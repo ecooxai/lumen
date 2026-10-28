@@ -29,6 +29,7 @@ for name,count in frozen['category_counts'].items():
                    harnessesHealthy=source['both_harnesses_complete_without_zero_assertion_files'],
                    lumenRemaining=source['lumen']['remaining_files'],chromeRemaining=source['chromium']['remaining_files'],
                    lumenFullyPassing=source['lumen']['files_passing_all_assertions'],chromeFullyPassing=source['chromium']['files_passing_all_assertions'],
+                   lumenSubtestOutcomes=source['lumen']['subtest_outcomes'],chromeSubtestOutcomes=source['chromium']['subtest_outcomes'],
                    lumenFileOutcomes=source['lumen']['file_outcomes'],chromeFileOutcomes=source['chromium']['file_outcomes'])
     value['categories'][name]=row
 status=json.loads((STATE/'status.json').read_text())
@@ -76,6 +77,18 @@ if score.get('history'):
     iteration=score['history'][-1].get('iteration','')
     if iteration.rsplit('-',1)[-1].isdigit():status['iteration']=int(iteration.rsplit('-',1)[-1])
 value['isCurrentAcceptedNativeArtifact']=value.get('lumenBinarySHA256')in(None,native)
+review_path=BASE/'reference-review.json'
+if review_path.is_file():
+    review=json.loads(review_path.read_text())
+    if review.get('status')=='quarantined':
+        status['wpt']['referenceStatus']='Installed control under review: fresh URL sanity checks failed.'
+        status['phase']+=' The installed Chrome control failed independent URL sanity checks; comparative rates are quarantined while raw failures remain visible.'
+        if value.get('chromiumBinarySHA256')==review.get('binarySHA256'):
+            value['referenceReview']={key:review[key]for key in ('status','reason','binarySHA256','probeEvidence')}
+            for row in value['categories'].values():
+                row.setdefault('recordedChromePassRetention',row.get('chromePassRetention'))
+                row['chromePassRetention']=None
+                row['referenceStatus']='quarantined'
 status['expandedWpt']=value;status['updatedUTC']=datetime.now(timezone.utc).isoformat()
 archive=ROOT/'output/session-10290244/public/manifest.json'
 if archive.is_file():

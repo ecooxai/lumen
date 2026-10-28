@@ -1,0 +1,1988 @@
+{
+  "schema": 1,
+  "createdUTC": "2026-10-28T20:43:10.448455+00:00",
+  "sourceHashes": {
+    "tools/apple-session-gpt6as/bootstrap_wpt_10290244.py": "bd2d88a10dbe3fcf778fde89bd56b0f199e36e0a81f5fc18258840d944f2d846",
+    "tools/apple-session-gpt6as/start_official_wpt_10290244.py": "902f8ab4bb298c6d7d0dfc1ca2323a31306eefd612b2130231688644f66ea6fa",
+    "tools/apple-session-gpt6as/derive_wpt_environment_10290244.py": "61d3eebafa038054579d04aff400ae316ab1e7f420ceea1b15df7f46fe7a4605",
+    "tools/apple-session-gpt6as/freeze_chrome_reference_10290244.py": "6e7d0948e98fcf25ebe9885162cf3ee9e0674845a734b9ba728a705a439855f4",
+    "tools/apple-session-gpt6as/audit_priority_dependencies_10290244.py": "2233ffc7cd3ed81d384a4963530c9983feaeab77c3416b1d7603ce8cc678a779",
+    "tools/apple-session-gpt6as/run_priority_wpt_10290244.py": "b2395c8e7b00e4081924025d765cdb5386de19cd6eddb0f4178c4a8c6d6e2987",
+    "tools/apple-session-gpt6as/probe_chrome_native_url_10290244.py": "c1d803b5b081185c632ddf4628e0a414e8faea8793b54067308405202ad968aa",
+    "tools/apple-session-gpt6as/probe_chrome_signature_10290244.py": "4bf1f7725dabe1ca13061b6126ea885b94cfeb5a5eaa569cf0bc53f7ac97d948",
+    "tools/apple-session-gpt6as/update_priority_progress_10290244.py": "e608ab49319333628894a47822373897cec5c6d9fecc1f34b43bca7083154f16",
+    "tools/apple-session-gpt6as/verify_progress_visual_10290244.py": "8bc6828d844afecb35c8c90ecf034b9705d4442f9185f65571645c5ee7aa9bc4",
+    "tools/apple-session-gpt6as/freeze_priority_wpt.py": "333c655bfb8133b66be5e890b248aee25be0de1a4429b041f657a52d45e01724",
+    "tools/lume-progress-10290244/public/app.js": "9e27bcd61c50023aca6b24ff87d258661cd1a511abf9fbb50996ffda94bc08db"
+  },
+  "sourceBaseCommit": "5d59cd2fc39efd3ebe3573b7b682dae81d9a35ad",
+  "selectionSHA256": "46c7dc21e6bea1fff3505c9390663f160c4fcf34aa3d4f897cc1732efd2ed7d9",
+  "scope": "Source/provenance infrastructure only; no native source, scorecard, iteration counter or raw result stream is changed.",
+  "fixtureReadiness": {
+    "schema": 1,
+    "startedUTC": "2026-10-28T19:28:25.298056+00:00",
+    "server_pid": 23670,
+    "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+    "manifest_sha256": "7f2b0405286816226928047248543c709d4df237a2cfbe720e5c05e7a3554b24",
+    "server_config_sha256": "d3d4f26a540e3564d1d9f6137be4c465d99283ce5ad87531b67cd5719c79c9d0",
+    "reporter_sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "ca_sha256": "6760c932218bfe2703b10f2ea89a54b409f04d94dc5a1c9cf0f1fe7da8b30b52",
+    "ports": {
+      "http": [
+        18800,
+        18801
+      ],
+      "http-local": [
+        null
+      ],
+      "http-public": [
+        null
+      ],
+      "https": [
+        18443,
+        18444
+      ],
+      "https-local": [
+        null
+      ],
+      "https-public": [
+        null
+      ],
+      "h2": [
+        18900
+      ],
+      "ws": [
+        null
+      ],
+      "wss": [
+        null
+      ],
+      "webtransport-h3": [
+        null
+      ],
+      "dns": [
+        null
+      ]
+    },
+    "origin": "http://web-platform.test:18800",
+    "secure_origin": "https://web-platform.test:18443",
+    "h2_origin": "https://web-platform.test:18900",
+    "scope": "Pinned upstream WPT server with a custom completion reporter; sparse selected upstream sources, not a full official WPT run",
+    "limits": [
+      "DNS mapping and certificate trust are confined to test processes.",
+      "No system hosts file or global trust store is modified.",
+      "WebSocket, WebTransport and external address-space fixture listeners are disabled for this initial declared source selection.",
+      "HTTP/2 is configured but needs separate readiness evidence if selected cases require it."
+    ],
+    "fixture_ready": true,
+    "readiness": {
+      "reporter_http": {
+        "status": 200,
+        "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+        "bytes": 3278
+      },
+      "upstream_harness_http": {
+        "status": 200,
+        "sha256": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+        "bytes": 198420
+      },
+      "reporter_https": {
+        "status": 200,
+        "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+        "bytes": 3278,
+        "tls": null,
+        "hostnameValidated": true,
+        "caValidated": true
+      },
+      "alternate_http": {
+        "status": 200,
+        "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+        "bytes": 3278
+      },
+      "alternate_https": {
+        "status": 200,
+        "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+        "bytes": 3278,
+        "tls": null,
+        "hostnameValidated": true,
+        "caValidated": true
+      }
+    },
+    "certificate_spki_sha256_base64": "WXjEgm6G9rSgRQQVGbD5q+zOszPmv3ZBSfaIAMv+bY8=",
+    "server_start_identity": "Wed Oct 28 12:28:25 2026",
+    "server_identity_error": null,
+    "finishedUTC": "2026-10-28T19:28:26.950289+00:00"
+  },
+  "literalHelperAudit": {
+    "schema": 1,
+    "created_utc": "2026-10-28T19:47:08.342950+00:00",
+    "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+    "selection_schedule_sha256": "adcbf9719f722368b1e53ac1bd61cf38e566d3bd7495d9d6127cad38dd6aeabe",
+    "selection_file_sha256": "46c7dc21e6bea1fff3505c9390663f160c4fcf34aa3d4f897cc1732efd2ed7d9",
+    "selected_sources": 235,
+    "visited_sources_and_helpers": 270,
+    "literal_helper_references": 729,
+    "missing_tracked_helpers": [],
+    "unresolved_literals_or_templates": [
+      {
+        "source": "dom/nodes/Node-cloneNode-external-stylesheet-no-bc.sub.html",
+        "kind": "stylesheet",
+        "url": "${absoluteURL}",
+        "resolved": null,
+        "reason": "template-expression"
+      },
+      {
+        "source": "encoding/idlharness.any.js",
+        "kind": "meta-script",
+        "url": "/resources/WebIDLParser.js",
+        "resolved": "resources/WebIDLParser.js",
+        "reason": "not-a-tracked-literal-helper"
+      },
+      {
+        "source": "url/idlharness.any.js",
+        "kind": "meta-script",
+        "url": "/resources/WebIDLParser.js",
+        "resolved": "resources/WebIDLParser.js",
+        "reason": "not-a-tracked-literal-helper"
+      }
+    ],
+    "generated_wrapper_references": [],
+    "absolute_network_references": [
+      {
+        "source": "dom/events/EventTarget-dispatchEvent-returnvalue.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#concept-event-dispatch",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/events/EventTarget-dispatchEvent-returnvalue.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-event-preventdefault",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/events/EventTarget-dispatchEvent-returnvalue.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-event-returnvalue",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/events/EventTarget-dispatchEvent-returnvalue.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-event-defaultprevented",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/events/EventTarget-dispatchEvent.html",
+        "kind": "stylesheet",
+        "url": "mailto:Olli.Pettay@gmail.com",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/events/EventTarget-dispatchEvent.html",
+        "kind": "stylesheet",
+        "url": "mailto:Ms2ger@gmail.com",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/events/EventTarget-dispatchEvent.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-eventtarget-dispatchevent",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/events/EventTarget-this-of-listener.html",
+        "kind": "stylesheet",
+        "url": "mailto:d@domenic.me",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/events/EventTarget-this-of-listener.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#concept-event-listener-invoke",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/events/EventTarget-window-constructor.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#concept-event-dispatch",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Document-adoptNode.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-document-adoptnode",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Document-createElement.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-document-createelement",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Document-createElement.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-element-localname",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Document-createElement.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-element-tagname",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Document-createElement.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-element-prefix",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Document-createElement.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-element-namespaceuri",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Document-createElementNS.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-document-createelementns",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Document-importNode.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-document-importnode",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Node-cloneNode-XMLDocument.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-node-clonenode",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Node-cloneNode-XMLDocument.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#concept-node-clone",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Node-cloneNode-document-with-doctype.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-node-clonenode",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Node-cloneNode-document-with-doctype.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#concept-node-clone",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Node-cloneNode-parser-created-names.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-node-clonenode",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Node-cloneNode-svg.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-node-clonenode",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Node-cloneNode-svg.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#concept-node-clone",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "dom/nodes/Node-cloneNode.html",
+        "kind": "stylesheet",
+        "url": "https://dom.spec.whatwg.org/#dom-node-clonenode",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/json-document-utf8.html",
+        "kind": "stylesheet",
+        "url": "https://datatracker.ietf.org/doc/html/rfc8259#section-8.1",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-errors.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-errors.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-decode.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-cseucpkdfmtjapanese.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-cseucpkdfmtjapanese.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-han.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-x-euc-jp.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form-x-euc-jp.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-form.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-han.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/euc-jp/eucjp-encode-href.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-csiso2022jp.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-csiso2022jp.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-errors.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode-errors.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-decode.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-csiso2022jp.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-csiso2022jp.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-han.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-stateful.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp-encoder",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-stateful.html",
+        "kind": "stylesheet",
+        "url": "mailto:bsittler@chromium.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-han.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-href.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#iso-2022-jp",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-csshiftjis.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-csshiftjis.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-errors.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-errors.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms932.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms932.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms_kanji.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-ms_kanji.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-shift-jis.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-shift-jis.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-sjis.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-sjis.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-windows-31j.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-windows-31j.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-x-sjis.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode-x-sjis.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-decode.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-csshiftjis.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-csshiftjis.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-han.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms932.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms932.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms_kanji.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-ms_kanji.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-shift-jis.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-shift-jis.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-sjis.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-sjis.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-windows-31j.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-windows-31j.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-x-sjis.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form-x-sjis.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-form.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-han.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-japanese/shift_jis/sjis-encode-href.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#shift_jis",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-cseuckr.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-csksc56011987.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-errors.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-errors.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-kr",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-iso-ir-149.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-korean.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1987.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-ks_c_5601-1989.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc5601.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-ksc_5601.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode-windows-949.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-decode.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-kr",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-cseuckr.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-csksc56011987.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-han.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-kr",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-kr",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-iso-ir-149.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-korean.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1987.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ks_c_5601-1989.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc5601.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-ksc_5601.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form-windows-949.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-form.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-kr",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-han.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-kr",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-href-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-kr",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-korean/euc-kr/euckr-encode-href.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#euc-kr",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-big5-hkscs.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-cn-big5.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-csbig5.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-errors.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-errors.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-extra.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-extra.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode-x-x-big5.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-decode.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-enc-ascii.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-enc-ascii.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-big5-hkscs.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-cn-big5.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-csbig5.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBa.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-extBb.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-han.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-pua.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-errors-pua.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form-x-x-big5.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#names-and-labels",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-form.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-han.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-hangul.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-href-errors-misc.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-href.html",
+        "kind": "stylesheet",
+        "url": "mailto:ishida@w3.org",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "encoding/legacy-mb-tchinese/big5/big5-encode-href.html",
+        "kind": "stylesheet",
+        "url": "https://encoding.spec.whatwg.org/#big5",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      },
+      {
+        "source": "url/data-uri-fragment.html",
+        "kind": "stylesheet",
+        "url": "https://url.spec.whatwg.org/",
+        "resolved": null,
+        "reason": "absolute-network-url"
+      }
+    ],
+    "oversize_unscanned_helpers": [],
+    "limits": [
+      "Static literal helper scan only; does not establish complete runtime fixture readiness.",
+      "Dynamic fetch, navigation, worker-constructor and negative-test request targets are not automatically classified.",
+      "Tracked missing helper files are sparse-checkout fixture gaps, not browser failures.",
+      "No upstream file, manifest, selection or browser assertion was changed by this audit."
+    ]
+  },
+  "referenceReview": {
+    "schema": 1,
+    "createdUTC": "2026-10-28T20:18:02.414119+00:00",
+    "status": "quarantined",
+    "binarySHA256": "4f71e9dbe725fec1110977b6a6dd0708fb32fbde9c905b4b461cef880ac08288",
+    "probeEvidence": "output/session-10290244/chrome-native-url-sanity/receipt.json",
+    "probeSHA256": "271203cb1a6a76b6bc77634d29e192da08c70a83570d78fb423dbf1b34888aa9",
+    "reason": "Installed Chrome control fails independent URL parsing sanity checks. Raw results and failed assertions are preserved; comparative acceptance is withheld pending a verified reference.",
+    "passingSanityChecks": 3,
+    "sanityChecks": 12
+  },
+  "referenceSanityProbe": {
+    "schema": 1,
+    "startedUTC": "2026-10-28T20:12:17.490909+00:00",
+    "binarySHA256": "4f71e9dbe725fec1110977b6a6dd0708fb32fbde9c905b4b461cef880ac08288",
+    "binaryPath": "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "runnerSHA256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+    "scope": "Fresh about:blank; no WPT fixture, URL shim, reporter, extension, account or user profile. Native URL and HTMLAnchorElement sanity only.",
+    "probeCompleted": true,
+    "nativeSanityPassed": false,
+    "browserVersion": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/156.0.8078.48",
+      "revision": "@d0c02bfad08ec92a6ffcf989e53cd995e6381a4c",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "jsVersion": "15.6.75.19"
+    },
+    "ownedPID": 53436,
+    "ownedProcessIdentity": "53436 53435 Wed Oct 28 13:12:17 2026     /Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/MacOS/Google Chrome --headless=new --remote-debugging-port=0 --user-data-dir=/Users/devin/repos/lumen/output/session-10290244/chrome-native-url-sanity/chrome/lumen-wpt-chrome-rwb64a90 --no-first-run --no-default-browser-check --disable-background-networking about:blank",
+    "launchArguments": [
+      "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/MacOS/Google Chrome",
+      "--headless=new",
+      "--remote-debugging-port=0",
+      "--user-data-dir=/Users/devin/repos/lumen/output/session-10290244/chrome-native-url-sanity/chrome/lumen-wpt-chrome-rwb64a90",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--disable-background-networking",
+      "about:blank"
+    ],
+    "target": {
+      "type": "page",
+      "url": "about:blank",
+      "title": ""
+    },
+    "result": {
+      "location": "about:blank",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "platform": "MacIntel",
+      "functions": {
+        "URL": "function URL() { [native code] }",
+        "URLSearchParams": "function URLSearchParams() { [native code] }",
+        "createElement": "function createElement() { [native code] }",
+        "anchorHrefGetter": "function get href() { [native code] }"
+      },
+      "checks": [
+        {
+          "name": "URL rejects a space in hostname",
+          "expected": "throws:TypeError",
+          "actual": "http://example%20example.com/",
+          "passed": false
+        },
+        {
+          "name": "URL canonicalizes localhost file host",
+          "expected": "file:///",
+          "actual": "file://localhost/",
+          "passed": false
+        },
+        {
+          "name": "file URL ignores port mutation",
+          "expected": "file:///",
+          "actual": "file://localhost/",
+          "passed": false
+        },
+        {
+          "name": "file URL rejects host with port mutation",
+          "expected": "file://y/",
+          "actual": "file://x/",
+          "passed": false
+        },
+        {
+          "name": "URL replaces and encodes lone surrogate path",
+          "expected": "http://example.com/%EF%BF%BD",
+          "actual": "http://example.com/%EF%BF%BD",
+          "passed": true
+        },
+        {
+          "name": "anchor rejects spaced hostname as a parsed host",
+          "expected": "",
+          "actual": "example%20example.com",
+          "passed": false
+        },
+        {
+          "name": "anchor retains invalid literal href",
+          "expected": "http://example example.com",
+          "actual": "http://example%20example.com/",
+          "passed": false
+        },
+        {
+          "name": "anchor canonicalizes localhost file host",
+          "expected": "file:///",
+          "actual": "file://localhost/",
+          "passed": false
+        },
+        {
+          "name": "anchor file ignores port mutation",
+          "expected": "file:///",
+          "actual": "file://localhost/",
+          "passed": false
+        },
+        {
+          "name": "anchor file rejects host with port mutation",
+          "expected": "file://y/",
+          "actual": "file://x/",
+          "passed": false
+        },
+        {
+          "name": "URL exact upstream surrogate/noncharacter case",
+          "expected": "http://example.com/%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF?%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF",
+          "actual": "http://example.com/%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF?%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF",
+          "passed": true
+        },
+        {
+          "name": "anchor exact upstream surrogate/noncharacter case",
+          "expected": "http://example.com/%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF?%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF",
+          "actual": "http://example.com/%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF?%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF",
+          "passed": true
+        }
+      ],
+      "surrogateInputCodeUnits": [
+        "d800",
+        "d801",
+        "dffe",
+        "dfff",
+        "fdd0",
+        "fdcf",
+        "fdef",
+        "fdf0",
+        "fffe",
+        "ffff"
+      ]
+    },
+    "binarySHA256After": "4f71e9dbe725fec1110977b6a6dd0708fb32fbde9c905b4b461cef880ac08288",
+    "cleanup": {
+      "process": {
+        "sent_sigterm": false,
+        "sent_sigkill": false,
+        "error": null,
+        "post_signal_verification": {
+          "allowed_wait_s": 10,
+          "initial_live_members": {},
+          "duration_ms": 16
+        },
+        "process_group_gone": true,
+        "remaining_group_members": {},
+        "root_exit_code": 0,
+        "root_exit_before_signal_cleanup": 0,
+        "root_exit_observation_verified": true
+      },
+      "errors": [],
+      "graceful_close": {
+        "method": "Browser.close",
+        "attempted": true,
+        "acknowledged": true,
+        "allowed_drain_s": 20,
+        "exit_requirement": "All live owned-group members must disappear; an exiting process state is not ignored.",
+        "initial_process_state": {
+          "observed_unix_ms": 1793218338946,
+          "members": [
+            {
+              "pid": 53436,
+              "ppid": 53435,
+              "pgid": 53436,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "Rs",
+              "start_identity": "Wed Oct 28 13:12:17 2026",
+              "executable": "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/MacOS/Google Chrome"
+            },
+            {
+              "pid": 53446,
+              "ppid": 53436,
+              "pgid": 53436,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:12:17 2026",
+              "executable": "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.48/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+            },
+            {
+              "pid": 53447,
+              "ppid": 53436,
+              "pgid": 53436,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:12:17 2026",
+              "executable": "(Google Chrome He)"
+            },
+            {
+              "pid": 53452,
+              "ppid": 53436,
+              "pgid": 53436,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:12:17 2026",
+              "executable": "/Users/devin/repos/lumen/output/wpt-10290244/reference/chrome-4f71e9dbe725fec1-mac-arm64-10290244/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.48/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+            },
+            {
+              "pid": 53483,
+              "ppid": 53436,
+              "pgid": 53436,
+              "uid": 501,
+              "ruid": 501,
+              "stat": "S",
+              "start_identity": "Wed Oct 28 13:12:18 2026",
+              "executable": "(Google Chrome He)"
+            }
+          ]
+        },
+        "process_group_gone": true,
+        "drain_duration_ms": 335
+      }
+    },
+    "finishedUTC": "2026-10-28T20:12:19.290787+00:00",
+    "wallSeconds": 1.799
+  },
+  "limits": [
+    "Reference URL behavior is quarantined; absolute native results are not Chrome parity.",
+    "Frozen variants and unchanged assertions remain in their original denominators.",
+    "Runtime profiles, certificates/private keys and ignored state are excluded."
+  ]
+}

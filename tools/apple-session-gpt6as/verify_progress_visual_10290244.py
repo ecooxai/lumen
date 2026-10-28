@@ -63,7 +63,9 @@ try:
             order=['dom','events','url','headers','microtasks','storage','encoding']
             for row,name in zip(inspected['categoryRows'],order):
                 data=inspected['snapshot']['expanded']['categories'][name]
-                need(row[1]==str(data['scheduled'])and row[2]==f"{data['lumenRecorded']} / {data['lumenFullyPassing']}"and row[3]==f"{data['chromeRecorded']} / {data['chromeFullyPassing']}",'Visible category denominator or file outcome differs: '+name)
+                control=f"{data['chromeRecorded']} / {data['chromeFullyPassing']}"
+                if data.get('chromeSubtestOutcomes',{}).get('FAIL'):control+=f" · {data['chromeSubtestOutcomes']['FAIL']} failed assertions"
+                need(row[1]==str(data['scheduled'])and row[2]==f"{data['lumenRecorded']} / {data['lumenFullyPassing']}"and row[3]==control,'Visible category denominator or file outcome differs: '+name)
             if inspected['snapshot']['expanded']['isCurrentAcceptedNativeArtifact']is False:need('earlier native artifact'in inspected['expandedSummary'],'Historical cohort lacks a visible artifact label')
             exceptions=[item for item in page.events if item.get('method')=='Runtime.exceptionThrown']
             need(not exceptions,'Page JavaScript raised an exception')
