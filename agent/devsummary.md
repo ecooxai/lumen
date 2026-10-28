@@ -50,3 +50,14 @@ Avoided browser chrome pixels that page compositing immediately overwrites, and 
 The unchanged six-file pinned WPT subset still passes 1850/1850 in both Lume and Chrome, 6/6 files, on native SHA `f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46`. This remains a selected-suite result. Controlled scroll p95 decreased from 29.312% to 23.864% (18.59% observed reduction), but the 10% target still FAILS. The independent fixed final idle window passes: 49 valid interval samples over 48.976s, p95 1.000%, RSS 151.859→151.859MiB; no gaps/collector errors and natural cleanup. No soak or same-IPA credit.
 
 Score: 40.00/100 task gates. All source hashes, fresh WPT, timing, raw CPU hash and explicit failed interaction verdict are retained in `agent/evidence/10290244-004-renderer.json`. Expanded priority WPT remains 1515 frozen variants across 235 sources/seven categories; first bounded paired categories are next.
+
+
+## Iteration 10290244-005 — retain lazy wrappers during DOM cloning
+
+Start: 2026-10-28T19:52:01.222206+00:00. End: 2026-10-28T19:56:47.055158+00:00. Iteration wall: 285.833 s. Session elapsed: 4152.055 s. Workers: apple_runtime implementation and allocation experiment; wpt_engine independent review; release_integrator artifact/commit review; root remote coordination. Separate model compute durations are unavailable.
+
+Clone metadata now walks native trees and copies private platform state only where a source wrapper already has relevant metadata. Ordinary parsed descendants remain lazy, unopened template contents are not allocated merely for inspection, and page-defined Array.prototype setters cannot intercept the internal metadata list. The targeted allocation test improved 20/30 to 30/30. Two deep clones of a 1024-descendant tree added 2 wrappers instead of 3074; template clones 2 instead of 2055; sparse metadata 2 instead of 2049. These exact counters are not a measured general RAM reduction.
+
+All 292 retained native compatibility/allocation checks passed across nine timed stages; prebuilt-V8 incremental build 3.093 s. The unchanged six-file pinned WPT subset freshly passes 1850/1850 in Lume and Chrome, 6/6 files, on native SHA `de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5`. Evidence and full compiled-source hashes: `agent/evidence/10290244-005-clone-allocation.json`.
+
+Task score 35.00/100. The previous 40.00 score included 5 idle points measured on f941; they are now explicitly historical because the executable changed. No current-artifact idle/interaction/soak or same-IPA success is inferred from these short checks. Expanded 1515-variant inventory is unchanged; the completed f941 DOM comparison remains a separate artifact cohort.

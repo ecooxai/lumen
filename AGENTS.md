@@ -45,6 +45,11 @@ while kill -0 $P 2>/dev/null; do ps -o %cpu=,rss= -p $P; sleep 1; done
 - Report the measured CPU numbers with the test results.
 
 
-## Latest verified task checkpoint — 10290244-004
+## Previous verified task checkpoint — 10290244-004
 
 Current native snapshot is `build-apple-load-20261029/lumen-render-overdraw-f941cfcdedd9a59b` (f941cfcdedd9a59b…). Original fixed WPT subset: 1850/1850 in Lume and Chrome; renderer exact-pixel regressions 92/92. Idle passes independently; scroll p95 23.864% still exceeds 10%. Keep this failed gate explicit. Broader coverage is a frozen 1515-variant,235-source,seven-category priority suite, not all WPT. Same-device IPA execution and a full navigation soak remain unverified. Read the latest `agent/continue.md` entries and scorecard before further source changes; every changed binary needs matching fresh performance evidence.
+
+
+## Latest verified task checkpoint — 10290244-005
+
+Current native snapshot `build-apple-load-20261029/lumen-clone-allocation-de338a9f08913dc8` (de338a9f08913dc8…) passes 292 targeted allocation/compatibility checks and 1850/1850 assertions in the original six-file WPT subset. Lazy-wrapper allocation regression is fixed with exact counters, but current-binary CPU/RSS/soak still needs fresh evidence; previous f941 idle/scroll observations are historical. Expanded official-server WPT keeps 1515 frozen variants in seven categories and reports missing cases. Same-IPA Mac/iPad/iPhone execution remains unverified. Read the latest continuation and scorecard before modifying shared Makefile or native runtime files.

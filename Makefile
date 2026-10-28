@@ -576,3 +576,8 @@ $(BUILD)/test_wasm_async_deadline: $(call OBJ,tests/test_wasm_async_deadline.cc 
 $(BUILD)/tests/test_render_overdraw.c.o: src/paint/raster.c src/app/chrome_paint.h
 $(BUILD)/test_render_overdraw: $(call OBJ,tests/test_render_overdraw.c $(filter-out src/paint/raster.c,$(CORE_SRC)) $(JS_SRC)) $(V8LINK_RSP)
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Deep metadata cloning must retain lazy native wrappers for plain descendants.
+$(BUILD)/tests/test_clone_metadata_allocation.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_clone_metadata_allocation: $(call OBJ,tests/test_clone_metadata_allocation.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)

@@ -279,6 +279,58 @@ FN(clone) {
     }
     RET(jwrap(c, copy));
 }
+FN(cloneMetadataPairs) {
+    CTX; ARGN(source, 0); ARGN(copy, 1);
+    const bool deep = BOOL(2);
+    auto result = v8::Array::New(iso);
+    uint32_t index = 0;
+    std::vector<std::pair<Node *, Node *>> pending = {{source, copy}};
+    /* Private DOM metadata exists only on an already-created source wrapper.
+     * Walk the native trees so ordinary parsed descendants stay unwrapped:
+     * N.first/N.next in JS would materialize and retain both entire trees. */
+    v8::Local<v8::Private> keys[] = {
+        dom_state_key(iso, 1), dom_state_key(iso, 2),
+        dom_state_key(iso, 3), dom_state_key(iso, 4)
+    };
+    while (!pending.empty()) {
+        auto pair = pending.back(); pending.pop_back();
+        Node *from = pair.first, *to = pair.second;
+        if (from->type != to->type) {
+            iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Clone metadata trees do not match")));
+            return;
+        }
+        if (from->js && (from->type == NODE_ELEMENT || from->type == NODE_DOCUMENT)) {
+            auto object = static_cast<v8::Global<v8::Object> *>(from->js)->Get(iso);
+            if (!object.IsEmpty()) {
+                bool relevant = false;
+                const int first = from->type == NODE_ELEMENT ? 0 : 2;
+                for (int slot = first; slot < first + 2; slot++) {
+                    v8::Local<v8::Value> state;
+                    if (!object->GetPrivate(ctx, keys[slot]).ToLocal(&state)) return;
+                    if (!state->IsUndefined()) relevant = true;
+                }
+                if (relevant) {
+                    /* Page-defined Array.prototype setters must not intercept
+                     * this internal list or suppress platform metadata. */
+                    if (!result->CreateDataProperty(ctx, index++, object).FromMaybe(false) ||
+                        !result->CreateDataProperty(ctx, index++, jwrap(c, to)).FromMaybe(false)) return;
+                }
+            }
+        }
+        if (!deep) continue;
+        /* Preserve the former preorder, with template contents after ordinary
+         * children. Do not create template contents merely to inspect them. */
+        if (from->template_content && to->template_content)
+            pending.push_back({from->template_content, to->template_content});
+        Node *a = from->last, *b = to->last;
+        for (; a && b; a = a->prev, b = b->prev) pending.push_back({a, b});
+        if (a || b) {
+            iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Clone metadata children do not match")));
+            return;
+        }
+    }
+    RET(result);
+}
 FN(doc) { CTX; RET(jwrap(c, &c->doc->node)); }
 FN(contains) { CTX; ARGN(x, 0); ARGN(y, 1); RET(node_is_inclusive_ancestor(x, y)); }
 FN(version) { CTX; ARGN(n, 0); RET(v8::Number::New(iso, n->doc ? (double)n->doc->dom_version : 0)); }
@@ -1479,7 +1531,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(cspMedia); REG(referrer); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(xmlAppend); REG(xmlScript); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
-    REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
+    REG(matches); REG(byId); REG(clone); REG(cloneMetadataPairs); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
     REG(controlSelection); REG(controlSetSelection); REG(controlSetRangeText); REG(controlSelect); REG(controlEditable);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(baseUrl); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);

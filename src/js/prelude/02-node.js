@@ -133,7 +133,7 @@ function removeNode(c) {
  * platform slots. Clone only platform data; expandos and page-defined prototypes must
  * not become part of the copy. Keep this path shared by cloneNode/importNode
  * and Range's cloning operations. */
-function copyCloneMetadata(source, copy, deep) {
+function copyNodeCloneMetadata(source, copy) {
     const type = N.type(source);
     if (type === 1) {
         const name = elementNames.get(source);
@@ -149,12 +149,10 @@ function copyCloneMetadata(source, copy, deep) {
         const proto = documentInterfaces.get(source);
         if (proto) { documentInterfaces.set(copy, proto); Object.setPrototypeOf(copy, proto); }
     }
-    if (deep) {
-        for (let a = N.first(source), b = N.first(copy); a && b; a = N.next(a), b = N.next(b))
-            copyCloneMetadata(a, b, true);
-    }
-    if (type === 1 && N.ns(source) === 0 && N.name(source) === 'template')
-        copyCloneMetadata(N.templateContent(source), N.templateContent(copy), deep);
+}
+function copyCloneMetadata(source, copy, deep) {
+    const pairs = N.cloneMetadataPairs(source, copy, !!deep);
+    for (let i = 0; i < pairs.length; i += 2) copyNodeCloneMetadata(pairs[i], pairs[i + 1]);
 }
 function cloneDOMNode(source, deep, owner) {
     if (attributeState.has(source)) {

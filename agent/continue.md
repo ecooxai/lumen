@@ -49,3 +49,10 @@ Score 35.00/100 is task acceptance. Expanded official-server WPT and new-artifac
 Current immutable native `build-apple-load-20261029/lumen-render-overdraw-f941cfcdedd9a59b` SHA `f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46` preserves 1850/1850 selected WPT assertions in both engines and passes 92 exact-pixel checks. Idle p95 1.000% passes separately; scrolling p95 23.864% still fails 10% and must remain visible. Task score 40.00/100, not full-WPT conformance. See `agent/evidence/10290244-004-renderer.json`.
 
 The next native candidate may add Apple DOM-allocation test infrastructure and wheel-event coalescing; retain separate immutable artifact receipts and rerun current-artifact gates. Expanded WPT uses the frozen 1515-variant schedule with seven categories, process-local exact DNS, upstream CA, unchanged reporter/manifest and one-second measurements. Missing/unrun variants never count as passes. Progress backend is locally healthy; public tunnel registration is still under bounded recovery and must be health-verified before claiming a URL.
+
+
+## Accepted allocation checkpoint 10290244-005
+
+Native `build-apple-load-20261029/lumen-clone-allocation-de338a9f08913dc8` SHA `de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5` passes 292 targeted native checks and the fresh unchanged1850-assertion WPT subset in both engines. Metadata copying preserves lazy wrappers; explicit wrapper growth falls 3074→2 for two 1024-descendant plain clones. No broad RSS claim. Task score 35.00/100; f941 idle/scroll evidence is historical for this new binary.
+
+Wheel-event follow-up may now append its Makefile target after this checkpoint. It needs separate TDD, exact-source build provenance, unchanged WPT recheck and current-artifact interaction/idle/soak. The expanded WPT cohort at `output/wpt-10290244/priority-f941-v1` stays bound to f941 and the frozen 1515 variants; do not silently relabel it for this new engine.

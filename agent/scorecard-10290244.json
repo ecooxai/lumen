@@ -5,8 +5,8 @@
   "session_start_utc": "2026-10-28T18:47:35Z",
   "deadline_utc": "2026-10-28T21:47:35Z",
   "target_score": 98,
-  "score": 40,
-  "score_state": "original_subset_all_pass_idle_pass_scroll_failed_expanded_pending",
+  "score": 35,
+  "score_state": "allocation_compatibility_pass_current_performance_unverified",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-10290244.md",
   "gates": [
@@ -18,7 +18,7 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-render-overdraw-1.json"
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-clone-allocation-1.json"
       ],
       "passed": 1850,
       "denominator": 1850
@@ -40,11 +40,11 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-render-overdraw-1.json",
-        "output/session-10290244/render-overdraw-green-1/compiled-source-sha256.json",
-        "output/session-10290244/render-overdraw-green-1/summary.json"
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-clone-allocation-1.json",
+        "output/session-10290244/clone-allocation-green-1/compiled-source-sha256.json",
+        "output/session-10290244/clone-allocation-green-1/summary.json"
       ],
-      "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46"
+      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5"
     },
     {
       "id": "ipa_mac",
@@ -78,14 +78,10 @@
       "category": "performance",
       "weight": 5,
       "name": "Idle",
-      "status": "passed",
-      "earned": 5,
-      "evidence": [
-        "output/session-10290244/native-scroll-render-overdraw/receipt.json",
-        "output/session-10290244/native-scroll-render-overdraw/process-summary.json",
-        "output/session-10290244/native-scroll-render-overdraw/process-samples.jsonl"
-      ],
-      "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
+      "status": "unverified",
+      "earned": 0,
+      "evidence": [],
+      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5",
       "settle_seconds": 15,
       "valid_window_seconds": 64.009,
       "samples": 65,
@@ -97,37 +93,55 @@
             "output/session-10290244/apple-wasm-idle-baseline/fixed-settle-review.json"
           ],
           "prior_earned": 5
+        },
+        {
+          "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
+          "evidence": [
+            "output/session-10290244/native-scroll-render-overdraw/receipt.json",
+            "output/session-10290244/native-scroll-render-overdraw/process-summary.json",
+            "output/session-10290244/native-scroll-render-overdraw/process-samples.jsonl"
+          ],
+          "prior_earned": 5,
+          "prior_status": "passed",
+          "review": {
+            "samples": 50,
+            "validIntervalSamples": 49,
+            "durationSeconds": 48.976,
+            "settleSeconds": 66.132,
+            "cpuP95Percent": 1.0,
+            "cpuMeanPercent": 0.08204081632653061,
+            "cpuPeakPercent": 1.012,
+            "rssStartMiB": 151.859375,
+            "rssEndMiB": 151.859375,
+            "verdict": "passed",
+            "scope": "Fixed post-scroll idle subgate only; does not make the scrolling or soak gate pass."
+          }
         }
       ],
-      "note": "Independently accepted idle window. Overall scroll receipt remains failed.",
-      "review": {
-        "samples": 50,
-        "validIntervalSamples": 49,
-        "durationSeconds": 48.976,
-        "settleSeconds": 66.132,
-        "cpuP95Percent": 1.0,
-        "cpuMeanPercent": 0.08204081632653061,
-        "cpuPeakPercent": 1.012,
-        "rssStartMiB": 151.859375,
-        "rssEndMiB": 151.859375,
-        "verdict": "passed",
-        "scope": "Fixed post-scroll idle subgate only; does not make the scrolling or soak gate pass."
-      }
+      "note": "The allocation candidate is a new executable. Previous renderer CPU/RSS observations remain historical until an exact-artifact fresh run."
     },
     {
       "id": "perf_interaction",
       "category": "performance",
       "weight": 5,
       "name": "Ordinary interaction",
-      "status": "failed",
+      "status": "unverified",
       "earned": 0,
-      "evidence": [
-        "output/session-10290244/native-scroll-render-overdraw/receipt.json"
-      ],
-      "note": "One controlled A/B workload improved p95, but scrolling remains over the unchanged 10% target.",
-      "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
-      "scroll_cpu_p95_percent": 23.864,
-      "ceiling_percent": 10
+      "evidence": [],
+      "note": "The allocation candidate is a new executable. Previous renderer CPU/RSS observations remain historical until an exact-artifact fresh run.",
+      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5",
+      "ceiling_percent": 10,
+      "historical_evidence": [
+        {
+          "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
+          "evidence": [
+            "output/session-10290244/native-scroll-render-overdraw/receipt.json"
+          ],
+          "prior_earned": 0,
+          "prior_status": "failed",
+          "review": null
+        }
+      ]
     },
     {
       "id": "perf_soak",
@@ -137,7 +151,8 @@
       "status": "unverified",
       "earned": 0,
       "evidence": [],
-      "note": "No completed current-artifact navigation soak yet."
+      "note": "The allocation candidate is a new executable. Previous renderer CPU/RSS observations remain historical until an exact-artifact fresh run.",
+      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5"
     },
     {
       "id": "perf_budgets",
@@ -147,11 +162,11 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/render-overdraw-green-1/summary.json"
+        "output/session-10290244/clone-allocation-green-1/summary.json"
       ],
-      "build_seconds": 2.102,
+      "build_seconds": 3.093,
       "prebuilt_v8": true,
-      "note": "Seven timed, one-second-sampled stages; each completed within five minutes."
+      "note": "Nine timed, one-second-sampled stages completed within five minutes; short tests do not prove sustained idle or RAM behavior."
     },
     {
       "id": "repro_tdd",
@@ -161,8 +176,8 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/render-overdraw-red.log",
-        "output/session-10290244/render-overdraw-green-1/summary.json"
+        "output/session-10290244/clone-allocation-red.log",
+        "output/session-10290244/clone-allocation-green-1/summary.json"
       ]
     },
     {
@@ -173,10 +188,10 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "output/session-10290244/render-overdraw-green-1/compiled-source-sha256.json",
-        "output/session-10290244/render-overdraw-green-1/summary.json"
+        "output/session-10290244/clone-allocation-green-1/compiled-source-sha256.json",
+        "output/session-10290244/clone-allocation-green-1/summary.json"
       ],
-      "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46"
+      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5"
     },
     {
       "id": "release_progress",
@@ -212,9 +227,17 @@
       "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
       "scroll_cpu_p95_percent": 23.864,
       "scroll_target_percent": 10
+    },
+    {
+      "iteration": "10290244-005",
+      "updated_utc": "2026-10-28T19:56:47.055158+00:00",
+      "prior_score": 40,
+      "score": 35,
+      "binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5",
+      "reason_for_removed_idle_points": "New native binary; previous f941 idle result is historical, not a measured regression."
     }
   ],
-  "updated_utc": "2026-10-28T19:52:01.222206+00:00",
-  "current_baseline_binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
+  "updated_utc": "2026-10-28T19:56:47.055158+00:00",
+  "current_baseline_binary_sha256": "de338a9f08913dc814d0051918ade567548f4f1c9231dcc7e44247ffbdf018e5",
   "full_official_wpt_pass_percent": null
 }
