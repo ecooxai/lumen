@@ -637,3 +637,12 @@ The exact candidate passes 137/137 native CTest entries in 49.30 seconds. The un
 All 599 recorded source/resource/test/build inputs match the staged tree. CTest CPU min/median/max: 0/50.992/157.006%; sampled peak RSS: 335.843 MB; sampled peak PSS: 211.470 MB. Interval sampling and shared-page RSS limitations remain. The zstd 8 MiB cap is a decoder-window limit, not a total response or browser-memory limit. Current-draft aspect-ratio differences from pinned Chromium remain explicit. Non-item flex/grid container serialization follows existing interoperability while CSSWG issue 14429 remains unresolved.
 
 This is the tenth meaningful session iteration, so the local checkpoint is sealed. Quiet performance and the final 4,200-variant replay remain pending. Existing publication rejections are not bypassed. Exact evidence and limits: agent/iteration-records/20261028-session3-160.json.
+
+
+### Iteration 161 — accepted reductions in redundant sizing validation
+
+Start: 2026-10-28T18:02:20Z. End: 2026-10-28T18:12:11.415784+00:00. Duration: 9.86 minutes. Total session wall time: 91.04 minutes from 16:41:09 UTC. Same-model agents: engine_integration, validation_gate, platform_network, root. Scoped score: 97/100. Whole-goal score: 19/100, unchanged.
+
+Two bounded guards remove unnecessary work on common nonnegative sizing inputs. Whitespace, signed-zero, non-finite math and mutable declaration behavior remain unchanged. Candidate 161 passes 137/137 native CTest entries in 52.24 seconds. Both frozen 160 and 161 pass 56 range, 114 negative-literal and 140 boundary controls. All 326 upstream identities across the unchanged 38 sizing URLs match exactly: 213 PASS, 18 fully passing URLs, all harnesses OK, no gains or losses. All exact owned cleanup checks pass. All 600 recorded source/resource/test/build inputs match the staged tree.
+
+The quiet balanced 160/161/Chromium comparison has 21 valid trials, each passing 9,395 checks. Median milliseconds: DOM 39.966/40.245/10.000; style/layout 331.889/336.023/55.000; Grid 148.575/134.387/50.100. Grid is descriptively 9.5% lower, while DOM and layout are 0.7% and 1.2% higher; ranges overlap. No general speedup or full recovery is claimed. A direct 150/161/Chromium comparison follows for the final before/after table, followed by the exact final broad replay. Native CTest CPU min/median/max: 0/48.001/178.996%; sampled peak RSS 314.012 MB and PSS 181.469 MB, with the established sampling limitations. Evidence: agent/iteration-records/20261028-session3-161.json.

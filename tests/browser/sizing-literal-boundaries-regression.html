@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><title>Sizing literal boundary controls</title><pre id="results"></pre><script>
+(()=>{const rows=[],properties=['width','height','min-width','min-height','max-width','max-height','min-inline-size','min-block-size','max-inline-size','max-block-size'];
+const check=(name,fn)=>{try{fn();rows.push({name,status:'PASS'});}catch(e){rows.push({name,status:'FAIL',message:String(e.message||e)});}},eq=(a,b)=>{if(a!==b)throw Error(JSON.stringify(a)+' != '+JSON.stringify(b));};
+const node=()=>{const e=document.createElement('div');e.style.cssText='display:none;font-size:40px';document.body.append(e);return e;};
+for(const p of properties)for(const value of ['-10px',' \t-10px','\n-0.5em','\r\n -1%','\u00a0-10px','\ufeff-10px'])check(p+' rejects '+JSON.stringify(value),()=>{
+ const e=node();try{e.style.setProperty(p,'30px');e.style.setProperty(p,value);eq(e.style.getPropertyValue(p),'30px');eq(CSS.supports(p,value),false);}finally{e.remove();}
+});
+for(const p of properties)for(const value of ['10px','+10px','.5px',' 10px ','0','-0px'])check(p+' accepts '+JSON.stringify(value),()=>{
+ const e=node();try{e.style.setProperty(p,value);eq(CSS.supports(p,value),true);eq(parseFloat(e.style.getPropertyValue(p)),parseFloat(value));}finally{e.remove();}
+});
+for(const p of properties)for(const value of ['calc(-10px)','calc(-0px)'])check(p+' retains valid math '+value,()=>{
+ const e=node();try{e.style.setProperty(p,value);eq(CSS.supports(p,value),true);eq(getComputedStyle(e).getPropertyValue(p),'0px');}finally{e.remove();}
+});
+for(const r of rows)console.log('SIZING_BOUNDARY_RESULT '+JSON.stringify(r));const pass=rows.filter(r=>r.status==='PASS').length,marker='RESULTS browser-sizing-literal-boundaries:'+(pass===rows.length?'PASS':'FAIL')+' '+pass+'/'+rows.length;console.log(marker);document.getElementById('results').textContent=marker;})();
+</script>

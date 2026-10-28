@@ -437,13 +437,16 @@ static bool alen(ACtx *c, const char *v, Length *out) { return css_parse_length(
 static bool alen_size(ACtx *c, const char *v, Length *out) {
     Length value = *out;
     if (!alen(c, v, &value)) return false;
-    while (is_ws((unsigned char)*v)) v++;
-    bool math = (isalpha((unsigned char)*v) || str_istarts(v, "-webkit-")) && strchr(v, '(');
     if (value.kind == LK_LEN) {
-        /* Negative literals are invalid declarations, not values to clamp. Do
-           not overwrite an earlier valid declaration when native CSS parses one. */
-        if (!math && (value.px < 0 || value.pct < 0)) return false;
-        if (math && !value.pct && !value.pctu && !value.mm && value.px < 0) value.px = 0;
+        /* Only negative components need the literal-versus-math distinction.
+           Keep common nonnegative sizes on the existing parsed-value path. */
+        if (value.px < 0 || value.pct < 0) {
+            while (is_ws((unsigned char)*v)) v++;
+            bool math = (isalpha((unsigned char)*v) || str_istarts(v, "-webkit-")) && strchr(v, '(');
+            /* Invalid negative literals must not replace a prior declaration. */
+            if (!math) return false;
+            if (!value.pct && !value.pctu && !value.mm && value.px < 0) value.px = 0;
+        }
         /* Canonicalize signed zero while retaining the percentage unit hint. */
         if (!value.mm) { if (value.px == 0) value.px = 0.0f; if (value.pct == 0) value.pct = 0.0f; }
     }

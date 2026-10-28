@@ -1,0 +1,260 @@
+{
+  "iteration": 161,
+  "session_iteration": 11,
+  "status": "accepted_focused_and_balanced_performance_gates",
+  "start_utc": "2026-10-28T18:02:20Z",
+  "start_scope": "Exact build timestamp; preceding source inspection and implementation overlapped160 follow-up.",
+  "end_utc": "2026-10-28T18:12:11.415784+00:00",
+  "elapsed_minutes": 9.86,
+  "session_wall_minutes": 91.04,
+  "agents": [
+    "engine_integration",
+    "validation_gate",
+    "platform_network",
+    "root"
+  ],
+  "global_score": 19,
+  "scoped_score": 97,
+  "changes": [
+    "Skip negative-literal property/value regex work for ordinary ASCII-positive input prefixes, preserving whitespace and non-ASCII fallback.",
+    "Classify native sizing syntax as literal versus math only when a parsed component is negative. Signed-zero normalization and non-finite decisions remain unchanged."
+  ],
+  "build": {
+    "source_manifest_before": "257660d81f0336352c1b24cd70be0f14e231f9c962b994c4246078cb46dae52b",
+    "source_diff_before": "48dc75cc916e9c8f47b57b5b372c373bc6e769b88fc452effb070620ec6807dc",
+    "head": "afffd43c9f5bda662a7327c5e9c1e3dd3d70e74a",
+    "started_utc": "2026-10-28T18:02:20Z",
+    "pid": 3048230,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i161",
+    "binary_sha256": "e1ce98de93882e5859bb3b4105e3f02f00ed7272cfb9223674ceddc1411f6a93",
+    "diff_sha256": "48dc75cc916e9c8f47b57b5b372c373bc6e769b88fc452effb070620ec6807dc",
+    "startup_exit_code": 0,
+    "source_diff_after": "48dc75cc916e9c8f47b57b5b372c373bc6e769b88fc452effb070620ec6807dc",
+    "source_manifest_after": "257660d81f0336352c1b24cd70be0f14e231f9c962b994c4246078cb46dae52b",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T18:02:43Z"
+  },
+  "recorded_inputs": 600,
+  "source_manifest_sha256": "257660d81f0336352c1b24cd70be0f14e231f9c962b994c4246078cb46dae52b",
+  "all_recorded_inputs_match_staged_tree": true,
+  "independent_correctness": {
+    "created_utc": "2026-10-28T18:07:26.752418+00:00",
+    "candidate_sha256": "e1ce98de93882e5859bb3b4105e3f02f00ed7272cfb9223674ceddc1411f6a93",
+    "baseline_sha256": "0bce10c757a157ea202cc6528f7d611e7289d00bc768b330de436bba4a68dc3a",
+    "native_ctest": {
+      "pass": 137,
+      "total": 137,
+      "elapsed_s": 52.24
+    },
+    "authored_each_binary": {
+      "range": 56,
+      "negative_literals": 114,
+      "literal_boundaries": 140
+    },
+    "authored_all_pass": true,
+    "upstream_summary": {
+      "baseline_observed_urls": 38,
+      "baseline_observed_subtests": 326,
+      "baseline_pass_subtests": 213,
+      "baseline_fully_passing_urls": 18,
+      "baseline_harness_ok_zero_subtests": 0,
+      "candidate_observed_urls": 38,
+      "candidate_observed_subtests": 326,
+      "candidate_pass_subtests": 213,
+      "candidate_fully_passing_urls": 18,
+      "candidate_harness_ok_zero_subtests": 0,
+      "chromium_observed_urls": 38,
+      "chromium_observed_subtests": 326,
+      "chromium_pass_subtests": 292,
+      "chromium_fully_passing_urls": 28,
+      "chromium_harness_ok_zero_subtests": 0,
+      "chromium_passing_subtests": 292,
+      "baseline_matches_chromium_pass": 195,
+      "candidate_matches_chromium_pass": 195,
+      "candidate_missing_chromium_assertions": 0,
+      "candidate_fully_matches_chromium_passing_urls": 12
+    },
+    "upstream_statuses": {
+      "baseline": {
+        "OK": 38
+      },
+      "candidate": {
+        "OK": 38
+      },
+      "chromium": {
+        "OK": 38
+      }
+    },
+    "upstream_pass_gains": 0,
+    "upstream_pass_losses": 0,
+    "cleanup_audits": {
+      "sizing38-native161": {
+        "starts": 38,
+        "actual_exits": 38,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "removed": true
+      },
+      "sizing56-native160": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "removed": true
+      },
+      "sizing56-native161": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "removed": true
+      },
+      "sizing114-native160": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "removed": true
+      },
+      "sizing114-native161": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "removed": true
+      },
+      "sizing140-native160": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "removed": true
+      },
+      "sizing140-native161": {
+        "starts": 1,
+        "actual_exits": 1,
+        "remaining_pids": 0,
+        "remaining_profiles": 0,
+        "removed": true
+      }
+    },
+    "acceptance": "Correctness gate passes; performance and final integration decision pending."
+  },
+  "native_resources": {
+    "label": "Owned161 nativeCTest tree",
+    "started_utc": "2026-10-28T18:03:34.406060+00:00",
+    "finished_utc": "2026-10-28T18:04:27.439636+00:00",
+    "root_pid": 3054199,
+    "comm": null,
+    "exe": null,
+    "interval_seconds": 1,
+    "samples": 53,
+    "elapsed_seconds": 53.034,
+    "cpu_one_core_equals_100": true,
+    "cpu_min": 0.0,
+    "cpu_median": 48.0005,
+    "cpu_max": 178.996,
+    "cpu_last10_median": 23.0,
+    "rss_peak_mb": 314.012,
+    "rss_final_mb": 83.055,
+    "pss_peak_mb": 181.469,
+    "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028-session3/native161-gate/resources.csv",
+    "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+  },
+  "balanced_performance": {
+    "baseline_iteration": 160,
+    "candidate_iteration": 161,
+    "chromium_version": "150.0.7871.114",
+    "checks_per_trial": 9395,
+    "trials": 21,
+    "summary": {
+      "mode": "measure",
+      "finished_utc": "2026-10-28T18:10:16Z",
+      "engines": {
+        "baseline": {
+          "trials": 7,
+          "valid": 7,
+          "invalid_statuses": [],
+          "in_page_ms": {
+            "dom_create_remove": {
+              "median": 39.96597397327423,
+              "minimum": 35.70460593700409,
+              "maximum": 42.27361297607422,
+              "samples": 7
+            },
+            "style_layout": {
+              "median": 331.8891330957413,
+              "minimum": 317.59237706661224,
+              "maximum": 374.6420420408249,
+              "samples": 7
+            },
+            "grid_cache_rebuild": {
+              "median": 148.57537198066711,
+              "minimum": 132.66842794418335,
+              "maximum": 166.25876605510712,
+              "samples": 7
+            }
+          }
+        },
+        "chromium": {
+          "trials": 7,
+          "valid": 7,
+          "invalid_statuses": [],
+          "in_page_ms": {
+            "dom_create_remove": {
+              "median": 10,
+              "minimum": 9.5,
+              "maximum": 22,
+              "samples": 7
+            },
+            "style_layout": {
+              "median": 55,
+              "minimum": 51.799999952316284,
+              "maximum": 83.39999997615814,
+              "samples": 7
+            },
+            "grid_cache_rebuild": {
+              "median": 50.10000002384186,
+              "minimum": 44.60000002384186,
+              "maximum": 89.60000002384186,
+              "samples": 7
+            }
+          }
+        },
+        "candidate": {
+          "trials": 7,
+          "valid": 7,
+          "invalid_statuses": [],
+          "in_page_ms": {
+            "dom_create_remove": {
+              "median": 40.24500501155853,
+              "minimum": 36.32934093475342,
+              "maximum": 41.72882902622223,
+              "samples": 7
+            },
+            "style_layout": {
+              "median": 336.02273201942444,
+              "minimum": 328.4432729482651,
+              "maximum": 427.0991119146347,
+              "samples": 7
+            },
+            "grid_cache_rebuild": {
+              "median": 134.3870689868927,
+              "minimum": 128.72572004795074,
+              "maximum": 173.749086022377,
+              "samples": 7
+            }
+          }
+        }
+      },
+      "all_declared_trials_passed": true,
+      "sources_unchanged": true,
+      "binaries_unchanged": true
+    },
+    "interpretation": "The Grid median is descriptively9.5% lower, while DOM and layout medians are0.7% and1.2% higher. Ranges overlap. This small sample does not establish full performance recovery or a general speedup. Acceptance is based on demonstrably removed work and preserved correctness without a clear broad timing penalty.",
+    "final_before_after_comparison": "A separate direct150/161/Chromium benchmark follows; medians from different rounds must not be combined."
+  },
+  "final_broad_status": "Fresh exact161 4200-variant replay follows the direct benchmark. Previous156/160 runs remain explicitly partial.",
+  "score_limit": "Whole-goal estimate is subjective and unchanged; scoped correctness does not imply Chromium parity."
+}

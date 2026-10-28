@@ -299,7 +299,9 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 }
 function mathValid(p, v) {
     if (cssGridRelevant(p)) return cssGridParse(p, v) !== null;
-    if (MATH_LEN_PROPS.test(p)) {
+    /* Only a leading minus, whitespace or non-ASCII prefix can become a
+       negative literal after trim(). Ordinary positive sizes need no scan. */
+    if ((v[0] === '-' || v[0] <= ' ' || v[0] > '\x7f') && MATH_LEN_PROPS.test(p)) {
         const negative = /^-((?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(?:[a-z]+|%)?$/i.exec(v.trim());
         if (negative && +negative[1] > 0) return false;
     }
