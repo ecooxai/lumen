@@ -1,117 +1,44 @@
 {
   "schema_version": 1,
-  "prepared_utc": "2026-10-28T13:57:26.153976+00:00",
-  "cloud_url": "https://ecooxai.github.io/lumen/",
-  "live_preview_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
-  "source_metadata_commit_local": "602a5f2f0b40ddc809e47b872eb1ec18758b558c",
-  "tested_engine_commit": "0f62172b08683c7c0d89722c588af6ff94f82ca3",
-  "whole_goal_score": 19,
-  "requested_goal_score": 98,
-  "full_development_history_published": false,
-  "engine_source_scope": "Engine-source snapshot; not the complete development repository or validation environment",
-  "source_archive_compiled_inputs_verified": 584,
-  "validation_helper_sources_included": 0,
-  "omissions": "All agent validation/progress runtime tooling, historical agents tooling, other tools scripts, Git history, raw results and profiles. Only the exact prompt document is included from agent/.",
-  "publication_verification": "GitHub Pages built the reviewed showcase. All eight public assets were fetched over HTTPS with HTTP 200 and exact matching bytes and SHA-256 at the verification time below. This receipt preserves the immutable payload identities; the manifest itself is updated to record delivery.",
-  "files": [
-    {
-      "filename": ".nojekyll",
+  "created_utc": "2026-10-28T19:34:37.623602+00:00",
+  "release": "Lumen native Linux checkpoint162",
+  "engine_source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
+  "source_packaging_commit": "dba9bb7808ad4bcb457441540a65b75a111049c5",
+  "binary_sha256": "d76d88b2c6d67dadfc75375bd47679ae17d88d0cdb07f62d6d5969e422a949e5",
+  "recorded_input_count": 601,
+  "recorded_input_digest": "48ed537f69e2fcc7cf862a00fdf3640fb2cdde0a1a5397c9687a7aab31df40d0",
+  "build_provenance": "The immutable binary was built from frozen dirty HEAD 14fad818 before the later acceptance commit; all 601 exact recorded inputs were subsequently mapped to the engine source commit. The packaging commit changes documentation only.",
+  "scope": "Reviewed source snapshot and synthetic native demonstration media only. Selected compatibility coverage is not the full WPT suite or Chromium parity. External system libraries and V8/wgpu dependencies are not bundled.",
+  "known_limitations": "Experimental checkpoint with unresolved combined-run failures, including previously passing checks. Passing isolated confirmations do not erase those original failures. This release is not claimed to be regression-free.",
+  "privacy": "Private task/handoff documents, full development history, private reports, validation runtime, profiles and credentials are excluded from this payload.",
+  "files": {
+    ".nojekyll": {
       "bytes": 0,
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
-    {
-      "filename": "index.html",
-      "bytes": 16970,
-      "sha256": "84a9d1686ba589102cdd64298d16dcabb6e1c647e06837deef8feec8cbe2d9ff"
+    "index.html": {
+      "bytes": 4252,
+      "sha256": "b421e16d8981f89ee9c5fe18517592d1a13b765d344d3f99489a5cfc37d4f791"
     },
-    {
-      "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
-      "bytes": 258431,
-      "sha256": "5a106d9b64fc31f1220f5a9c4b90e315ff3accbaae8dd8a50342fd876b172d02"
+    "src.tar.gz": {
+      "bytes": 4433706,
+      "sha256": "85c4d1b3958d68c3347c9b6825621ef6159fe85cd68fad07a62405488d98a40f"
     },
-    {
-      "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json",
-      "bytes": 1980,
-      "sha256": "1c39d1a7ac5b9028b37a07906e87f0039ca672a52584f052b3c55fef0722d450"
+    "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4": {
+      "bytes": 232212,
+      "sha256": "2367c099b72af97c2eb06c290ad7efe33fa195569c183a00a8be4023b7dc1c1c"
     },
-    {
-      "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
-      "bytes": 46540,
-      "sha256": "b822ef66d760a7ad148a5e6bf31e337f34bb787de462c2caf99c07b67eb75c31"
+    "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4": {
+      "bytes": 258733,
+      "sha256": "b0cdbd0a1f8cb9616a0537c40ec1e20d4cc71b9ff0d6ab757e788702160c25ee"
     },
-    {
-      "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
-      "bytes": 255167,
-      "sha256": "527ddd4902c838ac999399351422e9ac9f38ebbe15aea4d3c2de8f76022eb877"
+    "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json": {
+      "bytes": 2496,
+      "sha256": "8836f09545df8bcc069b93e27a860f6e541fd0e891d3427ffa4f247bc9fc3235"
     },
-    {
-      "filename": "source-inclusion-manifest.json",
-      "bytes": 112230,
-      "sha256": "9f7b34fbd18fc7ca4f0116de64025dc62c8a025e4f96478c2537bd5e51cd4070"
-    },
-    {
-      "filename": "src.tar.gz",
-      "bytes": 4450698,
-      "sha256": "ae97e4667153cc0d51f7d6ad1bfefc0d4d516d6ec3359cfa8d16f7691cd06362"
+    "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-native-frame.png": {
+      "bytes": 287204,
+      "sha256": "1589be9963e37fa026cd17967cf73f6158e4979a87c112775d2216c08207b289"
     }
-  ],
-  "delivery_verified_utc": "2026-10-28T13:59:43.022940+00:00",
-  "initial_showcase_commit": "8a2b08d384fd326b805021c2561436b87d8d311e",
-  "delivery_verification": {
-    "page_http": 200,
-    "build_status": "built",
-    "public_assets_verified": 8,
-    "exact_byte_mismatches": 0,
-    "files": [
-      {
-        "filename": "index.html",
-        "http": 200,
-        "bytes": 16970,
-        "sha256": "84a9d1686ba589102cdd64298d16dcabb6e1c647e06837deef8feec8cbe2d9ff"
-      },
-      {
-        "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
-        "http": 200,
-        "bytes": 258431,
-        "sha256": "5a106d9b64fc31f1220f5a9c4b90e315ff3accbaae8dd8a50342fd876b172d02"
-      },
-      {
-        "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json",
-        "http": 200,
-        "bytes": 1980,
-        "sha256": "1c39d1a7ac5b9028b37a07906e87f0039ca672a52584f052b3c55fef0722d450"
-      },
-      {
-        "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
-        "http": 200,
-        "bytes": 46540,
-        "sha256": "b822ef66d760a7ad148a5e6bf31e337f34bb787de462c2caf99c07b67eb75c31"
-      },
-      {
-        "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
-        "http": 200,
-        "bytes": 255167,
-        "sha256": "527ddd4902c838ac999399351422e9ac9f38ebbe15aea4d3c2de8f76022eb877"
-      },
-      {
-        "filename": "source-inclusion-manifest.json",
-        "http": 200,
-        "bytes": 112230,
-        "sha256": "9f7b34fbd18fc7ca4f0116de64025dc62c8a025e4f96478c2537bd5e51cd4070"
-      },
-      {
-        "filename": "src.tar.gz",
-        "http": 200,
-        "bytes": 4450698,
-        "sha256": "ae97e4667153cc0d51f7d6ad1bfefc0d4d516d6ec3359cfa8d16f7691cd06362"
-      },
-      {
-        "filename": "publication-manifest.json",
-        "http": 200,
-        "bytes": 2526,
-        "sha256": "1c854c7e0f110d487b9029abfd4e9588b531fba7d4ff6aabd442f3ed70a1e95b"
-      }
-    ]
-  },
-  "receipt_updated_utc": "2026-10-28T14:00:52.702337+00:00"
+  }
 }
