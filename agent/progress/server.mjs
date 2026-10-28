@@ -17,6 +17,20 @@ function originAllowed(origin){if(!origin)return true;try{const u=new URL(origin
 function data(file,fallback){try{return JSON.parse(fs.readFileSync(path.join(base,file),'utf8'))}catch{return fallback}}
 function messages(){try{return fs.readFileSync(path.join(runtime,'messages.jsonl'),'utf8').trim().split('\n').filter(Boolean).slice(-100).map(x=>JSON.parse(x))}catch{return []}}
 function visibleMessages(isPrivate){return messages().filter(m=>isPrivate||m.public===true)}
+function reviewedShowcase(){
+ const meta=data('runtime/showcase-manifest.json',null);
+ if(meta?.reviewed_publication!==true||!Number.isSafeInteger(meta.bytes)||meta.bytes<=0||meta.bytes>64*1024*1024||!/^[0-9a-f]{64}$/.test(meta.sha256||''))return null;
+ let fd;
+ try{
+  fd=fs.openSync(path.join(runtime,'lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4'),fs.constants.O_RDONLY|fs.constants.O_NOFOLLOW|fs.constants.O_NONBLOCK);
+  const stat=fs.fstatSync(fd);if(!stat.isFile()||stat.size!==meta.bytes)return null;
+  const bytes=Buffer.alloc(meta.bytes+1);let read=0,n;
+  while(read<bytes.length&&(n=fs.readSync(fd,bytes,read,bytes.length-read,null))>0)read+=n;
+  if(read!==meta.bytes)return null;
+  const verified=bytes.subarray(0,read);if(crypto.createHash('sha256').update(verified).digest('hex')!==meta.sha256)return null;
+  return {bytes:verified};
+ }catch{return null}finally{if(fd!==undefined)fs.closeSync(fd)}
+}
 function currentStatus(){
  const status=data('status.json',{}),run=data('../validation/linux-wpt-20261028/full-paired-checkpoint/state.json',null);
  if(run){
@@ -26,6 +40,8 @@ function currentStatus(){
  }
  const guarded=data('../validation/linux-wpt-20261028/guarded-original-first2000/state.json',null);
  if(guarded){status.guarded_baseline={state:guarded.status,observed_urls:guarded.observed_urls,selected_urls:guarded.selected_urls,verified_spawns:guarded.verified_native_spawns,startup_failures:guarded.guard_startup_failures,finished_utc:guarded.finished_utc||null};status.current_evidence=[...(status.current_evidence||[]),['Guarded original baseline state',`${guarded.observed_urls||0}/${guarded.selected_urls||2000} URLs; ${guarded.status||'unknown'}; ${guarded.verified_native_spawns||0} verified launches, ${guarded.guard_startup_failures||0} startup failures. Separate measurement condition.`]];}
+ const finalPlan=data('../validation/linux-wpt-20261028/final-accepted-verification-plan.json',null),finalHarness=data('../validation/linux-wpt-20261028/final-accepted-first2000/state.json',null),finalRender=data('../validation/linux-wpt-20261028/final-accepted-reftest100-launch/state.json',null);
+ if(finalPlan){status.final_verification={native:finalPlan.native_suite||null,focused55:finalPlan.shared_style55||null,harness:finalHarness?{state:finalHarness.status,observed_urls:finalHarness.observed_urls,selected_urls:finalHarness.selected_urls,verified_spawns:finalHarness.verified_native_spawns,startup_failures:finalHarness.guard_startup_failures}:null,rendering:finalRender?{state:finalRender.status,observed_urls:finalRender.observed_urls,selected_urls:finalRender.selected_urls}:null};if(finalHarness)status.current_evidence=[...(status.current_evidence||[]),['Final frozen127 live replay',`${finalHarness.observed_urls||0}/${finalHarness.selected_urls||2000} testharness URLs observed; ${finalHarness.status||'unknown'}; ${finalHarness.verified_native_spawns||0} verified launches, ${finalHarness.guard_startup_failures||0} startup failures. Observed count is not a pass count.`]];}
  return status;
 }
 function snapshot(isPrivate){return {type:'snapshot',status:currentStatus(),telemetry,messages:visibleMessages(isPrivate)}}
@@ -51,7 +67,7 @@ const server=http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS'){res.writeHead(204);return res.end()}
  const url=new URL(req.url,'http://localhost');if(req.method!=='GET')return json(res,405,{error:'Method not allowed'});
  if(url.pathname==='/healthz')return json(res,200,{ok:true,service:'lumen-wpt-progress'});
- if(url.pathname==='/showcase.mp4'){const meta=data('runtime/showcase-manifest.json',null),f=path.join(runtime,'lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4');if(!meta?.reviewed_publication||!fs.existsSync(f)||fs.statSync(f).size!==meta.bytes)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':meta.bytes,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return fs.createReadStream(f).pipe(res)}
+ if(url.pathname==='/showcase.mp4'){const item=reviewedShowcase();if(!item)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':item.bytes.length,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return res.end(item.bytes)}
  if(url.pathname.startsWith('/api/')||url.pathname==='/src.tar.gz'){
   if(url.pathname==='/api/status')return json(res,200,snapshot(authorized(req)));
   if(url.pathname==='/src.tar.gz'){const f=path.join(runtime,'src.tar.gz');if(!fs.existsSync(f))return json(res,404,{error:'Source archive not prepared'});res.writeHead(200,{'Content-Type':'application/gzip','Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-src.tar.gz"','Cache-Control':'no-store'});return fs.createReadStream(f).pipe(res)}

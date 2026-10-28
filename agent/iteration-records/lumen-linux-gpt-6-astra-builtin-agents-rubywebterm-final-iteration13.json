@@ -40,12 +40,43 @@
     },
     {
       "name": "guarded55_then2000_then100",
-      "status": "in_progress",
-      "result": null
+      "status": "primary2000_complete_with_losses_under_review; rendering100_pending",
+      "result": {
+        "focused55": {
+          "harness_ok": 55,
+          "total_urls": 55,
+          "passed_assertions": 5505,
+          "total_assertions": 5963,
+          "lost_accepted_identities": 0
+        },
+        "primary2000_raw": {
+          "baseline_fully_passing_urls": 747,
+          "final_fully_passing_urls": 765,
+          "baseline_passing_assertions": 98485,
+          "baseline_total_assertions": 107088,
+          "final_passing_assertions": 100737,
+          "final_total_assertions": 108961,
+          "chromium_passing_reference_assertions": 105689,
+          "baseline_exact_chromium_pass_matches": 95417,
+          "final_exact_chromium_pass_matches": 97712,
+          "gained_pass_identities": 2757,
+          "lost_pass_identities": 505,
+          "loss_disposition": "pending unchanged same-budget isolation; no net improvement acceptance yet"
+        }
+      }
     },
     {
       "name": "actual_window_showcase",
-      "status": "prepared_not_recorded"
+      "status": "PM_content_approved_publication_queued",
+      "started_utc": "2026-10-28T07:43:03.008007+00:00",
+      "ended_utc": "2026-10-28T07:43:44.491212+00:00",
+      "sha256": "48e22ae5c4ccbc8227bf3fc19dc4625051a985467af7b0bc5c405b97bfc4bede",
+      "bytes": 476197,
+      "duration_seconds": 36,
+      "width": 960,
+      "height": 720,
+      "scope": "Actual final127 X11 presentation during verification; dashboard replay-in-progress state preserved; specific sizing20/20 is not full WPT",
+      "superseded_attempt": "First36s recording preserved but not published because native table overflow reduced readability; dashboard evidence rows were stacked before the approved second recording"
     },
     {
       "name": "source_branch_and_pages_publication",
@@ -56,5 +87,6 @@
     "Focused quality is pending final review; sampled pass rates do not set whole-goal readiness",
     "Runtime/source/archive commits and binary hash remain distinct",
     "No raw denied evidence archive, credentials, profiles, inbox or QA screenshot collection is published"
-  ]
+  ],
+  "updated_utc": "2026-10-28T07:51:32.331401+00:00"
 }

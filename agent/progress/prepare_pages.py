@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Prepare only public aggregate status and the audited accepted-source archive."""
-import datetime,hashlib,html,json,pathlib,shutil,subprocess
+import datetime,hashlib,html,json,pathlib,shutil,subprocess,os,stat
 ROOT=pathlib.Path(__file__).resolve().parent
 RUNTIME=ROOT/'runtime'
 DEST=RUNTIME/'lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-pages'
@@ -10,7 +10,8 @@ def main():
     status=json.loads((ROOT/'status.json').read_text())
     archive=RUNTIME/'src.tar.gz'
     provenance=json.loads((RUNTIME/'src.tar.manifest.json').read_text())
-    digest=hashlib.sha256(archive.read_bytes()).hexdigest()
+    archive_bytes=archive.read_bytes()
+    digest=hashlib.sha256(archive_bytes).hexdigest()
     if digest!=provenance['sha256'] or archive.stat().st_size!=provenance['bytes']:
         raise RuntimeError('Accepted source archive does not match its reviewed manifest')
     runtime_commit=status.get('checkpoint','')
@@ -25,9 +26,19 @@ def main():
     video=RUNTIME/'lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4'
     video_meta_path=RUNTIME/'showcase-manifest.json'
     video_meta=json.loads(video_meta_path.read_text()) if video_meta_path.exists() else None
-    reviewed_video=bool(video_meta and video_meta.get('reviewed_publication'))
+    reviewed_video=bool(video_meta and video_meta.get('reviewed_publication') is True)
+    video_bytes=None
     if reviewed_video:
-        if video_meta.get('binary_sha256')!=status.get('accepted_binary_sha256') or not video.is_file() or video.stat().st_size!=video_meta['bytes'] or hashlib.sha256(video.read_bytes()).hexdigest()!=video_meta['sha256']:
+        size=video_meta.get('bytes')
+        if not isinstance(size,int) or isinstance(size,bool) or not 0<size<=64*1024*1024:
+            raise RuntimeError('Reviewed showcase size is invalid')
+        fd=os.open(video,os.O_RDONLY|os.O_NOFOLLOW|os.O_NONBLOCK)
+        with os.fdopen(fd,'rb') as stream:
+            info=os.fstat(stream.fileno())
+            if not stat.S_ISREG(info.st_mode) or info.st_size!=size:
+                raise RuntimeError('Reviewed showcase must be an exact regular file')
+            video_bytes=stream.read(size+1)
+        if video_meta.get('binary_sha256')!=status.get('accepted_binary_sha256') or len(video_bytes)!=size or hashlib.sha256(video_bytes).hexdigest()!=video_meta['sha256']:
             raise RuntimeError('Reviewed showcase does not match the final binary/artifact manifest')
         if not (0 < video_meta.get('duration_seconds',0) < 60) or video_meta.get('width',0)*3!=video_meta.get('height',0)*4:
             raise RuntimeError('Showcase must be under60seconds and4:3')
@@ -49,13 +60,13 @@ def main():
     if reviewed_video:
         section='<h2>Actual native browser showcase</h2><p>Recorded from the reviewed combined native binary; actual screen capture with model/agent/tool credits.</p><video controls preload="metadata" style="width:100%;max-width:960px;background:#000" src="showcase.mp4"></video><p><a href="showcase.mp4" download="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4">Download the4:3 showcase video</a></p>'
         page=page.replace('<h2>Scope and measured evidence</h2>',section+'<h2>Scope and measured evidence</h2>')
-        shutil.copy2(video,DEST/'showcase.mp4')
+        (DEST/'showcase.mp4').write_bytes(video_bytes)
     elif (DEST/'showcase.mp4').exists():
         (DEST/'showcase.mp4').unlink()
     (DEST/'index.html').write_text(page)
     (DEST/'status.json').write_text(json.dumps(status,indent=2)+'\n')
     (DEST/'.nojekyll').write_text('')
-    shutil.copy2(archive,DEST/'src.tar.gz')
+    (DEST/'src.tar.gz').write_bytes(archive_bytes)
     manifest={'prepared_utc':now,'accepted_commit':provenance['commit'],'accepted_runtime_commit':runtime_commit,'compiled_input_identity':trees,'allowed_handoff_only_changes':changed,'frozen_binary_sha256':status.get('accepted_binary_sha256'),'binary_scope':status.get('accepted_binary_scope'),'rebuild_claim':'Source/build-input equality only; no bit-for-bit reproducible rebuild claim. No git describe/rev-parse/GIT_SHA version embedding found in inspected CMake/src/tools.','source_sha256':digest,'live_url':LIVE,'publication_status':'prepared locally; not pushed or enabled','files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in DEST.iterdir() if p.name!='publication-manifest.json'},'showcase':video_meta if reviewed_video else None,'excluded':'Raw-result archive, credentials, profiles, inbox and QA screenshots'}
     (DEST/'publication-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     print(json.dumps({'directory':str(DEST),'accepted_commit':provenance['commit'],'files':sorted(p.name for p in DEST.iterdir()),'bytes':sum(p.stat().st_size for p in DEST.iterdir()),'published':False}))

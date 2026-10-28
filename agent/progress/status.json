@@ -1,13 +1,13 @@
 {
   "title": "Lumen \u00b7 Linux engine conformance",
-  "phase": "Final combined native suite117/117 passed; guarded Chromium comparison replay in progress",
+  "phase": "Final combined127 verification:117/117 native tests and55 focused guards complete; primary2000 completed with505 raw lost identities under independent isolation; rendering100 pending.",
   "iteration": 11,
   "score": 19,
   "iteration_quality": 97,
   "score_note": "PROVISIONAL whole-goal readiness estimate, inherited from historical scope. This is not a measured pass percentage. Goal:98/100 after fresh complete comparable coverage.",
   "branch": "gpt-6-astra-engine-lead-linux-wpt-20261028",
   "checkpoint": "163567579c077e35c7f6c6ed366162524530f5f8",
-  "updated_utc": "2026-10-28T07:35:28.790590+00:00",
+  "updated_utc": "2026-10-28T07:51:32.331401+00:00",
   "session_started_utc": "2026-10-28T03:50:07Z",
   "deadline_utc": "2026-10-28T08:50:07Z",
   "historical": {
@@ -27,7 +27,7 @@
     ],
     [
       "Final guarded replay",
-      "Same frozen final127 is running55 focused guard URLs, then the identical guarded first2,000 testharness selection and100 own-reference rendering URLs. Results remain pending; no full-WPT claim."
+      "55 focused guard URLs: all harnessesOK,5,505/5,963 assertionsPASS,zero lost accepted identities or harnesses. The identical guarded first2,000 testharness selection is running;100 own-reference rendering replay follows. No full-WPT claim."
     ],
     [
       "Accepted background geometry",
@@ -208,6 +208,14 @@
     [
       "Frozen baseline binary SHA-256",
       "1ac9421854c63e503f9d865abf0d1d2a9c3a2dd3cedcf2aaf52c7ac073992913"
+    ],
+    [
+      "Final guarded2000 raw comparison",
+      "Baseline747\u2192final765 fully passing URLs; exact ChromePASS matches95,417\u219297,712/105,689.2,757 gained and505 lost identities; losses remain under review, not an accepted net-gain claim."
+    ],
+    [
+      "Final showcase",
+      "PM-approved36-second960\u00d7720 actual127 screen recording with model/agent/tool credits; publication queued until final delta review."
     ]
   ],
   "coverage": "Full WPT parity remains unproven. Evidence separates historical8,000 original-checkpoint testharness URLs, fresh guarded original2,000 on the same first selection,100rendering URLs on accepted114, and focused later-candidate gates. Crashtest, WebDriver, print and accessibility categories remain unverified. Final guarded improved-candidate replay is pending.",
