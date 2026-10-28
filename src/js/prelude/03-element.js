@@ -11,7 +11,7 @@ function parseDecls(s) {
     let depth = 0, q = 0, start = 0; const parts = [];
     for (let i = 0; i < s.length; i++) { const c = s[i]; if (q) { if (c === q) q = 0; } else if (c === '"' || c === "'") q = c; else if (c === '(') depth++; else if (c === ')') depth--; else if (c === ';' && !depth) { parts.push(s.slice(start, i)); start = i + 1; } }
     parts.push(s.slice(start));
-    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if ((lk === 'font' || lk === 'font-family') && !mathValid(lk, v)) continue; m.set(lk, [v, imp]); }
+    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if ((lk === 'font' || lk === 'font-family' || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
 const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !important' : '') + ';').join(' ');
@@ -308,6 +308,7 @@ function mathValid(p, v) {
         return /^\s*(inherit|initial|unset|revert|revert-layer|none|auto|base|base-select|textfield|menulist-button|button|checkbox|listbox|menulist|meter|progress-bar|radio|searchfield|textarea)\s*$/i.test(v);
     if (/-gradient\(/i.test(v) && !/var\(|env\(|attr\(/i.test(v) && !gradInterpValid(v)) return false;
     if (/var\(|env\(|attr\(|calc-size\(|anchor/i.test(v)) return true;
+    if (/^background-position(?:-[xy])?$/.test(p) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return cssPositionParse(v, cssPositionAxis(p)) !== null;
     const re = /(^|[\s,(/])((?:-webkit-)?[a-z][a-z0-9-]*)\(/gi;
     let m;
     while ((m = re.exec(v))) {
@@ -320,6 +321,121 @@ function mathValid(p, v) {
         if (MATH_LEN_PROPS.test(p) && n >= v.trim().length && !(t === 'length^1' || t === '%^1')) return false;
     }
     return true;
+}
+/* The background-position grammar is shared by declaration validation,
+   specified-value serialization, and animation. A component retains its edge
+   and optional offset; computed animation values normalize those separately. */
+const CSS_POSITION = /^background-position(?:-[xy])?$/;
+const cssPositionAxis = p => p.endsWith('-x') ? 0 : p.endsWith('-y') ? 1 : -1;
+function cssPositionLength(text) {
+    const [type, end] = mathType(text);
+    return end === text.length && (type === 'length^1' || type === '%^1' || type === '' && /^[+-]?(?:0+(?:\.0*)?|\.0+)$/.test(text));
+}
+function cssPositionParse(value, axis = -1, maxLayers = Infinity) {
+    const layers = tomSplitTop(String(value).replace(/\/\*[\s\S]*?\*\//g, ' '), ',');
+    if (!layers.length) return null;
+    const out = [], keyAxis = key => /^(left|right|x-start|x-end)$/.test(key) ? 0 : /^(top|bottom|y-start|y-end)$/.test(key) ? 1 : -1;
+    const key = text => /^(left|right|top|bottom|center|[xy]-(start|end))$/i.test(text) ? text.toLowerCase() : null;
+    const component = (text, ax, logical) => {
+        const k = key(text);
+        if (k && (k === 'center' || keyAxis(k) === ax) && (logical || !/^[xy]-/.test(k))) return { keyword: k, offset: null };
+        return !k && cssPositionLength(text) ? { keyword: null, offset: text } : null;
+    };
+    for (const layer of layers) {
+        const t = specSplit(layer.trim()), pair = [null, null];
+        if (!t.length) return null;
+        if (axis >= 0) {
+            if (t.length === 1) pair[axis] = component(t[0], axis, true);
+            else if (t.length === 2 && keyAxis(key(t[0])) === axis && cssPositionLength(t[1])) pair[axis] = { keyword: key(t[0]), offset: t[1] };
+            if (!pair[axis]) return null;
+        } else if (t.length === 1) {
+            pair[0] = pair[1] = { keyword: 'center', offset: null };
+            const ax = keyAxis(key(t[0])) === 1 ? 1 : 0; pair[ax] = component(t[0], ax, false);
+            if (!pair[ax]) return null;
+        } else if (t.length === 2) {
+            pair[0] = component(t[0], 0, false); pair[1] = component(t[1], 1, false);
+            if (!pair[0] || !pair[1]) {
+                if (!key(t[0]) || !key(t[1])) return null;
+                pair[0] = component(t[1], 0, false); pair[1] = component(t[0], 1, false);
+            }
+            if (!pair[0] || !pair[1]) return null;
+        } else if (t.length === 3 || t.length === 4) {
+            let center = 0;
+            for (let i = 0; i < t.length; i++) {
+                const k = key(t[i]);
+                if (k === 'center') { center++; continue; }
+                const ax = keyAxis(k);
+                if (ax < 0 || /^[xy]-/.test(k) || pair[ax]) return null;
+                let offset = null;
+                if (i + 1 < t.length && cssPositionLength(t[i + 1])) offset = t[++i];
+                pair[ax] = { keyword: k, offset };
+            }
+            if (center === 1 && !!pair[0] !== !!pair[1]) pair[pair[0] ? 1 : 0] = { keyword: 'center', offset: null };
+            else if (center) return null;
+            if (!pair[0] || !pair[1]) return null;
+        } else return null;
+        out.push(pair);
+        if (out.length > maxLayers) return null;
+    }
+    return out;
+}
+function cssPositionOffsetText(text) {
+    if (/^[+-]?(?:0+(?:\.0*)?|\.0+)$/.test(text)) return '0px';
+    if (!/^calc\(/i.test(text)) return text;
+    try {
+        const m = tomSumMap(CSSNumericValue.parse(text));
+        if (!m) return text;
+        const terms = [...m].filter(([u, n]) => u === 'percent' || n !== 0).sort((a, b) => a[0] === 'percent' ? -1 : b[0] === 'percent' ? 1 : a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+        if (!terms.length) return '0px';
+        const token = (u, n) => String(+n.toPrecision(12)) + (u === 'percent' ? '%' : u === 'number' ? '' : u);
+        let result = token(...terms[0]);
+        for (const [u, n] of terms.slice(1)) result += (n < 0 ? ' - ' : ' + ') + token(u, Math.abs(n));
+        return 'calc(' + result + ')';
+    } catch (_) { return text; }
+}
+function cssPositionPartText(part, axis, edgeForm) {
+    const offset = part.offset === null ? null : cssPositionOffsetText(part.offset);
+    if (part.keyword) return part.keyword + (offset === null ? '' : ' ' + offset);
+    return (edgeForm ? (axis ? 'top ' : 'left ') : '') + offset;
+}
+function cssPositionPairText(pair) {
+    const edge = pair.some(p => p.keyword && p.offset !== null);
+    return pair.map((p, axis) => cssPositionPartText(p, axis, edge)).join(' ');
+}
+function cssPositionSpecified(value, axis) {
+    const parsed = cssPositionParse(value, axis);
+    return parsed && parsed.map(pair => axis < 0 ? cssPositionPairText(pair) : cssPositionPartText(pair[axis], axis, false)).join(', ');
+}
+function cssPositionDeclaration(map, prop, priority = false) {
+    const values = [null, null], important = [false, false];
+    for (const [name, entry] of map) {
+        if (!CSS_POSITION.test(name)) continue;
+        const axis = cssPositionAxis(name), wide = /^(inherit|initial|unset|revert|revert-layer)$/i.test(entry[0]);
+        /* Pending shorthand values retain their common source identity. Their
+           individual axes are not observable until substitution; direct pending
+           longhands retain their own token stream. CSS Values 5, substitution. */
+        const pending = /\b(?:var|env|attr)\s*\(/i.test(entry[0]);
+        const parsed = pending ? { raw: entry[0], shorthand: axis < 0 } : wide ? entry[0].toLowerCase() : cssPositionParse(entry[0], axis);
+        if (!parsed) continue;
+        for (let ax = 0; ax < 2; ax++) if ((axis < 0 || axis === ax) && (!important[ax] || entry[1])) {
+            values[ax] = pending || wide ? parsed : parsed.map(pair => pair[ax]); important[ax] = !!entry[1];
+        }
+    }
+    const axis = cssPositionAxis(prop), present = v => v !== null;
+    if (priority) return axis >= 0 ? present(values[axis]) && important[axis] ? 'important' : '' : values.every(present) && important.every(Boolean) ? 'important' : '';
+    if (axis >= 0) {
+        const value = values[axis];
+        return !value ? '' : typeof value === 'string' ? value : !Array.isArray(value) ? value.shorthand ? '' : value.raw : value.map(p => cssPositionPartText(p, axis, false)).join(', ');
+    }
+    if (!values.every(present) || important[0] !== important[1]) return '';
+    const pending = values.some(v => typeof v === 'object' && !Array.isArray(v));
+    if (pending) return values[0] === values[1] && values[0].shorthand ? values[0].raw : '';
+    if (typeof values[0] === 'string' || typeof values[1] === 'string') return values[0] === values[1] ? values[0] : '';
+    if (values[0].length !== values[1].length) return '';
+    /* Axis-only logical origins cannot be represented by the full shorthand's
+       physical position grammar. Do not emit a value that cannot round-trip. */
+    if (values.some(list => list.some(p => p.keyword && /^[xy]-(?:start|end)$/.test(p.keyword)))) return '';
+    return values[0].map((p, i) => cssPositionPairText([p, values[1][i]])).join(', ');
 }
 /* the font shorthand split into its parts: [style || variant || weight || stretch]? size [/ line-height]? family */
 const FONT_STRETCH_KW = /^(ultra-condensed|extra-condensed|condensed|semi-condensed|semi-expanded|expanded|extra-expanded|ultra-expanded)$/i;
@@ -442,7 +558,8 @@ function specNormalize(p, v) {
         const r = String(n);
         return pre + (sign === '-' && n ? '-' : '') + r;
     }).replace(/\s+/g, ' ');
-    if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return t;
+    if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return CSS_POSITION.test(p) ? t.toLowerCase() : t;
+    if (CSS_POSITION.test(p)) return cssPositionSpecified(t, cssPositionAxis(p)) || t;
     if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log)\(/i.test(t)) t = specFoldMath(t);
     if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
@@ -549,8 +666,8 @@ class CSSStyleDeclaration {
     item(i) { return [...this._m().keys()][i] || ''; }
     getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); return e ? e[0] : shorthandPart(m, p); }
     getPropertyPriority(p) { const e = this._m().get(camelToKebab(String(p))); return e ? e[1] : ''; }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } const m = new SMap(this._m()); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },

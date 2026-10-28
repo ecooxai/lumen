@@ -1,0 +1,209 @@
+{
+  "iteration": 4,
+  "title": "Computed background positions, repeatable-list interpolation, and CSS declaration representation",
+  "status": "accepted_focused_increment_pending_final_combined_replay",
+  "started_utc": "2026-10-28T05:14:33Z",
+  "start_basis": "recorded first implementation timestamp; earlier design discussion not used to invent exact duration",
+  "finished_utc": "2026-10-28T06:26:32.534883+00:00",
+  "whole_goal_readiness": 19,
+  "focused_quality_score": 96,
+  "agents": [
+    "/root/engine_lead",
+    "/root/conformance",
+    "/root/ops_preview",
+    "/root"
+  ],
+  "owned_source_files": [
+    "src/css/style.c",
+    "src/js/prelude/03-element.js",
+    "src/js/prelude/06d-anim.js"
+  ],
+  "baseline": {
+    "binary": "build/codex-native/lumen-astra-i114",
+    "sha256": "fa067d66042f2760fedd598323e173c3e74f2d07e4d4197b060a899438aa67a0",
+    "composition": "accepted grid, BroadcastChannel, image plus accepted capture; no position or font optimization",
+    "main_urls": 17,
+    "main_passes": 482,
+    "main_subtests": 1299,
+    "chromium_passes": 1272,
+    "chromium_subtests": 1299
+  },
+  "attempts": [
+    {
+      "candidate": 113,
+      "status": "rejected",
+      "sha256": "51731e4119efa09f49a4631eaf9e9ae51133b8af86894ddae2aa9090e5bbdcfc",
+      "started_utc": "2026-10-28T05:27:15Z",
+      "finished_utc": "2026-10-28T05:30:09Z",
+      "main_passes": 1156,
+      "gained": 679,
+      "lost": 5,
+      "new_aggregate_timeouts": 2,
+      "findings": [
+        "CSS Animations synthesized neutral endpoints skipped the default per-keyframe timing function.",
+        "Four logical axis singleton values were incorrectly converted to physical percentages."
+      ],
+      "timeout_disposition": "Fresh isolated runs completed in4.64/5.85 seconds at explicit30-second deadlines; original aggregate CLI deadline was not retained, so equal deadline is not claimed. Original timeout records and an input-shape failure before browser launch remain retained."
+    },
+    {
+      "candidate": 116,
+      "status": "rejected_cssom_regressions",
+      "sha256": "80aa8d9e5618443217d01114120971370b975ec90f68acbb4f4d4ce4145e2dfe",
+      "started_utc": "2026-10-28T05:46:39Z",
+      "finished_utc": "2026-10-28T05:47:12Z",
+      "main_passes": 1192,
+      "main_gains": 710,
+      "main_losses": 0,
+      "matched_chromium_passes": 1167,
+      "adjacent_passes": "63/214 (baseline57/214)",
+      "shared_easing": "2/11 unchanged",
+      "grid": "3628/3975 unchanged",
+      "extended_cssom": "3/10 versus baseline6/10 and Chromium10/10",
+      "findings": [
+        "Pending shorthand token streams disappeared from specified serialization.",
+        "Repeated cssText shorthand retained an obsolete Map insertion order.",
+        "New declaration getter exposed old important axis records after explicit shorthand replacement."
+      ]
+    },
+    {
+      "candidate": 117,
+      "status": "rejected_forward_setter_boundary",
+      "sha256": "6e8d2ffd14a2f2de402a0a74ed9f1cee85656bb8986c4443e52cbf311a9447a1",
+      "started_utc": "2026-10-28T05:58:28Z",
+      "finished_utc": "2026-10-28T06:01:41Z",
+      "extended_cssom": "9/10; all three lost baseline passes restored",
+      "remaining_blocker": "Permitted forward observation: important x-axis followed by normal shorthand leaves a stale important axis in specified serialization.",
+      "remaining_preexisting": "Mixed-priority computed shorthand remains4px5px instead of3px5px."
+    },
+    {
+      "candidate": 119,
+      "status": "superseded_by_narrowed_getter_scope",
+      "sha256": "6bc71045339c51b4c0fedff923e51a97cf66f583e18ca9207dc5f735f8d9de61",
+      "started_utc": "2026-10-28T06:12:06Z",
+      "finished_utc": "2026-10-28T06:12:54Z",
+      "composition": "Accepted dc7bae76 HEAD plus position-only; sizing118 excluded and restored byte-exactly.",
+      "source_manifest": "d8ee7d5c66c7a60e4f0a60275c289ff5080b8108715758a52a569eb0820ae1fa",
+      "source_diff": "7f231c65eae6abd27517c738ed66b0142ca1e907ad5ffda817d183896d465723",
+      "independent_source_review": "Ops cleared full shorthand set/remove after validation, preserving unrelated declarations and invalid-input behavior.",
+      "reason": "Source review identified a potentially newly exposed specified-axis result when an older important shorthand survives a later axis setter. The denied reverse browser probe remains unexecuted; no observed Chromium result is claimed."
+    },
+    {
+      "candidate": 120,
+      "status": "accepted_focused_increment",
+      "sha256": "92fceeb8f3f6bd2cf1231e3a246e6fb75bdd707d9cc28e1e381c67395db66914",
+      "started_utc": "2026-10-28T06:18:20Z",
+      "finished_utc": "2026-10-28T06:18:59Z",
+      "composition": "Accepted dc7bae76 HEAD plus position-only; sizing118 runtime excluded/restored. Pending sizing HTML/CTest registration is non-runtime metadata.",
+      "source_manifest": "bd0e8652b30d841f4b1f2ed969bd572c4e173c721473d8448906e81b270a66c5",
+      "source_diff": "55ed6a2c062fa25cb2aebc6bee522d7d36823d4d0213625f1557b92b447975d4",
+      "scope_narrowing": "Public getPropertyValue/getPropertyPriority methods restored byte-for-byte to acceptedHEAD, independently verified by ops. Native computed values, normalization, repeatable-list interpolation, shared easing, and complete shorthand set/remove remain. Partial declaration-model reconstruction is excluded.",
+      "independent_disposition": "agent/validation/linux-wpt-20261028/position120-independent-disposition.json"
+    }
+  ],
+  "resource_bounds": {
+    "repeatable_list_max_items": 16384,
+    "max_serialized_ascii_bytes": 1048576,
+    "ordinary_lcm": 6,
+    "pathological_coprime_lcm": 67591,
+    "pathological_behavior": "Explicit discrete fallback with exact endpoints; no unchecked numeric LCM growth."
+  },
+  "native_validation": {
+    "candidate113": "110/110 native tests passed",
+    "candidate116": "8/8 targeted native tests passed",
+    "candidate119_helper_preflight": "69 checks:11 arithmetic/resource,16 shared easing,23 declaration representation,19 mutation methods; one test-extraction wrapper syntax error was corrected before the passing run."
+  },
+  "paint_cost_evidence": {
+    "candidate113_cpu_seconds": 36.326715,
+    "candidate113_wall_seconds": 45.961941,
+    "candidate115_cpu_seconds": 35.072722,
+    "candidate115_wall_seconds": 41.938761,
+    "interpretation": "Display-list/layout test, not rasterization. Source composition differs by font optimization; this is a bounded CPU/wall diagnosis, not a pure position comparison or broad performance claim. Prior234-second wall duration occurred under contention.",
+    "path": "agent/validation/linux-wpt-20261028/paint-cull-cpu-pair/results.json"
+  },
+  "rendering_evidence": {
+    "urls": 10,
+    "baseline114": "3 PASS / 7 FAIL",
+    "candidate113": "3 PASS / 7 FAIL",
+    "measured_gain": 0,
+    "limitation": "Numeric/list serialization and interpolation do not establish multilayer or gradient rendering support; renderer remains first-layer only.",
+    "accepted120_rendering_gain_claimed": false
+  },
+  "known_limitations": [
+    "Two mixed logical-axis list expectations remain unresolved draft-spec/test/reference differences; uniform logical origin preservation restores four singleton baseline passes. Chromium150 does not support the logical keywords.",
+    "Twenty-seven Chromium nonpasses in the main cohort include twelve logical-keyword cases and fifteen computed list-cardinality differences.",
+    "New independent12-case geometry/interpolation fixture upload was denied and unexecuted; it was not retransmitted or reconstructed.",
+    "Separate reverse-axis setter browser observation upload was denied and unexecuted; it was not retransmitted or reconstructed.",
+    "Preexisting mixed-priority computed background-position failure remains explicit.",
+    "Source-level architectural analysis, not paired observation: attribute-backed declaration storage cannot fully represent partial-axis mutation/removal of a pending shorthand with mixed priorities. Complete shorthand replacement/removal is corrected; partial expansion remains outside this scope."
+  ],
+  "primary_sources": [
+    "https://drafts.csswg.org/css-backgrounds-4/#the-background-position",
+    "https://drafts.csswg.org/css-animations-2/#keyframes",
+    "https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty",
+    "https://drafts.csswg.org/css-values-5/#pending-substitution-value"
+  ],
+  "evidence_root": "agent/validation/linux-wpt-20261028",
+  "updated_utc": "2026-10-28T06:26:32.534883+00:00",
+  "duration_minutes": 71.99224805,
+  "accepted_binary": {
+    "path": "build/codex-native/lumen-gpt-6-astra-position-accepted-20261028",
+    "sha256": "92fceeb8f3f6bd2cf1231e3a246e6fb75bdd707d9cc28e1e381c67395db66914",
+    "byte_identical_to_independently_tested_candidate120": true
+  },
+  "accepted_evidence": {
+    "main17": {
+      "baseline_pass": 482,
+      "candidate_pass": 1192,
+      "total": 1299,
+      "gains": 710,
+      "losses": 0,
+      "chromium_pass": 1272
+    },
+    "adjacent10": {
+      "baseline_pass": 57,
+      "candidate_pass": 63,
+      "total": 214,
+      "gains": 6,
+      "losses": 0
+    },
+    "shared_easing6": {
+      "baseline_pass": 2,
+      "candidate_pass": 2,
+      "total": 11,
+      "gains": 0,
+      "losses": 0
+    },
+    "grid28": {
+      "baseline_pass": 3628,
+      "candidate_pass": 3628,
+      "total": 3975,
+      "gains": 0,
+      "losses": 0
+    },
+    "frozen_cssom10": {
+      "baseline_pass": 6,
+      "candidate_pass": 7,
+      "total": 10,
+      "gains": 1,
+      "losses": 0
+    },
+    "upstream_cssom8": {
+      "baseline_pass": 97,
+      "candidate_pass": 101,
+      "total": 113,
+      "gains": 4,
+      "losses": 0
+    },
+    "scored_harnesses": 70,
+    "candidate_harnesses_ok": 70,
+    "lost_harness_ok": 0,
+    "forward_observer": "Unscored: full shorthand20px20px restored, all priorities cleared, computed positions20px20px; specified derived x/y remain empty under accepted legacy getter semantics."
+  },
+  "surrendered_candidate_only_behavior": "The richer priority-aware public getter was removed. The frozen CSSOM diagnostic changed from candidate117:9/10 to accepted candidate120:7/10; baseline remains6/10. Two unaccepted candidate-only passes were surrendered with zero baseline losses.",
+  "source_files_sha256": {
+    "src/css/style.c": "e566a1ca394b08fb3e1142cd3057180da64996fb3e2cd228a886d1179a2c97d1",
+    "src/js/prelude/03-element.js": "40d2a5a1b11f0e69ab22f1d8b53ebd3db71073dcd684b14473fd2ed6426bf338",
+    "src/js/prelude/06d-anim.js": "ceeaddf670c47f073b678e20f9ac2c72b4bf78bfe0f94606ab5707afb95c981b"
+  },
+  "comparison_composition_limit": "The actual independent gate baseline is114, which predates the accepted font optimization. Accepted candidate120 contains font plus position, while sizing is excluded. Earlier candidate116 excluded font and independently showed the identical482\u21921192/1299 (+710) main gain, with the same adjacent/shared/grid outcomes, supporting attribution of those gains to position. No pure position-on115 paired comparison is claimed. Geometry will use a new combined accepted121 baseline."
+}

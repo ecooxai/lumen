@@ -355,7 +355,81 @@ function waGridSpecified(el, prop, value) {
     if (value === 'initial' || value === 'unset') return prop.startsWith('grid-auto-') ? 'auto' : 'none';
     return value;
 }
+/* <position> combines independently on each axis after converting its
+   edge-origin form to offsets from the top left. Keep percentage type even
+   when its coefficient is zero, and repeat lists to their least common multiple. */
+const WA_POSITION = /^background-position(?:-[xy])?$/;
+/* Bound expanded repeatable lists before allocation. Coprime author list lengths
+   can otherwise multiply into an enormous computed value; the existing discrete
+   fallback is used beyond this engine work limit. */
+const WA_POSITION_MAX_ITEMS = 16384, WA_POSITION_MAX_TEXT = 1 << 20;
+function waPositionNumeric(part) {
+    const key = part.keyword;
+    if (part.offset === null) return new SMap([['percent', key === 'center' ? 50 : /^(right|bottom|x-end|y-end)$/.test(key) ? 100 : 0]]);
+    const out = waGridNumeric(part.offset);
+    if (!out || out.has('fr')) return null;
+    if (/^(right|bottom|x-end|y-end)$/.test(key || '')) {
+        for (const [unit, value] of out) out.set(unit, -value);
+        out.set('percent', (out.get('percent') || 0) + 100);
+    }
+    return out;
+}
+function waPositionSum(A, B, p, add) {
+    if (!A || !B) return null;
+    const values = new SMap(), keys = new SSet([...A.keys(), ...B.keys()]);
+    for (const unit of keys) { const x = A.get(unit) || 0, y = B.get(unit) || 0; values.set(unit, add ? x + y : x + (y - x) * p); }
+    const terms = [...values].filter(([unit, value]) => unit === 'percent' || Math.abs(value) > 1e-9);
+    terms.sort((a, b) => a[0] === 'percent' ? -1 : b[0] === 'percent' ? 1 : a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+    if (!terms.length) return '0px';
+    const token = (unit, value) => waFmt(value) + (unit === 'percent' ? '%' : unit);
+    if (terms.length === 1) return token(...terms[0]);
+    let out = token(...terms[0]);
+    for (const [unit, value] of terms.slice(1)) out += (value < 0 ? ' - ' : ' + ') + token(unit, Math.abs(value));
+    return 'calc(' + out + ')';
+}
+function waPositionMix(prop, a, b, progress, add) {
+    if (a.length > WA_POSITION_MAX_TEXT || b.length > WA_POSITION_MAX_TEXT) return null;
+    const axis = cssPositionAxis(prop), A = cssPositionParse(a, axis, WA_POSITION_MAX_ITEMS), B = cssPositionParse(b, axis, WA_POSITION_MAX_ITEMS);
+    if (!A || !B) return null;
+    let x = A.length, y = B.length; while (y) { const r = x % y; x = y; y = r; }
+    const count = A.length / x * B.length, out = [];
+    if (!Number.isSafeInteger(count) || count > WA_POSITION_MAX_ITEMS) return null;
+    let characters = 0;
+    const aa = A.map(pair => pair.map(part => part && waPositionNumeric(part))), bb = B.map(pair => pair.map(part => part && waPositionNumeric(part)));
+    for (let i = 0; i < count; i++) {
+        const pair = [];
+        for (let ax = 0; ax < 2; ax++) if (axis < 0 || ax === axis) {
+            const value = waPositionSum(aa[i % A.length][ax], bb[i % B.length][ax], progress, !!add);
+            if (value === null) return null; pair.push(value);
+        }
+        const item = pair.join(' '); characters += item.length + (i ? 2 : 0);
+        if (characters > WA_POSITION_MAX_TEXT) return null;
+        out.push(item);
+    }
+    return out.join(', ');
+}
+function waPositionSpecified(el, prop, value) {
+    const wide = value.trim().toLowerCase();
+    if (wide === 'inherit') value = el && el.parentElement ? waBaseValue(el.parentElement, prop) : prop === 'background-position' ? '0% 0%' : '0%';
+    if (/^(initial|unset|revert|revert-layer)$/.test(wide)) return prop === 'background-position' ? '0% 0%' : '0%';
+    if (value.length > WA_POSITION_MAX_TEXT || !/\b[xy]-(?:start|end)\b/i.test(value)) return value;
+    const axis = cssPositionAxis(prop), parsed = cssPositionParse(value, axis, WA_POSITION_MAX_ITEMS);
+    if (parsed && parsed.some(pair => pair.some(part => part && /^[xy]-(?:start|end)$/.test(part.keyword || '')))) {
+        const mode = el ? waBaseValue(el, 'writing-mode') || 'horizontal-tb' : 'horizontal-tb';
+        const vertical = /^(vertical|sideways)-/.test(mode), rtl = !!el && waBaseValue(el, 'direction') === 'rtl';
+        const right = vertical ? mode.endsWith('-rl') : rtl, bottom = vertical && rtl;
+        /* Rewrite parsed origin keywords only. Custom property names and other
+           substitution tokens are case-sensitive and are never textual targets. */
+        for (const pair of parsed) for (const part of pair) if (part) {
+            const m = /^([xy])-(start|end)$/.exec(part.keyword || '');
+            if (m) part.keyword = m[1] === 'x' ? (right !== (m[2] === 'end') ? 'right' : 'left') : (bottom !== (m[2] === 'end') ? 'bottom' : 'top');
+        }
+        value = parsed.map(pair => axis < 0 ? cssPositionPairText(pair) : cssPositionPartText(pair[axis], axis, false)).join(', ');
+    }
+    return value;
+}
 function waMix(prop, a, b, p, op) {   /* op: interpolate (p) or add (p ignored, b added to a) */
+    if (WA_POSITION.test(prop)) return waPositionMix(prop, a, b, p, op);
     if (WA_GRID.test(prop)) return waGridMix(a, b, p, !!op);
     const A = waTokens(a), B = waTokens(b);
     if (A.length !== B.length) return null;
@@ -438,6 +512,7 @@ function waTransform(a, b, p, op) {
     return `matrix(${[cs * sx, sn * sx, cs * k - sn * sy, sn * k + cs * sy, L(da.tx, db.tx), L(da.ty, db.ty)].map(waFmt).join(', ')})`;
 }
 function waInterp(prop, a, b, p) {
+    if (WA_POSITION.test(prop)) { const r = waPositionMix(prop, a, b, p, false); return r !== null ? r : p < 0.5 ? a : b; }
     if (p === 0) return a; if (p === 1) return b;
     if (prop === 'transform') return waTransform(a, b, p);
     if (prop === 'visibility' && (a === 'visible' || b === 'visible') && p > 0 && p < 1) return 'visible';
@@ -473,6 +548,7 @@ class KeyframeEffect extends AnimationEffect {
         if (arguments.length === 1 && target instanceof KeyframeEffect) {
             const s = target;
             def(this, '_t', Object.assign({}, s._t)); def(this, '_target', s._target); def(this, '_pseudo', s._pseudo);
+            def(this, '_defaultEase', s._defaultEase || WA_LINEAR);
             def(this, '_comp', s._comp); def(this, '_icomp', s._icomp); def(this, '_kfs', s._kfs.map(k => Object.assign({}, k, { props: new SMap(k.props) }))); def(this, '_anim', null);
             return;
         }
@@ -485,6 +561,7 @@ class KeyframeEffect extends AnimationEffect {
             if (options.iterationComposite !== undefined) icomp = waEnum(options.iterationComposite, ['replace', 'accumulate'], 'IterationCompositeOperation');
             if (options.pseudoElement !== undefined && options.pseudoElement !== null) pseudo = waPseudo(options.pseudoElement, "construct 'KeyframeEffect'");
         }
+        def(this, '_defaultEase', WA_LINEAR);
         def(this, '_t', waTiming(WA_T0, options)); def(this, '_kfs', kfs); def(this, '_comp', comp); def(this, '_icomp', icomp); def(this, '_pseudo', pseudo);
     }
     get target() { return this._target; }
@@ -500,7 +577,7 @@ class KeyframeEffect extends AnimationEffect {
             return o;
         });
     }
-    setKeyframes(kf) { this._kfs = waKeyframes(kf); waInvalidate(); }
+    setKeyframes(kf) { this._kfs = waKeyframes(kf); this._defaultEase = WA_LINEAR; waInvalidate(); }
 }
 function waPseudo(v, what) {
     v = String(v);
@@ -516,6 +593,7 @@ function waEffectValue(eff, prop, under, c) {
     const p = c.progress, val = (k) => {
         let v = k ? k.props.get(prop) : under;
         if (v != null && WA_GRID.test(prop)) v = waGridSpecified(eff._target, prop, v);
+        if (v != null && WA_POSITION.test(prop)) v = waPositionSpecified(eff._target, prop, v);
         return k ? waCompose(prop, under, v, k.composite === 'auto' ? eff._comp : k.composite) : v;
     };
     let pts = kfs.map(k => ({ co: k.co, k }));
@@ -530,7 +608,10 @@ function waEffectValue(eff, prop, under, c) {
         if (si < 0) si = pts.findIndex(x => x.co === 0) >= 0 ? pts.map(x => x.co).lastIndexOf(0) : 0;
         if (si >= pts.length - 1) si = pts.length - 2;
         const s = pts[si], e = pts[si + 1];
-        const d = e.co === s.co ? 0 : (p - s.co) / (e.co - s.co), de = s.k ? s.k.ease(d, false) : d;
+        /* CSS-generated neutral endpoints use the animation's default keyframe
+           easing; author-supplied Web Animations keyframes default to linear. */
+        const d = e.co === s.co ? 0 : (p - s.co) / (e.co - s.co);
+        const de = (s.k ? s.k.ease : eff._defaultEase || WA_LINEAR)(d, false);
         res = waInterp(prop, val(s.k), val(e.k), de);
     }
     if (eff._icomp === 'accumulate' && c.currentIteration > 0 && isFinite(c.currentIteration)) {
@@ -952,7 +1033,7 @@ function caStart(el, names) {
         const timing = { duration: Math.max(0, trTime(at('animation-duration', i, '0s'))), delay: trTime(at('animation-delay', i, '0s')), iterations: iter === 'infinite' ? Infinity : Math.max(0, parseFloat(iter) || 0),
             direction: at('animation-direction', i, 'normal'), fill: ['none', 'forwards', 'backwards', 'both'].includes(fill) ? fill : 'none', composite: at('animation-composition', i, 'replace') };
         let eff;
-        try { eff = new KeyframeEffect(el, frames, timing); }
+        try { eff = new KeyframeEffect(el, frames, timing); eff._defaultEase = waEasing(easing).f; }
         catch (e) { try { eff = new KeyframeEffect(el, frames.map(f => Object.assign({}, f, { easing: 'linear' })), Object.assign(timing, { composite: 'replace' })); } catch (e2) { return; } }
         const a = new CSSAnimation(eff, document.timeline);
         a._caName = name;

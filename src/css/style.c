@@ -626,21 +626,172 @@ static void apply_background_image(ACtx *c, const char *v) {
         char *abs = style_url_join(base, u); free(u); c->st->bg_image = abs;
     }
 }
-static void apply_bg_pos(ACtx *c, const char *v) {
-    char *t[4]; int n = split_ws(v, t, 4); Length l[2] = { {0, 0, LK_LEN}, {0, 50, LK_LEN} };
-    int k = 0; bool xset = false, yset = false;
-    for (int i = 0; i < n; i++) {
-        if (str_ieq(t[i], "left")) { l[0] = (Length){0, 0, LK_LEN}; xset = true; }
-        else if (str_ieq(t[i], "right")) { l[0] = (Length){0, 100, LK_LEN}; xset = true; }
-        else if (str_ieq(t[i], "top")) { l[1] = (Length){0, 0, LK_LEN}; yset = true; }
-        else if (str_ieq(t[i], "bottom")) { l[1] = (Length){0, 100, LK_LEN}; yset = true; }
-        else if (str_ieq(t[i], "center")) { if (!xset && k == 0) { l[0] = (Length){0, 50, LK_LEN}; xset = true; } else { l[1] = (Length){0, 50, LK_LEN}; yset = true; } }
-        else { Length x; if (alen(c, t[i], &x)) { if (!xset) { l[0] = x; xset = true; } else { l[1] = x; yset = true; } } }
-        k++;
+/* Background positions keep their computed length/percentage pair for every
+   layer. The painter currently consumes the first layer; CSSOM and animation
+   must retain the complete lists independently of the background-image count. */
+static const char *const bg_axis_props[] = { "background-position-x", "background-position-y" };
+static Length bg_percent(float value) { return (Length){ .pct = value, .kind = LK_LEN, .pctu = true }; }
+static bool bg_length(ACtx *c, const char *text, Length *out) {
+    const char *p = text; LCtx lc = { c->em, c->rem, c->mc };
+    char *end; float number = strtof(text, &end);
+    if (end != text) {
+        if (!*end && number != 0) return false;
+        if (*end && *end != '%' && !str_ieq(end, "px") && !str_ieq(end, "em") && !str_ieq(end, "rem")
+            && !str_ieq(end, "ex") && !str_ieq(end, "ch") && !str_ieq(end, "cap") && !str_ieq(end, "ic")
+            && !str_ieq(end, "lh") && !str_ieq(end, "pt") && !str_ieq(end, "pc") && !str_ieq(end, "in")
+            && !str_ieq(end, "cm") && !str_ieq(end, "mm") && !str_ieq(end, "q")
+            && !str_ieq(end, "vw") && !str_ieq(end, "vh") && !str_ieq(end, "vmin") && !str_ieq(end, "vmax")
+            && !str_ieq(end, "svw") && !str_ieq(end, "svh") && !str_ieq(end, "lvw") && !str_ieq(end, "lvh")
+            && !str_ieq(end, "dvw") && !str_ieq(end, "dvh") && !str_ieq(end, "cqw") && !str_ieq(end, "cqh")
+            && !str_ieq(end, "cqi") && !str_ieq(end, "cqb") && !str_ieq(end, "cqmin") && !str_ieq(end, "cqmax")) return false;
+    } else if (!str_istarts(text, "calc(") && !str_istarts(text, "min(") && !str_istarts(text, "max(")
+               && !str_istarts(text, "clamp(") && !str_istarts(text, "round(") && !str_istarts(text, "mod(")
+               && !str_istarts(text, "rem(") && !str_istarts(text, "abs(") && !str_istarts(text, "hypot(")) return false;
+    if (!parse_dim(&p, out, &lc) || out->kind != LK_LEN) return false;
+    while (is_ws((unsigned char)*p)) p++;
+    return !*p;
+}
+/* 0: start edge; 1: center; 2: end edge. Logical axis keywords are
+   interpreted in the element's writing direction, while physical edges stay fixed. */
+static int bg_keyword(const ACtx *c, const char *text, int axis, bool logical) {
+    if (str_ieq(text, "center")) return 1;
+    if (str_ieq(text, axis ? "top" : "left")) return 0;
+    if (str_ieq(text, axis ? "bottom" : "right")) return 2;
+    if (logical && (str_ieq(text, axis ? "y-start" : "x-start") || str_ieq(text, axis ? "y-end" : "x-end"))) {
+        bool reversed = axis ? (c->st->writing_mode != 0 && c->st->direction) : (c->st->writing_mode ? c->st->writing_mode == 1 : c->st->direction);
+        bool end = str_ieq(text, axis ? "y-end" : "x-end");
+        return (reversed != end) ? 2 : 0;
     }
-    if (n == 1 && !yset) l[1] = (Length){0, 50, LK_LEN};
-    c->st->bg_pos[0] = l[0]; c->st->bg_pos[1] = l[1];
-    free_toks(t, n);
+    return -1;
+}
+static Length bg_offset(Length value, int edge) {
+    if (edge != 2) return value;
+    value.px = -value.px; value.pct = 100 - value.pct; value.pctu = true;
+    if (value.mm) { value.px2 = -value.px2; value.pct2 = 100 - value.pct2; value.mm = (uint8_t)(3 - value.mm); }
+    return value;
+}
+static bool bg_component(ACtx *c, const char *text, int axis, bool logical, Length *out) {
+    int edge = bg_keyword(c, text, axis, logical);
+    if (edge >= 0) { *out = bg_percent(edge * 50); return true; }
+    return bg_length(c, text, out);
+}
+static bool bg_position_item(ACtx *c, const char *text, int axis, Length out[2]) {
+    char *t[5]; int n = split_ws(text, t, 5); bool ok = false;
+    out[0] = out[1] = bg_percent(50);
+    if (axis >= 0) {
+        if (n == 1) ok = bg_component(c, t[0], axis, true, &out[axis]);
+        else if (n == 2) { int edge = bg_keyword(c, t[0], axis, true); ok = edge >= 0 && edge != 1 && bg_length(c, t[1], &out[axis]); if (ok) out[axis] = bg_offset(out[axis], edge); }
+    } else if (n == 1) {
+        if (bg_keyword(c, t[0], 1, false) >= 0 && !str_ieq(t[0], "center")) ok = bg_component(c, t[0], 1, false, &out[1]);
+        else ok = bg_component(c, t[0], 0, false, &out[0]);
+    } else if (n == 2) {
+        ok = bg_component(c, t[0], 0, false, &out[0]) && bg_component(c, t[1], 1, false, &out[1]);
+        if (!ok && bg_keyword(c, t[0], 1, false) >= 0 && bg_keyword(c, t[1], 0, false) >= 0)
+            ok = bg_component(c, t[1], 0, false, &out[0]) && bg_component(c, t[0], 1, false, &out[1]);
+    } else if (n == 3 || n == 4) {
+        bool set[2] = { false, false }; int center = 0; ok = true;
+        for (int i = 0; i < n && ok; i++) {
+            if (str_ieq(t[i], "center")) { center++; continue; }
+            int ax = bg_keyword(c, t[i], 0, false) >= 0 ? 0 : bg_keyword(c, t[i], 1, false) >= 0 ? 1 : -1;
+            if (ax < 0 || set[ax]) { ok = false; break; }
+            int edge = bg_keyword(c, t[i], ax, false); Length offset = bg_percent(0);
+            if (i + 1 < n && bg_length(c, t[i + 1], &offset)) i++;
+            out[ax] = bg_offset(offset, edge); set[ax] = true;
+        }
+        if (center == 1 && set[0] != set[1]) set[0] = set[1] = true;
+        else if (center) ok = false;
+        ok = ok && set[0] && set[1];
+    }
+    free_toks(t, n); return ok;
+}
+static void bg_length_str(SB *b, Length value) {
+    if (value.mm) { Length a = value, z = value; a.mm = z.mm = 0; z.px = value.px2; z.pct = value.pct2;
+        sb_puts(b, value.mm == 1 ? "min(" : "max("); bg_length_str(b, a); sb_puts(b, ", "); bg_length_str(b, z); sb_putc(b, ')'); return; }
+    /* A zero percentage still carries a percentage basis, including when a
+       length is present. Do not collapse calc(0% + 10px) to a length. */
+    if ((value.pctu || value.pct) && value.px) sb_printf(b, "calc(%g%% %c %gpx)", value.pct, value.px < 0 ? '-' : '+', fabsf(value.px));
+    else if (value.pctu || value.pct) sb_printf(b, "%g%%", value.pct);
+    else sb_printf(b, "%gpx", value.px == 0 ? 0.0 : (double)value.px);
+}
+/* Logical origins remain part of an axis longhand's computed value, including
+   in lists. Keep its computed offset separate from the physical used position. */
+static bool bg_logical_axis_str(SB *out, ACtx *c, const char *text, int axis) {
+    char *t[3]; int n = split_ws(text, t, 3);
+    const char *start = axis ? "y-start" : "x-start", *end = axis ? "y-end" : "x-end";
+    bool logical = n > 0 && (str_ieq(t[0], start) || str_ieq(t[0], end));
+    if (logical) {
+        sb_puts(out, str_ieq(t[0], start) ? start : end);
+        if (n == 2) { Length offset; if (bg_length(c, t[1], &offset)) { sb_putc(out, ' '); bg_length_str(out, offset); } }
+    }
+    free_toks(t, n); return logical;
+}
+static bool bg_axis_is_logical(const char *text, int axis) {
+    if (!text) return false;
+    while (is_ws((unsigned char)*text)) text++;
+    return str_istarts(text, axis ? "y-start" : "x-start") || str_istarts(text, axis ? "y-end" : "x-end");
+}
+static bool bg_resolve_axis(const ComputedStyle *st, const char *text, size_t length, int axis, Length *out) {
+    /* The stored offset is already computed (px/percentage), so resolving its
+       origin never re-reads font, viewport, or container-query unit state. */
+    ACtx c = {0}; c.st = (ComputedStyle *)st; c.em = c.rem = st->font_size;
+    char *item = xstrndup(text, length); Length pair[2];
+    bool ok = bg_position_item(&c, item, axis, pair); free(item);
+    if (ok) *out = pair[axis]; return ok;
+}
+static void bg_position_resolve_logical(ComputedStyle *st) {
+    for (int axis = 0; axis < 2; axis++) {
+        const char *text = custom_get(st->gen_n, bg_axis_props[axis]);
+        if (!bg_axis_is_logical(text, axis)) continue;
+        const char *end = text; int depth = 0;
+        while (*end && (depth || *end != ',')) { if (*end == '(') depth++; else if (*end == ')') depth--; end++; }
+        Length value; if (bg_resolve_axis(st, text, (size_t)(end - text), axis, &value)) st->bg_pos[axis] = value;
+    }
+}
+static void bg_resolved_axis_str(SB *out, const ComputedStyle *st, const char *text, size_t length, int axis) {
+    Length value;
+    if (bg_axis_is_logical(text, axis) && bg_resolve_axis(st, text, length, axis, &value)) bg_length_str(out, value);
+    else sb_put(out, text, length);
+}
+static bool apply_bg_position(ACtx *c, const char *value, int axis) {
+    SB out[2]; sb_init(&out[0]); sb_init(&out[1]); Length first[2]; int count = 0; bool ok = true;
+    for (const char *p = value;;) {
+        const char *end = p; int depth = 0;
+        while (*end && (depth || *end != ',')) { if (*end == '(') depth++; else if (*end == ')') depth--; end++; }
+        char *item = xstrndup(p, (size_t)(end - p)); Length pair[2];
+        ok = !depth && bg_position_item(c, item, axis, pair); if (!ok) { free(item); break; }
+        for (int a = 0; a < 2; a++) if (axis < 0 || axis == a) { if (count) sb_puts(&out[a], ", "); if (axis < 0 || !bg_logical_axis_str(&out[a], c, item, a)) bg_length_str(&out[a], pair[a]); }
+        free(item);
+        if (!count) memcpy(first, pair, sizeof first); count++;
+        if (!*end) break; p = end + 1;
+    }
+    if (ok) for (int a = 0; a < 2; a++) if (axis < 0 || axis == a) { c->st->bg_pos[a] = first[a]; gen_put(&c->st->gen_n, bg_axis_props[a], sb_take(&out[a])); }
+    sb_free(&out[0]); sb_free(&out[1]); return ok;
+}
+static void apply_bg_pos(ACtx *c, const char *v) { (void)apply_bg_position(c, v, -1); }
+static void bg_position_copy(ComputedStyle *st, const ComputedStyle *from, int axis) {
+    for (int a = 0; a < 2; a++) if (axis < 0 || axis == a) {
+        const char *v = from ? gen_value(from, gen_prop(bg_axis_props[a])) : NULL;
+        gen_put(&st->gen_n, bg_axis_props[a], xstrdup(v ? v : "0%"));
+        st->bg_pos[a] = from ? from->bg_pos[a] : bg_percent(0);
+    }
+}
+static char *bg_position_computed(const ComputedStyle *s, int axis) {
+    const char *x = gen_value(s, gen_prop(bg_axis_props[0])), *y = gen_value(s, gen_prop(bg_axis_props[1]));
+    if (!x) x = "0%"; if (!y) y = "0%";
+    if (axis >= 0) return xstrdup(axis ? y : x);
+    SB out; sb_init(&out); const char *xp = x, *yp = y; int count = 0;
+    do {
+        const char *xe = xp, *ye = yp; int depth = 0;
+        while (*xe && (depth || *xe != ',')) { if (*xe == '(') depth++; else if (*xe == ')') depth--; xe++; }
+        depth = 0; while (*ye && (depth || *ye != ',')) { if (*ye == '(') depth++; else if (*ye == ')') depth--; ye++; }
+        if (count++) sb_puts(&out, ", "); bg_resolved_axis_str(&out, s, xp, (size_t)(xe - xp), 0); sb_putc(&out, ' '); bg_resolved_axis_str(&out, s, yp, (size_t)(ye - yp), 1);
+        if (!*xe && !*ye) break;
+        /* A shorthand cannot exactly represent unequal longhand list lengths. */
+        if (!*xe || !*ye) { sb_free(&out); return xstrdup(""); }
+        xp = xe + 1; yp = ye + 1;
+        while (is_ws((unsigned char)*xp)) xp++; while (is_ws((unsigned char)*yp)) yp++;
+    } while (true);
+    return sb_take(&out);
 }
 static void apply_bg_size(ACtx *c, const char *v) {
     if (str_ieq(v, "cover")) { c->st->bg_size_kind = BGS_COVER; return; }
@@ -651,13 +802,37 @@ static void apply_bg_size(ACtx *c, const char *v) {
     if (n == 1) c->st->bg_size[1] = L_auto();
     free_toks(t, n);
 }
+static void bg_shorthand_positions(ACtx *c, const char *value) {
+    SB positions; sb_init(&positions); int layer = 0;
+    for (const char *p = value;;) {
+        const char *end = p, *slash = NULL; int depth = 0;
+        while (*end && (depth || *end != ',')) {
+            if (*end == '(') depth++; else if (*end == ')') depth--;
+            else if (!depth && *end == '/' && !slash) slash = end;
+            end++;
+        }
+        char *head = xstrndup(p, (size_t)((slash ? slash : end) - p)); const char *q = head; char *token;
+        SB pair; sb_init(&pair);
+        while ((token = next_token(&q))) {
+            Length l;
+            if (bg_keyword(c, token, 0, false) >= 0 || bg_keyword(c, token, 1, false) >= 0 || bg_length(c, token, &l)) {
+                if (pair.n) sb_putc(&pair, ' '); sb_puts(&pair, token);
+            }
+            free(token);
+        }
+        if (layer++) sb_puts(&positions, ", "); sb_puts(&positions, pair.n ? pair.s : "0% 0%");
+        sb_free(&pair); free(head);
+        if (!*end) break; p = end + 1;
+    }
+    apply_bg_pos(c, positions.s ? positions.s : "0% 0%"); sb_free(&positions);
+}
 static void apply_background(ACtx *c, const char *v) {
     /* use last layer for color, first for image */
     c->st->bg_color = 0; c->st->bg_ser = NULL; free(c->st->bg_image); c->st->bg_image = NULL; free(c->st->bg_gradient); c->st->bg_gradient = NULL;
-    c->st->bg_repeat = BG_REPEAT; c->st->bg_size_kind = BGS_AUTO; c->st->bg_pos[0] = c->st->bg_pos[1] = (Length){0, 0, LK_LEN};
+    c->st->bg_repeat = BG_REPEAT; c->st->bg_size_kind = BGS_AUTO; bg_position_copy(c->st, NULL, -1);
     if (str_ieq(v, "none")) return;
     if (strstr(v, "url(") || strstr(v, "gradient(")) apply_background_image(c, v);
-    const char *p = v; char *t; int pos_n = 0; char posbuf[128] = {0};
+    const char *p = v; char *t;
     while ((t = next_token(&p))) {
         size_t tl = strlen(t);
         char *tt = t; if (tl && tt[tl - 1] == ',') tt[tl - 1] = 0;
@@ -670,10 +845,9 @@ static void apply_background(ACtx *c, const char *v) {
         else if (str_ieq(tt, "cover") || str_ieq(tt, "contain")) apply_bg_size(c, tt);
         else if (!strcmp(tt, "/")) {}
         else if (css_parse_color(tt, &col, c->st->color)) { CssColor cc = cur_color(c->st); const char *ser = NULL; parse_color_ser(tt, &col, &ser, &cc); c->st->bg_color = col; c->st->bg_ser = ser; }
-        else if (pos_n < 2 && (str_ieq(tt, "center") || str_ieq(tt, "left") || str_ieq(tt, "right") || str_ieq(tt, "top") || str_ieq(tt, "bottom") || isdigit((unsigned char)tt[0]) || tt[0] == '-' || tt[0] == '.')) { strncat(posbuf, " ", sizeof posbuf - strlen(posbuf) - 1); strncat(posbuf, tt, sizeof posbuf - strlen(posbuf) - 1); pos_n++; }
         free(t);
     }
-    if (pos_n) apply_bg_pos(c, posbuf);
+    bg_shorthand_positions(c, v);
 }
 static void apply_font(ACtx *c, const char *v) {
     /* [style] [variant] [weight] size[/line-height] family */
@@ -1090,6 +1264,12 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         if (!strcmp(P, "position-anchor")) { free(st->pos_anchor); st->pos_anchor = strncmp(val, "--", 2) || inherit || initial || unset ? NULL : xstrdup(val); if (st->pos_anchor) return; }
         if (!strcmp(P, "anchor-name")) { free(st->anchor_name); st->anchor_name = str_ieq(val, "none") || inherit || initial || unset ? NULL : xstrdup(val); return; }
     }
+    if (!strcmp(P, "background-position") || !strcmp(P, "background-position-x") || !strcmp(P, "background-position-y")) {
+        int axis = !strcmp(P, "background-position-x") ? 0 : !strcmp(P, "background-position-y") ? 1 : -1;
+        if (inherit || initial || unset) { if (inherit) st->parent_sensitive = true; bg_position_copy(st, inherit ? par : NULL, axis); }
+        else (void)apply_bg_position(&c, val, axis);
+        free(vbuf); free(subst); return;
+    }
     const GenProp *gp = gen_prop(P);
     bool anim_longhand = !strncmp(P, "transition-", 11) || !strncmp(P, "animation-", 10);
     bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
@@ -1117,7 +1297,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
         else if (!strcmp(P, "font-family")) st->font_family = src->font_family;
         else if (!strcmp(P, "line-height")) { st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
-        else if (!strcmp(P, "background-color") || !strcmp(P, "background")) { st->bg_color = src->bg_color; st->bg_ser = src->bg_ser; if (!strcmp(P, "background")) { free(st->bg_image); st->bg_image = NULL; free(st->bg_gradient); st->bg_gradient = NULL; } }
+        else if (!strcmp(P, "background-color") || !strcmp(P, "background")) { st->bg_color = src->bg_color; st->bg_ser = src->bg_ser; if (!strcmp(P, "background")) { bg_position_copy(st, inherit ? par : NULL, -1); free(st->bg_image); st->bg_image = NULL; free(st->bg_gradient); st->bg_gradient = NULL; } }
         else if (!strcmp(P, "display")) { st->display = src->display; st->display_text = src->display_text; }
         else if (!strcmp(P, "text-align")) st->text_align = src->text_align;
         else if (!strcmp(P, "width")) st->width = src->width;
@@ -3179,6 +3359,7 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     base->parent_sensitive |= st->parent_sensitive;
     base->inherited_dynamic |= st->inherited_dynamic;
     if (!st->content && which != 4) { style_free(st); return NULL; }
+    bg_position_resolve_logical(st);
     return st;
 }
 
@@ -3251,6 +3432,7 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
         }
         css_apply_decl(st, par, p, v[i].d->value, e, el);
     }
+    bg_position_resolve_logical(st);
 }
 
 #if defined(__ANDROID__) && !defined(NDEBUG)
@@ -4412,6 +4594,7 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         if (v) { sb_puts(&b, v); return sb_take(&b); }
     }
     if (!s) return sb_take(&b);
+    if (!strcmp(prop, "background-position") || !strcmp(prop, "background-position-x") || !strcmp(prop, "background-position-y")) return bg_position_computed(s, !strcmp(prop, "background-position-x") ? 0 : !strcmp(prop, "background-position-y") ? 1 : -1);
     static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root" };
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };
     static const char *const bs[] = { "none", "hidden", "solid", "dashed", "dotted", "double", "groove", "ridge", "inset", "outset" };
