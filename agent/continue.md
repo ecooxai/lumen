@@ -70,3 +70,7 @@ Candidate `9e5d9bd983bc7525cfad92c07e14049ef941c2a56796148906e31c4c63c2c7dd`: Fr
 ## Checkpoint012 — Body and frameset Window handler aliases
 
 Candidate `c2a47e90b142feb848e9dce21296075fa8cbec5ae01b8d973e80608794338a2e`: Frozen body/frameset checks **5/45 RED →45/45 GREEN**; separate borrowed-Window regression **3/4 →4/4**. Existing frame7/14/35, native window445, transfer68, streams74 and legacy178 pass. Build3.091s; all ten stages16.126s. Qualified Chrome actually passes43/45; its pageswap/pagereveal alias failures remain visible. Exact historical source staged without overwriting later working changes. Accepted733/score45 unchanged. The inherited tokenizer sanitizer failure remains unresolved in this binary and requires the separately tested correction. See `agent/evidence/102900614-012-body-window-handlers.json`.
+
+## Checkpoint013 — XHR response encoding and data URL bytes
+
+Candidate `50eb65330c1dc48e13afb42e7543d38294c2841ebcf154898cb536deaf582fe9`: Frozen XHR/data-URL checks **14/42 RED →42/42 GREEN**; meta29, legacy178, streams74, transfer68, codec170 and native document78 remain green. Build9.110s; eleven stages21.265s under1Hz sampling, reusing prebuilt V8. Exact historical source staged without overwriting later working changes. Accepted733/score45 unchanged. The inherited tokenizer sanitizer failure remains unresolved in this binary and requires the separately tested correction. See `agent/evidence/102900614-013-xhr-encoding.json`.

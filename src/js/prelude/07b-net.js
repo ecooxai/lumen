@@ -171,12 +171,81 @@ class Response extends Body {
     static redirect(u, s = 302) { return immutableResponse(new Response(null, { status: s, headers: { location: String(u) } })); }
 }
 function immutableResponse(response) { headerOps.setGuard(response.headers, 'immutable'); return response; }
+// Data URLs carry bytes. Percent decoding must not apply UTF-8 validation;
+// the consumer (XHR, Response.text, ArrayBuffer, etc.) chooses decoding later.
+function dataURLMimeType(value) {
+    const token = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+    const quoted = /^[\t\x20-\x7E\x80-\xFF]*$/;
+    value = value.replace(/^[\t\n\r ]+|[\t\n\r ]+$/g, '');
+    const slash = value.indexOf('/');
+    if (slash <= 0 || !token.test(value.slice(0, slash))) return null;
+    let end = value.indexOf(';', slash + 1); if (end < 0) end = value.length;
+    const subtype = value.slice(slash + 1, end).replace(/[\t\n\r ]+$/g, '');
+    if (!token.test(subtype)) return null;
+    let result = value.slice(0, slash).toLowerCase() + '/' + subtype.toLowerCase();
+    const seen = new Set();
+    for (let position = end; position < value.length;) {
+        position++;
+        while (position < value.length && /[\t\n\r ]/.test(value[position])) position++;
+        const start = position;
+        while (position < value.length && value[position] !== '=' && value[position] !== ';') position++;
+        const name = value.slice(start, position).toLowerCase();
+        if (position === value.length) break;
+        if (value[position] === ';') continue;
+        position++;
+        let parameter = '';
+        if (value[position] === '"') {
+            position++;
+            while (position < value.length) {
+                let ch = value[position++];
+                if (ch === '"') break;
+                if (ch === '\\' && position < value.length) ch = value[position++];
+                parameter += ch;
+            }
+            while (position < value.length && value[position] !== ';') position++;
+        } else {
+            const start = position;
+            while (position < value.length && value[position] !== ';') position++;
+            parameter = value.slice(start, position).replace(/[\t\n\r ]+$/g, '');
+            if (!parameter) continue;
+        }
+        if (!token.test(name) || !quoted.test(parameter) || seen.has(name)) continue;
+        seen.add(name);
+        result += ';' + name + '=' + (token.test(parameter) ? parameter : '"' + parameter.replace(/["\\]/g, '\\$&') + '"');
+    }
+    return result;
+}
 function localBody(url) {
     if (url.startsWith('blob:')) { const b = objectURLs.get(url); return blobFileOps.isBlob(b) ? [blobFileOps.copyBuffer(b), blobFileOps.type(b)] : null; }
-    const m = /^data:([^,]*?)(;base64)?,(.*)$/s.exec(url); if (!m) return undefined;
-    const raw = m[2] ? atob(decodeURIComponent(m[3])) : decodeURIComponent(m[3]);
-    const u = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) u[i] = raw.charCodeAt(i) & 255;
-    return [m[2] ? u.buffer : N.encode(decodeURIComponent(m[3])), m[1] || 'text/plain;charset=US-ASCII'];
+    if (!url.startsWith('data:')) return undefined;
+    const fragment = url.indexOf('#'); if (fragment >= 0) url = url.slice(0, fragment);
+    const comma = url.indexOf(','); if (comma < 0) return null;
+    let mime = url.slice(5, comma).replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, '');
+    const encoded = new Uint8Array(N.encode(url.slice(comma + 1)));
+    const decoded = new Uint8Array(encoded.length);
+    const hex = code => code >= 48 && code <= 57 ? code - 48 : code >= 65 && code <= 70 ? code - 55 : code >= 97 && code <= 102 ? code - 87 : -1;
+    let length = 0;
+    for (let index = 0; index < encoded.length; index++) {
+        if (encoded[index] === 37 && index + 2 < encoded.length) {
+            const high = hex(encoded[index + 1]), low = hex(encoded[index + 2]);
+            if (high >= 0 && low >= 0) { decoded[length++] = high * 16 + low; index += 2; continue; }
+        }
+        decoded[length++] = encoded[index];
+    }
+    const marker = /; *base64$/i.exec(mime);
+    let body;
+    if (marker) {
+        mime = mime.slice(0, marker.index);
+        const chunks = [];
+        for (let index = 0; index < length; index += 4096)
+            chunks.push(String.fromCharCode(...decoded.subarray(index, Math.min(index + 4096, length))));
+        let binary; try { binary = atob(chunks.join('')); } catch (error) { return null; }
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < bytes.length; index++) bytes[index] = binary.charCodeAt(index);
+        body = bytes.buffer;
+    } else body = decoded.buffer.slice(0, length);
+    if (mime.startsWith(';')) mime = 'text/plain' + mime;
+    return [body, dataURLMimeType(mime) || 'text/plain;charset=US-ASCII'];
 }
 // Blob URL response, honouring a single "Range: bytes=" request header (206 + Content-Range); null = network error.
 function blobResponse(url, lb, range) {
@@ -464,7 +533,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         if (this._rs === 4) { this._rs = 0; this._reset(); }
     }
     _mimeType() { return (this._mime || this.getResponseHeader('content-type') || '').split(';')[0].trim().toLowerCase(); }
-    _text() { if (!this._body) return ''; let s = N.decode(this._body); if (s.charCodeAt(0) === 0xFEFF) s = s.slice(1); return s; }
+    _text() { return this._body ? N.responseTextDecode(this._body, this.getResponseHeader('content-type') || '', this._mime || '') : ''; }
     get responseText() {
         if (this._rt && this._rt !== 'text') throw new DOMException("The value is only accessible if the object's 'responseType' is '' or 'text' (was '" + this._rt + "').", 'InvalidStateError');
         return this._rs < 3 ? '' : this._text();
@@ -492,7 +561,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         switch (this._rt) {
         case 'arraybuffer': return this._resp = b instanceof ArrayBuffer ? b : b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
         case 'blob': return this._resp = new Blob([b], { type: this._mime || this.getResponseHeader('content-type') || '' });
-        case 'json': try { return this._resp = JSON.parse(this._text()); } catch (e) { return this._resp = null; }
+        case 'json': try { return this._resp = JSON.parse(this._body ? N.decode(this._body) : ''); } catch (e) { return this._resp = null; }
         }
         return null;
     }

@@ -1,0 +1,227 @@
+{
+  "iteration": "102900614-013",
+  "started_utc": "2026-10-28T23:57:08.141365+00:00",
+  "updated_utc": "2026-10-28T23:57:53.253967+00:00",
+  "elapsed_seconds": 45.113,
+  "total_session_seconds": 6191.795,
+  "score": 45,
+  "status": "XHR response encoding and data URL bytes",
+  "native_artifact_promoted": false,
+  "accepted_native_unchanged": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "candidate_binary_sha256": "50eb65330c1dc48e13afb42e7543d38294c2841ebcf154898cb536deaf582fe9",
+  "candidate_jsrun_sha256": "668280f7be5249213dc1b68e71dd72ad564e62b1ed5a38a913713f93674be011",
+  "candidate_source_manifest": "agent/evidence/102900614-013/compiled-source-sha256.json",
+  "red": {
+    "passed": 14,
+    "total": 42
+  },
+  "green": {
+    "passed": 42,
+    "total": 42,
+    "build_seconds": 9.11,
+    "all_build_test_seconds": 21.265,
+    "meta": 29,
+    "legacy": 178,
+    "streams": 74,
+    "transfer": 68,
+    "codec": 170,
+    "document_encoding": 78
+  },
+  "qualification": {
+    "inheritedTokenizerSanitizerFailureUnresolvedInThisArtifact": true,
+    "scope": "Window XHR; dedicated-worker XMLHttpRequest is not claimed."
+  },
+  "evidence": [
+    {
+      "source": "output/session-102900614/xhr-encoding-candidate-1/patch-receipt.json",
+      "committed": "agent/evidence/102900614-013/00-xhr-encoding-candidate-1-patch-receipt.json",
+      "sha256": "6224b1189884ed216ad12935398294755676a7420d46aa5bab8a44f486b05b15",
+      "bytes": 1856
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/summary.json",
+      "committed": "agent/evidence/102900614-013/01-xhr-encoding-green-1-summary.json",
+      "sha256": "8b4a62cf9fb8aab05844da07ea5daa9db6631411c6baa63a053639514b59feb8",
+      "bytes": 18199
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/102900614-013/02-xhr-encoding-green-1-compiled-source-sha256.json",
+      "sha256": "a036d9601e216fcb33a509351bebd547a9c5bebdd4866e65691a61e600cd877b",
+      "bytes": 15370
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-red-1.json",
+      "committed": "agent/evidence/102900614-013/03-session-102900614-xhr-encoding-red-1.json",
+      "sha256": "a095132aa536f3a3c729e5636aaed053e1f3c9ff96523c25316272b8a0f80b4f",
+      "bytes": 2046
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-red-1.log",
+      "committed": "agent/evidence/102900614-013/04-session-102900614-xhr-encoding-red-1.log",
+      "sha256": "34089a7c5e88ff1d01e0d0901ff5da7c3dd5adb0b6ebf7226b0b14ba8b9435a9",
+      "bytes": 5950
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-red-1.csv",
+      "committed": "agent/evidence/102900614-013/05-session-102900614-xhr-encoding-red-1.csv",
+      "sha256": "9dd0f15c390dcf76e35bea58b942e92d0c7b3c7c515fb564cc57dee1654853dc",
+      "bytes": 79
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/build.json",
+      "committed": "agent/evidence/102900614-013/06-xhr-encoding-green-1-build.json",
+      "sha256": "471e6d5d49578f0e775e17ac91a925edef760718b8a714dde664fc28370446d8",
+      "bytes": 2043
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/build.log",
+      "committed": "agent/evidence/102900614-013/07-xhr-encoding-green-1-build.log",
+      "sha256": "c38a3561acc944bf49ba5cde306770963dc7465f7f841931719ca0ca60a17ed5",
+      "bytes": 57206
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/xhr-encoding.json",
+      "committed": "agent/evidence/102900614-013/08-xhr-encoding-green-1-xhr-encoding.json",
+      "sha256": "d53ccf38acca38317f6aadbe0289902aea645bac0a2ef2034c4f629c73d8c641",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/xhr-encoding.log",
+      "committed": "agent/evidence/102900614-013/09-xhr-encoding-green-1-xhr-encoding.log",
+      "sha256": "ceb790a3180af52f965ac3361b8ac6122dc813fa63a95277184a12d9a4366ff5",
+      "bytes": 4590
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/html-meta.json",
+      "committed": "agent/evidence/102900614-013/10-xhr-encoding-green-1-html-meta.json",
+      "sha256": "ee881eac6021001d94cb234ce4cfd5e6c5f0a04350c4248b88ad4264c9ab1285",
+      "bytes": 2014
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/html-meta.log",
+      "committed": "agent/evidence/102900614-013/11-xhr-encoding-green-1-html-meta.log",
+      "sha256": "41a3ba7bde328ca7ce445acc27b913f319c41ea82f2e18c666a67a8539759dac",
+      "bytes": 5036
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/legacy-codecs.json",
+      "committed": "agent/evidence/102900614-013/12-xhr-encoding-green-1-legacy-codecs.json",
+      "sha256": "3e6d0467ac06eb9ef1357ad88b491dc82d5858cb3f3f5d652d261808e1fc3385",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/legacy-codecs.log",
+      "committed": "agent/evidence/102900614-013/13-xhr-encoding-green-1-legacy-codecs.log",
+      "sha256": "ad30aa7b23cc4a02294589815959f7161151b690c5c76b08f15d42d2643061bb",
+      "bytes": 24105
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/text-streams.json",
+      "committed": "agent/evidence/102900614-013/14-xhr-encoding-green-1-text-streams.json",
+      "sha256": "6f63d2d923360be4d68cfb38e01f4bdf484fd82f99d8c6e3eadda2c5e89d7fb7",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/text-streams.log",
+      "committed": "agent/evidence/102900614-013/15-xhr-encoding-green-1-text-streams.log",
+      "sha256": "45ad8bd9160c4fc700cebc3171c28fdc208f27b928b6708221ac0750e3ca3a63",
+      "bytes": 10267
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/message-transfer.json",
+      "committed": "agent/evidence/102900614-013/16-xhr-encoding-green-1-message-transfer.json",
+      "sha256": "4d5b04afeb7ab7d679e5d8dd2a0c7537c0b29e20a93a3bc4fe15dabf31ad4f3b",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/message-transfer.log",
+      "committed": "agent/evidence/102900614-013/17-xhr-encoding-green-1-message-transfer.log",
+      "sha256": "4aeec23d621d99af7e9a5ceb240216b8d32d274669ac3c56850fdb7c7b33770a",
+      "bytes": 10027
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/text-codec.json",
+      "committed": "agent/evidence/102900614-013/18-xhr-encoding-green-1-text-codec.json",
+      "sha256": "0984dd6ac10dffbfcd71914e8ce49e9859c9eca751cf50cc70ccdd255693a114",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/text-codec.log",
+      "committed": "agent/evidence/102900614-013/19-xhr-encoding-green-1-text-codec.log",
+      "sha256": "ad10fdb95b889d334dab4e5d3ec9298437bb263fc8bcf20d2250963c8e750e32",
+      "bytes": 21136
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/test_encoding.json",
+      "committed": "agent/evidence/102900614-013/20-xhr-encoding-green-1-test_encoding.json",
+      "sha256": "8e3fa4e9977bd3215f58707a1ae5d2da657ae489ad2b36c0d6e3aa52983b8927",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/test_encoding.log",
+      "committed": "agent/evidence/102900614-013/21-xhr-encoding-green-1-test_encoding.log",
+      "sha256": "dfbaa42bf908960b0e192756842ddf3403ecd583d2c08fd0868827220896a0e2",
+      "bytes": 30
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/test_encoding_encoder.json",
+      "committed": "agent/evidence/102900614-013/22-xhr-encoding-green-1-test_encoding_encoder.json",
+      "sha256": "1adbbcf1835c631de6c45d115643a556f847cfa4bb8f58bed71fe128a377897f",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/test_encoding_encoder.log",
+      "committed": "agent/evidence/102900614-013/23-xhr-encoding-green-1-test_encoding_encoder.log",
+      "sha256": "3d0d7958a1bc993f0a545f8b6c667fefc55af300eb5590293405b3a43edafe62",
+      "bytes": 40
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/test_url_encoding.json",
+      "committed": "agent/evidence/102900614-013/24-xhr-encoding-green-1-test_url_encoding.json",
+      "sha256": "a7d4ed3911bd8372f042ba919372b62f1b34e894f8dffabafdf34d1d3801e44f",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/test_url_encoding.log",
+      "committed": "agent/evidence/102900614-013/25-xhr-encoding-green-1-test_url_encoding.log",
+      "sha256": "bf0b0ec6a486af905b4aa0dc3415d15c7822111fe415e2ad09fba5ba79c3ee2f",
+      "bytes": 34
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/test_document_encoding.json",
+      "committed": "agent/evidence/102900614-013/26-xhr-encoding-green-1-test_document_encoding.json",
+      "sha256": "4b86c953ba4958c0dc139e3385ef476e7dede193a16306721f4e638e396fd8a4",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/xhr-encoding-green-1/test_document_encoding.log",
+      "committed": "agent/evidence/102900614-013/27-xhr-encoding-green-1-test_document_encoding.log",
+      "sha256": "951d1fad04152778fc17ce36777774b590d1b6c177ec1210452aacfad2c37db8",
+      "bytes": 5104
+    }
+  ],
+  "raw_byte_preservation": [
+    "agent/evidence/102900614-013/04-session-102900614-xhr-encoding-red-1.log",
+    "agent/evidence/102900614-013/05-session-102900614-xhr-encoding-red-1.csv",
+    "agent/evidence/102900614-013/07-xhr-encoding-green-1-build.log",
+    "agent/evidence/102900614-013/09-xhr-encoding-green-1-xhr-encoding.log",
+    "agent/evidence/102900614-013/11-xhr-encoding-green-1-html-meta.log",
+    "agent/evidence/102900614-013/13-xhr-encoding-green-1-legacy-codecs.log",
+    "agent/evidence/102900614-013/15-xhr-encoding-green-1-text-streams.log",
+    "agent/evidence/102900614-013/17-xhr-encoding-green-1-message-transfer.log",
+    "agent/evidence/102900614-013/19-xhr-encoding-green-1-text-codec.log",
+    "agent/evidence/102900614-013/21-xhr-encoding-green-1-test_encoding.log",
+    "agent/evidence/102900614-013/23-xhr-encoding-green-1-test_encoding_encoder.log",
+    "agent/evidence/102900614-013/25-xhr-encoding-green-1-test_url_encoding.log",
+    "agent/evidence/102900614-013/27-xhr-encoding-green-1-test_document_encoding.log"
+  ],
+  "implementation": "Decode XHR response bytes with MIME/override charset and BOM precedence, preserve JSON UTF8 behavior and override state, and parse data URLs through percent-byte decoding and forgiving base64 with network errors for invalid payloads.",
+  "limits": [
+    "Dedicated-worker XMLHttpRequest remains separate work.",
+    "The inherited tokenizer sanitizer failure is unresolved in this exact historical binary.",
+    "No fresh original/full-WPT, GUI resource, navigation soak or same signed IPA acceptance is claimed by this checkpoint."
+  ],
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed",
+  "sourceStaging": "Reviewed historical source was reconstructed from exact installer/preimage hashes and staged directly in the index. Later working-tree candidates were preserved."
+}

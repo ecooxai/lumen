@@ -242,3 +242,10 @@ Checkpoint007 commit infrastructure follow-up `2026-10-28T23:29:47.289388+00:00`
 - Frozen body/frameset checks **5/45 RED →45/45 GREEN**; separate borrowed-Window regression **3/4 →4/4**. Existing frame7/14/35, native window445, transfer68, streams74 and legacy178 pass. Build3.091s; all ten stages16.126s. Qualified Chrome actually passes43/45; its pageswap/pagereveal alias failures remain visible.
 - This exact historical artifact still contains the tokenizer bounds failure recorded in011. Source and all relevant RED/GREEN/failed receipts are preserved in `agent/evidence/102900614-012-body-window-handlers.json`. No safety, GUI resource or full-WPT promotion follows from these functional gates.
 - Use private shared Window records for cross-realm handler identity, existing event-listener activation order, private special-event brands and the owner document’s existing inline-handler CSP/sandbox compiler. Blocked attributes preserve valid prior handlers; syntax failure clears them. Parsed body aliases hydrate before author scripts.
+
+## 102900614-013 — XHR response encoding and data URL bytes
+
+- Start `2026-10-28T23:57:08.141365+00:00`; end `2026-10-28T23:57:53.253967+00:00`; checkpoint `45.113s`; total session `6191.795s`. Accepted **45/100**, artifact733 unchanged.
+- Frozen XHR/data-URL checks **14/42 RED →42/42 GREEN**; meta29, legacy178, streams74, transfer68, codec170 and native document78 remain green. Build9.110s; eleven stages21.265s under1Hz sampling, reusing prebuilt V8.
+- This exact historical artifact still contains the tokenizer bounds failure recorded in011. Source and all relevant RED/GREEN/failed receipts are preserved in `agent/evidence/102900614-013-xhr-encoding.json`. No safety, GUI resource or full-WPT promotion follows from these functional gates.
+- Decode XHR response bytes with MIME/override charset and BOM precedence, preserve JSON UTF8 behavior and override state, and parse data URLs through percent-byte decoding and forgiving base64 with network errors for invalid payloads.

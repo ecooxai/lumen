@@ -674,7 +674,7 @@
       }
     }
   ],
-  "updated_utc": "2026-10-28T23:57:08.141365+00:00",
+  "updated_utc": "2026-10-28T23:57:53.253967+00:00",
   "current_baseline_binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
@@ -892,6 +892,15 @@
       "total_session_seconds": 6146.682,
       "score": 45,
       "status": "Body and frameset Window handler aliases"
+    },
+    {
+      "iteration": "102900614-013",
+      "started_utc": "2026-10-28T23:57:08.141365+00:00",
+      "updated_utc": "2026-10-28T23:57:53.253967+00:00",
+      "elapsed_seconds": 45.113,
+      "total_session_seconds": 6191.795,
+      "score": 45,
+      "status": "XHR response encoding and data URL bytes"
     }
   ],
   "current_native_source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",
@@ -952,6 +961,14 @@
       "evidence": "agent/evidence/102900614-012-body-window-handlers.json",
       "accepted": false,
       "note": "Body and frameset Window handler aliases; unresolved inherited tokenizer sanitizer failure, fresh combined gates pending."
+    },
+    {
+      "iteration": "102900614-013",
+      "binary_sha256": "50eb65330c1dc48e13afb42e7543d38294c2841ebcf154898cb536deaf582fe9",
+      "source_manifest": "agent/evidence/102900614-013/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-013-xhr-encoding.json",
+      "accepted": false,
+      "note": "XHR response encoding and data URL bytes; unresolved inherited tokenizer sanitizer failure, fresh combined gates pending."
     }
   ],
   "reference_qualification": {

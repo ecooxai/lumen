@@ -63,7 +63,8 @@ const char *web_encoding_name(WebEncoding encoding) {
  * an unknown first charset does not authorize a later duplicate parameter.
  * Only a bounded label buffer is needed, even for a very long media type.
  */
-WebEncoding web_encoding_mime_n(const char *mime, size_t length) {
+WebEncoding web_encoding_mime_charset_n(const char *mime, size_t length, bool *present) {
+    if (present) *present = false;
     if (!mime) return WEB_ENC_UNKNOWN;
     while (length && http_space((unsigned char)*mime)) { ++mime; --length; }
     while (length && http_space((unsigned char)mime[length - 1])) --length;
@@ -116,10 +117,16 @@ WebEncoding web_encoding_mime_n(const char *mime, size_t length) {
                 if (i < sizeof label) label[i] = (char)c;
             }
         }
-        if (charset && valid_value)
+        if (charset && valid_value) {
+            if (present) *present = true;
             return used <= 80 ? web_encoding_label_n(label, used) : WEB_ENC_UNKNOWN;
+        }
     }
     return WEB_ENC_UNKNOWN;
+}
+
+WebEncoding web_encoding_mime_n(const char *mime, size_t length) {
+    return web_encoding_mime_charset_n(mime, length, NULL);
 }
 
 static bool emit(SB *output, uint32_t codepoint, size_t maximum) {

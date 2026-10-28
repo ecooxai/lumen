@@ -1,0 +1,46 @@
+[js log] XHR_ENCODING_CHECK {"i":0,"name":"HTTP UTF8 baseline","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":1,"name":"HTTP Windows1252 charset","ok":false,"error":"Error: expected \"€\", got \"�\""}
+[js log] XHR_ENCODING_CHECK {"i":2,"name":"HTTP quoted mixed-case charset parameter","ok":false,"error":"Error: expected \"€\", got \"�\""}
+[js log] XHR_ENCODING_CHECK {"i":3,"name":"override explicit charset wins","ok":false,"error":"Error: expected \"€\", got \"�\""}
+[js log] XHR_ENCODING_CHECK {"i":4,"name":"override without charset retains response charset","ok":false,"error":"Error: expected \"€\", got \"�\""}
+[js log] XHR_ENCODING_CHECK {"i":5,"name":"override unknown charset falls back to UTF8","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":6,"name":"override empty quoted charset falls back to UTF8","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":7,"name":"invalid override MIME retains response charset","ok":false,"error":"Error: expected \"€\", got \"�\""}
+[js log] XHR_ENCODING_CHECK {"i":8,"name":"first unknown charset blocks later duplicate","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":9,"name":"first valid charset blocks later duplicate","ok":false,"error":"Error: expected \"€\", got \"�\""}
+[js log] XHR_ENCODING_CHECK {"i":10,"name":"UTF8 BOM overrides legacy charset","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":11,"name":"only one leading UTF8 BOM is removed","ok":false,"error":"Error: expected \"﻿A\", got \"A\""}
+[js log] XHR_ENCODING_CHECK {"i":12,"name":"UTF16LE BOM overrides legacy charset","ok":false,"error":"Error: expected \"A€\", got \"��A\\u0000� \""}
+[js log] XHR_ENCODING_CHECK {"i":13,"name":"UTF16BE BOM overrides UTF8 charset","ok":false,"error":"Error: expected \"A\", got \"��\\u0000A\""}
+[js log] XHR_ENCODING_CHECK {"i":14,"name":"UTF16LE charset without BOM","ok":false,"error":"Error: expected \"A\", got \"A\\u0000\""}
+[js log] XHR_ENCODING_CHECK {"i":15,"name":"UTF16BE charset without BOM","ok":false,"error":"Error: expected \"A\", got \"\\u0000A\""}
+[js log] XHR_ENCODING_CHECK {"i":16,"name":"unsupported UTF32 charset defaults to UTF8","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":17,"name":"replacement encoding emits one replacement for nonempty body","ok":false,"error":"Error: expected \"�\", got \"AB\""}
+[js log] XHR_ENCODING_CHECK {"i":18,"name":"replacement encoding preserves empty body","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":19,"name":"ISO2022JP response charset","ok":false,"error":"Error: expected \"水\", got \"\\u001b$B?e\\u001b(B\""}
+[js log] XHR_ENCODING_CHECK {"i":20,"name":"JSON response decoding stays UTF8 despite legacy MIME","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":21,"name":"JSON response does not accept UTF16 BOM","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":22,"name":"overrideMimeType before open remains effective","ok":false,"error":"Error: expected \"€\", got \"�\""}
+[js log] XHR_ENCODING_CHECK {"i":23,"name":"overrideMimeType persists through another open","ok":false,"error":"Error: expected \"€\", got \"�\""}
+[js log] XHR_ENCODING_CHECK {"i":24,"name":"data URL UTF8 percent bytes","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":25,"name":"data URL invalid UTF8 byte is replacement","ok":false,"error":"URIError: URI malformed"}
+[js log] XHR_ENCODING_CHECK {"i":26,"name":"data URL legacy bytes retain charset","ok":false,"error":"URIError: URI malformed"}
+[js log] XHR_ENCODING_CHECK {"i":27,"name":"data URL UTF16 BOM preserved through percent decoding","ok":false,"error":"URIError: URI malformed"}
+[js log] XHR_ENCODING_CHECK {"i":28,"name":"data URL ArrayBuffer preserves arbitrary bytes","ok":false,"error":"URIError: URI malformed"}
+[js log] XHR_ENCODING_CHECK {"i":29,"name":"fetch data URL ArrayBuffer preserves arbitrary bytes","ok":false,"error":"URIError: URI malformed"}
+[js log] XHR_ENCODING_CHECK {"i":30,"name":"fetch text uses UTF8 independently of MIME charset","ok":false,"error":"URIError: URI malformed"}
+[js log] XHR_ENCODING_CHECK {"i":31,"name":"literal Unicode data URL is UTF8 encoded","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":32,"name":"invalid percent escape sequences remain literal","ok":false,"error":"URIError: URI malformed"}
+[js log] XHR_ENCODING_CHECK {"i":33,"name":"data URL fragment is excluded from body","ok":false,"error":"Error: expected \"hello\", got \"hello#fragment\""}
+[js log] XHR_ENCODING_CHECK {"i":34,"name":"data URL base64 preserves non-UTF8 bytes","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":35,"name":"data URL base64 marker is case insensitive","ok":false,"error":"Error: expected \"A\", got \"QQ==\""}
+[js log] XHR_ENCODING_CHECK {"i":36,"name":"data URL base64 marker permits preceding space","ok":false,"error":"Error: expected \"A\", got \"QQ==\""}
+[js log] XHR_ENCODING_CHECK {"i":37,"name":"data URL base64 forgiving ASCII whitespace","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":38,"name":"invalid base64 fetch rejects with TypeError","ok":false,"error":"Error: expected \"TypeError\", got \"InvalidCharacterError\""}
+[js log] XHR_ENCODING_CHECK {"i":39,"name":"invalid base64 XHR dispatches error without synchronous throw","ok":false,"error":"InvalidCharacterError: The string to be decoded is not correctly encoded."}
+[js log] XHR_ENCODING_CHECK {"i":40,"name":"missing data URL comma is a network error","ok":true}
+[js log] XHR_ENCODING_CHECK {"i":41,"name":"data URL default MIME type contains text/plain","ok":false,"error":"URIError: URI malformed"}
+[js log] XHR_ENCODING_RESULTS {"total":42,"passed":14,"failed":28}
+jsrun: context 21.8ms, 1 scripts 1.1ms, dom_version 20
+XHR_ENCODING_RECEIPT {"binarySHA256": "2f3170840352af15bbe42d5222f8e021013d385f96f3e80a293dc54f6201d0f0", "fixtureSHA256": "0af8307a1ff9e24721eedc7298ee0ccdbc84372e67c5573dab17510b86793add", "htmlSHA256": "7839d5d09da919a3e878cec0837655517b38c9e29f953f0c28b1fcfd2c3ccf0d", "total": 42, "passed": 14, "failed": 28}
+RESULTS xhr-response-encoding FAIL (14/42 checks)

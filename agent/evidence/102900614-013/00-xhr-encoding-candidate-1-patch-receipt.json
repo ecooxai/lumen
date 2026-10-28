@@ -1,0 +1,31 @@
+{
+  "startedUTC": "2026-10-28T23:49:31.289072+00:00",
+  "sourceBaseCommit": "62814214300802705485cccbfaaa684c004ea44a",
+  "applied": true,
+  "before": {
+    "src/base/encoding.c": "fc928f380ee0357e6f307bdf04058a6462e91c8b3674ee9768e37395ee690339",
+    "src/base/encoding.h": "fa2a85fa515c861c047f63587d0e4c00113366e10ce54d79cd3e86ed34dd3920",
+    "src/js/text_codec.h": "9b64d6725aa4c0f8a58a8ed457f8f5898f3c929b3c9f415b9f0b798f397891cf",
+    "src/js/jsnative.cc": "dbf1b47500e0803c78903cee2da2e75c6e789134a7ca88910b94f986eef9931a",
+    "src/js/prelude/07b-net.js": "682b11595b33dc502a51e1d1f32ef8b5df4560e1607e2e2af15bc57b25c6ead3"
+  },
+  "after": {
+    "src/base/encoding.c": "21788c99d1ebd0559d63b987efaaf4bfa42eda8df2d91a759413d47af32186ab",
+    "src/base/encoding.h": "b205d19524e9a5227f4cb7cb0ed6172ff5154a610c6e29d86df1360ff5b6aa38",
+    "src/js/text_codec.h": "cc4176360e07324e171a55abcfe487031281089fea60184f449786cd4d778950",
+    "src/js/jsnative.cc": "4d3b3e9106451873c8d1fe29823966edbc5e4e81fb453efe2a3412a646fdb220",
+    "src/js/prelude/07b-net.js": "1c379284e978bcc4c5ec135575e017997558d3762606e1548a3e19a68ff18d39"
+  },
+  "fixtureSHA256": "0af8307a1ff9e24721eedc7298ee0ccdbc84372e67c5573dab17510b86793add",
+  "redMonitorSHA256": "a095132aa536f3a3c729e5636aaed053e1f3c9ff96523c25316272b8a0f80b4f",
+  "redLogSHA256": "34089a7c5e88ff1d01e0d0901ff5da7c3dd5adb0b6ebf7226b0b14ba8b9435a9",
+  "red": {
+    "binarySHA256": "2f3170840352af15bbe42d5222f8e021013d385f96f3e80a293dc54f6201d0f0",
+    "fixtureSHA256": "0af8307a1ff9e24721eedc7298ee0ccdbc84372e67c5573dab17510b86793add",
+    "htmlSHA256": "7839d5d09da919a3e878cec0837655517b38c9e29f953f0c28b1fcfd2c3ccf0d",
+    "total": 42,
+    "passed": 14,
+    "failed": 28
+  },
+  "scope": "Window XHR charset/BOM/JSON and fetch/XHR data-URL bytes. Dedicated-worker XMLHttpRequest remains separate work."
+}

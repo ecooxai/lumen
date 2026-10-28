@@ -28,6 +28,9 @@ typedef enum {
 /* Byte-counted label and MIME parsing; unknown labels remain explicit. */
 WebEncoding web_encoding_label_n(const char *label, size_t length);
 WebEncoding web_encoding_mime_n(const char *mime, size_t length);
+/* Presence distinguishes an explicit unknown charset from an absent/invalid
+ * MIME parameter, as required by XHR overrideMimeType's fallback ordering. */
+WebEncoding web_encoding_mime_charset_n(const char *mime, size_t length, bool *present);
 const char *web_encoding_name(WebEncoding encoding);
 
 /* Append replacement-decoded Unicode as UTF-8. An optional BOM override is

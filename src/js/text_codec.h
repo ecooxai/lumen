@@ -125,4 +125,46 @@ inline void jsg_text_decode(const v8::FunctionCallbackInfo<v8::Value> &args) {
     if (created) args.GetReturnValue().Set(result);
 }
 
+/* XHR's legacy response decoder accepts the replacement encoding and allows
+ * a BOM to override the MIME-derived fallback. Public TextDecoder keeps its
+ * stricter constructor labels and independent ignoreBOM/fatal semantics. */
+inline void jsg_response_text_decode(const v8::FunctionCallbackInfo<v8::Value> &args) {
+    auto iso = args.GetIsolate();
+    if (!args[0]->IsArrayBuffer() || !args[1]->IsString() || !args[2]->IsString()) {
+        iso->ThrowException(v8::Exception::TypeError(
+            v8::String::NewFromUtf8Literal(iso, "Invalid internal response decoder data")));
+        return;
+    }
+    auto buffer = args[0].As<v8::ArrayBuffer>();
+    if (buffer->WasDetached()) {
+        iso->ThrowException(v8::Exception::TypeError(
+            v8::String::NewFromUtf8Literal(iso, "Detached internal response decoder data")));
+        return;
+    }
+    v8::String::Utf8Value response_mime(iso, args[1]), override_mime(iso, args[2]);
+    if (!*response_mime || !*override_mime) return;
+    bool override_has_charset = false;
+    WebEncoding encoding = web_encoding_mime_charset_n(*override_mime,
+        static_cast<size_t>(override_mime.length()), &override_has_charset);
+    if (!override_has_charset) encoding = web_encoding_mime_n(*response_mime,
+        static_cast<size_t>(response_mime.length()));
+    if (encoding == WEB_ENC_UNKNOWN) encoding = WEB_ENC_UTF8;
+    auto backing = buffer->GetBackingStore();
+    SB output; sb_init(&output);
+    const bool decoded = web_encoding_decode_n(&output, encoding,
+        static_cast<const char *>(backing->Data()), buffer->ByteLength(), true,
+        static_cast<size_t>(v8::String::kMaxLength));
+    if (!decoded) {
+        sb_free(&output);
+        iso->ThrowException(v8::Exception::RangeError(
+            v8::String::NewFromUtf8Literal(iso, "Decoded response exceeds the engine string limit")));
+        return;
+    }
+    v8::Local<v8::String> result;
+    const bool created = v8::String::NewFromUtf8(iso, output.s ? output.s : "",
+        v8::NewStringType::kNormal, static_cast<int>(output.n)).ToLocal(&result);
+    sb_free(&output);
+    if (created) args.GetReturnValue().Set(result);
+}
+
 #endif

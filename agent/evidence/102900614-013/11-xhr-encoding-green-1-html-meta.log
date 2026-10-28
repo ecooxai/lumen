@@ -1,0 +1,33 @@
+[js log] HTML_META_CHECK {"i":0,"name":"UTF8 meta baseline","ok":true}
+[js log] HTML_META_CHECK {"i":1,"name":"Windows1252 meta","ok":true}
+[js log] HTML_META_CHECK {"i":2,"name":"Big5 metadata controls bytes and hyperlink query","ok":true}
+[js log] HTML_META_CHECK {"i":3,"name":"GBK metadata controls bytes and hyperlink query","ok":true}
+[js log] HTML_META_CHECK {"i":4,"name":"ISO2022JP metadata","ok":true}
+[js log] HTML_META_CHECK {"i":5,"name":"pragma before content","ok":true}
+[js log] HTML_META_CHECK {"i":6,"name":"content before pragma","ok":true}
+[js log] HTML_META_CHECK {"i":7,"name":"content without pragma does not select encoding","ok":true}
+[js log] HTML_META_CHECK {"i":8,"name":"charset attribute overrides earlier content","ok":true}
+[js log] HTML_META_CHECK {"i":9,"name":"unknown charset prevents content fallback in same meta","ok":true}
+[js log] HTML_META_CHECK {"i":10,"name":"first duplicate charset wins","ok":true}
+[js log] HTML_META_CHECK {"i":11,"name":"duplicate content attribute is ignored","ok":true}
+[js log] HTML_META_CHECK {"i":12,"name":"ASCII mixed-case metadata","ok":true}
+[js log] HTML_META_CHECK {"i":13,"name":"slash after meta tag name","ok":true}
+[js log] HTML_META_CHECK {"i":14,"name":"unknown meta allows later valid declaration","ok":true}
+[js log] HTML_META_CHECK {"i":15,"name":"comment metadata is skipped","ok":true}
+[js log] HTML_META_CHECK {"i":16,"name":"metadata text inside another attribute is skipped","ok":true}
+[js log] HTML_META_CHECK {"i":17,"name":"UTF16 meta maps to UTF8","ok":true}
+[js log] HTML_META_CHECK {"i":18,"name":"x-user-defined meta maps to Windows1252","ok":true}
+[js log] HTML_META_CHECK {"i":19,"name":"transport charset overrides metadata","ok":true}
+[js log] HTML_META_CHECK {"i":20,"name":"BOM overrides transport and metadata","ok":true}
+[js log] HTML_META_CHECK {"i":21,"name":"single-quoted charset in content extraction","ok":true}
+[js log] HTML_META_CHECK {"i":22,"name":"content extraction resumes after charset without equals","ok":true}
+[js log] HTML_META_CHECK {"i":23,"name":"XML encoding fallback in text/html","ok":true}
+[js log] HTML_META_CHECK {"i":24,"name":"XML declaration is case sensitive","ok":true}
+[js log] HTML_META_CHECK {"i":25,"name":"later HTML meta precedes XML encoding fallback","ok":true}
+[js log] HTML_META_CHECK {"i":26,"name":"UTF-16LE XML prefix without BOM","ok":true}
+[js log] HTML_META_CHECK {"i":27,"name":"UTF-16BE XML prefix without BOM","ok":true}
+[js log] HTML_META_CHECK {"i":28,"name":"text/plain does not inspect HTML metadata","ok":true}
+[js log] HTML_META_RESULTS {"total":29,"passed":29,"failed":0}
+jsrun: context 21.4ms, 1 scripts 9.6ms, dom_version 136
+HTML_META_RECEIPT {"binarySHA256": "668280f7be5249213dc1b68e71dd72ad564e62b1ed5a38a913713f93674be011", "fixtureSHA256": "f466ea43bdb133c418df706162e4fab1f4d1b3717e9a2ab116d7745a89630468", "htmlSHA256": "8a7d5f2355050e84bc1961c9418862ecf8c11437fc7774ee0f5bc23fb68fba35", "caseSHA256": ["b2ba26ffad0242bc3a88c8c6241effd27cf032ec8b5a521fba2d008a7de525e9", "b489a1abb1022e6612eacece6c4bd2ad00e72bbfae3376f4ee41c5ef34caa47f", "4699033b94a3dc5aa825909789b35f5ad4e466dc8436e07166eecb450bf48172", "0c027f3f244c7543fbf8fba48a0f9ddc59759c0c22ec2743b6a3cb6391111bd0", "9f967b37fc2b2184e50f2beab711f7d72a3702e158fcba78619309bef2b0fbc3", "4e1a8d51ff31acaafc770cf0140ea886e10aacf26311e4d5b61f7286384ef626", "200e2f7fc0923cc164202465e6d415daed216dbdb3f5fa5ca69f9063c9f1a168", "ad4cb3a8a18c73b8cb70452e9d7829c5d88985e9fedb483ac36b112595681788", "2c014dc456df2caa4dda1fb563cdb26a947d0760a795fb587c003e8bd53c5353", "6eae0a0bff73bde7cbe385ba65cfac9a370556ac4803262277b3715cc6f5e77a", "8d5548191d7db8182b40ae42f1969c056f4cd103c39d903c64bf599721e2d1c5", "1f5ee4eb70b0a73484ffeb51bad6ad0ac52de3a585adf153f6ed6935119ddfa2", "6b2c1487288607594083acbfec842a286662ede4817875585e607ff46a593845", "58004cb7d52dffafdb556a28129250f4a0d0c0c6cdc9586fdca3303027e0f77f", "04b102704fc1045a590a9348cfd2af3e96756f7a95579655e7a3d5dcceac97ed", "fcc2d391110e1b29d50543096afb35436dcaa70e4a3d197229677474baf30169", "d1ea49ef4bac4f39cce43aed4caa4d22dc55cb6c4cf252c65d3ea4cca4a9beb6", "d2c4a39c23945ee149296ef2c928ab2dd0ce3c3426ab9ac1065accff1822bef9", "c2fc22136dbaa86cd735e27cf5992461c23de229e03bdfbd48b83353efba2bb3", "531d3d53cc1ca5288a58043b510f10fa1ee2ee38b1b97ff3bcae6ed754ef8fe7", "465ce8d813ec5effe56107f5caf3208c82687ac0ae89dd3b02ca5c0c09332cb5", "7d9b3d500cc8f05ceafc64041e2ebe829d5295c754e23e5e708ba920d6ba3055", "3a946068b2ffa59957b66361890e32f4b9b86c315349c2be78a12992733ca662", "b5155d0f298d7dd1b78a1e102ab13e0479d5abd7560aca074983144d63e97d73", "b44c782e7b0a6cda05786602285131865ad8325a1b4e3640e1e9061c75777fe2", "14871f6a7746734996394653c1914c470794c9d3342ab772f33d612dadfb1c7b", "d3e9f9bbd54b6e77c098096f0747b1045a90d0ebf7145f9b2e619c3546e351ee", "6779ecb808cc4d38b647354ff0cf537ac7487cc3d09f3065dda76260d76d82fe", "85adafac37b5e2a03fb57a178e4a86ad87828329e9d45504430567e17a496181"], "total": 29, "passed": 29, "failed": 0}
+RESULTS html-meta-encoding PASS (29/29 checks)

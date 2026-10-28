@@ -1313,6 +1313,7 @@ FN(fileReaderCheckpoint) { jsg_file_reader_checkpoint(a); }
 FN(encode) { v8::Isolate *iso = a.GetIsolate(); v8::String::Utf8Value u(iso, a[0]); RET(mkab(iso, *u ? *u : "", *u ? (size_t)u.length() : 0)); }
 FN(textEncoding) { jsg_text_encoding(a); }
 FN(textDecode) { jsg_text_decode(a); }
+FN(responseTextDecode) { jsg_response_text_decode(a); }
 FN(decode) {
     v8::Isolate *iso = a.GetIsolate(); const char *p = ""; size_t n = 0;
     bytes_of(a[0], &p, &n);
@@ -1617,7 +1618,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(sbFlags); REG(compileHandler); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaQuality); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(deviceInfo); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
-    REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(urlSet); REG(documentEncoding); REG(documentURL); REG(setDocumentURL); REG(documentQuirks); REG(documentBaseUrl); REG(htmlUrl); REG(idlGet); REG(idlPut); REG(idlRegister); REG(idlFallback); REG(initCloneIntrinsic); REG(cloneUnsupported); REG(blobState); REG(fileReaderPackage); REG(fileReaderCheckpoint); REG(encode); REG(decode); REG(textEncoding); REG(textDecode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
+    REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(urlSet); REG(documentEncoding); REG(documentURL); REG(setDocumentURL); REG(documentQuirks); REG(documentBaseUrl); REG(htmlUrl); REG(idlGet); REG(idlPut); REG(idlRegister); REG(idlFallback); REG(initCloneIntrinsic); REG(cloneUnsupported); REG(blobState); REG(fileReaderPackage); REG(fileReaderCheckpoint); REG(encode); REG(decode); REG(textEncoding); REG(textDecode); REG(responseTextDecode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_windows(c, N); js_install_workers(c, N); js_install_canvas(c, N); js_install_webgpu(c, N); js_install_capture(c, N);
