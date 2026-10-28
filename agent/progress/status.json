@@ -1,13 +1,13 @@
 {
   "title": "Lumen \u00b7 Linux engine conformance",
-  "phase": "Accepted engine improvements retained; broad native run stopped pending physical-capture safeguards",
-  "iteration": 4,
+  "phase": "Linux physical-capture policy and flex repairs accepted; background geometry final review underway",
+  "iteration": 12,
   "score": 19,
-  "iteration_quality": 96,
+  "iteration_quality": 97,
   "score_note": "PROVISIONAL whole-goal readiness estimate, inherited from historical scope. This is not a measured pass percentage. Goal:98/100 after fresh complete comparable coverage.",
   "branch": "gpt-6-astra-engine-lead-linux-wpt-20261028",
-  "checkpoint": "12523c8c5fbc117891f965b3593c7f562812385a",
-  "updated_utc": "2026-10-28T06:45:29.591718+00:00",
+  "checkpoint": "7b9ce3397ceca19b0e43732bab423b73ba17f380",
+  "updated_utc": "2026-10-28T07:15:42.517779+00:00",
   "session_started_utc": "2026-10-28T03:50:07Z",
   "deadline_utc": "2026-10-28T08:50:07Z",
   "historical": {
@@ -21,6 +21,34 @@
     "comparison": "Chrome158.0.8116.0 Linux22.04, wpt.fyi canary experimental run5128138001743872,2026-10-21/22"
   },
   "current_evidence": [
+    [
+      "Accepted Linux capture policy",
+      "Commit7b9ce339; focused quality97/100. Physical camera/microphone acquisition is refused with NotAllowedError until a real site-consent UI exists. Independent actual-source19checks atO0/O3 and integrated audio/video/both denial pass. This is a privacy repair, not a WPT gain."
+    ],
+    [
+      "Fresh guarded original baseline",
+      "A separate first2,000-URL run completed07:07:33UTC. Original Lumen:747fullypassingURLs,98,485/107,088 observed assertion passes; retained Chromium150:1,693fullypassing,105,689/110,572 passes. Same selection, changed native acquisition guard; do not append to historical8,000."
+    ],
+    [
+      "Guarded baseline exact comparison",
+      "95,417 of105,689 Chromium-passing assertion identities matched;3,547 ChromePASS identities unobserved natively. Native harnesses:1,702OK,212TIMEOUT,86ERROR. Final improved-candidate replay is pending."
+    ],
+    [
+      "Guarded baseline safety validation",
+      "36verified native launches and36author-navigation releases; zero guard startup failures. Sealed hash-pinned acquisition-refusal library, exact constructor PID/nonce ACK, fresh profiles. No successful physical capture is synthesized."
+    ],
+    [
+      "Active work, not yet accepted",
+      "Geometry122 is blocked by one color-clip lost pass despite eight gains in24 software references; bottom-layer clip-list correction is underway. GPU/internal3/3 and one actual X11-presented own-reference pair pass independently. Cleanup11 stability diagnosis continues."
+    ],
+    [
+      "Accepted flex static-position repair",
+      "Commit c4694182; focused quality 95/100. Guarded baseline121 to candidate123: 163 to 685 of 689 assertions, +522 passes and zero lost identities; Chromium 689/689."
+    ],
+    [
+      "Flex independent rendering",
+      "Five unchanged reftests improve 2 to 4 passes, zero losses; Chromium 5/5. Both safe-overflow passes are preserved. Four vertical-baseline assertions and tentative outer-containing-block safe overflow remain gaps."
+    ],
     [
       "Accepted background-position repair",
       "Commit2508cf2; focused quality96/100. Computed positions and repeatable-list animation improved with zero lost baseline passes across70 harnesses; public specified-value getters retain accepted behavior."
@@ -68,10 +96,6 @@
     [
       "Accepted capture and build tooling",
       "Capture commit 029d030c; build graph 05a087eb. Real viewport controls accepted; unchanged embedded assets no longer force unrelated C++ compilation. Makefiles verified; Ninja unexecuted"
-    ],
-    [
-      "Active work, not yet accepted",
-      "Iteration10 flex absolute-child static positioning and iteration7 background tile geometry; isolated candidates will be compared with frozen accepted121."
     ],
     [
       "Completed original-baseline comparison",
@@ -170,7 +194,7 @@
       "1ac9421854c63e503f9d865abf0d1d2a9c3a2dd3cedcf2aaf52c7ac073992913"
     ]
   ],
-  "coverage": "Full WPT parity remains unproven. Fresh evidence includes8,000 original-checkpoint testharness URLs, a separate100-URL rendering sample on accepted114, and focused later-candidate gates. Crashtest, WebDriver, print and accessibility categories remain unverified. Binary, revision and method boundaries remain explicit.",
+  "coverage": "Full WPT parity remains unproven. Evidence separates historical8,000 original-checkpoint testharness URLs, fresh guarded original2,000 on the same first selection,100rendering URLs on accepted114, and focused later-candidate gates. Crashtest, WebDriver, print and accessibility categories remain unverified. Final guarded improved-candidate replay is pending.",
   "findings": [
     "Grid candidate101 was rejected after independent tests found two lost hidden-subtree assertions. Candidate102 corrects the cause and passed focused independent review.",
     "Grid iteration quality is 97/100 for the focused patch; whole-goal readiness remains 19/100 provisional. Full Chromium parity is unproven.",
@@ -183,7 +207,9 @@
     "Four completed paired shards cover8,000/39,394 testharness URLs on the original frozen baseline. Whole-goal readiness remains19/100 provisional; the100-URL reftest sample is separate.",
     "Font115 preserves exact observed Fontconfig matching while reducing CPU on one large CJK workload. Its version gate, configuration invalidation and fallback paths are explicit; complete font geometry conformance is not established.",
     "Sizing118 improves the measured preferred-ratio/constraint cases without lost passes. Separate SVG intrinsic-size, nonreplaced absolute positioning, ratio serialization and loaded-image rendering failures remain explicit.",
-    "At06:45:01 UTC independent process verification found no task-native WPT workers and no active broad supervisor. Existing task Chromium processes had explicit fake-device/fake-UI flags. No device inventory or media inspection was performed. Production Linux capture refusal and old-binary test interposition are being reviewed separately."
+    "Historical broad run stopped06:44:52UTC; independent06:45:01audit found no task-native WPT workers. The fresh guarded original2,000 completed separately07:07:33UTC. Production Linux physical acquisition is now refused pending real site consent; old binaries require verified pre-main refusal. No device inventory or media inspection occurred."
   ],
-  "active_iteration": 10
+  "active_iteration": 7,
+  "accepted_binary_sha256": "00fd275605100b7dbf5b33bd7a08209c38c0678f8684b3e6075f892bb53b4f84",
+  "accepted_binary_scope": "Frozen privacy124: accepted pre-flex runtime plus Linux capture refusal; final combined build pending."
 }

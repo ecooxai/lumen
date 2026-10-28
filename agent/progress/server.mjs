@@ -22,8 +22,10 @@ function currentStatus(){
  if(run){
   const completed=Array.isArray(run.shards)?run.shards.length:0,active=run.current?.shard;
   status.full_baseline={state:run.status||'unknown',completed_shards:completed,total_shards:20,selected_urls:39394,current_shard:active||null,started_utc:run.started_utc||null};
-  status.current_evidence=[...(status.current_evidence||[]),['Live full-baseline progress',`${completed}/20 shards completed; ${active?`active ${active}`:'no active shard'}; ${run.status||'unknown'}. In-shard counts are not yet summarized.`]];
+  status.current_evidence=[...(status.current_evidence||[]),['Historical broad-run state',`${completed}/20 shards completed; ${run.status||'unknown'}. Historical8,000 and partial004 remain separate from guarded measurements.`]];
  }
+ const guarded=data('../validation/linux-wpt-20261028/guarded-original-first2000/state.json',null);
+ if(guarded){status.guarded_baseline={state:guarded.status,observed_urls:guarded.observed_urls,selected_urls:guarded.selected_urls,verified_spawns:guarded.verified_native_spawns,startup_failures:guarded.guard_startup_failures,finished_utc:guarded.finished_utc||null};status.current_evidence=[...(status.current_evidence||[]),['Guarded original baseline state',`${guarded.observed_urls||0}/${guarded.selected_urls||2000} URLs; ${guarded.status||'unknown'}; ${guarded.verified_native_spawns||0} verified launches, ${guarded.guard_startup_failures||0} startup failures. Separate measurement condition.`]];}
  return status;
 }
 function snapshot(isPrivate){return {type:'snapshot',status:currentStatus(),telemetry,messages:visibleMessages(isPrivate)}}

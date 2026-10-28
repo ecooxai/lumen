@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Prepare only public aggregate status and the audited accepted-source archive."""
-import datetime,hashlib,html,json,pathlib,shutil
+import datetime,hashlib,html,json,pathlib,shutil,subprocess
 ROOT=pathlib.Path(__file__).resolve().parent
 RUNTIME=ROOT/'runtime'
 DEST=RUNTIME/'lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-pages'
@@ -13,8 +13,15 @@ def main():
     digest=hashlib.sha256(archive.read_bytes()).hexdigest()
     if digest!=provenance['sha256'] or archive.stat().st_size!=provenance['bytes']:
         raise RuntimeError('Accepted source archive does not match its reviewed manifest')
-    if status.get('checkpoint')!=provenance['commit']:
-        raise RuntimeError('Refresh the accepted status/source snapshot before preparing Pages')
+    runtime_commit=status.get('checkpoint','')
+    subprocess.run(['git','merge-base','--is-ancestor',runtime_commit,provenance['commit']],cwd=ROOT.parents[1],check=True,stdout=subprocess.DEVNULL)
+    changed=subprocess.check_output(['git','diff','--name-only',runtime_commit,provenance['commit']],cwd=ROOT.parents[1],text=True).splitlines()
+    docs={'AGENTS.md','devsummary.md','agent/task.md'}
+    if any(name not in docs and not name.startswith(('agent/progress/','agent/iteration-records/')) for name in changed):
+        raise RuntimeError('Archive changes runtime/build inputs beyond the accepted runtime checkpoint')
+    trees={key:{label:subprocess.check_output(['git','rev-parse',commit+':'+path],cwd=ROOT.parents[1],text=True).strip() for label,commit in [('runtime',runtime_commit),('archive',provenance['commit'])]} for key,path in [('source_tree','src'),('cmake_blob','CMakeLists.txt')]}
+    if any(pair['runtime']!=pair['archive'] for pair in trees.values()):
+        raise RuntimeError('Compiled source/build-input Git objects differ')
     DEST.mkdir(exist_ok=True)
     allowed={'index.html','status.json','src.tar.gz','.nojekyll','publication-manifest.json'}
     if any(p.name not in allowed or p.is_symlink() for p in DEST.iterdir()):
@@ -27,14 +34,14 @@ def main():
 <main><div class="eyebrow">Lumen Linux · saved engineering evidence</div><h1>Browser engine progress</h1><p>'''+esc(status['phase'])+'''</p><p class="notice">This page preserves the reviewed aggregate checkpoint. Open the live workspace for two-second CPU, memory, disk and connection telemetry and the public task message board. The saved page remains readable when the live tunnel is unavailable.</p>
 <div class="actions"><a class="button" href="'''+LIVE+'''" rel="noopener">Open live progress and messages</a><a class="button" href="src.tar.gz" download="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-src.tar.gz">Download reviewed source + Git bundle</a></div>
 <div class="cards"><section class="card"><div class="small">Whole-goal readiness estimate</div><div class="number">'''+esc(status.get('score','Pending'))+'''/100</div><p>Provisional estimate, not a measured WPT pass rate. Target 98/100 remains unproven.</p></section><section class="card"><div class="small">Latest accepted focused iteration</div><div class="number">'''+esc(status.get('iteration_quality','Pending'))+'''/100</div><p>Iteration '''+esc(status.get('iteration','—'))+''' · bounded patch quality, reviewed separately from whole-browser conformance.</p></section><section class="card"><div class="small">Aggregate evidence updated</div><p>'''+esc(status.get('updated_utc','Pending'))+'''</p><div class="small">Page prepared '''+esc(now)+'''</div></section></div>
-<h2>Scope and measured evidence</h2><p class="notice">'''+esc(status.get('coverage',''))+'''</p><table>'''+rows+'''</table><h2>Findings and limits</h2><ul>'''+findings+'''</ul><h2>Reproducible accepted source</h2><p>Branch <code>'''+esc(status.get('branch',''))+'''</code></p><p>Commit <code>'''+esc(provenance['commit'])+'''</code></p><p>Source SHA-256 <code>'''+esc(digest)+'''</code></p><p class="small">The archive contains accepted Git sources and a portable Git bundle. Runtime credentials, browser profiles, private messages and untracked experimental data are excluded. Raw test-result archives are not part of this publication.</p><div class="credit">GPT-6 Astra · built-in agents · RubyWebTerm</div></main></html>'''
+<h2>Scope and measured evidence</h2><p class="notice">'''+esc(status.get('coverage',''))+'''</p><table>'''+rows+'''</table><h2>Findings and limits</h2><ul>'''+findings+'''</ul><h2>Reproducible accepted source</h2><p>Branch <code>'''+esc(status.get('branch',''))+'''</code></p><p>Accepted runtime commit <code>'''+esc(runtime_commit)+'''</code></p><p>Archive commit (including reviewed handoff files) <code>'''+esc(provenance['commit'])+'''</code></p><p>Source SHA-256 <code>'''+esc(digest)+'''</code></p><p class="small">The archive contains accepted Git sources and a portable Git bundle. Runtime credentials, browser profiles, private messages and untracked experimental data are excluded. Raw test-result archives are not part of this publication.</p><div class="credit">GPT-6 Astra · built-in agents · RubyWebTerm</div></main></html>'''
     badge='<div style="position:fixed;right:12px;bottom:12px;z-index:10000;max-width:calc(100vw - 24px);background:#000;color:#fff;border:1px solid #5883ad;border-radius:8px;padding:8px 12px;font:12px/1.4 system-ui,sans-serif">Iteration '+esc(status.get('iteration','—'))+' · patch '+esc(status.get('iteration_quality','pending'))+'/100 · overall '+esc(status.get('score','pending'))+'/100</div>'
     page=page.replace('</main></html>','</main>'+badge+'</html>')
     (DEST/'index.html').write_text(page)
     (DEST/'status.json').write_text(json.dumps(status,indent=2)+'\n')
     (DEST/'.nojekyll').write_text('')
     shutil.copy2(archive,DEST/'src.tar.gz')
-    manifest={'prepared_utc':now,'accepted_commit':provenance['commit'],'source_sha256':digest,'live_url':LIVE,'publication_status':'prepared locally; not pushed or enabled','files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in DEST.iterdir() if p.name!='publication-manifest.json'},'excluded':'Raw-result archive, credentials, profiles, inbox and QA screenshots'}
+    manifest={'prepared_utc':now,'accepted_commit':provenance['commit'],'accepted_runtime_commit':runtime_commit,'compiled_input_identity':trees,'allowed_handoff_only_changes':changed,'frozen_binary_sha256':status.get('accepted_binary_sha256'),'binary_scope':status.get('accepted_binary_scope'),'rebuild_claim':'Source/build-input equality only; no bit-for-bit reproducible rebuild claim. No git describe/rev-parse/GIT_SHA version embedding found in inspected CMake/src/tools.','source_sha256':digest,'live_url':LIVE,'publication_status':'prepared locally; not pushed or enabled','files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in DEST.iterdir() if p.name!='publication-manifest.json'},'excluded':'Raw-result archive, credentials, profiles, inbox and QA screenshots'}
     (DEST/'publication-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     print(json.dumps({'directory':str(DEST),'accepted_commit':provenance['commit'],'files':sorted(p.name for p in DEST.iterdir()),'bytes':sum(p.stat().st_size for p in DEST.iterdir()),'published':False}))
 if __name__=='__main__':main()

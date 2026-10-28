@@ -40,3 +40,5 @@ Official requirements checked on 2026-10-28:
 - https://docs.github.com/en/rest/pages/pages
 
 Surge had no existing authenticated account in the retained preflight, and no new account was created. The live HTTPS tunnel remains the current preview until the final reviewed Pages deployment is verified.
+
+The static preparer distinguishes the accepted runtime checkpoint, the archive commit including reviewed handoff files, and the frozen binary hash/scope. It requires runtime ancestry and permits only progress/iteration-record/AGENTS/devsummary/task documentation changes afterward; all other source and build inputs must be identical. It records source-tree and CMake object identities. This does not claim a bit-for-bit reproducible rebuild.
