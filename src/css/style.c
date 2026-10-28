@@ -1515,7 +1515,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
-    if (strstr(v, "var(")) { subst = subst_vars(v, st, 0); if (!subst) return; v = subst; }
+    if (strstr(v, "var(")) {
+        subst = subst_vars(v, st, 0);
+        if (!subst) {
+            if (!strcmp(prop, "writing-mode")) css_apply_decl(st, par, prop, "unset", e, el);
+            return;
+        }
+        v = subst;
+    }
     char *vbuf = xstrdup(v); char *val = str_trim(vbuf);
     ACtx c = { st, par, e, el, st->font_size, 16, e ? &e->media : NULL };
     g_cq[0] = g_cq[1] = 0;
@@ -1525,6 +1532,18 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     const char *P = logical_size_prop(prop, st->writing_mode);
     Length l; Color col; int k;
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
+    if (!strcmp(P, "writing-mode") && !inherit && !initial && !unset) {
+        static const char *const modes[] = { "horizontal-tb", "vertical-rl", "vertical-lr", "sideways-rl", "sideways-lr", NULL };
+        if (kw(val, modes) < 0) {
+            /* Literal invalid declarations are ignored. Invalid substitution
+               is invalid at computed-value time, so this inherited property
+               takes its unset value instead of resurrecting a lower priority. */
+            bool invalid_substitution = subst != NULL;
+            free(vbuf); free(subst);
+            if (invalid_substitution) css_apply_decl(st, par, P, "unset", e, el);
+            return;
+        }
+    }
     bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
     GridTrack *prepared_tracks = NULL; int prepared_count = 0;
     if (!inherit && !initial && !unset) {
@@ -1611,6 +1630,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "background-color") || !strcmp(P, "background")) { st->bg_color = src->bg_color; st->bg_ser = src->bg_ser; if (!strcmp(P, "background")) { st->bg_repeat = src->bg_repeat; st->bg_origin = src->bg_origin; st->bg_clip = src->bg_clip; st->bg_layers = src->bg_layers; const char *clip = gen_value(src, gen_prop("background-clip")); gen_put(&st->gen_n, "background-clip", xstrdup(clip ? clip : "border-box")); st->bg_size_kind = src->bg_size_kind; memcpy(st->bg_size, src->bg_size, sizeof st->bg_size); bg_position_copy(st, inherit ? par : NULL, -1); free(st->bg_image); st->bg_image = NULL; free(st->bg_gradient); st->bg_gradient = NULL; } }
         else if (!strcmp(P, "display")) { st->display = src->display; st->display_text = src->display_text; }
         else if (!strcmp(P, "text-align")) st->text_align = src->text_align;
+        else if (!strcmp(P, "writing-mode")) st->writing_mode = (unset && par ? par : src)->writing_mode;
         else if (!strcmp(P, "width")) st->width = src->width;
         else if (!strcmp(P, "height")) st->height = src->height;
         else if (!strcmp(P, "grid-column-start")) { st->grid_column.start = src->grid_column.start; if (inherit) st->parent_sensitive = true; }
@@ -1957,7 +1977,7 @@ apply:
         else if (!strcmp(P, "white-space") || !strcmp(P, "white-space-collapse")) { static const char *const ws[] = { "normal", "nowrap", "pre", "pre-wrap", "pre-line", "break-spaces", NULL }; k = kw(val, ws); if (k >= 0) st->white_space = (uint8_t)k; else if (str_ieq(val, "preserve")) st->white_space = WS_PRE_WRAP; }
         else if (!strcmp(P, "word-break")) st->word_break = str_ieq(val, "break-all") ? 1 : str_ieq(val, "break-word") ? 2 : 0;
         else if (!strcmp(P, "word-spacing")) st->word_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
-        else if (!strcmp(P, "writing-mode")) st->writing_mode = str_istarts(val, "vertical") ? (strstr(val, "-rl") || strstr(val, "-RL") ? 2 : 1) : 0;   /* 2: vertical-rl */
+        else if (!strcmp(P, "writing-mode")) st->writing_mode = str_ieq(val, "vertical-rl") ? 2 : str_ieq(val, "vertical-lr") ? 1 : 0;   /* 2: vertical-rl; sideways layout remains unsupported */
         break;
     case 'z':
         if (!strcmp(P, "z-index")) { if (str_ieq(val, "auto")) st->z_auto = true; else { st->z_auto = false; st->z_index = atoi(val); if (isalpha((unsigned char)val[0])) { LCtx lc = { st->font_size, 16, NULL }; const char *q = val; Length L; if (parse_dim(&q, &L, &lc) && !L.pct && isfinite(L.px)) st->z_index = (int)lroundf(L.px); } } }
@@ -3682,7 +3702,10 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     if (!content) { if (owned) free(md); return NULL; }
     ComputedStyle *st = style_inherit(base);
     for (int i = 0; i < n; i++) if (md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-') css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
-    for (int i = 0; i < n; i++) if (!(md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-')) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
+    /* Logical dimensions use the pseudo's final writing mode, regardless of
+       where its declaration appears relative to the dimension declarations. */
+    for (int i = 0; i < n; i++) if (!strcmp(md[i].d->prop, "writing-mode")) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
+    for (int i = 0; i < n; i++) if (!(md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-') && strcmp(md[i].d->prop, "writing-mode")) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
     if (owned) free(md);
     /* An absent pseudo can become visible when a consulted variable changes. */
     cm_or(&base->custom_dependencies, &st->custom_dependencies);
@@ -3741,7 +3764,8 @@ static bool unitless_invalid(const char *p, const char *v, Node *el) {
     return has_unitless_number(v);
 }
 static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el, bool author) {
-    /* custom properties first, then font-size (em basis), then rest */
+    /* Dependencies precede their consumers: custom values, writing mode,
+       font-size (em basis), color, then the remaining cascade in its order. */
     custom_defer = true;
     for (int i = 0; i < n; i++) if (v[i].d->prop[0] == '-' && v[i].d->prop[1] == '-') css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
     custom_defer = false;
@@ -3753,11 +3777,14 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
         char *r = subst_vars(raw, st, 0);
         hm_put(&st->custom->map, p, r ? r : xstrdup("")); free(raw);
     }
+    /* CSS Logical Properties requires the element's computed writing mode
+       before corresponding logical/physical dimensions cascade together. */
+    for (int i = 0; i < n; i++) if (!strcmp(v[i].d->prop, "writing-mode")) css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if ((!strcmp(p, "font-size") || !strcmp(p, "font")) && !(author && unitless_invalid(p, v[i].d->value, el))) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     for (int i = 0; i < n; i++) {
         const char *p = v[i].d->prop;
-        if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue;
+        if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "writing-mode") || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue;
         if (author && unitless_invalid(p, v[i].d->value, el)) continue;
         if (author && el && el->doc && el->doc->quirks && quirky_length_prop(p) && has_unitless_number(v[i].d->value)) {
             char *q = quirk_px(v[i].d->value); css_apply_decl(st, par, p, q, e, el); free(q); continue;

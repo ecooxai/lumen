@@ -1,0 +1,92 @@
+{
+  "iteration": 163,
+  "status": "accepted focused Linux correctness checkpoint; broad final replay pending",
+  "started_utc": "2026-10-28T22:46:53+00:00",
+  "start_basis": "session4 planning and baseline verification",
+  "ended_utc": "2026-10-28T23:03:05.705822+00:00",
+  "elapsed_minutes": 16.2118,
+  "session_elapsed_minutes": 16.2118,
+  "agents": [
+    "root",
+    "engine_lead_20261029",
+    "conformance_20261029",
+    "progress_20261029"
+  ],
+  "whole_goal_score": 19,
+  "focused_scope_score": 97,
+  "target_score": 98,
+  "binary": "build/codex-native/lumen-astra-i163",
+  "binary_sha256": "db0027c34c774bcfaea7269a208b26ae3d1ef66ec77213be218f87c173ceaef5",
+  "recorded_inputs": 603,
+  "recorded_input_digest": "f45a6045789179c94eb2c405e8ee66853abacc5fb24275c9ca14072e96cc3712",
+  "build_head": "df053adb69af76da0b8ae5ba092fc3cf2af44b41",
+  "source_unchanged_during_build": true,
+  "independent_acceptance_sha256": "55aada557539c7b9196f0bd20150345c1f3ba00fd802c85a7c495200a4c1cc09",
+  "native_ctest": {
+    "pass": 138,
+    "total": 138,
+    "seconds": 48.64,
+    "metadata_checks": 195,
+    "logical_cascade_checks": 22
+  },
+  "upstream": {
+    "stylesheet_metadata": {
+      "baseline_pass": 8,
+      "candidate_pass": 20,
+      "chromium_pass": 20,
+      "total": 20,
+      "gains": 12,
+      "losses": 0
+    },
+    "sizing38": {
+      "baseline_pass": 213,
+      "candidate_pass": 213,
+      "total": 326,
+      "gains": 0,
+      "losses": 0
+    },
+    "animation6": {
+      "baseline_pass": 1380,
+      "candidate_pass": 1380,
+      "total": 1504,
+      "gains": 0,
+      "losses": 0
+    },
+    "logical7": {
+      "baseline_pass": 102,
+      "candidate_pass": 102,
+      "total": 252,
+      "gains": 0,
+      "losses": 0
+    },
+    "edges4": {
+      "baseline_pass": 7,
+      "candidate_pass": 7,
+      "total": 162,
+      "gains": 0,
+      "losses": 0
+    }
+  },
+  "authored_transition224": {
+    "baseline_pass": 210,
+    "candidate_pass": 224,
+    "chromium_pass": 184,
+    "total": 224,
+    "gains": 14,
+    "losses": 0,
+    "all_gains_chromium_pass": true,
+    "retained_chromium_draft_differences": 40
+  },
+  "gates163_real_native_guard_launches": 91,
+  "gates163_guard_exit_codes": {
+    "0": 91
+  },
+  "limitations": [
+    "Whole WPT/Chromium parity not achieved; focused selections overlap broad4200 and cannot be added to it.",
+    "Authored iframe metadata v1 retains16212/60,16342/60,Chromium60/60; failures remain counted.",
+    "Optional no-PSL native-test portability adjustment is queued for164; no Android validation claim.",
+    "all shorthand, sideways layout and logical edge mapping are not completed by this change.",
+    "Current published source remains162 until separately reviewed163 package.",
+    "Full development history and denied private payload exports remain blocked."
+  ]
+}

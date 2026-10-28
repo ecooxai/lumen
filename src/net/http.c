@@ -983,6 +983,7 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
         if (!url_parse(url, &u)) { r = xcalloc(1, sizeof *r); r->error = xstrdup("invalid url"); break; }
         if (!strcmp(u.scheme, "file")) { r = net_file_response(&u, url); url_free(&u); break; }
         if (strcmp(u.scheme, "http") && strcmp(u.scheme, "https")) { r = xcalloc(1, sizeof *r); r->error = xstrdup("unsupported scheme"); url_free(&u); break; }
+        net_request_update_fetch_metadata(req, &u);
         /* Streamed fetches deliver the live response head and body to script as they arrive. */
         bool get = !strcmp(method, "GET") && !body;
         bool cacheable = get && !req->on_head && http_cache_enabled() && !headers_get(&req->headers, "range");
@@ -1067,7 +1068,7 @@ NetRequest *net_request_new(const char *method, const char *url) {
     r->method = xstrdup(method ? method : "GET"); r->url = xstrdup(url);
     return r;
 }
-static void net_request_free(NetRequest *r) { free(r->method); free(r->url); headers_free(&r->headers); free(r->body); if (r->prepared_response) net_response_free(r->prepared_response); free(r); }
+static void net_request_free(NetRequest *r) { net_request_free_fetch_metadata(r); free(r->method); free(r->url); headers_free(&r->headers); free(r->body); if (r->prepared_response) net_response_free(r->prepared_response); free(r); }
 static NetResponse *net_request_response(NetRequest *req) {
     if (req->prepared_response) { NetResponse *r = req->prepared_response; req->prepared_response = NULL; return r; }
     return net_fetch_impl(req);

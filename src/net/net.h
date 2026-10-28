@@ -31,6 +31,7 @@ struct NetRequest {
     char *method;
     char *url;
     Headers headers;
+    struct NetFetchMetadata *fetch_metadata; /* owned native subresource request context */
     char *body; size_t body_len;
     NetResponse *prepared_response; /* owned local response; uses the same asynchronous work/done queue */
     int max_redirects;     /* 0 = the default (20); -1 = none: a redirect is the response */
@@ -71,6 +72,11 @@ void net_shutdown(void);
 /* Debug Android builds: log numeric timings of each request for the next seconds (0 disarms). Call on the main thread. */
 void net_trace_load(unsigned seconds);
 NetRequest *net_request_new(const char *method, const char *url);
+/* Native subresources supply their initiator origin, destination and request mode.
+   The transport recomputes metadata before every HTTP hop, retaining redirect taint. */
+void net_request_set_fetch_metadata(NetRequest *req, const char *origin, const char *destination, const char *mode);
+void net_request_update_fetch_metadata(NetRequest *req, const URL *current_url);
+void net_request_free_fetch_metadata(NetRequest *req);
 /* fetch()'s control pseudo-headers from script, never sent: ":redirect: manual" returns a redirect as the response,
    ":cookies: omit" neither sends nor stores cookies. Returns false for an ordinary header. */
 bool net_request_control(NetRequest *rq, const char *name, const char *value);

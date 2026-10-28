@@ -392,17 +392,27 @@ typedef struct { char *url; uint64_t gen; float vw, vh, dpr; char *body; size_t 
 static double g_load_trace_until;   /* main-loop stalls are logged until then */
 
 /* Downloads a page's blocking subresources concurrently, like a browser's preload scanner. */
-typedef struct { char **urls; NetResponse **out; int n; SDL_AtomicInt next; } FetchBatch;
+static NetRequest *sheet_request(const Document *doc, const Node *link, const char *url) {
+    NetRequest *rq = net_request_new("GET", url);
+    /* The initiator is the document URL, never the attacker-controlled <base>.
+       Opaque/inherited-origin documents remain conservative until native
+       document origin state is available to every loader. */
+    net_request_set_fetch_metadata(rq, doc ? doc->url : NULL, "style",
+        link && node_attr(link, "crossorigin") ? "cors" : "no-cors");
+    return rq;
+}
+typedef struct { char **urls; Node **nodes; Document *doc; NetResponse **out; int n; SDL_AtomicInt next; } FetchBatch;
 static int batch_worker(void *arg) {
     FetchBatch *b = arg;
     for (int i; (i = SDL_AddAtomicInt(&b->next, 1)) < b->n;)
-        if (b->urls[i]) b->out[i] = net_fetch_sync(net_request_new("GET", b->urls[i]));
+        if (b->urls[i]) b->out[i] = net_fetch_sync(b->nodes[i] && b->nodes[i]->tag == A_link
+            ? sheet_request(b->doc, b->nodes[i], b->urls[i]) : net_request_new("GET", b->urls[i]));
     return 0;
 }
 typedef struct { char **urls; int n; const char *ref; } ModBatch;
 static int module_worker(void *arg) { ModBatch *m = arg; js_module_prefetch((const char *const *)m->urls, m->n, m->ref); return 0; }
-static void fetch_batch(char **urls, NetResponse **out, int n) {
-    FetchBatch b = { urls, out, n, { 0 } };
+static void fetch_batch(char **urls, Node **nodes, Document *doc, NetResponse **out, int n) {
+    FetchBatch b = { urls, nodes, doc, out, n, { 0 } };
     SDL_Thread *th[12]; int nt = 0;
     for (; nt < LMIN(n - 1, 12); nt++) if (!(th[nt] = SDL_CreateThread(batch_worker, "lumen-fetch", &b))) break;
     batch_worker(&b);
@@ -462,7 +472,7 @@ static int loader(void *arg) {
     double t_parse = now_ms();
     /* Classic scripts and stylesheets in document order, fetched together; module scripts
      * and modulepreloads with their whole static import graphs alongside. */
-    char **urls = NULL, **mods = NULL; NetResponse **got = NULL; int nurl = 0, ui = 0, nmod = 0;
+    char **urls = NULL, **mods = NULL; Node **url_nodes = NULL; NetResponse **got = NULL; int nurl = 0, ui = 0, nmod = 0;
     bool js = !getenv("LUMEN_NO_JS");
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT) continue;
@@ -475,13 +485,14 @@ static int loader(void *arg) {
         if (!u) continue;
         char ***v = module ? &mods : &urls; int *k = module ? &nmod : &nurl;
         *v = xrealloc(*v, sizeof **v * (size_t)(*k + 1)); (*v)[(*k)++] = u;
+        if (!module) { url_nodes = xrealloc(url_nodes, sizeof *url_nodes * (size_t)nurl); url_nodes[nurl - 1] = n; }
     }
     got = xcalloc((size_t)nurl + 1, sizeof *got);
     if (gen_live(rq->gen)) {
         ModBatch mb = { mods, nmod, p->url };
         SDL_Thread *mt = nmod ? SDL_CreateThread(module_worker, "lumen-modules", &mb) : NULL;
         if (nmod && !mt) module_worker(&mb);
-        fetch_batch(urls, got, nurl);
+        fetch_batch(urls, url_nodes, p->d, got, nurl);
         if (mt) SDL_WaitThread(mt, NULL);
     }
     double t_batch = now_ms();
@@ -519,14 +530,14 @@ static int loader(void *arg) {
             char *u = url_join(doc_base(p->d), node_attr(n, "href"));
             NetResponse *cr = NULL;
             for (int i = 0; u && i < nurl; i++) if (got[i] && urls[i] && !strcmp(urls[i], u)) { cr = got[i]; got[i] = NULL; break; }
-            if (!cr && u) cr = net_fetch_sync(net_request_new("GET", u));
+            if (!cr && u) cr = net_fetch_sync(sheet_request(p->d, n, u));
             if (cr && cr->status == 200) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
             if (cr) net_response_free(cr); free(u);
         }   /* images load asynchronously once the page is shown (sync_images) */
     }
     for (int i = 0; i < nurl; i++) { free(urls[i]); net_response_free(got[i]); }
     for (int i = 0; i < nmod; i++) free(mods[i]);
-    free(urls); free(got); free(mods);
+    free(urls); free(url_nodes); free(got); free(mods);
     double t_css = now_ms();
     style_recalc(p->e, &p->d->node, true);
     p->seen_ver = p->d->dom_version;
@@ -3257,7 +3268,7 @@ static bool sync_sheets(Page *p, bool seed) {
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; n_full++; parsed += len; }
             else {
                 char *u = url_join(doc_base(p->d), node_attr(n, "href"));
-                if (u) { NetRequest *rq = net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
+                if (u) { NetRequest *rq = is_sheet_link(n) ? sheet_request(p->d, n, u) : net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
             }
         }
         free(t);
