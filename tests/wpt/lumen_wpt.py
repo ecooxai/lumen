@@ -16,6 +16,8 @@ them). Chrome's baseline is DATA/chrome-base.json, built from the wpt.fyi raw re
 Run `run` through tools/codex_compile.py so the server and every Lumen instance share the host CPU cap.
 """
 import argparse, collections, http.server, json, os, re, shutil, signal, subprocess, sys, threading, time, urllib.parse
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'agent', 'validation'))
+from native_capture_guard import guarded_popen
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(os.path.dirname(HERE))
@@ -261,7 +263,7 @@ class Runner:
         if env["SDL_VIDEODRIVER"] == "offscreen": env["LUMEN_NO_GPU"] = "1"
         log = open(os.path.join(TMP, "inst%d.log" % inst.n), "wb")
         inst.fresh = True; inst.count = 0; inst.cur = None; inst.result = None
-        inst.proc = subprocess.Popen([self.binary, "http://web-platform.test:8000/lumen/c.py?op=next&inst=%d" % inst.n],
+        inst.proc = guarded_popen([self.binary, "http://web-platform.test:8000/lumen/c.py?op=next&inst=%d" % inst.n],
                                      env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
         inst.t0 = time.time()
 

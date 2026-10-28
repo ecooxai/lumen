@@ -3,6 +3,7 @@
 No edits to WPT resources; own profiles, frozen binaries, exact one-second monitor.
 """
 import argparse,hashlib,json,os,pathlib,signal,socket,subprocess,tempfile,time,urllib.request,urllib.error
+from native_capture_guard import guarded_popen
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 PRE=r'''(function(){if(window.opener)return;var done=false;var log=console.error.bind(console);var stringify=JSON.stringify;Object.defineProperty(window,"__lumenWpt",{value:{harness:false,report:function(r){if(done)return;done=true;r.environment={width:innerWidth,height:innerHeight,dpr:devicePixelRatio,userAgent:navigator.userAgent};window.__astraResult=r;log("ASTRAWPT-H "+stringify({status:r.status,message:r.message,environment:r.environment}));r.subtests.forEach(function(s){log("ASTRAWPT-S "+stringify([String(s[0]),s[1],s[2]==null?null:String(s[2]).slice(0,500)]));});log("ASTRAWPT-E");}}});})();'''
 URLS=['/performance-timeline/idlharness.any.html','/performance-timeline/idlharness.any.worker.html','/performance-timeline/po-observe.any.html','/performance-timeline/po-observe.any.worker.html','/performance-timeline/po-observe-type.any.html','/performance-timeline/po-observe-type.any.worker.html','/user-timing/idlharness.any.html','/user-timing/idlharness.any.worker.html','/user-timing/mark-errors.any.html','/user-timing/mark-errors.any.worker.html','/user-timing/measure-with-dict.any.html','/user-timing/measure-with-dict.any.worker.html']
@@ -32,7 +33,7 @@ def lumen(binary,u,out,timeout):
   pre=pathlib.Path(prof)/'pre.js';pre.write_text(PRE)
   env=dict(os.environ,XDG_DATA_HOME=prof,LUMEN_NO_SESSION='1',LUMEN_HOST_MAP='web-platform.test=127.0.0.1,not-web-platform.test=127.0.0.1',SSL_CERT_FILE='/tmp/lumen-wpt/ca.pem',LUMEN_PRE_FILE=str(pre),LUMEN_WINDOW='800x640',LUMEN_CONSOLE='2',LUMEN_JS_TIMEOUT_MS='60000',LUMEN_TESTDRIVER='1',SDL_VIDEODRIVER='offscreen',LUMEN_NO_GPU='1')
   log=out/'browser.log';f=log.open('wb',buffering=0);t0=time.monotonic()
-  p=subprocess.Popen([binary,full_url(u)],env=env,stdout=f,stderr=f,stdin=subprocess.DEVNULL)
+  p=guarded_popen([binary,full_url(u)],env=env,stdout=f,stderr=f,stdin=subprocess.DEVNULL)
   m=monitor(p.pid,out/'resources','lumen '+u);result=None
   try:
    while time.monotonic()-t0<timeout and p.poll() is None:

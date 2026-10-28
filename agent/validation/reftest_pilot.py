@@ -8,6 +8,7 @@ oracle is used. Unsupported reference graphs remain explicit results.
 import argparse, base64, collections, datetime, hashlib, json, os, pathlib
 import resource, shutil, signal, subprocess, sys, tempfile, time, urllib.parse, uuid
 from types import SimpleNamespace
+from native_capture_guard import guarded_popen
 
 
 def utc():
@@ -79,7 +80,7 @@ def capture(args, url, directory, width=800, height=600, timeout=None):
     failure = None
     try:
         with log_path.open('w') as log:
-            proc = subprocess.Popen([str(args.binary), full_url], env=env, stdout=log,
+            proc = guarded_popen([str(args.binary), full_url], env=env, stdout=log,
                                     stderr=subprocess.STDOUT, start_new_session=True)
             result['pid'] = proc.pid
             monitor = subprocess.Popen([sys.executable, 'agent/progress/monitor.py',
