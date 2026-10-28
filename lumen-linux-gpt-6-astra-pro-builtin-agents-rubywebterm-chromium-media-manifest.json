@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-28T13:12:03.383066+00:00",
+  "accepted_engine_commit": "0f62172b08683c7c0d89722c588af6ff94f82ca3",
+  "binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
+  "recording_started_utc": "2026-10-28T13:01:41Z",
+  "width": 960,
+  "height": 720,
+  "duration_seconds": 36,
+  "frame_rate": 15,
+  "framing": "Actual 960x648 native browser window retained in full, padded with a 72px black band. Clean copy has a blank band; showcase has white credits.",
+  "credits": {
+    "model": "GPT-6 Astra Pro",
+    "agents": "Built-in agents",
+    "connector": "rubywebterm MCP",
+    "comparison": "Chromium"
+  },
+  "content": "Actual accepted Lumen Linux browser shows live telemetry and the unchanged 47-control fixture reporting 47/47 PASS. Recorded dashboard is a timestamped snapshot; later broad results belong to the final report.",
+  "GPU_log_indicators": {
+    "Vulkan": true,
+    "NVIDIA": true,
+    "llvmpipe": false,
+    "software renderer": false
+  },
+  "guarded_owned_window_capture": true,
+  "owned_capture_processes_drained": true,
+  "files": [
+    {
+      "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
+      "url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
+      "bytes": 255167,
+      "sha256": "527ddd4902c838ac999399351422e9ac9f38ebbe15aea4d3c2de8f76022eb877"
+    },
+    {
+      "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
+      "url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
+      "bytes": 258431,
+      "sha256": "5a106d9b64fc31f1220f5a9c4b90e315ff3accbaae8dd8a50342fd876b172d02"
+    }
+  ],
+  "scope": "Source-free media and aggregate metadata only; no private scripts, QA directory, raw test-result files or user display capture."
+}

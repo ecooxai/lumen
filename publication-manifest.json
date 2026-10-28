@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "prepared_utc": "2026-10-28T13:57:26.153976+00:00",
+  "cloud_url": "https://ecooxai.github.io/lumen/",
+  "live_preview_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
+  "source_metadata_commit_local": "602a5f2f0b40ddc809e47b872eb1ec18758b558c",
+  "tested_engine_commit": "0f62172b08683c7c0d89722c588af6ff94f82ca3",
+  "whole_goal_score": 19,
+  "requested_goal_score": 98,
+  "full_development_history_published": false,
+  "engine_source_scope": "Engine-source snapshot; not the complete development repository or validation environment",
+  "source_archive_compiled_inputs_verified": 584,
+  "validation_helper_sources_included": 0,
+  "omissions": "All agent validation/progress runtime tooling, historical agents tooling, other tools scripts, Git history, raw results and profiles. Only the exact prompt document is included from agent/.",
+  "publication_verification": "Public URLs and bytes are verified after deployment; this prepared manifest pins the reviewed payloads.",
+  "files": [
+    {
+      "filename": ".nojekyll",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "filename": "index.html",
+      "bytes": 16970,
+      "sha256": "84a9d1686ba589102cdd64298d16dcabb6e1c647e06837deef8feec8cbe2d9ff"
+    },
+    {
+      "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
+      "bytes": 258431,
+      "sha256": "5a106d9b64fc31f1220f5a9c4b90e315ff3accbaae8dd8a50342fd876b172d02"
+    },
+    {
+      "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json",
+      "bytes": 1980,
+      "sha256": "1c39d1a7ac5b9028b37a07906e87f0039ca672a52584f052b3c55fef0722d450"
+    },
+    {
+      "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
+      "bytes": 46540,
+      "sha256": "b822ef66d760a7ad148a5e6bf31e337f34bb787de462c2caf99c07b67eb75c31"
+    },
+    {
+      "filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
+      "bytes": 255167,
+      "sha256": "527ddd4902c838ac999399351422e9ac9f38ebbe15aea4d3c2de8f76022eb877"
+    },
+    {
+      "filename": "source-inclusion-manifest.json",
+      "bytes": 112230,
+      "sha256": "9f7b34fbd18fc7ca4f0116de64025dc62c8a025e4f96478c2537bd5e51cd4070"
+    },
+    {
+      "filename": "src.tar.gz",
+      "bytes": 4450698,
+      "sha256": "ae97e4667153cc0d51f7d6ad1bfefc0d4d516d6ec3359cfa8d16f7691cd06362"
+    }
+  ]
+}
