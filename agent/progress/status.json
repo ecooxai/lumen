@@ -1,13 +1,13 @@
 {
   "title": "Lumen \u00b7 Linux engine conformance",
-  "phase": "Linux physical-capture policy and flex repairs accepted; background geometry final review underway",
-  "iteration": 12,
+  "phase": "Final combined native suite117/117 passed; guarded Chromium comparison replay in progress",
+  "iteration": 11,
   "score": 19,
   "iteration_quality": 97,
   "score_note": "PROVISIONAL whole-goal readiness estimate, inherited from historical scope. This is not a measured pass percentage. Goal:98/100 after fresh complete comparable coverage.",
   "branch": "gpt-6-astra-engine-lead-linux-wpt-20261028",
-  "checkpoint": "7b9ce3397ceca19b0e43732bab423b73ba17f380",
-  "updated_utc": "2026-10-28T07:15:42.517779+00:00",
+  "checkpoint": "163567579c077e35c7f6c6ed366162524530f5f8",
+  "updated_utc": "2026-10-28T07:35:28.790590+00:00",
   "session_started_utc": "2026-10-28T03:50:07Z",
   "deadline_utc": "2026-10-28T08:50:07Z",
   "historical": {
@@ -21,6 +21,26 @@
     "comparison": "Chrome158.0.8116.0 Linux22.04, wpt.fyi canary experimental run5128138001743872,2026-10-21/22"
   },
   "current_evidence": [
+    [
+      "Final combined native gate",
+      "Post-commit final127:117/117 native testsPASS,26.25seconds wall. Actual relink from runtime1635675 produced SHAa06dc09b\u202643db88, identical to reviewed126. This is test completion, not a browser speed comparison."
+    ],
+    [
+      "Final guarded replay",
+      "Same frozen final127 is running55 focused guard URLs, then the identical guarded first2,000 testharness selection and100 own-reference rendering URLs. Results remain pending; no full-WPT claim."
+    ],
+    [
+      "Accepted background geometry",
+      "Commit415ae501; focused quality96/100. Unchanged24 own-reference tests10\u219218PASS,+8/0lost; Chromium21PASS/1FAIL/2TIMEOUT. Native color-list cascade25/25. Full multilayer image painting remains unsupported."
+    ],
+    [
+      "Actual GPU presentation evidence",
+      "Antecedent122 ordinary X11-presented round-repeat test/reference pixels match exactly on NVIDIA MX110 wgpu/Vulkan, with engine screenshot hooks disabled. Three GPU-enabled internal references improve2\u21923PASS. Final127 showcase is being recorded separately."
+    ],
+    [
+      "Accepted adopted-node cleanup",
+      "Commit1635675; focused quality97/100. Deterministic real-JS original/clone adoption and live-parent Node/ownerDocument retention fail before and pass after; final node count balances. Five unchanged guarded cleanup repetitions pass. Exact historical invalid-free heap-address attribution remains unproven."
+    ],
     [
       "Accepted Linux capture policy",
       "Commit7b9ce339; focused quality97/100. Physical camera/microphone acquisition is refused with NotAllowedError until a real site-consent UI exists. Independent actual-source19checks atO0/O3 and integrated audio/video/both denial pass. This is a privacy repair, not a WPT gain."
@@ -36,10 +56,6 @@
     [
       "Guarded baseline safety validation",
       "36verified native launches and36author-navigation releases; zero guard startup failures. Sealed hash-pinned acquisition-refusal library, exact constructor PID/nonce ACK, fresh profiles. No successful physical capture is synthesized."
-    ],
-    [
-      "Active work, not yet accepted",
-      "Geometry122 is blocked by one color-clip lost pass despite eight gains in24 software references; bottom-layer clip-list correction is underway. GPU/internal3/3 and one actual X11-presented own-reference pair pass independently. Cleanup11 stability diagnosis continues."
     ],
     [
       "Accepted flex static-position repair",
@@ -207,9 +223,10 @@
     "Four completed paired shards cover8,000/39,394 testharness URLs on the original frozen baseline. Whole-goal readiness remains19/100 provisional; the100-URL reftest sample is separate.",
     "Font115 preserves exact observed Fontconfig matching while reducing CPU on one large CJK workload. Its version gate, configuration invalidation and fallback paths are explicit; complete font geometry conformance is not established.",
     "Sizing118 improves the measured preferred-ratio/constraint cases without lost passes. Separate SVG intrinsic-size, nonreplaced absolute positioning, ratio serialization and loaded-image rendering failures remain explicit.",
-    "Historical broad run stopped06:44:52UTC; independent06:45:01audit found no task-native WPT workers. The fresh guarded original2,000 completed separately07:07:33UTC. Production Linux physical acquisition is now refused pending real site consent; old binaries require verified pre-main refusal. No device inventory or media inspection occurred."
+    "Historical broad run stopped06:44:52UTC; independent06:45:01audit found no task-native WPT workers. The fresh guarded original2,000 completed separately07:07:33UTC. Production Linux physical acquisition is now refused pending real site consent; old binaries require verified pre-main refusal. No device inventory or media inspection occurred.",
+    "All accepted runtime repairs are combined in post-commit127 with117/117 native gates passing. Final guarded WPT/reftest replay is a separate pending integration gate; whole-goal readiness remains19/100 provisional."
   ],
-  "active_iteration": 7,
-  "accepted_binary_sha256": "00fd275605100b7dbf5b33bd7a08209c38c0678f8684b3e6075f892bb53b4f84",
-  "accepted_binary_scope": "Frozen privacy124: accepted pre-flex runtime plus Linux capture refusal; final combined build pending."
+  "active_iteration": 13,
+  "accepted_binary_sha256": "a06dc09b0065a7727bb837c30fd5e5faf49a365b3401adbb1e31b4d4e143db88",
+  "accepted_binary_scope": "Post-commit final127 combines every accepted runtime repair, including flex, geometry, cleanup and Linux physical-capture refusal."
 }

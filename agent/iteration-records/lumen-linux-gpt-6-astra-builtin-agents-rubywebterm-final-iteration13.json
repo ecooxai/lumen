@@ -1,0 +1,60 @@
+{
+  "iteration": 13,
+  "title": "Final combined verification and delivery",
+  "status": "in_progress",
+  "started_utc": "2026-10-28T07:32:35.661322+00:00",
+  "start_basis": "Actual retained post-commit127 build start",
+  "ended_utc": null,
+  "focused_quality_score": null,
+  "whole_goal_readiness": 19,
+  "agents": [
+    "/root/engine_lead",
+    "/root/conformance",
+    "/root/ops_preview",
+    "/root"
+  ],
+  "model": "GPT-6 Astra",
+  "tools": [
+    "built-in agents",
+    "RubyWebTerm"
+  ],
+  "accepted_runtime_commit": "163567579c077e35c7f6c6ed366162524530f5f8",
+  "frozen_binary_sha256": "a06dc09b0065a7727bb837c30fd5e5faf49a365b3401adbb1e31b4d4e143db88",
+  "steps": [
+    {
+      "name": "post-commit actual relink",
+      "started_utc": "2026-10-28T07:32:35.661322+00:00",
+      "ended_utc": "2026-10-28T07:32:41.768763+00:00",
+      "status": "PASS",
+      "byte_identical_to126": true
+    },
+    {
+      "name": "native117",
+      "started_utc": "2026-10-28T07:32:57.849463+00:00",
+      "ended_utc": "2026-10-28T07:33:24.973981+00:00",
+      "status": "PASS",
+      "passed": 117,
+      "total": 117,
+      "ctest_wall_seconds": 26.25,
+      "binary_unchanged": true
+    },
+    {
+      "name": "guarded55_then2000_then100",
+      "status": "in_progress",
+      "result": null
+    },
+    {
+      "name": "actual_window_showcase",
+      "status": "prepared_not_recorded"
+    },
+    {
+      "name": "source_branch_and_pages_publication",
+      "status": "prepared_not_published"
+    }
+  ],
+  "limits": [
+    "Focused quality is pending final review; sampled pass rates do not set whole-goal readiness",
+    "Runtime/source/archive commits and binary hash remain distinct",
+    "No raw denied evidence archive, credentials, profiles, inbox or QA screenshot collection is published"
+  ]
+}

@@ -42,3 +42,5 @@ Official requirements checked on 2026-10-28:
 Surge had no existing authenticated account in the retained preflight, and no new account was created. The live HTTPS tunnel remains the current preview until the final reviewed Pages deployment is verified.
 
 The static preparer distinguishes the accepted runtime checkpoint, the archive commit including reviewed handoff files, and the frozen binary hash/scope. It requires runtime ancestry and permits only progress/iteration-record/AGENTS/devsummary/task documentation changes afterward; all other source and build inputs must be identical. It records source-tree and CMake object identities. This does not claim a bit-for-bit reproducible rebuild.
+
+The optional fixed `/showcase.mp4` route stays404 until the explicitly requested actual-screen video has a reviewed publication manifest and matching file size. Static preparation additionally verifies its SHA256, final binary hash, duration under60seconds and4:3 dimensions before copying that exact named artifact. This route does not expose arbitrary runtime files or the denied raw-results archive.

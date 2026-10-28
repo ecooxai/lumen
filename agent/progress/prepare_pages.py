@@ -22,8 +22,17 @@ def main():
     trees={key:{label:subprocess.check_output(['git','rev-parse',commit+':'+path],cwd=ROOT.parents[1],text=True).strip() for label,commit in [('runtime',runtime_commit),('archive',provenance['commit'])]} for key,path in [('source_tree','src'),('cmake_blob','CMakeLists.txt')]}
     if any(pair['runtime']!=pair['archive'] for pair in trees.values()):
         raise RuntimeError('Compiled source/build-input Git objects differ')
+    video=RUNTIME/'lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4'
+    video_meta_path=RUNTIME/'showcase-manifest.json'
+    video_meta=json.loads(video_meta_path.read_text()) if video_meta_path.exists() else None
+    reviewed_video=bool(video_meta and video_meta.get('reviewed_publication'))
+    if reviewed_video:
+        if video_meta.get('binary_sha256')!=status.get('accepted_binary_sha256') or not video.is_file() or video.stat().st_size!=video_meta['bytes'] or hashlib.sha256(video.read_bytes()).hexdigest()!=video_meta['sha256']:
+            raise RuntimeError('Reviewed showcase does not match the final binary/artifact manifest')
+        if not (0 < video_meta.get('duration_seconds',0) < 60) or video_meta.get('width',0)*3!=video_meta.get('height',0)*4:
+            raise RuntimeError('Showcase must be under60seconds and4:3')
     DEST.mkdir(exist_ok=True)
-    allowed={'index.html','status.json','src.tar.gz','.nojekyll','publication-manifest.json'}
+    allowed={'index.html','status.json','src.tar.gz','.nojekyll','publication-manifest.json','showcase.mp4'}
     if any(p.name not in allowed or p.is_symlink() for p in DEST.iterdir()):
         raise RuntimeError('Unexpected file in the dedicated publication directory')
     rows=''.join('<tr><th>'+esc(a)+'</th><td>'+esc(b)+'</td></tr>' for a,b in status.get('current_evidence',[]))
@@ -37,11 +46,17 @@ def main():
 <h2>Scope and measured evidence</h2><p class="notice">'''+esc(status.get('coverage',''))+'''</p><table>'''+rows+'''</table><h2>Findings and limits</h2><ul>'''+findings+'''</ul><h2>Reproducible accepted source</h2><p>Branch <code>'''+esc(status.get('branch',''))+'''</code></p><p>Accepted runtime commit <code>'''+esc(runtime_commit)+'''</code></p><p>Archive commit (including reviewed handoff files) <code>'''+esc(provenance['commit'])+'''</code></p><p>Source SHA-256 <code>'''+esc(digest)+'''</code></p><p class="small">The archive contains accepted Git sources and a portable Git bundle. Runtime credentials, browser profiles, private messages and untracked experimental data are excluded. Raw test-result archives are not part of this publication.</p><div class="credit">GPT-6 Astra · built-in agents · RubyWebTerm</div></main></html>'''
     badge='<div style="position:fixed;right:12px;bottom:12px;z-index:10000;max-width:calc(100vw - 24px);background:#000;color:#fff;border:1px solid #5883ad;border-radius:8px;padding:8px 12px;font:12px/1.4 system-ui,sans-serif">Iteration '+esc(status.get('iteration','—'))+' · patch '+esc(status.get('iteration_quality','pending'))+'/100 · overall '+esc(status.get('score','pending'))+'/100</div>'
     page=page.replace('</main></html>','</main>'+badge+'</html>')
+    if reviewed_video:
+        section='<h2>Actual native browser showcase</h2><p>Recorded from the reviewed combined native binary; actual screen capture with model/agent/tool credits.</p><video controls preload="metadata" style="width:100%;max-width:960px;background:#000" src="showcase.mp4"></video><p><a href="showcase.mp4" download="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4">Download the4:3 showcase video</a></p>'
+        page=page.replace('<h2>Scope and measured evidence</h2>',section+'<h2>Scope and measured evidence</h2>')
+        shutil.copy2(video,DEST/'showcase.mp4')
+    elif (DEST/'showcase.mp4').exists():
+        (DEST/'showcase.mp4').unlink()
     (DEST/'index.html').write_text(page)
     (DEST/'status.json').write_text(json.dumps(status,indent=2)+'\n')
     (DEST/'.nojekyll').write_text('')
     shutil.copy2(archive,DEST/'src.tar.gz')
-    manifest={'prepared_utc':now,'accepted_commit':provenance['commit'],'accepted_runtime_commit':runtime_commit,'compiled_input_identity':trees,'allowed_handoff_only_changes':changed,'frozen_binary_sha256':status.get('accepted_binary_sha256'),'binary_scope':status.get('accepted_binary_scope'),'rebuild_claim':'Source/build-input equality only; no bit-for-bit reproducible rebuild claim. No git describe/rev-parse/GIT_SHA version embedding found in inspected CMake/src/tools.','source_sha256':digest,'live_url':LIVE,'publication_status':'prepared locally; not pushed or enabled','files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in DEST.iterdir() if p.name!='publication-manifest.json'},'excluded':'Raw-result archive, credentials, profiles, inbox and QA screenshots'}
+    manifest={'prepared_utc':now,'accepted_commit':provenance['commit'],'accepted_runtime_commit':runtime_commit,'compiled_input_identity':trees,'allowed_handoff_only_changes':changed,'frozen_binary_sha256':status.get('accepted_binary_sha256'),'binary_scope':status.get('accepted_binary_scope'),'rebuild_claim':'Source/build-input equality only; no bit-for-bit reproducible rebuild claim. No git describe/rev-parse/GIT_SHA version embedding found in inspected CMake/src/tools.','source_sha256':digest,'live_url':LIVE,'publication_status':'prepared locally; not pushed or enabled','files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in DEST.iterdir() if p.name!='publication-manifest.json'},'showcase':video_meta if reviewed_video else None,'excluded':'Raw-result archive, credentials, profiles, inbox and QA screenshots'}
     (DEST/'publication-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     print(json.dumps({'directory':str(DEST),'accepted_commit':provenance['commit'],'files':sorted(p.name for p in DEST.iterdir()),'bytes':sum(p.stat().st_size for p in DEST.iterdir()),'published':False}))
 if __name__=='__main__':main()

@@ -51,6 +51,7 @@ const server=http.createServer(async(req,res)=>{
  if(req.method==='OPTIONS'){res.writeHead(204);return res.end()}
  const url=new URL(req.url,'http://localhost');if(req.method!=='GET')return json(res,405,{error:'Method not allowed'});
  if(url.pathname==='/healthz')return json(res,200,{ok:true,service:'lumen-wpt-progress'});
+ if(url.pathname==='/showcase.mp4'){const meta=data('runtime/showcase-manifest.json',null),f=path.join(runtime,'lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4');if(!meta?.reviewed_publication||!fs.existsSync(f)||fs.statSync(f).size!==meta.bytes)return json(res,404,{error:'Reviewed showcase not prepared'});res.writeHead(200,{'Content-Type':'video/mp4','Content-Length':meta.bytes,'Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"','Cache-Control':'no-store'});return fs.createReadStream(f).pipe(res)}
  if(url.pathname.startsWith('/api/')||url.pathname==='/src.tar.gz'){
   if(url.pathname==='/api/status')return json(res,200,snapshot(authorized(req)));
   if(url.pathname==='/src.tar.gz'){const f=path.join(runtime,'src.tar.gz');if(!fs.existsSync(f))return json(res,404,{error:'Source archive not prepared'});res.writeHead(200,{'Content-Type':'application/gzip','Content-Disposition':'attachment; filename="lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-src.tar.gz"','Cache-Control':'no-store'});return fs.createReadStream(f).pipe(res)}
