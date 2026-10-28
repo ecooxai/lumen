@@ -42,3 +42,7 @@ Candidate `build-apple-load-20261029/lumen-gpu-callback-2dacdbcc36c5be7e` SHA-25
 ## Checkpoint005 — active public progress
 
 Public base `https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz` is verified with TLS,2.004s system metrics, full source archive and task message/reply. Current score45/100 on accepted733, with GPU2dac candidate tracked separately. Private message capability stays only in ignored task state and the private user artifact; never print or commit it. Tunnel relay12527 uses explicit four XDG directories, server12706 listens18785; verify exact PID identity before any future restart. Commit/archive refresh follows every accepted checkpoint. See `agent/evidence/102900614-005-progress-delivery.json`.
+
+## Checkpoint006 — qualified fresh comparator
+
+Use exact Chrome `output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome` SHA-256 `0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4` with qualification `agent/evidence/102900614-006-chrome-reference.json` (also ignored `output/wpt-102900614/reference-review.json`). Its native URL failures are genuine known implementation differences, retained asFAIL; this qualification does not assert perfect Chrome conformance. Pin both artifacts and upstream schedule in new paired runs. Preserve all old reference/quarantine reports. Current score45, native accepted artifact unchanged.

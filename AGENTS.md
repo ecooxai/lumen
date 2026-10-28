@@ -30,3 +30,7 @@ Verified transfer native `733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881
 ### Active progress delivery005
 
 Verified public base `https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz`; current acceptance45/100. Private message keys remain out of Git, source archive and tool output. The relay must receive explicit task XDG_DATA_HOME, XDG_CONFIG_HOME, XDG_CACHE_HOME and XDG_STATE_HOME; do not restart shared/default profiles. Preserve source publication hashes and refresh the archive after each accepted checkpoint.
+
+### Current reference qualification006
+
+The fresh official signed Chrome `0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4` is qualified for new paired measurements by provenance, native reproducibility and exact implementation-source review. Its real URL standards failures remainFAIL. Historical quarantined reports stay immutable. Use `agent/evidence/102900614-006-chrome-reference.json`; never equate reference qualification with WPT conformance.

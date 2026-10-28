@@ -1,0 +1,30 @@
+{
+  "revision": "d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+  "browserVersion": "Chrome/156.0.8078.74",
+  "sources": [
+    {
+      "path": "url/url_features.cc",
+      "sourceURL": "https://chromium.googlesource.com/chromium/src/+/d331de35ca8ab1358c7a17e4bd41627d55eaef51/url/url_features.cc?format=TEXT",
+      "bytes": 2243,
+      "sha256": "5fa02f64a413dab2cc225ffe1274aba4b932fafa70e0b301843d165c9ca26674"
+    },
+    {
+      "path": "url/url_canon_fileurl.cc",
+      "sourceURL": "https://chromium.googlesource.com/chromium/src/+/d331de35ca8ab1358c7a17e4bd41627d55eaef51/url/url_canon_fileurl.cc?format=TEXT",
+      "bytes": 8799,
+      "sha256": "b4e0ba7a37118f23e8d0de928f9049c722b79b9b04ded689f93c7222aee254ad"
+    },
+    {
+      "path": "third_party/blink/renderer/core/url/dom_url_utils.cc",
+      "sourceURL": "https://chromium.googlesource.com/chromium/src/+/d331de35ca8ab1358c7a17e4bd41627d55eaef51/third_party/blink/renderer/core/url/dom_url_utils.cc?format=TEXT",
+      "error": "HTTPError: HTTP Error 404: Not Found"
+    },
+    {
+      "path": "third_party/blink/renderer/platform/weborigin/kurl.cc",
+      "sourceURL": "https://chromium.googlesource.com/chromium/src/+/d331de35ca8ab1358c7a17e4bd41627d55eaef51/third_party/blink/renderer/platform/weborigin/kurl.cc?format=TEXT",
+      "bytes": 36322,
+      "sha256": "50764c3b1d5af2157aebf382e79390297f41556e39d5eee219a2026a86643014"
+    }
+  ],
+  "scope": "Only source identity/errors are copied; full public implementation files remain in ignored output. No unavailable source was invented."
+}

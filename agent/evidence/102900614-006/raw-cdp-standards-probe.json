@@ -1,0 +1,122 @@
+{
+  "schema": 1,
+  "startedUTC": "2026-10-28T22:54:42.625146+00:00",
+  "binarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "probeSourceSHA256": "c1d803b5b081185c632ddf4628e0a414e8faea8793b54067308405202ad968aa",
+  "runnerSHA256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+  "scope": "Fresh about:blank; no WPT fixture, URL shim, reporter, extension, account or user profile. Native URL and HTMLAnchorElement sanity only.",
+  "probeCompleted": true,
+  "nativeSanityPassed": false,
+  "browserVersion": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.74",
+    "revision": "@d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.25"
+  },
+  "target": {
+    "type": "page",
+    "url": "about:blank",
+    "title": ""
+  },
+  "result": {
+    "location": "about:blank",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "platform": "MacIntel",
+    "functions": {
+      "URL": "function URL() { [native code] }",
+      "URLSearchParams": "function URLSearchParams() { [native code] }",
+      "createElement": "function createElement() { [native code] }",
+      "anchorHrefGetter": "function get href() { [native code] }"
+    },
+    "checks": [
+      {
+        "name": "URL rejects a space in hostname",
+        "expected": "throws:TypeError",
+        "actual": "http://example%20example.com/",
+        "passed": false
+      },
+      {
+        "name": "URL canonicalizes localhost file host",
+        "expected": "file:///",
+        "actual": "file://localhost/",
+        "passed": false
+      },
+      {
+        "name": "file URL ignores port mutation",
+        "expected": "file:///",
+        "actual": "file://localhost/",
+        "passed": false
+      },
+      {
+        "name": "file URL rejects host with port mutation",
+        "expected": "file://y/",
+        "actual": "file://x/",
+        "passed": false
+      },
+      {
+        "name": "URL replaces and encodes lone surrogate path",
+        "expected": "http://example.com/%EF%BF%BD",
+        "actual": "http://example.com/%EF%BF%BD",
+        "passed": true
+      },
+      {
+        "name": "anchor rejects spaced hostname as a parsed host",
+        "expected": "",
+        "actual": "example%20example.com",
+        "passed": false
+      },
+      {
+        "name": "anchor retains invalid literal href",
+        "expected": "http://example example.com",
+        "actual": "http://example%20example.com/",
+        "passed": false
+      },
+      {
+        "name": "anchor canonicalizes localhost file host",
+        "expected": "file:///",
+        "actual": "file://localhost/",
+        "passed": false
+      },
+      {
+        "name": "anchor file ignores port mutation",
+        "expected": "file:///",
+        "actual": "file://localhost/",
+        "passed": false
+      },
+      {
+        "name": "anchor file rejects host with port mutation",
+        "expected": "file://y/",
+        "actual": "file://x/",
+        "passed": false
+      },
+      {
+        "name": "URL exact upstream surrogate/noncharacter case",
+        "expected": "http://example.com/%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF?%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF",
+        "actual": "http://example.com/%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF?%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF",
+        "passed": true
+      },
+      {
+        "name": "anchor exact upstream surrogate/noncharacter case",
+        "expected": "http://example.com/%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF?%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF",
+        "actual": "http://example.com/%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF?%EF%BF%BD%F0%90%9F%BE%EF%BF%BD%EF%B7%90%EF%B7%8F%EF%B7%AF%EF%B7%B0%EF%BF%BE%EF%BF%BF",
+        "passed": true
+      }
+    ],
+    "surrogateInputCodeUnits": [
+      "d800",
+      "d801",
+      "dffe",
+      "dfff",
+      "fdd0",
+      "fdcf",
+      "fdef",
+      "fdf0",
+      "fffe",
+      "ffff"
+    ]
+  },
+  "binarySHA256After": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "finishedUTC": "2026-10-28T22:54:46.158045+00:00",
+  "wallSeconds": 3.532
+}

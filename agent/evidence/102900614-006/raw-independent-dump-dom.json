@@ -1,0 +1,168 @@
+{
+  "startedUTC": "2026-10-28T23:11:16.426315+00:00",
+  "binarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "fixtureSHA256": "cd7a8c5d5dcd93e83d615fbee33f142308f7a6f04b8d1311ced7a906f60db86f",
+  "scope": "Independent direct signed Chrome dump-DOM transport; no CDP/WPT module or URL shim. Fresh task profiles. This does not earn conformance/parity.",
+  "environmentVariableNamesRelevantToLoaderOrChrome": [],
+  "runs": [
+    {
+      "mode": "inherited-environment",
+      "startedUTC": "2026-10-28T23:11:16.441460+00:00",
+      "finishedUTC": "2026-10-28T23:11:17.734042+00:00",
+      "durationSeconds": 1.293,
+      "exitCode": 0,
+      "forced": false,
+      "ownedPID": 21383,
+      "ownedProcessGroupGone": true,
+      "environmentVariableNames": [
+        "COLORTERM",
+        "FPATH",
+        "HOME",
+        "HOMEBREW_CELLAR",
+        "HOMEBREW_PREFIX",
+        "HOMEBREW_REPOSITORY",
+        "INFOPATH",
+        "LANG",
+        "LC_CTYPE",
+        "LOGNAME",
+        "LaunchInstanceID",
+        "OLDPWD",
+        "OSLogRateLimit",
+        "PATH",
+        "PWD",
+        "SECURITYSESSIONID",
+        "SHELL",
+        "SHLVL",
+        "SSH_AUTH_SOCK",
+        "TERM",
+        "TERM_PROGRAM",
+        "TERM_PROGRAM_VERSION",
+        "TERM_SESSION_ID",
+        "TMPDIR",
+        "USER",
+        "XPC_FLAGS",
+        "XPC_SERVICE_NAME",
+        "_",
+        "__CFBundleIdentifier",
+        "__CF_USER_TEXT_ENCODING"
+      ],
+      "result": {
+        "location": "file:///Users/devin/repos/lumen/output/session-102900614/chrome-independent-diagnostic-1/url-native.html",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "nativeURL": "function URL() { [native code] }",
+        "checks": [
+          {
+            "name": "space hostname",
+            "expected": "throws:TypeError",
+            "actual": "http://example%20example.com/",
+            "passed": false
+          },
+          {
+            "name": "file localhost",
+            "expected": "file:///",
+            "actual": "file://localhost/",
+            "passed": false
+          },
+          {
+            "name": "file ignored port",
+            "expected": "file:///",
+            "actual": "file:///",
+            "passed": true
+          },
+          {
+            "name": "file rejected host port",
+            "expected": "file://y/",
+            "actual": "file://x/",
+            "passed": false
+          },
+          {
+            "name": "invalid anchor literal",
+            "expected": "http://example example.com",
+            "actual": "http://example%20example.com/",
+            "passed": false
+          },
+          {
+            "name": "anchor file localhost",
+            "expected": "file:///",
+            "actual": "file://localhost/",
+            "passed": false
+          }
+        ]
+      },
+      "parseError": null,
+      "domSHA256": "9af2bc8c1856c1f06fd69f9f7b10818a5bb86ca739ed96ca3205c444041e5d8a",
+      "stderrSHA256": "7ef95fd7eb450890b12d354377e70185f3028418379831e527e1128b60038f36"
+    },
+    {
+      "mode": "minimal-environment",
+      "startedUTC": "2026-10-28T23:11:17.735015+00:00",
+      "finishedUTC": "2026-10-28T23:11:18.797814+00:00",
+      "durationSeconds": 1.063,
+      "exitCode": 0,
+      "forced": false,
+      "ownedPID": 21439,
+      "ownedProcessGroupGone": true,
+      "environmentVariableNames": [
+        "HOME",
+        "LANG",
+        "LC_CTYPE",
+        "LOGNAME",
+        "PATH",
+        "SHELL",
+        "TMPDIR",
+        "USER",
+        "__CF_USER_TEXT_ENCODING"
+      ],
+      "result": {
+        "location": "file:///Users/devin/repos/lumen/output/session-102900614/chrome-independent-diagnostic-1/url-native.html",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "nativeURL": "function URL() { [native code] }",
+        "checks": [
+          {
+            "name": "space hostname",
+            "expected": "throws:TypeError",
+            "actual": "http://example%20example.com/",
+            "passed": false
+          },
+          {
+            "name": "file localhost",
+            "expected": "file:///",
+            "actual": "file://localhost/",
+            "passed": false
+          },
+          {
+            "name": "file ignored port",
+            "expected": "file:///",
+            "actual": "file:///",
+            "passed": true
+          },
+          {
+            "name": "file rejected host port",
+            "expected": "file://y/",
+            "actual": "file://x/",
+            "passed": false
+          },
+          {
+            "name": "invalid anchor literal",
+            "expected": "http://example example.com",
+            "actual": "http://example%20example.com/",
+            "passed": false
+          },
+          {
+            "name": "anchor file localhost",
+            "expected": "file:///",
+            "actual": "file://localhost/",
+            "passed": false
+          }
+        ]
+      },
+      "parseError": null,
+      "domSHA256": "9af2bc8c1856c1f06fd69f9f7b10818a5bb86ca739ed96ca3205c444041e5d8a",
+      "stderrSHA256": "20ab5929788c43dfd51289670575d02ccf67e51090bc2b63b131b68f63aa52cb"
+    }
+  ],
+  "managedChromePolicyNames": [],
+  "finishedUTC": "2026-10-28T23:11:18.798208+00:00",
+  "binarySHA256After": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "bothNativeSanityPassed": false
+}

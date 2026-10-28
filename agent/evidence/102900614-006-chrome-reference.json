@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "taskId": "102900614",
+  "createdUTC": "2026-10-28T23:17:54.579818+00:00",
+  "status": "qualified_known_standard_failures",
+  "qualifiedForPairedMeasurement": true,
+  "binaryPath": "output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "binarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "browserVersion": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.74",
+    "revision": "@d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.25"
+  },
+  "nativeStandardsSanityPassed": false,
+  "standardsFailuresRetained": true,
+  "assertionsModified": false,
+  "qualificationBasis": [
+    "Official Google download provenance; strict deep signature, Google publisher team and Gatekeeper pass without security/quarantine changes.",
+    "Fresh task profiles reproduce the same native parsing through CDP/about:blank and direct dump-DOM in inherited/minimal environments.",
+    "Exact shipped Chromium revision explains the observed URL differences; native known failures do not imply an invalid browser identity."
+  ],
+  "rawOutcomeCounts": {
+    "cdp": {
+      "passed": 3,
+      "failed": 9,
+      "total": 12
+    },
+    "eachDirectRun": {
+      "passed": 1,
+      "failed": 5,
+      "total": 6
+    }
+  },
+  "knownDifferences": [
+    {
+      "case": "Spaced hostname is percent-encoded instead of rejected",
+      "standardsExpected": "TypeError for constructor; invalid anchor literal remains invalid",
+      "observedChrome": "http://example%20example.com/",
+      "cause": "Exact shipped source disables DisallowSpaceCharacterInURLHostParsing by default; Chromium issue416293488 records this known nonconformance.",
+      "sources": [
+        "https://chromium.googlesource.com/chromium/src/+/d331de35ca8ab1358c7a17e4bd41627d55eaef51/url/url_features.cc?format=TEXT",
+        "https://issues.chromium.org/issues/416293488",
+        "https://url.spec.whatwg.org/#forbidden-host-code-point"
+      ]
+    },
+    {
+      "case": "file://localhost/ keeps localhost instead of serializing empty host",
+      "standardsExpected": "file:///",
+      "observedChrome": "file://localhost/",
+      "cause": "Exact shipped file canonicalizer leaves platform/path-specific behavior and records TODO41299821 to generalize localhost canonicalization.",
+      "sources": [
+        "https://chromium.googlesource.com/chromium/src/+/d331de35ca8ab1358c7a17e4bd41627d55eaef51/url/url_canon_fileurl.cc?format=TEXT",
+        "https://url.spec.whatwg.org/#file-host-state"
+      ]
+    },
+    {
+      "case": "file host setter with x:123 mutates host to x while dropping port",
+      "standardsExpected": "file://y/ unchanged",
+      "observedChrome": "file://x/",
+      "cause": "Exact shipped KURL source documents deliberately permissive host/port parsing for compatibility. This is a source-supported explanation consistent with observed native behavior, not a changed WPT expectation.",
+      "inference": true,
+      "sources": [
+        "https://chromium.googlesource.com/chromium/src/+/d331de35ca8ab1358c7a17e4bd41627d55eaef51/third_party/blink/renderer/platform/weborigin/kurl.cc?format=TEXT",
+        "https://url.spec.whatwg.org/#dom-url-host"
+      ]
+    }
+  ],
+  "evidence": {
+    "trust": "agent/evidence/102900614-006/official-signature-trust.json",
+    "cdp": "agent/evidence/102900614-006/raw-cdp-standards-probe.json",
+    "independent": "agent/evidence/102900614-006/raw-independent-dump-dom.json",
+    "exactSource": "agent/evidence/102900614-006/exact-chromium-source-identities.json"
+  },
+  "sourceReceiptSHA256": {
+    "output/session-102900614/chrome-official-reference-v2/receipt.json": "c8fabf36f14b15f3048a0673a87937e7ded5c0241b89e55a24a2e4ca38090424",
+    "output/session-102900614/chrome-native-sanity-1/receipt.json": "bb6f66cf54cd0def52f5cf4a277665880128d7cf98fead7e71ccda0f171791cf",
+    "output/session-102900614/chrome-independent-diagnostic-1/receipt.json": "9cf13a93b0656860925f866e5603eb787d4a51f4e856696ff9b0aee80e7c9d99",
+    "output/session-102900614/chromium-url-source-review/receipt.json": "d3e1ff874ef5b2fa3611f7f0cb223eb0e8dae46368c23c6f5ec5f85be7f9d3ab"
+  },
+  "historicalComparator": {
+    "review": "output/wpt-10290244/reference-review.json",
+    "sha256": "81d9e385da35f851440f2db54a3cb11ed580dbaf4927ec2017b56623ae5c80ce",
+    "statusUnchanged": true,
+    "policy": "Historical quarantined reports remain immutable. New paired runs must pin this exact qualified executable, upstream files, schedule and native artifact; no old comparison is retroactively accepted."
+  },
+  "scope": "Reference provenance and measurement qualification only. Chrome failures remain FAIL and in all WPT denominators. This is not full conformance, expanded-suite acceptance, native performance or IPA proof."
+}

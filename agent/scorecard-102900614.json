@@ -42,7 +42,7 @@
       "category": "wpt",
       "weight": 20,
       "name": "Expanded important suite",
-      "status": "incomplete_reference_quarantined",
+      "status": "incomplete_new_reference_qualified",
       "earned": 0,
       "evidence": [
         "output/wpt-10290244/priority-eac62-v1/priority-comparison.json"
@@ -58,7 +58,7 @@
           ]
         }
       ],
-      "note": "All1515 variants remain frozen; historical158/207 cannot establish current build acceptance or full WPT conformance."
+      "note": "Fresh signed Chrome is qualified for new paired measurements with known standards failures retained. All1515 frozen variants still required; old quarantined comparator reports remain historical and no expanded acceptance points are awarded."
     },
     {
       "id": "wpt_no_regression",
@@ -674,7 +674,7 @@
       }
     }
   ],
-  "updated_utc": "2026-10-28T23:14:40.626860+00:00",
+  "updated_utc": "2026-10-28T23:17:54.579818+00:00",
   "current_baseline_binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
@@ -829,6 +829,15 @@
       "total_session_seconds": 3599.168,
       "score": 45,
       "status": "Task public HTTPS,2s metrics, full source archive and authenticated message/reply verified"
+    },
+    {
+      "iteration": "102900614-006",
+      "started_utc": "2026-10-28T23:14:40.626860+00:00",
+      "updated_utc": "2026-10-28T23:17:54.579818+00:00",
+      "elapsed_seconds": 193.953,
+      "total_session_seconds": 3793.121,
+      "score": 45,
+      "status": "Fresh signed Chrome qualified for new paired measurements; all native standards failures retained"
     }
   ],
   "current_native_source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",
@@ -842,5 +851,13 @@
       "accepted": false,
       "note": "Measured GPU-only improvement; combined standards/fresh soak gates pending; fixed scrollingCPU gate stillfails."
     }
-  ]
+  ],
+  "reference_qualification": {
+    "evidence": "agent/evidence/102900614-006-chrome-reference.json",
+    "sha256": "1e34a36c89d61da6314e975fb8fe8296e0bd2e07ac73cc3836861785fcac5452",
+    "binary_sha256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+    "status": "qualified_known_standard_failures",
+    "qualified_for_paired_measurement": true,
+    "standards_failures_retained": true
+  }
 }

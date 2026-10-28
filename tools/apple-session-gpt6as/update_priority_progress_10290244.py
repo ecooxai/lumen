@@ -96,12 +96,27 @@ if score.get('history'):
     iteration=score['history'][-1].get('iteration','')
     if iteration.rsplit('-',1)[-1].isdigit():status['iteration']=int(iteration.rsplit('-',1)[-1])
 value['isCurrentAcceptedNativeArtifact']=value.get('lumenBinarySHA256')in(None,native)
+qualified_reference=None
+if score.get('reference_qualification'):
+    qualification=score['reference_qualification'];proof_path=ROOT/qualification['evidence']
+    if sha(proof_path)!=qualification['sha256']:raise RuntimeError('Reference qualification changed')
+    proof=json.loads(proof_path.read_text())
+    if not proof.get('qualifiedForPairedMeasurement') or proof.get('binarySHA256')!=qualification['binary_sha256'] or not proof.get('standardsFailuresRetained'):raise RuntimeError('Reference qualification is incomplete')
+    qualified_reference=proof
+    status['chromeControl']={'qualifiedForPairedMeasurement':True,'version':proof['browserVersion']['product'],
+        'binarySha256':proof['binarySHA256'],'knownStandardsFailuresRetained':True,'evidence':qualification['evidence'],
+        'scope':'Fresh reference identity qualified; historical comparisons unchanged and new paired results pending.'}
+else:status.pop('chromeControl',None)
 review_path=BASE/'reference-review.json'
 if review_path.is_file():
     review=json.loads(review_path.read_text())
     if review.get('status')=='quarantined':
-        status['wpt']['referenceStatus']='Installed control under review: fresh URL sanity checks failed.'
-        status['phase']+=' The installed Chrome control failed independent URL sanity checks; comparative rates are quarantined while raw failures remain visible.'
+        if qualified_reference:
+            status['wpt']['referenceStatus']='Fresh signed Chrome qualified for paired measurement; known URL failures retained. Historical comparisons unchanged.'
+            status['phase']+=' A fresh official Chrome reference is qualified after independent reproducibility and exact-source review; its real standards failures remain visible. The old comparator matrix stays historical.'
+        else:
+            status['wpt']['referenceStatus']='Installed control under review: fresh URL sanity checks failed.'
+            status['phase']+=' The installed Chrome control failed independent URL sanity checks; comparative rates are quarantined while raw failures remain visible.'
         if value.get('chromiumBinarySHA256')==review.get('binarySHA256'):
             value['referenceReview']={key:review[key]for key in ('status','reason','binarySHA256','probeEvidence')}
             for row in value['categories'].values():

@@ -1,0 +1,22 @@
+{
+  "iteration": "102900614-006",
+  "started_utc": "2026-10-28T23:14:40.626860+00:00",
+  "updated_utc": "2026-10-28T23:17:54.579818+00:00",
+  "elapsed_seconds": 193.953,
+  "total_session_seconds": 3793.121,
+  "score": 45,
+  "status": "Fresh signed Chrome qualified for new paired measurements; all native standards failures retained",
+  "reference_binary_sha256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "native_artifact_promoted": false,
+  "qualification": "agent/evidence/102900614-006-chrome-reference.json",
+  "stages": {
+    "trust_seconds": 25.858,
+    "native_cdp_seconds": 3.532,
+    "direct_dump_dom_seconds": [
+      1.293,
+      1.063
+    ]
+  },
+  "resource_scope": "Signature/copy and browser startup/process-tree samples are diagnostic observations; no idle or general browser performance claim.",
+  "model_compute_duration": "Unavailable; parallel worker wall time is not summed"
+}
