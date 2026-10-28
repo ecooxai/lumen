@@ -562,6 +562,7 @@ Object.setPrototypeOf(G, DedicatedWorkerGlobalScope.prototype);
 #include "blob_file.inc"
 #include "text_codec.inc"
 #include "headers.inc"
+#include "web_streams.inc"
 R"JS(
 const urlSearchParamsOps = createURLSearchParams(nativeIDL);
 const { URLSearchParams } = urlSearchParamsOps;
@@ -608,11 +609,65 @@ function atob(s) {
     for (const ch of s) { n = (n << 6 | B64.indexOf(ch)) & 0xffffff; bits += 6; if (bits >= 8) { bits -= 8; o += String.fromCharCode(n >> bits & 255); } }
     return o;
 }
+
+// Dedicated workers need real abort signals for writable stream cancellation.
+const workerAbortSignalState = new WeakMap(), workerAbortControllerState = new WeakMap(), workerAbortToken = {};
+const abortState = signal => {
+    const state = workerAbortSignalState.get(signal);
+    if (!state) throw new TypeError('Invalid AbortSignal receiver');
+    return state;
+};
+class AbortSignal extends EventTarget {
+    constructor(...args) {
+        if (args[0] !== workerAbortToken) throw new TypeError('Illegal constructor');
+        super(); workerAbortSignalState.set(this, { aborted: false, reason: undefined }); this.onabort = null;
+    }
+    get aborted() { return abortState(this).aborted; }
+    get reason() { return abortState(this).reason; }
+    throwIfAborted() { const state = abortState(this); if (state.aborted) throw state.reason; }
+    static abort(reason = undefined) { const controller = new AbortController(); controller.abort(reason); return controller.signal; }
+    static timeout(milliseconds) {
+        milliseconds = Number(milliseconds);
+        if (!Number.isFinite(milliseconds) || milliseconds < 0 || milliseconds >= 18446744073709551616) throw new RangeError('Invalid timeout');
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(new DOMException('Signal timed out', 'TimeoutError')), Math.trunc(milliseconds));
+        return controller.signal;
+    }
+    static any(signals) {
+        const list = Array.from(signals); for (const signal of list) abortState(signal);
+        const controller = new AbortController(), listeners = [];
+        const abort = signal => {
+            controller.abort(abortState(signal).reason);
+            for (const [source, listener] of listeners) source.removeEventListener('abort', listener);
+            listeners.length = 0;
+        };
+        const already = list.find(signal => abortState(signal).aborted);
+        if (already) abort(already);
+        else for (const signal of new Set(list)) { const listener = () => abort(signal); listeners.push([signal, listener]); signal.addEventListener('abort', listener, { once: true }); }
+        return controller.signal;
+    }
+}
+class AbortController {
+    constructor() { workerAbortControllerState.set(this, new AbortSignal(workerAbortToken)); }
+    get signal() { const signal = workerAbortControllerState.get(this); if (!signal) throw new TypeError('Invalid AbortController receiver'); return signal; }
+    abort(reason = undefined) {
+        const signal = this.signal, state = abortState(signal);
+        if (state.aborted) return;
+        state.aborted = true; state.reason = reason === undefined ? new DOMException('Signal aborted', 'AbortError') : reason;
+        const event = new Event('abort'); event.isTrusted = true; fireOn(signal, event);
+    }
+}
+
 const { TextEncoder, TextDecoder } = createTextCodecInterfaces(null, { label: W.textEncoding, decode: W.textDecode });
+const { ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter,
+    TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, TextEncoderStream, TextDecoderStream
+} = createWebStreamInterfaces(nativeIDL, { TextEncoder, TextDecoder, AbortController, DOMException });
+
 const headerOps = createHeadersInterface();
 const { Headers } = headerOps;
 const blobFileOps = createBlobFileInterfaces(nativeIDL, {
     blobState: W.blobState, encode: urlSearchParamsOps.utf8Bytes, decode: W.decode,
+    stream: bytes => new ReadableStream({ start(controller) { controller.enqueue(bytes); controller.close(); } }),
 });
 const {Blob, File} = blobFileOps;
 class ProgressEvent extends Event {
@@ -1037,7 +1092,10 @@ const api = {
         if (!arguments.length) throw new TypeError("Failed to execute 'structuredClone': 1 argument required.");
         return W.clone(value, cloneTransferList(options));
     },
-    btoa, atob, TextEncoder, TextDecoder, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, FormData, Headers, Request, Response, fetch, performance, console,
+    btoa, atob, TextEncoder, TextDecoder, TextEncoderStream, TextDecoderStream,
+    ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter,
+    TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, AbortController, AbortSignal,
+    Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, FormData, Headers, Request, Response, fetch, performance, console,
     Event, ProgressEvent, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });

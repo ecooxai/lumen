@@ -9,7 +9,7 @@
  * wrappers are rejected without running traps. The only callers are the
  * unexposed N/W closures used while installing the platform interfaces.
  */
-enum JsgIDLKind { JSG_IDL_URL = 1, JSG_IDL_DOM_EXCEPTION = 2, JSG_IDL_URL_PARAMS = 3, JSG_IDL_FILE_READER = 4, JSG_IDL_FILE_READER_SYNC = 5, JSG_IDL_BLOB = 6, JSG_IDL_FILE = 7 };
+enum JsgIDLKind { JSG_IDL_URL = 1, JSG_IDL_DOM_EXCEPTION = 2, JSG_IDL_URL_PARAMS = 3, JSG_IDL_FILE_READER = 4, JSG_IDL_FILE_READER_SYNC = 5, JSG_IDL_BLOB = 6, JSG_IDL_FILE = 7, JSG_IDL_TEXT_ENCODER_STREAM = 8, JSG_IDL_TEXT_DECODER_STREAM = 9 };
 
 inline void jsg_idl_type_error(v8::Isolate *iso, const char *message) {
     iso->ThrowException(v8::Exception::TypeError(
@@ -22,7 +22,7 @@ inline int jsg_idl_kind(const v8::FunctionCallbackInfo<v8::Value> &args) {
         return 0;
     }
     const int kind = args[0].As<v8::Int32>()->Value();
-    if (kind < JSG_IDL_URL || kind > JSG_IDL_FILE) {
+    if (kind < JSG_IDL_URL || kind > JSG_IDL_TEXT_DECODER_STREAM) {
         jsg_idl_type_error(args.GetIsolate(), "Invalid internal Web IDL interface");
         return 0;
     }
@@ -43,6 +43,10 @@ inline v8::Local<v8::Private> jsg_idl_state_key(v8::Isolate *iso, int kind) {
             return v8::Private::ForApi(iso, v8::String::NewFromUtf8Literal(iso, "lumen.idl.Blob.state.v1"));
         case JSG_IDL_FILE:
             return v8::Private::ForApi(iso, v8::String::NewFromUtf8Literal(iso, "lumen.idl.File.state.v1"));
+        case JSG_IDL_TEXT_ENCODER_STREAM:
+            return v8::Private::ForApi(iso, v8::String::NewFromUtf8Literal(iso, "lumen.idl.TextEncoderStream.state.v1"));
+        case JSG_IDL_TEXT_DECODER_STREAM:
+            return v8::Private::ForApi(iso, v8::String::NewFromUtf8Literal(iso, "lumen.idl.TextDecoderStream.state.v1"));
         default:
             return v8::Private::ForApi(iso, v8::String::NewFromUtf8Literal(iso, "lumen.idl.URLSearchParams.state.v1"));
     }
@@ -62,6 +66,10 @@ inline v8::Local<v8::Private> jsg_idl_prototype_key(v8::Isolate *iso, int kind) 
             return v8::Private::ForApi(iso, v8::String::NewFromUtf8Literal(iso, "lumen.idl.Blob.prototype.v1"));
         case JSG_IDL_FILE:
             return v8::Private::ForApi(iso, v8::String::NewFromUtf8Literal(iso, "lumen.idl.File.prototype.v1"));
+        case JSG_IDL_TEXT_ENCODER_STREAM:
+            return v8::Private::ForApi(iso, v8::String::NewFromUtf8Literal(iso, "lumen.idl.TextEncoderStream.prototype.v1"));
+        case JSG_IDL_TEXT_DECODER_STREAM:
+            return v8::Private::ForApi(iso, v8::String::NewFromUtf8Literal(iso, "lumen.idl.TextDecoderStream.prototype.v1"));
         default:
             return v8::Private::ForApi(iso, v8::String::NewFromUtf8Literal(iso, "lumen.idl.URLSearchParams.prototype.v1"));
     }

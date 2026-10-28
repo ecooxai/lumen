@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 
-const sourcePath=process.env.LUMEN_STREAMS_SOURCE||new URL('../src/js/prelude/07-web.js',import.meta.url);
+const sourcePath=process.env.LUMEN_STREAMS_SOURCE||new URL('../src/js/prelude/06t-streams.js',import.meta.url);
 const source=fs.readFileSync(sourcePath,'utf8');
 const first=source.includes('function writableDeferred(')?source.indexOf('function writableDeferred('):source.indexOf('class WritableStreamDefaultWriter');
 const last=source.indexOf('class TransformStream',first);

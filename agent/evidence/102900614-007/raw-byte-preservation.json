@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "iteration": "102900614-007",
+  "verifiedUTC": "2026-10-28T23:29:47.289388+00:00",
+  "exclusions": [
+    {
+      "committed": "agent/evidence/102900614-007/23-session-102900614-text-streams-red-1.csv",
+      "source": "output/session-102900614/text-streams-red-1.csv",
+      "sha256": "6da8e5b0464b27085b585d7e0437309c9fb647137cb4605a91c70677a1e4b0a2",
+      "reason": "Preserve original measured CRLF CSV or native assertion-output whitespace; not authored source."
+    },
+    {
+      "committed": "agent/evidence/102900614-007/24-session-102900614-transform-streams-red-2.log",
+      "source": "output/session-102900614/transform-streams-red-2.log",
+      "sha256": "1884ab1244ef1b7f8d80274b0c8d8ec3037d71a4de76225a3bf2d3794c05b21e",
+      "reason": "Preserve original measured CRLF CSV or native assertion-output whitespace; not authored source."
+    },
+    {
+      "committed": "agent/evidence/102900614-007/26-session-102900614-transform-streams-red-2.csv",
+      "source": "output/session-102900614/transform-streams-red-2.csv",
+      "sha256": "5b9e8cff515ed8ba4c2407a66f53f2f5c0baa8276f1f361809f2f6923290ee2a",
+      "reason": "Preserve original measured CRLF CSV or native assertion-output whitespace; not authored source."
+    }
+  ],
+  "authoredWhitespaceChecksRemainStrict": true,
+  "scope": "Resume only the already prepared007 commit; no test rerun, assertion change, source change or duplicate iteration."
+}

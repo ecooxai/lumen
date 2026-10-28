@@ -600,3 +600,9 @@ $(BUILD)/src/js/text_codec.inc: src/js/prelude/06u-textcodec.js
 	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
 $(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: $(BUILD)/src/js/text_codec.inc
 $(BUILD)/src/js/jsnative.cc.o $(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: src/js/text_codec.h src/base/encoding.h
+
+# One stream and incremental Encoding Stream runtime for both JavaScript hosts.
+$(BUILD)/src/js/web_streams.inc: src/js/prelude/06t-streams.js
+	@mkdir -p $(dir $@)
+	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
+$(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: $(BUILD)/src/js/web_streams.inc

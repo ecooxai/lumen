@@ -12,7 +12,7 @@ inline v8::Maybe<bool> jsg_is_uncloneable(v8::Isolate *iso,
                                         v8::Local<v8::Context> context,
                                         v8::Local<v8::Object> object) {
     if (object->IsProxy()) return v8::Just(true);
-    const int kinds[] = {JSG_IDL_URL, JSG_IDL_URL_PARAMS, JSG_IDL_FILE_READER, JSG_IDL_FILE_READER_SYNC};
+    const int kinds[] = {JSG_IDL_URL, JSG_IDL_URL_PARAMS, JSG_IDL_FILE_READER, JSG_IDL_FILE_READER_SYNC, JSG_IDL_TEXT_ENCODER_STREAM, JSG_IDL_TEXT_DECODER_STREAM};
     for (int kind : kinds) {
         v8::Local<v8::Value> state;
         if (!object->GetPrivate(context, jsg_idl_state_key(iso, kind)).ToLocal(&state))

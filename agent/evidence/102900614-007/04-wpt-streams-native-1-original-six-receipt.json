@@ -1,0 +1,27 @@
+{
+  "startedUTC": "2026-10-28T23:13:37.850318+00:00",
+  "binarySHA256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+  "command": [
+    "/opt/homebrew/opt/python@3.15/bin/python3.15",
+    "tools/apple-session-gpt6as/probe_native_wpt.py",
+    "--binary",
+    "build/lumen-task102900614-80a60752a025a3b1",
+    "--expected-sha256",
+    "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+    "--output",
+    "output/native-wpt-task102900614-80a60752a025a3b1",
+    "--seconds-per-test",
+    "25"
+  ],
+  "passed": true,
+  "finishedUTC": "2026-10-28T23:13:47.100234+00:00",
+  "durationSeconds": 9.25,
+  "exitCode": 0,
+  "report": "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task102900614-80a60752a025a3b1/wpt-report.json",
+  "reportSHA256": "25f410759ecc3d427572db88ec1b41d2a5e72d239d7604a4896dc1c76bffe2c3",
+  "files": 6,
+  "fullyPassing": 6,
+  "assertions": {
+    "PASS": 1850
+  }
+}

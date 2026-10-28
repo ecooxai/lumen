@@ -34,3 +34,7 @@ Verified public base `https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz`; cur
 ### Current reference qualification006
 
 The fresh official signed Chrome `0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4` is qualified for new paired measurements by provenance, native reproducibility and exact implementation-source review. Its real URL standards failures remainFAIL. Historical quarantined reports stay immutable. Use `agent/evidence/102900614-006-chrome-reference.json`; never equate reference qualification with WPT conformance.
+
+### Current functional candidate007
+
+Shared-stream native `80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129` has946/946 custom checks, original1850/1850 and fresh23/26 stream variants. Legacy decoding and iframe realm timing remain known failures. Current accepted artifact733/score45 is unchanged pending combined resources. Exact candidate source manifest and evidence are in `agent/evidence/102900614-007-shared-streams.json`.

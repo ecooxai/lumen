@@ -674,7 +674,7 @@
       }
     }
   ],
-  "updated_utc": "2026-10-28T23:17:54.579818+00:00",
+  "updated_utc": "2026-10-28T23:26:56.745213+00:00",
   "current_baseline_binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
@@ -838,6 +838,15 @@
       "total_session_seconds": 3793.121,
       "score": 45,
       "status": "Fresh signed Chrome qualified for new paired measurements; all native standards failures retained"
+    },
+    {
+      "iteration": "102900614-007",
+      "started_utc": "2026-10-28T23:17:54.579818+00:00",
+      "updated_utc": "2026-10-28T23:26:56.745213+00:00",
+      "elapsed_seconds": 542.165,
+      "total_session_seconds": 4335.286,
+      "score": 45,
+      "status": "Shared stream candidate validated; original WPT retained;23/26 fresh upstream stream variants pass"
     }
   ],
   "current_native_source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",
@@ -850,6 +859,14 @@
       "evidence": "agent/evidence/102900614-004-gpu-upload.json",
       "accepted": false,
       "note": "Measured GPU-only improvement; combined standards/fresh soak gates pending; fixed scrollingCPU gate stillfails."
+    },
+    {
+      "iteration": "102900614-007",
+      "binary_sha256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+      "source_manifest": "agent/evidence/102900614-007/02-text-streams-green-1-compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-007-shared-streams.json",
+      "accepted": false,
+      "note": "Verified functional shared-stream candidate with original6/6 and fresh23/26 upstream variants; combined resource/soak acceptance pending."
     }
   ],
   "reference_qualification": {
@@ -859,5 +876,12 @@
     "status": "qualified_known_standard_failures",
     "qualified_for_paired_measurement": true,
     "standards_failures_retained": true
+  },
+  "latest_functional_candidate": {
+    "binary_sha256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+    "evidence": "agent/evidence/102900614-007-shared-streams.json",
+    "evidence_sha256": "3303eea2ac14019e54db644e39ca414f9aded128238dec5dcd8311f370024a3f",
+    "stream_wpt": "agent/evidence/102900614-007/stream-wpt-review.json",
+    "stream_wpt_sha256": "328b7fc2c03c81a8ee76116974997444b9e03eb9214e939f7ea04925743f4186"
   }
 }

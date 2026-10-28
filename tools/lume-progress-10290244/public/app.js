@@ -20,6 +20,8 @@ function render(snapshot){
   if(wpt)facts.unshift(fact('Original six-file subset',`${wpt.passed.toLocaleString()} / ${wpt.total.toLocaleString()} assertions · ${wpt.fullyPassingFiles} fully passing files`));
   const historical=status.performance?.historicalInteraction;
   if(historical)facts.push(fact('Previous-build scrolling CPU',`${historical.status} · p95 ${number(historical.cpuP95Percent,2)}% · ${historical.binarySha256?.slice(0,12)||'unknown'}… (historical)`));
+  const candidate=status.functionalCandidate;
+  if(candidate)facts.push(fact('Latest functional candidate',`${candidate.binarySha256.slice(0,12)}… · ${candidate.fullyPassingVariants}/${candidate.recordedVariants} Encoding Stream variants fully pass · ${candidate.scheduledFrozenVariants} frozen total · resource acceptance pending`));
   $('compatibility').replaceChildren(...facts);
   renderExpanded(status.expandedWpt);
   $('source-link').href=base+'/src.tar.gz';

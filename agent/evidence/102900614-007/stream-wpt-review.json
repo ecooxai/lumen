@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "binarySHA256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+  "scope": "Unchanged26 Encoding Streams/window/dedicated-worker variants, including two IDL variants; diagnostic subset of fixed1515 inventory",
+  "scheduled": 26,
+  "recorded": 26,
+  "fullyPassing": 23,
+  "passingPercentOfRun": 88.462,
+  "frozenScheduledVariants": 1515,
+  "frozenUnrunOutsideThisGroup": 1489,
+  "assertions": {
+    "PASS": 338,
+    "FAIL": 8
+  },
+  "harnessStatuses": {
+    "OK": 25,
+    "TIMEOUT": 1
+  },
+  "failures": [
+    {
+      "test": "/encoding/streams/decode-non-utf8.any.html",
+      "status": "OK",
+      "assertions": [
+        {
+          "name": "TextDecoderStream should be able to decode Shift_JIS",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+        },
+        {
+          "name": "TextDecoderStream should be able to decode invalid sequences in Shift_JIS",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+        },
+        {
+          "name": "TextDecoderStream should be able to decode ISO-2022-JP",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+        },
+        {
+          "name": "TextDecoderStream should be able to decode invalid sequences in ISO-2022-JP",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+        }
+      ]
+    },
+    {
+      "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+      "status": "OK",
+      "assertions": [
+        {
+          "name": "TextDecoderStream should be able to decode Shift_JIS",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+        },
+        {
+          "name": "TextDecoderStream should be able to decode invalid sequences in Shift_JIS",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+        },
+        {
+          "name": "TextDecoderStream should be able to decode ISO-2022-JP",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+        },
+        {
+          "name": "TextDecoderStream should be able to decode invalid sequences in ISO-2022-JP",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+        }
+      ]
+    },
+    {
+      "test": "/encoding/streams/realms.window.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    }
+  ],
+  "inputEvidence": [
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/cohort.json",
+      "committed": "agent/evidence/102900614-007/03-wpt-streams-native-1-cohort.json",
+      "sha256": "d0d291fa40b558686622c990e6587dec0d0a88276e962c01773ce48e380b5963",
+      "bytes": 1106600
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/original-six-receipt.json",
+      "committed": "agent/evidence/102900614-007/04-wpt-streams-native-1-original-six-receipt.json",
+      "sha256": "a12aa68b40842f0e7634227dbf5b48d249d65a31db6c77ebb278974f72b78bb5",
+      "bytes": 966
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/run.json",
+      "committed": "agent/evidence/102900614-007/05-encoding-streams-run.json",
+      "sha256": "0ab250b390ce5b484ca82c807a2a56b4023238d8ee31425c412ad58cd10283e6",
+      "bytes": 11986
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/schedule.json",
+      "committed": "agent/evidence/102900614-007/06-encoding-streams-schedule.json",
+      "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "bytes": 10971
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/results.jsonl",
+      "committed": "agent/evidence/102900614-007/07-encoding-streams-results.jsonl",
+      "sha256": "622e7c4eddfc50b4780933967684e3b791ce9bf4dffe59150aa9be9ade7b1ad3",
+      "bytes": 100853
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/summary.json",
+      "committed": "agent/evidence/102900614-007/08-encoding-streams-summary.json",
+      "sha256": "1306c9d2bb4292a1a80fd7e0ac2a3422c55bdcbda4311ab9f12a8cb7e2846346",
+      "bytes": 2082
+    }
+  ],
+  "knownLimits": [
+    "Legacy multibyte incremental decoding is still missing in this exact artifact.",
+    "The cross-realm case times out before assertions because srcdoc iframe load currently dispatches synchronously; no realm conformance credit.",
+    "Other groups may run separately in the same immutable cohort; these26 counts are not combined with historical207 results."
+  ]
+}

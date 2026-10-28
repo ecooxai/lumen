@@ -46,3 +46,7 @@ Public base `https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz` is verified w
 ## Checkpoint006 — qualified fresh comparator
 
 Use exact Chrome `output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome` SHA-256 `0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4` with qualification `agent/evidence/102900614-006-chrome-reference.json` (also ignored `output/wpt-102900614/reference-review.json`). Its native URL failures are genuine known implementation differences, retained asFAIL; this qualification does not assert perfect Chrome conformance. Pin both artifacts and upstream schedule in new paired runs. Preserve all old reference/quarantine reports. Current score45, native accepted artifact unchanged.
+
+## Checkpoint007 — verified shared-stream functional candidate
+
+Candidate `build-apple-load-20261029/lumen-text-streams-80a60752a025a3b1` SHA-256 `80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129` passes946 custom assertions and original6/6 files,1850/1850 assertions. Fresh upstream Encoding Streams group23/26 fully passes; non-UTF8 window/worker and cross-realm timeout remain. Accepted resource artifact733 and score45 unchanged until combined current-artifact gates pass. All1515 inventory rows retained. Exact source/evidence: `agent/evidence/102900614-007-shared-streams.json`. Do not merge historical207 results into this candidate's rates.

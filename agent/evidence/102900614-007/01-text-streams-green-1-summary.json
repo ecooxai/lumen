@@ -1,0 +1,337 @@
+{
+  "startedUTC": "2026-10-28T23:08:21.219280+00:00",
+  "sourceBaseCommit": "d665c4920c0c2c0aaf9e22e9945342c772423f1f",
+  "compiledSourceManifest": "output/session-102900614/text-streams-green-1/compiled-source-sha256.json",
+  "build": "build-apple-load-20261029",
+  "rtcEnabled": true,
+  "webtransportEnabled": true,
+  "prebuiltV8": "Reuse the existing platform-matched Makefile dependency; no V8 build requested.",
+  "stages": [
+    {
+      "stage": "build",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:21.230526+00:00",
+      "finishedUTC": "2026-10-28T23:08:26.348751+00:00",
+      "durationSeconds": 5.118,
+      "command": [
+        "make",
+        "-j3",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/lumen",
+        "build-apple-load-20261029/jsrun",
+        "build-apple-load-20261029/test_clone_brand",
+        "build-apple-load-20261029/test_worker_lifecycle",
+        "build-apple-load-20261029/test_worker_security"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/build.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 4,
+      "intervalCpuPeakPercent": 276.309,
+      "rssPeakMiB": 767.938,
+      "resultLines": [],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "text-streams",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:26.547181+00:00",
+      "finishedUTC": "2026-10-28T23:08:27.667868+00:00",
+      "durationSeconds": 1.121,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_text_streams.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-text-streams-582aefb38f35e971"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/text-streams.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.219,
+      "resultLines": [
+        "[js log] TEXT_STREAM_RESULTS {\"total\":74,\"passed\":74,\"failed\":0,\"issue\":null}",
+        "TEXT_STREAM_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-text-streams-582aefb38f35e971\", \"binary_sha256\": \"582aefb38f35e97167654b550a6afbe69c93b8998f990e3622adae0ad7bafbfa\", \"fixture_sha256\": \"45d4a163068810e3fde0595b99d6f3db6814ac75dfd737131ef77b67ed1dbf82\", \"worker_sha256\": \"c95f251bec89bf94130284d6710c8d02c5c4295450ce0d0be4b6dd9b4df81f41\", \"total\": 74, \"passed\": 74, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 35, \"passed\": 35}, \"worker\": {\"total\": 35, \"passed\": 35}, \"cross-realm\": {\"total\": 4, \"passed\": 4}}}",
+        "RESULTS text-streams PASS (74/74 checks)"
+      ],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "writable-streams",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:27.668234+00:00",
+      "finishedUTC": "2026-10-28T23:08:28.774144+00:00",
+      "durationSeconds": 1.106,
+      "command": [
+        "env",
+        "LUMEN_STREAMS_SOURCE=/Users/devin/repos/lumen/src/js/prelude/06t-streams.js",
+        "node",
+        "--test",
+        "--test-reporter=tap",
+        "tests/test_writable_streams.mjs"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/writable-streams.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.219,
+      "resultLines": [],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "transform-streams",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:28.774417+00:00",
+      "finishedUTC": "2026-10-28T23:08:29.885300+00:00",
+      "durationSeconds": 1.111,
+      "command": [
+        "env",
+        "LUMEN_STREAMS_SOURCE=/Users/devin/repos/lumen/src/js/prelude/06t-streams.js",
+        "node",
+        "--test",
+        "--test-reporter=tap",
+        "tests/test_transform_streams.mjs"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/transform-streams.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.656,
+      "resultLines": [],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "streams-html",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:29.885581+00:00",
+      "finishedUTC": "2026-10-28T23:08:31.994962+00:00",
+      "durationSeconds": 2.109,
+      "command": [
+        "env",
+        "LUMEN_CONSOLE=1",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/text-streams-green-1/streams-html-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-text-streams-582aefb38f35e971",
+        "/Users/devin/repos/lumen/tests/js/streams.html",
+        "1500"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/streams-html.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 1,
+      "intervalCpuPeakPercent": 6.904,
+      "rssPeakMiB": 69.609,
+      "resultLines": [
+        "[js log] RESULTS streams pipeTo:PASS pipeThrough:PASS pull:PASS tee:PASS textstreams:PASS closed:PASS response.body:PASS"
+      ],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "message-transfer",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:31.995264+00:00",
+      "finishedUTC": "2026-10-28T23:08:33.088382+00:00",
+      "durationSeconds": 1.093,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_message_transfer.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-text-streams-582aefb38f35e971"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/message-transfer.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 5.562,
+      "resultLines": [
+        "[js log] MESSAGE_TRANSFER_RESULTS {\"total\":68,\"passed\":68,\"failed\":0,\"issue\":null}",
+        "MESSAGE_TRANSFER_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-text-streams-582aefb38f35e971\", \"binary_sha256\": \"582aefb38f35e97167654b550a6afbe69c93b8998f990e3622adae0ad7bafbfa\", \"fixture_sha256\": \"31f3e40bebaa4ba9f06bb705c5e5b4dc3eb9a375ccf5f4d4c47eeb88540b052d\", \"worker_sha256\": \"456a04b5a1e00d4b4ba1ec870613aef2e77429fb8c9a63090e7b51829d9026d4\", \"total\": 68, \"passed\": 68, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 31, \"passed\": 31}, \"worker\": {\"total\": 31, \"passed\": 31}, \"cross-worker\": {\"total\": 6, \"passed\": 6}}}",
+        "RESULTS message-transfer PASS (68/68 checks)"
+      ],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "text-codec",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:33.088776+00:00",
+      "finishedUTC": "2026-10-28T23:08:34.175443+00:00",
+      "durationSeconds": 1.087,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_text_codec.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-text-streams-582aefb38f35e971"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/text-codec.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 5.406,
+      "resultLines": [
+        "[js log] TEXT_CODEC_RESULTS {\"total\":170,\"passed\":170,\"failed\":0,\"workerIssue\":null}",
+        "TEXT_CODEC_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-text-streams-582aefb38f35e971\", \"binary_sha256\": \"582aefb38f35e97167654b550a6afbe69c93b8998f990e3622adae0ad7bafbfa\", \"fixture_sha256\": \"fe9efe3f8452bc46ae30f280b9c930b3f510e8fb9ccd2335824a11338bdc188b\", \"worker_sha256\": \"6e49e4aad71a6e60e2490243b46c861631ad2b48924673ac63be1129f4c6ff88\", \"total\": 170, \"passed\": 170, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 81, \"passed\": 81}, \"worker\": {\"total\": 81, \"passed\": 81}, \"cross-realm\": {\"total\": 8, \"passed\": 8}}}"
+      ],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "html-clone-brands",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:34.175800+00:00",
+      "finishedUTC": "2026-10-28T23:08:35.259865+00:00",
+      "durationSeconds": 1.084,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_html_interface_clone_brands.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-text-streams-582aefb38f35e971",
+        "--expected-sha256",
+        "582aefb38f35e97167654b550a6afbe69c93b8998f990e3622adae0ad7bafbfa"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/html-clone-brands.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 5.359,
+      "resultLines": [
+        "[js log] RESULTS html-interface-clone-brands PASS (132/132 checks)",
+        "CLONE_BRANDS_RECEIPT {\"binarySHA256\": \"582aefb38f35e97167654b550a6afbe69c93b8998f990e3622adae0ad7bafbfa\", \"fixtureSHA256\": \"b2f8fcfc554cd5625d3a5999e981d9ba967571cfc0afd3bac9466e50ce715232\", \"naturalExitCode\": 0, \"resultFound\": true, \"scope\": \"Native V8/DOM interface exports and clone brands; not complete interface semantics\", \"passed\": 132, \"total\": 132}"
+      ],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "test_clone_brand",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:35.260287+00:00",
+      "finishedUTC": "2026-10-28T23:08:36.358540+00:00",
+      "durationSeconds": 1.098,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/text-streams-green-1/test_clone_brand-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_clone_brand-text-streams-4cb604182d2db753"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/test_clone_brand.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [
+        "RESULTS clone-brand PASS (140/140 checks)"
+      ],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "test_worker_lifecycle",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:36.358928+00:00",
+      "finishedUTC": "2026-10-28T23:08:37.451566+00:00",
+      "durationSeconds": 1.093,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/text-streams-green-1/test_worker_lifecycle-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_worker_lifecycle-text-streams-b0d667bf91e4dc83"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/test_worker_lifecycle.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [
+        "RESULTS worker-lifecycle PASS (262/262 checks)"
+      ],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "test_worker_security",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:37.451944+00:00",
+      "finishedUTC": "2026-10-28T23:08:38.544196+00:00",
+      "durationSeconds": 1.092,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/text-streams-green-1/test_worker_security-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_worker_security-text-streams-ee4152ae6849bd23"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/test_worker_security.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [
+        "RESULTS worker-security PASS (51/51 checks)"
+      ],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    },
+    {
+      "stage": "worker-ports",
+      "passed": true,
+      "startedUTC": "2026-10-28T23:08:38.544480+00:00",
+      "finishedUTC": "2026-10-28T23:08:40.621236+00:00",
+      "durationSeconds": 2.077,
+      "command": [
+        "env",
+        "LUMEN_CONSOLE=1",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/text-streams-green-1/worker-ports-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-text-streams-582aefb38f35e971",
+        "/Users/devin/repos/lumen/tests/js/worker-ports.html",
+        "1500"
+      ],
+      "monitor": "output/session-102900614/text-streams-green-1/worker-ports.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 1,
+      "intervalCpuPeakPercent": 6.843,
+      "rssPeakMiB": 71.453,
+      "resultLines": [
+        "[js log] RESULTS worker-ports blobWorker:PASS portsDelivered:PASS portRoundTrip:PASS"
+      ],
+      "performanceNote": "Short assertion runs do not establish an idle/performance verdict."
+    }
+  ],
+  "artifacts": {
+    "lumen": {
+      "path": "build-apple-load-20261029/lumen",
+      "snapshot": "build-apple-load-20261029/lumen-text-streams-80a60752a025a3b1",
+      "sha256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+      "bytes": 14020888
+    },
+    "jsrun": {
+      "path": "build-apple-load-20261029/jsrun",
+      "snapshot": "build-apple-load-20261029/jsrun-text-streams-582aefb38f35e971",
+      "sha256": "582aefb38f35e97167654b550a6afbe69c93b8998f990e3622adae0ad7bafbfa",
+      "bytes": 13809528
+    },
+    "test_clone_brand": {
+      "path": "build-apple-load-20261029/test_clone_brand",
+      "snapshot": "build-apple-load-20261029/test_clone_brand-text-streams-4cb604182d2db753",
+      "sha256": "4cb604182d2db7536d539b60291098416add39fd44d560debf6d78079d40224c",
+      "bytes": 13828096
+    },
+    "test_worker_lifecycle": {
+      "path": "build-apple-load-20261029/test_worker_lifecycle",
+      "snapshot": "build-apple-load-20261029/test_worker_lifecycle-text-streams-b0d667bf91e4dc83",
+      "sha256": "b0d667bf91e4dc835916e9aac79474ae0e75f51d9343391f3abd2489587ec98c",
+      "bytes": 13845224
+    },
+    "test_worker_security": {
+      "path": "build-apple-load-20261029/test_worker_security",
+      "snapshot": "build-apple-load-20261029/test_worker_security-text-streams-ee4152ae6849bd23",
+      "sha256": "ee4152ae6849bd23dfe2938a4ce124ca57ef328bfb4aa9714c2e014c1a94a8a1",
+      "bytes": 13826440
+    }
+  },
+  "passed": true,
+  "finishedUTC": "2026-10-28T23:08:40.643501+00:00",
+  "durationSeconds": 19.443,
+  "scope": "Native shared-stream regression and unchanged transfer/clone/worker/codec regressions. Unchanged upstream WPT and final native GUI resource acceptance remain separate gates; legacy multibyte streaming is not claimed."
+}

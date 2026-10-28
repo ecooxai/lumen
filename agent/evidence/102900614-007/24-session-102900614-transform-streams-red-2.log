@@ -1,0 +1,198 @@
+TAP version 13
+# Subtest: node-reference: rejected start errors pending read and write
+ok 1 - node-reference: rejected start errors pending read and write
+  ---
+  duration_ms: 1.098042
+  type: 'test'
+  ...
+# Subtest: node-reference: rejected flush errors pending read and close
+ok 2 - node-reference: rejected flush errors pending read and close
+  ---
+  duration_ms: 0.293916
+  type: 'test'
+  ...
+# Subtest: node-reference: abort preserves undefined across a pressure-blocked write
+ok 3 - node-reference: abort preserves undefined across a pressure-blocked write
+  ---
+  duration_ms: 0.323958
+  type: 'test'
+  ...
+# Subtest: node-reference: abort preserves null across a pressure-blocked write
+ok 4 - node-reference: abort preserves null across a pressure-blocked write
+  ---
+  duration_ms: 0.098083
+  type: 'test'
+  ...
+# Subtest: node-reference: abort preserves false across a pressure-blocked write
+ok 5 - node-reference: abort preserves false across a pressure-blocked write
+  ---
+  duration_ms: 0.56975
+  type: 'test'
+  ...
+# Subtest: lumen-prelude: rejected start errors pending read and write
+not ok 6 - lumen-prelude: rejected start errors pending read and write
+  ---
+  duration_ms: 751.19575
+  type: 'test'
+  location: '/Users/devin/repos/lumen/tests/test_transform_streams.mjs:24:5'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 750ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: lumen-prelude: rejected flush errors pending read and close
+not ok 7 - lumen-prelude: rejected flush errors pending read and close
+  ---
+  duration_ms: 753.004667
+  type: 'test'
+  location: '/Users/devin/repos/lumen/tests/test_transform_streams.mjs:30:5'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 750ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: lumen-prelude: abort preserves undefined across a pressure-blocked write
+not ok 8 - lumen-prelude: abort preserves undefined across a pressure-blocked write
+  ---
+  duration_ms: 3.304042
+  type: 'test'
+  location: '/Users/devin/repos/lumen/tests/test_transform_streams.mjs:37:9'
+  failureType: 'testCodeFailure'
+  error: |-
+    Operation must reject with the original reason
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    rejectedWith (file:///Users/devin/repos/lumen/tests/test_transform_streams.mjs:21:12)
+  ...
+# Subtest: lumen-prelude: abort preserves null across a pressure-blocked write
+not ok 9 - lumen-prelude: abort preserves null across a pressure-blocked write
+  ---
+  duration_ms: 1.169375
+  type: 'test'
+  location: '/Users/devin/repos/lumen/tests/test_transform_streams.mjs:37:9'
+  failureType: 'testCodeFailure'
+  error: |-
+    Operation must reject with the original reason
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    rejectedWith (file:///Users/devin/repos/lumen/tests/test_transform_streams.mjs:21:12)
+  ...
+# Subtest: lumen-prelude: abort preserves false across a pressure-blocked write
+not ok 10 - lumen-prelude: abort preserves false across a pressure-blocked write
+  ---
+  duration_ms: 0.798333
+  type: 'test'
+  location: '/Users/devin/repos/lumen/tests/test_transform_streams.mjs:37:9'
+  failureType: 'testCodeFailure'
+  error: |-
+    Operation must reject with the original reason
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    rejectedWith (file:///Users/devin/repos/lumen/tests/test_transform_streams.mjs:21:12)
+  ...
+# Subtest: lumen-prelude: transformer.cancel receives exact undefined
+not ok 11 - lumen-prelude: transformer.cancel receives exact undefined
+  ---
+  duration_ms: 1.104333
+  type: 'test'
+  location: '/Users/devin/repos/lumen/tests/test_transform_streams.mjs:49:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + TypeError: errored
+    +     at Object.error (evalmachine.<anonymous>:3:99)
+    +     at Object.abort (evalmachine.<anonymous>:264:27)
+    +     at WritableStream._finishErroring (evalmachine.<anonymous>:222:72)
+    +     at WritableStream._advance (evalmachine.<anonymous>:229:48)
+    +     at WritableStream.Promise.resolve.then._started (evalmachine.<anonymous>:141:74)
+    - undefined
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  actual:
+  error: 'errored'
+  name: 'TypeError'
+  stack: |-
+    Object.error (evalmachine.<anonymous>:3:99)
+    Object.abort (evalmachine.<anonymous>:264:27)
+    WritableStream._finishErroring (evalmachine.<anonymous>:222:72)
+    WritableStream._advance (evalmachine.<anonymous>:229:48)
+    WritableStream.Promise.resolve.then._started (evalmachine.<anonymous>:141:74)
+  operator: 'strictEqual'
+  stack: |-
+    rejectedWith (file:///Users/devin/repos/lumen/tests/test_transform_streams.mjs:20:58)
+  ...
+# Subtest: lumen-prelude: transformer.cancel receives exact null
+not ok 12 - lumen-prelude: transformer.cancel receives exact null
+  ---
+  duration_ms: 0.343167
+  type: 'test'
+  location: '/Users/devin/repos/lumen/tests/test_transform_streams.mjs:49:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/devin/repos/lumen/tests/test_transform_streams.mjs:54:16)
+    async Test.run (node:internal/test_runner/test:1409:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+  ...
+# Subtest: lumen-prelude: transformer.cancel receives exact false
+not ok 13 - lumen-prelude: transformer.cancel receives exact false
+  ---
+  duration_ms: 0.21075
+  type: 'test'
+  location: '/Users/devin/repos/lumen/tests/test_transform_streams.mjs:49:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///Users/devin/repos/lumen/tests/test_transform_streams.mjs:54:16)
+    async Test.run (node:internal/test_runner/test:1409:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 5
+# fail 6
+# cancelled 2
+# skipped 0
+# todo 0
+# duration_ms 1555.775208

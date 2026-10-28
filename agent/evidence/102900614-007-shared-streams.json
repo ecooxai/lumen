@@ -1,0 +1,340 @@
+{
+  "iteration": "102900614-007",
+  "started_utc": "2026-10-28T23:17:54.579818+00:00",
+  "updated_utc": "2026-10-28T23:26:56.745213+00:00",
+  "elapsed_seconds": 542.165,
+  "total_session_seconds": 4335.286,
+  "score": 45,
+  "status": "Shared stream candidate validated; original WPT retained;23/26 fresh upstream stream variants pass",
+  "native_artifact_promoted": false,
+  "accepted_native_unchanged": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "candidate_binary_sha256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+  "candidate_jsrun_sha256": "582aefb38f35e97167654b550a6afbe69c93b8998f990e3622adae0ad7bafbfa",
+  "candidate_source_manifest": "agent/evidence/102900614-007/02-text-streams-green-1-compiled-source-sha256.json",
+  "compiled_inputs": 157,
+  "source_manifest_sha256": "ff5b2f101e07f43f10ae61c2e4ffc1652c124881907470defbbe616ad04383b6",
+  "red": {
+    "encoding_streams": {
+      "report": "output/session-102900614/text-streams-red-1.log",
+      "total": 74,
+      "passed": 10,
+      "failed": 64
+    },
+    "transform_lifecycle": {
+      "report": "output/session-102900614/transform-streams-red-2.log",
+      "total": 13,
+      "passed": 5,
+      "failed": 6,
+      "timedOut": 2
+    }
+  },
+  "green": {
+    "custom_checks_passed": 946,
+    "custom_checks_total": 946,
+    "text_streams_checks": 74,
+    "transform_checks": 13,
+    "writable_checks": 26,
+    "duration_seconds": 19.443,
+    "build_seconds": 5.118
+  },
+  "original_wpt": {
+    "files": 6,
+    "fully_passing": 6,
+    "assertions_passed": 1850,
+    "assertions_total": 1850,
+    "duration_seconds": 9.25,
+    "report_sha256": "25f410759ecc3d427572db88ec1b41d2a5e72d239d7604a4896dc1c76bffe2c3"
+  },
+  "stream_wpt": {
+    "schema": 1,
+    "binarySHA256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+    "scope": "Unchanged26 Encoding Streams/window/dedicated-worker variants, including two IDL variants; diagnostic subset of fixed1515 inventory",
+    "scheduled": 26,
+    "recorded": 26,
+    "fullyPassing": 23,
+    "passingPercentOfRun": 88.462,
+    "frozenScheduledVariants": 1515,
+    "frozenUnrunOutsideThisGroup": 1489,
+    "assertions": {
+      "PASS": 338,
+      "FAIL": 8
+    },
+    "harnessStatuses": {
+      "OK": 25,
+      "TIMEOUT": 1
+    },
+    "failures": [
+      {
+        "test": "/encoding/streams/decode-non-utf8.any.html",
+        "status": "OK",
+        "assertions": [
+          {
+            "name": "TextDecoderStream should be able to decode Shift_JIS",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+          },
+          {
+            "name": "TextDecoderStream should be able to decode invalid sequences in Shift_JIS",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+          },
+          {
+            "name": "TextDecoderStream should be able to decode ISO-2022-JP",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+          },
+          {
+            "name": "TextDecoderStream should be able to decode invalid sequences in ISO-2022-JP",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+          }
+        ]
+      },
+      {
+        "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+        "status": "OK",
+        "assertions": [
+          {
+            "name": "TextDecoderStream should be able to decode Shift_JIS",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+          },
+          {
+            "name": "TextDecoderStream should be able to decode invalid sequences in Shift_JIS",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+          },
+          {
+            "name": "TextDecoderStream should be able to decode ISO-2022-JP",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+          },
+          {
+            "name": "TextDecoderStream should be able to decode invalid sequences in ISO-2022-JP",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"TypeError: Streaming this legacy encoding/error mode is not implemented\""
+          }
+        ]
+      },
+      {
+        "test": "/encoding/streams/realms.window.html",
+        "status": "TIMEOUT",
+        "assertions": []
+      }
+    ],
+    "inputEvidence": [
+      {
+        "source": "output/session-102900614/wpt-streams-native-1/cohort.json",
+        "committed": "agent/evidence/102900614-007/03-wpt-streams-native-1-cohort.json",
+        "sha256": "d0d291fa40b558686622c990e6587dec0d0a88276e962c01773ce48e380b5963",
+        "bytes": 1106600
+      },
+      {
+        "source": "output/session-102900614/wpt-streams-native-1/original-six-receipt.json",
+        "committed": "agent/evidence/102900614-007/04-wpt-streams-native-1-original-six-receipt.json",
+        "sha256": "a12aa68b40842f0e7634227dbf5b48d249d65a31db6c77ebb278974f72b78bb5",
+        "bytes": 966
+      },
+      {
+        "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/run.json",
+        "committed": "agent/evidence/102900614-007/05-encoding-streams-run.json",
+        "sha256": "0ab250b390ce5b484ca82c807a2a56b4023238d8ee31425c412ad58cd10283e6",
+        "bytes": 11986
+      },
+      {
+        "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/schedule.json",
+        "committed": "agent/evidence/102900614-007/06-encoding-streams-schedule.json",
+        "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+        "bytes": 10971
+      },
+      {
+        "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/results.jsonl",
+        "committed": "agent/evidence/102900614-007/07-encoding-streams-results.jsonl",
+        "sha256": "622e7c4eddfc50b4780933967684e3b791ce9bf4dffe59150aa9be9ade7b1ad3",
+        "bytes": 100853
+      },
+      {
+        "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/summary.json",
+        "committed": "agent/evidence/102900614-007/08-encoding-streams-summary.json",
+        "sha256": "1306c9d2bb4292a1a80fd7e0ac2a3422c55bdcbda4311ab9f12a8cb7e2846346",
+        "bytes": 2082
+      }
+    ],
+    "knownLimits": [
+      "Legacy multibyte incremental decoding is still missing in this exact artifact.",
+      "The cross-realm case times out before assertions because srcdoc iframe load currently dispatches synchronously; no realm conformance credit.",
+      "Other groups may run separately in the same immutable cohort; these26 counts are not combined with historical207 results."
+    ]
+  },
+  "evidence": [
+    {
+      "source": "output/session-102900614/text-streams-candidate-1/patch-receipt.json",
+      "committed": "agent/evidence/102900614-007/00-text-streams-candidate-1-patch-receipt.json",
+      "sha256": "f09718d0fe09f6799a7505bdf7a5ce2140de2de2ff8bdb8667f4df5a6538195f",
+      "bytes": 2335
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/summary.json",
+      "committed": "agent/evidence/102900614-007/01-text-streams-green-1-summary.json",
+      "sha256": "ddf734e1ccc5b9e8f2c2e2a824bd1e5f846fbd4ea838b8eb655f4a18a64fe2b7",
+      "bytes": 15703
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/102900614-007/02-text-streams-green-1-compiled-source-sha256.json",
+      "sha256": "ff5b2f101e07f43f10ae61c2e4ffc1652c124881907470defbbe616ad04383b6",
+      "bytes": 15370
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/cohort.json",
+      "committed": "agent/evidence/102900614-007/03-wpt-streams-native-1-cohort.json",
+      "sha256": "d0d291fa40b558686622c990e6587dec0d0a88276e962c01773ce48e380b5963",
+      "bytes": 1106600
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/original-six-receipt.json",
+      "committed": "agent/evidence/102900614-007/04-wpt-streams-native-1-original-six-receipt.json",
+      "sha256": "a12aa68b40842f0e7634227dbf5b48d249d65a31db6c77ebb278974f72b78bb5",
+      "bytes": 966
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/run.json",
+      "committed": "agent/evidence/102900614-007/05-encoding-streams-run.json",
+      "sha256": "0ab250b390ce5b484ca82c807a2a56b4023238d8ee31425c412ad58cd10283e6",
+      "bytes": 11986
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/schedule.json",
+      "committed": "agent/evidence/102900614-007/06-encoding-streams-schedule.json",
+      "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "bytes": 10971
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/results.jsonl",
+      "committed": "agent/evidence/102900614-007/07-encoding-streams-results.jsonl",
+      "sha256": "622e7c4eddfc50b4780933967684e3b791ce9bf4dffe59150aa9be9ade7b1ad3",
+      "bytes": 100853
+    },
+    {
+      "source": "output/session-102900614/wpt-streams-native-1/encoding-streams/summary.json",
+      "committed": "agent/evidence/102900614-007/08-encoding-streams-summary.json",
+      "sha256": "1306c9d2bb4292a1a80fd7e0ac2a3422c55bdcbda4311ab9f12a8cb7e2846346",
+      "bytes": 2082
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/build.json",
+      "committed": "agent/evidence/102900614-007/09-text-streams-green-1-build.json",
+      "sha256": "4590dd656c985636dfe039cad8662691eaf4616c32a1e916c6dd57597dc3ff13",
+      "bytes": 2041
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/text-streams.json",
+      "committed": "agent/evidence/102900614-007/10-text-streams-green-1-text-streams.json",
+      "sha256": "530b23822d8ee0c84d129798d34e210907a6a347cd7b7d5b8dec8cba8c0d9f65",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/writable-streams.json",
+      "committed": "agent/evidence/102900614-007/11-text-streams-green-1-writable-streams.json",
+      "sha256": "b8c3c52442daa5cbb1f65a596a9655312fb2b1b586baf6f07c01ea5f1d865334",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/transform-streams.json",
+      "committed": "agent/evidence/102900614-007/12-text-streams-green-1-transform-streams.json",
+      "sha256": "f90a243ab9eb98568564cf1f1f4a087d609d740a145ebeb0e82bcf27de135696",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/streams-html.json",
+      "committed": "agent/evidence/102900614-007/13-text-streams-green-1-streams-html.json",
+      "sha256": "defa3effc6d13ca5d0df07308dfa1223dbce7a3cada77b05e7c526e3bbfb04c0",
+      "bytes": 2020
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/message-transfer.json",
+      "committed": "agent/evidence/102900614-007/14-text-streams-green-1-message-transfer.json",
+      "sha256": "44f483222de7bae88167f821e899e6adfd223e86f6dda021d19173eed68505ed",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/text-codec.json",
+      "committed": "agent/evidence/102900614-007/15-text-streams-green-1-text-codec.json",
+      "sha256": "46cfbfb27a6256eb0facbe9f487499a3ae8be087d4288beaa8f4419d3687a55e",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/html-clone-brands.json",
+      "committed": "agent/evidence/102900614-007/16-text-streams-green-1-html-clone-brands.json",
+      "sha256": "eadc1300e81e359b1dbeb2acf3c0ee5b8c65fe0d7076f98c179dc3e3c1efa7df",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/test_clone_brand.json",
+      "committed": "agent/evidence/102900614-007/17-text-streams-green-1-test_clone_brand.json",
+      "sha256": "6b93568c3be5ab709d74286c8f208a5af35ed65a4c83a0d10164a2eb8fc7d2ba",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/test_worker_lifecycle.json",
+      "committed": "agent/evidence/102900614-007/18-text-streams-green-1-test_worker_lifecycle.json",
+      "sha256": "141c5db6613d102969aa040d31e35d0367242cc3135e0ee2a354ec8ece9ce244",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/test_worker_security.json",
+      "committed": "agent/evidence/102900614-007/19-text-streams-green-1-test_worker_security.json",
+      "sha256": "8159f2f36c0a29694a3f717af98f4fe3e9df2efae5ecf49675ddf7f5648660ba",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/text-streams-green-1/worker-ports.json",
+      "committed": "agent/evidence/102900614-007/20-text-streams-green-1-worker-ports.json",
+      "sha256": "84445bd0c0c65fbebca9e66d5f89d3a512283b8be3017e27bc6a5b5573dba2e5",
+      "bytes": 2017
+    },
+    {
+      "source": "output/session-102900614/text-streams-red-1.log",
+      "committed": "agent/evidence/102900614-007/21-session-102900614-text-streams-red-1.log",
+      "sha256": "3f04da306930023bcafda5385b94039b2c0d067ee904e1e542552eb536dae43f",
+      "bytes": 11976
+    },
+    {
+      "source": "output/session-102900614/text-streams-red-1.json",
+      "committed": "agent/evidence/102900614-007/22-session-102900614-text-streams-red-1.json",
+      "sha256": "15d1dc8d1b76b230a09014f6e33f4f342780549879ec0a1b68a24b72e3da6867",
+      "bytes": 2058
+    },
+    {
+      "source": "output/session-102900614/text-streams-red-1.csv",
+      "committed": "agent/evidence/102900614-007/23-session-102900614-text-streams-red-1.csv",
+      "sha256": "6da8e5b0464b27085b585d7e0437309c9fb647137cb4605a91c70677a1e4b0a2",
+      "bytes": 104
+    },
+    {
+      "source": "output/session-102900614/transform-streams-red-2.log",
+      "committed": "agent/evidence/102900614-007/24-session-102900614-transform-streams-red-2.log",
+      "sha256": "1884ab1244ef1b7f8d80274b0c8d8ec3037d71a4de76225a3bf2d3794c05b21e",
+      "bytes": 6526
+    },
+    {
+      "source": "output/session-102900614/transform-streams-red-2.json",
+      "committed": "agent/evidence/102900614-007/25-session-102900614-transform-streams-red-2.json",
+      "sha256": "46713da12efcf5bff70a351f5a46057ccc5c345faa523b21e67b21e947923c4f",
+      "bytes": 2053
+    },
+    {
+      "source": "output/session-102900614/transform-streams-red-2.csv",
+      "committed": "agent/evidence/102900614-007/26-session-102900614-transform-streams-red-2.csv",
+      "sha256": "5b9e8cff515ed8ba4c2407a66f53f2f5c0baa8276f1f361809f2f6923290ee2a",
+      "bytes": 105
+    }
+  ],
+  "resource_scope": "Every native/build regression stage uses1Hz process-tree monitoring. Short assertion runs do not establish idle, scrolling or soak acceptance.733 remains the accepted resource artifact; no2dac or733 idle numbers are transferred to80a.",
+  "standards_scope": "UTF streaming, backpressure/error propagation and private nonserializable Encoding Stream brands in windows and dedicated workers. Broader Streams, legacy streaming and cross-realm behavior are not fully conformant.",
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed",
+  "raw_evidence_whitespace_preservation": {
+    "evidence": "agent/evidence/102900614-007/raw-byte-preservation.json",
+    "sha256": "00c2f7ceb1ef60c7b56d2adeaa1e908ea634537f3482858f01950a7a79772110"
+  }
+}

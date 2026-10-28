@@ -137,6 +137,17 @@ if supplement_path.is_file():
         value['headersSupplemental']={'evidence':'agent/evidence/10290244-headers-fixture-supplemental.json','receiptSHA256':sha(supplement_path),'binarySHA256':native,'frozenVariants':52,'replacedVariants':2,'originalLedgerSHA256':supplement['originalResultsSHA256'],'rawOriginalSummary':raw,'adjustedSummary':adjusted,'policy':supplement['policy']}
         raw_pass=raw['subtest_outcomes'].get('PASS',0);raw_total=raw['executed_subtests_excluding_notrun'];adjusted_pass=adjusted['subtest_outcomes'].get('PASS',0);adjusted_total=adjusted['executed_subtests_excluding_notrun']
         status['phase']+=f" Fetch Headers raw run: {raw_pass}/{raw_total} assertions, {raw['files_passing_all_assertions']}/52 fully passing files. After restoring a pinned missing helper, the separate adjusted view is {adjusted_pass}/{adjusted_total} assertions and {adjusted['files_passing_all_assertions']}/52 fully passing files; {adjusted['file_outcomes'].get('ERROR',0)} errors and {adjusted['file_outcomes'].get('TIMEOUT',0)} timeouts remain. Original results are preserved."
+candidate=score.get('latest_functional_candidate')
+if candidate:
+    candidate_path=ROOT/candidate['stream_wpt']
+    if sha(candidate_path)!=candidate['stream_wpt_sha256']:raise RuntimeError('Candidate WPT evidence changed')
+    candidate_wpt=json.loads(candidate_path.read_text())
+    if candidate_wpt['binarySHA256']!=candidate['binary_sha256']:raise RuntimeError('Candidate WPT artifact differs')
+    status['functionalCandidate']={'binarySha256':candidate['binary_sha256'],'accepted':False,
+        'fullyPassingVariants':candidate_wpt['fullyPassing'],'recordedVariants':candidate_wpt['recorded'],
+        'scheduledFrozenVariants':candidate_wpt['frozenScheduledVariants'],'assertions':candidate_wpt['assertions'],
+        'scope':candidate_wpt['scope'],'evidence':candidate['stream_wpt']}
+else:status.pop('functionalCandidate',None)
 status['expandedWpt']=value;status['updatedUTC']=datetime.now(timezone.utc).isoformat()
 recorded=sum(row['lumenRecorded'] for row in value['categories'].values())
 passed=sum(row['lumenFullyPassing'] for row in value['categories'].values())

@@ -1,0 +1,44 @@
+{
+  "startedUTC": "2026-10-28T23:07:02.389518+00:00",
+  "sourceBaseCommit": "d665c4920c0c2c0aaf9e22e9945342c772423f1f",
+  "before": {
+    "src/js/prelude/07-web.js": "3ac188ebee6f1d486f8fc1c8e27b6a707fc60778df5bcbe963b4a776b74d11c4",
+    "src/js/worker.cc": "130f0b43484630fc8249aea2920109c0fd06676e5e8af294719b19c3617fb661",
+    "src/js/idl_state.h": "ad32a106f9ce8e01a926d9a98142da4be8127b996f7eb26ac21e89eb4ff44f17",
+    "src/js/clone_brand.h": "5e14f2dd9c2e6bc2c8b6a5177f55a6df4851dc8d69da56f9262a3bdb86bbf5d6",
+    "Makefile": "64ec44d5a7fc9228a4ee5de0089633eb7d609a35b70a2a13d231395f487cad30",
+    "tests/test_writable_streams.mjs": "a566867594c982392321f34a4342c1925ba0e8c65630e7cf47b0f261f763ece4"
+  },
+  "after": {
+    "src/js/prelude/07-web.js": "e8569d5699029bf5f409e615e08fe4c4172bd29970a5e8e6f89e46346660ad27",
+    "src/js/worker.cc": "0845859e7c5e1e711e8c0473d8034f5f6f55e3fd1c2fc3d1add85d753d9e083f",
+    "src/js/idl_state.h": "16d195002c82c4f150b7c7000636b495bfa2ccd37ac9be9f52b438879ca036c3",
+    "src/js/clone_brand.h": "26fea92fca67fd63af899f6ed5b78de9afe22204ad30b7b0a1515e4a2a0ac888",
+    "Makefile": "f35bdf1d3502bb7130e26a54b4949297da8aea6555ec8179bfd317bb810d8501",
+    "tests/test_writable_streams.mjs": "9298ccc2078582eccb12efa30aa069ad72a600164e88743a686fdde7012e04e2",
+    "src/js/prelude/06t-streams.js": "db97aabe87ab03be1156c9561c7aa8cb965976df78b4a3518ad6f025345858d5"
+  },
+  "fixtureSHA256": "341f6f3ea9dd173bffd2e63db6cd5d41c9b95687a1917ae00897c6902a8f246c",
+  "fixturePath": "tests/test_text_streams.py",
+  "testFixtures": {
+    "tests/test_text_streams.py": "341f6f3ea9dd173bffd2e63db6cd5d41c9b95687a1917ae00897c6902a8f246c",
+    "tests/test_transform_streams.mjs": "1c295a7765768cf8ade491091ef85c29727e20544122329a81120b4fb1959322"
+  },
+  "red": {
+    "encodingStreams": {
+      "report": "output/session-102900614/text-streams-red-1.log",
+      "total": 74,
+      "passed": 10,
+      "failed": 64
+    },
+    "transformLifecycle": {
+      "report": "output/session-102900614/transform-streams-red-2.log",
+      "total": 13,
+      "passed": 5,
+      "failed": 6,
+      "timedOut": 2
+    }
+  },
+  "scope": "Shared streams plus incremental Encoding streams in window and dedicated workers; no full Streams or legacy streaming conformance claim.",
+  "finishedUTC": "2026-10-28T23:07:02.403651+00:00"
+}
