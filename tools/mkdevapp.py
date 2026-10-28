@@ -19,6 +19,10 @@ from macos_deployment_closure import inspect_closure, sha256, version_text, vers
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--binary', type=Path, default=Path('build/lumen'),
+                        help='Tested executable inside this project; defaults to build/lumen')
+    parser.add_argument('--expected-binary-sha256',
+                        help='Require the selected executable to match its recorded test artifact SHA-256')
     parser.add_argument('--identifier', default='ai.ecoox.lumen.development')
     parser.add_argument('--minimum-system-version',
                         help='Optional conservative minimum; cannot understate the inspected dependency closure')
@@ -26,16 +30,26 @@ def main():
     if sys.platform != 'darwin':
         parser.error('A macOS development bundle must be created on macOS')
     root = Path(__file__).resolve().parents[1]
-    source = root / 'build/lumen'
+    source = (args.binary if args.binary.is_absolute() else root / args.binary).resolve()
+    if not source.is_relative_to(root):
+        parser.error('--binary must resolve to a file inside this project')
     output = args.output.resolve()
     if output.suffix != '.app' or output.exists():
         parser.error('--output must name a new .app directory')
     if not output.is_relative_to(root / 'out'):
         parser.error('Local development bundles must be beneath the project out directory')
     if not source.is_file():
-        parser.error('Build build/lumen before packaging')
+        parser.error('Build the selected --binary executable before packaging')
     if not args.identifier or not all(c.isalnum() or c in '.-' for c in args.identifier):
         parser.error('Invalid bundle identifier')
+    expected = args.expected_binary_sha256
+    if expected is not None:
+        if len(expected) != 64 or any(c not in '0123456789abcdefABCDEF' for c in expected):
+            parser.error('--expected-binary-sha256 must contain exactly 64 hexadecimal characters')
+        expected = expected.lower()
+    source_before = sha256(source)
+    if expected is not None and source_before != expected:
+        parser.error('The selected executable does not match --expected-binary-sha256')
     closure = inspect_closure(root, source)
     minimum = closure['maximumDeclaredMinimum']
     if args.minimum_system_version is not None:
@@ -50,7 +64,6 @@ def main():
     resources = output / 'Contents/Resources'
     executable.parent.mkdir(parents=True)
     resources.mkdir()
-    source_before = sha256(source)
     shutil.copy2(source, executable)
     executable.chmod(0o755)
     if sha256(executable) != source_before:
@@ -85,6 +98,8 @@ def main():
         raise RuntimeError('A source executable or dependency changed during packaging')
     print(json.dumps({'app': str(output), 'executable': str(executable),
                       'bundleIdentifier': args.identifier, 'developmentOnly': True,
+                      'sourceExecutable': str(source),
+                      'expectedBinarySha256Verified': expected is not None,
                       'binaryBeforeBundleSigningSha256': source_before,
                       'binarySha256': sha256(executable), 'minimumSystemVersion': minimum,
                       'deploymentClosure': signed_closure,
