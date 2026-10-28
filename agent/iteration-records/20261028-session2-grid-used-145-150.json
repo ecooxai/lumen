@@ -1,0 +1,352 @@
+{
+  "iteration": 150,
+  "origin_candidate": 145,
+  "correction_candidates": [
+    146,
+    147
+  ],
+  "scope": "Actual Box-owned Grid used-track values, narrow ungenerated-pseudo computed fallback, and corrected native fixture migration",
+  "status": "Focused final 150 CSS and 33-URL Grid gates pass; full 132/132 native gate passes. Final supplemental and broad release gates remain separately owned.",
+  "scoped_score": 96,
+  "score_scope": "Reviewed bounded cache/serializer repair, not browser parity; combined release remains gated",
+  "whole_goal_score": 19,
+  "started_utc": "2026-10-28T11:10:50.263627+00:00",
+  "finished_utc": "2026-10-28T12:04:11Z",
+  "elapsed_minutes": 53.3456,
+  "time_scope": "From first retained cache source-ready signal through final150 focused holdouts; includes review, rejected attempts and shared build windows, not CPU time",
+  "session_started_utc": "2026-10-28T09:12:12Z",
+  "total_session_wall_minutes": 171.9833,
+  "model": "GPT-6 Astra Pro",
+  "agents": [
+    "progress_and_deployment",
+    "repository_lead",
+    "standards_comparison"
+  ],
+  "tools": [
+    "built-in agents",
+    "rubywebterm MCP",
+    "native Lumen",
+    "Chromium150",
+    "WPT",
+    "1s resource monitor"
+  ],
+  "binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
+  "exact_snapshot": "agent/progress/runtime/private-prepared/source-snapshots/iteration-150",
+  "snapshot_record_sha256": "8498f1a18c2bef470c4f4152e40bab6b1221af51db266c15c6b3a59bb8e8c5b9",
+  "owned_file_hashes_at150": {
+    "src/layout/layout.h": "6d322d9a4b5d8e07ac24432fe340217f43553a8ae14b3aa23c925e8e32457fb2",
+    "src/layout/block.c": "8e85f3d17eedb0156c518a322f6794a5da76fe20cd3aab22bac319016cb550ca",
+    "src/layout/grid.c": "51f26a8e4e636c8887f062f75cca312ebf555f442b2bd91b5a09d7e4f3282997",
+    "src/layout/box.c": "b9c022adc1c09ee7bc1b14f8a1f33d644bc0f640aa8a88138c7a76d03ee26f78",
+    "src/css/style.c": "8922155823488af562e93ff0bbf1547ad741d1d42e144a51f35e0a0cfa30e173",
+    "src/js/jsnative.cc": "96cd129690b7f7ebccbaeda77ea899c1b1cf1f6cef9e2da1e34bb355a6a233f0",
+    "tests/test_grid_used_values.c": "a8b6f755c14b2336ecff4d3a092f8b124f5b8f90647c817f9c6eb679ff641d3c",
+    "tests/test_grid_item_width.c": "4f88d6869bcfdced97c652504179bc0174924b91c78011d0bde9da652732cd51",
+    "tests/browser/grid-used-track-regression.html": "b0e99fc4954db76a27efa34935f3e0c4c35e6000b4319da243b14c9cc343d64a"
+  },
+  "changes": [
+    "Transfer actual final cwid/rh arrays into an optional Box-owned GridUsedTracks payload; never reconstruct sizing in JavaScript.",
+    "Free the payload on layout replacement and Box destruction before arena reset; preserve explicit and leading implicit offsets.",
+    "Serialize used pixels from the correct generated grid Box, preserving specified/computed structure when no grid Box exists or private animation mode is requested.",
+    "Use the target document owning JsCtx/host for cross-document computed-style synchronization.",
+    "Share escape-aware line-name termination between parsing and serialization.",
+    "Retain already-computed explicit content:none pseudo style, while preserving the existing content-declaration allocation guard and generated-box condition."
+  ],
+  "focused": {
+    "cache_controls": {
+      "baseline142": 8,
+      "candidate145": 46,
+      "candidate146": 47,
+      "candidate150": 47,
+      "chromium": 47,
+      "total": 47,
+      "fixture_sha256": "b0e99fc4954db76a27efa34935f3e0c4c35e6000b4319da243b14c9cc343d64a",
+      "lifetime_controls": "120 browser mutation/rebuild cycles plus40 remove/recreate cycles; native17 checks include120 rebuild cycles"
+    },
+    "parser": {
+      "baseline128": {
+        "pass": 347,
+        "total": 1172,
+        "urls": 37,
+        "harness_ok": 37,
+        "fully_passing_urls": 3
+      },
+      "previous141": {
+        "pass": 1059,
+        "total": 1172,
+        "urls": 37,
+        "harness_ok": 37,
+        "fully_passing_urls": 31
+      },
+      "candidate146": {
+        "pass": 1087,
+        "total": 1172,
+        "urls": 37,
+        "harness_ok": 37,
+        "fully_passing_urls": 32
+      },
+      "chromium": {
+        "pass": 1130,
+        "total": 1172,
+        "urls": 37,
+        "harness_ok": 37,
+        "fully_passing_urls": 35
+      },
+      "previous145": {
+        "pass": 1087,
+        "total": 1172,
+        "urls": 37,
+        "harness_ok": 37,
+        "fully_passing_urls": 32
+      },
+      "candidate150": {
+        "pass": 1087,
+        "total": 1172,
+        "urls": 37,
+        "harness_ok": 37,
+        "fully_passing_urls": 32
+      }
+    },
+    "deltas_vs141": {
+      "gains": 28,
+      "losses": 0
+    },
+    "deltas_vs145_and146": {
+      "gains": 0,
+      "losses": 0
+    },
+    "deltas_vs128": {
+      "gains": 782,
+      "losses": 42,
+      "loss_classification": "All42 are retained unsupported tentative Grid3 intrinsic automatic-repeat outcomes; not generally invalid CSS."
+    },
+    "identities_unchanged": true
+  },
+  "rejected_attempts": [
+    {
+      "candidate": "145 attempt1",
+      "state": "Compile failed, no runtime candidate",
+      "reason": "Document.stylesheets is void*, requiring the established StyleEngine cast; original failed build and hashes retained."
+    },
+    {
+      "candidate": 145,
+      "state": "Rejected at scoped88",
+      "native": "127/129",
+      "authored": "46/47",
+      "reason": "Real ungenerated explicit content:none pseudo fallback defect plus public-getter fixture migration needed."
+    },
+    {
+      "candidate": 146,
+      "state": "Unaccepted combined candidate; placement experiment later rolled back",
+      "native": "128/129",
+      "authored": "47/47",
+      "reason": "Only native failure was an incorrect private-getter fixture migration; separate supplemental placement experiment caused21 geometry regressions. Its gains are excluded from final150."
+    }
+  ],
+  "fixture_migration": {
+    "original_geometry_checks_preserved": 5,
+    "parsed_track_metadata_checks": "All3 columns and3 rows: zero/min20 floors, explicit10px lengths, flex factors0.8 and1",
+    "private_tokens_unchanged_from144": true,
+    "source_proof": "agent/validation/linux-wpt-20261028/session2/used-grid-tracks/private-getter144-146-source-proof.json",
+    "source_proof_sha256": "ba20ccec728724cd081daf6a44b6e366c2fa8c04469a23747f2f0e40a8e16622",
+    "private_expected_columns": "10px minmax(0,1fr)10px",
+    "private_expected_rows": "minmax(20px,.8fr)auto minmax(20px,1fr)",
+    "public_columns_independently_derived": "10px 1060px 10px from1080px container minus two10px tracks",
+    "public_rows_independently_derived": "Actual middle-item height plus remaining540px space allocated0.8:1, tolerance0.01px",
+    "full147_native": "130/130 PASS; valid retained completion/run/resource logs",
+    "not_engine_or_wpt_gain": true,
+    "late_LastTest_copy_correction": "agent/validation/linux-wpt-20261028/session2/used-grid-tracks/lasttest-copy-provenance-correction.json"
+  },
+  "final_native_gate": {
+    "passed": 132,
+    "total": 132,
+    "completion": {
+      "started_utc": "2026-10-28T12:02:46Z",
+      "root_pid": 1417676,
+      "monitor_pid": 1417677,
+      "exit": 0,
+      "finished_utc": "2026-10-28T12:04:01Z",
+      "elapsed_seconds": 75.13784546498209
+    },
+    "resources": {
+      "label": "candidate150 full native CTest",
+      "started_utc": "2026-10-28T12:02:46.648744+00:00",
+      "finished_utc": "2026-10-28T12:04:01.692912+00:00",
+      "root_pid": 1417676,
+      "comm": null,
+      "exe": null,
+      "interval_seconds": 1,
+      "samples": 75,
+      "elapsed_seconds": 75.044,
+      "cpu_one_core_equals_100": true,
+      "cpu_min": 1.0,
+      "cpu_median": 85.49950000000001,
+      "cpu_max": 173.0,
+      "cpu_last10_median": 30.9995,
+      "rss_peak_mb": 314.581,
+      "rss_final_mb": 207.442,
+      "pss_peak_mb": 178.139,
+      "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2-module-errors/native150/resources.csv",
+      "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+    },
+    "ctest_log_sha256": "9bca37fd3bba0abe3b0bdba59194b5495e2ce0b63868094142cbe066ab945d5a"
+  },
+  "final_supplemental_gate": null,
+  "capture_cleanup": {
+    "parser37": {
+      "runner": "agent/validation/paired_wpt.py",
+      "arguments": [
+        "--kind",
+        "lumen",
+        "--binary",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i150",
+        "--output",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/final-css-holdouts150/parser37",
+        "--timeout",
+        "30",
+        "--urls-file",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/css-grid-parser/ordinary-urls.json"
+      ],
+      "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i150",
+      "source_hashes_before": {
+        "agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+        "agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+        "agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+        "tests/wpt/lumen_wpt.py": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca"
+      },
+      "source_hashes_after": {
+        "agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+        "agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+        "agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+        "tests/wpt/lumen_wpt.py": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca"
+      },
+      "sources_unchanged": true,
+      "joined_cleanup_threads": 1,
+      "remaining_cleanup_threads": [],
+      "cleanup_elapsed_s": 0.46263280999846756,
+      "cohort_elapsed_s": 68.13199887692463,
+      "runner_exception": null,
+      "method": "Join actual trusted guard cleanup workers; never synthesize audit records."
+    },
+    "typedom9": {
+      "runner": "agent/validation/paired_wpt.py",
+      "arguments": [
+        "--kind",
+        "lumen",
+        "--binary",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i150",
+        "--output",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/final-css-holdouts150/typedom9",
+        "--timeout",
+        "30",
+        "--urls-file",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/typed-grid-regression/urls.json"
+      ],
+      "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i150",
+      "source_hashes_before": {
+        "agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+        "agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+        "agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+        "tests/wpt/lumen_wpt.py": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca"
+      },
+      "source_hashes_after": {
+        "agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+        "agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+        "agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+        "tests/wpt/lumen_wpt.py": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca"
+      },
+      "sources_unchanged": true,
+      "joined_cleanup_threads": 1,
+      "remaining_cleanup_threads": [],
+      "cleanup_elapsed_s": 0.28991338808555156,
+      "cohort_elapsed_s": 17.917547317920253,
+      "runner_exception": null,
+      "method": "Join actual trusted guard cleanup workers; never synthesize audit records."
+    },
+    "cache47": {
+      "version": 2,
+      "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i150",
+      "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-used-track-regression.html",
+      "marker": "browser-grid-used-tracks",
+      "source_hashes_before": {
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_fixture.py": "8da5fcf656a2c787d57c36101c7f6735b8047c207c83d60a4ca1853c6b72da9d",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-used-track-regression.html": "b0e99fc4954db76a27efa34935f3e0c4c35e6000b4319da243b14c9cc343d64a",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i150": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967"
+      },
+      "source_hashes_after": {
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_fixture.py": "8da5fcf656a2c787d57c36101c7f6735b8047c207c83d60a4ca1853c6b72da9d",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-used-track-regression.html": "b0e99fc4954db76a27efa34935f3e0c4c35e6000b4319da243b14c9cc343d64a",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i150": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967"
+      },
+      "sources_unchanged": true,
+      "joined_cleanup_threads": 1,
+      "remaining_cleanup_threads": [],
+      "cleanup_elapsed_s": 0.7743910549907014,
+      "elapsed_s": 3.1253291979664937,
+      "guard_audit": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/final-css-holdouts150/cache47-guard/launches.jsonl",
+      "guard_events": [
+        "started_at_private_gate",
+        "constructor_verified_and_acknowledged",
+        "author_url_released",
+        "exited"
+      ],
+      "guard_events_complete_and_linked": true,
+      "remaining_recorded_pids": [],
+      "runner_exception": null,
+      "method": "Join actual trusted cleanup workers; require their real exit record and removed profile; never synthesize audit events."
+    }
+  },
+  "resources145": {
+    "label": "native145 used-grid CTest",
+    "started_utc": "2026-10-28T11:19:51.903041+00:00",
+    "finished_utc": "2026-10-28T11:20:39.996305+00:00",
+    "root_pid": 1141760,
+    "comm": null,
+    "exe": null,
+    "interval_seconds": 1,
+    "samples": 48,
+    "elapsed_seconds": 48.093,
+    "cpu_one_core_equals_100": true,
+    "cpu_min": 2.0,
+    "cpu_median": 126.927,
+    "cpu_max": 245.001,
+    "cpu_last10_median": 65.00150000000001,
+    "rss_peak_mb": 423.997,
+    "rss_final_mb": 183.546,
+    "pss_peak_mb": 173.871,
+    "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/used-grid-tracks/native145/resources.csv",
+    "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+  },
+  "evidence_root": "agent/validation/linux-wpt-20261028/session2/used-grid-tracks",
+  "final_comparison": "agent/validation/linux-wpt-20261028/session2/final-css-holdouts150/comparison.json",
+  "final_comparison_sha256": "a061dc7413ca0aef9389318095bee1251633ed456f06c290e3fc116c02b1d77a",
+  "limitations": [
+    "The correct used-value getter exposes actual layout output; it does not make the underlying Grid intrinsic sizing, subgrid, auto-repeat or placement algorithms complete.",
+    "39 of the original67 used-size misses remain in the focused parser cohort.",
+    "Omitted-content and hidden-host pseudo computed queries retain inherited limitations; the correction only retains already-computed explicit content:none style.",
+    "All42 unsupported tentative Grid3 outcomes remain visible.",
+    "The146 auto-placement experiment is rolled back and its gains are excluded from final150 claims.",
+    "Native timing/resource observations include concurrent jobs and are not isolated performance benchmarks."
+  ],
+  "standards": [
+    "https://drafts.csswg.org/css-grid-2/#resolved-track-list",
+    "https://drafts.csswg.org/cssom/"
+  ],
+  "independent_review": "repository_lead and standards_comparison reviewed ownership/freeing, target-document flush, empty/implicit tracks, escaped names, narrow pseudo retention and the independently derived fixture expectations. Root approved the bounded approach and preserved failed evidence.",
+  "recorded_utc": "2026-10-28T12:07:44.563042+00:00",
+  "final_grid_rollback_gate": {
+    "urls": 33,
+    "assertions_unchanged_from145": true,
+    "geometry_losses_restored": 21,
+    "gains_vs145": 0,
+    "losses_vs145": 0,
+    "harness_OK": 33,
+    "independent_owner": "standards_comparison"
+  }
+}

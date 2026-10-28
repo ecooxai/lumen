@@ -1,0 +1,97 @@
+{
+  "iteration": 145,
+  "status": "UNACCEPTED - corrected follow-up required",
+  "recorded_utc": "2026-10-28T11:30:22.652114+00:00",
+  "whole_goal_score": 19,
+  "scoped_score": 88,
+  "scope": "Box-owned grid used-track arrays and public resolved-value serialization",
+  "binary_sha256": "ed3ae57f5c8e7e9c483ee5bdee25f6df4b8e2800ee845c855d8ce417248aa8cd",
+  "source_manifest_sha256": "68cd960aad62225ba85246a3a78ef5f525caa816bbbd9e04fe1d1369060fa10f",
+  "source_snapshot": "agent/progress/runtime/private-prepared/source-snapshots/iteration-145",
+  "compile_attempt1": "agent/validation/iteration-145-attempt1: Document.stylesheets void-pointer type error; preserved failed compile, no runtime candidate. Attempt2 adds established StyleEngine cast only.",
+  "native": {
+    "started_utc": "2026-10-28T11:19:51.840468+00:00",
+    "finished_utc": "2026-10-28T11:20:40.042581+00:00",
+    "exit_code": 8,
+    "jobs": 3,
+    "tmpdir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/runtime-temp",
+    "label": "Full native suite, overlaps separately monitored frozen browser work; not an isolated performance benchmark"
+  },
+  "native_summary": {
+    "passed": 127,
+    "total": 129,
+    "failures": [
+      "browser_grid_used_tracks",
+      "grid_item_width"
+    ]
+  },
+  "authored": {
+    "passed": 46,
+    "total": 47,
+    "failure": {
+      "name": "ungenerated pseudo preserves computed structure",
+      "actual": "none",
+      "expected": "repeat(2, 10px)"
+    },
+    "baseline142": {
+      "passed": 8,
+      "total": 47
+    },
+    "chromium": {
+      "passed": 47,
+      "total": 47
+    },
+    "fixture_sha256": "b0e99fc4954db76a27efa34935f3e0c4c35e6000b4319da243b14c9cc343d64a"
+  },
+  "upstream": {
+    "urls": 37,
+    "total": 1172,
+    "passed": 1087,
+    "fully_passing_urls": 32,
+    "harness_ok": 37,
+    "versus141": {
+      "gains": 28,
+      "losses": 0
+    },
+    "versus128": {
+      "gains": 782,
+      "losses": 42
+    },
+    "retained_losses": "All42 tentative Grid3 intrinsic-auto-repeat outcomes remain visible and are unsupported by the bounded Grid1/2 profile; they are not generally invalid CSS.",
+    "comparison_file": "agent/validation/linux-wpt-20261028/session2/used-grid-tracks/candidate145-parser-comparison.json",
+    "comparison_sha256": "8e0b8320fc19005a316f3a97f073bdda4dcb338538557c0cebe244c41738bb90"
+  },
+  "resources": {
+    "label": "native145 used-grid CTest",
+    "started_utc": "2026-10-28T11:19:51.903041+00:00",
+    "finished_utc": "2026-10-28T11:20:39.996305+00:00",
+    "root_pid": 1141760,
+    "comm": null,
+    "exe": null,
+    "interval_seconds": 1,
+    "samples": 48,
+    "elapsed_seconds": 48.093,
+    "cpu_one_core_equals_100": true,
+    "cpu_min": 2.0,
+    "cpu_median": 126.927,
+    "cpu_max": 245.001,
+    "cpu_last10_median": 65.00150000000001,
+    "rss_peak_mb": 423.997,
+    "rss_final_mb": 183.546,
+    "pss_peak_mb": 173.871,
+    "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/used-grid-tracks/native145/resources.csv",
+    "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+  },
+  "required_correction": "Retain explicitly declared content:none pseudo computed style while continuing to suppress its Box; preserve native minified parser assertions via private computed getter and add independent public used-pixel checks.",
+  "retained_fixture": "agent/validation/linux-wpt-20261028/session2/used-grid-tracks/test_grid_item_width-before146.c",
+  "review": "Root and standards independently confirmed CSSOM pseudo existence and CSS Grid resolved/computed distinction; all original raw evidence retained.",
+  "subagents": [
+    "/root/progress_and_deployment",
+    "/root/repository_lead",
+    "/root/standards_comparison"
+  ],
+  "started_utc": "2026-10-28T11:10:50.263627+00:00",
+  "finished_utc": "2026-10-28T11:20:56Z",
+  "timing_scope": "From retained first source-ready signal through the last145 focused cohort; earlier implementation discussion is not assigned an invented timestamp",
+  "elapsed_minutes": 10.0956
+}

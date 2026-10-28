@@ -1,0 +1,64 @@
+<!doctype html><meta charset="utf-8"><title>Grid used-track serialization controls</title>
+<style>body{margin:0;font:16px sans-serif}</style><pre id="results">Running</pre><script>
+(async()=>{
+ const results=[]; const eq=(a,b)=>{if(a!==b)throw new Error(JSON.stringify(a)+' != '+JSON.stringify(b));};
+ const test=(name,fn)=>{try{fn();results.push({name,status:'PASS'});}catch(e){results.push({name,status:'FAIL',message:String(e.message||e)});}};
+ const cols=(e,p)=>getComputedStyle(e,p).gridTemplateColumns,rows=(e,p)=>getComputedStyle(e,p).gridTemplateRows;
+ const grid=(css,fn,html='')=>{const e=document.createElement('div');e.style.cssText='display:grid;width:200px;height:80px;'+css;e.innerHTML=html;document.body.append(e);try{fn(e);}finally{e.remove();}};
+ const simple=[
+ ['fixed explicit columns','grid-template-columns:10px 20px','columns','10px 20px'],
+ ['fixed explicit rows','grid-template-rows:15px 25px','rows','15px 25px'],
+ ['percent columns use content width','grid-template-columns:25% 75%;padding:10px;border:2px solid','columns','50px 150px'],
+ ['percent rows use definite content height','grid-template-rows:25% 75%;padding:10px;border:2px solid','rows','20px 60px'],
+ ['fraction columns expose used lengths','grid-template-columns:1fr 3fr','columns','50px 150px'],
+ ['fraction rows expose used lengths','grid-template-rows:1fr 1fr','rows','40px 40px'],
+ ['column gap remains outside track sizes','grid-template-columns:1fr 1fr;column-gap:20px','columns','90px 90px'],
+ ['row gap remains outside track sizes','grid-template-rows:1fr 1fr;row-gap:20px','rows','30px 30px'],
+ ['stretched auto columns expose used lengths','grid-template-columns:auto auto','columns','100px 100px'],
+ ['stretched auto rows expose used lengths','grid-template-rows:auto auto','rows','40px 40px'],
+ ['empty grid has no invented column','','columns','none'],
+ ['empty grid has no invented row','','rows','none'],
+ ['explicit line names survive used serialization','grid-template-columns:[a] 10px [b c] 20px [d]','columns','[a] 10px [b c] 20px [d]'],
+ ['integer repeat line boundaries merge','grid-template-columns:repeat(2, [s] 10px [e])','columns','[s] 10px [e s] 10px [e]'],
+ ['outer and repeated line boundaries merge','grid-template-columns:[a] repeat(2, [b] 10px [c]) [d]','columns','[a b] 10px [c b] 10px [c d]'],
+ ['calculated integer repetition exposes each actual track','grid-template-columns:repeat(calc(1 + 1), 10px)','columns','10px 10px'],
+ ['automatic repeat names use expanded actual columns','width:100px;grid-template-columns:repeat(auto-fill, [s] minmax(20px, 1fr) [e])','columns','[s] 20px [e s] 20px [e s] 20px [e s] 20px [e s] 20px [e]'],
+ ['non-grid preserves computed repetition structure','display:block;grid-template-columns:repeat(2, 10px)','columns','repeat(2, 10px)'],
+ ['display none preserves computed names and repetition','display:none;grid-template-columns:repeat(2, [a] 10px [b])','columns','repeat(2, [a] 10px [b])']
+ ];
+ for(const[name,css,axis,expected]of simple)test(name,()=>grid(css,e=>eq(axis==='columns'?cols(e):rows(e),expected)));
+ test('implicit columns are included',()=>grid('grid-auto-columns:20px',e=>eq(cols(e),'20px 20px 20px'),'<div style="grid-column:3"></div>'));
+ test('implicit rows are included',()=>grid('grid-auto-rows:10px',e=>eq(rows(e),'10px 10px'),'<div style="grid-row:2"></div>'));
+ test('absolute child creates no implicit tracks',()=>grid('position:relative',e=>{eq(cols(e),'none');eq(rows(e),'none');},'<div style="position:absolute;width:10px;height:10px"></div>'));
+ test('trailing implicit columns keep explicit line positions',()=>grid('grid-template-columns:[a] 10px [b];grid-auto-columns:20px',e=>eq(cols(e),'[a] 10px [b] 20px 20px'),'<div style="grid-column:3"></div>'));
+ test('leading implicit columns keep explicit line positions',()=>grid('grid-template-columns:[a] 10px [b];grid-auto-columns:20px',e=>eq(cols(e),'20px [a] 10px [b]'),'<div style="grid-column:-3 / -2"></div>'));
+ test('leading implicit rows keep explicit line positions',()=>grid('grid-template-rows:[a] 10px [b];grid-auto-rows:20px',e=>eq(rows(e),'20px [a] 10px [b]'),'<div style="grid-row:-3 / -2"></div>'));
+ test('hidden ancestor returns computed track structure',()=>{const h=document.createElement('div');h.style.display='none';document.body.append(h);const e=document.createElement('div');e.style.cssText='display:grid;grid-template-columns:repeat(2, 10px)';h.append(e);try{eq(cols(e),'repeat(2, 10px)');}finally{h.remove();}});
+ test('display transitions replace used values with computed values',()=>grid('grid-template-columns:repeat(2, 1fr)',e=>{eq(cols(e),'100px 100px');e.style.display='none';eq(cols(e),'repeat(2, 1fr)');e.style.display='grid';eq(cols(e),'100px 100px');}));
+ test('grid to block and back preserves computed structure',()=>grid('grid-template-columns:repeat(2, 1fr)',e=>{eq(cols(e),'100px 100px');e.style.display='block';eq(cols(e),'repeat(2, 1fr)');e.style.display='grid';eq(cols(e),'100px 100px');}));
+ test('resizing refreshes used values on a live declaration',()=>grid('grid-template-columns:1fr 1fr',e=>{const c=getComputedStyle(e);eq(c.gridTemplateColumns,'100px 100px');e.style.width='300px';eq(c.gridTemplateColumns,'150px 150px');}));
+ test('track replacement refreshes retained lengths',()=>grid('grid-template-columns:repeat(2, 10px)',e=>{eq(cols(e),'10px 10px');e.style.gridTemplateColumns='repeat(3, 20px)';eq(cols(e),'20px 20px 20px');}));
+ test('font update refreshes relative track lengths',()=>grid('font-size:20px;grid-template-columns:1em 2em',e=>{eq(cols(e),'20px 40px');e.style.fontSize='30px';eq(cols(e),'30px 60px');}));
+ test('adding and removing a child refreshes implicit tracks',()=>grid('grid-auto-columns:20px',e=>{eq(cols(e),'none');const c=document.createElement('div');c.style.gridColumn='3';e.append(c);eq(cols(e),'20px 20px 20px');c.remove();eq(cols(e),'none');}));
+ test('detached style is empty and reattachment recalculates',()=>grid('grid-template-columns:1fr 1fr',e=>{eq(cols(e),'100px 100px');e.remove();eq(cols(e),'');e.style.width='300px';document.body.append(e);eq(cols(e),'150px 150px');}));
+ test('line-name-only change refreshes names with same geometry',()=>grid('grid-template-columns:[a] 10px [b]',e=>{eq(cols(e),'[a] 10px [b]');e.style.gridTemplateColumns='[x] 10px [y]';eq(cols(e),'[x] 10px [y]');}));
+ const pseudo=(rule,fn)=>{const style=document.createElement('style'),e=document.createElement('div');e.id='pseudo-target';e.style.cssText='display:grid;width:200px;grid-template-columns:200px';style.textContent='#pseudo-target::before{'+rule+'}';document.head.append(style);document.body.append(e);try{fn(e);}finally{e.remove();style.remove();}};
+ test('before pseudo uses its own grid box',()=>pseudo('content:"";display:grid;width:70px;grid-template-columns:1fr 1fr',e=>eq(cols(e,'::before'),'35px 35px')));
+ test('inline-grid pseudo uses its own grid box',()=>pseudo('content:"";display:inline-grid;width:70px;grid-template-columns:1fr 1fr',e=>eq(cols(e,'::before'),'35px 35px')));
+ test('ungenerated pseudo preserves computed structure',()=>pseudo('content:none;display:grid;grid-template-columns:repeat(2, 10px)',e=>eq(cols(e,'::before'),'repeat(2, 10px)')));
+ test('missing pseudo does not borrow host grid tracks',()=>grid('grid-template-columns:1fr 1fr',e=>eq(cols(e,'::before'),'none')));
+ test('display-contents host pseudo still uses its own grid box',()=>pseudo('content:"";display:grid;width:70px;grid-template-columns:1fr 1fr',e=>{e.style.display='contents';eq(cols(e,'::before'),'35px 35px');}));
+ test('repeated layout replaces rather than accumulates track values',()=>grid('grid-template-columns:1fr 1fr',e=>{for(let i=0;i<120;i++){const w=200+(i%3)*20;e.style.width=w+'px';eq(cols(e),(w/2)+'px '+(w/2)+'px');}}));
+ test('escaped punctuation line names survive used serialization',()=>grid('grid-template-columns:[a\\+b] 10px [end]',e=>eq(cols(e),'[a\\+b] 10px [end]')));
+ test('escaped closing bracket is part of a line name',()=>grid('grid-template-columns:[x\\]y] 10px [end]',e=>eq(cols(e),'[x\\]y] 10px [end]')));
+ test('hexadecimal escape terminator is preserved in line names',()=>grid('grid-template-columns:[\\31 a] 10px [end]',e=>eq(cols(e),'[\\31 a] 10px [end]')));
+ test('bounded remove and recreate never reuses stale grid values',()=>{for(let i=0;i<40;i++){let removed,live;const w=100+(i%3)*20;grid('width:'+w+'px;grid-template-columns:1fr 1fr',e=>{removed=e;live=getComputedStyle(e);eq(live.gridTemplateColumns,(w/2)+'px '+(w/2)+'px');});eq(live.gridTemplateColumns,'');eq(cols(removed),'');}});
+ const f=document.createElement('iframe');f.style.cssText='width:320px;height:100px';
+ try{await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(new Error('frame load timeout')),5000);f.onload=()=>{clearTimeout(timeout);resolve();};f.srcdoc='<!doctype html><div id="g" style="display:grid;width:200px;grid-template-columns:1fr 1fr"></div>';document.body.append(f);});const g=f.contentDocument.getElementById('g');
+ test('caller document reads another document grid',()=>eq(cols(g),'100px 100px'));
+ test('caller document flushes target document after mutation',()=>{g.style.width='300px';eq(cols(g),'150px 150px');});
+ test('own window agrees on target document used values',()=>eq(f.contentWindow.getComputedStyle(g).gridTemplateColumns,'150px 150px'));
+ }catch(e){results.push({name:'cross-document fixture setup',status:'FAIL',message:String(e.message||e)});}finally{f.remove();}
+ window.__gridUsedTrackResults=results;const pass=results.filter(r=>r.status==='PASS').length;const marker='RESULTS browser-grid-used-tracks:'+(pass===results.length?'PASS':'FAIL')+' '+pass+'/'+results.length;document.getElementById('results').textContent=marker;console.log(marker);for(const row of results)console.log('GRID_USED_TRACK_RESULT '+JSON.stringify(row));
+})();
+</script>

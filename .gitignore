@@ -15,3 +15,6 @@ build-g/
 /tests/android/fonts/.cxx/
 /tests/android/fonts/local.properties
 __pycache__/
+
+# Task-owned transient browser and benchmark scratch.
+/agent/t/

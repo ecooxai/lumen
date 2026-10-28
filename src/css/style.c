@@ -1111,6 +1111,7 @@ static bool grid_fixed_dimension(const char *text, Length value, bool parsed) {
     }
     return true;
 }
+static const char *grid_name_end(const char *p);
 static int parse_grid_tracks_info(ACtx *c, const char *v, GridTrack **out, GridTrackParseInfo *info, bool repeated_body) {
     VEC(GridTrack) tr = {0};
     const char *p = v; char *t = NULL;
@@ -1119,7 +1120,7 @@ static int parse_grid_tracks_info(ACtx *c, const char *v, GridTrack **out, GridT
     for (;;) {
         while (is_ws((unsigned char)*p)) p++;
         /* A bracketed line-name list is one component even with spaces. */
-        if (*p == '[') { const char *end = strchr(p + 1, ']'); if (!end) goto invalid; p = end + 1; continue; }
+        if (*p == '[') { const char *end = grid_name_end(p + 1); if (!end) goto invalid; p = end + 1; continue; }
         t = next_token(&p); if (!t) break;
         size_t tl = strlen(t);
         if (!have_track && str_ieq(t, "subgrid")) subgrid = true;
@@ -3666,7 +3667,8 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     base->attribute_dependencies |= st->attribute_dependencies;
     base->parent_sensitive |= st->parent_sensitive;
     base->inherited_dynamic |= st->inherited_dynamic;
-    if (!st->content && which != 4) { style_free(st); return NULL; }
+    /* Keep computed values for explicitly styled, ungenerated pseudos;
+       box construction still requires content. */
     bg_position_resolve_logical(st);
     return st;
 }
@@ -4755,6 +4757,140 @@ static void tracks_str(SB *b, const GridTrack *t, int n) {
         else len_str(b, t->size, "auto");
     }
 }
+
+/* CSS Grid 7.2.6: expose the layout's actual track arrays. Line-name expansion
+   follows the computed token structure; it never estimates track sizes. */
+static const Box *grid_style_box(Node *el, const ComputedStyle *s) {
+    if (!el || !(el->flags & NF_CONNECTED) || !el->style) return NULL;
+    if (el->style == s) return el->box && el->box->st == s ? el->box : NULL;
+    if (s != el->style->before && s != el->style->after) return NULL;
+    Node *ancestor = el;
+    while (ancestor && !ancestor->box) ancestor = ancestor->parent;
+    const Box *root = ancestor ? ancestor->box : NULL;
+    for (const Box *box = root; box;) {
+        if (box->node == el && box->st == s) return box;
+        if (box->first) { box = box->first; continue; }
+        while (box != root && !box->next) box = box->parent;
+        box = box == root ? NULL : box->next;
+    }
+    return NULL;
+}
+static const char *grid_name_end(const char *p) {
+    while (*p) {
+        if (*p == ']') return p;
+        if (*p == '\\' && p[1]) {
+            p++;
+            if (isxdigit((unsigned char)*p)) {
+                int n = 0; while (n++ < 6 && isxdigit((unsigned char)*p)) p++;
+                if (is_ws((unsigned char)*p)) p++;
+            } else p++;
+        } else p++;
+    }
+    return NULL;
+}
+static void grid_add_names(SB *out, const char *p, const char *end) {
+    bool space = out->n != 0;
+    while (p < end) {
+        if (is_ws((unsigned char)*p)) { space = out->n != 0; p++; continue; }
+        if (space) sb_putc(out, ' '); space = false;
+        if (*p == '\\' && p + 1 < end) {
+            sb_putc(out, *p++);
+            if (isxdigit((unsigned char)*p)) {
+                int n = 0; while (p < end && n++ < 6 && isxdigit((unsigned char)*p)) sb_putc(out, *p++);
+                if (p < end && is_ws((unsigned char)*p)) { sb_putc(out, ' '); p++; }
+            } else sb_putc(out, *p++);
+        } else sb_putc(out, *p++);
+    }
+}
+/* Count ordinary track tokens and expand only their associated names. An
+   automatic repeat uses the count already materialized by layout, including
+   a zero-count first pass to identify the surrounding fixed sections. */
+static int grid_expand_names(ACtx *c, const char *value, SB *names, int limit,
+                             int offset, int automatic, int *auto_width, int depth) {
+    if (depth > 16) return -1;
+    const char *p = value; int count = 0;
+    for (;;) {
+        while (is_ws((unsigned char)*p)) p++;
+        if (*p == '[') {
+            const char *end = grid_name_end(p + 1); if (!end) return -1;
+            if (names && offset + count <= limit) grid_add_names(names + offset + count, p + 1, end);
+            p = end + 1; continue;
+        }
+        char *token = next_token(&p); if (!token) break;
+        if (str_ieq(token, "none")) { free(token); continue; }
+        if (str_ieq(token, "subgrid")) { free(token); return -1; }
+        if (str_istarts(token, "repeat(")) {
+            size_t length = strlen(token);
+            if (length < 9 || token[length - 1] != ')') { free(token); return -1; }
+            char *inner = xstrndup(token + 7, length - 8), *parts[3];
+            int n = split_top(inner, ',', parts, 3);
+            if (n != 2) { free(inner); free(token); return -1; }
+            int nested_auto = 0;
+            int width = grid_expand_names(c, parts[1], NULL, limit, 0, 0, &nested_auto, depth + 1);
+            long repeat = 1; const char *number = str_trim(parts[0]);
+            bool is_auto = str_ieq(number, "auto-fill") || str_ieq(number, "auto-fit");
+            if (width <= 0 || nested_auto || (!is_auto && !grid_repeat_count(c, number, &repeat))) {
+                free(inner); free(token); return -1;
+            }
+            if (is_auto) {
+                if (*auto_width) { free(inner); free(token); return -1; }
+                *auto_width = width; repeat = automatic;
+            }
+            if (names) for (long k = 0; k < repeat && offset + count + k * width <= limit; k++) {
+                int ignored = 0;
+                if (grid_expand_names(c, parts[1], names, limit, offset + count + (int)k * width,
+                                      automatic, &ignored, depth + 1) < 0) {
+                    free(inner); free(token); return -1;
+                }
+            }
+            count = LMIN(1000, count + (int)repeat * width);
+            free(inner);
+        } else count = LMIN(1000, count + 1);
+        free(token);
+    }
+    return count;
+}
+static void grid_resolved_tracks(SB *out, Node *el, const ComputedStyle *s, const char *property, int axis) {
+    const GenProp *g = gen_prop(property);
+    const char *value = g ? gen_value(s, g) : NULL;
+    const Box *box = grid_style_box(el, s);
+    const GridUsedTracks *used = box && box->fmt == FMT_GRID ? box->grid_used : NULL;
+    if (!used || (value && str_istarts(value, "subgrid"))) {
+        if (value) sb_puts(out, value);
+        else tracks_str(out, axis ? s->grid_rows : s->grid_cols, axis ? s->grid_nrows : s->grid_ncols);
+        return;
+    }
+    int count = used->count[axis];
+    if (!count) { sb_puts(out, "none"); return; }
+    SB *names = xcalloc((size_t)count + 1, sizeof *names);
+    if (value) {
+        ACtx c = {0}; c.em = s->font_size; c.rem = 16;
+        if (el && el->doc) {
+            if (el->doc->html && el->doc->html->style) c.rem = el->doc->html->style->font_size;
+            if (el->doc->stylesheets) c.mc = &((const StyleEngine *)el->doc->stylesheets)->media;
+        }
+        int automatic_width = 0;
+        int fixed = grid_expand_names(&c, value, NULL, count, 0, 0, &automatic_width, 0);
+        int automatic = automatic_width ? LMAX(1, (used->template_count[axis] - fixed) / automatic_width) : 1;
+        int ignored = 0;
+        if (fixed < 0 || grid_expand_names(&c, value, names, count, used->explicit_start[axis],
+                                         automatic, &ignored, 0) < 0)
+            for (int i = 0; i <= count; i++) { free(names[i].s); sb_init(names + i); }
+    }
+    for (int i = 0; i <= count; i++) {
+        if (names[i].n) {
+            if (out->n) sb_putc(out, ' ');
+            sb_putc(out, '['); sb_puts(out, names[i].s); sb_putc(out, ']');
+        }
+        if (i < count) {
+            if (out->n) sb_putc(out, ' ');
+            float size = used->size[axis][i]; sb_printf(out, "%gpx", size == 0 ? 0.0 : (double)size);
+        }
+        free(names[i].s);
+    }
+    free(names);
+}
+
 static void gap_str(SB *b, float px, Length l) { if (l.kind == LK_LEN && l.pct) len_str(b, l, "normal"); else if (px) sb_printf(b, "%gpx", px); else sb_puts(b, "normal"); }
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop);
 static void computed_prepare(Node *el) {
@@ -4779,7 +4915,7 @@ char *css_get_computed_pseudo(Node *el, int which, const char *prop) {
     free(css_get_computed_value(el, "display"));
     const ComputedStyle *b = el && el->type == NODE_ELEMENT ? el->style : NULL;
     const ComputedStyle *ps = b ? (which == 1 ? b->before : b->after) : NULL;
-    if (!ps && !strcmp(prop, "content")) return xstrdup("none");
+    if (!ps && (!strcmp(prop, "content") || !strcmp(prop, "grid-template-columns") || !strcmp(prop, "grid-template-rows"))) return xstrdup("none");
     return computed_of(el, ps ? ps : b, prop);
 }
 /* Resolve track dimensions while css_apply_decl has the correct element,
@@ -4815,7 +4951,11 @@ static char *tr_grid_value(Node *n, const ComputedStyle *s, const char *prop) {
     if (!s || (strcmp(prop, "grid-template-columns") && strcmp(prop, "grid-template-rows"))) return computed_of(n, s, prop);
     const GenProp *g = gen_prop(prop);
     const char *value = g ? gen_value(s, g) : NULL;
-    return value ? xstrdup(value) : computed_of(n, s, prop);
+    if (value) return xstrdup(value);
+    SB out; sb_init(&out);
+    bool rows = !strcmp(prop, "grid-template-rows");
+    tracks_str(&out, rows ? s->grid_rows : s->grid_cols, rows ? s->grid_nrows : s->grid_ncols);
+    return sb_take(&out);
 }
 /* Animation uses computed track values; CSSOM intentionally returns flattened
    used tracks for a grid box and must keep that public behavior. */
@@ -5004,8 +5144,8 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     else if (!strcmp(prop, "column-gap")) gap_str(&b, s->column_gap, s->column_gap_l);
     else if (!strcmp(prop, "row-gap")) gap_str(&b, s->row_gap, s->row_gap_l);
     else if (!strcmp(prop, "gap")) { gap_str(&b, s->row_gap, s->row_gap_l); sb_putc(&b, ' '); gap_str(&b, s->column_gap, s->column_gap_l); }
-    else if (!strcmp(prop, "grid-template-columns")) tracks_str(&b, s->grid_cols, s->grid_ncols);
-    else if (!strcmp(prop, "grid-template-rows")) tracks_str(&b, s->grid_rows, s->grid_nrows);
+    else if (!strcmp(prop, "grid-template-columns")) grid_resolved_tracks(&b, el, s, prop, 0);
+    else if (!strcmp(prop, "grid-template-rows")) grid_resolved_tracks(&b, el, s, prop, 1);
     else if (!strcmp(prop, "text-align")) { static const char *ta[] = { "start", "left", "right", "center", "justify", "end" }; sb_puts(&b, ta[s->text_align % 6]); }
     else if (!strcmp(prop, "white-space")) { static const char *ws[] = { "normal", "nowrap", "pre", "pre-wrap", "pre-line", "break-spaces" }; sb_puts(&b, ws[s->white_space % 6]); }
     else if (!strcmp(prop, "flex-direction")) { static const char *fd[] = { "row", "row-reverse", "column", "column-reverse" }; sb_puts(&b, fd[s->flex_direction & 3]); }

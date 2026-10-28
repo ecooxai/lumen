@@ -496,6 +496,54 @@ static std::string mod_key(JsCtx *c, v8::Local<v8::Module> m) {
     }
     return c->doc && c->doc->url ? c->doc->url : "";
 }
+bool mod_rethrow_cached(v8::Isolate *iso, const ModErrorMap &errors, const std::string &key) {
+    auto it = errors.find(key);
+    if (it == errors.end()) return false;
+    iso->ThrowException(it->second.Get(iso));
+    return true;
+}
+void mod_cache_script_error(v8::Isolate *iso, ModErrorMap &errors, const std::string &key, v8::TryCatch &caught) {
+    if (!caught.HasCaught()) return;
+    if (caught.CanContinue() && !errors.count(key)) errors.emplace(key, v8::Global<v8::Value>(iso, caught.Exception()));
+    caught.ReThrow();
+}
+bool mod_script_requests(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Module> module,
+                         const std::string &key, bool css, ModResolver resolve, ModErrorMap &errors,
+                         std::vector<std::string> &requests) {
+    v8::TryCatch caught(iso);
+    v8::Local<v8::FixedArray> rq = module->GetModuleRequests();
+    for (int i = 0; i < rq->Length(); i++) {
+        v8::Local<v8::ModuleRequest> mr = rq->Get(i).As<v8::ModuleRequest>();
+        std::string sp = jcstr(iso, mr->GetSpecifier()), ty;
+        if (!mod_attr_type(iso, ctx, mr->GetImportAttributes(), 3, css, ty)) {
+            mod_cache_script_error(iso, errors, key, caught); return false;
+        }
+        std::string url = resolve(sp, key);
+        if (url.empty()) {
+            iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to resolve module specifier \"" + sp + "\"").c_str())));
+            mod_cache_script_error(iso, errors, key, caught); return false;
+        }
+        requests.push_back(mod_mkey(url, ty));
+    }
+    return true;
+}
+bool mod_rethrow_graph_error(v8::Isolate *iso, const ModErrorMap &errors, const ModGraph &graph,
+                             const std::string &root) {
+    /* Ordered depth-first traversal is root-specific, including cycles. Keep the
+     * original script Error object without storing this selection on a parent. */
+    std::unordered_set<std::string> visited;
+    std::vector<std::string> pending{root};
+    while (!pending.empty()) {
+        std::string key = std::move(pending.back()); pending.pop_back();
+        if (!visited.insert(key).second) continue;
+        if (mod_rethrow_cached(iso, errors, key)) return true;
+        auto it = graph.find(key);
+        if (it != graph.end()) {
+            for (auto edge = it->second.rbegin(); edge != it->second.rend(); ++edge) pending.push_back(*edge);
+        }
+    }
+    return false;
+}
 static constexpr double kCodeRefreshQuietMs = 10000;   /* after the last module compile */
 static constexpr double kCodeIdleMs = 4000;             /* after the last user input */
 static std::atomic<double> g_input_at{ 0 };              /* last trusted pointer, touch, key or wheel event */
@@ -516,13 +564,17 @@ static void code_refresh_tick(JsCtx *c) {
 }
 static v8::MaybeLocal<v8::Module> mod_compile(JsCtx *c, const std::string &key, const std::string &src) {
     v8::Isolate *iso = c->iso;
+    if (mod_rethrow_cached(iso, c->mod_errors, key)) return {};
+    v8::TryCatch caught(iso);
     v8::ScriptOrigin origin(jstr(iso, key.c_str()), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
     bool cache = src.size() >= kCodeCacheMin && !g_code_dir.empty() && key.find("#lumen-inline-") == std::string::npos;
     std::string path = cache ? code_path(src.data(), src.size()) : std::string();
     v8::ScriptCompiler::CachedData *cd = cache ? code_load(path) : nullptr;
     v8::ScriptCompiler::Source s(jsrc(iso, src.data(), src.size()), origin, cd);
     v8::Local<v8::Module> m;
-    if (!v8::ScriptCompiler::CompileModule(iso, &s, cd ? v8::ScriptCompiler::kConsumeCodeCache : v8::ScriptCompiler::kNoCompileOptions).ToLocal(&m)) return {};
+    if (!v8::ScriptCompiler::CompileModule(iso, &s, cd ? v8::ScriptCompiler::kConsumeCodeCache : v8::ScriptCompiler::kNoCompileOptions).ToLocal(&m)) {
+        mod_cache_script_error(iso, c->mod_errors, key, caught); return {};
+    }
     if (cache && (!cd || s.GetCachedData()->rejected)) t_code_pending.emplace_back(v8::Global<v8::Module>(iso, m), path);
     if (cache) {
         int had = cd && !s.GetCachedData()->rejected ? s.GetCachedData()->length : 0;
@@ -658,6 +710,7 @@ v8::MaybeLocal<v8::Module> mod_synthetic(v8::Local<v8::Context> ctx, const std::
     return m;
 }
 static v8::MaybeLocal<v8::Module> mod_build(JsCtx *c, const std::string &key, const std::string &body, const std::string &ctype, bool *load_failure = nullptr) {
+    if (mod_rethrow_cached(c->iso, c->mod_errors, key)) return {};
     std::string t = mod_ktype(key);
     if (!mod_mime_matches(t, ctype)) {
         if (load_failure) *load_failure = true;
@@ -666,7 +719,10 @@ static v8::MaybeLocal<v8::Module> mod_build(JsCtx *c, const std::string &key, co
     }
     if (t.empty()) return mod_compile(c, key, body);
     v8::Local<v8::Module> m;
-    if (!mod_synthetic(c->iso->GetCurrentContext(), mod_kurl(key), t, body, ctype).ToLocal(&m)) return {};
+    v8::TryCatch caught(c->iso);
+    if (!mod_synthetic(c->iso->GetCurrentContext(), mod_kurl(key), t, body, ctype).ToLocal(&m)) {
+        mod_cache_script_error(c->iso, c->mod_errors, key, caught); return {};
+    }
     c->mods[key].Reset(c->iso, m);
     c->mod_url.emplace(m->GetIdentityHash(), key);
     return m;
@@ -674,24 +730,37 @@ static v8::MaybeLocal<v8::Module> mod_build(JsCtx *c, const std::string &key, co
 static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root, bool *load_failure = nullptr) {
     v8::Isolate *iso = c->iso;
     std::string ref = c->doc && c->doc->url ? c->doc->url : "";
-    std::vector<v8::Local<v8::Module>> todo{ root };
+    const std::string root_key = mod_key(c, root);
+    ModGraph graph;
+    std::unordered_set<std::string> inspected;
+    std::vector<v8::Local<v8::Module>> todo{root};
     while (!todo.empty()) {
         std::vector<std::string> need;
+        std::vector<v8::Local<v8::Module>> next;
         for (v8::Local<v8::Module> m : todo) {
             std::string base = mod_key(c, m);
-            v8::Local<v8::FixedArray> rq = m->GetModuleRequests();
-            for (int i = 0; i < rq->Length(); i++) {
-                v8::Local<v8::ModuleRequest> mr = rq->Get(i).As<v8::ModuleRequest>();
-                std::string sp = jcstr(iso, mr->GetSpecifier()), ty;
-                if (!mod_attr_type(iso, iso->GetCurrentContext(), mr->GetImportAttributes(), 3, true, ty)) return false;
-                std::string u = mod_mkey(mod_resolve(sp, base), ty);
-                if (u.empty()) return mod_throw(iso, "Failed to resolve module specifier \"" + sp + "\""), false;
-                if (!c->mods.count(u) && std::find(need.begin(), need.end(), u) == need.end()) need.push_back(u);
+            if (!inspected.insert(base).second || c->mod_errors.count(base)) continue;
+            std::vector<std::string> requests;
+            {
+                v8::TryCatch caught(iso);
+                if (!mod_script_requests(iso, iso->GetCurrentContext(), m, base, true,
+                                         mod_resolve, c->mod_errors, requests)) {
+                    if (caught.HasCaught() && caught.CanContinue() && c->mod_errors.count(base)) continue;
+                    if (caught.HasCaught()) caught.ReThrow();
+                    return false;
+                }
+            }
+            graph[base] = requests;
+            for (const std::string &key : requests) {
+                if (c->mod_errors.count(key)) continue;
+                auto found = c->mods.find(key);
+                if (found != c->mods.end()) next.push_back(found->second.Get(iso));
+                else if (std::find(need.begin(), need.end(), key) == need.end()) need.push_back(key);
             }
         }
-        todo.clear();
-        double busy = c->busy_since.exchange(0);   /* network time is not script time */
-        std::vector<std::string> urls; for (const std::string &k : need) urls.push_back(mod_kurl(k));
+        double busy = c->busy_since.exchange(0);
+        std::vector<std::string> urls;
+        for (const std::string &key : need) urls.push_back(mod_kurl(key));
         mod_prefetch(urls, ref, [c](const std::string &u) { return c->mods.count(u) > 0; });
         if (busy > 0) c->busy_since = now_ms();
         for (size_t i = 0; i < need.size(); i++) {
@@ -701,11 +770,21 @@ static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root, bool *load_failure =
                 return mod_throw(iso, "Failed to fetch module: " + urls[i]), false;
             }
             v8::Local<v8::Module> m;
-            if (!mod_build(c, need[i], body, ct, load_failure).ToLocal(&m)) return false;
-            todo.push_back(m);
+            v8::TryCatch caught(iso);
+            bool failed_load = false;
+            if (!mod_build(c, need[i], body, ct, &failed_load).ToLocal(&m)) {
+                if (failed_load && load_failure) *load_failure = true;
+                /* Finish fetching the reachable graph before selecting a parse
+                 * error: a network or MIME failure has priority over it. */
+                if (!failed_load && caught.HasCaught() && caught.CanContinue() && c->mod_errors.count(need[i])) continue;
+                if (caught.HasCaught()) caught.ReThrow();
+                return false;
+            }
+            next.push_back(m);
         }
+        todo = std::move(next);
     }
-    return true;
+    return !mod_rethrow_graph_error(iso, c->mod_errors, graph, root_key);
 }
 static v8::MaybeLocal<v8::Module> mod_resolve_cb(v8::Local<v8::Context> ctx, v8::Local<v8::String> spec, v8::Local<v8::FixedArray> attrs, v8::Local<v8::Module> ref) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
@@ -757,6 +836,8 @@ static void mod_job_start(JsCtx *c, std::unique_ptr<ModJob> j) {
 static void import_finish(JsCtx *c, v8::Local<v8::Promise::Resolver> R, const std::string &u) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    auto failure = c->mod_errors.find(u);
+    if (failure != c->mod_errors.end()) { (void)R->Reject(ctx, failure->second.Get(iso)); return; }
     v8::TryCatch tc(iso);
     v8::Local<v8::Module> m;
     std::string body;
@@ -852,7 +933,7 @@ static v8::MaybeLocal<v8::Promise> mod_dynamic(v8::Local<v8::Context> ctx, v8::L
         v8::TryCatch tc(iso);
         mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\"");
         (void)R->Reject(ctx, tc.Exception());
-    } else if (c->mods.count(u)) import_finish(c, R, u);
+    } else if (c->mods.count(u) || c->mod_errors.count(u)) import_finish(c, R, u);
     else {
         auto j = std::make_unique<ModJob>();
         j->url = u;
@@ -1413,7 +1494,7 @@ static void js_free_collect(JsCtx *c, std::vector<Node *> &roots, std::vector<Do
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset(); c->pick_cb.Reset(); c->rejs.clear();   /* before Dispose: ~JsCtx must not release handles */
         c->tt_script.Reset(); c->tt_eval.Reset(); c->code_like.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
-        c->mods.clear(); c->mod_url.clear(); c->mod_jobs.clear(); c->code_refresh.clear(); if (!c->parent) mod_synth_drop(c->iso);
+        c->mods.clear(); c->mod_errors.clear(); c->mod_url.clear(); c->mod_jobs.clear(); c->code_refresh.clear(); if (!c->parent) mod_synth_drop(c->iso);
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
         for (Node *n : c->wrapped)
             if (!n->parent && n->type != NODE_DOCUMENT && !n->refcount && !n->host) roots.push_back(n);
@@ -1506,7 +1587,7 @@ static void module_script_run(JsCtx *c, Node *script, const char *src, size_t n,
     bool ext = script && node_attr(script, "src"), load_failure = false;
     std::string tt_buf;
     if (!tt_script_text(c, script, src, n, tt_buf)) return;
-    if (may_defer && ext && !src && url && !c->mods.count(url)) {
+    if (may_defer && ext && !src && url && !c->mods.count(url) && !c->mod_errors.count(url)) {
         { JS_ENTER(c); jwrap(c, script); }
         auto j = std::make_unique<ModJob>();
         j->url = url;
@@ -1522,7 +1603,8 @@ static void module_script_run(JsCtx *c, Node *script, const char *src, size_t n,
         v8::Local<v8::Module> m;
         js_enter(c);
         auto it = c->mods.find(key);
-        if (it != c->mods.end()) m = it->second.Get(iso);
+        if (mod_rethrow_cached(iso, c->mod_errors, key)) { /* report the retained module-script error below */ }
+        else if (it != c->mods.end()) m = it->second.Get(iso);
         else {
             bool ok = src != nullptr;
             if (src) body.assign(src, n);

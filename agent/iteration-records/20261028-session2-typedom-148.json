@@ -1,0 +1,257 @@
+{
+  "iteration": 148,
+  "title": "Property-aware CSS Typed OM reification and direct-value ownership",
+  "status": "Scoped148 gates and immutable150 holdout passed; accepted for combined validation by repository_lead; final combined release remains separately gated",
+  "scoped_score_proposed": 96,
+  "whole_goal_score": 19,
+  "whole_goal_score_method": "Subjective readiness judgment, not a test pass percentage or parity formula",
+  "started_utc": "2026-10-28T11:36:56Z",
+  "finished_utc": "2026-10-28T11:55:40.034704+00:00",
+  "time_cost_minutes": 18.7339,
+  "timing_scope": "From first retained frozen attribution launch through final candidate148 native gate; source-review discussion began earlier and is not assigned an invented timestamp",
+  "session_started_utc": "2026-10-28T09:12:12+00:00",
+  "session_elapsed_minutes": 163.4672,
+  "agents": {
+    "implementation": "progress_and_deployment (GPT-6 Astra Pro, built-in agent)",
+    "independent_source_reviews": [
+      "repository_lead",
+      "standards_comparison"
+    ],
+    "project_manager": "root"
+  },
+  "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i148",
+  "binary_sha256": "8f00ced4e6341e289365065ba157e6ed11b338674128ad1892a333e07d211438",
+  "source_snapshot": "agent/progress/runtime/private-prepared/source-snapshots/iteration-148",
+  "owned_source_hashes": {
+    "src/js/prelude/03e-typedom.js": "fe6293ee04a02fa77d77a06bbf72265687cb9e5a3b2b480dac54b8f053f87f50",
+    "tests/browser/grid-typed-value-regression.html": "b5f1f19c89fb1cc822e757a63f8a8ca4e305f5efd930475b145ff4d0f498b638"
+  },
+  "patch_sha256": "f3c2922b41811c1e359562273214aa6c37fdba4130f4a9f926a7be4e66df7c93",
+  "authored_fixture_sha256": "b5f1f19c89fb1cc822e757a63f8a8ca4e305f5efd930475b145ff4d0f498b638",
+  "upstream": {
+    "urls": 9,
+    "assertions": 542,
+    "summary": {
+      "baseline146": {
+        "pass": 471,
+        "total": 542,
+        "harness_ok": 9,
+        "fully_passing_urls": 1
+      },
+      "candidate148": {
+        "pass": 479,
+        "total": 542,
+        "harness_ok": 9,
+        "fully_passing_urls": 2
+      },
+      "chromium": {
+        "pass": 507,
+        "total": 542,
+        "harness_ok": 9,
+        "fully_passing_urls": 4
+      }
+    },
+    "gains": 8,
+    "losses": 0,
+    "identities_unchanged": true,
+    "restored_primary_assertion": {
+      "url": "/css/css-typed-om/the-stylepropertymap/properties/grid-area.html",
+      "name": "'grid-area' does not support 'a / a'",
+      "occurrence": 0,
+      "before": "FAIL",
+      "after": "PASS",
+      "chromium": "PASS",
+      "before_message": "assert_class_string: Unsupported value must be a CSSStyleValue and not one of its subclasses expected \"[object CSSStyleValue]\" but got \"[object CSSKeywordValue]\"",
+      "after_message": null
+    },
+    "comparison": "agent/validation/linux-wpt-20261028/session2/typed-grid-regression/candidate148-comparison.json"
+  },
+  "authored": {
+    "baseline146_pass": 32,
+    "candidate148_pass": 62,
+    "chromium_pass": 60,
+    "total": 62,
+    "gains": 30,
+    "losses": 0,
+    "chromium_discrepancies": [
+      [
+        "same-property direct value survives set and append",
+        "FAIL",
+        "1 != 2"
+      ],
+      [
+        "same-property direct append preserves a CSSOM comma-separated list",
+        "FAIL",
+        "\"10px 20px 10px 20px\" != \"10px 20px, 10px 20px\""
+      ]
+    ],
+    "discrepancies_already_passed_native146": true,
+    "all_fixture_versions_retained": true,
+    "v3_background_position_append_premise_error_retained": true,
+    "v4_corrected_only_to_list_valued_background_size": true,
+    "v5_kept_list_decomposition_assertion_and_added_separate_CSSOM_comma_list_assertion": true,
+    "oracle_review": {
+      "reviewer": "standards_comparison",
+      "disposition": "Both expectations supported by the current draft; no fixture correction required",
+      "reason": "Parse subdivides list iterations before reification; append adds the associated representation as a new entry; getAll subdivides both. Backgrounds3 <bg-size># requires comma-separated size pairs. Direct-property association does not make every value an opaque entire list.",
+      "references": [
+        "https://drafts.css-houdini.org/css-typed-om-1/#dom-stylepropertymap-append",
+        "https://drafts.csswg.org/css-backgrounds-3/#the-background-size"
+      ],
+      "pinned_helper_limit": "runListValuedPropertyTests currently delegates to runPropertyTests and has a TODO for actual list tests; it is not independent append coverage.",
+      "evidence": "agent/validation/linux-wpt-20261028-session2/typed-om-append-oracle-review.json",
+      "sha256": "2aeb4fb44929d15b0bbd2cc326b2a56c0f4a0da4baf4983634208fb1998589bf"
+    }
+  },
+  "native": {
+    "passed": 131,
+    "total": 131,
+    "completion": {
+      "started_utc": "2026-10-28T11:54:36.823213+00:00",
+      "finished_utc": "2026-10-28T11:55:40.034704+00:00",
+      "exit_code": 0,
+      "jobs": 2,
+      "tmpdir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/runtime-temp",
+      "label": "Full native suite, overlaps separately monitored frozen browser work; not an isolated performance benchmark"
+    },
+    "resource_summary": {
+      "label": "native148 TypedOM CTest",
+      "started_utc": "2026-10-28T11:54:36.938746+00:00",
+      "finished_utc": "2026-10-28T11:55:39.985857+00:00",
+      "root_pid": 1352321,
+      "comm": null,
+      "exe": null,
+      "interval_seconds": 1,
+      "samples": 63,
+      "elapsed_seconds": 63.047,
+      "cpu_one_core_equals_100": true,
+      "cpu_min": 0.0,
+      "cpu_median": 71.0005,
+      "cpu_max": 185.001,
+      "cpu_last10_median": 37.585499999999996,
+      "rss_peak_mb": 289.841,
+      "rss_final_mb": 177.652,
+      "pss_peak_mb": 190.867,
+      "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/typed-grid-regression/native148/resources.csv",
+      "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+    },
+    "lasttest_sha256": "a67778ef10ae108bdfc404119adac9587b6c2a0cea335c686406026cb053a5e8"
+  },
+  "capture": {
+    "authored_cleanup": {
+      "version": 2,
+      "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i148",
+      "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-typed-value-regression.html",
+      "marker": "browser-grid-typed-values",
+      "source_hashes_before": {
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_fixture.py": "8da5fcf656a2c787d57c36101c7f6735b8047c207c83d60a4ca1853c6b72da9d",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-typed-value-regression.html": "b5f1f19c89fb1cc822e757a63f8a8ca4e305f5efd930475b145ff4d0f498b638",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i148": "8f00ced4e6341e289365065ba157e6ed11b338674128ad1892a333e07d211438"
+      },
+      "source_hashes_after": {
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_fixture.py": "8da5fcf656a2c787d57c36101c7f6735b8047c207c83d60a4ca1853c6b72da9d",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-typed-value-regression.html": "b5f1f19c89fb1cc822e757a63f8a8ca4e305f5efd930475b145ff4d0f498b638",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i148": "8f00ced4e6341e289365065ba157e6ed11b338674128ad1892a333e07d211438"
+      },
+      "sources_unchanged": true,
+      "joined_cleanup_threads": 1,
+      "remaining_cleanup_threads": [],
+      "cleanup_elapsed_s": 0.4861950839404017,
+      "elapsed_s": 2.0445927790133283,
+      "guard_audit": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/typed-grid-regression/candidate148-authored-guard/launches.jsonl",
+      "guard_events": [
+        "started_at_private_gate",
+        "constructor_verified_and_acknowledged",
+        "author_url_released",
+        "exited"
+      ],
+      "guard_events_complete_and_linked": true,
+      "remaining_recorded_pids": [],
+      "runner_exception": null,
+      "method": "Join actual trusted cleanup workers; require their real exit record and removed profile; never synthesize audit events."
+    },
+    "upstream_cleanup": {
+      "runner": "agent/validation/paired_wpt.py",
+      "arguments": [
+        "--kind",
+        "lumen",
+        "--binary",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i148",
+        "--output",
+        "/tmp/lumen-astra-checks-20261028/typed-grid-session2-lumen-candidate148",
+        "--timeout",
+        "30",
+        "--urls-file",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2/typed-grid-regression/urls.json"
+      ],
+      "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i148",
+      "source_hashes_before": {
+        "agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+        "agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+        "agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+        "tests/wpt/lumen_wpt.py": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca"
+      },
+      "source_hashes_after": {
+        "agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+        "agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+        "agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+        "tests/wpt/lumen_wpt.py": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca"
+      },
+      "sources_unchanged": true,
+      "joined_cleanup_threads": 1,
+      "remaining_cleanup_threads": [],
+      "cleanup_elapsed_s": 0.42007649794686586,
+      "cohort_elapsed_s": 19.070128238061443,
+      "runner_exception": null,
+      "method": "Join actual trusted guard cleanup workers; never synthesize audit records."
+    },
+    "no_primary_controller_access": true
+  },
+  "limitations": [
+    "This is a bounded Grid Typed OM classification and direct-value association repair, not full Typed OM support.",
+    "CSS-wide, pending var(), custom-property and unrelated subclass ordering are preserved; broader cross-realm branding remains inherited.",
+    "The current Typed OM draft does not fill every Grid-specific reification entry; exact subclass cases are supported by pinned WPT and Chromium observations, while associated-property ownership follows the general draft algorithm.",
+    "Two authored same-property background-size append observations differ from installed Chromium150; both already passed native146 and are not counted as148 gains or shared-WPT superiority.",
+    "No upstream expectations or CSSOM shorthand canonicalization were changed.",
+    "The immutable148 binary includes unaccepted145-147 source; this scoped result does not resolve the supplemental geometry or module error-ordering release blockers."
+  ],
+  "sources": [
+    "https://drafts.css-houdini.org/css-typed-om-1/#reify-as-a-cssstylevalue",
+    "https://drafts.css-houdini.org/css-typed-om-1/"
+  ],
+  "written_utc": "2026-10-28T11:59:55.883001+00:00",
+  "scoped_score": 96,
+  "final150_holdout": {
+    "binary_sha256": "79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967",
+    "summary": {
+      "pass": 479,
+      "total": 542,
+      "urls": 9,
+      "harness_ok": 9,
+      "fully_passing_urls": 2
+    },
+    "gains_vs148": 0,
+    "losses_vs148": 0,
+    "identities_unchanged": true,
+    "comparison_sha256": "a061dc7413ca0aef9389318095bee1251633ed456f06c290e3fc116c02b1d77a"
+  },
+  "recorded_utc": "2026-10-28T12:07:44.563042+00:00",
+  "final150_native_gate": {
+    "passed": 132,
+    "total": 132,
+    "completion": {
+      "started_utc": "2026-10-28T12:02:46Z",
+      "root_pid": 1417676,
+      "monitor_pid": 1417677,
+      "exit": 0,
+      "finished_utc": "2026-10-28T12:04:01Z",
+      "elapsed_seconds": 75.13784546498209
+    }
+  }
+}

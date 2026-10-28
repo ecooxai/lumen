@@ -16,6 +16,12 @@ typedef struct TextFrag { struct Box *box; float x, y, w, h, base; int g0, g1; }
 typedef struct Line { float y, h, base; int f0, nf; } Line;
 typedef struct IRect { float x, y, w, h; bool first, last; int line; } IRect;
 
+/* Owned by one layout box; sizes are final CSS pixels in logical track order. */
+typedef struct GridUsedTracks {
+    float *size[2];
+    int count[2], explicit_start[2], explicit_count[2], template_count[2];
+} GridUsedTracks;
+
 typedef struct Box {
     uint8_t kind, fmt, ctl;
     bool anon, abs, fixed, floated, bfc, scroller, placeholder, collapse_top, has_baseline, intr_ok, has_abs, is_marker;
@@ -29,6 +35,7 @@ typedef struct Box {
     Line *lines; int nlines, lcap;
     IRect *ir; int nir, ircap;
     float baseline;
+    GridUsedTracks *grid_used;
     float imin, imax;
     float scroll_w, scroll_h;
     int list_index;

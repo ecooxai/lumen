@@ -446,10 +446,26 @@ else()
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/module-error-regression.html"
             --marker browser-module-errors --output "${CMAKE_CURRENT_BINARY_DIR}/browser-module-errors")
         set_tests_properties(browser_module_errors PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-module-errors:PASS" TIMEOUT 35)
+        add_test(NAME browser_module_identity COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/module-identity-regression.html"
+            --marker browser-module-identity --output "${CMAKE_CURRENT_BINARY_DIR}/browser-module-identity")
+        set_tests_properties(browser_module_identity PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-module-identity:PASS" TIMEOUT 35)
+    add_test(NAME browser_module_graph_identity COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/module-graph-identity-regression.html"
+            --marker browser-module-graph-identity --output "${CMAKE_CURRENT_BINARY_DIR}/browser-module-graph-identity")
+        set_tests_properties(browser_module_graph_identity PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-module-graph-identity:PASS" TIMEOUT 35)
         add_test(NAME browser_body_event COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/body-event-regression.html"
             --marker browser-body-event --output "${CMAKE_CURRENT_BINARY_DIR}/browser-body-event")
         set_tests_properties(browser_body_event PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-body-event:PASS" TIMEOUT 35)
+        add_test(NAME browser_grid_typed_values COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/grid-typed-value-regression.html"
+            --marker browser-grid-typed-values --output "${CMAKE_CURRENT_BINARY_DIR}/browser-grid-typed-values")
+        set_tests_properties(browser_grid_typed_values PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-grid-typed-values:PASS" TIMEOUT 35)
+        add_test(NAME browser_grid_used_tracks COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/grid-used-track-regression.html"
+            --marker browser-grid-used-tracks --output "${CMAKE_CURRENT_BINARY_DIR}/browser-grid-used-tracks")
+        set_tests_properties(browser_grid_used_tracks PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-grid-used-tracks:PASS" TIMEOUT 35)
         add_test(NAME browser_grid_repeat_count COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/grid-repeat-count-regression.html"
             --marker browser-grid-repeat-count --output "${CMAKE_CURRENT_BINARY_DIR}/browser-grid-repeat-count")
@@ -563,6 +579,10 @@ else()
         target_link_libraries(test_paint_cull PRIVATE lumen_engine)
         target_compile_options(test_paint_cull PRIVATE -UNDEBUG)
         add_test(NAME paint_cull COMMAND test_paint_cull)
+        add_executable(test_grid_used_values tests/test_grid_used_values.c)
+        target_link_libraries(test_grid_used_values PRIVATE lumen_engine)
+        target_compile_options(test_grid_used_values PRIVATE -UNDEBUG)
+        add_test(NAME grid_used_values COMMAND test_grid_used_values)
         add_executable(test_grid_repeat_validation tests/test_grid_repeat_validation.c)
         target_link_libraries(test_grid_repeat_validation PRIVATE lumen_engine)
         target_compile_options(test_grid_repeat_validation PRIVATE -UNDEBUG)

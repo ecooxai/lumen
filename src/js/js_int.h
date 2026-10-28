@@ -77,6 +77,18 @@ bool mod_attr_type(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::F
 bool mod_mime_matches(const std::string &type, const std::string &ctype);
 void mod_synth_drop(v8::Isolate *iso);
 v8::MaybeLocal<v8::Module> mod_synthetic(v8::Local<v8::Context> ctx, const std::string &u, const std::string &type, const std::string &body, const std::string &ctype);
+/* Only a script's own parse/creation error is retained by its typed module-map
+ * key. A dependency error is selected separately for each requested root. */
+using ModErrorMap = std::unordered_map<std::string, v8::Global<v8::Value>>;
+using ModGraph = std::unordered_map<std::string, std::vector<std::string>>;
+using ModResolver = std::string (*)(const std::string &, const std::string &);
+bool mod_rethrow_cached(v8::Isolate *iso, const ModErrorMap &errors, const std::string &key);
+void mod_cache_script_error(v8::Isolate *iso, ModErrorMap &errors, const std::string &key, v8::TryCatch &caught);
+bool mod_script_requests(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::Module> module,
+                         const std::string &key, bool css, ModResolver resolve, ModErrorMap &errors,
+                         std::vector<std::string> &requests);
+bool mod_rethrow_graph_error(v8::Isolate *iso, const ModErrorMap &errors, const ModGraph &graph,
+                             const std::string &root);
 struct JsCtx {
     v8::Isolate *iso = nullptr;
     std::shared_ptr<JsBroadcastContext> broadcast;
@@ -157,6 +169,7 @@ struct JsCtx {
     void *host_ud = nullptr;          /* child host data returned by frame_open */
     std::string frame_src;
     std::unordered_map<std::string, v8::Global<v8::Module>> mods;   /* ES module map, keyed by URL */
+    ModErrorMap mod_errors;
     std::unordered_multimap<int, std::string> mod_url;              /* module identity hash -> key */
     int mod_seq = 0;
     std::vector<std::unique_ptr<ModJob>> mod_jobs;

@@ -40,9 +40,33 @@ int main(void) {
         bad += fabsf(b->w - want) > .5f;
     }
     Node *gm = doc_get_element_by_id(d, "gm");
-    char *cols = css_get_computed_value(gm, "grid-template-columns"), *rows = css_get_computed_value(gm, "grid-template-rows");
-    fprintf(stderr, "minified: [%s] [%s]\n", cols, rows);
-    assert(!strcmp(cols, "10px 1fr 10px") && !strcmp(rows, "minmax(20px, 0.8fr) auto minmax(20px, 1fr)"));
+    /* The minified parser must keep all tracks, floors, and flex factors.
+       These checks retain the old parsed-structure coverage independently of
+       serialization: minmax(0,1fr) must not lose its zero minimum. */
+    const ComputedStyle *st = gm->style;
+    assert(st->grid_ncols == 3 && st->grid_nrows == 3);
+    assert(st->grid_cols[0].size.kind == LK_LEN && st->grid_cols[0].size.px == 10);
+    assert(st->grid_cols[1].fr == 1 && st->grid_cols[1].min.kind == LK_LEN && st->grid_cols[1].min.px == 0);
+    assert(st->grid_cols[2].size.kind == LK_LEN && st->grid_cols[2].size.px == 10);
+    assert(fabsf(st->grid_rows[0].fr - .8f) < .00001f && st->grid_rows[0].min.kind == LK_LEN && st->grid_rows[0].min.px == 20);
+    assert(st->grid_rows[1].fr == 0 && st->grid_rows[1].size.kind == LK_AUTO);
+    assert(st->grid_rows[2].fr == 1 && st->grid_rows[2].min.kind == LK_LEN && st->grid_rows[2].min.px == 20);
+    /* Animation's private computed getter preserves the authored token
+       structure; the public resolved getter below exposes layout's pixels. */
+    char *cols = css_get_animation_value(gm, "grid-template-columns"), *rows = css_get_animation_value(gm, "grid-template-rows");
+    fprintf(stderr, "minified computed: [%s] [%s]\n", cols, rows);
+    assert(!strcmp(cols, "10px minmax(0,1fr)10px") && !strcmp(rows, "minmax(20px,.8fr)auto minmax(20px,1fr)"));
+    free(cols); free(rows);
+    cols = css_get_computed_value(gm, "grid-template-columns");
+    rows = css_get_computed_value(gm, "grid-template-rows");
+    fprintf(stderr, "minified resolved: [%s] [%s]\n", cols, rows);
+    assert(!strcmp(cols, "10px 1060px 10px"));
+    float top = 0, middle = 0, bottom = 0; char extra = 0;
+    assert(sscanf(rows, "%fpx %fpx %fpx %c", &top, &middle, &bottom, &extra) == 3);
+    float auto_height = box("m")->h, remaining = 540.0f - auto_height;
+    assert(fabsf(middle - auto_height) < .01f);
+    assert(fabsf(top - remaining * .8f / 1.8f) < .01f);
+    assert(fabsf(bottom - remaining / 1.8f) < .01f);
     free(cols); free(rows);
     assert(!bad);
     return 0;

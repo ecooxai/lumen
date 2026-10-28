@@ -162,9 +162,9 @@ static void build(BState *bs, Box *parent, Node *n, int *li_counter);
 static void build_pseudo(BState *bs, Box *parent, Node *el, ComputedStyle *ps) {
     if (!ps || !ps->content || ps->display == D_NONE) return;
     bool blockify = ps->position == P_ABSOLUTE || ps->position == P_FIXED || ps->float_ != F_NONE;
-    uint8_t kind = blockify ? BX_BLOCK : ps->display == D_INLINE ? BX_INLINE : (ps->display == D_INLINE_BLOCK || ps->display == D_INLINE_FLEX) ? BX_ATOMIC : BX_BLOCK;
+    uint8_t kind = blockify ? BX_BLOCK : ps->display == D_INLINE ? BX_INLINE : (ps->display == D_INLINE_BLOCK || ps->display == D_INLINE_FLEX || ps->display == D_INLINE_GRID) ? BX_ATOMIC : BX_BLOCK;
     Box *b = new_box(bs->L, kind, el, ps); b->anon = true;
-    b->fmt = ps->display == D_FLEX || ps->display == D_INLINE_FLEX ? FMT_FLEX : ps->display == D_GRID ? FMT_GRID : FMT_FLOW;
+    b->fmt = ps->display == D_FLEX || ps->display == D_INLINE_FLEX ? FMT_FLEX : ps->display == D_GRID || ps->display == D_INLINE_GRID ? FMT_GRID : FMT_FLOW;
     b->abs = ps->position == P_ABSOLUTE || ps->position == P_FIXED; b->fixed = ps->position == P_FIXED; b->floated = ps->float_ != F_NONE;
     if (b->abs || b->floated || kind == BX_ATOMIC) b->bfc = true;
     if (*ps->content) { Box *t = new_box(bs->L, BX_TEXT, NULL, ps); t->text = prep_text(bs, ps->content, strlen(ps->content), ps, &t->text_len, NULL); append(b, t); }

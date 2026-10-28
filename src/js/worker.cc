@@ -47,6 +47,7 @@ struct WEnv {
     std::shared_ptr<Worker> w; v8::Isolate *iso = nullptr;
     v8::Global<v8::Context> ctx; v8::Global<v8::Function> onmsg, report;
     std::map<std::string, v8::Global<v8::Module>> mods; std::multimap<int, std::string> murl;
+    ModErrorMap mod_errors;
     std::map<uint32_t, WTimer> timers; uint32_t tseq = 0; bool closing = false, reporting = false; double t0 = 0;
     std::map<uint64_t, WFetchCb> fetches;   /* W.fetchAsync callbacks by net request id */
 };
@@ -55,7 +56,7 @@ uint32_t g_wseq;
 const int kEnvSlot = 2;
 v8::MaybeLocal<v8::Module> wm_compile(WEnv *E, const std::string &u, const std::string &src);
 bool wm_graph(WEnv *E, v8::Local<v8::Module> m);
-bool wm_load(WEnv *E, const std::string &key);
+bool wm_load(WEnv *E, const std::string &key, bool *load_failure = nullptr);
 v8::MaybeLocal<v8::Promise> wm_dynamic(v8::Local<v8::Context>, v8::Local<v8::Data>, v8::Local<v8::Value>, v8::Local<v8::String>, v8::Local<v8::FixedArray>);
 v8::MaybeLocal<v8::Module> wm_resolve_cb(v8::Local<v8::Context>, v8::Local<v8::String>, v8::Local<v8::FixedArray>, v8::Local<v8::Module>);
 void wm_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::Object> meta);
@@ -939,7 +940,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         }
         for (auto &f : E->fetches) { { std::lock_guard<std::mutex> lk(g_wfetch_mu); g_wfetch.erase(f.first); } net_cancel(f.first); }
         js_broadcast_deactivate(E->broadcast);
-        E->fetches.clear(); E->timers.clear(); E->mods.clear(); E->murl.clear(); mod_synth_drop(iso); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
+        E->fetches.clear(); E->timers.clear(); E->mods.clear(); E->mod_errors.clear(); E->murl.clear(); mod_synth_drop(iso); E->onmsg.Reset(); E->report.Reset(); E->ctx.Reset();
     }
     std::deque<Buf> abandoned;
     {
@@ -966,10 +967,14 @@ std::string wm_key(WEnv *E, v8::Local<v8::Module> m) {
 }
 v8::MaybeLocal<v8::Module> wm_compile(WEnv *E, const std::string &u, const std::string &src) {
     v8::Isolate *iso = E->iso;
+    if (mod_rethrow_cached(iso, E->mod_errors, u)) return {};
+    v8::TryCatch caught(iso);
     v8::ScriptOrigin origin(jstr(iso, u.c_str()), 0, 0, false, -1, v8::Local<v8::Value>(), false, false, true);
     v8::ScriptCompiler::Source so(jsrc(iso, src.data(), src.size()), origin);
     v8::Local<v8::Module> m;
-    if (!v8::ScriptCompiler::CompileModule(iso, &so).ToLocal(&m)) return {};
+    if (!v8::ScriptCompiler::CompileModule(iso, &so).ToLocal(&m)) {
+        mod_cache_script_error(iso, E->mod_errors, u, caught); return {};
+    }
     E->mods[u].Reset(iso, m); E->murl.emplace(m->GetIdentityHash(), u);
     return m;
 }
@@ -979,37 +984,67 @@ std::string wm_resolve(const std::string &spec, const std::string &base) {
     char *u = url_join(base.c_str(), spec.c_str()); std::string r = u ? u : ""; free(u); return r;
 }
 /* fetches and compiles a module map key (URL, or URL + type) and its static imports, unless already known */
-bool wm_load(WEnv *E, const std::string &key) {
+bool wm_load(WEnv *E, const std::string &key, bool *load_failure) {
     v8::Isolate *iso = E->iso;
+    if (mod_rethrow_cached(iso, E->mod_errors, key)) return false;
     if (E->mods.count(key)) return true;
     std::string u = mod_kurl(key), ty = mod_ktype(key), body, ct;
     NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
     bool ok = r && r->status >= 200 && r->status < 300;
     if (ok) { body.assign(r->body ? r->body : "", r->body_len); const char *t = headers_get(&r->headers, "content-type"); ct = t ? t : ""; }
     if (r) net_response_free(r);
-    if (!ok) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to fetch module: " + u).c_str()))); return false; }
+    if (!ok) {
+        if (load_failure) *load_failure = true;
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to fetch module: " + u).c_str()))); return false;
+    }
     v8::Local<v8::Module> d;
     if (!mod_mime_matches(ty, ct)) {
+        if (load_failure) *load_failure = true;
         iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to load module script with an incompatible MIME type: " + u).c_str())));
         return false;
     }
-    if (ty.empty()) return wm_compile(E, u, body).ToLocal(&d) && wm_graph(E, d);
-    if (!mod_synthetic(iso->GetCurrentContext(), u, ty, body, ct).ToLocal(&d)) return false;
+    if (ty.empty()) return wm_compile(E, u, body).ToLocal(&d);
+    v8::TryCatch caught(iso);
+    if (!mod_synthetic(iso->GetCurrentContext(), u, ty, body, ct).ToLocal(&d)) {
+        mod_cache_script_error(iso, E->mod_errors, key, caught); return false;
+    }
     E->mods[key].Reset(iso, d); E->murl.emplace(d->GetIdentityHash(), key);
     return true;
 }
 bool wm_graph(WEnv *E, v8::Local<v8::Module> m) {
     v8::Isolate *iso = E->iso;
-    std::string base = wm_key(E, m);
-    v8::Local<v8::FixedArray> rq = m->GetModuleRequests();
-    for (int i = 0; i < rq->Length(); i++) {
-        v8::Local<v8::ModuleRequest> mr = rq->Get(i).As<v8::ModuleRequest>();
-        std::string sp = jcstr(iso, mr->GetSpecifier()), ty, u = wm_resolve(sp, base);
-        if (!mod_attr_type(iso, iso->GetCurrentContext(), mr->GetImportAttributes(), 3, false, ty)) return false;
-        if (u.empty()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to resolve module specifier \"" + sp + "\"").c_str()))); return false; }
-        if (!wm_load(E, mod_mkey(u, ty))) return false;
+    const std::string root = wm_key(E, m);
+    ModGraph graph;
+    std::unordered_set<std::string> inspected;
+    std::vector<std::string> todo{root};
+    for (size_t at = 0; at < todo.size(); at++) {
+        const std::string key = todo[at];
+        if (!inspected.insert(key).second || E->mod_errors.count(key)) continue;
+        {
+            v8::TryCatch caught(iso);
+            bool failed_load = false;
+            if (!wm_load(E, key, &failed_load)) {
+                if (!failed_load && caught.HasCaught() && caught.CanContinue() && E->mod_errors.count(key)) continue;
+                if (caught.HasCaught()) caught.ReThrow();
+                return false;
+            }
+        }
+        auto found = E->mods.find(key);
+        if (found == E->mods.end()) return false;
+        std::vector<std::string> requests;
+        {
+            v8::TryCatch caught(iso);
+            if (!mod_script_requests(iso, iso->GetCurrentContext(), found->second.Get(iso),
+                                     key, false, wm_resolve, E->mod_errors, requests)) {
+                if (caught.HasCaught() && caught.CanContinue() && E->mod_errors.count(key)) continue;
+                if (caught.HasCaught()) caught.ReThrow();
+                return false;
+            }
+        }
+        graph[key] = requests;
+        todo.insert(todo.end(), requests.begin(), requests.end());
     }
-    return true;
+    return !mod_rethrow_graph_error(iso, E->mod_errors, graph, root);
 }
 v8::MaybeLocal<v8::Module> wm_resolve_cb(v8::Local<v8::Context> ctx, v8::Local<v8::String> spec, v8::Local<v8::FixedArray> attrs, v8::Local<v8::Module> ref) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
@@ -1051,6 +1086,7 @@ v8::MaybeLocal<v8::Promise> wm_dynamic(v8::Local<v8::Context> ctx, v8::Local<v8:
         v8::Local<v8::Value> r;
         if (!wm_load(E, key)) { (void)R->Reject(cx, tc.Exception()); return; }
         v8::Local<v8::Module> m = E->mods[key].Get(iso);
+        if (!wm_graph(E, m)) { (void)R->Reject(cx, tc.Exception()); return; }
         if (m->GetStatus() == v8::Module::kErrored) { (void)R->Reject(cx, m->GetException()); return; }
         if (m->GetStatus() == v8::Module::kUninstantiated && !m->InstantiateModule(cx, wm_resolve_cb).FromMaybe(false)) { (void)R->Reject(cx, tc.Exception()); return; }
         if (m->GetStatus() == v8::Module::kEvaluating || m->GetStatus() == v8::Module::kInstantiating) { (void)R->Resolve(cx, m->GetModuleNamespace()); return; }

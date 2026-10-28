@@ -396,7 +396,15 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         box_translate(c, x - c->x, y - c->y);
     }
     float total = ry[nr];
-    free(cwid); free(cx0); free(rh); free(ry); free(rows); free(auto_cols); free(auto_rows); vec_free(items); vec_free(cols);
+    if (!b->grid_used) b->grid_used = xcalloc(1, sizeof *b->grid_used);
+    else { free(b->grid_used->size[0]); free(b->grid_used->size[1]); }
+    *b->grid_used = (GridUsedTracks){
+        .size = {cwid, rh}, .count = {items.n || explicit_columns ? nc : 0, nr},
+        .explicit_start = {leading_columns, leading_rows},
+        .explicit_count = {explicit_columns, explicit_rows},
+        .template_count = {sized_columns, s->grid_nrows}
+    };
+    free(cx0); free(ry); free(rows); free(auto_cols); free(auto_rows); vec_free(items); vec_free(cols);
     return total;
 }
 

@@ -416,3 +416,63 @@ Full native CTest passes 127/127 in 53.99 seconds, monitored for 54.13 seconds o
 The remaining 17 assertions stay explicit: four module exception-identity cases, one fetch-error-priority case, one error-source-location case, four origin-policy cases, four CSS rule serialization cases, one constructed stylesheet import case, and two selector NUL/UTF-8 preprocessing cases. The loader repair does not claim complete module maps, fetch policy or Wasm-module integration. A later bounded exception-identity repair may proceed separately.
 
 Frozen144 binary SHA256 941ffd66a9ffc783aa87f6f6b464ab2d79e4c19fd783f2613efe6541106c1506 maps to recoverable 561-file source snapshot and manifest 60045fea51bff3a82e55bc0f982ee24a1ef3f0ba7c5d0d89727f918b6d574f7c. All compiled-source bytes are matched against the Git index before commit. Exact hashes, timing, resources and raw evidence locations are in agent/iteration-records/20261028-session2-module-144.json. Total session wall time through replay completion is 113.9333 minutes.
+
+### Candidates 145 and 150: actual Grid used-track values
+
+Initial 145 was rejected at scoped qualitative 88/100: its first compile failed, and its corrected build produced 46/47 authored controls and 127/129 native tests. The 37-URL parser cohort gained 28 identities with no losses, but this did not waive the failures. All failed build/source/test evidence remains.
+
+The final cache reads actual layout tracks and preserves private computed tokens. The narrow explicit-content:none correction retains already computed pseudo styles without adding two styles per node for universal selectors. The independently reviewed grid_item_width fixture checks parsed floors/factors, authored private tokens, all five original geometry widths and derived public used sizes; its earlier mistaken private-token expectation remains in rejected evidence.
+
+Frozen 150 passes 47/47 unchanged used-track controls and all 132 native tests. The parser cohort is 1,087/1,172: 32 fully passing URLs, all 37 harnesses OK, +28/0 versus 141 and unchanged versus 145/146. Versus 128, all 782 gains and 42 unsupported tentative Grid3 losses remain counted. Scoped cache quality is 96/100; inherited whole-browser readiness remains qualitative 19/100.
+
+### Candidate 146: auto-placement rejected and precisely removed
+
+The focused 29 URLs improved 360 to 424/468 (+64/0). The original supplemental 200 then exposed 21 real baseline-layout losses despite 140 gains versus 139. Frozen 143 and 145 matched on the four affected URLs (22/52); 146 fell to 5/52. Twenty losses involved vertical writing and column auto-flow; another involved overflow/last-baseline behavior. A correct logical-axis/baseline design exceeded this acceptance window.
+
+Scoped quality is 60/100 and the experiment is not shipped. The approved reverse patch restores Grid source, style metadata and geometry fixtures byte-for-byte to pre-placement snapshots, preserving cache/pseudo fixes. Frozen 150 restores all 21 identities: the 29 URLs are 360/468 and four regression URLs 22/52, exactly matching 145, all 33 harnesses OK with real cleanup. The 64 provisional gains are excluded from final claims. Experimental source, 54 added controls, binaries and raw results remain private.
+
+### Candidate 148: property-aware Grid Typed OM
+
+The inherited generic single-identifier heuristic misclassified a correctly canonicalized grid-area shorthand. The bounded repair preserves property-specific Grid value types and private associated-property ownership for generic CSSStyleValue objects; cross-property set/append rejects before serialization.
+
+Final 148 and 150 pass 62/62 controls and improve the unchanged nine-URL cohort 471 to 479/542 (+8/0), all harnesses OK, restoring the primary grid-area loss. Full 148 native testing passed 131/131; combined 150 passes 132/132. Two independently reviewed, preexisting Chromium append-list discrepancies remain in the authored oracle and are excluded from new gains. Scoped quality is 96/100.
+
+### Candidates 147, 149 and combined 150: module error identity
+
+Candidate 147 retained script errors and passed 25/25 controls and 130/130 native tests, but its four upstream gains accompanied one real cyclic-root regression. It remains rejected at scoped qualitative 88/100. Parent caching incorrectly treated a selected descendant error as that parent's own error.
+
+The correction retains only intrinsic script errors, traverses already compiled dependencies and selects errors by ordered, cycle-aware depth-first traversal for each requested root. Reachable fetch/MIME failure priority stays separate. New unchanged controls pass 26/42 on 147 and 42/42 on 150 and Chromium; the original 25 remain passing. All 19 resource hashes match their sealed baseline.
+
+The unchanged 44-URL cohort is 303 to 308/320 versus accepted 144 (+5/0, no missing identities), 34 to 38 fully passing URLs and all 44 harnesses OK; Chromium is 320/320. Against rejected 147, cyclic-root selection and fetch priority are both repaired (+2/0). Twelve remaining origin-policy, source-location and CSS-module assertions remain explicit. Scoped module quality is 96/100.
+
+Combined 150 builds and starts with unchanged source, exact binary SHA-256 79874c9c16af2086cb1de93a6194276d4b17512897aeca118244beddef7bb967 and 584 source/resource files verified against the prepared Git index. Native testing passes 132/132. All 46 module browser launches have real linked guard exits, unchanged protected hashes and no remaining recorded PIDs/cleanup workers. The 75 one-second native samples show peak CPU 173% of one core, RSS 314.581 MiB and PSS 178.139 MiB; concurrent load means these are not controlled performance measurements.
+
+Source is frozen. Full supplemental 200, final primary/expanded comparisons, rendering and quiet performance remain separate acceptance/evaluation gates.
+
+### Iteration timing, scores and preservation
+
+UTC intervals below overlap. They must not be summed as task wall time. Each record distinguishes staging/build/test time; first durable staging does not claim to measure earlier offline reasoning.
+
+| Candidate / scope | Recorded start UTC | Recorded end UTC | Minutes | Scoped score | Subagents |
+| --- | --- | --- | ---: | ---: | --- |
+| 145 rejected cache | 11:10:50.264 | 11:20:56 | 10.0956 | 88/100 | progress_and_deployment, standards_comparison, repository_lead |
+| 145–150 corrected cache gate | 11:10:50.264 | 12:04:11 | 53.3456 | 96/100 | all three |
+| 146 retained staging through rollback | 11:11:43.646 | 12:00:02.331 | 48.3114 | 60/100, rejected | standards_comparison, repository_lead |
+| 147 first durable patch through failed upstream gate | 11:18:35.846 | 11:42:43 | 24.1192 | 88/100, rejected | repository_lead, standards_comparison |
+| 148 Typed OM | 11:36:56 | 11:55:40.035 | 18.7339 | 96/100 | progress_and_deployment, standards_comparison, repository_lead |
+| 149 graph staging through combined module gate | 11:55:53.269 | 12:04:11.562 | 8.3049 | 96/100 | repository_lead, standards_comparison |
+| 150 combined build/core gates | 12:00:36 | 12:04:11 | 3.5917 | 96/100 scoped, broader gates pending | all three |
+
+The inherited whole-goal estimate remains 19/100, explicitly subjective with no scoring formula. Requested full Chromium parity and 98/100 are not claimed. Detailed immutable records live in agent/iteration-records and private validation roots, with readable reports in agent/progress/iterations.
+
+The clean 142 primary completed at 783/2,000 fully passing URLs (39.15%), 101,564/109,272 passing assertions, 592 existing-identity gains/23 losses and 365 newly passing registrations. Its 23 losses include 21 tentative Grid3 cases, the subsequently repaired Typed OM case and a retained TrustedTypes PASS-to-NOTRUN execution loss. Isolated 128/134/142 controls all return the same 1 PASS/32 FAIL with the target passing; the batch/history-dependent difference is unresolved, not called fixed.
+
+The durable source-free checkpoint 142 report was updated in place at 11:32:28 UTC, version 1, file ID libfile_d43f671196ec81918633195a5641535f. It contains aggregate evidence, not Git source or raw results. Exact private source snapshots exist for subsequent candidates; 150 has all 584 compiled files, with the seven preexisting untracked fixtures untouched.
+
+Ruby had brief genuine internal-error outages. Root centralized 30-second retries; the first recovered at 11:27:28 after two retries, the second at 12:10:30 after one. Existing tests continued; uncertain operations were inspected before retry. The original 14:12:12 controller deadline is unchanged. Separate source-read review denials were resolved through explicit current user authorization and narrow legitimate re-review, with no alternate export route. Publication is a separate concrete content/authorization review.
+
+At controller checkpoint 2026-10-28T12:14:34Z, elapsed task wall time from 09:12:12 UTC is 182.3667 minutes. Validation remains active; this is not the final session stop.
+
+### Accepted combined source 150 after supplemental validation
+
+The original supplemental 200 gate passes on frozen 150: 1,767/3,370 assertions, 77 fully passing URLs, all 200 harnesses OK; 554 gains/zero losses versus 128 and 128 gains/zero losses versus 139. All three browser launches have real guard exits/profile removal and unchanged source hashes. Combined source is accepted at scoped qualitative 96/100; whole-goal remains 19/100. Full Chromium parity is not claimed. Final expanded/primary, rendering and controlled performance evaluation remain active. The 146 experiment and its 64 provisional gains stay excluded. Exact accepted Git/source mapping is retained with iteration-150.

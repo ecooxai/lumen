@@ -569,7 +569,8 @@ FN(computed) {
     /* Mode 3 is private animation access: preserve computed track structure and
        avoid a layout flush solely to obtain CSSOM's used grid track sizes. */
     int mode = a.Length() > 2 ? a[2]->Int32Value(ctx).FromMaybe(0) : 0;
-    if (c->host.sync) c->host.sync(c->host.ud, c->doc, mode != 3 && computed_needs_layout(p));
+    JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
+    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, mode != 3 && computed_needs_layout(p));
     char *v = jsg_computed(n, p.c_str(), mode); RET(nstr(iso, v)); free(v);
 }
 FN(trTake) {

@@ -717,6 +717,7 @@ bool layout_move(Layout *L, Node *n, const Length old[4]) {
 static void free_box_data(Box *b) {
     for (Box *c = b->first; c; c = c->next) free_box_data(c);
     free(b->frags); free(b->lines); free(b->ir); text_release_shaped(b);
+    if (b->grid_used) { free(b->grid_used->size[0]); free(b->grid_used->size[1]); free(b->grid_used); b->grid_used = NULL; }
     if (b->node && b->node->box == b) b->node->box = NULL;
 }
 

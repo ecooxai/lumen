@@ -3,8 +3,13 @@
 /* text -> typed values for a property */
 const TOM_LIST_PROPS = /^(animation-(?!composition$|range|timeline$).*|transition-.*|background-(?!color$).*|mask-(?!type$).*|will-change|scroll-timeline-.*|view-timeline-.*)$/;
 const TOM_WIDE = /^(initial|inherit|unset|revert|revert-layer)$/i;
+/* Placement shorthands represent a tuple of grid lines even when CSSOM
+   compresses it to one token; line numbers are not scalar Typed OM values. */
+const TOM_GRID_PLACEMENT_SHORTHAND = /^grid-(area|row|column)$/;
+const TOM_GRID_LINE = /^grid-(row|column)-(start|end)$/;
 const tomSplitTop = (s, sep) => { const out = []; let d = 0, cur = '', q = ''; for (const c of s) { if (q) { cur += c; if (c === q) q = ''; continue; } if (c === '"' || c === "'") q = c; if (c === '(') d++; else if (c === ')') d--; if (c === sep && !d) { out.push(cur); cur = ''; } else cur += c; } out.push(cur); return out; };
-const tomGeneric = text => { const o = Object.create(CSSStyleValue.prototype); tomInit(o, { text }); return o; };
+const tomAssociatedProperties = new WeakMap();
+const tomGeneric = (text, property) => { const o = Object.create(CSSStyleValue.prototype); tomInit(o, { text }); tomAssociatedProperties.set(o, property); return o; };
 const tomUnparsed = text => {
     const parts = []; let rest = text, m;
     while ((m = /var\(\s*(--[^,)\s]+)\s*(?:,([^()]*(?:\([^()]*\)[^()]*)*))?\)/.exec(rest))) {
@@ -20,12 +25,14 @@ function tomReify(prop, text) {
     if (prop.startsWith('--')) return tomUnparsed(text);
     if (TOM_WIDE.test(text)) return new CSSKeywordValue(text.toLowerCase());
     if (/var\(/i.test(text)) return tomUnparsed(text);
-    if (/(^|-)color$/.test(prop) && /^[a-z]+$/i.test(text) && !/^(currentcolor|auto)$/i.test(text)) return tomGeneric(text);   /* named colours are not keywords */
+    if (TOM_GRID_PLACEMENT_SHORTHAND.test(prop)) return tomGeneric(text, prop);
+    if (/(^|-)color$/.test(prop) && /^[a-z]+$/i.test(text) && !/^(currentcolor|auto)$/i.test(text)) return tomGeneric(text, prop);   /* named colours are not keywords */
     if (/^-?[a-z_][a-z0-9_-]*$/i.test(text) && !/^-?\d/.test(text)) return new CSSKeywordValue(text);
+    if (TOM_GRID_LINE.test(prop)) return tomGeneric(text, prop);
     if (/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?(%|[a-z]+)?$/i.test(text) || /^(calc|min|max|clamp)\(/i.test(text)) { try { return CSSNumericValue.parse(text); } catch (e) {} }
     if ((prop === 'transform') && text !== 'none') { const t = tomParseTransform(text); if (t) return t; }
     if (/^url\(/i.test(text) && /image|content|cursor|src/.test(prop)) { const o = Object.create(CSSImageValue.prototype); tomInit(o, { text }); return o; }
-    return tomGeneric(text);
+    return tomGeneric(text, prop);
 }
 const tomValues = (prop, text) => TOM_LIST_PROPS.test(prop) && !TOM_WIDE.test(String(text).trim()) ? tomSplitTop(String(text), ',').map(s => tomReify(prop, s)) : [tomReify(prop, text)];
 const tomPropName = p => { p = String(p); return p.startsWith('--') ? p : p.toLowerCase(); };
@@ -131,8 +138,11 @@ const tomText = (p, vals) => {
     if (vals.length > 1 && !TOM_LIST_PROPS.test(p)) throw new TypeError(`Property '${p}' does not take multiple values`);
     const parts = vals.map(v => {
         if (v instanceof CSSNumericValue && TOM_NO_NUMERIC.test(p) || !p.startsWith('--') && !tomTypedOk(p, v)) throw new TypeError(`Property '${p}' does not accept ${v}`);
-        if (v instanceof CSSStyleValue) return v.toString();
-        if (v instanceof CSSStyleValue) return v.toString();
+        if (v instanceof CSSStyleValue) {
+            const associated = tomAssociatedProperties.get(v);
+            if (associated !== undefined && associated !== p) throw new TypeError(`Value belongs to '${associated}', not '${p}'`);
+            return v.toString();
+        }
         const s = String(v);
         if (!p.startsWith('--') && !CSS.supports(p, s)) throw new TypeError(`Invalid value '${s}' for '${p}'`);
         return s;
