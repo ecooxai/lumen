@@ -19,3 +19,11 @@ The native runner's ERROR, TIMEOUT, and process-exit categories are not automati
 ## Review boundary
 
 The October 2026 connector review denied full-source exports. These measurement changes were reviewed through bounded semantic summaries, exact small diffs, and retained execution evidence. Denied synthetic test payloads remain unexecuted and are not included in this tooling commit. Large reports, profiles, one-off experiments, and old invalid attempts remain in ignored session evidence.
+
+## Final accepted candidate replay
+
+`compare_final_delta.py` uses the same exact URL, complete assertion name, and duplicate-occurrence loader as `compare_wpt_runs.py`. It reports every baseline-to-candidate harness transition, changed assertion identities, and each URL's observed denominator. PASS gains are separated into previously observed assertions and newly observed assertions. PASS losses distinguish observed non-PASS outcomes from assertions no longer observed. Missing observations remain explicit; they are not synthesized as assertion failures.
+
+The report retains raw input hashes, duplicate-URL diagnostics, all selected URL rows, fully passing nonempty URL counts, harness-OK pages with zero assertions, Chromium-PASS matches, and missing Chromium identities. Inputs must remain stable while read. Port or fixture-role normalization is never applied to this primary report; any unambiguous supplemental normalization must be reported separately with provenance. The same URL selection does not imply identical engine execution order or browsing-performance comparability.
+
+Run with `--urls`, `--baseline`, `--candidate`, `--chromium`, and `--output`; optional repeated `--provenance` arguments hash retained configuration and instrumentation artifacts. Run metadata must identify frozen binaries, source composition, runner deadlines, worker counts, scheduling, and any cutoff or partial attempt.
