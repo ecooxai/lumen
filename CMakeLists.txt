@@ -442,6 +442,10 @@ else()
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/input-queue-lifecycle-regression.html"
             --marker browser-input-queue --output "${CMAKE_CURRENT_BINARY_DIR}/browser-input-queue" --testdriver)
         set_tests_properties(browser_input_queue PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-input-queue:PASS" TIMEOUT 35)
+        add_test(NAME browser_module_errors COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
+            --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/module-error-regression.html"
+            --marker browser-module-errors --output "${CMAKE_CURRENT_BINARY_DIR}/browser-module-errors")
+        set_tests_properties(browser_module_errors PROPERTIES PASS_REGULAR_EXPRESSION "RESULTS browser-module-errors:PASS" TIMEOUT 35)
         add_test(NAME browser_body_event COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py"
             --binary "$<TARGET_FILE:lumen>" --fixture "${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/body-event-regression.html"
             --marker browser-body-event --output "${CMAKE_CURRENT_BINARY_DIR}/browser-body-event")

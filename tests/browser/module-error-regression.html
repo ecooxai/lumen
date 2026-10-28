@@ -1,0 +1,87 @@
+<!doctype html><meta charset="utf-8"><title>Module fetch and script error routing</title>
+<script>
+window.moduleControlErrors = []; window.parserBadRan = false;
+window.addEventListener('error', event => { if (event.target === window) { moduleControlErrors.push(event.error ? event.error.name : 'Error'); event.preventDefault(); } });
+</script>
+<script type="module" src="data:text/plain,globalThis.parserBadRan=true" onload="window.parserBadResult='load'" onerror="window.parserBadResult='error'"></script>
+<script type="module" src="data:text/javascript,globalThis.parserGoodValue=7" onload="window.parserGoodResult='load'" onerror="window.parserGoodResult='error'"></script>
+<script>
+(async () => {
+const results = [], check = (name, ok, detail) => results.push({name, status: ok ? 'PASS' : 'FAIL', detail});
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+let sequence = 0;
+const data = (type, source) => 'data:' + type + ',' + encodeURIComponent(source + '\n/* unique ' + (++sequence) + ' */');
+async function scriptCase(source, external) {
+ const script = document.createElement('script'), before = moduleControlErrors.length, events = [];
+ script.type = 'module';
+ let finish; const done = new Promise(resolve => { finish = resolve; });
+ const onGlobal = event => { if (event.target === window && !external) finish(); };
+ window.addEventListener('error', onGlobal);
+ script.onload = () => { events.push('load'); finish(); };
+ script.onerror = () => { events.push('error'); finish(); };
+ if (external) script.src = data('text/javascript', source); else script.textContent = source;
+ const deadline = setTimeout(finish, 1500);
+ document.head.appendChild(script); await done; clearTimeout(deadline); await wait(0);
+ window.removeEventListener('error', onGlobal); script.remove();
+ return {events, errors: moduleControlErrors.slice(before)};
+}
+async function workerCase(url, type = 'module') {
+ return new Promise(resolve => {
+  let worker; const timer = setTimeout(() => { if (worker) worker.terminate(); resolve('timeout'); }, 1500);
+  try { worker = new Worker(url, {type}); } catch (error) { clearTimeout(timer); resolve(error.name); return; }
+  worker.onmessage = event => { clearTimeout(timer); worker.terminate(); resolve('message:' + event.data); };
+  worker.onerror = event => { event.preventDefault(); clearTimeout(timer); worker.terminate(); resolve('error'); };
+ });
+}
+try {
+ if (document.readyState === 'loading') await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, {once:true}));
+ check('parser external JavaScript module preserves response metadata', parserGoodResult === 'load' && parserGoodValue === 7, String(parserGoodResult));
+ check('parser external non-JavaScript MIME fires script error', parserBadResult === 'error' && !parserBadRan, String(parserBadResult));
+ check('parser MIME failure does not report a global script exception', moduleControlErrors.length === 0, JSON.stringify(moduleControlErrors));
+ const types = ['application/ecmascript','application/javascript','application/x-ecmascript','application/x-javascript','text/ecmascript','text/javascript','text/javascript1.0','text/javascript1.1','text/javascript1.2','text/javascript1.3','text/javascript1.4','text/javascript1.5','text/jscript','text/livescript','text/x-ecmascript','text/x-javascript','Text/JavaScript;Charset=UTF-8'];
+ for (const type of types) {
+  try { const value = await import(data(type, 'export default 7;')); check('JavaScript MIME essence ' + type, value.default === 7, value.default); }
+  catch (error) { check('JavaScript MIME essence ' + type, false, error.name); }
+ }
+ for (const type of ['text/plain','application/json','application/octet-stream','text/javascriptx','text/css','']) {
+  let outcome = 'fulfilled'; try { await import(data(type, 'export default 7;')); } catch (error) { outcome = error.name; }
+  check('dynamic import rejects incompatible MIME ' + type, outcome === 'TypeError', outcome);
+ }
+ let observed = await scriptCase('import ' + JSON.stringify(data('text/plain', 'export default 1;')) + ';', false);
+ check('inline dependency MIME failure targets script element', observed.events.join() === 'error' && observed.errors.length === 0, JSON.stringify(observed));
+ observed = await scriptCase('import "./module-error-missing144.mjs";', false);
+ check('inline dependency network failure targets script element', observed.events.join() === 'error' && observed.errors.length === 0, JSON.stringify(observed));
+ observed = await scriptCase('import ' + JSON.stringify(data('text/plain', 'export default 1;')) + ';', true);
+ check('external dependency MIME failure targets script element', observed.events.join() === 'error' && observed.errors.length === 0, JSON.stringify(observed));
+ observed = await scriptCase('export const broken = ;', true);
+ check('external parse error remains global and fires load', observed.events.join() === 'load' && observed.errors.join() === 'SyntaxError', JSON.stringify(observed));
+ observed = await scriptCase('throw new RangeError("owned evaluation");', true);
+ check('external evaluation error remains global and fires load', observed.events.join() === 'load' && observed.errors.join() === 'RangeError', JSON.stringify(observed));
+ observed = await scriptCase('export const broken = ;', false);
+ check('inline parse error remains global without load or element error', observed.events.length === 0 && observed.errors.join() === 'SyntaxError', JSON.stringify(observed));
+ observed = await scriptCase('import missing from ' + JSON.stringify(data('text/javascript','export const other = 1;')) + ';', true);
+ check('external linking error remains global and fires load', observed.events.join() === 'load' && observed.errors.join() === 'SyntaxError', JSON.stringify(observed));
+ observed = await scriptCase('import x from ' + JSON.stringify(data('text/javascript','export default 1;')) + ' with {type:"unsupported"};', false);
+ check('unsupported static module type remains a global TypeError', observed.events.length === 0 && observed.errors.join() === 'TypeError', JSON.stringify(observed));
+ observed = await scriptCase('import "unmapped-bare-name";', false);
+ check('unresolved specifier remains a global TypeError', observed.events.length === 0 && observed.errors.join() === 'TypeError', JSON.stringify(observed));
+ for (const [label,source,expected] of [['parse','export const broken = ;','SyntaxError'],['evaluation','throw new RangeError("dynamic evaluation");','RangeError']]) {
+  let outcome = 'fulfilled'; const before = moduleControlErrors.length;
+  try { await import(data('text/javascript',source)); } catch (error) { outcome = error.name; }
+  check('dynamic import retains ' + label + ' exception', outcome === expected && moduleControlErrors.length === before, outcome);
+ }
+ for (const [label,type,source,expected] of [['valid data','text/javascript','postMessage(7)','message:7'],['invalid data','text/plain','postMessage(7)','error'],['invalid dependency','text/javascript','import ' + JSON.stringify(data('text/plain','export default 1;')) + '; postMessage(7)','error']]) {
+  const outcome = await workerCase(data(type,source)); check('module worker ' + label, outcome === expected, outcome);
+ }
+ for (const type of ['text/javascript','text/plain']) {
+  const url = URL.createObjectURL(new Blob(['postMessage(7)'], {type})); const outcome = await workerCase(url); URL.revokeObjectURL(url);
+  check('module Blob worker preserves MIME ' + type, outcome === (type === 'text/javascript' ? 'message:7' : 'error'), outcome);
+ }
+ const classic = await workerCase(data('text/javascript','postMessage(7)'), 'classic');
+ check('classic JavaScript worker remains functional', classic === 'message:7', classic);
+} catch (error) { check('fixture completion', false, String(error)); }
+window.moduleErrorResults = results;
+for (const row of results) console.log('CASE browser-module-errors ' + JSON.stringify(row));
+console.log('RESULTS browser-module-errors:' + (results.every(row => row.status === 'PASS') ? 'PASS' : 'FAIL') + ' ' + results.filter(row => row.status === 'PASS').length + '/' + results.length);
+})();
+</script>

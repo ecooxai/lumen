@@ -73,6 +73,8 @@ std::string mod_mkey(const std::string &u, const std::string &t);
 std::string mod_kurl(const std::string &k);
 std::string mod_ktype(const std::string &k);
 bool mod_attr_type(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local<v8::FixedArray> a, int stride, bool css, std::string &type);
+/* MIME match for an already fetched supported module type; no content sniffing. */
+bool mod_mime_matches(const std::string &type, const std::string &ctype);
 void mod_synth_drop(v8::Isolate *iso);
 v8::MaybeLocal<v8::Module> mod_synthetic(v8::Local<v8::Context> ctx, const std::string &u, const std::string &type, const std::string &body, const std::string &ctype);
 struct JsCtx {

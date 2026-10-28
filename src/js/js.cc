@@ -478,9 +478,11 @@ void js_module_prefetch(const char *const *urls, int n, const char *ref) {
     for (int i = 0; i < n; i++) if (urls[i]) roots.emplace_back(urls[i]);
     mod_prefetch(roots, ref ? ref : "", [](const std::string &) { return false; });
 }
-char *js_module_take(const char *url, const char *ref, size_t *len) {
-    std::string body;
-    if (!mod_take(url, ref ? ref : "", body)) return nullptr;
+char *js_module_take(const char *url, const char *ref, size_t *len, char **ctype) {
+    std::string body, ct;
+    if (ctype) *ctype = nullptr;
+    if (!mod_take(url, ref ? ref : "", body, &ct)) return nullptr;
+    if (ctype) *ctype = xstrdup(ct.c_str());
     char *r = (char *)xmalloc(body.size() + 1);
     memcpy(r, body.data(), body.size()); r[body.size()] = 0;
     *len = body.size();
@@ -576,6 +578,23 @@ static bool json_mime(const std::string &ct) {
     const std::string t = module_mime_essence(ct);
     return t == "application/json" || t == "text/json" || (t.size() > 5 && t.compare(t.size() - 5, 5, "+json") == 0);
 }
+/* HTML module fetch uses the MIME essence, independent of filename or body.
+   Text modules accept any MIME type; unsupported types are rejected earlier. */
+bool mod_mime_matches(const std::string &type, const std::string &ctype) {
+    if (type == "text") return true;
+    if (type == "json") return json_mime(ctype);
+    const std::string mime = module_mime_essence(ctype);
+    if (type == "css") return mime == "text/css";
+    if (!type.empty()) return false;
+    static const char *const javascript[] = {
+        "application/ecmascript", "application/javascript", "application/x-ecmascript", "application/x-javascript",
+        "text/ecmascript", "text/javascript", "text/javascript1.0", "text/javascript1.1", "text/javascript1.2",
+        "text/javascript1.3", "text/javascript1.4", "text/javascript1.5", "text/jscript", "text/livescript",
+        "text/x-ecmascript", "text/x-javascript"
+    };
+    for (const char *known : javascript) if (mime == known) return true;
+    return false;
+}
 /* each synthetic module's [value(, css flag)] until it evaluates, per isolate (the Android V8 has no
    host_defined_options on synthetic modules); mod_synth_drop clears an isolate's before it goes away */
 namespace {
@@ -638,8 +657,13 @@ v8::MaybeLocal<v8::Module> mod_synthetic(v8::Local<v8::Context> ctx, const std::
     (*g_synth)[iso].emplace(m->GetIdentityHash(), SynthEnt{ v8::Global<v8::Module>(iso, m), v8::Global<v8::Array>(iso, d) });
     return m;
 }
-static v8::MaybeLocal<v8::Module> mod_build(JsCtx *c, const std::string &key, const std::string &body, const std::string &ctype) {
+static v8::MaybeLocal<v8::Module> mod_build(JsCtx *c, const std::string &key, const std::string &body, const std::string &ctype, bool *load_failure = nullptr) {
     std::string t = mod_ktype(key);
+    if (!mod_mime_matches(t, ctype)) {
+        if (load_failure) *load_failure = true;
+        mod_throw(c->iso, "Failed to load module script with an incompatible MIME type: " + mod_kurl(key));
+        return {};
+    }
     if (t.empty()) return mod_compile(c, key, body);
     v8::Local<v8::Module> m;
     if (!mod_synthetic(c->iso->GetCurrentContext(), mod_kurl(key), t, body, ctype).ToLocal(&m)) return {};
@@ -647,7 +671,7 @@ static v8::MaybeLocal<v8::Module> mod_build(JsCtx *c, const std::string &key, co
     c->mod_url.emplace(m->GetIdentityHash(), key);
     return m;
 }
-static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
+static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root, bool *load_failure = nullptr) {
     v8::Isolate *iso = c->iso;
     std::string ref = c->doc && c->doc->url ? c->doc->url : "";
     std::vector<v8::Local<v8::Module>> todo{ root };
@@ -672,9 +696,12 @@ static bool mod_graph(JsCtx *c, v8::Local<v8::Module> root) {
         if (busy > 0) c->busy_since = now_ms();
         for (size_t i = 0; i < need.size(); i++) {
             std::string body, ct;
-            if (!mod_take(urls[i], ref, body, &ct)) return mod_throw(iso, "Failed to fetch module: " + urls[i]), false;
+            if (!mod_take(urls[i], ref, body, &ct)) {
+                if (load_failure) *load_failure = true;
+                return mod_throw(iso, "Failed to fetch module: " + urls[i]), false;
+            }
             v8::Local<v8::Module> m;
-            if (!mod_build(c, need[i], body, ct).ToLocal(&m)) return false;
+            if (!mod_build(c, need[i], body, ct, load_failure).ToLocal(&m)) return false;
             todo.push_back(m);
         }
     }
@@ -689,9 +716,9 @@ static v8::MaybeLocal<v8::Module> mod_resolve_cb(v8::Local<v8::Context> ctx, v8:
     if (it == c->mods.end()) return mod_throw(iso, "Failed to resolve module specifier \"" + jcstr(iso, spec) + "\""), v8::MaybeLocal<v8::Module>();
     return it->second.Get(iso);
 }
-static v8::MaybeLocal<v8::Promise> mod_eval(JsCtx *c, v8::Local<v8::Module> m) {
+static v8::MaybeLocal<v8::Promise> mod_eval(JsCtx *c, v8::Local<v8::Module> m, bool *load_failure = nullptr) {
     v8::Local<v8::Context> ctx = c->iso->GetCurrentContext();
-    if (!mod_graph(c, m)) return {};
+    if (!mod_graph(c, m, load_failure)) return {};
     if (m->GetStatus() == v8::Module::kUninstantiated && !m->InstantiateModule(ctx, mod_resolve_cb).FromMaybe(false)) return {};
     /* a module importing itself (or a cycle member) while it is still being linked or evaluated: the running
        evaluation finishes it, and Evaluate() must not be re-entered */
@@ -1472,14 +1499,15 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
 
 /* may_defer: an external module whose graph is not loaded yet is fetched in the
    background and run from tick_one, instead of blocking the page on the network. */
-static void module_script_run(JsCtx *c, Node *script, const char *src, size_t n, const char *url, bool may_defer) {
+static void module_script_run(JsCtx *c, Node *script, const char *src, size_t n, const char *url, bool may_defer,
+                              bool fetched = false, const char *ctype = nullptr) {
     if (!c) return;
     if (script) script->flags |= NF_SCRIPT_STARTED;
-    bool ext = script && node_attr(script, "src"), ok = false;
+    bool ext = script && node_attr(script, "src"), load_failure = false;
     std::string tt_buf;
     if (!tt_script_text(c, script, src, n, tt_buf)) return;
     if (may_defer && ext && !src && url && !c->mods.count(url)) {
-        { JS_ENTER(c); jwrap(c, script); }   /* keeps the element alive until it runs */
+        { JS_ENTER(c); jwrap(c, script); }
         auto j = std::make_unique<ModJob>();
         j->url = url;
         j->script = script;
@@ -1489,34 +1517,44 @@ static void module_script_run(JsCtx *c, Node *script, const char *src, size_t n,
     {
         JS_ENTER(c);
         v8::TryCatch tc(iso);
-        std::string key = url ? url : "", body;
+        std::string key = url ? url : "", body, ct;
         if (!ext) key += "#lumen-inline-" + std::to_string(++c->mod_seq);
         v8::Local<v8::Module> m;
         js_enter(c);
         auto it = c->mods.find(key);
-        if (it != c->mods.end()) { m = it->second.Get(iso); ok = true; }
+        if (it != c->mods.end()) m = it->second.Get(iso);
         else {
+            bool ok = src != nullptr;
             if (src) body.assign(src, n);
-            if (!src) {
+            if (ext && fetched) ct = ctype ? ctype : "";
+            else if (!src) {
                 double busy = c->busy_since.exchange(0);
                 std::string ref = c->doc && c->doc->url ? c->doc->url : "";
                 mod_prefetch({ key }, ref, [c](const std::string &k) { return c->mods.count(k) > 0; });
-                ok = mod_take(key, ref, body);
+                ok = mod_take(key, ref, body, &ct);
                 if (busy > 0) c->busy_since = now_ms();
-            } else ok = true;
-            if (ok) (void)mod_compile(c, key, body).ToLocal(&m);
+            }
+            if (!ok) load_failure = true;
+            else if (ext) (void)mod_build(c, key, body, ct, &load_failure).ToLocal(&m);
+            else (void)mod_compile(c, key, body).ToLocal(&m);
         }
         v8::Local<v8::Promise> p;
         v8::Local<v8::Function> f;
-        if (!m.IsEmpty() && mod_eval(c, m).ToLocal(&p) && v8::Function::New(ctx, mod_report).ToLocal(&f)) (void)p->Catch(ctx, f);
+        if (!m.IsEmpty() && mod_eval(c, m, &load_failure).ToLocal(&p) && v8::Function::New(ctx, mod_report).ToLocal(&f)) (void)p->Catch(ctx, f);
         js_leave(c);
-        if (tc.HasCaught() && tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
+        /* A fetch/MIME failure makes the script result null. Parse, linking,
+           evaluation and import-attribute errors remain errors to rethrow. */
+        if (!load_failure && tc.HasCaught() && tc.CanContinue()) jreport(c, tc.Exception(), tc.Message());
+        if (load_failure) tc.Reset();
         settle(c);
     }
-    if (ext) { JS_ENTER(c); jfire(c, script, ok ? "load" : "error"); }
+    if (script && (ext || load_failure)) { JS_ENTER(c); jfire(c, script, load_failure ? "error" : "load"); }
 }
 void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
     module_script_run(c, script, src, n, url, false);
+}
+void js_run_module_fetched(JsCtx *c, Node *script, const char *src, size_t n, const char *url, const char *ctype) {
+    module_script_run(c, script, src, n, url, false, true, ctype);
 }
 void js_run_module_inserted(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
     module_script_run(c, script, src, n, url, true);

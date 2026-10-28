@@ -101,7 +101,7 @@ static float g_side_w = SIDEW, g_side_drag_x; static bool g_side_drag, g_dm_logo
 #define WSY0 (SIDEY + 8)
 #define WSRH 40.f
 
-typedef struct { Node *n; char *src; size_t len; char *name; bool module; } PScript;
+typedef struct { Node *n; char *src; size_t len; char *name; bool module; char *ctype; } PScript;
 typedef struct { Node *n; uint64_t h; size_t len; } SheetRef;   /* len: <style> text length, 0 for links */
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
@@ -490,13 +490,13 @@ static int loader(void *arg) {
         if (!jsg_is_script(n)) continue;
         bool mod = jsg_module_script(n);
         if (!mod && !jsg_classic_script(n)) continue;
-        PScript sc = { n, NULL, 0, NULL, mod };
+        PScript sc = { n, NULL, 0, NULL, mod, NULL };
         const char *src = jsg_script_src(n);
         if (src) {
             sc.name = url_join(doc_base(p->d), src);
             if (!sc.name) continue;
             if (mod) {   /* prefetched above; js_run_module compiles it and its imports */
-                sc.src = js_module_take(sc.name, p->url, &sc.len);
+                sc.src = js_module_take(sc.name, p->url, &sc.len, &sc.ctype);
                 p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;
                 continue;
             }
@@ -547,7 +547,7 @@ static void page_free(Page *p) {
     release_page_images(p);
     hm_free(&p->img_fired, NULL);
     free(p->sref);
-    for (int i = 0; i < p->nscripts; i++) { free(p->scripts[i].src); free(p->scripts[i].name); }
+    for (int i = 0; i < p->nscripts; i++) { free(p->scripts[i].src); free(p->scripts[i].name); free(p->scripts[i].ctype); }
     free(p->scripts);
     if (p->L) layout_free(p->L);
     if (p->e) style_engine_free(p->e);
@@ -3745,7 +3745,7 @@ static void page_start_js(App *a, Page *p) {
         if (sc->module != (pass == 1) || (sc->n->flags & NF_SCRIPT_STARTED) || !(sc->n->flags & NF_CONNECTED)) continue;
         if (sc->src) {
             double ts = now_ms(); size_t len = sc->len;
-            if (sc->module) js_run_module(p->js, sc->n, sc->src, sc->len, sc->name); else js_run_script(p->js, sc->n, sc->src, sc->len, sc->name);
+            if (sc->module) js_run_module_fetched(p->js, sc->n, sc->src, sc->len, sc->name, sc->ctype); else js_run_script(p->js, sc->n, sc->src, sc->len, sc->name);
             free(sc->src); sc->src = NULL; sc->len = 0;
             if (now_ms() - ts >= 50) LOAD_TRACE("script=%d module=%d bytes=%zu ms=%.0f", i, sc->module, len, now_ms() - ts);
         }

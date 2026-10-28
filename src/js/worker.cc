@@ -30,7 +30,7 @@ struct WFetchEv { uint64_t id; int kind; NetResponse *resp; std::string data; };
 struct Worker {
     JsBroadcastIdentity broadcast_identity;
     uint32_t id = 0; JsCtx *owner = nullptr;
-    std::string url, src, ua, platform, name; bool have_src = false, module = false, shared = false, service = false;
+    std::string url, src, ctype, ua, platform, name; bool have_src = false, module = false, shared = false, service = false;
     std::mutex mu; std::condition_variable cv;
     uint64_t task_version = 0;  // protected by mu, prevents lost foreground wakeups
     std::deque<Buf> in; std::deque<OutMsg> out;
@@ -861,12 +861,16 @@ void worker_main(std::shared_ptr<Worker> w) {
             }
             if (tc.HasCaught()) fprintf(stderr, "lumen: worker prelude failed: %s\n", jcstr(iso, tc.Exception()).c_str());
         }
-        std::string src = w->src; bool ok = w->have_src;
+        std::string src = w->src, ct = w->ctype; bool ok = w->have_src;
         if (!ok && !w->term) {
             NetResponse *r = net_fetch_sync(net_request_new("GET", w->url.c_str()));
-            if (r && r->status >= 200 && r->status < 300) { src.assign(r->body ? r->body : "", r->body_len); ok = true; }
+            if (r && r->status >= 200 && r->status < 300) {
+                src.assign(r->body ? r->body : "", r->body_len); ok = true;
+                const char *type = headers_get(&r->headers, "content-type"); ct = type ? type : "";
+            }
             if (r) net_response_free(r);
         }
+        if (ok && w->module && !mod_mime_matches("", ct)) ok = false;
         if (!ok) post_out(E, OutMsg{ WM_LOADFAIL, {}, {}, {}, 0, 0 });
         else if (!w->term) {
             v8::HandleScope hs2(iso);
@@ -985,6 +989,10 @@ bool wm_load(WEnv *E, const std::string &key) {
     if (r) net_response_free(r);
     if (!ok) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to fetch module: " + u).c_str()))); return false; }
     v8::Local<v8::Module> d;
+    if (!mod_mime_matches(ty, ct)) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to load module script with an incompatible MIME type: " + u).c_str())));
+        return false;
+    }
     if (ty.empty()) return wm_compile(E, u, body).ToLocal(&d) && wm_graph(E, d);
     if (!mod_synthetic(iso->GetCurrentContext(), u, ty, body, ct).ToLocal(&d)) return false;
     E->mods[key].Reset(iso, d); E->murl.emplace(d->GetIdentityHash(), key);
@@ -1083,6 +1091,7 @@ void n_workerNew(const FCI &a) {
     auto w = std::make_shared<Worker>();
     w->id = ++g_wseq; w->owner = jctx(iso);
     w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);
+    if (a.Length() > 8 && a[8]->IsString()) w->ctype = jcstr(iso, a[8]);
     w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : ""; w->module = a.Length() > 5 && a[5]->IsTrue();
     w->broadcast_identity = js_broadcast_worker_identity(js_broadcast_identity(w->owner), w->url);
     w->shared = a.Length() > 6 && a[6]->IsTrue();   /* a SharedWorker's global */

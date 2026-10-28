@@ -270,12 +270,11 @@ class Worker extends EventTarget {
         super();
         if (arguments.length < 1) throw new TypeError("Failed to construct 'Worker': 1 argument required, but only 0 present.");
         const u = new URL(String(url), document.baseURI || N.url());
-        let src = null;
-        if (u.protocol === 'blob:') { const b = objectURLs.get(u.href); if (b) src = new TextDecoder().decode(b._buf); }
-        else if (u.protocol === 'data:') { const lb = localBody(u.href); if (lb) src = new TextDecoder().decode(lb[0]); }
+        let src = null, sourceType = '';
+        if (u.protocol === 'blob:' || u.protocol === 'data:') { const lb = localBody(u.href); if (lb) { src = new TextDecoder().decode(lb[0]); sourceType = lb[1]; } }
         else if (u.origin !== location.origin) throw new DOMException(`Failed to construct 'Worker': Script at '${u.href}' cannot be accessed from origin '${location.origin}'.`, 'SecurityError');
         this.onmessage = null; this.onmessageerror = null; this.onerror = null;
-        def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : '', !!opts && opts.type === 'module', !!opts && opts[SHARED_WORKER] === true));
+        def(this, '_id', N.workerNew(u.href, src, N.userAgent(), N.platform(), opts && opts.name != null ? String(opts.name) : '', !!opts && opts.type === 'module', !!opts && opts[SHARED_WORKER] === true, false, sourceType));
         workers.set(this._id, this);
     }
     postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage' on 'Worker': 1 argument required, but only 0 present."); if (!this._id) return; const transfer = Array.isArray(t) ? t : t && t.transfer || []; for (const item of transfer) if (N.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); const ps = transfer.filter(p => p instanceof MessagePort); if (!ps.length) return N.workerPost(this._id, m); N.workerPost(this._id, { __lumenXfer: ps.map(p => { const k = ++portSeq; p._wk = [this._id, k]; if (p._other) remotePorts.set(k, p._other); return k; }), data: m }); }

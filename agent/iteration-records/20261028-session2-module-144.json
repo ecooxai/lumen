@@ -1,0 +1,165 @@
+{
+  "iteration": 144,
+  "started_utc": "2026-10-28T10:43:38Z",
+  "finished_utc": "2026-10-28T11:06:08Z",
+  "elapsed_minutes": 22.5,
+  "time_scope": "First unchanged44-URL baseline launch through final candidate replay; includes overlapping separate Grid/input work and excludes earlier design. Per-run monotonic durations retained.",
+  "score": 96,
+  "whole_goal_score": 19,
+  "acceptance": "Accepted scoped repair after exact unchanged upstream identity comparison, independent source review, authored controls and full native gate; global release acceptance pending.",
+  "agents": [
+    "repository_lead",
+    "standards_comparison",
+    "progress_and_deployment",
+    "root"
+  ],
+  "model": "GPT-6 Astra",
+  "tools": [
+    "built-in agents",
+    "Ruby MCP",
+    "Chromium150",
+    "guarded paired_wpt",
+    "drained authored fixture",
+    "CTest",
+    "1-second process-tree monitor"
+  ],
+  "build": {
+    "source_manifest_before": "60045fea51bff3a82e55bc0f982ee24a1ef3f0ba7c5d0d89727f918b6d574f7c",
+    "source_diff_before": "1b65c7789c26e6544756c1d298f5b706529c078f30b2eabc961d677d18af9a15",
+    "head": "3c7887bf4737a0cba849ae5aef432407a341df21",
+    "started_utc": "2026-10-28T11:03:08Z",
+    "pid": 1039843,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i144",
+    "binary_sha256": "941ffd66a9ffc783aa87f6f6b464ab2d79e4c19fd783f2613efe6541106c1506",
+    "diff_sha256": "1b65c7789c26e6544756c1d298f5b706529c078f30b2eabc961d677d18af9a15",
+    "startup_exit_code": 0,
+    "source_diff_after": "1b65c7789c26e6544756c1d298f5b706529c078f30b2eabc961d677d18af9a15",
+    "source_manifest_after": "60045fea51bff3a82e55bc0f982ee24a1ef3f0ba7c5d0d89727f918b6d574f7c",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T11:04:03Z"
+  },
+  "source_snapshot": "agent/progress/runtime/private-prepared/source-snapshots/iteration-144",
+  "comparison": {
+    "baseline_observed_urls": 44,
+    "baseline_observed_subtests": 319,
+    "baseline_pass_subtests": 286,
+    "baseline_fully_passing_urls": 30,
+    "baseline_harness_ok_zero_subtests": 0,
+    "candidate_observed_urls": 44,
+    "candidate_observed_subtests": 320,
+    "candidate_pass_subtests": 303,
+    "candidate_fully_passing_urls": 34,
+    "candidate_harness_ok_zero_subtests": 0,
+    "chromium_observed_urls": 44,
+    "chromium_observed_subtests": 320,
+    "chromium_pass_subtests": 320,
+    "chromium_fully_passing_urls": 44,
+    "chromium_harness_ok_zero_subtests": 0,
+    "chromium_passing_subtests": 320,
+    "baseline_matches_chromium_pass": 286,
+    "candidate_matches_chromium_pass": 303,
+    "candidate_missing_chromium_assertions": 0,
+    "candidate_fully_matches_chromium_passing_urls": 34
+  },
+  "harness_statuses": {
+    "baseline": {
+      "OK": 39,
+      "ERROR": 5
+    },
+    "candidate": {
+      "OK": 44
+    },
+    "chromium": {
+      "OK": 44
+    }
+  },
+  "identity_changes": {
+    "existing_assertion_gains": 16,
+    "existing_assertion_losses": 0,
+    "newly_registered_assertions": 1,
+    "newly_registered_pass": 1,
+    "new_assertion_source": "css-module/charset-2.html",
+    "missing_candidate_assertions": 0,
+    "native_only_passes_vs_chromium": 0
+  },
+  "authored": {
+    "baseline142_pass": 30,
+    "candidate144_pass": 43,
+    "chromium_pass": 43,
+    "total": 43,
+    "fixture_sha256": "59cd0bca5bca769b34a1626b4326069279d0514041730449bc0833c1724c69bb",
+    "evidence_revision": "Per-assertion console output and event-driven readiness replaced one truncated line/fixed delay; assertions unchanged; final same bytes replayed on baseline and Chromium."
+  },
+  "native": {
+    "pass": 127,
+    "total": 127,
+    "ctest_seconds": 53.99,
+    "completion": {
+      "started_utc": "2026-10-28T11:04:43Z",
+      "root_pid": 1049213,
+      "monitor_pid": 1049215,
+      "exit": 0,
+      "finished_utc": "2026-10-28T11:05:37Z",
+      "elapsed_seconds": 54.133557126973756
+    },
+    "resources": {
+      "label": "candidate144 full native CTest",
+      "started_utc": "2026-10-28T11:04:43.537627+00:00",
+      "finished_utc": "2026-10-28T11:05:37.600601+00:00",
+      "root_pid": 1049213,
+      "comm": null,
+      "exe": null,
+      "interval_seconds": 1,
+      "samples": 54,
+      "elapsed_seconds": 54.063,
+      "cpu_one_core_equals_100": true,
+      "cpu_min": 3.001,
+      "cpu_median": 124.0,
+      "cpu_max": 246.017,
+      "cpu_last10_median": 75.997,
+      "rss_peak_mb": 426.209,
+      "rss_final_mb": 208.72,
+      "pss_peak_mb": 216.135,
+      "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261028/session2-module-errors/native144/resources.csv",
+      "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+    }
+  },
+  "remaining_failures": {
+    "module_exception_identity": 4,
+    "module_fetch_error_priority": 1,
+    "module_error_source_location": 1,
+    "module_origin_policy": 4,
+    "css_rule_serialization": 4,
+    "constructed_stylesheet_import_filtering": 1,
+    "css_utf8_nul_replacement": 2
+  },
+  "audit": {
+    "upstream_baseline_launches": 44,
+    "upstream_candidate_launches": 44,
+    "real_exit_records": 88,
+    "all_profiles_removed": true,
+    "all_recorded_pids_absent": true,
+    "all_guarded_runner_hashes_unchanged": true,
+    "authored_final_baseline_and_candidate_real_cleanup": true
+  },
+  "limitations": [
+    "No complete module-map/fetch implementation or Wasm-module integration claim.",
+    "Network/MIME load failures are distinct from parse/link/evaluation/unsupported-attribute errors; remaining identity, priority, source-location and origin-policy gaps remain visible.",
+    "Classic worker behavior remains outside module MIME classification; its ordinary valid control passes.",
+    "Broader CSS rules and selector preprocessing remain separate from this module-loader repair."
+  ],
+  "sources": [
+    "https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-single-module-script",
+    "https://html.spec.whatwg.org/multipage/scripting.html#execute-the-script-element",
+    "https://mimesniff.spec.whatwg.org/#javascript-mime-type"
+  ],
+  "evidence_sha256": {
+    "agent/validation/linux-wpt-20261028/session2-module-errors/urls.json": "8ea51ec4e4bfe3014a2b1a980c2d2c86d9dc4719f3295f4764eb095903b89276",
+    "agent/validation/linux-wpt-20261028/session2-module-errors/comparison141-144.json": "991ae5d4a457765bfac84c060e8a59f02fc8fd10012b7526edf91bf648108286",
+    "agent/validation/linux-wpt-20261028/session2-module-errors/baseline141/results.jsonl": "678a1628c229a00b8dc035f9d2336b5a6a888a958e74eabaf032fb804b4732d8",
+    "agent/validation/linux-wpt-20261028/session2-module-errors/candidate144/results.jsonl": "4a80c91f3935490b360a8ad0759aa02daf15df4c0e7326e5a66bcce474993c0e",
+    "agent/validation/linux-wpt-20261028/session2-module-errors/chromium/results.jsonl": "d89432b4882603682d3a0016d909c0730491bedf4ff5a9a33aff57b51e765c0e",
+    "agent/validation/linux-wpt-20261028/session2-module-errors/authored-candidate144/guard-cleanup.json": "6c310f4c5d7dbf78b943a8013365c8f691d60aaa8ab3542336e9c3c50cdbf0aa"
+  }
+}
