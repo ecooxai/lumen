@@ -24,6 +24,11 @@ static bool g_init_failed;
 static int g_perm;   /* what the last request answered: 1 granted, -1 denied */
 
 int cam_permission(void) {
+#if defined(__linux__) && !defined(__ANDROID__)
+    /* Linux has no origin-scoped consent mediation yet. -2 is an internal
+     * permanent policy refusal, distinct from a missing physical device. */
+    return -2;
+#endif
 #ifdef __ANDROID__
     /* the persistent grant survives app restarts */
     JNIEnv *env = SDL_GetAndroidJNIEnv();
@@ -43,6 +48,9 @@ int cam_permission(void) {
 }
 
 static bool cam_init(void) {
+#if defined(__linux__) && !defined(__ANDROID__)
+    return false;   /* do not enumerate or initialize physical capture backends */
+#endif
     if (SDL_WasInit(SDL_INIT_CAMERA) & SDL_INIT_CAMERA) return true;
     if (g_init_failed) return false;
     if (!SDL_InitSubSystem(SDL_INIT_CAMERA)) { SDL_Log("lumen: camera unavailable: %s", SDL_GetError()); g_init_failed = true; return false; }
@@ -73,6 +81,9 @@ static long spec_cost(const SDL_CameraSpec *s, int w, int h, int fps) {
 }
 
 int cam_open(const void *owner, int w, int h, int fps, int facing) {
+#if defined(__linux__) && !defined(__ANDROID__)
+    return -2;   /* native boundary: no acquisition before origin consent exists */
+#endif
     if (!cam_init()) return -1;
     if (w <= 0) w = 640;
     if (h <= 0) h = 480;

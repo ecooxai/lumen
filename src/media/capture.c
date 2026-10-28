@@ -185,6 +185,9 @@ static void mic_release(MicDev *s, bool call) {
     if (call) voice_call(false);
 }
 int mic_permission(void) {
+#if defined(__linux__) && !defined(__ANDROID__)
+    return -2;   /* origin-scoped capture permission is not implemented on Linux */
+#endif
 #ifdef __ANDROID__
     mic_check_granted();
     int p = SDL_GetAtomicInt(&g_mic_perm);
@@ -313,6 +316,9 @@ static void mic_heal(int id) { (void)id; }
 static void mic_stats_read(int id, const float *p, int n) { (void)id; (void)p; (void)n; }
 #endif
 int mic_open(const void *owner, bool voice) {
+#if defined(__linux__) && !defined(__ANDROID__)
+    return -2;   /* refuse before SDL initialization or microphone slot allocation */
+#endif
     if (!(SDL_WasInit(SDL_INIT_AUDIO) & SDL_INIT_AUDIO) && !SDL_InitSubSystem(SDL_INIT_AUDIO)) return -1;
     for (int i = 0; i < MIC_MAX; i++) if (!g_mic[i].owner) {
         g_mic[i].owner = owner; g_mic[i].s = NULL; g_mic[i].state = 0; g_mic[i].voice = voice;

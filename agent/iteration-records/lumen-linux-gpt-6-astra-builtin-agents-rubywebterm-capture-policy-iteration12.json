@@ -1,0 +1,88 @@
+{
+  "iteration": 12,
+  "name": "Linux physical capture refusal and guarded conformance execution",
+  "status": "accepted",
+  "whole_goal_readiness": 19,
+  "focused_quality": 97,
+  "production_code_start_utc": "2026-10-28T06:47:00.464395+00:00",
+  "sources": {
+    "src/media/camera.c": "76e7f85c24344a89ad90b81fef1a7cd6e6a595847ac44212d5f27687f8844908",
+    "src/media/capture.c": "b00dde81da9b4b3b8217f140a21caa11a39e9268e70564ac03c42db23cb0c639",
+    "src/js/prelude/08-window.js": "187376f69c6d2e08c778bfd084b579e155abb6784b1a1ce1606fcc28e7b940c2"
+  },
+  "scope": "Refuse Linux physical camera/microphone acquisition before backend initialization until origin consent mediation exists; preserve Android and non-capture media paths. Separate process guard protects unchanged old binaries during tests.",
+  "guard_library_sha256": "45643caa22bb659bc7b431acfc7b8af04d68f971c3610f4d56dcb2847d808900",
+  "guard_source_sha256": "fdf4694382a6b02015db383386336438935d38d9603cd290d3e71a99a8219530",
+  "guard_evidence": "agent/validation/linux-wpt-20261028/capture-refusal/preflight.json",
+  "guard_validation": "10 dummy-only acquisition/refusal/playback checks; rejected ACK, missing nonce, and competing preload terminate before oracle main",
+  "not_claimed": [
+    "Complete origin permissions UI",
+    "Positive physical capture capability",
+    "WPT capture success",
+    "No historical hardware access solely from absence of a log"
+  ],
+  "known_capability_change": "Linux physical camera and microphone capture intentionally unavailable. enumerateDevices retains one generic audioinput with empty label; camera enumeration is refused before SDL.",
+  "accepted_utc": "2026-10-28T07:07:31.306682+00:00",
+  "duration_minutes": 20.514038116666665,
+  "agents": [
+    "/root/engine_lead",
+    "/root/ops_preview",
+    "/root/conformance",
+    "/root"
+  ],
+  "candidate": 124,
+  "binary": "build/codex-native/lumen-astra-i124",
+  "binary_sha256": "00fd275605100b7dbf5b33bd7a08209c38c0678f8684b3e6075f892bb53b4f84",
+  "build_start_utc": "2026-10-28T06:52:17Z",
+  "build_end_utc": "2026-10-28T06:52:44Z",
+  "runtime_composition": "Accepted runtime before flex123, plus only three physical-capture refusal sources; independent geometry and flex changes excluded. Final source branch retains separately accepted flex123.",
+  "independent_native_oracle": {
+    "checks_each": 19,
+    "optimization_levels": [
+      "O0",
+      "O3"
+    ],
+    "linked_libraries": "libc and loader only; no SDL or capture backend",
+    "backend_sentinel_calls": 0,
+    "evidence": "agent/validation/linux-wpt-20261028/production-capture-refusal-oracle/summary.json"
+  },
+  "registered_native_test": {
+    "name": "linux_capture_refusal",
+    "passed": 1,
+    "total": 1
+  },
+  "browser_policy_observations": {
+    "video": "NotAllowedError",
+    "audio": "NotAllowedError",
+    "combined": "NotAllowedError",
+    "classification": "Direct product-policy validation, not WPT gains"
+  },
+  "upstream_guard": {
+    "urls": 6,
+    "baseline_pass": 6,
+    "candidate_pass": 6,
+    "total": 8,
+    "chromium_pass": 6,
+    "lost": 0,
+    "harness_ok": 6,
+    "limitations": [
+      "GUM-deny stops earlier at unsupported testdriver.set_permission and does not validate native denial mapping",
+      "Existing noframe failure remains"
+    ]
+  },
+  "independent_disposition": "agent/validation/linux-wpt-20261028/capture-policy124-independent-disposition.json",
+  "primary_spec": "https://w3c.github.io/mediacapture-main/#dom-mediadevices-getusermedia",
+  "spec_basis": "The Permission Failure branch permits security/platform limitations and rejects NotAllowedError. This conservative policy does not implement origin consent UI.",
+  "android_validation": "Linux conditional guards leave Android acquisition branches unchanged; Android device execution was not tested.",
+  "noncapture_scope": "Synthetic/canvas/file media streams and normal playback remain outside physical-acquisition refusal; unchanged MediaStreamTrackEvent and canvas-capture guards passed.",
+  "review_dispositions": [
+    "Native refusal precedes SDL initialization/enumeration and microphone allocation",
+    "Camera policy is checked before enumeration in openCam",
+    "Ordinary permission query maps negative native status to denied",
+    "No global opt-in bypass is introduced",
+    "Old frozen binaries require a separately verified sealed-library/bootstrap acquisition guard"
+  ],
+  "measurement_gain": 0,
+  "native_regression_source_sha256": "3d211e537dddb459486b9bd095ae5e9f4095405e2700cca56b0c2441a465c494",
+  "accepted_binary_copy": "build/codex-native/lumen-gpt-6-astra-capture-policy-accepted-20261028"
+}

@@ -297,16 +297,19 @@ const mcWait = (state, close, changed, ok) => new Promise((res, rej) => {
 function openMic(a) {
     const ec = a === true || typeof a !== 'object' ? undefined : a.echoCancellation;   /* on unless false, {exact: false} or {ideal: false} */
     const id = N.micOpen(!(ec === false || (ec && typeof ec === 'object' && (ec.exact === false || ec.ideal === false))));
+    if (id === -2) return Promise.reject(new DOMException('Camera or microphone permission is denied', 'NotAllowedError'));
     if (id < 0) return Promise.reject(new DOMException('Requested device not found', 'NotFoundError'));
     return mcWait(() => N.micState(id), () => N.micClose(id), micPermChanged, () => micTrack(id));
 }
 function openCam(v) {
+    if (N.camPermission && N.camPermission() === -2) return Promise.reject(new DOMException('Camera permission is denied', 'NotAllowedError'));
     const o = v && typeof v === 'object' ? v : {};
     let facing = mcVal(o.facingMode); if (Array.isArray(facing)) facing = facing[0];
     const dev = String(mcVal(o.deviceId) ?? '');
     const f = dev === 'camera1' ? 1 : dev === 'camera2' ? 2 : facing === 'environment' ? 2 : facing === 'user' ? 1 : 0;
     const w = +mcVal(o.width) || 0, h = +mcVal(o.height) || 0, fps = +mcVal(o.frameRate) || 30;
     const id = N.camCount() > 0 ? N.camOpen(Math.min(w || (h ? h * 4 / 3 : 640), 1920), Math.min(h || (w ? w * 3 / 4 : 480), 1920), Math.min(fps, 60), f) : -1;
+    if (id === -2) return Promise.reject(new DOMException('Camera or microphone permission is denied', 'NotAllowedError'));
     if (id < 0) return Promise.reject(new DOMException('Requested device not found', 'NotFoundError'));
     return mcWait(() => N.camState(id), () => N.camClose(id), camPermChanged, () => camTrack(id));
 }
