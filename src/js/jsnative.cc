@@ -68,6 +68,35 @@ char *(*js_clip_get)(void);
 FN(clipSet) { CTX; v8::String::Utf8Value u(iso, a[0]); if (js_clip_set) js_clip_set(*u ? *u : ""); }
 FN(clipGet) { CTX; char *t = js_clip_get ? js_clip_get() : nullptr; RET(jstr(iso, t ? t : "")); free(t); }
 FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
+/* Prelude-only state is attached with unforgeable V8 private keys, rather than
+ * a per-realm WeakMap or visible expando. A same-origin object crossing into a
+ * different window therefore retains its platform brand and metadata. V8's
+ * ordinary object tracing owns the state, including cycles involving Attrs. */
+static v8::Local<v8::Private> dom_state_key(v8::Isolate *iso, int slot) {
+    static const char *names[] = { "lumen.dom.attr", "lumen.dom.attrs", "lumen.dom.name",
+                                  "lumen.dom.content-type", "lumen.dom.document-interface" };
+    if (slot < 0 || slot >= (int)ARRLEN(names)) return v8::Local<v8::Private>();
+    return v8::Private::ForApi(iso, jstr(iso, names[slot]));
+}
+FN(domStateGet) {
+    v8::Isolate *iso = a.GetIsolate();
+    auto context = iso->GetCurrentContext();
+    if (!a[0]->IsObject() || a[0]->IsProxy()) return;
+    auto key = dom_state_key(iso, a[1]->Int32Value(context).FromMaybe(-1));
+    if (key.IsEmpty()) return;
+    v8::Local<v8::Value> value;
+    if (a[0].As<v8::Object>()->GetPrivate(context, key).ToLocal(&value)) RET(value);
+}
+FN(domStateSet) {
+    v8::Isolate *iso = a.GetIsolate();
+    auto context = iso->GetCurrentContext();
+    auto key = dom_state_key(iso, a[1]->Int32Value(context).FromMaybe(-1));
+    if (!a[0]->IsObject() || a[0]->IsProxy() || key.IsEmpty()) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Invalid internal DOM state receiver")));
+        return;
+    }
+    RET(a[0].As<v8::Object>()->SetPrivate(context, key, a[2]).FromMaybe(false));
+}
 FN(type) { CTX; ARGN(n, 0); RET((int)n->type); }
 FN(name) { CTX; ARGN(n, 0); RET(jstr(iso, n->type == NODE_ELEMENT || n->type == NODE_PI ? n->tag : n->type == NODE_DOCTYPE ? n->text : "")); }
 FN(ns) { CTX; ARGN(n, 0); RET((int)n->ns); }
@@ -229,7 +258,27 @@ FN(matches) {
     RET(m);
 }
 FN(byId) { CTX; std::string id = S(0); RET(jwrap(c, doc_get_element_by_id(c->doc, id.c_str()))); }
-FN(clone) { CTX; ARGN(n, 0); RET(jwrap(c, node_clone(n, BOOL(1), c->doc))); }
+FN(clone) {
+    CTX; ARGN(n, 0);
+    Document *owner = n->doc ? n->doc : c->doc;
+    if (a.Length() > 2 && !a[2]->IsNullOrUndefined()) {
+        ARGN(into, 2);
+        if (into->type != NODE_DOCUMENT) {
+            iso->ThrowException(v8::Exception::TypeError(jstr(iso, "The clone owner must be a Document")));
+            return;
+        }
+        owner = (Document *)into;
+    }
+    Node *copy = node_clone(n, BOOL(1), owner);
+    if (copy->type == NODE_DOCUMENT) {
+        Document *document = (Document *)copy;
+        const std::string base = js_document_base_url((Document *)n, true);
+        free(document->base_url);
+        document->base_url = xstrndup(base.data(), base.size());
+        c->docs.push_back(document);
+    }
+    RET(jwrap(c, copy));
+}
 FN(doc) { CTX; RET(jwrap(c, &c->doc->node)); }
 FN(contains) { CTX; ARGN(x, 0); ARGN(y, 1); RET(node_is_inclusive_ancestor(x, y)); }
 FN(version) { CTX; ARGN(n, 0); RET(v8::Number::New(iso, n->doc ? (double)n->doc->dom_version : 0)); }
@@ -243,7 +292,7 @@ FN(attachShadow) {
 }
 FN(templateContent) {
     CTX; ARGN(n, 0);
-    if (!n->template_content) { n->template_content = node_new_fragment(c->doc); n->template_content->refcount = 1; n->template_content->flags |= NF_INERT; }
+    if (!n->template_content) { n->template_content = node_new_fragment(n->doc); n->template_content->refcount = 1; n->template_content->flags |= NF_INERT; }
     RET(jwrap(c, n->template_content));
 }
 FN(rect) {
@@ -369,6 +418,42 @@ FN(documentEncoding) {
     }
     const char *name = web_encoding_name(((Document *)node)->encoding);
     RET(jstr(iso, name ? name : "UTF-8"));
+}
+
+FN(documentURL) {
+    v8::Isolate *iso = a.GetIsolate();
+    Node *node = junwrap(a[0]);
+    if (!node || node->type != NODE_DOCUMENT) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Illegal invocation")));
+        return;
+    }
+    const char *url = ((Document *)node)->url;
+    RET(jstr(iso, url ? url : "about:blank"));
+}
+
+FN(setDocumentURL) {
+    v8::Isolate *iso = a.GetIsolate();
+    Node *node = junwrap(a[0]);
+    if (!node || node->type != NODE_DOCUMENT) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Illegal invocation")));
+        return;
+    }
+    const std::string url = jcstr(iso, a[1]);
+    Document *document = (Document *)node;
+    free(document->url);
+    document->url = xstrndup(url.data(), url.size());
+    free(document->base_url);
+    document->base_url = nullptr;
+}
+
+FN(documentQuirks) {
+    v8::Isolate *iso = a.GetIsolate();
+    Node *node = junwrap(a[0]);
+    if (!node || node->type != NODE_DOCUMENT) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Illegal invocation")));
+        return;
+    }
+    RET(((Document *)node)->quirks);
 }
 
 FN(documentBaseUrl) {
@@ -1390,7 +1475,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())
-    REG(isNode); REG(version);
+    REG(isNode); REG(domStateGet); REG(domStateSet); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(cspMedia); REG(referrer); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(xmlAppend); REG(xmlScript); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
@@ -1404,7 +1489,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(sbFlags); REG(compileHandler); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaQuality); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(deviceInfo); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
-    REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(urlSet); REG(documentEncoding); REG(documentBaseUrl); REG(htmlUrl); REG(idlGet); REG(idlPut); REG(idlRegister); REG(idlFallback); REG(initCloneIntrinsic); REG(cloneUnsupported); REG(blobState); REG(fileReaderPackage); REG(fileReaderCheckpoint); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
+    REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(urlSet); REG(documentEncoding); REG(documentURL); REG(setDocumentURL); REG(documentQuirks); REG(documentBaseUrl); REG(htmlUrl); REG(idlGet); REG(idlPut); REG(idlRegister); REG(idlFallback); REG(initCloneIntrinsic); REG(cloneUnsupported); REG(blobState); REG(fileReaderPackage); REG(fileReaderCheckpoint); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_windows(c, N); js_install_workers(c, N); js_install_canvas(c, N); js_install_webgpu(c, N); js_install_capture(c, N);

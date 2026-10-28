@@ -1,0 +1,37 @@
+[
+  {
+    "path": "src/dom/dom.c",
+    "before": "3aff672a0854b222dbe2e8c0d569e6ff0b76cb408dd715bfbe3addfc6c32dc7f",
+    "after": "87120dba2fb8ba4b09c4ae0c24a15871ad8e3adfe2000c057c6ce2516d554d46"
+  },
+  {
+    "path": "src/js/jsnative.cc",
+    "before": "d506322d37c86fdcff396dcfee711c55158d172f3d35281b1818bda2c6b23519",
+    "after": "a2bf9a6a2bfc143f24e4aef028366d47bb905be6118d7cb0d6c0819fea2876c2"
+  },
+  {
+    "path": "src/js/prelude/02-node.js",
+    "before": "132575e7a6df50d53829cdef55394c8b31781d1462d2651f921432848c511926",
+    "after": "18f364069fbd43dee58697cf26b6171241633ae4aea3c036b1d14a6d872a5008"
+  },
+  {
+    "path": "src/js/prelude/03-element.js",
+    "before": "a354664ac2d627e3d394f9d191a372a8a805a380e4d8fd68c34a32acc75a72c5",
+    "after": "3e29bc3458971ae4ababef37826f4b11f23b2bfef956742999d8007c7a1aab94"
+  },
+  {
+    "path": "src/js/prelude/06-document.js",
+    "before": "68fb6f811c8e75dd361b65afacfc543d82dffc7a49705b7006daccd7c303b5cd",
+    "after": "d132997c43f2d75a5b72df68c8dbbdc09811d6134452914db89b70086c6c3713"
+  },
+  {
+    "path": "src/js/prelude/06c-traversal.js",
+    "before": "1a119e00fe3f3924cd41a25ddfa5995819516ccc7d4ed1dab525c966280b6b3c",
+    "after": "42fbad0c2fb99cc7f68a56bb359873e552bb6873855cb7ee727efa7f72506b0b"
+  },
+  {
+    "path": "src/js/prelude/07b-net.js",
+    "before": "9b027eec93c500c8b422fdbaa9e3604d0d40246e28c0067086a7bfe6d2915c08",
+    "after": "3ca93f70b96f9e3ef1e706f928a40b420072c3222487af54bfb73d13c7c7ffae"
+  }
+]

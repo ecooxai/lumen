@@ -66,6 +66,20 @@ PAGE = r'''<!doctype html><html><body><script>
  check('A completed XHTML script remains executed before a later XML error', () => !!malformed.contentDocument.querySelector('parsererror') && malformed.contentWindow.partialScriptRan===true);
  const blocked=await frame('/blocked-script.xhtml');
  check('XHTML script execution still obeys its response CSP', () => blocked.contentDocument.contentType==='application/xhtml+xml' && blocked.contentWindow.xmlScriptResult===undefined);
+ const parentElement=document.createElement('div'), childAttribute=dd.createAttribute('data-child');
+ childAttribute.value='child';
+ check('parent elements accept attributes created in a child realm', () => { parentElement.setAttributeNode(childAttribute); return childAttribute.ownerElement===parentElement && childAttribute.ownerDocument===document && parentElement.getAttribute('data-child')==='child'; });
+ check('attribute identity is shared by accessors from different realms', () => parentElement.getAttributeNode('data-child')===childAttribute && html.contentWindow.Element.prototype.getAttributeNode.call(parentElement,'data-child')===childAttribute);
+ const childQualified=xd.createElementNS('urn:cross-realm','p:Leaf');
+ check('importNode preserves namespace metadata from a child realm', () => { const c=document.importNode(childQualified,true); return c.ownerDocument===document && c.namespaceURI==='urn:cross-realm' && c.prefix==='p' && c.localName==='Leaf'; });
+ check('borrowed parent cloneNode preserves child namespace metadata', () => { const c=Node.prototype.cloneNode.call(childQualified); return c.ownerDocument===xd && c.namespaceURI==='urn:cross-realm' && c.prefix==='p' && c.localName==='Leaf'; });
+ check('borrowed parent cloneNode preserves child XHTML content type', () => { const c=Node.prototype.cloneNode.call(hd); return c.contentType==='application/xhtml+xml' && c.URL===hd.URL && c.documentElement===null; });
+ check('importNode accepts qualified attributes from a child realm', () => { const a=xd.createAttributeNS('urn:cross-attribute','p:Value');a.value='value';const c=document.importNode(a);return c.ownerDocument===document && c.ownerElement===null && c.namespaceURI==='urn:cross-attribute' && c.prefix==='p' && c.value==='value'; });
+ let xhr=null,response=null;
+ try { xhr=new XMLHttpRequest();xhr.open('GET','/fixture.xml',false);xhr.send();response=xhr.responseXML; } catch (_) {}
+ check('XHR responseXML preserves its response URL and documentURI', () => !!response && response.URL===xhr.responseURL && response.documentURI===xhr.responseURL);
+ check('XHR responseXML baseURI is the response URL', () => !!response && response.baseURI===xhr.responseURL);
+ check('XHR responseXML clones preserve URL encoding and content type', () => { if(!response)return false;const c=response.cloneNode(true);return c.URL===xhr.responseURL && c.documentURI===xhr.responseURL && c.baseURI===xhr.responseURL && c.characterSet===response.characterSet && c.contentType===response.contentType && c.documentElement.ownerDocument===c; });
  for (const element of [xml,xhtml,html,broken,custom,utf16,scripted,malformed,blocked]) element.remove();
  check('Removed frames release their public browsing context association', () => [xml,xhtml,html,broken,custom,utf16].every(e=>e.contentWindow===null && e.contentDocument===null));
  for (let index=0; index<checks.length; index++) console.log('XML_FRAME_CHECK '+JSON.stringify({index,...checks[index]}));
@@ -136,14 +150,14 @@ def main():
         report = json.loads(lines[0])
         checks = [json.loads(line.split('XML_FRAME_CHECK ', 1)[1]) for line in transcript.splitlines()
                   if 'XML_FRAME_CHECK ' in line]
-        if len(checks) != 24 or sorted(item['index'] for item in checks) != list(range(24)):
+        if len(checks) != 33 or sorted(item['index'] for item in checks) != list(range(33)):
             print('XML_FRAME_INFRASTRUCTURE missing or duplicate bounded case records')
             return 1
         if sum(item['passed'] is True for item in checks) != report['passed']:
             print('XML_FRAME_INFRASTRUCTURE aggregate count differs from per-case records')
             return 1
         print(f"RESULTS xml-frame-documents {'PASS' if report['passed']==report['total'] else 'FAIL'} ({report['passed']}/{report['total']} checks)")
-        return 0 if report['total'] == 24 and report['passed'] == 24 else 1
+        return 0 if report['total'] == 33 and report['passed'] == 33 else 1
     finally:
         server.shutdown()
         server.server_close()

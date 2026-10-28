@@ -1,0 +1,49 @@
+<!doctype html><meta charset="utf-8"><title>HTML interface and clone brand regression</title>
+<h1>HTML interface and clone brands</h1><pre id="result">Running</pre>
+<script>
+(() => {
+  const cases = [
+    ['caption','HTMLTableCaptionElement'], ['col','HTMLTableColElement'], ['colgroup','HTMLTableColElement'],
+    ['data','HTMLDataElement'], ['datalist','HTMLDataListElement'], ['del','HTMLModElement'],
+    ['dir','HTMLDirectoryElement'], ['font','HTMLFontElement'], ['frame','HTMLFrameElement'],
+    ['frameset','HTMLFrameSetElement'], ['ins','HTMLModElement'], ['legend','HTMLLegendElement'],
+    ['map','HTMLMapElement'], ['meter','HTMLMeterElement'], ['optgroup','HTMLOptGroupElement'],
+    ['output','HTMLOutputElement'], ['param','HTMLParamElement'], ['progress','HTMLProgressElement']
+  ];
+  const checks = [];
+  function check(name, value, detail = '') {
+    const entry = {name, passed:!!value, detail:String(detail)}; checks.push(entry);
+    console.log((entry.passed ? 'PASS ' : 'FAIL ') + name + (detail ? ': ' + detail : ''));
+  }
+  for (const [tag, name] of cases) {
+    const C = window[name], original = document.createElement(tag);
+    check(tag+' exposes '+name, typeof C === 'function');
+    check(tag+' original has canonical interface', typeof C === 'function' && original instanceof C && Object.getPrototypeOf(original) === C.prototype);
+    original.setAttribute('data-clone', 'before');
+    const clone = original.cloneNode();
+    check(tag+' clone has canonical interface', typeof C === 'function' && clone instanceof C && Object.getPrototypeOf(clone) === C.prototype);
+    clone.setAttribute('data-clone', 'after');
+    check(tag+' clone is independent and retains HTML metadata', clone !== original && original.getAttribute('data-clone') === 'before' && clone.getAttribute('data-clone') === 'after' && clone.namespaceURI === 'http://www.w3.org/1999/xhtml' && clone.localName === tag && clone.ownerDocument === document);
+    const custom = Object.create(typeof C === 'function' ? C.prototype : HTMLElement.prototype);
+    Object.setPrototypeOf(original, custom); const canonical = original.cloneNode();
+    check(tag+' clone does not copy an overridden prototype', typeof C === 'function' && canonical instanceof C && Object.getPrototypeOf(canonical) === C.prototype && !custom.isPrototypeOf(canonical));
+    let illegal = false; if (typeof C === 'function') { try { new C(); } catch (error) { illegal = error instanceof TypeError; } }
+    check(tag+' direct HTML constructor rejects without a custom-element definition', illegal);
+    const xml = document.createElementNS('urn:lumen-clone-fixture', tag);
+    check(tag+' foreign namespace stays an Element', xml instanceof Element && !(xml instanceof HTMLElement) && xml.namespaceURI === 'urn:lumen-clone-fixture' && xml.localName === tag);
+  }
+  const div=document.createElement('div');
+  check('existing div brand is retained', div instanceof HTMLDivElement && Object.getPrototypeOf(div)===HTMLDivElement.prototype);
+  check('existing div clone brand is retained', div.cloneNode() instanceof HTMLDivElement);
+  check('unknown plain tag remains HTMLUnknownElement', document.createElement('lumenunknownclonetag') instanceof HTMLUnknownElement);
+  const custom=document.createElement('lumen-clone-custom');
+  check('unregistered custom tag remains plain HTMLElement', custom instanceof HTMLElement && !(custom instanceof HTMLUnknownElement));
+  const input=document.createElement('input');input.setAttribute('type','checkbox');
+  check('existing input clone preserves interface and type', input.cloneNode() instanceof HTMLInputElement && input.cloneNode().type==='checkbox');
+  const foreign=document.createElementNS('urn:lumen-clone-fixture','div');
+  check('foreign div does not acquire an HTML constructor', foreign instanceof Element && !(foreign instanceof HTMLDivElement));
+  const result={schemaVersion:1,scope:'Real native HTML interface exports/prototypes and clone branding; not complete interface IDL conformance',total:checks.length,passed:checks.filter(c=>c.passed).length,failed:checks.filter(c=>!c.passed),checks};
+  globalThis.cloneBrandResult=result;document.getElementById('result').textContent=JSON.stringify(result,null,2);document.documentElement.setAttribute('data-clone-brands-done','true');
+  console.log('RESULTS html-interface-clone-brands '+(result.failed.length?'FAIL':'PASS')+' ('+result.passed+'/'+result.total+' checks)');
+})();
+</script>

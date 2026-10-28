@@ -151,7 +151,7 @@ const needNode = (n, m, cls = 'Range') => { if (!N.isNode(n)) throw new TypeErro
 const needArgs = (args, k, m, cls = 'Range') => { if (args.length < k) throw new TypeError(`Failed to execute '${m}' on '${cls}': ${k} arguments required, but only ${args.length} present.`); };
 const noDoctype = (n) => { if (N.type(n) === 10) throw rErr("The node provided is of type 'DocumentType'.", 'InvalidNodeTypeError'); };
 const checkOffset = (n, o) => { const L = nodeLength(n); if (o > L) throw rErr(`The offset ${o} is larger than the node's length (${L}).`, 'IndexSizeError'); };
-const cloneCD = (n, data) => { const c = N.clone(n, false); N.setText(c, data); return c; };
+const cloneCD = (n, data) => { const c = cloneDOMNode(n, false); N.setText(c, data); return c; };
 class AbstractRange {
     constructor() { if (new.target === AbstractRange) illegal(); }
     get startContainer() { return this._sc; } get startOffset() { return this._so; }
@@ -256,10 +256,10 @@ class Range extends AbstractRange {
         if (sc === ec && isCD(sc)) { insertNode(f, cloneCD(sc, N.text(sc).substring(so, eo)), null); return f; }
         const { fp, lp, contained } = this._split();
         if (fp && isCD(fp)) insertNode(f, cloneCD(sc, N.text(sc).substring(so)), null);
-        else if (fp) { const c = N.clone(fp, false); insertNode(f, c, null); insertNode(c, this._sub(sc, so, fp, nodeLength(fp)).cloneContents(), null); }
-        for (const ch of contained) insertNode(f, N.clone(ch, true), null);
+        else if (fp) { const c = cloneDOMNode(fp, false); insertNode(f, c, null); insertNode(c, this._sub(sc, so, fp, nodeLength(fp)).cloneContents(), null); }
+        for (const ch of contained) insertNode(f, cloneDOMNode(ch, true), null);
         if (lp && isCD(lp)) insertNode(f, cloneCD(ec, N.text(ec).substring(0, eo)), null);
-        else if (lp) { const c = N.clone(lp, false); insertNode(f, c, null); insertNode(c, this._sub(lp, 0, ec, eo).cloneContents(), null); }
+        else if (lp) { const c = cloneDOMNode(lp, false); insertNode(f, c, null); insertNode(c, this._sub(lp, 0, ec, eo).cloneContents(), null); }
         return f;
     }
     _newPoint() {
@@ -276,10 +276,10 @@ class Range extends AbstractRange {
         const { fp, lp, contained } = this._split();
         const [nn, no] = this._newPoint();
         if (fp && isCD(fp)) { insertNode(f, cloneCD(sc, N.text(sc).substring(so)), null); replaceData(sc, so, nodeLength(sc) - so, ''); }
-        else if (fp) { const c = N.clone(fp, false); insertNode(f, c, null); insertNode(c, this._sub(sc, so, fp, nodeLength(fp)).extractContents(), null); }
+        else if (fp) { const c = cloneDOMNode(fp, false); insertNode(f, c, null); insertNode(c, this._sub(sc, so, fp, nodeLength(fp)).extractContents(), null); }
         for (const ch of contained) insertNode(f, ch, null);
         if (lp && isCD(lp)) { insertNode(f, cloneCD(ec, N.text(ec).substring(0, eo)), null); replaceData(ec, 0, eo, ''); }
-        else if (lp) { const c = N.clone(lp, false); insertNode(f, c, null); insertNode(c, this._sub(lp, 0, ec, eo).extractContents(), null); }
+        else if (lp) { const c = cloneDOMNode(lp, false); insertNode(f, c, null); insertNode(c, this._sub(lp, 0, ec, eo).extractContents(), null); }
         this._sc = this._ec = nn; this._so = this._eo = no;
         return f;
     }
@@ -418,7 +418,7 @@ class DOMMatrix extends DOMMatrixReadOnly {}
 class DOMPoint { constructor(x = 0, y = 0, z = 0, w = 1) { Object.assign(this, { x, y, z, w }); } }
 const XML_TYPES = ['text/xml', 'application/xml', 'application/xhtml+xml', 'image/svg+xml'];
 function parseXML(src, type, target = null) {
-    const doc = target || N.newXmlDoc(); Object.setPrototypeOf(doc, XMLDocument.prototype); def(doc, '__ct', type);
+    const doc = target || N.newXmlDoc(); Object.setPrototypeOf(doc, XMLDocument.prototype); documentContentTypes.set(doc, type);
     const append = (parent, child) => N.xmlAppend(parent, child, target === null);
     const ents = { lt: '<', gt: '>', amp: '&', quot: '"', apos: "'" };
     const decode = (s) => s.indexOf('&') < 0 ? s : s.replace(/&([^;\s&<]*);?/g, (m, e) => {

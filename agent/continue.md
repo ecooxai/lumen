@@ -35,3 +35,10 @@ Fresh frozen six-file WPT baseline: 1844/1850 (99.675676%), Chrome 1850/1850; si
 Task scorecard is `agent/scorecard-10290244.json`; current earned score 14.97/100 is an acceptance checklist, not a conformance percentage. The task branch was pushed through configured origin at9518bda. Additional code changes in flight are not automatically covered by baseline evidence.
 
 Pinned sparse upstream WPT source was restored under `output/wpt-10290244/upstream` at7f8d49b5a82606efc771f43d10aad5bce5ccbfeb. Official server/manifest setup is in progress; sparse scope and all unrun categories stay explicit.
+
+
+## Current accepted engine checkpoint 10290244-003
+
+Lume and Chrome each pass1850/1850 assertions,6/6files, on the unchanged pinned subset. New native artifact `build-apple-load-20261029/lumen-clone-metadata-5ec2abd8d1503c17` SHA-256 `5ec2abd8d1503c17524e65ec6ed89ed5ba4a75253e326a0d8715f7a49b60fd75`. Native targeted regression suite262/262; prebuilt-V8 incremental build3.075s. Reviewed source includes Document/Attr cloning, native owner/document metadata, cross-realm identity and XHR XML URL/baseURI. See `agent/evidence/10290244-003-clone-metadata.json`.
+
+Score 35.00/100 is task acceptance. Expanded official-server WPT and new-artifact resource tests are next; previous7a4b CPU evidence stays historical. SameIPA Mac/iPad/iPhone remains unverified. Do not stop at this selected-suite milestone.

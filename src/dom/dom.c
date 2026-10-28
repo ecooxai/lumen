@@ -352,6 +352,19 @@ void node_text_append(Node *n, const char *s, size_t len) {
 Node *node_clone(Node *n, bool deep, Document *d) {
     Node *c;
     switch (n->type) {
+    case NODE_DOCUMENT: {
+        /* A Document is larger than a Node and owns its copied descendants.
+         * Do not turn it into a fragment or attach its clone to the caller's
+         * active document. The JS owner registers this allocation for cleanup. */
+        Document *source = (Document *)n;
+        d = doc_new(source->url);
+        d->node.ns = n->ns;
+        d->encoding = source->encoding;
+        d->quirks = source->quirks;
+        if (source->base_url) d->base_url = xstrdup(source->base_url);
+        c = &d->node;
+        break;
+    }
     case NODE_ELEMENT: c = node_new_element(d, n->tag, n->ns); for (int i = 0; i < n->nattrs; i++) node_set_attr_n(c, n->attrs[i].name, n->attrs[i].value, n->attrs[i].value_len); break;
     case NODE_TEXT: c = node_new_text(d, n->text, n->text_len); break;
     case NODE_COMMENT: c = node_new_comment(d, n->text, n->text_len); break;
@@ -360,7 +373,7 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     case NODE_CDATA: c = node_new_cdata(d, n->text, n->text_len); break;
     default: c = node_new_fragment(d); break;
     }
-    if (n->template_content) { c->template_content = node_clone(n->template_content, true, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
+    if (n->template_content) { c->template_content = node_clone(n->template_content, deep, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
     if (deep) for (Node *k = n->first; k; k = k->next) node_append(c, node_clone(k, true, d));
     control_clone_state(c, n);
     return c;

@@ -5,8 +5,8 @@
   "session_start_utc": "2026-10-28T18:47:35Z",
   "deadline_utc": "2026-10-28T21:47:35Z",
   "target_score": 98,
-  "score": 14.967568,
-  "score_state": "frozen_subset_and_fixed_idle_verified_other_gates_pending",
+  "score": 35,
+  "score_state": "original_subset_all_pass_current_engine_performance_pending",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-10290244.md",
   "gates": [
@@ -15,12 +15,12 @@
       "category": "wpt",
       "weight": 10,
       "name": "Original frozen important subset",
-      "status": "partial",
-      "earned": 9.967568,
+      "status": "passed",
+      "earned": 10,
       "evidence": [
-        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-baseline-1.json"
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-clone-metadata-1.json"
       ],
-      "passed": 1844,
+      "passed": 1850,
       "denominator": 1850
     },
     {
@@ -37,9 +37,14 @@
       "category": "wpt",
       "weight": 10,
       "name": "Provenance and no-regression confirmation",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": []
+      "status": "passed",
+      "earned": 10,
+      "evidence": [
+        "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-clone-metadata-1.json",
+        "output/session-10290244/clone-metadata-green-1/compiled-source-sha256.json",
+        "output/session-10290244/clone-metadata-green-1/summary.json"
+      ],
+      "binary_sha256": "5ec2abd8d1503c17524e65ec6ed89ed5ba4a75253e326a0d8715f7a49b60fd75"
     },
     {
       "id": "ipa_mac",
@@ -73,16 +78,24 @@
       "category": "performance",
       "weight": 5,
       "name": "Idle",
-      "status": "passed",
-      "earned": 5,
-      "evidence": [
-        "output/session-10290244/apple-wasm-idle-baseline/fixed-settle-review.json"
-      ],
+      "status": "unverified",
+      "earned": 0,
+      "evidence": [],
       "binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85",
       "settle_seconds": 15,
       "valid_window_seconds": 64.009,
       "samples": 65,
-      "interval_cpu_p95_percent": 0.996
+      "interval_cpu_p95_percent": 0.996,
+      "historical_evidence": [
+        {
+          "binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85",
+          "evidence": [
+            "output/session-10290244/apple-wasm-idle-baseline/fixed-settle-review.json"
+          ],
+          "prior_earned": 5
+        }
+      ],
+      "note": "A changed native artifact requires fresh matching performance evidence."
     },
     {
       "id": "perf_interaction",
@@ -91,7 +104,8 @@
       "name": "Ordinary interaction",
       "status": "unverified",
       "earned": 0,
-      "evidence": []
+      "evidence": [],
+      "note": "A changed native artifact requires fresh matching performance evidence."
     },
     {
       "id": "perf_soak",
@@ -100,34 +114,50 @@
       "name": "Controlled memory soak",
       "status": "unverified",
       "earned": 0,
-      "evidence": []
+      "evidence": [],
+      "note": "A changed native artifact requires fresh matching performance evidence."
     },
     {
       "id": "perf_budgets",
       "category": "performance",
       "weight": 5,
       "name": "Build/test budgets",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": []
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "output/session-10290244/clone-metadata-green-1/summary.json"
+      ],
+      "build_seconds": 3.075,
+      "prebuilt_v8": true,
+      "note": "All eight native stages are timed and sampled; no stage exceeded five minutes. Short runs do not establish idle CPU."
     },
     {
       "id": "repro_tdd",
       "category": "reproducibility_release",
       "weight": 5,
       "name": "Regression-first improvement",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": []
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "output/session-10290244/clone-metadata-expanded-red.log",
+        "output/session-10290244/xml-crossrealm-red.log",
+        "output/session-10290244/clone-metadata-green-1/summary.json"
+      ]
     },
     {
       "id": "repro_source",
       "category": "reproducibility_release",
       "weight": 5,
       "name": "Source/artifact continuity",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": []
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/task.md",
+        "agent/continue.md",
+        "output/session-10290244/clone-metadata-green-1/compiled-source-sha256.json",
+        "output/session-10290244/clone-metadata-green-1/summary.json"
+      ],
+      "binary_sha256": "5ec2abd8d1503c17524e65ec6ed89ed5ba4a75253e326a0d8715f7a49b60fd75"
     },
     {
       "id": "release_progress",
@@ -146,9 +176,17 @@
       "prior_score": 9.967568,
       "score": 14.967568,
       "baseline_binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85"
+    },
+    {
+      "iteration": "10290244-003",
+      "updated_utc": "2026-10-28T19:18:56.812906+00:00",
+      "prior_score": 14.967568,
+      "score": 35,
+      "binary_sha256": "5ec2abd8d1503c17524e65ec6ed89ed5ba4a75253e326a0d8715f7a49b60fd75",
+      "historical_idle_binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85"
     }
   ],
-  "updated_utc": "2026-10-28T19:10:56.571308+00:00",
-  "current_baseline_binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85",
+  "updated_utc": "2026-10-28T19:18:56.812906+00:00",
+  "current_baseline_binary_sha256": "5ec2abd8d1503c17524e65ec6ed89ed5ba4a75253e326a0d8715f7a49b60fd75",
   "full_official_wpt_pass_percent": null
 }

@@ -475,7 +475,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
             if (mt === 'text/html' && this._rt === 'document' && this._async) d = N.parseDoc(this._text());
             else if (mt === '' || XML_TYPES.includes(mt) || mt.endsWith('+xml')) { d = parseXML(this._text(), 'application/xml'); if (d.documentElement && d.documentElement.localName === 'parsererror') d = null; }
         }
-        if (d) def(d, '__url', this.responseURL);
+        if (d) N.setDocumentURL(d, this.responseURL);
         return this._resp = d;
     }
     get responseXML() {

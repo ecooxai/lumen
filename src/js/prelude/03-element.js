@@ -39,14 +39,36 @@ const computedHandler = { get(t, p) { if (typeof p !== 'string' || p in t) retur
 
 class Element extends Node {}
 methods(Element.prototype, ParentNode); methods(Element.prototype, ChildNode);
-const lcName = (el, n) => { n = String(n); return N.ns(el) === 0 ? n.toLowerCase() : n; };
+const lcName = (el, n) => { n = String(n); return N.ns(el) === 0 && N.ns(N.ownerDoc(el)) !== 3 ? asciiLower(n) : n; };
 const NSURI = ['http://www.w3.org/1999/xhtml', 'http://www.w3.org/2000/svg', 'http://www.w3.org/1998/Math/MathML'];
 const XML_NS = 'http://www.w3.org/XML/1998/namespace', XMLNS_NS = 'http://www.w3.org/2000/xmlns/';
 const validLocalName = n => /^[A-Za-z][^\t\n\f\r \/>\x00]*$/.test(n) || /^[:_\u0080-\u{10FFFF}][A-Za-z0-9\-.:_\u0080-\u{10FFFF}]*$/u.test(n);
+const validAttributeLocalName = n => /^[^\t\n\f\r \/=>\x00]+$/.test(n);
 const asciiLower = s => s.replace(/[A-Z]+/g, c => c.toLowerCase()), asciiUpper = s => s.replace(/[a-z]+/g, c => c.toUpperCase());
+const elementNames = privateDOMState(2);
+function elementLocalName(element) { return elementNames.get(element)?.localName ?? N.name(element); }
+function elementNamespace(element) { const state = elementNames.get(element); return state ? state.namespace : N.ns(element) === 3 ? null : NSURI[N.ns(element)] || NSURI[0]; }
+function qualifiedName(namespace, name, attribute = false) {
+    namespace = namespace == null || namespace === '' ? null : attributeString(namespace);
+    name = attributeString(name);
+    const index = name.indexOf(':'), prefix = index >= 0 ? name.slice(0, index) : null,
+        localName = index >= 0 ? name.slice(index + 1) : name;
+    if ((prefix !== null && !/^[^\t\n\f\r \/>\x00]+$/.test(prefix)) || !(attribute ? validAttributeLocalName(localName) : validLocalName(localName)))
+        throw new DOMException(`The qualified name provided ('${name}') is invalid.`, 'InvalidCharacterError');
+    if ((prefix !== null && namespace === null) || (prefix === 'xml' && namespace !== XML_NS) ||
+        ((name === 'xmlns' || prefix === 'xmlns') !== (namespace === XMLNS_NS)))
+        throw new DOMException(`The namespace configuration for '${name}' is invalid.`, 'NamespaceError');
+    return { namespace, name, prefix, localName };
+}
+function setAttributeValue(element, name, value) {
+    const old = N.attr(element, name);
+    N.setAttr(element, name, value);
+    notify('attributes', element, { attributeName: name, oldValue: old });
+    ceAttr(element, name, old, value);
+}
 methods(Element.prototype, {
-    get tagName() { let ln = this.localName; if (typeof ln !== 'string') ln = String(N.name(this)); const q = this.__pfx ? this.__pfx + ':' + ln : ln; return this.namespaceURI === NSURI[0] && N.ns(N.ownerDoc(this)) !== 3 ? asciiUpper(q) : q; },
-    get localName() { return this.__ln ?? N.name(this); }, get namespaceURI() { return this.__nsu !== undefined ? this.__nsu : N.ns(this) === 3 ? null : NSURI[N.ns(this)] || NSURI[0]; }, get prefix() { return this.__pfx ?? null; },
+    get tagName() { const localName = elementLocalName(this), prefix = elementNames.get(this)?.prefix, name = prefix ? prefix + ':' + localName : localName; return elementNamespace(this) === NSURI[0] && N.ns(N.ownerDoc(this)) !== 3 ? asciiUpper(name) : name; },
+    get localName() { return elementLocalName(this); }, get namespaceURI() { return elementNamespace(this); }, get prefix() { N.ns(this); return elementNames.get(this)?.prefix ?? null; },
     get id() { return N.attr(this, 'id') ?? ''; }, set id(v) { this.setAttribute('id', v); },
     get className() { return N.attr(this, 'class') ?? ''; }, set className(v) { this.setAttribute('class', v); },
     get classList() { if (!this.__cl) def(this, '__cl', new DOMTokenList(this, 'class')); return this.__cl; }, set classList(v) { this.setAttribute('class', v); },
@@ -56,23 +78,33 @@ methods(Element.prototype, {
     getAttributeNS(ns, n) { return N.attr(this, String(n)); },
     setAttribute(n, v) {
         n = lcName(this, n); if (!/^[^\s"'>\/=\x00-\x1f]+$/.test(n)) throw new DOMException(`'${n}' is not a valid attribute name.`, 'InvalidCharacterError');
-        const old = N.attr(this, n); v = String(v);
-        N.setAttr(this, n, v);
-        notify('attributes', this, { attributeName: n, oldValue: old });
-        ceAttr(this, n, old, v);
+        setAttributeValue(this, n, String(v));
     },
     setAttributeNS(ns, n, v) { n = String(n); const i = n.indexOf(':'); this.setAttribute(i >= 0 ? n.slice(i + 1) : n, v); },
-    removeAttribute(n) { n = lcName(this, n); const old = N.attr(this, n); if (old == null) return; N.rmAttr(this, n); notify('attributes', this, { attributeName: n, oldValue: old }); ceAttr(this, n, old, null); },
+    removeAttribute(n) { n = lcName(this, n); const old = N.attr(this, n); if (old == null) return; detachAttribute(this, n); N.rmAttr(this, n); notify('attributes', this, { attributeName: n, oldValue: old }); ceAttr(this, n, old, null); },
     removeAttributeNS(ns, n) { this.removeAttribute(n); },
     hasAttribute(n) { return N.attr(this, lcName(this, n)) != null; }, hasAttributeNS(ns, n) { return N.attr(this, String(n)) != null; },
     hasAttributes() { return N.attrs(this).length > 0; },
     toggleAttribute(n, force) { const has = this.hasAttribute(n); if (force === undefined ? has : !force) { if (has) this.removeAttribute(n); return false; } if (!has) this.setAttribute(n, ''); return true; },
     getAttributeNames() { const a = N.attrs(this); const r = []; for (let i = 0; i < a.length; i += 2) r.push(a[i]); return r; },
-    getAttributeNode(n) { return this.hasAttribute(n) ? new Attr(this, lcName(this, n)) : null; },
+    getAttributeNode(n) { return attachedAttribute(this, lcName(this, n)); },
     getAttributeNodeNS(ns, n) { return this.getAttributeNode(n); },
-    setAttributeNode(a) { const old = this.getAttributeNode(a.name); this.setAttribute(a.name, a.value); def(a, '_el', this); return old; },
+    setAttributeNode(a) {
+        const state = requireAttribute(a);
+        if (state.element && state.element !== this) throw new DOMException('The attribute is already in use.', 'InUseAttributeError');
+        const old = attachedAttribute(this, state.name);
+        if (old === a) return a;
+        const value = attributeValue(state);
+        if (old) detachAttribute(this, state.name);
+        setAttributeValue(this, state.name, value);
+        state.element = this; state.document = N.ownerDoc(this); state.value = value;
+        let cache = elementAttributes.get(this);
+        if (!cache) elementAttributes.set(this, cache = new Map());
+        cache.set(state.name, a);
+        return old;
+    },
     setAttributeNodeNS(a) { return this.setAttributeNode(a); },
-    removeAttributeNode(a) { if (!a || !this.hasAttribute(a.name)) throw new DOMException("Failed to execute 'removeAttributeNode' on 'Element': The node provided is owned by another element.", 'NotFoundError'); const v = a.value; this.removeAttribute(a.name); const d = new Attr(null, a.name); Object.defineProperty(d, 'value', { value: v, writable: true }); return d; },
+    removeAttributeNode(a) { const state = requireAttribute(a); if (state.element !== this || attachedAttribute(this, state.name) !== a) throw new DOMException("The attribute is not owned by this element.", 'NotFoundError'); Element.prototype.removeAttribute.call(this, state.name); return a; },
     get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, v == null ? '' : String(v)); },
     get outerHTML() { return N.html(this, true); },
     set outerHTML(v) { const p = N.parent(this); if (!p) return; insertNode(p, N.parseFrag(p, String(v)), this); removeNode(this); },

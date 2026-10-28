@@ -1,7 +1,12 @@
 const illegal = () => { throw new TypeError('Illegal constructor'); };
+const privateDOMState = slot => ({
+    get(object) { return N.domStateGet(object, slot); },
+    has(object) { return N.domStateGet(object, slot) !== undefined; },
+    set(object, value) { N.domStateSet(object, slot, value); return this; },
+});
 class Node extends EventTarget { constructor() { super(); illegal(); } }
 Object.assign(Node, { ELEMENT_NODE: 1, ATTRIBUTE_NODE: 2, TEXT_NODE: 3, CDATA_SECTION_NODE: 4, PROCESSING_INSTRUCTION_NODE: 7, COMMENT_NODE: 8, DOCUMENT_NODE: 9, DOCUMENT_TYPE_NODE: 10, DOCUMENT_FRAGMENT_NODE: 11, DOCUMENT_POSITION_DISCONNECTED: 1, DOCUMENT_POSITION_PRECEDING: 2, DOCUMENT_POSITION_FOLLOWING: 4, DOCUMENT_POSITION_CONTAINS: 8, DOCUMENT_POSITION_CONTAINED_BY: 16, DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC: 32 });
-Object.assign(Node.prototype, { ELEMENT_NODE: 1, TEXT_NODE: 3, COMMENT_NODE: 8, DOCUMENT_NODE: 9, DOCUMENT_FRAGMENT_NODE: 11 });
+Object.assign(Node.prototype, Node);
 const nextIn = (n, root) => { const f = N.first(n); if (f) return f; for (; n && n !== root; n = N.parent(n)) { const x = N.next(n); if (x) return x; } return null; };
 const kids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) a.push(c); return a; };
 const elKids = (n) => { const a = []; for (let c = N.first(n); c; c = N.next(c)) if (N.type(c) === 1) a.push(c); return a; };
@@ -124,6 +129,43 @@ function removeNode(c) {
     if (was) ceConnected(c, false);
     return c;
 }
+/* Qualified names and document interface/content-type state use private
+ * platform slots. Clone only platform data; expandos and page-defined prototypes must
+ * not become part of the copy. Keep this path shared by cloneNode/importNode
+ * and Range's cloning operations. */
+function copyCloneMetadata(source, copy, deep) {
+    const type = N.type(source);
+    if (type === 1) {
+        const name = elementNames.get(source);
+        if (name) elementNames.set(copy, { ...name });
+        const attributes = elementAttributes.get(source);
+        if (attributes) for (const attribute of attributes.values()) {
+            const state = requireAttribute(attribute);
+            if (state.element === source && state.namespace !== null && N.attr(copy, state.name) !== null)
+                makeAttribute(copy, state.name, N.ownerDoc(copy), state.namespace, state.prefix, state.localName, attributeValue(state));
+        }
+    } else if (type === 9) {
+        if (documentContentTypes.has(source)) documentContentTypes.set(copy, documentContentTypes.get(source));
+        const proto = documentInterfaces.get(source);
+        if (proto) { documentInterfaces.set(copy, proto); Object.setPrototypeOf(copy, proto); }
+    }
+    if (deep) {
+        for (let a = N.first(source), b = N.first(copy); a && b; a = N.next(a), b = N.next(b))
+            copyCloneMetadata(a, b, true);
+    }
+    if (type === 1 && N.ns(source) === 0 && N.name(source) === 'template')
+        copyCloneMetadata(N.templateContent(source), N.templateContent(copy), deep);
+}
+function cloneDOMNode(source, deep, owner) {
+    if (attributeState.has(source)) {
+        const state = requireAttribute(source);
+        return makeAttribute(null, state.name, owner || attributeDocument(state), state.namespace,
+            state.prefix, state.localName, attributeValue(state));
+    }
+    const copy = N.clone(source, !!deep, owner);
+    copyCloneMetadata(source, copy, !!deep);
+    return copy;
+}
 methods(Node.prototype, {
     get nodeType() { return N.type(this); },
     get nodeName() { const t = N.type(this); return t === 1 ? this.tagName : t === 3 ? '#text' : t === 4 ? '#cdata-section' : t === 7 ? N.name(this) : t === 8 ? '#comment' : t === 9 ? '#document' : t === 11 ? '#document-fragment' : t === 10 ? N.name(this) : ''; },
@@ -154,7 +196,7 @@ methods(Node.prototype, {
     insertBefore(c, ref) { return insertNode(this, c, ref === undefined ? null : ref); },
     removeChild(c) { if (!N.isNode(c) || N.parent(c) !== this) throw new DOMException('The node to be removed is not a child of this node.', 'NotFoundError'); return removeNode(c); },
     replaceChild(n, old) { if (N.parent(old) !== this) throw new DOMException('The node to be replaced is not a child of this node.', 'NotFoundError'); if (n === old) return old; const nx = N.next(old); removeNode(old); insertNode(this, n, nx === n ? N.next(n) : nx); return old; },
-    cloneNode(deep) { const r = N.clone(this, !!deep); if (!N.inert(this)) ceUpgradeTree(r); return r; },
+    cloneNode(deep) { const r = cloneDOMNode(this, !!deep); if (!attributeState.has(this) && !N.inert(this)) ceUpgradeTree(r); return r; },
     contains(o) { return o != null && N.isNode(o) && N.contains(this, o); },
     getRootNode(o) { let n = this; for (;;) { const p = N.parent(n); if (p) { n = p; continue; } if (o && o.composed && N.type(n) === 11 && N.host(n)) { n = N.host(n); continue; } return n; } },
     isSameNode(o) { return this === o; },
@@ -260,11 +302,79 @@ methods(ShadowRoot.prototype, {
     get styleSheets() { return scopeSheets(this); },
 });
 
-class Attr {
-    constructor(el, name) { def(this, '_el', el); this.name = name; this.localName = name; this.namespaceURI = null; this.prefix = null; this.specified = true; }
-    get value() { return this._el ? N.attr(this._el, this.name) ?? '' : ''; } set value(v) { if (this._el) this._el.setAttribute(this.name, v); }
-    get ownerElement() { return this._el; } get nodeType() { return 2; } get nodeName() { return this.name; } get nodeValue() { return this.value; } get textContent() { return this.value; }
+const attributeState = privateDOMState(0), elementAttributes = privateDOMState(1);
+const attributeString = value => { if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string'); return String(value); };
+function requireAttribute(attribute) {
+    const state = attributeState.get(attribute);
+    if (!state) throw new TypeError('Illegal invocation');
+    return state;
 }
+function attributeDocument(state) { return state.element ? N.ownerDoc(state.element) : state.document; }
+function attributeValue(state) {
+    if (state.element) {
+        const value = N.attr(state.element, state.name);
+        if (value !== null) state.value = value;
+    }
+    return state.value;
+}
+function writeAttributeValue(attribute, value) {
+    const state = requireAttribute(attribute);
+    value = attributeString(value);
+    if (state.element) setAttributeValue(state.element, state.name, value);
+    else state.value = value;
+}
+function makeAttribute(element, name, owner, namespace = null, prefix = null, localName = name, value = '') {
+    const attribute = Object.create(Attr.prototype);
+    attributeState.set(attribute, { element, name, namespace, prefix, localName, value,
+        document: owner || (element ? N.ownerDoc(element) : document) });
+    if (element) {
+        let cache = elementAttributes.get(element);
+        if (!cache) elementAttributes.set(element, cache = new Map());
+        cache.set(name, attribute);
+    }
+    return attribute;
+}
+function attachedAttribute(element, name) {
+    const value = N.attr(element, name);
+    if (value === null) return null;
+    const cached = elementAttributes.get(element)?.get(name);
+    return cached || makeAttribute(element, name, N.ownerDoc(element), null, null, name, value);
+}
+function detachAttribute(element, name) {
+    const cache = elementAttributes.get(element), attribute = cache?.get(name);
+    if (attribute) {
+        const state = requireAttribute(attribute);
+        state.value = attributeValue(state);
+        state.document = N.ownerDoc(element);
+        state.element = null;
+        cache.delete(name);
+    }
+    return attribute || null;
+}
+class Attr extends Node { constructor() { illegal(); } }
+methods(Attr.prototype, {
+    get name() { return requireAttribute(this).name; },
+    get localName() { return requireAttribute(this).localName; },
+    get namespaceURI() { return requireAttribute(this).namespace; },
+    get prefix() { return requireAttribute(this).prefix; },
+    get specified() { requireAttribute(this); return true; },
+    get value() { return attributeValue(requireAttribute(this)); }, set value(value) { writeAttributeValue(this, value); },
+    get ownerElement() { return requireAttribute(this).element; },
+    get ownerDocument() { return attributeDocument(requireAttribute(this)); },
+    get nodeType() { requireAttribute(this); return 2; }, get nodeName() { return requireAttribute(this).name; },
+    get nodeValue() { return attributeValue(requireAttribute(this)); }, set nodeValue(value) { writeAttributeValue(this, value == null ? '' : value); },
+    get textContent() { return attributeValue(requireAttribute(this)); }, set textContent(value) { writeAttributeValue(this, value == null ? '' : value); },
+    get baseURI() { return attributeDocument(requireAttribute(this)).baseURI; },
+    get parentNode() { requireAttribute(this); return null; }, get parentElement() { requireAttribute(this); return null; },
+    get firstChild() { requireAttribute(this); return null; }, get lastChild() { requireAttribute(this); return null; },
+    get previousSibling() { requireAttribute(this); return null; }, get nextSibling() { requireAttribute(this); return null; },
+    get childNodes() { const state = requireAttribute(this); return state.children || (state.children = nodeList([])); },
+    get isConnected() { requireAttribute(this); return false; },
+    hasChildNodes() { requireAttribute(this); return false; }, getRootNode() { requireAttribute(this); return this; },
+    contains(other) { requireAttribute(this); return this === other; },
+    isEqualNode(other) { const a = requireAttribute(this), b = attributeState.get(other); return !!b && a.namespace === b.namespace && a.localName === b.localName && attributeValue(a) === attributeValue(b); },
+    normalize() { requireAttribute(this); },
+});
 class NamedNodeMap {
     constructor(el) {
         def(this, '_el', el);
@@ -276,9 +386,9 @@ class NamedNodeMap {
         });
     }
     get length() { return N.attrs(this._el).length / 2; }
-    item(i) { const n = N.attrs(this._el); return i >= 0 && 2 * i < n.length ? new Attr(this._el, n[2 * i]) : null; }
-    getNamedItem(n) { n = String(n).toLowerCase(); return N.attr(this._el, n) == null ? null : new Attr(this._el, n); }
-    setNamedItem(a) { this._el.setAttribute(a.name, a.value); }
+    item(i) { const n = N.attrs(this._el); return i >= 0 && 2 * i < n.length ? attachedAttribute(this._el, n[2 * i]) : null; }
+    getNamedItem(n) { return attachedAttribute(this._el, lcName(this._el, n)); }
+    setNamedItem(a) { return Element.prototype.setAttributeNode.call(this._el, a); }
     removeNamedItem(n) { const a = this.getNamedItem(n); if (!a) throw new DOMException("Failed to execute 'removeNamedItem' on 'NamedNodeMap': No item with name '" + n + "' was found.", 'NotFoundError'); return this._el.removeAttributeNode(a); }
     *[Symbol.iterator]() { for (let i = 0; i < this.length; i++) yield this[i]; }
 }
