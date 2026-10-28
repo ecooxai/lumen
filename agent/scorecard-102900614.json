@@ -5,7 +5,7 @@
   "session_start_utc": "2026-10-28T22:14:41.459Z",
   "deadline_utc": "2026-10-29T01:14:41.459Z",
   "target_score": 98,
-  "score": 40,
+  "score": 45,
   "score_state": "current_native_artifact_accepted_partial_gates_pending",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-10290244.md",
@@ -645,9 +645,13 @@
       "category": "reproducibility_release",
       "weight": 5,
       "name": "Reviewed progress/release delivery",
-      "status": "pending_current_task",
-      "earned": 0,
-      "evidence": [],
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/102900614-005-progress-delivery.json",
+        "agent/evidence/102900614-005/public-probe.json",
+        "agent/evidence/102900614-005/public-reply.json"
+      ],
       "evidence_generation": "current_task",
       "historical_evidence": [
         {
@@ -660,14 +664,21 @@
           ]
         }
       ],
-      "note": "Task-local identity and9/9 checks pass; public task route, websocket, archive and message-reply still require fresh verification."
+      "note": "Task-local identity and9/9 checks pass; public task route, websocket, archive and message-reply still require fresh verification.",
+      "review": {
+        "liveOrigin": "https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz",
+        "verifiedSourceCommit": "d665c4920c0c2c0aaf9e22e9945342c772423f1f",
+        "verifiedArchiveSHA256": "313c1fc0874beddcd6e753aec77358a2aa56a1abf9f26b0d47c53ab925c1e09d",
+        "refreshCurrentSourceArchive": "Required immediately after this documentation checkpoint",
+        "scope": "Verified TLS,2s live system telemetry, measured websocket round trip, full reviewed source bytes, authenticated message and agent reply. No native performance or IPA credit."
+      }
     }
   ],
-  "updated_utc": "2026-10-28T23:11:31.564421+00:00",
+  "updated_utc": "2026-10-28T23:14:40.626860+00:00",
   "current_baseline_binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
-  "current_native_source_commit": null,
+  "current_native_source_commit": "d665c4920c0c2c0aaf9e22e9945342c772423f1f",
   "accepted_artifact_status": "current_native_partial_acceptance",
   "source_branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-102900614",
   "inherited_scorecard": "agent/scorecard-102900614-inherited.json",
@@ -809,6 +820,15 @@
       "total_session_seconds": 3410.105,
       "score": 40,
       "status": "GPU upload candidate reduces CPU with exact CPU-frame pixels;10% interaction gate remains failed"
+    },
+    {
+      "iteration": "102900614-005",
+      "started_utc": "2026-10-28T23:11:31.564421+00:00",
+      "updated_utc": "2026-10-28T23:14:40.626860+00:00",
+      "elapsed_seconds": 189.062,
+      "total_session_seconds": 3599.168,
+      "score": 45,
+      "status": "Task public HTTPS,2s metrics, full source archive and authenticated message/reply verified"
     }
   ],
   "current_native_source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",

@@ -38,3 +38,7 @@ Current verified native `build-apple-load-20261029/lumen-message-transfer-733943
 ## Checkpoint004 — measured GPU candidate
 
 Candidate `build-apple-load-20261029/lumen-gpu-callback-2dacdbcc36c5be7e` SHA-256 `2dacdbcc36c5be7edeaf8027533be38d85fbefe06c717e172ee324c499f2ec03` has68/68 normal and68/68 ASan checks, no actual Metal errors, identical CPU-frame page pixels and scrollp95 `18.997%` versus23.054%. Fixed10% still fails. Current accepted native733 and score40 remain unchanged until fresh combined gates. Originalb62 crash is retained. See `agent/evidence/102900614-004-gpu-upload.json`.
+
+## Checkpoint005 — active public progress
+
+Public base `https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz` is verified with TLS,2.004s system metrics, full source archive and task message/reply. Current score45/100 on accepted733, with GPU2dac candidate tracked separately. Private message capability stays only in ignored task state and the private user artifact; never print or commit it. Tunnel relay12527 uses explicit four XDG directories, server12706 listens18785; verify exact PID identity before any future restart. Commit/archive refresh follows every accepted checkpoint. See `agent/evidence/102900614-005-progress-delivery.json`.

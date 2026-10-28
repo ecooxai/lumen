@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "mode": "probe",
+  "startedUTC": "2026-10-28T23:09:49.104Z",
+  "publicURL": "https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz",
+  "passed": true,
+  "wpt": {
+    "passed": 1850,
+    "total": 1850,
+    "scope": "Six unchanged upstream WPT-source files only; full official WPT remains unmeasured",
+    "binarySha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848"
+  },
+  "prioritySummary": {
+    "recorded": 207,
+    "fullyPassing": 158,
+    "scheduled": 1515,
+    "unrun": 1308,
+    "observedVariantPassPercent": 76.3285,
+    "scheduledFullyPassingPercent": 10.429,
+    "scope": "Raw frozen priority variants, not full WPT",
+    "binarySha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+    "isCurrentAcceptedNativeArtifact": false
+  },
+  "websocket": {
+    "tlsCertificateValidated": true,
+    "handshakeAcceptVerified": true,
+    "websocketRoundTripMs": [
+      69.73,
+      68.219
+    ],
+    "sampleTimestamps": [
+      "2026-10-28T23:09:49.315Z",
+      "2026-10-28T23:09:51.319Z"
+    ],
+    "observedSampleIntervalSeconds": 2.004
+  },
+  "publicSourceArchive": {
+    "bytes": 9504604,
+    "sha256": "313c1fc0874beddcd6e753aec77358a2aa56a1abf9f26b0d47c53ab925c1e09d",
+    "sourceCommit": "d665c4920c0c2c0aaf9e22e9945342c772423f1f",
+    "fullByteHashVerified": true
+  },
+  "messageStoredForAgentReview": true,
+  "privateKeysOmitted": true,
+  "finishedUTC": "2026-10-28T23:09:51.822Z"
+}

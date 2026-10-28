@@ -179,3 +179,12 @@ Consolidated outdated task-owned instructions and archived both previous documen
 - `656000` CPU-frame page pixels compare identically and all1875 fractional wheel inputs retain exact final position. Dynamic toolbar is explicitly excluded. The native-window capture metadata error remains separate; no invented scanout/PID proof.
 - Optional scratch-only preflight22:45:20.172–22:45:21.184Z failed from missing mirror header/ps, with no Mac mutation or performance credit.
 - Only GPU source/test and explicit reproduction helpers are committed; stream/raster working edits are excluded. Evidence `agent/evidence/102900614-004-gpu-upload.json`. Parallel wall time is not summed; model compute duration unavailable.
+
+## 102900614-005 — live task progress and private message delivery
+
+- Start `2026-10-28T23:11:31.564421+00:00`; end `2026-10-28T23:14:40.626860+00:00`; checkpoint `189.062s`; total session `3599.168s`. Current acceptance **45/100**; release/progress5points now supported. Prior50 remains historical, current native733 unchanged.
+- Verified HTTPS `https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz`, WebSocket TLS/handshake, **2.004s** telemetry cadence and round trips `[69.73, 68.219]`ms. System metrics and native test-process measurements remain distinct.
+- Full **9504604byte** public source archive verified at commit `d665c4920c0c2c0aaf9e22e9945342c772423f1f`, SHA-256 `313c1fc0874beddcd6e753aec77358a2aa56a1abf9f26b0d47c53ab925c1e09d`. Refresh required after this checkpoint; this receipt is never relabelled as newer source.
+- Authenticated task message reached the local inbox and its agent reply returned through the public endpoint. No access key or fragment is printed, committed or published. Private user access HTML0600,1155bytes was transferred with RSA-OAEP, reconstructed with an identical hash, and delivered privately by root; its capability and storage identifier are omitted from public evidence.
+- Task tunnel failure traced to launchd definition lacking isolated XDG paths. Only the proven owned profile service was stopped; a detached task relay with explicit DATA/CONFIG/CACHE/STATE restored TLS. Default/other profiles remained untouched.
+- Actual probe timestamps are in evidence `agent/evidence/102900614-005-progress-delivery.json`; earlier parallel stages are not added to elapsed wall time. Source archive and Surge refresh remain active work, not goal completion.

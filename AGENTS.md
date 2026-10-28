@@ -26,3 +26,7 @@ Priorities: meaningful high-impact red/green standards fixes; high scrolling CPU
 ### Current checkpoint003
 
 Verified transfer native `733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848`; original WPT1850/1850 and targeted222/222 pass. Current artifact acceptance40/100, prior50 historical. Fresh soak and task public delivery pending; scroll p9523.054% still fails10% ceiling. Keep GPU/stream candidates isolated. Details and exact sources in `agent/evidence/102900614-003-message-transfer.json`.
+
+### Active progress delivery005
+
+Verified public base `https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz`; current acceptance45/100. Private message keys remain out of Git, source archive and tool output. The relay must receive explicit task XDG_DATA_HOME, XDG_CONFIG_HOME, XDG_CACHE_HOME and XDG_STATE_HOME; do not restart shared/default profiles. Preserve source publication hashes and refresh the archive after each accepted checkpoint.

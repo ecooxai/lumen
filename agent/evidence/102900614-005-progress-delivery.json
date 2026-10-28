@@ -1,0 +1,58 @@
+{
+  "iteration": "102900614-005",
+  "started_utc": "2026-10-28T23:11:31.564421+00:00",
+  "updated_utc": "2026-10-28T23:14:40.626860+00:00",
+  "elapsed_seconds": 189.062,
+  "total_session_seconds": 3599.168,
+  "score": 45,
+  "status": "Task public HTTPS,2s metrics, full source archive and authenticated message/reply verified",
+  "accepted_native_unchanged": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "public_url": "https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz",
+  "public_probe": {
+    "receipt": "output/session-102900614/progress-public-probe.json",
+    "sha256": "430c5b91e5b6766b0a0c75609c374cd742d0578eb08ea40cdb6ffe82d1ef1df6",
+    "started_utc": "2026-10-28T23:09:49.104Z",
+    "finished_utc": "2026-10-28T23:09:51.822Z"
+  },
+  "reply_probe": {
+    "receipt": "output/session-102900614/progress-public-reply-check.json",
+    "sha256": "8e28cafa452b8abca13bd737ac819c0c6aa9ab33e256b2aa45669131987bf9c3",
+    "started_utc": "2026-10-28T23:10:37.527Z",
+    "finished_utc": "2026-10-28T23:10:37.782Z"
+  },
+  "source_archive_verified": {
+    "bytes": 9504604,
+    "sha256": "313c1fc0874beddcd6e753aec77358a2aa56a1abf9f26b0d47c53ab925c1e09d",
+    "sourceCommit": "d665c4920c0c2c0aaf9e22e9945342c772423f1f",
+    "fullByteHashVerified": true
+  },
+  "refresh_latest_source_archive_required": true,
+  "refresh_policy": "Push this checkpoint, rebuild reviewed archive from current committedHEAD, update status and repeat public full-byte verification. Previous verified archive is not relabelled as containing newer commits.",
+  "websocket": {
+    "tlsCertificateValidated": true,
+    "handshakeAcceptVerified": true,
+    "websocketRoundTripMs": [
+      69.73,
+      68.219
+    ],
+    "sampleTimestamps": [
+      "2026-10-28T23:09:49.315Z",
+      "2026-10-28T23:09:51.319Z"
+    ],
+    "observedSampleIntervalSeconds": 2.004
+  },
+  "private_user_artifact": {
+    "name": "gpt6-astra-pro_builtin-subagents_devinmac3d_lume-102900614_private-progress-access.html",
+    "bytes": 1155,
+    "sha256": "51dc5482c8e63c336c2dc6160b95d952bcbe2d603d251472ec05cddb531f53c7",
+    "mode": "0600",
+    "prepared": true,
+    "delivered_privately": true,
+    "delivery_method": "RSA-OAEP exact-hash reconstruction followed by private user file delivery; confirmed by root",
+    "contains_private_capability": true,
+    "excluded_from_git_archive_and_public_routes": true
+  },
+  "scope": "Progress/release infrastructure gate only; no native WPT, performance, source-binary or same-IPA promotion. Existing real Chrome URL failures remain raw while independent known-bug qualification proceeds.",
+  "parallel_timing_note": "Probe stages may precede this acceptance checkpoint because work is parallel; their exact timestamps are preserved and wall times are not summed.",
+  "model_compute_duration": "Unavailable"
+}

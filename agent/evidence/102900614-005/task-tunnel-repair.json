@@ -1,0 +1,28 @@
+{
+  "taskId": "102900614",
+  "startedUTC": "2026-10-28T23:04:32.997165+00:00",
+  "oldPID": 85419,
+  "oldProcessIdentitySHA256": "c0b03c8c87045481df54b082fa5b58c52ad683e7608f4d1cd738f9f669f0b6fc",
+  "launchDefinitionSHA256": "cb44e240979bc795eabcd3845a9b86e3f31b1c7c4a1a1ffb8a6ac82078cb49ac",
+  "launchEnvironmentNames": [
+    "OPENTUNNEL_DAEMON"
+  ],
+  "expectedXDGPathsPresent": {
+    "XDG_DATA_HOME": false,
+    "XDG_CONFIG_HOME": false,
+    "XDG_CACHE_HOME": false
+  },
+  "scope": "Stop only xyz.opentunnel.lume-progress-102900614; retain task route/certificate; foreground relay gets explicit task XDG data/config/cache/state. No default/other profile change.",
+  "downExitCode": 0,
+  "oldOwnedProcessExited": true,
+  "newPID": 12527,
+  "newExplicitXDGNames": [
+    "XDG_CACHE_HOME",
+    "XDG_CONFIG_HOME",
+    "XDG_DATA_HOME",
+    "XDG_STATE_HOME"
+  ],
+  "newRelayRunning": true,
+  "publicHealthPassed": true,
+  "finishedUTC": "2026-10-28T23:04:34.370999+00:00"
+}
