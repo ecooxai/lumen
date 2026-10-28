@@ -68,6 +68,8 @@ void js_control_selection_changed(JsCtx *c, Node *target); /* queue select and c
 bool js_dispatch_window(JsCtx *c, const char *type);
 void js_release_pins(void);   /* end of a host event batch: unpin js_dispatch targets */
 void js_set_ready_state(JsCtx *c, int state);
+/* After DOMContentLoaded: complete/load wait for connected descendant frames. */
+void js_complete_document(JsCtx *c);
 /* ms until the next timer / animation frame is due; <0 if none */
 double js_next_deadline(JsCtx *c);
 /* run due timers, animation frames and microtasks */

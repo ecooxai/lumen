@@ -112,6 +112,7 @@ struct JsCtx {
     uint32_t sandbox_flags = 0;
     std::unordered_set<JsWindowId> window_refs;
     bool dead = false;
+    bool document_load_pending = false, frame_load_notify = false;
     uint64_t frame_scan_ver = ~0ull;
     void *host_ud = nullptr;          /* child host data returned by frame_open */
     std::string frame_src;
@@ -167,6 +168,7 @@ extern "C" JsCtx *owner_ctx(Document *d);
 static inline const char *js_top_url(const JsCtx *c) { while (c && c->parent) c = c->parent; return c && c->doc ? c->doc->url : nullptr; }
 std::string ctx_origin(JsCtx *c);
 void frames_scan(JsCtx *c);
+bool frames_loading(JsCtx *c);
 void frames_inserted(JsCtx *c, Node *root);
 void frames_forget(JsCtx *c);
 void frame_kill(JsCtx *k);

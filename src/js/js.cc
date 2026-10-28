@@ -990,6 +990,30 @@ void js_set_ready_state(JsCtx *c, int state) {
     jfire(c, &c->doc->node, "readystatechange");
 }
 
+static void finish_document_load(JsCtx *c) {
+    if (!c || c->dead || !c->document_load_pending || frames_loading(c)) return;
+    /* Clear before author callbacks: a dynamic frame after completion cannot
+     * redispatch this document's load, and callbacks may retire the realm. */
+    c->document_load_pending = false;
+    const bool notify_frame = c->frame_load_notify;
+    c->frame_load_notify = false;
+    js_set_ready_state(c, 2);
+    if (!c->dead) js_dispatch_window(c, "load");
+    if (notify_frame && !c->dead && c->parent && !c->parent->dead &&
+        c->frame_el && (c->frame_el->flags & NF_CONNECTED) &&
+        js_frame_ctx(c->frame_el) == c)
+        js_dispatch(c->parent, c->frame_el, "load", "Event", false, false, 0, 0, 0, nullptr);
+}
+
+void js_complete_document(JsCtx *c) {
+    if (!c || c->dead || c->doc->ready_state == 2) return;
+    c->document_load_pending = true;
+    /* Discover parser-created frames before testing blockers. DOM access must
+     * not determine whether a child navigation delays the document's load. */
+    frames_scan(c);
+    finish_document_load(c);
+}
+
 double js_next_deadline(JsCtx *c) {
     if (!c) return INFINITY;
     double d = INFINITY;
@@ -1034,6 +1058,7 @@ void js_tick(JsCtx *c) {
     tick_one(c);
     frames_scan(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) if (!k->dead) js_tick(k);
+    finish_document_load(c);
 }
 static void tick_one(JsCtx *c) {
     JS_ENTER(c);

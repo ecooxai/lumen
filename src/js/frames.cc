@@ -173,7 +173,7 @@ void js_run_parsed_script(JsCtx *c, Node *s) {
 }
 
 static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html, size_t n, bool fire_load,
-                           const char *content_type = nullptr) {
+                           const std::string &source_key, const char *content_type = nullptr) {
     JsCtx *old = js_frame_ctx(f);
     Document *d = doc_new(url);
     if (!g_next_permissions.empty()) { d->permissions_policy = strdup(g_next_permissions.c_str()); g_next_permissions.clear(); }
@@ -200,6 +200,7 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     ch.window_id = window_id;
     JsCtx *k = js_new_ex(d, &ch, p, f);
     k->host_ud = ch.ud;
+    k->frame_src = source_key; /* Stable before scripts/load handlers can rescan the parent. */
     if (const char *fp = getenv("LUMEN_FRAME_PRE")) if (strncmp(url, "about:", 6)) js_eval(k, fp, "lumen:frame-pre");
     if (!xml_type.empty() && !frame_parse_xml(k, html, n, content_type, xml_type))
         fprintf(stderr, "lumen: frame XML decoding or parsing exceeded its contract\n");
@@ -210,9 +211,8 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     if (k->dead) return k;
     js_set_ready_state(k, 1);
     js_dispatch(k, &d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
-    js_set_ready_state(k, 2);
-    js_dispatch_window(k, "load");
-    if (fire_load && !k->dead && !p->dead) js_dispatch(p, f, "load", "Event", false, false, 0, 0, 0, NULL);
+    k->frame_load_notify = fire_load;
+    js_complete_document(k);
     return k;
 }
 
@@ -283,7 +283,7 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
         bool ok = r && r->status > 0;
         if (ok && frame_embed_blocked(p, r, r->url ? r->url : l->url.c_str())) {
             fprintf(stderr, "lumen: refused to display '%s' in a frame (X-Frame-Options / frame-ancestors)\n", r->url ? r->url : l->url.c_str());
-            JsCtx *k = frame_create(p, l->f, "about:blank", "", 0, true);
+            JsCtx *k = frame_create(p, l->f, "about:blank", "", 0, true, key);
             k->frame_src = key;
             delete l;
             return;
@@ -294,7 +294,7 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
         if (ok) { const char *policy = headers_get(&r->headers, "permissions-policy"); g_next_permissions = policy ? policy : ""; g_next_ref = l->ref; }
         const char *content_type = ok ? headers_get(&r->headers, "content-type") : nullptr;
         JsCtx *k = frame_create(p, l->f, ok && r->url ? r->url : l->url.c_str(),
-            body, ok && r->body ? r->body_len : 0, true, ok ? (content_type ? content_type : "") : nullptr);
+            body, ok && r->body ? r->body_len : 0, true, key, ok ? (content_type ? content_type : "") : nullptr);
         k->frame_src = key;
     }
     delete l;
@@ -308,7 +308,7 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key,
         !csp_allows_url(p->doc->csp, p->doc->url, u, "frame-src")) {
         fprintf(stderr, "lumen: CSP frame-src blocked form target %.120s\n", u); return;
     }
-    JsCtx *k = frame_create(p, f, "about:blank", "", 0, !remote);
+    JsCtx *k = frame_create(p, f, "about:blank", "", 0, !remote, key);
     k->frame_src = key;
     if (!remote) return;
     if (p->doc && p->doc->csp && !csp_allows_url(p->doc->csp, p->doc->url, u, "frame-src")) { fprintf(stderr, "lumen: CSP frame-src blocked %.120s\n", u); return; }
@@ -343,7 +343,7 @@ static void frame_start(JsCtx *p, Node *f) {
     if (p->dead) return;
     std::string key = src_key(p, f);
     size_t length = 0;
-    if (const char *sd = node_attr_n(f, "srcdoc", &length)) { JsCtx *k = frame_create(p, f, "about:srcdoc", sd, length, true); k->frame_src = key; return; }
+    if (const char *sd = node_attr_n(f, "srcdoc", &length)) { JsCtx *k = frame_create(p, f, "about:srcdoc", sd, length, true, key); k->frame_src = key; return; }
     frame_load(p, f, key.c_str(), key);
 }
 
@@ -384,6 +384,21 @@ void frames_scan(JsCtx *c) {
     std::vector<Node *> todo;
     collect_iframes(&c->doc->node, todo);
     for (Node *n : todo) if (!js_frame_ctx(n)) frame_start(c, n);
+}
+
+bool frames_loading(JsCtx *c) {
+    /* A replacement retires the old placeholder; only the current connected
+     * realm owns a blocker. Removed/superseded requests may finish later. */
+    for (FrameLoad *load : g_loads) {
+        if (load->p != c) continue;
+        JsCtx *child = js_frame_ctx(load->f);
+        if (child && !child->dead && child->id == load->kid &&
+            (load->f->flags & NF_CONNECTED) && load->f->doc == c->doc) return true;
+    }
+    for (JsCtx *child : c->kids)
+        if (!child->dead && child->document_load_pending && child->frame_el &&
+            (child->frame_el->flags & NF_CONNECTED) && child->frame_el->doc == c->doc) return true;
+    return false;
 }
 
 void frames_inserted(JsCtx *c, Node *root) {

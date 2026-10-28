@@ -2076,8 +2076,7 @@ static void page_start_js(App *a, Page *p) {
         node_release(sl[i]);
     }
     free(sl);
-    js_set_ready_state(p->js, 2);
-    js_dispatch_window(p->js, "load");
+    js_complete_document(p->js);
     fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - t0);
     restyle(a);
 }

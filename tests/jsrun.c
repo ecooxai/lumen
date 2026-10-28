@@ -95,8 +95,7 @@ int main(int argc, char **argv) {
     }
     js_set_ready_state(js, 1);
     js_dispatch(js, &d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
-    js_set_ready_state(js, 2);
-    js_dispatch_window(js, "load");
+    js_complete_document(js);
     double t2 = now_ms();
     double end = t2 + ms;
     const char *until = getenv("JSRUN_UNTIL_ATTR");   /* stop early once <html> carries this attribute */
