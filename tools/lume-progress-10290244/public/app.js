@@ -1,17 +1,23 @@
 const $=id=>document.getElementById(id);
 const config=await fetch('/config.json',{cache:'no-store'}).then(r=>r.json()).catch(()=>({liveBase:''}));
 const base=config.liveBase||location.origin;
-const access=new URLSearchParams(location.hash.slice(1)).get('access')||sessionStorage.getItem('lume10290244-access');
-if(access){sessionStorage.setItem('lume10290244-access',access);history.replaceState(null,'',location.pathname+location.search);$('send').disabled=false;$('message-state').textContent='Private message access is enabled.';}
+const sessionPrefix='lume'+(config.taskId||'10290244');
+const access=new URLSearchParams(location.hash.slice(1)).get('access')||sessionStorage.getItem(sessionPrefix+'-access');
+if(access){sessionStorage.setItem(sessionPrefix+'-access',access);history.replaceState(null,'',location.pathname+location.search);$('send').disabled=false;$('message-state').textContent='Private message access is enabled.';}
 const number=(v,digits=1)=>typeof v==='number'&&Number.isFinite(v)?v.toFixed(digits):'—';
 const text=(id,value)=>{$(id).textContent=value;};
 const fact=(name,value)=>{const row=document.createElement('div');row.className='fact';const key=document.createElement('span'),detail=document.createElement('strong');key.textContent=name;detail.textContent=value;row.append(key,detail);return row;};
 function render(snapshot){
   const {status={},metrics,scorecard}=snapshot;
+  document.title=`Lume ${status.taskId||config.taskId||''} · Apple WPT progress`;
+  const taskLabel=document.getElementById('task-label');if(taskLabel)taskLabel.textContent=`Lume · task ${status.taskId||config.taskId||'pending'}`;
   text('phase',status.phase||'Waiting for a verified progress update');
   const wpt=status.wpt;
-  if(wpt){text('wpt-rate',number(wpt.passPercent,2)+'%');text('wpt-count',`${wpt.passed.toLocaleString()} / ${wpt.total.toLocaleString()} assertions · ${wpt.reportedFiles} files reported`);text('wpt-scope',wpt.scope||'Pinned upstream subset; not a full official WPT rate.');}
+  const priority=status.prioritySummary;
+  if(priority){text('wpt-rate',number(priority.observedVariantPassPercent,2)+'%');text('wpt-count',`${priority.fullyPassing.toLocaleString()} / ${priority.recorded.toLocaleString()} observed priority variants · ${priority.scheduled.toLocaleString()} scheduled`);text('wpt-scope',`${priority.unrun.toLocaleString()} unrun variants remain. ${number(priority.scheduledFullyPassingPercent,2)}% of the frozen schedule is recorded fully passing. Full WPT rate is unmeasured.`);}
+  else if(wpt){text('wpt-rate',number(wpt.passPercent,2)+'%');text('wpt-count',`${wpt.passed.toLocaleString()} / ${wpt.total.toLocaleString()} assertions · ${wpt.reportedFiles} files reported`);text('wpt-scope',wpt.scope||'Pinned upstream subset; not a full official WPT rate.');}
   const facts=[fact('Installed control',wpt?`${wpt.chromePassed} / ${wpt.chromeTotal} assertions${wpt.referenceStatus?' · '+wpt.referenceStatus:''}`:'Unverified'),fact('Fully passing files',wpt?`${wpt.fullyPassingFiles} / ${wpt.reportedFiles}`:'Unverified'),fact('Full official WPT rate','Unmeasured'),fact('Current native idle CPU',status.performance?.idleStatus?`${status.performance.idleStatus} · p95 ${number(status.performance.idleCpuP95Percent,2)}%`:'Unverified'),fact('Current native idle RSS',typeof status.performance?.idleRssMiB==='number'?number(status.performance.idleRssMiB,2)+' MiB':'Unverified'),fact('Native scrolling CPU',status.performance?`${status.performance.interactionStatus} · p95 ${number(status.performance.interactionCpuP95Percent,2)}% (target ≤${status.performance.interactionCpuCeilingPercent}%)`:'Unverified'),fact('Identical IPA on Mac / iPad / iPhone',status.apple?.sameIpa||'Unverified'),fact('Last verified source',status.sourceCommit?.slice(0,12)||'Pending')];
+  if(wpt)facts.unshift(fact('Original six-file subset',`${wpt.passed.toLocaleString()} / ${wpt.total.toLocaleString()} assertions · ${wpt.fullyPassingFiles} fully passing files`));
   const historical=status.performance?.historicalInteraction;
   if(historical)facts.push(fact('Previous-build scrolling CPU',`${historical.status} · p95 ${number(historical.cpuP95Percent,2)}% · ${historical.binarySha256?.slice(0,12)||'unknown'}… (historical)`));
   $('compatibility').replaceChildren(...facts);
@@ -26,7 +32,7 @@ function render(snapshot){
     if(rows.length)$('disks').replaceChildren(...rows);
   }
   const score=scorecard?.score_state==='baseline_audit_pending'?'—':number(scorecard?.score,2);
-  text('score',`Iteration ${status.iteration??'—'} · ${score}/100 task gates`);
+  text('score',`Iteration ${status.iteration??'—'} · ${score}/100 ${scorecard?.accepted_artifact_status==='inherited_baseline'?'inherited task gates':'task gates'}`);
   text('artifact',wpt?.binarySha256?`Native binary ${wpt.binarySha256.slice(0,20)}…`:'Artifact identity pending');
 }
 function renderExpanded(data){
@@ -57,8 +63,8 @@ function connect(){
 fetch(base+'/api/progress',{cache:'no-store'}).then(r=>r.json()).then(render).catch(()=>text('phase','Live endpoint is unavailable. No measurements have been invented.'));
 connect();
 let messages=[];
-try{messages=JSON.parse(sessionStorage.getItem('lume10290244-messages')||'[]');}catch{}
-const saveMessages=()=>sessionStorage.setItem('lume10290244-messages',JSON.stringify(messages.slice(-10)));
+try{messages=JSON.parse(sessionStorage.getItem(sessionPrefix+'-messages')||'[]');}catch{}
+const saveMessages=()=>sessionStorage.setItem(sessionPrefix+'-messages',JSON.stringify(messages.slice(-10)));
 function showMessages(){
   $('replies').replaceChildren(...messages.slice(-5).map(message=>{const item=document.createElement('div');item.className='reply';const label=document.createElement('small'),question=document.createElement('p'),answer=document.createElement('p');label.textContent=message.reply?'Agent replied':'Stored for agent review';question.textContent=message.text;answer.textContent=message.reply||'Awaiting the next agent checkpoint.';item.append(label,question,answer);return item;}));
 }

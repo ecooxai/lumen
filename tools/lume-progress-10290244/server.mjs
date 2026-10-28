@@ -20,7 +20,10 @@ function equalSecret(actual,expected) {
 }
 
 export function createProgressServer(options={}) {
-  const stateDir=options.stateDir||path.resolve(HERE,'../../output/session-10290244/progress-state');
+  const taskId=String(options.taskId||'10290244');
+  if(!/^[A-Za-z0-9_-]{1,64}$/.test(taskId))throw Error('Invalid task identifier');
+  const emptyStatus={...EMPTY_STATUS,taskId};
+  const stateDir=options.stateDir||path.resolve(HERE,`../../output/session-${taskId}/progress-state`);
   const publicDir=options.publicDir||path.join(HERE,'public');
   const store=createMessageStore(stateDir);
   const sample=createSampler();
@@ -38,7 +41,13 @@ export function createProgressServer(options={}) {
     return h;
   };
   const json=(req,res,code,value)=>{res.writeHead(code,{...headers(req),'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(value));};
-  const snapshot=async()=>({schema:1,serverTime:new Date().toISOString(),refreshSeconds:2,metrics,status:await readJson(path.join(stateDir,'status.json'),EMPTY_STATUS),scorecard:options.scorecard?await readJson(options.scorecard,null):null});
+  const snapshot=async()=>{
+    const status=await readJson(path.join(stateDir,'status.json'),emptyStatus);
+    const scorecard=options.scorecard?await readJson(options.scorecard,null):null;
+    return {schema:1,serverTime:new Date().toISOString(),refreshSeconds:2,metrics,
+      status:status?.taskId===taskId?status:{...emptyStatus,phase:'Status identity mismatch; awaiting a matching receipt'},
+      scorecard:scorecard?.task_id===taskId?scorecard:null};
+  };
   const refresh=async()=>{
     if (sampling) return;
     sampling=true;
@@ -61,8 +70,9 @@ export function createProgressServer(options={}) {
       if (!originAllowed(req)) return json(req,res,403,{error:'Origin rejected'});
       res.writeHead(204,{...headers(req),'Access-Control-Allow-Methods':'GET, POST','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Max-Age':'600'});return res.end();
     }
-    if(req.method==='GET'&&url.pathname==='/api/health')return json(req,res,200,{ok:true,taskId:'10290244',live:'/live',messages:'A private access link is required. Messages are data, never commands.'});
+    if(req.method==='GET'&&url.pathname==='/api/health')return json(req,res,200,{ok:true,taskId,live:'/live',messages:'A private access link is required. Messages are data, never commands.'});
     if(req.method==='GET'&&url.pathname==='/api/progress')return json(req,res,200,await snapshot());
+    if(req.method==='GET'&&url.pathname==='/config.json')return json(req,res,200,{liveBase:'',taskId});
     if(req.method==='GET'&&/^\/api\/message\/[a-f0-9-]{36}$/.test(url.pathname)) {
       const value=await store.read(url.pathname.split('/').at(-1),url.searchParams.get('key'));
       return json(req,res,value?200:404,value||{error:'Not found'});
@@ -135,13 +145,14 @@ export function createProgressServer(options={}) {
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
-  const stateDir=path.resolve(process.env.LUME_PROGRESS_STATE||path.join(HERE,'../../output/session-10290244/progress-state'));
+  const taskId=process.env.LUME_TASK_ID||'10290244';
+  const stateDir=path.resolve(process.env.LUME_PROGRESS_STATE||path.join(HERE,`../../output/session-${taskId}/progress-state`));
   await fsp.mkdir(stateDir,{recursive:true});
   const keyFile=path.join(stateDir,'message-access-key');
   let messageToken;
   try{messageToken=(await fsp.readFile(keyFile,'utf8')).trim();}
   catch{messageToken=crypto.randomBytes(24).toString('hex');await fsp.writeFile(keyFile,messageToken+'\n',{mode:0o600,flag:'wx'});}
-  const server=createProgressServer({stateDir,messageToken,scorecard:path.resolve(HERE,'../../agent/scorecard-10290244.json'),sourceArchive:process.env.LUME_SOURCE_ARCHIVE?path.resolve(process.env.LUME_SOURCE_ARCHIVE):undefined,allowedOrigins:(process.env.LUME_ALLOWED_ORIGINS||'').split(',').filter(Boolean)});
+  const server=createProgressServer({taskId,stateDir,messageToken,scorecard:process.env.LUME_SCORECARD?path.resolve(process.env.LUME_SCORECARD):path.resolve(HERE,`../../agent/scorecard-${taskId}.json`),sourceArchive:process.env.LUME_SOURCE_ARCHIVE?path.resolve(process.env.LUME_SOURCE_ARCHIVE):undefined,allowedOrigins:(process.env.LUME_ALLOWED_ORIGINS||'').split(',').filter(Boolean)});
   const port=Number(process.env.PORT||18784);
   server.listen(port,'127.0.0.1',()=>process.stdout.write(`Lume progress listening on http://127.0.0.1:${port}; private message key stored outside published files.\n`));
   process.on('SIGTERM',()=>server.closeProgress());process.on('SIGINT',()=>server.closeProgress());

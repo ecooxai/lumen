@@ -148,3 +148,12 @@ Consolidated outdated task-owned instructions and archived both previous documen
 - Historical WPT1850/1850 assertions in6files;158/207 observed priority variants fully pass,1515variants frozen; full WPT rate unknown.
 - Root and all3built-in workers use identical inherited model/reasoning. Child MCP hung; root now brokers remote I/O. Model compute duration unavailable; parallel wall times are not summed.
 - No build/test in this setup iteration; test/build timing and resource evidence will be appended by stage.
+
+## 102900614-002 — task-scoped progress and truthful WPT coverage
+
+- Start `2026-10-28T22:21:43.088519+00:00`; end `2026-10-28T22:39:39.725760+00:00`; elapsed `1076.637s`; total session wall time `1498.267s`.
+- Score **50/100 inherited**; no changed executable is promoted and no native performance points are added.
+- Regression first: new-task identity and stale-receipt isolation **1/3 → 3/3**, with **9/9** total progress checks green. Monitored stage durations: RED `1.059s`, GREEN `1.038s`. Short unit checks have insufficient CPU intervals for a steady-state performance claim.
+- Reused existing MVC progress stack with explicit task identity, isolated message storage, raw priority pass denominator, inherited-score label, dynamic status validation, and exact private-key/reachable-history publication checks. Full WPT rate remains unmeasured.
+- Initial commit pager/whitespace interruption was infrastructure only; exact user text and archived bytes retained. No separate timing was captured, and no acceptance points were awarded for the repair.
+- Evidence: `agent/evidence/102900614-002-progress-task-isolation.json`. Model compute duration unavailable; parallel wall times are not summed.

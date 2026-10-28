@@ -4,7 +4,8 @@ import {fileURLToPath} from 'node:url';
 import {createMessageStore} from './model.mjs';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
-const state=path.resolve(process.env.LUME_PROGRESS_STATE||path.join(here,'../../output/session-10290244/progress-state'));
+const taskId=process.env.LUME_TASK_ID||'10290244';
+const state=path.resolve(process.env.LUME_PROGRESS_STATE||path.join(here,`../../output/session-${taskId}/progress-state`));
 const [command,...args]=process.argv.slice(2);
 const store=createMessageStore(state);
 if(command==='list'){

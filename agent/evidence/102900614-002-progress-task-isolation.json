@@ -1,0 +1,50 @@
+{
+  "iteration": "102900614-002",
+  "started_utc": "2026-10-28T22:21:43.088519+00:00",
+  "updated_utc": "2026-10-28T22:39:39.725760+00:00",
+  "elapsed_seconds": 1076.637,
+  "total_session_seconds": 1498.267,
+  "score": 50,
+  "status": "Progress task isolation and truthful coverage display verified; native baseline remains inherited",
+  "red": {
+    "log": "output/session-102900614/progress-task-identity-red-1.log",
+    "monitor": "output/session-102900614/progress-task-identity-red-1.json",
+    "log_sha256": "48cd5a0a2e620f40b4eeaf087833740f863d787d41196e3fb26121663d3fdc50",
+    "monitor_sha256": "545a04cb0106dbc8f9e85dba295aae0aabf2fa5614593d334da9d0c9c4efeccf",
+    "counts": {
+      "tests": 3,
+      "pass": 1,
+      "fail": 2
+    },
+    "started_utc": "2026-10-28T22:31:31.078592+00:00",
+    "finished_utc": "2026-10-28T22:31:32.139313+00:00",
+    "wall_seconds": 1.059,
+    "samples": 1,
+    "valid_cpu_intervals": 0,
+    "max_sampling_gap_s": 1.021,
+    "natural_exit_code": 1,
+    "collector_error": null
+  },
+  "green": {
+    "log": "output/session-102900614/progress-task-identity-green-1.log",
+    "monitor": "output/session-102900614/progress-task-identity-green-1.json",
+    "log_sha256": "4a7c93cba140d4c59099afee5cee10ac6dddeb0f4a4ab3f4d170acdd42959c00",
+    "monitor_sha256": "301c9020a715b89f5aaea750e0d8b096d210df4845fffb49a02cc56970c43661",
+    "counts": {
+      "tests": 9,
+      "pass": 9,
+      "fail": 0
+    },
+    "started_utc": "2026-10-28T22:35:41.306925+00:00",
+    "finished_utc": "2026-10-28T22:35:42.346483+00:00",
+    "wall_seconds": 1.038,
+    "samples": 1,
+    "valid_cpu_intervals": 0,
+    "max_sampling_gap_s": 1.009,
+    "natural_exit_code": 0,
+    "collector_error": null
+  },
+  "native_artifact_promoted": false,
+  "infrastructure_note": "Initial setup commit pager/whitespace interruption resolved with --no-pager and exact verbatim task/archive preservation; separate duration unavailable. No acceptance points awarded for that repair.",
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed"
+}

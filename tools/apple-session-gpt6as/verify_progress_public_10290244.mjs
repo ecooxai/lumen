@@ -7,8 +7,10 @@ import {pathToFileURL} from 'node:url';
 import {performance} from 'node:perf_hooks';
 
 const root=process.cwd();
-const state=path.join(root,'output/session-10290244/progress-state');
-const output=path.join(root,'output/session-10290244');
+const taskId=process.env.LUME_TASK_ID||'10290244';
+assert.match(taskId,/^[A-Za-z0-9_-]{1,64}$/);
+const output=path.join(root,`output/session-${taskId}`);
+const state=path.join(output,'progress-state');
 const {decodeFrames}=await import(pathToFileURL(path.join(root,'tools/apple-web-lab-gpt6as/server.mjs')));
 const read=async filename=>JSON.parse(await fs.readFile(filename,'utf8'));
 const receipt=await read(path.join(state,'server-receipt.json'));
@@ -90,11 +92,14 @@ try{
     assert.ok(typeof value.reply==='string'&&value.reply.trim().length>0,'Agent has not replied to the verification message');
     result.messageId=value.id;result.agentReplyObserved=true;result.reply=value.reply;
   }else if(mode==='probe'){
-    const health=await request('/api/health');assert.equal(health.taskId,'10290244');assert.equal(health.ok,true);
-    const progress=await request('/api/progress');assert.equal(progress.status.taskId,'10290244');
+    const health=await request('/api/health');assert.equal(health.taskId,taskId);assert.equal(health.ok,true);
+    const progress=await request('/api/progress');assert.equal(progress.status.taskId,taskId);
     assert.equal(progress.status.fullOfficialWptPassPercent,null);
-    assert.equal(progress.status.wpt.passed,1850);assert.equal(progress.status.wpt.total,1850);
-    result.wpt={passed:1850,total:1850,scope:progress.status.wpt.scope,binarySha256:progress.status.wpt.binarySha256};
+    const localStatus=await read(path.join(state,'status.json'));
+    assert.deepEqual(progress.status.wpt,localStatus.wpt);
+    assert.deepEqual(progress.status.prioritySummary,localStatus.prioritySummary);
+    result.wpt={passed:progress.status.wpt.passed,total:progress.status.wpt.total,scope:progress.status.wpt.scope,binarySha256:progress.status.wpt.binarySha256};
+    result.prioritySummary=progress.status.prioritySummary;
     result.websocket=await websocketProbe();
     const manifest=await read(path.join(output,'public/manifest.json'));
     const download=await fetch(origin+'/src.tar.gz',{signal:AbortSignal.timeout(60000)});
@@ -103,7 +108,7 @@ try{
     for await(const chunk of download.body){bytes+=chunk.length;assert.ok(bytes<=manifest.bytes);hash.update(chunk);}
     assert.equal(bytes,manifest.bytes);assert.equal(hash.digest('hex'),manifest.sha256);
     result.publicSourceArchive={bytes,sha256:manifest.sha256,sourceCommit:manifest.sourceCommit,fullByteHashVerified:true};
-    const text='Automated delivery check for task10290244: please confirm you received this progress-page message and are continuing WPT and Apple performance work.';
+    const text=`Automated delivery check for task ${taskId}: please confirm you received this progress-page message and are continuing WPT and Apple performance work.`;
     let message;
     try{
       message=await read(privateClient);

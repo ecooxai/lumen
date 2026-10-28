@@ -1,9 +1,12 @@
 """Refresh public category progress from frozen inventory and verified reports."""
 import argparse
 from datetime import datetime, timezone
-import hashlib, json, pathlib
+import hashlib, json, os, pathlib, re
 
-ROOT=pathlib.Path.cwd();BASE=ROOT/'output/wpt-10290244';STATE=ROOT/'output/session-10290244/progress-state'
+ROOT=pathlib.Path.cwd();BASE=ROOT/'output/wpt-10290244'
+TASK=os.environ.get('LUME_TASK_ID','10290244')
+if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',TASK):raise RuntimeError('Invalid task identifier')
+STATE=ROOT/('output/session-'+TASK+'/progress-state')
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--cohort',type=pathlib.Path,help='Directory containing cohort.json and priority-comparison.json')
 args=parser.parse_args()
@@ -35,7 +38,9 @@ for name,count in frozen['category_counts'].items():
 status=json.loads((STATE/'status.json').read_text())
 if not args.cohort and status.get('expandedWpt',{}).get('reportSHA256')and status['expandedWpt'].get('selectionScheduleSHA256')==frozen['schedule_sha256']:
     value=status['expandedWpt']
-score=json.loads((ROOT/'agent/scorecard-10290244.json').read_text())
+score=json.loads((ROOT/('agent/scorecard-'+TASK+'.json')).read_text())
+if score.get('task_id')!=TASK:raise RuntimeError('Scorecard task identity differs')
+status['taskId']=TASK
 gates={row['id']:row for row in score['gates']}
 comparison_path=gates['wpt_original']['evidence'][0]
 comparison=json.loads((ROOT/comparison_path).read_text())
@@ -109,7 +114,14 @@ if supplement_path.is_file():
         raw_pass=raw['subtest_outcomes'].get('PASS',0);raw_total=raw['executed_subtests_excluding_notrun'];adjusted_pass=adjusted['subtest_outcomes'].get('PASS',0);adjusted_total=adjusted['executed_subtests_excluding_notrun']
         status['phase']+=f" Fetch Headers raw run: {raw_pass}/{raw_total} assertions, {raw['files_passing_all_assertions']}/52 fully passing files. After restoring a pinned missing helper, the separate adjusted view is {adjusted_pass}/{adjusted_total} assertions and {adjusted['files_passing_all_assertions']}/52 fully passing files; {adjusted['file_outcomes'].get('ERROR',0)} errors and {adjusted['file_outcomes'].get('TIMEOUT',0)} timeouts remain. Original results are preserved."
 status['expandedWpt']=value;status['updatedUTC']=datetime.now(timezone.utc).isoformat()
-archive=ROOT/'output/session-10290244/public/manifest.json'
+recorded=sum(row['lumenRecorded'] for row in value['categories'].values())
+passed=sum(row['lumenFullyPassing'] for row in value['categories'].values())
+scheduled=value['selectedVariants']
+status['prioritySummary']={'recorded':recorded,'fullyPassing':passed,'scheduled':scheduled,'unrun':scheduled-recorded,
+    'observedVariantPassPercent':round(100*passed/recorded,4) if recorded else None,
+    'scheduledFullyPassingPercent':round(100*passed/scheduled,4),'scope':'Raw frozen priority variants, not full WPT'}
+if score.get('accepted_artifact_status')=='inherited_baseline':status['phase']='Inherited previous-build evidence; new task validation is in progress. '+status['phase']
+archive=ROOT/('output/session-'+TASK+'/public/manifest.json')
 if archive.is_file():
     manifest=json.loads(archive.read_text());status['sourceArchive']=manifest;status['sourceCommit']=manifest['sourceCommit']
 temporary=STATE/'status.tmp';temporary.write_text(json.dumps(status,indent=2)+'\n');temporary.replace(STATE/'status.json')

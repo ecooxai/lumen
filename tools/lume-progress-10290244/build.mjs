@@ -11,5 +11,7 @@ if(endpoint.protocol!=='https:')throw Error('Published live endpoint must use HT
 const destination=path.resolve(value('--output'));
 await fs.mkdir(destination,{recursive:true});
 for(const name of['index.html','app.js','style.css'])await fs.copyFile(path.join(here,'public',name),path.join(destination,name));
-await fs.writeFile(path.join(destination,'config.json'),JSON.stringify({liveBase:endpoint.origin})+'\n');
+const taskId=process.env.LUME_TASK_ID||'10290244';
+if(!/^[A-Za-z0-9_-]{1,64}$/.test(taskId))throw Error('Invalid task identifier');
+await fs.writeFile(path.join(destination,'config.json'),JSON.stringify({liveBase:endpoint.origin,taskId})+'\n');
 process.stdout.write(JSON.stringify({output:destination,liveBase:endpoint.origin,scope:'Static view; telemetry and messages require the separate live endpoint.'})+'\n');
