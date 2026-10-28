@@ -1,0 +1,190 @@
+{
+  "iteration": 2,
+  "title": "Native image request reuse and decode lifecycle",
+  "agents": [
+    "ops_preview",
+    "conformance",
+    "engine_lead",
+    "root"
+  ],
+  "started_utc": "2026-10-28T04:02:32.814556Z",
+  "start_basis": "First recorded controlled reproduction of the unchanged lifecycle failure",
+  "finished_utc": "2026-10-28T05:18:05.410075+00:00",
+  "updated_utc": "2026-10-28T05:18:05.410075+00:00",
+  "status": "accepted focused pending-request/decode lifecycle repair",
+  "iteration_quality_score": 96,
+  "whole_goal_readiness": 19,
+  "duration_note": "Concurrent lane wall time includes diagnosis, rejected hypotheses, source coordination and independent validation; it is not exclusive labor and must not be added to other lane durations.",
+  "attempts": [
+    {
+      "candidate": 103,
+      "status": "rejected and reverted",
+      "iteration_quality_score": null,
+      "score_status": "No accepted patch score assigned; pending independent PM review or rejected gate",
+      "whole_goal_readiness": 19,
+      "whole_goal_status": "provisional estimate, not measured pass percentage",
+      "build_started_utc": "2026-10-28T04:07:02Z",
+      "build_finished_utc": "2026-10-28T04:07:23Z",
+      "binary_sha256": "4bf938cc0bcc79b7f42b395f4e28feadaa1d20fb1c4b44d16965abf6a5440d0c",
+      "build_exit_code": 0,
+      "source_unchanged_during_build": true,
+      "evidence": "agent/validation/iteration-103/build-state.json",
+      "note": "Original16 still15/16; proposed ordering5/5 invalidated because Chromium2/5. Three false expectations retained as failed hypothesis, never counted as gains."
+    },
+    {
+      "candidate": 106,
+      "status": "experimental combined build",
+      "iteration_quality_score": null,
+      "score_status": "No accepted patch score assigned; pending independent PM review or rejected gate",
+      "whole_goal_readiness": 19,
+      "whole_goal_status": "provisional estimate, not measured pass percentage",
+      "build_started_utc": "2026-10-28T04:26:50Z",
+      "build_finished_utc": "2026-10-28T04:29:56Z",
+      "binary_sha256": "f5f29059189a09751b854ffac10c61fd473f6398e422c9593914ed3cc16a5e7e",
+      "build_exit_code": 0,
+      "source_unchanged_during_build": true,
+      "evidence": "agent/validation/iteration-106/build-state.json",
+      "note": "Original16/16 in three fresh profiles. Official9:49/64 baseline to50/64, one gain and zero lost passes. Contains experimental BroadcastChannel, so not isolated acceptance proof."
+    },
+    {
+      "candidate": 108,
+      "status": "experimental isolated image",
+      "iteration_quality_score": null,
+      "score_status": "No accepted patch score assigned; pending independent PM review or rejected gate",
+      "whole_goal_readiness": 19,
+      "whole_goal_status": "provisional estimate, not measured pass percentage",
+      "build_started_utc": "2026-10-28T04:37:22Z",
+      "build_finished_utc": "2026-10-28T04:38:43Z",
+      "binary_sha256": "17baf355779d12f0f4239eefb33c34eff22bfba19c7b9fcf3356d22c05c769a3",
+      "build_exit_code": 0,
+      "source_unchanged_during_build": true,
+      "evidence": "agent/validation/iteration-108/build-state.json",
+      "note": "Image-only on accepted grid, BroadcastChannel patch reversed/restored with exact hashes. Later native document/URL hardening superseded this build."
+    },
+    {
+      "candidate": 110,
+      "status": "rejected pending correction",
+      "iteration_quality_score": null,
+      "score_status": "No accepted patch score assigned; pending independent PM review or rejected gate",
+      "whole_goal_readiness": 19,
+      "whole_goal_status": "provisional estimate, not measured pass percentage",
+      "build_started_utc": "2026-10-28T04:53:36Z",
+      "build_finished_utc": "2026-10-28T04:57:38Z",
+      "binary_sha256": "bea123fb8ee75151a90b3cd77fa72f2408a9a3031693b5fc263bf8ac09dd7ef4",
+      "build_exit_code": 0,
+      "source_unchanged_during_build": true,
+      "evidence": "agent/validation/iteration-110/build-state.json",
+      "note": "Isolated image; original16/16 and full native109/109. Official9:50/64, one gain/zero lost. Five independent context observations exposed one introduced referrerPolicy rejection; baseline and Chromium resolve. CORS mutation and public document/baseURI shadowing observations improved."
+    },
+    {
+      "candidate": 111,
+      "status": "accepted focused repair",
+      "iteration_quality_score": 96,
+      "score_status": "PM accepted focused scope",
+      "whole_goal_readiness": 19,
+      "whole_goal_status": "provisional estimate, not measured pass percentage",
+      "build_started_utc": "2026-10-28T05:11:07Z",
+      "build_finished_utc": "2026-10-28T05:12:41Z",
+      "binary_sha256": "914b1e2024f3b7af4eacc31fe1b7d2bb0f518d60765940b869f249debf1f6047",
+      "build_exit_code": 0,
+      "source_unchanged_during_build": true,
+      "evidence": "agent/validation/linux-wpt-20261028/image-corrective111/provenance.json",
+      "note": "Exact referrerPolicy regression restored without changing observation; CORS/shadowing gains retained. Accepted grid+BC base, image-only uncommitted diff."
+    }
+  ],
+  "native110_gate": [
+    {
+      "gate": "original-16",
+      "started_utc": "2026-10-28T05:00:07.787411+00:00",
+      "finished_utc": "2026-10-28T05:00:10.197531+00:00",
+      "elapsed_s": 2.41,
+      "exit_code": 0,
+      "command": [
+        "python3",
+        "tests/browser/run.py",
+        "--binary",
+        "build/codex-native/lumen-astra-i110",
+        "--fixture",
+        "tests/browser/image-lifecycle.html",
+        "--marker",
+        "browser-image-lifecycle",
+        "--output",
+        "agent/validation/linux-wpt-20261028/image-hardened110/original-16",
+        "--timeout",
+        "35"
+      ]
+    },
+    {
+      "gate": "full-ctest",
+      "started_utc": "2026-10-28T05:00:10.198242+00:00",
+      "finished_utc": "2026-10-28T05:03:08.479998+00:00",
+      "elapsed_s": 178.282,
+      "exit_code": 0,
+      "command": [
+        "ctest",
+        "--test-dir",
+        "build/codex-native",
+        "--output-on-failure",
+        "-j",
+        "2"
+      ]
+    }
+  ],
+  "context_evidence": "agent/validation/linux-wpt-20261028/image-pending-context-comparison.json",
+  "spec_sources": [
+    "https://html.spec.whatwg.org/multipage/images.html#reacting-to-dom-mutations",
+    "https://html.spec.whatwg.org/multipage/embedded-content.html#dom-img-decode"
+  ],
+  "acceptance_time_basis": "PM decision recorded after independent111 context comparison",
+  "quality_scope": "Focused repair only; full image/WPT parity unproven",
+  "duration_minutes": 75.54,
+  "accepted_candidate": 111,
+  "accepted_binary_sha256": "914b1e2024f3b7af4eacc31fe1b7d2bb0f518d60765940b869f249debf1f6047",
+  "accepted_base_commit": "e0a4e1f44dbab062370e65c08103b3bb691807f0",
+  "source_manifest_sha256": "39ec31f45599bba30f0d5f1b5ed9eb371adfa0be241fac071fc0795cde5ec86c",
+  "validation": {
+    "unchanged_lifecycle": {
+      "baseline": "15/16 in three fresh profiles",
+      "chromium": "16/16",
+      "candidate111": "16/16"
+    },
+    "official_decode": {
+      "urls": 9,
+      "baseline": 49,
+      "candidate111": 50,
+      "chromium": 61,
+      "total": 64,
+      "gained": 1,
+      "lost": 0,
+      "harness_losses": 0
+    },
+    "candidate111_targeted_native": "3/3 image/DOM tests",
+    "antecedent_candidate110_native": "109/109 full native tests on isolated image110; not a111 full-suite claim",
+    "observations": "11 unchanged modes compared by outcome, not counted as testharness PASS assertions; four older picture/context divergences remain pre-existing",
+    "new_five_modes": {
+      "shadow_ownerDocument": "resolve, matches Chromium",
+      "shadow_baseURI": "resolve, matches Chromium",
+      "no_picture_control": "resolve, matches Chromium",
+      "no_picture_CORS_mutation": "EncodingError, matches Chromium; baseline incorrectly resolved",
+      "no_picture_referrerPolicy_mutation": "resolve, matches baseline and Chromium; restores the pass lost by110"
+    }
+  },
+  "source_review": {
+    "reviewer": "engine_lead",
+    "finding": "Native document/resolved URL anchoring and V8 string copy/free ownership reviewed; no new ownership/lifetime defect found. Policy remains in fetch-context and native pending-cache matching, separate from decode invalidation.",
+    "scheduling": "Initial microtask and later existing task scheduling preserved; rejected103 timing change is absent."
+  },
+  "resource_limits": {
+    "diagnostic_images": 4000,
+    "baseline_final_rss_mib": 112.988,
+    "candidate106_final_rss_mib": 113.402,
+    "post_gc_heap_difference_mib": 0.3,
+    "caveat": "Bounded create/decode/remove diagnostic only; no long-run retention slope or leak-free claim. Cache remains globally URL-keyed as before; this repair does not claim complete CORS/cache partition isolation."
+  },
+  "remaining_gaps": [
+    "Four pre-existing picture/context outcome divergences in the11-mode probe",
+    "Existing SVG/image-document failures in the official decode cohort",
+    "Long-run retention slope remains unproven",
+    "No full WPT or GPU conformance claim"
+  ]
+}

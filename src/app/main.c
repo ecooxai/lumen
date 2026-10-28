@@ -97,7 +97,7 @@ typedef struct Page {
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver, seen_sheet_ver, seen_paint_ver, seen_res; bool res_seen;
     bool sheets_pending; /* a fetched stylesheet was added: next restyle recomputes everything once */
     SheetRef *sref; int nsref;
-    HMap img_fired, image_urls, blob_requests; bool img_check, internal_ui;
+    HMap img_fired, image_urls, blob_requests; uint64_t image_scope; bool img_check, internal_ui;
     double load_t0;   /* when its load event first became due (images delay it up to 10 s) */
     /* <iframe> child browsing context (document owned by the JS layer) */
     Node *frame_el; float fw, fh, fsy; Canvas cv; Image img; DisplayList fdl;
@@ -130,12 +130,13 @@ static bool page_viewport(Page *page, float width, float height, float scale) {
     page->img_check = true;
     return true;
 }
-typedef struct { Image *im; bool done, evicted, refetch, local_blob, blob_pending; unsigned blob_refs; double used; float ew, eh; uint8_t *enc; size_t enclen; } ImgSlot;   /* enc: compressed bytes kept in Lite mode for local re-decode */
+typedef struct { Image *im; bool done, evicted, refetch, local_blob, blob_pending; unsigned blob_refs; uint64_t request_page; int request_cors; char *request_referrer; double used; float ew, eh; uint8_t *enc; size_t enclen; } ImgSlot;   /* enc: compressed bytes kept in Lite mode for local re-decode */
 static bool g_lite_active;
 
 static SDL_Mutex *icache_mu;
 static HMap icache;
 static size_t g_icache_bytes; static int g_icache_n;
+static uint64_t g_image_scope;
 static int g_img_epoch;
 static Uint32 EV_LOADED, EV_NET, EV_MENU, EV_DL, EV_UI, EV_TD;
 static uint64_t load_gen;
@@ -2961,7 +2962,7 @@ static void img_done(NetRequest *rq, NetResponse *r, void *ud) {
     if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img decode -> %s\n", im ? "ok" : "NULL");
     SDL_LockMutex(icache_mu);
     ImgSlot *slot = hm_get(&icache, l->u);
-    if (slot) slot->blob_pending = false;
+    if (slot) { slot->blob_pending = false; free(slot->request_referrer); slot->request_referrer = NULL; slot->request_page = 0; }
     if (slot && slot->local_blob && !slot->blob_refs) slot = NULL;
     if (slot && !slot->im && im) { g_icache_bytes += (size_t)im->w * (size_t)im->h * 4; g_icache_n++; }
     if (slot && !slot->im) { slot->im = im; im = NULL; }
@@ -3050,64 +3051,95 @@ static bool h_load_blocked(JsCtx *c) {
     SDL_UnlockMutex(icache_mu);
     return busy || font_pending() > 0;   /* web fonts the layout asked for, as in Chrome */
 }
+/* Queue one image without a style/layout flush. Return 2 when the same native
+   request can be reused, 1 for a new request, and 0 when no request was queued. */
+static int sync_image_request(Page *p, Node *n, bool image_only) {
+    if (n->type != NODE_ELEMENT) return 0;
+    if (!p->image_scope) p->image_scope = ++g_image_scope;
+    if (n->flags & NF_IMG_REQUEST) {
+        char prefix[48]; snprintf(prefix, sizeof prefix, "%p ", (void *)n); size_t len = strlen(prefix);
+        hm_foreach(&p->img_fired, e) if (!strncmp(e->key, prefix, len)) e->val = NULL;
+        hm_foreach(&p->blob_requests, e) if (!strncmp(e->key, prefix, len)) e->val = NULL;
+        n->flags &= ~(uint32_t)NF_IMG_REQUEST;
+    }
+    char *u = NULL;
+    if (!image_only && n->style && (n->style->mask_image || n->style->bg_image) && n->style->display != D_NONE) u = xstrdup(n->style->mask_image ? n->style->mask_image : n->style->bg_image);
+    else if (n->ns == NS_HTML && n->tag == A_img) { char sb[2048]; float dn; const char *sv = img_src(n, sb, sizeof sb, &dn); if (!sv) return 0; u = url_join(doc_base(p->d), sv); }
+    else return 0;
+    if (!u || !*u) { free(u); return 0; }
+    if (!strncmp(u, "blob:", 5)) {
+        char key[64]; blob_request_key(key, n, u);
+        if (hm_get(&p->blob_requests, key)) { free(u); return 0; }
+        bool valid = js_read_blob(p->js, u, NULL, NULL, NULL);
+        hm_put(&p->blob_requests, key, (void *)(uintptr_t)(valid ? 1 : 2));
+        if (!valid) { p->img_check = true; free(u); return 0; }
+        SDL_LockMutex(icache_mu);
+        ImgSlot *slot = hm_get(&icache, u);
+        if (!slot) { slot = xcalloc(1, sizeof *slot); slot->local_blob = true; hm_put(&icache, u, slot); }
+        if (!hm_get(&p->image_urls, u)) { hm_put(&p->image_urls, u, (void *)1); slot->blob_refs++; }
+        bool start = !slot->done && !slot->blob_pending;
+        if (start) slot->blob_pending = true;
+        SDL_UnlockMutex(icache_mu);
+        if (start) {
+            unsigned char *bytes = NULL; size_t len = 0; char *type = NULL;
+            valid = js_read_blob(p->js, u, &bytes, &len, &type);
+            NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xcalloc(1, sizeof *l); l->gen = p->gen; l->u = xstrdup(u);
+            NetResponse *r = xcalloc(1, sizeof *r); r->url = xstrdup(u); r->status = valid ? 200 : 0;
+            r->status_text = xstrdup(valid ? "OK" : ""); r->body = (char *)bytes; r->body_len = len;
+            if (valid) headers_add(&r->headers, "Content-Type", type && *type ? type : "application/octet-stream");
+            else r->error = xstrdup("Blob URL is no longer available");
+            free(type); rq->done = img_done; rq->work = img_work; rq->ud = l; rq->priority = 2;
+            net_fetch_prepared(rq, r);
+        }
+        p->img_check = true; free(u); return 0;
+    }
+    hm_put(&p->image_urls, u, (void *)1);
+    char ref[4200] = "";
+    bool send_ref = doc_referrer(p->d, u, n->tag == A_img ? node_attr(n, "referrerpolicy") : NULL, ref, sizeof ref);
+    if (!send_ref) ref[0] = 0;
+    const char *cross = n->tag == A_img ? node_attr(n, "crossorigin") : NULL;
+    int cors = !cross ? 0 : !strcasecmp(cross, "use-credentials") ? 2 : 1;
+    SDL_LockMutex(icache_mu);
+    ImgSlot *slot = hm_get(&icache, u);
+    bool have = slot != NULL;
+    /* Pixels are not required to reuse an already pending native resource. Only
+       share its request identity inside the same document and fetch context. */
+    bool reused = slot && (slot->done ? slot->im || slot->evicted :
+        slot->request_page == p->image_scope && slot->request_cors == cors && slot->request_referrer && !strcmp(slot->request_referrer, ref));
+    if (!slot) {
+        slot = xcalloc(1, sizeof *slot); slot->request_page = p->image_scope;
+        slot->request_cors = cors; slot->request_referrer = xstrdup(ref);
+        hm_put(&icache, u, slot);
+    }
+    SDL_UnlockMutex(icache_mu);
+    if (!have) {
+        if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img fetch %.80s\n", u);
+        NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xcalloc(1, sizeof *l); l->gen = p->gen; l->u = u;
+        if (send_ref) headers_add(&rq->headers, "Referer", ref);
+        rq->done = img_done; rq->work = img_work; rq->ud = l; rq->priority = 2; net_fetch(rq);
+    } else free(u);
+    p->img_check = true;
+    return reused ? 2 : !have ? 1 : 0;
+}
+static int img_start_request(Node *n) {
+    Page *p = image_page(n);
+    if (!p || n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_img) return 0;
+    char source[2048]; float density; const char *src = img_src(n, source, sizeof source, &density);
+    /* Blob registry reads can enter JS; keep those on the existing outer image
+       loop rather than re-entering it from a native JS callback. */
+    if (!src || !strncmp(src, "blob:", 5)) return 0;
+    return sync_image_request(p, n, true);
+}
 static bool sync_images(Page *p) {
     if (p->res_seen && p->seen_res == p->d->resource_version) return false;
     p->res_seen = true; p->seen_res = p->d->resource_version;
     if (p->d->ndimg) p->img_check = true;
     for (int di = -1; di < p->d->ndimg; di++)
-    for (Node *n = di < 0 ? p->d->node.first : p->d->dimg[di]; n; n = di < 0 ? node_next_in_tree(n, &p->d->node) : NULL) {
-        if (n->type != NODE_ELEMENT) continue;
-        if (n->flags & NF_IMG_REQUEST) {
-            char prefix[48]; snprintf(prefix, sizeof prefix, "%p ", (void *)n); size_t len = strlen(prefix);
-            hm_foreach(&p->img_fired, e) if (!strncmp(e->key, prefix, len)) e->val = NULL;
-            hm_foreach(&p->blob_requests, e) if (!strncmp(e->key, prefix, len)) e->val = NULL;
-            n->flags &= ~(uint32_t)NF_IMG_REQUEST;
-        }
-        char *u = NULL;
-        if (n->style && (n->style->mask_image || n->style->bg_image) && n->style->display != D_NONE) u = xstrdup(n->style->mask_image ? n->style->mask_image : n->style->bg_image);
-        else if (n->ns == NS_HTML && n->tag == A_img) { char sb[2048]; float dn; const char *sv = img_src(n, sb, sizeof sb, &dn); if (!sv) continue; u = url_join(doc_base(p->d), sv); }
-        else continue;
-        if (!u || !*u) { free(u); continue; }
-        if (!strncmp(u, "blob:", 5)) {
-            char key[64]; blob_request_key(key, n, u);
-            if (hm_get(&p->blob_requests, key)) { free(u); continue; }
-            bool valid = js_read_blob(p->js, u, NULL, NULL, NULL);
-            hm_put(&p->blob_requests, key, (void *)(uintptr_t)(valid ? 1 : 2));
-            if (!valid) { p->img_check = true; free(u); continue; }
-            SDL_LockMutex(icache_mu);
-            ImgSlot *slot = hm_get(&icache, u);
-            if (!slot) { slot = xcalloc(1, sizeof *slot); slot->local_blob = true; hm_put(&icache, u, slot); }
-            if (!hm_get(&p->image_urls, u)) { hm_put(&p->image_urls, u, (void *)1); slot->blob_refs++; }
-            bool start = !slot->done && !slot->blob_pending;
-            if (start) slot->blob_pending = true;
-            SDL_UnlockMutex(icache_mu);
-            if (start) {
-                unsigned char *bytes = NULL; size_t len = 0; char *type = NULL;
-                valid = js_read_blob(p->js, u, &bytes, &len, &type);
-                NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xcalloc(1, sizeof *l); l->gen = p->gen; l->u = xstrdup(u);
-                NetResponse *r = xcalloc(1, sizeof *r); r->url = xstrdup(u); r->status = valid ? 200 : 0;
-                r->status_text = xstrdup(valid ? "OK" : ""); r->body = (char *)bytes; r->body_len = len;
-                if (valid) headers_add(&r->headers, "Content-Type", type && *type ? type : "application/octet-stream");
-                else r->error = xstrdup("Blob URL is no longer available");
-                free(type); rq->done = img_done; rq->work = img_work; rq->ud = l; rq->priority = 2;
-                net_fetch_prepared(rq, r);
-            }
-            p->img_check = true; free(u); continue;
-        }
-        hm_put(&p->image_urls, u, (void *)1);
-        SDL_LockMutex(icache_mu);
-        bool have = hm_get(&icache, u) != NULL;
-        if (!have) { ImgSlot *slot = xcalloc(1, sizeof *slot); hm_put(&icache, u, slot); }
-        SDL_UnlockMutex(icache_mu);
-        if (!have) {
-            if (getenv("LUMEN_DEBUG_IMG")) fprintf(stderr, "lumen: img fetch %.80s\n", u);
-            NetRequest *rq = net_request_new("GET", u); ImgLoad *l = xcalloc(1, sizeof *l); l->gen = p->gen; l->u = u;
-            { char ref[4200]; if (doc_referrer(p->d, u, n->tag == A_img ? node_attr(n, "referrerpolicy") : NULL, ref, sizeof ref)) headers_add(&rq->headers, "Referer", ref); }
-            rq->done = img_done; rq->work = img_work; rq->ud = l; rq->priority = 2; net_fetch(rq);
-        } else free(u);
-    }
+    for (Node *n = di < 0 ? p->d->node.first : p->d->dimg[di]; n; n = di < 0 ? node_next_in_tree(n, &p->d->node) : NULL)
+        sync_image_request(p, n, false);
     return true;
 }
+
 /* Fire load/error once per (img node, resolved src) after its fetch completes. */
 static void fire_img_events(Page *p) {
     if (!p || !p->js || !p->img_check) return;
@@ -6283,7 +6315,7 @@ int main(int argc, char **argv) {
     js_load_blocked = h_load_blocked;
     net_wakeup = wake; media_wakeup = wake; js_wakeup = wake; js_clip_set = h_clip_set; js_clip_get = h_clip_get; js_clip_image = h_clip_image; js_global_init(argv[0]);
     boot_mark("v8");
-    paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size; jsg_img_done_hook = img_fetch_done;
+    paint_image_hook = node_img; paint_url_image_hook = url_img; svg_ext_ref_hook = svg_ext_ref; layout_image_size_hook = img_size; jsg_img_done_hook = img_fetch_done; jsg_img_request_hook = img_start_request;
     App a; memset(&a, 0, sizeof a); g_app = &a; a.nws = 1; a.wsicon[0] = WORKSPACE_DEFAULT_ICON; snprintf(a.wsname[0], sizeof a.wsname[0], "Personal"); a.side = sidebar_width(getenv("LUMEN_NO_SIDEBAR") ? 0 : SIDEW); tab_new(&a);
     bool want_gpu = !getenv("LUMEN_NO_GPU");
     renderer_read_preferences();

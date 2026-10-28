@@ -279,6 +279,8 @@ bool jsg_supports(const char *cond) { return css_supports(cond); }
 
 bool (*jsg_img_done_hook)(Node *n);
 bool jsg_img_done(Node *n) { return jsg_img_done_hook && jsg_img_done_hook(n); }
+int (*jsg_img_request_hook)(Node *n);
+int jsg_img_request(Node *n) { return jsg_img_request_hook ? jsg_img_request_hook(n) : 0; }
 bool jsg_img_size(Node *n, float *w, float *h) {
     return layout_image_size_hook && layout_image_size_hook(n, w, h);
 }

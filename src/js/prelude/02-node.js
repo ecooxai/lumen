@@ -24,11 +24,35 @@ let [liveRanges, liveIters] = (() => {
 })();
 /* Image loads also run for disconnected elements. decode() observes the selected request,
    waits for native decoding, and rejects if that request changes or its document becomes inactive. */
-const imgFailed = new WeakMap(), imgDecodeWaiters = new WeakMap();
+const imgFailed = new WeakMap(), imgDecodeWaiters = new WeakMap(), imgRequests = new WeakMap();
+const imgReferrerPolicies = new SSet(['no-referrer', 'no-referrer-when-downgrade', 'same-origin', 'origin', 'strict-origin', 'origin-when-cross-origin', 'strict-origin-when-cross-origin', 'unsafe-url']);
+function imgRequestContext(el) {
+    const source = N.imgSrc(el, true);
+    const cross = N.attr(el, 'crossorigin'), policy = String(N.attr(el, 'referrerpolicy') || '').toLowerCase();
+    return { document: N.ownerDoc(el), source,
+        cors: cross === null ? 0 : String(cross).toLowerCase() === 'use-credentials' ? 2 : 1,
+        policy: imgReferrerPolicies.has(policy) ? policy : '' };
+}
+const imgSameRequest = (a, b) => a.document === b.document && a.source === b.source && a.cors === b.cors;
+/* A referrer-policy mutation re-runs source selection, but need not replace a
+   same-source decode request. Keep it in fetch-context matching, not this guard. */
+const imgSameContext = (a, b) => imgSameRequest(a, b) && a.policy === b.policy;
+function imgQueueRequest(el) {
+    const request = imgRequestContext(el); request.reused = false;
+    imgRequests.set(el, request);
+    /* Coalesce source mutations before starting native asynchronous work. The
+       native cache owns request sharing; this weak record only latches its result. */
+    queueMicrotask(() => {
+        if (imgRequests.get(el) === request && imgSameContext(request, imgRequestContext(el)))
+            request.reused = N.imgRequest(el) === 2;
+    });
+    return request;
+}
 function imgSrcChanged(el) {
     if (!el.isConnected) N.imgWatch(el);
     if (!imgFailed.has(el)) EventTarget.prototype.addEventListener.call(el, 'error', () => imgFailed.set(el, N.imgSrc(el)));
     imgFailed.set(el, null);
+    imgQueueRequest(el);
     const waiting = imgDecodeWaiters.get(el);
     if (waiting) for (const check of waiting) queueMicrotask(check);
     const s = N.attr(el, 'src');
@@ -36,14 +60,16 @@ function imgSrcChanged(el) {
 }
 function decodeImage(el) {
     return new Promise((resolve, reject) => {
-        const src = N.imgSrc(el), available = !!N.imgSize(el);
+        const src = N.imgSrc(el), available = !!N.imgSize(el), context = imgRequestContext(el);
+        let request = imgRequests.get(el);
+        if (!request || !imgSameContext(request, context)) request = imgQueueRequest(el);
         const pictureParent = () => { const p = N.parent(el); return p && N.name(p) === 'picture' ? p : null; };
         const picture = pictureParent();
         /* A picture insertion/removal restarts pending source selection even if the selected URL
-           is unchanged. An already available image keeps its current request while that runs. */
-        const changed = () => N.imgSrc(el) !== src || (!available && pictureParent() !== picture);
+           is unchanged. An available image or a matching native pending resource keeps its request while that runs. */
+        const changed = () => !imgSameRequest(context, imgRequestContext(el)) || (!available && !request.reused && pictureParent() !== picture);
         let settled = false, queued = false;
-        const active = () => !!el.ownerDocument?.defaultView && N.fullyActive(el);
+        const active = () => !!N.ownerDoc(el)?.defaultView && N.fullyActive(el);
         const error = () => new DOMException('The image could not be decoded.', 'EncodingError');
         const cleanup = () => {
             EventTarget.prototype.removeEventListener.call(el, 'load', check);
@@ -650,7 +676,7 @@ function attrDetach(el, ns, ln, v) {
 function attrChange(el, ns, pfx, ln, v) {
     const old = N.attrNS(el, ns, ln);
     N.setAttrNS(el, ns, pfx, ln, v);   /* by namespace: a namespaced attribute with the same qualified name stays */
-    if (!ns && (ln === 'src' || ln === 'srcset' || ln === 'sizes') && el instanceof H.HTMLImageElement) imgSrcChanged(el);
+    if (!ns && (ln === 'src' || ln === 'srcset' || ln === 'sizes' || ln === 'crossorigin' || ln === 'referrerpolicy') && el instanceof H.HTMLImageElement) imgSrcChanged(el);
     notify('attributes', el, { attributeName: ln, attributeNamespace: ns, oldValue: old });
     ceAttr(el, ln, old, v, ns);
 }
@@ -659,7 +685,7 @@ function attrRemove(el, ns, ln) {
     if (old == null) return null;
     attrDetach(el, ns, ln, old);
     N.rmAttrNS(el, ns, ln);
-    if (!ns && (ln === 'src' || ln === 'srcset' || ln === 'sizes') && el instanceof H.HTMLImageElement) imgSrcChanged(el);
+    if (!ns && (ln === 'src' || ln === 'srcset' || ln === 'sizes' || ln === 'crossorigin' || ln === 'referrerpolicy') && el instanceof H.HTMLImageElement) imgSrcChanged(el);
     notify('attributes', el, { attributeName: ln, attributeNamespace: ns, oldValue: old });
     ceAttr(el, ln, old, null, ns);
     return old;
