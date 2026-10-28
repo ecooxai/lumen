@@ -614,7 +614,10 @@ static v8::MaybeLocal<v8::Value> synth_steps(v8::Local<v8::Context> ctx, v8::Loc
 /* a JSON, text or CSS module from a fetched body (JSON needs a JSON MIME type and must parse; CSS text/css) */
 v8::MaybeLocal<v8::Module> mod_synthetic(v8::Local<v8::Context> ctx, const std::string &u, const std::string &type, const std::string &body, const std::string &ctype) {
     v8::Isolate *iso = v8::Isolate::GetCurrent();
-    v8::Local<v8::String> src = jsrc(iso, body.data(), body.size());
+    /* Module scripts use UTF-8 decode: strip one leading UTF-8 BOM, without
+       switching to UTF-16 when another encoding's BOM is present. */
+    const size_t bom = body.size() >= 3 && !std::memcmp(body.data(), "\xEF\xBB\xBF", 3) ? 3 : 0;
+    v8::Local<v8::String> src = jsrc(iso, body.data() + bom, body.size() - bom);
     v8::Local<v8::Value> v = src;
     if (type == "json") {
         if (!json_mime(ctype)) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, ("Failed to load module script: \"" + u + "\" is not a JSON MIME type.").c_str()))); return {}; }

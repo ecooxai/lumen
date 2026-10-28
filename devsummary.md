@@ -278,3 +278,8 @@ First retained baseline09:19:01UTC; evidence end2026-10-28T09:24:18.287958+00:00
 ### Continuation iteration1 operational completion
 
 Progress agent work09:12:12–09:20:00UTC (7.8minutes overlapping other lanes) passed22/22 isolation, telemetry and feedback checks plus actual Chromium desktop/mobile message/reply flow. Focused quality96/100; whole-goal19/100 unchanged. Live service refreshes telemetry, reports6mounteddisks and measured582ms sampleRTT. Source route is disabled independently of backing-file existence; source archives remain in private staging. Existing HTTPS preview is working; Surge is unauthenticated. Public source/raw publication was not attempted. Exact evidence record retained in session2-operations.json.
+
+
+## Continuation iteration3 — accepted UTF-8 module BOM decoding
+
+Started09:25:44UTC; finished2026-10-28T09:30:11.042807+00:00; 4.451minutes overlapping other lanes. Repository_lead implemented, progress_and_deployment independently reviewed, root accepted focused97/100; whole-goal19/100. Frozen130 SHA256deaef89b24754e883b4a6c210189f4a43ba63a97ca0244eeb1ebeed80ce34bee; source manifest unchanged; grid/style parallel patches restored byte-identically after24.10second isolated build. Same8JSONURLs223→225/225 (+2/0lost), fullypassing6→8/8 matchingChromium; separate6CSSholdouts unchanged9/21,2ERROR4OK. UTF16 negative assertions remainpassing. Native startupPASS. All14 recorded nativePIDs absent after tests; existing daemon audit lacks final markers and rawrecords remain unchanged. See iteration3JSON for hashes, monitor summaries and restorationproof. Total sessionwall17.984minutes, parallel durations not summed.

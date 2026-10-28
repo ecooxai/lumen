@@ -1,0 +1,203 @@
+{
+  "iteration": 3,
+  "candidate": 130,
+  "scope": "UTF-8 decode strips exactly one initial EFBBBF before parsing a JSON/CSS/text synthetic module; other BOMs do not select a different encoding.",
+  "specification": "https://encoding.spec.whatwg.org/#utf-8-decode",
+  "model": "GPT-6 Astra",
+  "agents": [
+    "repository_lead",
+    "progress_and_deployment",
+    "root"
+  ],
+  "focused_quality_score": 97,
+  "whole_goal_score": 19,
+  "whole_goal_score_status": "provisional readiness, not pass percentage",
+  "started_utc": "2026-10-28T09:25:44Z",
+  "finished_utc": "2026-10-28T09:30:11.042807+00:00",
+  "cohorts": {
+    "json": {
+      "candidate129": {
+        "urls": 8,
+        "fully_passing": 6,
+        "pass": 223,
+        "total": 225,
+        "harness": {
+          "OK": 8
+        },
+        "report": "agent/validation/linux-wpt-20261028/session2-mime/candidate129/results.jsonl",
+        "sha256": "15a5c6a14f2ae00ea744618e149a2eb27ead3c81b98454b0a6096c55bd7dd17d"
+      },
+      "candidate130": {
+        "urls": 8,
+        "fully_passing": 8,
+        "pass": 225,
+        "total": 225,
+        "harness": {
+          "OK": 8
+        },
+        "report": "agent/validation/linux-wpt-20261028/session2-mime/candidate130/results.jsonl",
+        "sha256": "d5699e98b4e5cae8a2d459d4173c58d091dced3374e45bead4fc502d4e522e5e"
+      },
+      "chromium": {
+        "urls": 8,
+        "fully_passing": 8,
+        "pass": 225,
+        "total": 225,
+        "harness": {
+          "OK": 8
+        },
+        "report": "agent/validation/linux-wpt-20261028/session2-mime/chromium/results.jsonl",
+        "sha256": "701598e7a31fb1f1da2d4cab60388ec5c8dd15122ad909eb32441fe47affe0d6"
+      },
+      "gains": 2,
+      "losses": 0
+    },
+    "css_holdout": {
+      "candidate129": {
+        "urls": 6,
+        "fully_passing": 1,
+        "pass": 9,
+        "total": 21,
+        "harness": {
+          "ERROR": 2,
+          "OK": 4
+        },
+        "report": "agent/validation/linux-wpt-20261028/session2-mime/css-holdout/candidate129/results.jsonl",
+        "sha256": "4fe413bb5f72d72f69796570d1ba5bd8667a5c4425ad2147ec8f64ad3b8529e3"
+      },
+      "candidate130": {
+        "urls": 6,
+        "fully_passing": 1,
+        "pass": 9,
+        "total": 21,
+        "harness": {
+          "ERROR": 2,
+          "OK": 4
+        },
+        "report": "agent/validation/linux-wpt-20261028/session2-mime/css-holdout/candidate130/results.jsonl",
+        "sha256": "538801e1293c4b77ef7e48b4e9f3495cad79bd0d4b9bb85c942e969fce92c067"
+      },
+      "chromium": {
+        "urls": 6,
+        "fully_passing": 6,
+        "pass": 22,
+        "total": 22,
+        "harness": {
+          "OK": 6
+        },
+        "report": "agent/validation/linux-wpt-20261028/session2-mime/css-holdout/chromium/results.jsonl",
+        "sha256": "552592b0e5d1f0f6b941ae530e82b30e73a3a0c8e52abbb4450daa592dafcc13"
+      },
+      "gains": 0,
+      "losses": 0
+    }
+  },
+  "build": {
+    "source_manifest_before": "b480e48705b9784ec5b8b9c663cb2b6c8877a508eb42f5c493b142d573a7fb17",
+    "source_diff_before": "374443920735622f252a450df2a653eafacb794a6df534159c7a2cccadcf990e",
+    "head": "e0e02aba4a9863b91fe9644cb4977abdbe48bc7b",
+    "started_utc": "2026-10-28T09:25:44Z",
+    "pid": 477865,
+    "build_exit_code": 0,
+    "binary": "build/codex-native/lumen-astra-i130",
+    "binary_sha256": "deaef89b24754e883b4a6c210189f4a43ba63a97ca0244eeb1ebeed80ce34bee",
+    "diff_sha256": "374443920735622f252a450df2a653eafacb794a6df534159c7a2cccadcf990e",
+    "startup_exit_code": 0,
+    "source_diff_after": "374443920735622f252a450df2a653eafacb794a6df534159c7a2cccadcf990e",
+    "source_manifest_after": "b480e48705b9784ec5b8b9c663cb2b6c8877a508eb42f5c493b142d573a7fb17",
+    "source_unchanged_during_build": true,
+    "finished_utc": "2026-10-28T09:26:07Z"
+  },
+  "parallel_patch_restoration": {
+    "started_utc": "2026-10-28T09:25:44Z",
+    "start_monotonic": 973104.114677942,
+    "isolated_files": {
+      "src/layout/grid.c": {
+        "parallel_sha256": "bccdacc0ce2e0b5a93728b5297c19d1e845c16d6009f66af1af15e06b95ef9b8",
+        "baseline_sha256": "eef11a9514c6190e581f35ce98b0f6d08367f884359e52bfe7176c966ec5a027",
+        "backup": "agent/validation/iteration-130/grid.c.parallel-backup",
+        "restored_sha256": "bccdacc0ce2e0b5a93728b5297c19d1e845c16d6009f66af1af15e06b95ef9b8"
+      },
+      "src/css/style.c": {
+        "parallel_sha256": "8de88e97297e989e1786550789386544e37682f8055277caaa34bdf6dda06a86",
+        "baseline_sha256": "0b372abae09845774de2efbe32350bc1cefcfded6f56c99900e5fc839ac47dbe",
+        "backup": "agent/validation/iteration-130/style.c.parallel-backup",
+        "restored_sha256": "8de88e97297e989e1786550789386544e37682f8055277caaa34bdf6dda06a86"
+      }
+    },
+    "exit_code": 0,
+    "finished_utc": "2026-10-28T09:26:08Z",
+    "elapsed_s": 24.095281342044473
+  },
+  "build_resources": {
+    "label": "isolated BOM candidate130 build process tree",
+    "started_utc": "2026-10-28T09:25:44.302697+00:00",
+    "finished_utc": "2026-10-28T09:26:08.302784+00:00",
+    "root_pid": 477865,
+    "comm": null,
+    "exe": null,
+    "interval_seconds": 1,
+    "samples": 24,
+    "elapsed_seconds": 24.0,
+    "cpu_one_core_equals_100": true,
+    "cpu_min": 4.0,
+    "cpu_median": 95.905,
+    "cpu_max": 193.003,
+    "cpu_last10_median": 61.545500000000004,
+    "rss_peak_mb": 564.253,
+    "rss_final_mb": 41.566,
+    "pss_peak_mb": 462.073,
+    "csv": "agent/validation/iteration-130/build-resources.csv",
+    "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+  },
+  "guard_checks": {
+    "candidate130-guard": {
+      "events": {
+        "started_at_private_gate": 8,
+        "constructor_verified_and_acknowledged": 8,
+        "author_url_released": 8,
+        "exited": 7
+      },
+      "sha256": "8fe4221f573f400b1dec83ed984c3c500b79592fb694e763b459ad67d288c671",
+      "recorded_pids": [
+        484645,
+        486383,
+        486604,
+        486775,
+        486977,
+        487118,
+        487297,
+        487432
+      ],
+      "live_recorded_pids": []
+    },
+    "css-holdout/candidate130-guard": {
+      "events": {
+        "started_at_private_gate": 6,
+        "constructor_verified_and_acknowledged": 6,
+        "author_url_released": 6,
+        "exited": 5
+      },
+      "sha256": "3495f18f496357e00e44ac42cf66fb72f9ba6879d675d20b90c6d61a747f82de",
+      "recorded_pids": [
+        487921,
+        489348,
+        489560,
+        489830,
+        490625,
+        490818
+      ],
+      "live_recorded_pids": []
+    }
+  },
+  "guard_caveat": "Existing daemon cleanup audit can lose the final exit marker at controller shutdown. All recorded test PIDs independently absent; raw records retained. No guard-entry change.",
+  "independent_review": "Progress agent reviewed actual diff: bounds guard, exactly one UTF8BOM, empty/short/double-BOM handling and unchanged UTF16 path; runtime evidence separate.",
+  "limitations": [
+    "Only selected module cohorts pass; no full WPT claim.",
+    "CSS holdout9/21 with2ERROR remains unchanged.",
+    "Text modules share this decoder but were not independently tested in this iteration.",
+    "Native startup passed; full native suite queued after combined layout build."
+  ],
+  "cost_minutes": 4.451,
+  "total_session_wall_minutes": 17.984
+}
