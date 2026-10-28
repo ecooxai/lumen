@@ -1,4 +1,4 @@
-[$rubywebterm](app://asdk_app_6aca114c3b5481918899bbaa3ec1235a) \
+improve lumen browser for linux [$rubywebterm](app://asdk_app_6aca114c3b5481918899bbaa3ec1235a) \
 commit and switch to a new branch then improve this new browser engin, pass all web plateform test like chromium,compare with chromium \
 $project_dir=\
 /mnt/p3/project/browser/lumen-android/lumen-android\
@@ -12,7 +12,6 @@ $iteration_times=    1000        and stop when goal done or working time >5h\
 $reffiles=\
 only use pasted image ignore file link , if no upload then use the file  link\
 $goal_score= 98/100\
-\
 \
 \
 \
@@ -51,7 +50,7 @@ if subagents is using low cost and faster smaller models then main agent should 
 keep project and code clean .\
 monitor cpu ram usage for software dev every 1s when test,keep fast performace and less ram usage, if sonething too slow,high cpu and ram usage find why and deal with it first for fast dev.\
 use your model name and agent tool and keytool nmes like web or blender name when name finnal output files and new project\
-use git to manage project,create a new branch with your model name and agent name+branchname ,save to https\://fileharbor-meak.basicgleam65.chatgpt.site/ via its rest api     or  chatgpt library after a important progress, alwasy save after each 10 iterations.  \
+use git to manage project,create a new branch with your model name and agent name+branchname ,save to [https://fileharbor-meak.basicgleam65.chatgpt.site/](https://fileharbor-meak.basicgleam65.chatgpt.site/) via its rest api     or  chatgpt library after a important progress, alwasy save after each 10 iterations.  \
 \
 \### iterate\
 iterate user specified number and give score of your work n/100 every iteration . 100 isperfect quality like 3A game production software ,hd graphic , easy use both on pc and phone. same check for each subagent if user need ask subagent. after subagent finish ,main agent should check quality and if not good then start a new subagent to improve.  record each iteration start time and end time, time cost in min and subagents used write to devsummary.md and calculte total times cost from start to last \
@@ -76,10 +75,11 @@ when dev env not works,wait 20s and  try again for 3 times. then fallback to loc
 \
 use  https tunnel to let use preview latest work or progress(show and refresh evry 2s system cpu ram and all disk info in GB latency ms from server to client via websocket) and update deploy to surge.sh (include git repo to /src.tar.gz too)after each iteration. check opentunnel is running well after each iteration.  also add input box to send msg to server and main agent should receive the msg and response in time . ( prefer to use a deploy subagent for this task if can use subagent or do it in main agent if subagent not available)\
 \
-curl -fsSL https\://opentunnel.xyz/install | sh\
+curl -fsSL [https://opentunnel.xyz/install](https://opentunnel.xyz/install) | sh\
 opentunnel route add 8080  or other port  \
 npm install --global surge\
 cd webappdir && surge \
+\
 \
 \
 \
@@ -112,11 +112,4 @@ update AGENTS.md remove outdated info\
 write summary give neceesary conext for next agent start new task in end of AGENTS.md\
 push git and deploy to cloud like github page or cloudflare . when ouput image video audio or 3d obj, create  showcase version copys files too,put the model and agent tool name below with big white font and black bg to show who created this work clearly.  createa video 4:3ess than   60s to show your works well.\
 \
-you need not ended the working session to report progress instead of continuing development, need not report progress you must  keep working session and  improving util  high quality. do not pause the working session before achive goal and score for post task\
-
-
-## Supplemental user request received through progress dashboard
-
-Received 2026-10-27 17:29:55 UTC; acknowledged by project manager.
-
-when use chatgpt.com to gen image, image generated but not show in page, only blank placeholder; when edit existing msg it appends newtext afteroldmsg instead ofreplace
+you need not ended the working session to report progress instead of continuing development, need not report progress you must  keep working session and  improving util  high quality. do not pause the working session before achive goal and score for post task\\
