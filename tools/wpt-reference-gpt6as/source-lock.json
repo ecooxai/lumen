@@ -1,0 +1,81 @@
+{
+  "repository": "https://github.com/web-platform-tests/wpt",
+  "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "files": [
+    {
+      "path": "dom/nodes/Document-createElement.html",
+      "sha256": "bc29eb43b538602cd7a1ad86fb3b9f12f81ebabf6dc9d4590374e3d06e493e67",
+      "bytes": 4690
+    },
+    {
+      "path": "dom/nodes/Node-cloneNode.html",
+      "sha256": "0789489cf7d5eac64925f8a0fe02c8a06827c08b189d165a362ea4f11d1de6cb",
+      "bytes": 15632
+    },
+    {
+      "path": "dom/nodes/Node-contains.html",
+      "sha256": "c6a83057cbe24094aa8ad32e8b937e35f485d2f8685e5302e82e21b0850662b3",
+      "bytes": 1032
+    },
+    {
+      "path": "dom/common.js",
+      "sha256": "732f485014a4c6a6633439b24dfc442ab89391199504a1163b421a02374dfad3",
+      "bytes": 41767
+    },
+    {
+      "path": "html/webappapis/microtask-queuing/queue-microtask.window.js",
+      "sha256": "4a0f7a626ea5d3f21785f5dc30649430c5cf9cfcf2a016759eb41270500402e4",
+      "bytes": 1451
+    },
+    {
+      "path": "url/urlsearchparams-constructor.any.js",
+      "sha256": "165a7dcdff9a20b2bcef7e249e1609eb6383b6fdd74f85b4dac44d15ed12aa24",
+      "bytes": 9891
+    },
+    {
+      "path": "wasm/jsapi/constructor/instantiate.any.js",
+      "sha256": "56f3a2cc68761d87015248347bc80c7f19c5a031a4b5d39197bd620f1dad909f",
+      "bytes": 4201
+    },
+    {
+      "path": "wasm/jsapi/wasm-module-builder.js",
+      "sha256": "8eabf2c5fc2595dedc1fa5c1c53c548de6608300687938e409670dcecec86fd4",
+      "bytes": 53833
+    },
+    {
+      "path": "wasm/jsapi/assertions.js",
+      "sha256": "797868004d4d224eb015c9619255aaa6de25c381c20896d55550b901a5102e8a",
+      "bytes": 5464
+    },
+    {
+      "path": "wasm/jsapi/instanceTestFactory.js",
+      "sha256": "497fb487f1b76b600266e7d149db4155ef8641538ffe6ce9d7663b94be2a333d",
+      "bytes": 17726
+    },
+    {
+      "path": "resources/testharness.js",
+      "sha256": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+      "bytes": 198420
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "sha256": "3777176fc736b0a78cf7617b9613b220f635daae7536ec7ebb99c61dbb525aae",
+      "bytes": 1231
+    },
+    {
+      "path": "LICENSE.md",
+      "sha256": "5fac07febb0e2a97fb0d7b0def149ec08b642e1ba4b9c345283ab1cbd2af6570",
+      "bytes": 1500
+    },
+    {
+      "path": "common/dummy.xml",
+      "sha256": "11c8c8db88f191408a50edec6eb103a76f11804d4806407fc3bcfbfcde0b75e0",
+      "bytes": 30
+    },
+    {
+      "path": "common/dummy.xhtml",
+      "sha256": "b57b4bf4e92b8faaf5a49906776ad43b31c64c38a89e3e3b23155ba7173dd6c8",
+      "bytes": 123
+    }
+  ]
+}

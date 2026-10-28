@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "iteration": 6,
+  "total": 6,
+  "score": null,
+  "goalTarget": 98,
+  "scope": "Apple verification blocked",
+  "scoreNote": "A functional test pass rate is not an overall browser quality score. The Apple-device goal is not scored while native release, iPad, live account, and performance gates remain incomplete.",
+  "localDemoChecks": {
+    "passed": 36,
+    "total": 36,
+    "browser": "Chromium 151.0.7922.34",
+    "platform": "Linux fallback",
+    "media": "Synthetic camera, microphone, and location fixtures; physical devices not verified"
+  },
+  "separateEvidence": {
+    "nodeTests": {
+      "passed": 17,
+      "total": 17
+    },
+    "webTransport": {
+      "passed": 5,
+      "total": 5,
+      "scope": "Local Chromium with real HTTP/3-only QUIC echo server, public certificate pinning and server audit proof"
+    },
+    "webGPUOffscreen": {
+      "resolutionsVerified": [
+        "900x1200",
+        "1920x1080",
+        "3840x2160"
+      ],
+      "scope": "Explicit SwiftShader WebGPU offscreen texture render and actual RGBA readback",
+      "canvasPresentationVerified": false
+    },
+    "nativeWebGPUCanvas": {
+      "state": "failed in the Linux headless diagnostic",
+      "reason": "SharedImageBackingFactory could not create the WebGPU swapchain image; failure preserved separately"
+    },
+    "mockSignIn": {
+      "google": "local popup contract only",
+      "apple": "local popup contract only",
+      "authenticated": false
+    },
+    "appleDeviceGoal": {
+      "state": "blocked",
+      "reason": "Mac ENOSPC prevented the remaining native release and iPad validation; local Chromium evidence is not Apple-device proof"
+    },
+    "performance": {
+      "state": "measured; strict idle budget not met",
+      "scope": "Local Chromium whole-process tree; Linux fallback, not native Lumen or Apple hardware",
+      "freshIdle": {
+        "cpuMeanPercent": 0.864,
+        "cpuP95Percent": 4.001,
+        "scriptDurationSeconds": 0
+      },
+      "afterCleanup": {
+        "cpuMeanPercent": 1.153,
+        "cpuP95Percent": 5.011,
+        "scriptDurationSeconds": 0,
+        "activeResources": 0,
+        "summedRSSStartMiB": 976.6,
+        "summedRSSEndMiB": 774.4
+      },
+      "strictBudget": {
+        "cpuP95MaxPercent": 3,
+        "met": false
+      },
+      "note": "Matched controls had no measured page-script work and no retained registered resources. Both fresh and post-cleanup whole-browser p95 exceeded the strict budget; no normal-performance or native-platform pass is claimed."
+    }
+  },
+  "evidence": [
+    "output/qa-apple-gpt6/local-chromium-final/browser-evidence.json",
+    "output/qa-apple-gpt6/webtransport-iteration-2-verified.json",
+    "output/qa-apple-gpt6/software-webgpu-offscreen/webgpu-evidence.json",
+    "output/qa-apple-gpt6/geolocation-probe/geolocation-evidence.json",
+    "output/qa-apple-gpt6/idle-diagnostic/diagnostic.json",
+    "output/qa-apple-gpt6/idle-diagnostic/process-summary.json",
+    "output/qa-apple-gpt6/idle-diagnostic/process-samples.jsonl"
+  ],
+  "checkpointScope": "Six development checkpoints; not six completed Mac release/restart cycles."
+}

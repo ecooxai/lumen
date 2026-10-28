@@ -361,7 +361,12 @@ static int loader(void *arg) {
         for (int i = 0; i < r->headers.n; i++)
             if (!strcasecmp(r->headers.v[i].name, "content-security-policy")) p->d->csp = csp_append(p->d->csp, r->headers.v[i].value);
     }
-    html_parse(p->d, body, blen);
+    if (!rq->html && !wrapbuf && !errbuf && r && r->status > 0) {
+        if (!html_parse_bytes(p->d, body, blen, headers_get(&r->headers, "content-type"))) {
+            fprintf(stderr, "lumen: HTML decoding exceeded its byte contract\n");
+            html_parse(p->d, "", 0);
+        }
+    } else html_parse(p->d, body, blen);
     for (Node *m = p->d->node.first; m; m = node_next_in_tree(m, &p->d->node)) {  /* <meta name=referrer> overrides the header */
         if (m->type != NODE_ELEMENT || m->tag != A_meta || !node_attr(m, "content")) continue;
         const char *nm = node_attr(m, "name"), *he = node_attr(m, "http-equiv");
@@ -374,9 +379,9 @@ static int loader(void *arg) {
         bool mod = jsg_module_script(n);
         if (!mod && !jsg_classic_script(n)) continue;
         PScript sc = { n, NULL, 0, NULL, mod };
-        const char *src = node_attr(n, "src");
+        size_t src_length = 0; const char *src = node_attr_n(n, "src", &src_length);
         if (src) {
-            sc.name = url_join(p->d->url, src);
+            sc.name = src_length ? url_join_n(p->d->url, src, src_length) : NULL;
             if (!sc.name) continue;
             NetResponse *sr = doc_fetch_sync(p->d, sc.name, page_top_url(p), NULL);
             if (sr && sr->status >= 200 && sr->status < 300 && !js_script_mime_blocked(headers_get(&sr->headers, "content-type"))) { sc.src = xstrndup(sr->body ? sr->body : "", sr->body_len); sc.len = sr->body_len; }
@@ -1253,7 +1258,7 @@ static void render(App *a) {
     a->frame.scale = a->scale;
     /* Paint chrome directly into a framebuffer subview: safe-area padding adds
        no full-screen allocation or copy, and the page/GPU share these offsets. */
-    Canvas chrome = a->frame;
+    Canvas chrome = a->frame; chrome.media_frames = (PaintFrames){0}; chrome.track_media = false; chrome.media_retry = false;
     chrome.px += (size_t)a->view.px_y * (size_t)chrome.stride + a->view.px_x;
     chrome.w = a->view.px_w; chrome.h = a->view.px_h;
     int ph = a->view.px_h - toolbar_px; if (ph < 1) ph = 1;
@@ -1267,14 +1272,15 @@ static void render(App *a) {
     int rx0 = pwp, ry0 = ph, rx1 = 0, ry1 = 0;
     if (getenv("LUMEN_DEBUG_PAINT") && (a->page.w != pwp || a->page.h != ph)) fprintf(stderr, "lumen: page canvas resize %dx%d -> %dx%d\n", a->page.w, a->page.h, pwp, ph);
     if (a->page.w != pwp || a->page.h != ph || a->page.scale != a->scale) { canvas_free(&a->page); canvas_init(&a->page, pwp, ph, a->scale); part = false; a->osig_ok = false; }
-    bool gskip = false; GpuVideo gvd, *gvp = NULL;
+    media_canvas_prune(&a->page);
+    bool gskip = false; GpuVideo gvd, *gvp = NULL; const Image *submitted_video = NULL;
     Image *fast = part && !a->sdirty && a->t->cur && a->gpu && a->gvid_ok && a->t->sy == a->last_sy && a->page.w == pwp && a->page.h == ph ? media_owner_frame(a->vown) : NULL;
     if (a->t->cur && (defer || fast)) {   /* nothing but the video changed, or layout may be stale: only swap the video texture */
         Image *im = fast;
         if (!im) { a->dirty = a->vframe = false; return; }
         float s = a->page.scale; const float *r = a->vrect;
         gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(r[0] * s + 0.5f) + side_px, floorf(r[1] * s + 0.5f) + bar_px, floorf((r[0] + r[2]) * s + 0.5f) + side_px, floorf((r[1] + r[3]) * s + 0.5f) + bar_px };
-        gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd; gskip = true;
+        gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd; gskip = true; submitted_video = im;
     } else if (a->t->cur) {
         if (a->t->relayout || !a->t->cur->L) {
             if (!a->t->cur->L) a->t->cur->L = layout_new();
@@ -1381,7 +1387,7 @@ static void render(App *a) {
         if (gv && a->gvid_ok) {
             const Image *im = vit->img; float s = a->page.scale;
             gvd = (GpuVideo){ im->px, im->w, im->h, im->w, floorf(vit->x * s + 0.5f) + side_px, floorf(vit->y * s + 0.5f) + bar_px, floorf((vit->x + vit->w) * s + 0.5f) + side_px, floorf((vit->y + vit->h) * s + 0.5f) + bar_px };
-            gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd;
+            gvd.yuv = im->yuv; gvd.mat = im->yuv_mat; gvp = &gvd; submitted_video = im;
             a->vown = media_owner_of(im); a->vrect[0] = vit->x; a->vrect[1] = vit->y; a->vrect[2] = vit->w; a->vrect[3] = vit->h;
         }
     } else { a->gvid_ok = false; a->osig_ok = false; raster(&a->page, &(DisplayList){0}, RGBA(255, 255, 255, 255)); }
@@ -1400,24 +1406,35 @@ static void render(App *a) {
     if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride + side_px, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)pwp * 4);
     if (!gskip && a->hdl.items.n) { float s = chrome.scale; raster_rect(&chrome, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
+#if defined(__APPLE__) && !defined(LUMEN_IOS)
+    mac_debug_visibility(a->win, a->mview ? SDL_Metal_GetLayer(a->mview) : NULL);
+#endif
     bool presented = a->gpu && gpu_present_frame(a->gpu, a->frame.px, a->frame.w, a->frame.h, a->frame.stride, gskip ? 0 : part ? bar_px + ry0 : 0, gskip ? 0 : part ? bar_px + ry1 : a->frame.h, gvp);
     bool retry = gpu_present_pending(a->gpu);
+    bool surface_presented = presented;
     if (!presented && !retry) {
         SDL_Surface *ws = SDL_GetWindowSurface(a->win);
-        int y0 = gskip ? 0 : part ? bar_px + ry0 : 0, y1 = gskip ? 0 : part ? bar_px + ry1 : a->frame.h;
+        /* Recover all retained media data after a failed surface upload. */
+        int y0 = a->page.media_retry ? 0 : gskip ? 0 : part ? bar_px + ry0 : 0;
+        int y1 = a->page.media_retry ? a->frame.h : gskip ? 0 : part ? bar_px + ry1 : a->frame.h;
         if (ws && ws->w == a->frame.w && ws->h == a->frame.h && (ws->format == SDL_PIXELFORMAT_XRGB8888 || ws->format == SDL_PIXELFORMAT_ARGB8888)) {
             /* CPU path: copy only the changed rows straight into the window's shared-memory surface */
             if (y1 > ws->h) y1 = ws->h;
             if (y1 > y0) {
                 for (int y = y0; y < y1; y++) memcpy((uint8_t *)ws->pixels + (size_t)y * (size_t)ws->pitch, a->frame.px + (size_t)y * (size_t)a->frame.stride, (size_t)a->frame.w * 4);
-                SDL_Rect r = { 0, y0, ws->w, y1 - y0 }; SDL_UpdateWindowSurfaceRects(a->win, &r, 1);
+                SDL_Rect r = { 0, y0, ws->w, y1 - y0 }; surface_presented = SDL_UpdateWindowSurfaceRects(a->win, &r, 1);
             }
         } else if (ws) {
             SDL_Surface *src = SDL_CreateSurfaceFrom(a->frame.w, a->frame.h, SDL_PIXELFORMAT_ARGB8888, a->frame.px, a->frame.stride * 4);
-            SDL_BlitSurfaceScaled(src, NULL, ws, NULL, SDL_SCALEMODE_LINEAR);
-            SDL_DestroySurface(src); SDL_UpdateWindowSurface(a->win);
+            if (src && SDL_BlitSurfaceScaled(src, NULL, ws, NULL, SDL_SCALEMODE_LINEAR))
+                surface_presented = SDL_UpdateWindowSurface(a->win);
+            SDL_DestroySurface(src);
         }
     }
+    /* These counters describe actual compositor submissions, not scanout
+     * visibility. Failed/pending GPU or SDL submissions never acknowledge. */
+    media_canvas_submission(&a->page, surface_presented && !retry);
+    if (presented && !retry && submitted_video) media_frame_presented(submitted_video);
     if (retry) present_retry_fail(&a->present_retry, now_ms()); else present_retry_clear(&a->present_retry);
     if (!retry && cap_screen_active() && a->frame.h >= bar_px + ph && a->frame.w >= side_px + pwp)
         cap_screen_push(a->frame.px + (size_t)bar_px * (size_t)a->frame.stride + side_px, pwp, ph, a->frame.stride);
@@ -1762,7 +1779,8 @@ static bool frame_update(Page *p) {
     raster(&p->cv, &p->fdl, 0);   /* iframes are transparent unless their document paints a background */
     p->drawn_ver = p->d->dom_version; p->drawn_epoch = g_img_epoch;
     static uint32_t fver;
-    p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s, .ver = ++fver };
+    media_canvas_prune(&p->cv);
+    p->img = (Image){ .w = pw, .h = ph, .refs = 1 << 30, .px = p->cv.px, .scale = s, .ver = ++fver, .sampled_canvas = &p->cv };
     return true;
 }
 /* @font-face: declare faces as sheets arrive; fetch a face only once text asks for it */
@@ -1949,6 +1967,8 @@ static void click_frame(App *a, Page *fp, float x, float y) {
             const char *h = node_attr(n, "href"), *tg = node_attr(n, "target");
             if (!strncmp(h, "javascript:", 11) || h[0] == '#') goto done;
             char *u = url_join(fp->d->url, h);
+            /* Activation already queued parsed javascript URLs in this realm. */
+            if (u && !strncmp(u, "javascript:", 11)) { free(u); goto done; }
             if (u && tg && (!strcmp(tg, "_top") || !strcmp(tg, "_blank"))) { nav_from(fp->d, u); navigate(a, u, true); }
             else if (u) js_frame_navigate(frame, u);
             free(u); goto done;
@@ -2693,7 +2713,11 @@ static void anchor_follow(App *a, Node *t) {
             const char *h = node_attr(n, "href");
             if (!strncmp(h, "javascript:", 11)) return;
             if (h[0] == '#') { Node *t = doc_get_element_by_id(a->t->cur->d, h + 1); if (t && t->box) page_scroll(a, t->box->y); return; }
-            char *u = url_join(a->t->cur->d->url, h); nav_from(a->t->cur->d, u); navigate(a, u, true); free(u); return;
+            char *u = url_join(a->t->cur->d->url, h);
+            if (!u) return;
+            /* Include case/C0-normalized schemes handled by JS activation. */
+            if (!strncmp(u, "javascript:", 11)) { free(u); return; }
+            nav_from(a->t->cur->d, u); navigate(a, u, true); free(u); return;
         }
 }
 

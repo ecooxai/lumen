@@ -23,7 +23,7 @@ function pickFiles(el) {
 function downloadLink(a) {
     let u; try { u = new URL(a.href); } catch { return false; }
     const nm = a.download || decodeURIComponent(u.pathname.split('/').pop() || '') || 'download';
-    if (u.protocol === 'blob:') { const b = objectURLs.get(u.href); if (!b) return false; N.saveFile(nm, b._buf); return true; }
+    if (u.protocol === 'blob:') { const b = objectURLs.get(u.href); if (!blobFileOps.isBlob(b)) return false; N.saveFile(nm, blobFileOps.copyBuffer(b)); return true; }
     if (u.protocol !== 'data:' && u.origin !== location.origin) return false;
     fetch(u.href).then(r => r.arrayBuffer()).then(b => N.saveFile(nm, b), () => location.assign(u.href));
     return true;
@@ -31,7 +31,14 @@ function downloadLink(a) {
 function activate(el, ev, pre) {
     const a = el.closest ? el.closest('a[href]') : null;
     if (a && a.hasAttribute('download') && downloadLink(a)) return;
-    if (a) { const raw = N.attr(a, 'href'); if (/^javascript:/i.test(raw)) { try { (0, eval)(decodeURIComponent(raw.slice(11))); } catch (e) { report(e); } } else if (a.href) location.assign(a.href); return; }
+    if (a) {
+        const parsed = N.urlParse(N.attr(a, 'href'), document.baseURI);
+        if (parsed) {
+            if (parsed[1] === 'javascript:') N.navigate(parsed[0]);
+            else location.assign(parsed[0]);
+        }
+        return;
+    }
     if (el.closest && !/^(input|button|label|summary|textarea|select)$/.test(N.name(el))) {
         const t = el.closest('button,label,summary');
         if (t) el = t;
@@ -53,18 +60,39 @@ function activate(el, ev, pre) {
     else if (name === 'textarea' || name === 'select') N.focus(el);
 }
 function submitForm(form, submitter) {
-    const fd = new FormData(form);
-    if (submitter && submitter.name) fd.append(submitter.name, submitter.value);
-    const u = new URL((submitter && submitter.getAttribute('formaction')) || N.attr(form, 'action') || N.url(), document.baseURI);
-    if (form.method === 'get') { u.search = new URLSearchParams([...fd].filter(([, v]) => typeof v === 'string')).toString(); N.navigate(u.href); }
-    else {
-        const et = ((submitter && submitter.getAttribute('formenctype')) || N.attr(form, 'enctype') || '').toLowerCase();
-        const kv = [...fd].filter(([, v]) => typeof v === 'string');
+    if (!N.formCanNavigate(form)) return;
+    // A present submitter override wins even when empty or invalid (GET).
+    const override = submitter ? N.attr(submitter, 'formmethod') : null;
+    const method = formMethod(override !== null ? override : N.attr(form, 'method'));
+    if (method === 'dialog') {
+        let dialog = form.parentElement;
+        while (dialog && !(N.ns(dialog) === 0 && N.name(dialog) === 'dialog')) dialog = dialog.parentElement;
+        if (dialog) closeDialog(dialog, submitter ? submitter.value : undefined);
+        return; // Dialog submission never constructs a URL or sends form data.
+    }
+    const encoding = N.formEncoding(form);
+    if (encoding === null) return;
+    const entries = formEntries(form, encoding);
+    if (submitter && submitter.name) entries.push([String(submitter.name), String(submitter.value)]);
+    // Resolve in the actual form owner's document, including empty overrides.
+    const action = N.formAction(form, submitter);
+    if (action === null) return;
+    const u = new URL(action);
+    if (method === 'get') {
+        u.search = formURLEncoded(entries, encoding);
+        N.formNavigate(form, submitter, u.href, null, '');
+    } else {
+        // A present override wins even when empty or invalid (URL-encoded).
+        const enctypeOverride = submitter ? N.attr(submitter, 'formenctype') : null;
+        const et = formEnctype(enctypeOverride !== null ? enctypeOverride : N.attr(form, 'enctype'));
         if (et === 'multipart/form-data') {
             const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2);
-            N.navigatePost(u.href, multipartBody([...fd], bd), 'multipart/form-data; boundary=' + bd);
-        } else if (et === 'text/plain') N.navigatePost(u.href, kv.map(([k, v]) => `${k}=${v}\r\n`).join(''), 'text/plain');
-        else N.navigatePost(u.href, new URLSearchParams(kv).toString(), 'application/x-www-form-urlencoded');
+            N.formNavigate(form, submitter, u.href, multipartBody(entries, bd, encoding), 'multipart/form-data; boundary=' + bd);
+        } else if (et === 'text/plain') {
+            N.formNavigate(form, submitter, u.href, formPlainText(entries, encoding), 'text/plain');
+        } else {
+            N.formNavigate(form, submitter, u.href, formURLEncoded(entries, encoding), 'application/x-www-form-urlencoded');
+        }
     }
 }
 function cssSplit(s) {

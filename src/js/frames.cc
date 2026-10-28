@@ -1,5 +1,6 @@
 /* Nested browsing contexts (<iframe>): child V8 contexts sharing the parent's isolate */
 #include "js_int.h"
+#include "clone_brand.h"
 #include "jsglue.h"
 #include "../base/url.h"
 
@@ -41,8 +42,8 @@ JsCtx *js_frame_ctx(Node *f) {
     for (JsCtx *k : p->kids) if (!k->dead && k->frame_el == f) return k;
     return nullptr;
 }
-void frame_nav(JsCtx *k, const char *u);
-void js_frame_navigate(Node *f, const char *u) { if (JsCtx *k = js_frame_ctx(f)) frame_nav(k, u); }
+void frame_nav(JsCtx *k, const std::string &u);
+void js_frame_navigate(Node *f, const char *u) { if (u) if (JsCtx *k = js_frame_ctx(f)) frame_nav(k, u); }
 Document *js_frame_doc(Node *f) { JsCtx *k = js_frame_ctx(f); return k ? k->doc : nullptr; }
 
 void frame_kill(JsCtx *k) {
@@ -56,12 +57,28 @@ void frame_kill(JsCtx *k) {
     if (k->host.frame_close && k->host_ud) k->host.frame_close(k->host_ud);
     k->host_ud = nullptr;
 }
+/* DOM removing steps must sever the public association in the same call.
+ * A later host scan, or a getter-only guard, can otherwise revive a removed
+ * child when the same iframe is reinserted before the next event-loop turn.
+ * frame_kill deactivates queues/handles but retains the native JsCtx and its
+ * Document for already-held wrappers; it never destroys a V8-active owner. */
+extern "C" void dom_connected_subtree_removed(Document *document) {
+    JsCtx *parent = owner_ctx(document);
+    if (!parent || parent->dead) return;
+    for (JsCtx *child : std::vector<JsCtx *>(parent->kids)) {
+        if (!child->dead && child->frame_el &&
+            (!(child->frame_el->flags & NF_CONNECTED) || child->frame_el->doc != document))
+            frame_kill(child);
+    }
+}
+
 void frames_forget(JsCtx *c) { for (FrameLoad *l : g_loads) if (l->p == c) l->p = nullptr; }
 
 static std::string src_key(JsCtx *p, Node *f) {
-    if (const char *sd = node_attr(f, "srcdoc")) return std::string("srcdoc:") + sd;
-    const char *src = node_attr(f, "src");
-    char *u = src && *src ? url_join(p->doc->url, src) : nullptr;
+    size_t length = 0;
+    if (const char *sd = node_attr_n(f, "srcdoc", &length)) return std::string("srcdoc:") + std::string(sd, length);
+    const char *src = node_attr_n(f, "src", &length);
+    char *u = src && length ? url_join_n(p->doc->url, src, length) : nullptr;
     std::string r = u ? u : "";
     free(u);
     return r;
@@ -70,14 +87,20 @@ static std::string src_key(JsCtx *p, Node *f) {
 static std::string g_next_csp;   /* CSP of the response frame_create is about to build a document from */
 static std::string g_next_permissions; /* Permissions-Policy on the incoming frame response */
 static std::string g_next_ref;   /* Referer sent for the frame navigation frame_create is about to build */
-static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html, size_t n, bool fire_load) {
+static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html, size_t n, bool fire_load,
+                           const char *content_type = nullptr) {
     JsCtx *old = js_frame_ctx(f);
     Document *d = doc_new(url);
     if (!g_next_permissions.empty()) { d->permissions_policy = strdup(g_next_permissions.c_str()); g_next_permissions.clear(); }
     if (!g_next_csp.empty()) { d->csp = csp_append(nullptr, g_next_csp.c_str()); g_next_csp.clear(); }
     if (!g_next_ref.empty()) { d->referrer = strdup(g_next_ref.c_str()); g_next_ref.clear(); }
     else if (!strncmp(url, "about:", 6) && p->doc && p->doc->csp) d->csp = strdup(p->doc->csp);
-    html_parse(d, html ? html : "", html ? n : 0);
+    if (content_type) {
+        if (!html_parse_bytes(d, html ? html : "", html ? n : 0, content_type)) {
+            fprintf(stderr, "lumen: frame HTML decoding exceeded its byte contract\n");
+            html_parse(d, "", 0);
+        }
+    } else html_parse(d, html ? html : "", html ? n : 0);
     /* A document replacement retains the iframe browsing context. Commit before
      * retiring the old realm so its detach cannot close the successor's ID. */
     JsWindowId window_id = old ? js_window_commit(old->window_id, d, JS_COOP_UNSAFE_NONE) : 0;
@@ -95,13 +118,14 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
         if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED)) continue;
         bool mod = jsg_module_script(s);
         if (!mod && !jsg_classic_script(s)) continue;
-        const char *src = node_attr(s, "src");
+        size_t src_length = 0; const char *src = node_attr_n(s, "src", &src_length);
         if (mod) {
-            char *t = src ? nullptr : node_text_content(s), *u = src ? url_join(d->url, src) : nullptr;
-            js_run_module(k, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : d->url);
+            char *t = src ? nullptr : node_text_content(s), *u = src && src_length ? url_join_n(d->url, src, src_length) : nullptr;
+            if (src && !u) { s->flags |= NF_SCRIPT_STARTED; js_dispatch(k, s, "error", "Event", false, false, 0, 0, 0, NULL); }
+            else js_run_module(k, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : d->url);
             free(t); free(u);
         } else if (src) {
-            char *u = url_join(d->url, src);
+            char *u = src_length ? url_join_n(d->url, src, src_length) : nullptr;
             NetRequest *srq = u ? net_request_ctx("GET", u, js_top_url(k)) : nullptr;
             if (srq && d->url) { srq->no_cors_origin = strdup(d->url); srq->coep_require_corp = d->coep_require_corp; }
             NetResponse *sr = srq ? net_fetch_sync(srq) : nullptr;
@@ -131,7 +155,7 @@ static bool fa_source_match(std::string src, const char *anc, const std::string 
     URL a; if (!anc || !url_parse(anc, &a)) return false;
     bool web = a.scheme && (!strcmp(a.scheme, "http") || !strcmp(a.scheme, "https")), ok = false;
     if (src == "*") ok = web;
-    else if (src == "'self'") ok = origin_of(anc) == self;
+    else if (src == "'self'") ok = self != "null" && origin_of(anc) == self;
     else if (src.size() > 1 && src.back() == ':' && src.find('/') == std::string::npos) {
         std::string sch = src.substr(0, src.size() - 1);
         ok = a.scheme && (sch == a.scheme || (sch == "http" && !strcmp(a.scheme, "https")));
@@ -176,7 +200,8 @@ static bool frame_embed_blocked(JsCtx *p, const NetResponse *r, const char *url)
     if (!xfo) return false;
     while (*xfo == ' ') xfo++;
     if (!strncasecmp(xfo, "deny", 4)) return true;
-    if (!strncasecmp(xfo, "sameorigin", 10)) { for (JsCtx *a = p; a; a = a->parent) if (origin_of(a->doc ? a->doc->url : nullptr) != self) return true; }
+    /* An opaque origin's "null" serialization is not an origin identity. */
+    if (!strncasecmp(xfo, "sameorigin", 10)) { if (self == "null") return true; for (JsCtx *a = p; a; a = a->parent) if (origin_of(a->doc ? a->doc->url : nullptr) != self) return true; }
     return false;
 }
 
@@ -200,21 +225,47 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
         if (ok) for (int i = 0; i < r->headers.n; i++)
             if (str_ieq(r->headers.v[i].name, "content-security-policy")) { if (!g_next_csp.empty()) g_next_csp += '\n'; g_next_csp += r->headers.v[i].value; }
         if (ok) { const char *policy = headers_get(&r->headers, "permissions-policy"); g_next_permissions = policy ? policy : ""; g_next_ref = l->ref; }
-        JsCtx *k = frame_create(p, l->f, ok && r->url ? r->url : l->url.c_str(), body, ok && r->body ? r->body_len : 0, true);
+        const char *content_type = ok ? headers_get(&r->headers, "content-type") : nullptr;
+        JsCtx *k = frame_create(p, l->f, ok && r->url ? r->url : l->url.c_str(),
+            body, ok && r->body ? r->body_len : 0, true, ok ? (content_type ? content_type : "") : nullptr);
         k->frame_src = key;
     }
     delete l;
 }
 
-static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key) {
+static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key,
+                       const FrameSubmission *submission = nullptr) {
     bool remote = u && *u && strncmp(u, "about:", 6) && strncmp(u, "javascript:", 11);
+    if (submission && (!p || p->dead || !(f->flags & NF_CONNECTED) || f->doc != p->doc)) return;
+    if (submission && p->doc && p->doc->csp &&
+        !csp_allows_url(p->doc->csp, p->doc->url, u, "frame-src")) {
+        fprintf(stderr, "lumen: CSP frame-src blocked form target %.120s\n", u); return;
+    }
     JsCtx *k = frame_create(p, f, "about:blank", "", 0, !remote);
     k->frame_src = key;
     if (!remote) return;
     if (p->doc && p->doc->csp && !csp_allows_url(p->doc->csp, p->doc->url, u, "frame-src")) { fprintf(stderr, "lumen: CSP frame-src blocked %.120s\n", u); return; }
-    NetRequest *rq = net_request_ctx("GET", u, js_top_url(p));
+    NetRequest *rq = net_request_ctx(submission && submission->post ? "POST" : "GET", u,
+        submission ? submission->top_url.c_str() : js_top_url(p));
     std::string refs;
-    if (char *ref = net_referrer(p->doc->url, u, p->doc->referrer_policy)) { headers_add(&rq->headers, "Referer", ref); refs = ref; free(ref); }
+    if (submission) {
+        refs = submission->referrer;
+        if (!refs.empty()) headers_add(&rq->headers, "Referer", refs.c_str());
+        if (!submission->csp.empty()) {
+            rq->csp = xstrdup(submission->csp.c_str());
+            rq->csp_doc = xstrdup(submission->policy_url.c_str());
+            rq->csp_dir = "form-action"; /* Retained through HTTP redirects. */
+        }
+        if (submission->post) {
+            rq->body_len = submission->body.size();
+            rq->body = (char *)xmalloc(rq->body_len ? rq->body_len : 1);
+            if (rq->body_len) memcpy(rq->body, submission->body.data(), rq->body_len);
+            headers_add(&rq->headers, "Content-Type", submission->content_type.c_str());
+            headers_add(&rq->headers, "Origin", submission->origin.c_str());
+        }
+    } else if (char *ref = net_referrer(p->doc->url, u, p->doc->referrer_policy)) {
+        headers_add(&rq->headers, "Referer", ref); refs = ref; free(ref);
+    }
     FrameLoad *l = new FrameLoad{ p, f, k->id, u, refs };
     g_loads.push_back(l);
     rq->done = frame_done; rq->ud = l;
@@ -224,15 +275,27 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key)
 static void frame_start(JsCtx *p, Node *f) {
     if (p->dead) return;
     std::string key = src_key(p, f);
-    if (const char *sd = node_attr(f, "srcdoc")) { JsCtx *k = frame_create(p, f, "about:srcdoc", sd, strlen(sd), true); k->frame_src = key; return; }
+    size_t length = 0;
+    if (const char *sd = node_attr_n(f, "srcdoc", &length)) { JsCtx *k = frame_create(p, f, "about:srcdoc", sd, length, true); k->frame_src = key; return; }
     frame_load(p, f, key.c_str(), key);
 }
 
-void frame_nav(JsCtx *k, const char *u) {
+void frame_nav(JsCtx *k, const std::string &u) {
     if (!k->parent || k->dead) return;
-    char *abs = url_join(k->doc->url, u);
+    char *abs = url_join_n(k->doc->url, u.data(), u.size());
     if (abs) frame_load(k->parent, k->frame_el, abs, k->frame_src);
     free(abs);
+}
+void frame_submit(JsCtx *k, const std::string &url, const FrameSubmission &submission) {
+    if (!k || !k->parent || k->dead || !k->frame_el ||
+        !(k->frame_el->flags & NF_CONNECTED) || k->frame_el->doc != k->parent->doc) return;
+    /* Preserve the iframe src/srcdoc attribute key: a form navigation changes
+     * the active document, not those attributes. Copy before frame_load retires
+     * the old realm and creates its replacement. */
+    JsCtx *parent = k->parent;
+    Node *frame = k->frame_el;
+    const std::string key = k->frame_src;
+    frame_load(parent, frame, url.c_str(), key, &submission);
 }
 
 static bool is_iframe(Node *n) { return n->type == NODE_ELEMENT && n->ns == NS_HTML && n->tag == A_iframe; }
@@ -295,7 +358,7 @@ static void n_ctxRel(const FCI &a) {
     case 1: a.GetReturnValue().Set(t && t->parent ? win_for(c, root_of(t)) : v8::Local<v8::Value>(v8::Null(iso))); break;
     case 2: a.GetReturnValue().Set(t ? live_kids(t) : 0); break;
     case 3: a.GetReturnValue().Set(!t); break;
-    case 4: if (t) { std::string u = jcstr(iso, a[2]); frame_nav(t, u.c_str()); } break;
+    case 4: if (t) { std::string u = jcstr(iso, a[2]); frame_nav(t, u); } break;
     }
 }
 static void n_caller(const FCI &a) {
@@ -317,7 +380,8 @@ static void n_postTo(const FCI &a) {
     if (!valid || !target || target->dead || target->api.IsEmpty()) return;
     const JsWindowId source_id = source->window_id;
     const std::string origin = ctx_origin(source);
-    v8::ValueSerializer serializer(iso);
+    JsgCloneDelegate delegate(iso);
+    v8::ValueSerializer serializer(iso, &delegate);
     serializer.WriteHeader();
     if (!serializer.WriteValue(cx, a[1]).FromMaybe(false)) return;
     auto bytes = serializer.Release();

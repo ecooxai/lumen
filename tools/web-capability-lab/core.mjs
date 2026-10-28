@@ -93,3 +93,66 @@ export function inspectRTCEvidence({stats, capabilities, connectionState, iceCon
     dtlsState: transport?.dtlsState ?? null, candidatePairState: pair?.state ?? null,
     mediaTransportSupported: capabilities?.webrtcMediaTransport ?? null};
 }
+
+
+export async function validateByteStreamEcho(reader, expected) {
+  let offset=0;
+  for(let chunks=0;chunks<1024;chunks++) {
+    const {value,done}=await reader.read();
+    if(done) {
+      if(offset!==expected.byteLength)throw new Error('Stream echo ended before the expected payload');
+      return offset;
+    }
+    if(!(value instanceof Uint8Array))throw new Error('Stream echo requires byte chunks');
+    if(offset+value.byteLength>expected.byteLength)throw new Error('Stream echo contained trailing payload');
+    for(let index=0;index<value.byteLength;index++)if(value[index]!==expected[offset+index])throw new Error('Stream echo payload mismatch');
+    offset+=value.byteLength;
+  }
+  throw new Error('Stream echo exceeded the bounded chunk limit');
+}
+
+// Keep the peer connection alive until the channel's actual close event.
+// Calling channel.close() and peer.close() in the same cleanup pass can abort
+// an in-flight SCTP stream reset. Errors remain fatal, including after echoes.
+export function observeDataChannelClose(channel, scope) {
+  let closeObserved=false, errors=0, resolveClosed, rejectClosed;
+  const closed=new Promise((resolve,reject)=>{resolveClosed=resolve;rejectClosed=reject;});
+  closed.catch(()=>{});
+  const snapshot=()=>({gracefulChannelCloseObserved:closeObserved&&errors===0,
+    dataChannelReadyState:channel.readyState,dataChannelErrorCount:errors});
+  scope.listen(channel,'close',()=>{
+    if(channel.readyState!=='closed'){rejectClosed(new Error('Channel close event did not have closed state'));return;}
+    closeObserved=true;resolveClosed();
+  });
+  scope.add(()=>{if(!closeObserved)rejectClosed(new Error('Scope disposed before the channel close event'));});
+  return {
+    snapshot,
+    recordError(){errors++;rejectClosed(new Error('Data channel reported a transport error'));return snapshot();},
+    async finish(){
+      if(errors)throw new Error('Data channel reported a transport error');
+      if(channel.readyState==='closed'&&!closeObserved)throw new Error('Closed state lacks an observed channel close event');
+      if(!['open','closing','closed'].includes(channel.readyState))throw new Error('Data channel is not ready for graceful close');
+      if(channel.readyState==='open')channel.close();
+      await closed;
+      if(errors||!closeObserved||channel.readyState!=='closed')throw new Error('Graceful channel close was not verified');
+      return snapshot();
+    }
+  };
+}
+
+// A local close callback need not mean the remote endpoint has processed its
+// stream reset yet. Retain the peer until BOTH endpoints attest an actual
+// channel-close event. The existing ordered broker carries the two successive
+// completion markers; increasing sequences distinguish echo and close phases.
+export async function finishDataChannelClose(completion, scope, sendClosed, waitForPeerClosed, echoSequence) {
+  const active=()=>{if(scope.closed)throw new Error('Close barrier cancelled');};
+  active();
+  if(!Number.isSafeInteger(echoSequence)||echoSequence<=0)throw new Error('Missing peer echo-completion sequence');
+  await completion.finish();active();
+  await sendClosed();active();
+  const closedSequence=await waitForPeerClosed();active();
+  if(!Number.isSafeInteger(closedSequence)||closedSequence<=echoSequence)throw new Error('Peer close acknowledgement is stale or out of order');
+  const evidence=completion.snapshot();
+  if(!evidence.gracefulChannelCloseObserved||evidence.dataChannelReadyState!=='closed'||evidence.dataChannelErrorCount!==0)throw new Error('Transport error while waiting for peer close acknowledgement');
+  return {...evidence,peerChannelCloseAcknowledged:true,peerChannelCloseSignalSequence:closedSequence};
+}

@@ -1,0 +1,52 @@
+{
+  "deployment_directory": "tests/wpt-ipad004",
+  "authorized_device": "A77F68E4-972B-472B-80B8-F65E71D361E5",
+  "expected_unit_tests": 39,
+  "execution_status": "Source-only; root Mac gate pending",
+  "files": {
+    "IPAD004-COMMANDS.md": {
+      "sha256": "bb4cb2346e20911f17c6056d89704e51fb686eabb74a73078e28977967c700ec",
+      "bytes": 4544
+    },
+    "full_runner.py": {
+      "sha256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+      "bytes": 71361
+    },
+    "install_verify_ipad.py": {
+      "sha256": "5b69ea117429e2fb016da94d9f81dba2d4fd597d820015626e90270f829df90f",
+      "bytes": 13549
+    },
+    "ipad_adapter.py": {
+      "sha256": "0a45a31740340bf321c7add11dcaa1ffca8a63de44261ff7290f2a8413258c34",
+      "bytes": 17186
+    },
+    "ipad_generation.py": {
+      "sha256": "38d6f962059e932e12a158ae94df37ca289f434380e6478b1ede856b31fafb73",
+      "bytes": 5770
+    },
+    "ipad_runner.py": {
+      "sha256": "1876472b3552a425f9539ef9bb638cf86a6e006c3bc5f6ca603eb8305a39c4ba",
+      "bytes": 29178
+    },
+    "launch_ipad_smoke.py": {
+      "sha256": "47fc9fce87832e086da423f47b086cc695919d73678d7c7bba93ff0de238211c",
+      "bytes": 14761
+    },
+    "test_ipad_adapter.py": {
+      "sha256": "6a95cf15f5c2bbe400e53d0826b0748bbfa436240fcf988186d3434448b0cfab",
+      "bytes": 9931
+    },
+    "test_ipad_generation.py": {
+      "sha256": "37119ee096880b71769b2a02ac696f26335080f8292d8a05320b061f528d85c6",
+      "bytes": 6616
+    },
+    "test_ipad_runner.py": {
+      "sha256": "a86965333f62044bb87672785ccf4d0a6ca0e64fa41d38103118c209e2883487",
+      "bytes": 15186
+    },
+    "testharnessreport.js": {
+      "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+      "bytes": 3278
+    }
+  }
+}

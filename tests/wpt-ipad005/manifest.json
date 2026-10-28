@@ -1,0 +1,60 @@
+{
+  "status": "authored_source_only_pending_independent_review_and_mac_gates",
+  "expected_unit_tests": 56,
+  "device": "A77F68E4-972B-472B-80B8-F65E71D361E5",
+  "bundle_id": "com.ecooxai.lumen",
+  "source_generation": "Signed build003 remains unchanged; only isolated runtime harness changes",
+  "cleanup_policy": "exact-ipad-simctl-platform-termination-v1",
+  "old_failed_cleanup_preserved": true,
+  "natural_or_graceful_app_shutdown_claimed": false,
+  "files": {
+    "IPAD005-COMMANDS.md": {
+      "sha256": "eefbf7a8b4503196f683b029bfe9a880b6dc2258fc008c431a1e71d9a483f08c",
+      "bytes": 4575
+    },
+    "full_runner.py": {
+      "sha256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+      "bytes": 71361
+    },
+    "ipad_adapter.py": {
+      "sha256": "885d9aed25b8525f9370246f3bc87b05d72713052749cb9a06a0198a25434fc4",
+      "bytes": 22911
+    },
+    "ipad_generation.py": {
+      "sha256": "38d6f962059e932e12a158ae94df37ca289f434380e6478b1ede856b31fafb73",
+      "bytes": 5770
+    },
+    "ipad_lifecycle.py": {
+      "sha256": "fdf39fca49c5e72bbb05d132a07c6abbc79ae37d15b49e4c280e863d85a6bbbf",
+      "bytes": 5426
+    },
+    "ipad_runner.py": {
+      "sha256": "1876472b3552a425f9539ef9bb638cf86a6e006c3bc5f6ca603eb8305a39c4ba",
+      "bytes": 29178
+    },
+    "launch_ipad_smoke.py": {
+      "sha256": "922ba795019dcc5c2e700ca7c36db8f82fc2b233a36fbd55b45f09d9989707ca",
+      "bytes": 16141
+    },
+    "test_ipad_adapter.py": {
+      "sha256": "979bba8d9f77161941d023e16d47260a6cfa9af7a950d882ee47a9406f122465",
+      "bytes": 19441
+    },
+    "test_ipad_generation.py": {
+      "sha256": "37119ee096880b71769b2a02ac696f26335080f8292d8a05320b061f528d85c6",
+      "bytes": 6616
+    },
+    "test_ipad_lifecycle.py": {
+      "sha256": "297261808d7acb59f177b77add836682a54d42e82b26b0357df9a1500fceba1c",
+      "bytes": 4545
+    },
+    "test_ipad_runner.py": {
+      "sha256": "a86965333f62044bb87672785ccf4d0a6ca0e64fa41d38103118c209e2883487",
+      "bytes": 15186
+    },
+    "testharnessreport.js": {
+      "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+      "bytes": 3278
+    }
+  }
+}

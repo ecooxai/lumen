@@ -99,7 +99,7 @@ bool jsg_module_script(Node *s) {
 bool jsg_classic_script(Node *s) {
     if (node_has_attr(s, "nomodule")) return false;
     const char *t = node_attr(s, "type");
-    if (!t) return true;
+    if (!t) return !node_has_attr(s, "type"); /* invalid raw bytes are not an absent type */
     while (*t == ' ' || *t == '\t' || *t == '\n') t++;
     if (!*t) return true;
     static const char *ok[] = { "text/javascript", "application/javascript", "text/ecmascript", "application/ecmascript",

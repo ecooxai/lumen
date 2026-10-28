@@ -8,6 +8,10 @@
 
 /* Transparent, full-size title bar so the tab strip sits beside the traffic lights. */
 void mac_style_window(SDL_Window *w);
+#ifndef LUMEN_IOS
+/* Bounded, opt-in visibility metadata; no titles, URLs, or user data. */
+void mac_debug_visibility(SDL_Window *w, void *metal_layer);
+#endif
 #ifdef LUMEN_IOS
 #include "../base/device.h"
 /* Main-thread UIKit refinement of the cached SDL display/input information. */

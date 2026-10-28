@@ -79,6 +79,8 @@ def main() -> None:
         flags += [
             '-DCMAKE_SYSTEM_NAME=iOS', '-DCMAKE_OSX_ARCHITECTURES=arm64',
             '-DCMAKE_OSX_SYSROOT=' + sdk, '-DCMAKE_OSX_DEPLOYMENT_TARGET=16.0',
+            # The pinned upstream Apple branch force-selects dylibs unless this is ON.
+            '-DOPENSSL_USE_STATIC_LIBS=ON',
             '-DOPENSSL_ROOT_DIR=' + str(deps), '-DOPENSSL_INCLUDE_DIR=' + str(deps / 'include'),
             '-DOPENSSL_SSL_LIBRARY=' + str(deps / 'lib/libssl.a'),
             '-DOPENSSL_CRYPTO_LIBRARY=' + str(deps / 'lib/libcrypto.a'),

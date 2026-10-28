@@ -1,0 +1,55 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lume native dialog input fixture</title>
+<style>
+* { box-sizing:border-box; }
+html,body { margin:0; font:18px system-ui; background:#ffffff; color:#111827; }
+body { padding:112px 24px 24px; }
+button { font:18px system-ui; border:0; border-radius:6px; color:#ffffff; }
+#open { position:fixed; top:24px; left:20px; width:240px; height:56px; background:#0055cc; }
+dialog { width:280px; max-width:calc(100vw - 48px); padding:18px; border:3px solid #1e3a8a; border-radius:12px; background:#dbeafe; color:#111827; }
+dialog h2 { margin:0 0 12px; font-size:22px; }
+dialog p { margin:0 0 16px; line-height:1.3; }
+dialog button { display:block; width:100%; height:48px; margin:10px 0 0; }
+#accept { background:#006b4f; }
+#cancel { background:#b42318; }
+</style></head><body>
+<button id="open" type="button">Open local consent</button>
+<h1>Native dialog input</h1><p>This fixture tests native taps. No account or authentication provider is contacted.</p>
+<dialog id="consent"><form method="dialog"><h2>Local consent simulation</h2><p>Choose Continue or Cancel. This does not sign in to an account.</p>
+<button id="accept" value="accepted">Continue</button><button id="cancel" value="cancel">Cancel</button>
+</form></dialog>
+<script>
+(function () {
+  var run = new URLSearchParams(location.search).get('run');
+  var pageNonce = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  var pending = Promise.resolve(), opens = 0, submits = 0, closes = 0;
+  var dialog = document.getElementById('consent');
+  function send(type, extra) {
+    var event = Object.assign({run:run,type:type,pageNonce:pageNonce,simulation:true,authenticated:false,providerContacted:false,
+      width:innerWidth,height:innerHeight,dialogOpen:dialog.open,returnValue:dialog.returnValue,opens:opens,submits:submits,closes:closes}, extra || {});
+    pending = pending.then(function () {
+      return fetch('/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(event)});
+    }).catch(function () {});
+  }
+  document.getElementById('open').addEventListener('click', function (event) {
+    opens += 1;
+    dialog.showModal();
+    send('opened',{target:'open',trusted:event.isTrusted});
+  });
+  ['accept','cancel'].forEach(function (id) {
+    document.getElementById(id).addEventListener('click', function (event) {
+      send('click',{target:id,trusted:event.isTrusted});
+    });
+  });
+  dialog.querySelector('form').addEventListener('submit', function (event) {
+    submits += 1;
+    send('submit',{submitter:event.submitter ? event.submitter.id : null});
+  });
+  dialog.addEventListener('close', function () {
+    closes += 1;
+    send('closed');
+  });
+  send('ready');
+})();
+</script></body></html>

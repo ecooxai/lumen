@@ -1,0 +1,67 @@
+{
+  "WHATWG-LICENSE": {
+    "bytes": 16315,
+    "sha256": "85dc6f5ccb57a6fe8c33d158f9fc8fc7ee5655a5d3db2cdd131c6a3d0f48a864"
+  },
+  "commit_url_revision": "be17ac5c49881336538acfc7b40dba3c8009144b",
+  "decoder_table_sha256": "759a6b5cb49e450b6aab966e176a7f410c7cdcb0e140abee88ea009a2d8d9a65",
+  "encoding_encode_index.inc": {
+    "bytes": 451067,
+    "sha256": "b02e3642d966daf8e9d15a1e58d8074c5e4fa3f44f11e503230dc65bef5e4584"
+  },
+  "git_object_chain_verified": false,
+  "input_identities": {
+    "/Users/devin/repos/lumen/output/wpt/whatwg-encoding-be17ac5-decoder-data-001/encoding_decode_data.inc": [
+      16777235,
+      10079573,
+      924557,
+      1792705127438228227,
+      1792705127438228227
+    ],
+    "/Users/devin/repos/lumen/output/wpt/whatwg-encoding-be17ac5-source-https-003/LICENSE": [
+      16777235,
+      10062470,
+      16315,
+      1792703485009859705,
+      1792703485009859705
+    ],
+    "/Users/devin/repos/lumen/output/wpt/whatwg-encoding-be17ac5-source-https-003/indexes.json": [
+      16777235,
+      10062461,
+      530213,
+      1792703484840943594,
+      1792703484840943594
+    ]
+  },
+  "production_installed": false,
+  "source_indexes_sha256": "b7c8961095f0b4cae8f4a16a5011e7c84047a60c1277e28ee8df9e56074ee509",
+  "source_provenance_sha256": "0c1d80cbdaf14a71315e6d9d60fd5255618342dfd8defca10e32ab22a0dd49db",
+  "statistics": {
+    "duplicates_ordered_by_pointer": true,
+    "forward_tables_duplicated": false,
+    "katakana_entries": 63,
+    "numeric_readonly_bytes": 134856,
+    "per_realm_tables": false,
+    "runtime_lookup": "binary search and bounded duplicate selection",
+    "tables": {
+      "big5": {
+        "forward_entries": 19782,
+        "reverse_entries": 18590
+      },
+      "euc-kr": {
+        "forward_entries": 23940,
+        "reverse_entries": 17048
+      },
+      "gb18030": {
+        "forward_entries": 23940,
+        "reverse_entries": 23940
+      },
+      "jis0208": {
+        "forward_entries": 11280,
+        "reverse_entries": 7724
+      }
+    }
+  },
+  "status": "immutable_encoder_index_generated_not_installed",
+  "tests_executed": false
+}

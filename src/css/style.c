@@ -1935,6 +1935,14 @@ char *css_get_computed_value(Node *el, const char *prop) {
     else if (!strcmp(prop, "pointer-events")) sb_puts(&b, s->pointer_events ? "auto" : "none");
     else if (!strcmp(prop, "user-select") || !strcmp(prop, "-webkit-user-select") || !strcmp(prop, "webkit-user-select")) sb_puts(&b, s->user_select ? "none" : "auto");
     else if (!strcmp(prop, "box-sizing")) sb_puts(&b, s->box_sizing ? "border-box" : "content-box");
+    else if (!strcmp(prop, "object-fit")) {
+        static const char *const fits[] = { "fill", "contain", "cover", "none", "scale-down" };
+        if (s->object_fit < sizeof fits / sizeof *fits) sb_puts(&b, fits[s->object_fit]);
+    }
+    else if (!strcmp(prop, "flex-wrap")) {
+        static const char *const wraps[] = { "nowrap", "wrap", "wrap-reverse" };
+        if (s->flex_wrap < sizeof wraps / sizeof *wraps) sb_puts(&b, wraps[s->flex_wrap]);
+    }
     else if (transform_property(prop) >= 0) {
         int which = transform_property(prop);
         const TransformPart *p = s->transform_state ? &s->transform_state->part[which] : NULL;

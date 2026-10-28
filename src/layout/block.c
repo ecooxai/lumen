@@ -192,7 +192,9 @@ static void layout_abs(Layout *L, Box *cb) {
         bool wdef = len_def(s->width, pw);
         if (!wdef && !lA && !rA && s->width.kind == LK_AUTO) { mode = SZ_FORCED; fw = pw - l - r - a->m[1] - a->m[3]; }
         float avail = pw - (lA ? 0 : l) - (rA ? 0 : r);
-        if (!len_def(s->height, ph) && !tA && !bA) fh = ph - t - bt - a->m[0] - a->m[2];
+        /* Only auto height stretches between opposing insets. Intrinsic sizes
+           (including modal dialog fit-content) must keep their content height. */
+        if (s->height.kind == LK_AUTO && !tA && !bA) fh = ph - t - bt - a->m[0] - a->m[2];
         if (a->fmt == FMT_REPLACED) fh = -1;
         layout_box(L, a, 0, 0, mode == SZ_FORCED ? pw : avail, ph, NULL, mode, fw, fh);
         float ow = a->w, oh = a->h;

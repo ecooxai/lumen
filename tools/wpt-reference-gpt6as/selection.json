@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "scope": "Six prespecified WPT-source testharness cases: DOM creation/cloning/containment, microtask ordering, URLSearchParams, and WebAssembly instantiation. Window context only. Not a full WPT run.",
+  "test_ids": [
+    "/dom/nodes/Document-createElement.html",
+    "/dom/nodes/Node-cloneNode.html",
+    "/dom/nodes/Node-contains.html",
+    "/html/webappapis/microtask-queuing/queue-microtask.window.html",
+    "/url/urlsearchparams-constructor.any.html",
+    "/wasm/jsapi/constructor/instantiate.any.html"
+  ],
+  "generated_wrappers": {
+    "/html/webappapis/microtask-queuing/queue-microtask.window.html": {"source": "html/webappapis/microtask-queuing/queue-microtask.window.js", "scripts": []},
+    "/url/urlsearchparams-constructor.any.html": {"source": "url/urlsearchparams-constructor.any.js", "scripts": []},
+    "/wasm/jsapi/constructor/instantiate.any.html": {"source": "wasm/jsapi/constructor/instantiate.any.js", "scripts": ["/wasm/jsapi/wasm-module-builder.js", "/wasm/jsapi/assertions.js", "/wasm/jsapi/instanceTestFactory.js"]}
+  },
+  "limitations": [
+    "Selected before execution; no failing cases are removed from the selection.",
+    "This adapter serves unchanged upstream assertions and testharness.js; vendor integration is appended to testharnessreport.js in memory.",
+    "Three window wrappers are generated explicitly from locked source and META script dependencies, without the full canonical WPT manifest.",
+    "Worker variants, testdriver actions, HTTPS, HTTP/3, visual reftests and the full WPT suite are outside this smoke subset.",
+    "The generated JSON is wptreport-shaped custom-adapter evidence, not an official wpt run or a wpt.fyi submission."
+  ]
+}

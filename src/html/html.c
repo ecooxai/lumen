@@ -15,6 +15,7 @@ struct HtmlParser {
     Document *doc;
     SB in; size_t pos;          /* buffered input */
     bool finished;
+    bool input_after_cr;        /* input preprocessing spans feed boundaries */
     int state;
     const char *raw_end_tag;    /* for rawtext/rcdata/script */
     /* current token */
@@ -679,11 +680,33 @@ static void run(HtmlParser *p, bool final) {
 }
 
 void html_parser_feed(HtmlParser *p, const char *src, size_t len) {
-    /* HTML preprocessing: NUL becomes U+FFFD so C-string scanning never truncates input */
-    for (const char *z; len && (z = memchr(src, 0, len)); len -= (size_t)(z - src) + 1, src = z + 1) {
-        sb_put(&p->in, src, (size_t)(z - src)); sb_put(&p->in, "\xEF\xBF\xBD", 3);
+    /* Normalize the input stream, before tokenization can resolve character
+     * references. Keep the CR state across feeds, including empty feeds. The
+     * existing NUL replacement also stays here, ahead of C-string scanning.
+     * Ordinary bytes are copied in spans rather than appended one at a time. */
+    size_t start = 0;
+    for (size_t i = 0; i < len; ++i) {
+        unsigned char byte = (unsigned char)src[i];
+        if (p->input_after_cr) {
+            p->input_after_cr = false;
+            if (byte == '\n') {
+                if (i > start) sb_put(&p->in, src + start, i - start);
+                start = i + 1;
+                continue;
+            }
+        }
+        if (byte == '\r' || byte == 0) {
+            if (i > start) sb_put(&p->in, src + start, i - start);
+            if (byte == '\r') {
+                sb_putc(&p->in, '\n');
+                p->input_after_cr = true;
+            } else {
+                sb_put(&p->in, "\xEF\xBF\xBD", 3);
+            }
+            start = i + 1;
+        }
     }
-    sb_put(&p->in, src, len);
+    if (len > start) sb_put(&p->in, src + start, len - start);
     run(p, false);
     flush_chars(p);
 }
@@ -714,4 +737,74 @@ Node *html_parse_fragment(Document *d, Node *ctx, const char *src, size_t len) {
     html_parser_free(p);
     node_free_tree(root);
     return frag;
+}
+
+
+/* A response is a text document only for the complete MIME essence. Do not
+ * mistake text/plain-extra or a parameter value for text/plain. */
+static bool response_is_plaintext(const char *content_type) {
+    if (!content_type) return false;
+    const char *start = content_type;
+    while (*start == ' ' || *start == '\t' || *start == '\r' || *start == '\n') ++start;
+    const char *end = strchr(start, ';');
+    if (!end) end = start + strlen(start);
+    while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\r' || end[-1] == '\n')) --end;
+    return (size_t)(end - start) == 10 && str_ieqn(start, "text/plain", 10);
+}
+
+static void html_parse_plaintext(Document *document, const char *text, size_t length) {
+    HtmlParser *parser = html_parser_new(document, NULL);
+    /* Text documents use no-quirks mode. Emitting the synthetic pre start tag
+     * after INITIAL avoids the HTML missing-doctype fallback. Its synthetic
+     * LF consumes the pre element's leading-LF rule, preserving any real LF
+     * at the beginning of the response. */
+    document->quirks = false;
+    parser->mode = M_BEFORE_HTML;
+    parser->tt = T_START;
+    sb_put(&parser->tag, "pre", 3);
+    emit(parser);
+    emit_chars(parser, "\n", 1);
+    parser->state = S_PLAINTEXT;
+    html_parser_feed(parser, text, length);
+    html_parser_finish(parser);
+    html_parser_free(parser);
+}
+
+/* Decode an HTML or plain-text response before tokenization. A BOM overrides the supported
+ * transport charset and is removed by the shared replacement decoder. This
+ * bounded transport/BOM hook deliberately preserves the existing UTF-8
+ * fallback; it does not implement meta prescanning or parser restarts.
+ * Unicode input paths (srcdoc, document.write, DOMParser and generated pages)
+ * continue to call html_parse directly and are not decoded a second time.
+ */
+bool html_parse_bytes(Document *document, const char *bytes, size_t length,
+                      const char *content_type) {
+    if (!document || (!bytes && length) || length > SIZE_MAX / 3) return false;
+    if (!bytes) bytes = "";
+    const unsigned char *input = (const unsigned char *)bytes;
+    WebEncoding encoding = WEB_ENC_UNKNOWN;
+    if (length >= 3 && input[0] == 0xEF && input[1] == 0xBB && input[2] == 0xBF)
+        encoding = WEB_ENC_UTF8;
+    else if (length >= 2 && input[0] == 0xFF && input[1] == 0xFE)
+        encoding = WEB_ENC_UTF16LE;
+    else if (length >= 2 && input[0] == 0xFE && input[1] == 0xFF)
+        encoding = WEB_ENC_UTF16BE;
+    else if (content_type)
+        encoding = web_encoding_mime_n(content_type, strlen(content_type));
+    if (encoding == WEB_ENC_UNKNOWN) encoding = WEB_ENC_UTF8;
+
+    /* Three output bytes per input byte bounds even an all-error input. The
+     * builder grows to the actual decoded length, not this maximum. */
+    SB decoded;
+    sb_init(&decoded);
+    bool ok = web_encoding_decode_n(&decoded, encoding, bytes, length, true, length * 3);
+    if (ok) {
+        document->encoding = encoding;
+        if (response_is_plaintext(content_type))
+            html_parse_plaintext(document, decoded.s ? decoded.s : "", decoded.n);
+        else
+            html_parse(document, decoded.s ? decoded.s : "", decoded.n);
+    }
+    sb_free(&decoded);
+    return ok;
 }

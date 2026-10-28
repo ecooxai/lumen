@@ -1,0 +1,80 @@
+{
+  "status": "authored_source_only_pending_independent_review_and_mac_gates",
+  "expected_runtime_unit_tests": 56,
+  "already_executed_build_tests": 5,
+  "device": "A77F68E4-972B-472B-80B8-F65E71D361E5",
+  "bundle_id": "com.ecooxai.lumen",
+  "source_generation": "Actual isolated signed build006 of14814f31 source snapshot; build003 and004/005 evidence retained",
+  "source_executable_sha256": "351a9f393b76d3f6793409a4033dd121441f68714d02729056d8919bc800d539",
+  "source_bundle_contents_sha256": "9eb2aa287b8ebe73c51193c2ce659a19313a81b3c646df0aeb902b7e1d8cb479",
+  "build_receipt_sha256": "f660fae6cbc10298b9efd24b9a32e64317261adecf30dc245716bb516fdf7ae9",
+  "cleanup_policy": "exact-ipad-simctl-platform-termination-v1",
+  "old_failed_cleanup_and_profile_preserved": true,
+  "natural_or_graceful_app_shutdown_claimed": false,
+  "files": {
+    "BUILD006-COMMANDS.md": {
+      "sha256": "254812df9b357523dbd5656c901a65b83451c4094dd3cfcf163ce96d3568bd47",
+      "bytes": 2590
+    },
+    "IPAD006-COMMANDS.md": {
+      "sha256": "cc85bca9dc67f3339e76b163de2b92181aa6ca7f756a221c4521f4ad19480499",
+      "bytes": 4961
+    },
+    "build_current_ipad.py": {
+      "sha256": "06931fd158e51b7423b013535223b612f654c8d868cf4ad36217be4ffb5bfcc3",
+      "bytes": 18138
+    },
+    "full_runner.py": {
+      "sha256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+      "bytes": 71361
+    },
+    "install_verify_ipad.py": {
+      "sha256": "8ac7ffebd69693ad58b1e5b7ac24da84bdf63e0bc2482504ff1232299de7206d",
+      "bytes": 16262
+    },
+    "ipad_adapter.py": {
+      "sha256": "885d9aed25b8525f9370246f3bc87b05d72713052749cb9a06a0198a25434fc4",
+      "bytes": 22911
+    },
+    "ipad_generation.py": {
+      "sha256": "ddfc70cf9a2388208c1b2b47a840fc41fa228cc41615f614909d57d122d803dd",
+      "bytes": 7923
+    },
+    "ipad_lifecycle.py": {
+      "sha256": "fdf39fca49c5e72bbb05d132a07c6abbc79ae37d15b49e4c280e863d85a6bbbf",
+      "bytes": 5426
+    },
+    "ipad_runner.py": {
+      "sha256": "a15d1454fe147c588b0b1597233e8d11694920541eb6ecfc14aa8f4858e331df",
+      "bytes": 29194
+    },
+    "launch_ipad_smoke.py": {
+      "sha256": "c24576d77b67ed4e0b897ff902a120f0184d0321d42b7fc2e1c7ecadf4c49a64",
+      "bytes": 16473
+    },
+    "test_build_current_ipad.py": {
+      "sha256": "b7a143cbf89145f9fd7119659a879a69399a0079e88100978766b5d6af091d9c",
+      "bytes": 4221
+    },
+    "test_ipad_adapter.py": {
+      "sha256": "979bba8d9f77161941d023e16d47260a6cfa9af7a950d882ee47a9406f122465",
+      "bytes": 19441
+    },
+    "test_ipad_generation.py": {
+      "sha256": "48ac3edb4ed8aa7eed7e3f4b7e73b6b1be2e7c1c0365ec7146b726a08e6f01ff",
+      "bytes": 6988
+    },
+    "test_ipad_lifecycle.py": {
+      "sha256": "297261808d7acb59f177b77add836682a54d42e82b26b0357df9a1500fceba1c",
+      "bytes": 4545
+    },
+    "test_ipad_runner.py": {
+      "sha256": "2f97f6908fe6e3bd584fb839e4b2ce47d6c2d15e474e1836ed963cb4b6638402",
+      "bytes": 15214
+    },
+    "testharnessreport.js": {
+      "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+      "bytes": 3278
+    }
+  }
+}

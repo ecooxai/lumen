@@ -3,6 +3,7 @@
  * reserves/coalesces actions and commits them only after its JS/event batch.
  */
 #include "js_int.h"
+#include "clone_brand.h"
 #include <deque>
 #include <limits>
 #include <memory>
@@ -12,7 +13,8 @@ using FCI = v8::FunctionCallbackInfo<v8::Value>;
 enum Sandbox : uint32_t {
     SB_NAV = 1u << 0, SB_AUX = 1u << 1, SB_PROPAGATE = 1u << 2,
     SB_ORIGIN = 1u << 3, SB_SCRIPTS = 1u << 4,
-    SB_TOP_WITH_ACTIVATION = 1u << 5, SB_TOP_WITHOUT_ACTIVATION = 1u << 6
+    SB_TOP_WITH_ACTIVATION = 1u << 5, SB_TOP_WITHOUT_ACTIVATION = 1u << 6,
+    SB_FORMS = 1u << 7
 };
 struct Principal {
     std::string tuple;
@@ -36,7 +38,8 @@ struct Window {
     bool pending_blank = false, first_navigation = false, activated = false, secure = false;
     bool coep = false, isolated = false;
     double activation_until = 0;
-    size_t pending_count = 0;
+    size_t pending_count = 0, javascript_count = 0;
+    size_t form_source_count = 0, form_target_count = 0;
 };
 struct Message {
     JsWindowId source = 0, target = 0;
@@ -50,6 +53,38 @@ struct Message {
     std::vector<std::shared_ptr<v8::BackingStore>> buffers;
     size_t bytes = 0;
 };
+/* javascript: navigation is an actual later task, not an eval during click.
+ * Queue entries own only bytes and immutable principal/window identities. */
+struct JavascriptNavigation {
+    JsWindowId target = 0;
+    uint64_t epoch = 0, sequence = 0;
+    Principal initiator;
+    std::string url, csp;
+    size_t bytes = 0;
+};
+constexpr size_t javascript_max_count = 256, javascript_target_max_count = 64;
+constexpr size_t javascript_max_bytes = 8u * 1024u * 1024u;
+std::deque<JavascriptNavigation> javascript_navigations;
+uint64_t next_javascript_navigation = 1;
+size_t javascript_pending_bytes = 0;
+
+/* One planned navigation per form, with bounded owned bytes. The retained DOM
+ * node prevents address reuse while a task is pending; source/target epochs
+ * cancel tasks when either browsing-context document is retired. */
+struct FormNavigation {
+    JsWindowId source = 0, target = 0;
+    uint64_t source_epoch = 0, target_epoch = 0, sequence = 0;
+    struct ReleaseForm { void operator()(Node *node) const { if (node) node_release(node); } };
+    std::unique_ptr<Node, ReleaseForm> form;
+    std::string url;
+    FrameSubmission submission;
+    size_t bytes = 0;
+};
+constexpr size_t form_max_count = 256, form_max_bytes = 64u * 1024u * 1024u;
+std::deque<FormNavigation> form_navigations;
+uint64_t next_form_navigation = 1;
+size_t form_pending_bytes = 0;
+
 std::unordered_map<JsWindowId, std::unique_ptr<Window>> windows;
 std::deque<Message> messages;
 uint64_t next_window = 1, next_group = 1, next_opaque = 1, next_message = 1;
@@ -93,7 +128,10 @@ Principal url_principal(const char *text, unsigned depth = 0) {
     if (!text || !url_parse(text, &url)) return opaque_principal();
     Principal p;
     if (!strcmp(url.scheme, "blob") && url.path && !depth) {
-        p = url_principal(url.path, 1);
+        URL nested{}; bool inherits = url_parse(url.path, &nested) &&
+            (!strcmp(nested.scheme, "http") || !strcmp(nested.scheme, "https") || !strcmp(nested.scheme, "file"));
+        p = inherits ? url_principal(url.path, 1) : opaque_principal();
+        url_free(&nested);
     } else if (!url.opaque && url.host &&
                (!strcmp(url.scheme, "http") || !strcmp(url.scheme, "https") ||
                 !strcmp(url.scheme, "ws") || !strcmp(url.scheme, "wss") || !strcmp(url.scheme, "ftp"))) {
@@ -107,29 +145,31 @@ bool blank_url(const char *url) {
     return !url || !strcmp(url, "about:blank") || !strncmp(url, "about:blank#", 12) ||
            !strcmp(url, "about:srcdoc") || !strncmp(url, "about:srcdoc#", 13);
 }
-bool token(const char *list, const char *wanted) {
+bool token_n(const char *list, size_t length, const char *wanted) {
     if (!list) return false;
     const size_t n = strlen(wanted);
-    for (const char *p = list; *p;) {
-        while (*p && isspace((unsigned char)*p)) ++p;
-        const char *end = p; while (*end && !isspace((unsigned char)*end)) ++end;
-        if ((size_t)(end - p) == n && !strncasecmp(p, wanted, n)) return true;
+    for (size_t p = 0; p < length;) {
+        while (p < length && isspace((unsigned char)list[p])) ++p;
+        size_t end = p; while (end < length && !isspace((unsigned char)list[end])) ++end;
+        if (end - p == n && !strncasecmp(list + p, wanted, n)) return true;
         p = end;
     }
     return false;
 }
-uint32_t sandbox_list(const char *list) {
+uint32_t sandbox_list(const char *list, size_t length) {
     if (!list) return 0;
     uint32_t flags = SB_NAV | SB_AUX | SB_PROPAGATE | SB_ORIGIN | SB_SCRIPTS |
-                     SB_TOP_WITH_ACTIVATION | SB_TOP_WITHOUT_ACTIVATION;
-    if (token(list, "allow-popups")) flags &= ~SB_AUX;
-    if (token(list, "allow-popups-to-escape-sandbox")) flags &= ~SB_PROPAGATE;
-    if (token(list, "allow-same-origin")) flags &= ~SB_ORIGIN;
-    if (token(list, "allow-scripts")) flags &= ~SB_SCRIPTS;
-    if (token(list, "allow-top-navigation")) flags &= ~(SB_TOP_WITH_ACTIVATION | SB_TOP_WITHOUT_ACTIVATION);
-    if (token(list, "allow-top-navigation-by-user-activation")) flags &= ~SB_TOP_WITH_ACTIVATION;
+                     SB_TOP_WITH_ACTIVATION | SB_TOP_WITHOUT_ACTIVATION | SB_FORMS;
+    if (token_n(list, length, "allow-popups")) flags &= ~SB_AUX;
+    if (token_n(list, length, "allow-popups-to-escape-sandbox")) flags &= ~SB_PROPAGATE;
+    if (token_n(list, length, "allow-same-origin")) flags &= ~SB_ORIGIN;
+    if (token_n(list, length, "allow-scripts")) flags &= ~SB_SCRIPTS;
+    if (token_n(list, length, "allow-forms")) flags &= ~SB_FORMS;
+    if (token_n(list, length, "allow-top-navigation")) flags &= ~(SB_TOP_WITH_ACTIVATION | SB_TOP_WITHOUT_ACTIVATION);
+    if (token_n(list, length, "allow-top-navigation-by-user-activation")) flags &= ~SB_TOP_WITH_ACTIVATION;
     return flags;
 }
+uint32_t sandbox_list(const char *list) { return sandbox_list(list, list ? strlen(list) : 0); }
 uint32_t csp_sandbox(const char *csp) {
     uint32_t flags = 0;
     for (const char *p = csp; p && *p;) {
@@ -143,12 +183,37 @@ uint32_t csp_sandbox(const char *csp) {
     }
     return flags;
 }
+void release_form_accounting(const FormNavigation &request) {
+    form_pending_bytes -= request.bytes;
+    if (Window *source = find_window(request.source))
+        if (source->form_source_count) --source->form_source_count;
+    if (Window *target = find_window(request.target))
+        if (target->form_target_count) --target->form_target_count;
+}
+void purge_form_navigations(JsWindowId id, uint64_t epoch) {
+    for (auto it = form_navigations.begin(); it != form_navigations.end();) {
+        if ((it->source == id && (!epoch || it->source_epoch == epoch)) ||
+            (it->target == id && (!epoch || it->target_epoch == epoch))) {
+            release_form_accounting(*it);
+            it = form_navigations.erase(it);
+        } else ++it;
+    }
+}
+
 void purge_destination(JsWindowId id, uint64_t epoch = 0) {
+    purge_form_navigations(id, epoch);
     for (auto it = messages.begin(); it != messages.end();) {
         if (it->target == id && (!epoch || it->epoch == epoch)) {
             pending_bytes -= it->bytes;
             if (Window *w = find_window(id)) if (w->pending_count) --w->pending_count;
             it = messages.erase(it);
+        } else ++it;
+    }
+    for (auto it = javascript_navigations.begin(); it != javascript_navigations.end();) {
+        if (it->target == id && (!epoch || it->epoch == epoch)) {
+            javascript_pending_bytes -= it->bytes;
+            if (Window *w = find_window(id)) if (w->javascript_count) --w->javascript_count;
+            it = javascript_navigations.erase(it);
         } else ++it;
     }
 }
@@ -200,18 +265,32 @@ void consume_activation(JsWindowId id) {
 }
 } // namespace
 
-std::string js_windows_base_url(JsCtx *c, bool include_element) {
-    if (!c || !c->doc) return "about:blank";
-    std::string fallback = blank_url(c->doc->url) && !c->inherited_base_url.empty() ?
-        c->inherited_base_url : c->doc->url ? c->doc->url : "about:blank";
-    if (include_element) for (Node *n = c->doc->node.first; n; n = node_next_in_tree(n, &c->doc->node)) {
-        if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_base) continue;
-        const char *href = node_attr(n, "href"); if (!href) continue;
-        char *resolved = url_join(fallback.c_str(), href);
+static std::string document_base_url(Document *document, JsCtx *owner, bool include_element) {
+    if (!document) return "about:blank";
+    std::string fallback = owner && owner->doc == document && blank_url(document->url) &&
+        !owner->inherited_base_url.empty() ? owner->inherited_base_url :
+        document->url ? document->url : "about:blank";
+    if (include_element) for (Node *node = document->node.first; node;
+                              node = node_next_in_tree(node, &document->node)) {
+        if (!node_is(node, A_base)) continue;
+        size_t length = 0;
+        const char *href = node_attr_n(node, "href", &length);
+        if (!href) continue;
+        char *resolved = url_join_encoding_n(fallback.c_str(), href, length, document->encoding);
         if (resolved) { fallback = resolved; free(resolved); }
         break;
     }
     return fallback;
+}
+
+std::string js_document_base_url(Document *document, bool include_element) {
+    /* owner_ctx also knows script-created documents. They keep their own URL:
+     * the owner's inherited base applies only to its actual browsing document. */
+    return document_base_url(document, owner_ctx(document), include_element);
+}
+
+std::string js_windows_base_url(JsCtx *context, bool include_element) {
+    return document_base_url(context ? context->doc : nullptr, context, include_element);
 }
 
 JsWindowId js_window_new(const JsWindowHost *host) {
@@ -221,6 +300,9 @@ bool js_window_is_closed(JsWindowId id) { return !live_window(id); }
 JsWindowId js_window_id(const JsCtx *c) { return c ? c->window_id : 0; }
 void js_windows_pending(size_t *count, size_t *bytes) {
     if (count) *count = messages.size(); if (bytes) *bytes = pending_bytes;
+}
+void js_form_navigations_pending(size_t *count, size_t *bytes) {
+    if (count) *count = form_navigations.size(); if (bytes) *bytes = form_pending_bytes;
 }
 void js_window_destroy(JsWindowId id) {
     Window *w = find_window(id); if (!w) return;
@@ -274,8 +356,10 @@ void js_windows_attach(JsCtx *c) {
         c->host.window_id = w->id;
     }
     if (!w->epoch) js_window_commit(w->id, c->doc, JS_COOP_UNSAFE_NONE);
+    size_t sandbox_length = 0;
+    const char *sandbox_value = c->frame_el ? node_attr_n(c->frame_el, "sandbox", &sandbox_length) : nullptr;
     uint32_t flags = w->forced_sandbox | (c->parent ? c->parent->sandbox_flags : 0) |
-                     sandbox_list(c->frame_el ? node_attr(c->frame_el, "sandbox") : nullptr) | csp_sandbox(c->doc->csp);
+                     sandbox_list(sandbox_value, sandbox_length) | csp_sandbox(c->doc->csp);
     if (c->parent) {
         w->parent = c->parent->window_id;
         if (Window *parent = find_window(w->parent)) {
@@ -358,7 +442,8 @@ bool js_window_can_sleep(JsWindowId id) {
     Window *w = live_window(id); if (!w) return true;
     for (auto &entry : windows) {
         Window *other = entry.second.get(); if (other->closing) continue;
-        if (top_id(other->id) == id && other->pending_count) return false;
+        if (top_id(other->id) == id && (other->pending_count ||
+            other->form_source_count || other->form_target_count)) return false;
         if (live_window(other->opener) && (top_id(other->opener) == id || top_id(other->id) == id)) return false;
         if (other->current && top_id(other->id) != id)
             for (JsWindowId ref : other->current->window_refs)
@@ -435,7 +520,7 @@ bool absolute_navigation(JsCtx *source, const std::string &input, std::string &o
     if (input.size() > 65536) { dom_error(source->iso, "QuotaExceededError", "Window navigation URL exceeds the implementation limit."); return false; }
     const std::string base = js_windows_base_url(source, true);
     if (base.size() > 65536) { dom_error(source->iso, "QuotaExceededError", "Window navigation base URL exceeds the implementation limit."); return false; }
-    char *joined = url_join(base.c_str(), input.c_str());
+    char *joined = url_join_n(base.c_str(), input.data(), input.size());
     if (!joined) { dom_error(source->iso, "SyntaxError", "The window navigation URL is invalid."); return false; }
     if (strlen(joined) > 65536) { free(joined); dom_error(source->iso, "QuotaExceededError", "Resolved window navigation URL exceeds the implementation limit."); return false; }
     URL url{}; bool parsed = url_parse(joined, &url);
@@ -458,7 +543,7 @@ bool navigate_window(JsCtx *source, Window *target, const std::string &input, bo
     std::string url; if (!absolute_navigation(source, input, url)) return false;
     if (!current_context(source)) return false;
     if (target->parent) {
-        if (target->current && target->current->iso == source->iso) { frame_nav(target->current, url.c_str()); return true; }
+        if (target->current && target->current->iso == source->iso) { frame_nav(target->current, url); return true; }
         dom_error(source->iso, "NotSupportedError", "Cross-tab iframe navigation is not supported."); return false;
     }
     std::string ref = navigation_referrer(source, url);
@@ -492,6 +577,9 @@ Features parse_features(const std::string &input) {
     if (out.noreferrer) out.noopener = true;
     return out;
 }
+#include "form_navigation.h"
+#include "form_encoding.h"
+
 void n_winId(const FCI &a) { JsCtx *c = jctx(a.GetIsolate()); a.GetReturnValue().Set(v8::BigInt::NewFromUnsigned(a.GetIsolate(), c->window_id)); }
 void n_winOpen(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate(); JsCtx *source = caller(iso);
@@ -608,16 +696,51 @@ void n_winOp(const FCI &a) {
 }
 } // namespace
 
+namespace {
+void queue_javascript_navigation(JsCtx *source, Window *target, const std::string &url) {
+    if (!source || !target || !target->current || !current_context(source) ||
+        !current_context(target->current)) return;
+    /* Opaque principals compare by their native identity, never by "null". */
+    if (!(context_principal(source) == target->principal) || target->current->sb_noscript) return;
+    const char *policy = source->doc && source->doc->csp ? source->doc->csp : "";
+    const size_t policy_length = strlen(policy);
+    if (url.size() > 65536 || policy_length > javascript_max_bytes ||
+        url.size() > javascript_max_bytes - policy_length ||
+        javascript_navigations.size() >= javascript_max_count ||
+        target->javascript_count >= javascript_target_max_count) {
+        dom_error(source->iso, "QuotaExceededError", "The javascript navigation queue is full."); return;
+    }
+    JavascriptNavigation request;
+    request.target = target->id; request.epoch = target->epoch;
+    request.initiator = context_principal(source); request.url = url; request.csp = policy;
+    request.bytes = sizeof(request) + request.url.capacity() + request.csp.capacity() + request.initiator.tuple.capacity();
+    if (request.bytes > javascript_max_bytes - javascript_pending_bytes) {
+        dom_error(source->iso, "QuotaExceededError", "The javascript navigation queue is full."); return;
+    }
+    request.sequence = next_javascript_navigation++;
+    javascript_pending_bytes += request.bytes; ++target->javascript_count;
+    javascript_navigations.push_back(std::move(request));
+    if (js_wakeup) js_wakeup();
+}
+} // namespace
+
 bool js_windows_navigate(JsCtx *source, JsCtx *target, const std::string &url, bool replace) {
     if (!current_context(source) || !current_context(target)) return true;
     Window *w = accessible(source, target->window_id);
     if (!w || !can_navigate(source, w)) { dom_error(source->iso, "SecurityError", "This window is not allowed to navigate the target."); return true; }
+    URL parsed{};
+    const bool valid = url_parse_n(url.data(), url.size(), &parsed);
+    const bool javascript = valid && !strcmp(parsed.scheme, "javascript");
+    const bool web = valid && (!strcmp(parsed.scheme, "http") || !strcmp(parsed.scheme, "https") || blank_url(url.c_str()));
+    if (javascript) {
+        char *canonical = url_to_string(&parsed); url_free(&parsed);
+        if (canonical) { queue_javascript_navigation(source, w, canonical); free(canonical); }
+        return true;
+    }
+    url_free(&parsed);
     /* Keep pre-existing local-document/frame navigation with its original host.
      * Native web tabs and every script-created auxiliary use deferred commands. */
     if (w->parent || !w->host.navigate) return false;
-    URL parsed{}; bool web = url_parse(url.c_str(), &parsed) &&
-        (!strcmp(parsed.scheme, "http") || !strcmp(parsed.scheme, "https") || blank_url(url.c_str()));
-    url_free(&parsed);
     if (!web && !w->script_created) return false;
     (void)navigate_window(source, w, url, replace); return true;
 }
@@ -652,13 +775,16 @@ struct WindowSerializer : v8::ValueSerializer::Delegate {
     ~WindowSerializer() override { serializing_bytes -= capacity; }
     size_t release_capacity() { size_t bytes = capacity; serializing_bytes -= bytes; capacity = 0; return bytes; }
     void ThrowDataCloneError(v8::Local<v8::String>) override {
-        dom_error(iso, queue_exceeded ? "QuotaExceededError" : "DataCloneError", queue_exceeded ?
+        jsg_throw_clone_exception(iso, jstr(iso, queue_exceeded ?
             "The message queue and active serializations exceed the 32 MiB limit." : exceeded ?
-            "The serialized message exceeds the 8 MiB limit." : "This value cannot be cloned between windows.");
+            "The serialized message exceeds the 8 MiB limit." : "This value cannot be cloned between windows."),
+            queue_exceeded ? "QuotaExceededError" : "DataCloneError");
     }
     bool HasCustomHostObject(v8::Isolate *) override { return true; }
     v8::Maybe<bool> IsHostObject(v8::Isolate *, v8::Local<v8::Object> object) override {
         if (object->InternalFieldCount()) return v8::Just(true);
+        auto platform = jsg_is_uncloneable(iso, iso->GetCurrentContext(), object);
+        if (platform.IsNothing() || platform.FromJust()) return platform;
         auto prototype = object->GetPrototype();
         for (unsigned depth = 0; !prototype.IsEmpty() && prototype->IsObject(); ++depth) {
             if (depth == 128) { ThrowDataCloneError({}); return v8::Nothing<bool>(); }
@@ -696,8 +822,9 @@ bool wanted_origin(JsCtx *source, const std::string &text, Message &message) {
     if (text == "*") { message.wildcard = true; return true; }
     if (text == "/") { message.wanted = context_principal(source); return true; }
     URL url{};
-    if (!url_parse(text.c_str(), &url)) { dom_error(source->iso, "SyntaxError", "The target origin is not a valid absolute URL."); return false; }
-    url_free(&url); message.wanted = url_principal(text.c_str()); return true;
+    if (!url_parse_n(text.data(), text.size(), &url)) { dom_error(source->iso, "SyntaxError", "The target origin is not a valid absolute URL."); return false; }
+    char *canonical = url_to_string(&url); url_free(&url);
+    message.wanted = url_principal(canonical); free(canonical); return true;
 }
 bool queue_capacity(Window *target, size_t bytes, size_t active_capacity = 0) {
     return messages.size() < JS_WINDOW_PENDING_MAX_COUNT &&
@@ -770,11 +897,68 @@ bool js_windows_target_origin(JsCtx *source, JsCtx *target, const std::string &t
     return parsed && current_context(target) && (check.wildcard || check.wanted == context_principal(target));
 }
 
+namespace {
+int javascript_hex(unsigned char value) {
+    if (value >= '0' && value <= '9') return value - '0';
+    if (value >= 'a' && value <= 'f') return value - 'a' + 10;
+    if (value >= 'A' && value <= 'F') return value - 'A' + 10;
+    return -1;
+}
+std::string javascript_source(const std::string &url) {
+    std::string source; source.reserve(url.size() - 11);
+    for (size_t at = 11; at < url.size(); ++at) {
+        if (url[at] == '%' && at + 2 < url.size()) {
+            const int high = javascript_hex((unsigned char)url[at + 1]);
+            const int low = javascript_hex((unsigned char)url[at + 2]);
+            if (high >= 0 && low >= 0) {
+                source.push_back((char)((high << 4) | low)); at += 2; continue;
+            }
+        }
+        source.push_back(url[at]);
+    }
+    /* run_source's explicit-length V8 UTF-8 conversion replaces malformed byte
+     * sequences. A decoded NUL remains part of the script, never a terminator. */
+    return source;
+}
+void deliver_javascript_navigations(JsCtx *c) {
+    if (!current_context(c)) return;
+    const uint64_t cutoff = next_javascript_navigation - 1;
+    for (unsigned delivered = 0; delivered < 64; ++delivered) {
+        auto next = std::find_if(javascript_navigations.begin(), javascript_navigations.end(),
+            [&](const JavascriptNavigation &request) {
+                return request.target == c->window_id && request.sequence <= cutoff;
+            });
+        if (next == javascript_navigations.end()) break;
+        JavascriptNavigation request = std::move(*next); javascript_navigations.erase(next);
+        javascript_pending_bytes -= request.bytes;
+        Window *target = live_window(request.target);
+        if (target && target->javascript_count) --target->javascript_count;
+        if (!current_context(c) || !target || request.epoch != c->window_epoch ||
+            !(request.initiator == target->principal) || c->sb_noscript) continue;
+        /* Navigation checks the request's cloned source policy container.
+         * unsafe-eval cannot authorize it, and an anchor nonce is not a script
+         * nonce. A destination or later policy cannot replace this snapshot. */
+        if (!csp_allows_navigation(request.csp.c_str(), request.url.data(), request.url.size())) continue;
+        std::string source = javascript_source(request.url);
+        std::string().swap(request.url); std::string().swap(request.csp);
+        const std::string base = js_windows_base_url(c, true);
+        js_run_script(c, nullptr, source.data(), source.size(), base.c_str());
+        /* Callback-driven close/navigation invalidates the current epoch. New
+         * requests are beyond cutoff and cannot recurse in this delivery pass. */
+        if (!current_context(c)) break;
+    }
+}
+} // namespace
+
 double js_windows_deadline(JsCtx *c) {
     Window *w = c ? live_window(c->window_id) : nullptr;
-    return w && w->current == c && w->pending_count ? now_ms() : INFINITY;
+    return w && w->current == c && (w->pending_count || w->javascript_count || w->form_source_count) ? now_ms() : INFINITY;
 }
 void js_windows_deliver(JsCtx *c) {
+    if (!current_context(c)) return;
+    deliver_javascript_navigations(c);
+    if (!current_context(c)) return;
+    deliver_form_navigations(c);
     if (!current_context(c)) return;
     Window *w = live_window(c->window_id); if (!w || !w->pending_count) return;
     /* The sequence cutoff prevents a handler's new messages from recursively
@@ -816,5 +1000,6 @@ void js_install_windows(JsCtx *c, v8::Local<v8::Object> native) {
     v8::Isolate *iso = c->iso; auto ctx = iso->GetCurrentContext();
 #define REG(name) (void)native->Set(ctx, jstr(iso, #name), v8::Function::New(ctx, n_##name).ToLocalChecked())
     REG(winId); REG(winOpen); REG(winOp); REG(winPost);
+    REG(formCanNavigate); REG(formAction); REG(formNavigate); REG(formEncoding); REG(formEncode); REG(formUtf8Length);
 #undef REG
 }

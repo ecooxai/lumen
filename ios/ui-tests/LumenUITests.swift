@@ -208,30 +208,56 @@ final class LumenUITests: XCTestCase {
         coordinate(CGPoint(x: bounds.midX, y: bounds.midY)).tap()
     }
 
-    private func tapSoftwareKeyboard(_ text: String) {
-        // SDL forwards a hidden UITextField's native input to the page. It can
-        // show the keyboard without exposing AX keyboard focus for typeText().
-        // Tap the real keys so this still verifies UIKit -> SDL -> DOM input.
-        let keyboard = browser.keyboards.firstMatch
+    private func tapSoftwareKeyboard(_ text: String, in application: XCUIApplication? = nil) {
+        // Real UIKit keys may exist in AX before the keyboard animation enters
+        // the screen. Wait for a hittable key, then verify input through DOM.
+        let app = application ?? browser
+        let keyboard = app.keyboards.firstMatch
+        func visibleKey(_ labels: [String], timeout: TimeInterval) -> XCUIElement? {
+            let until = Date().addingTimeInterval(timeout)
+            repeat {
+                for label in labels {
+                    let key = keyboard.keys[label].firstMatch
+                    if key.exists && key.isHittable && app.frame.intersects(key.frame) { return key }
+                }
+                RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+            } while Date() < until
+            return nil
+        }
         for character in text {
-            let label = character == " " ? "space" : String(character)
-            let key = keyboard.keys[label].firstMatch
-            if !key.exists && character.isNumber {
-                // Full-size iPad keyboards may already expose a number row.
-                // iPhone keyboards expose the 123 layout switch as "more".
-                let switches = ["more", "numbers", "123"].map { keyboard.keys[$0].firstMatch }
-                guard let numbers = switches.first(where: { $0.exists && $0.isHittable }) else {
+            // iPhone exposes "space" while the iPad keyboard labels it " ".
+            let labels = character == " " ? [" ", "space"] : [String(character)]
+            var key = visibleKey(labels, timeout: character.isNumber ? 0.2 : 8)
+            if key == nil && character.isNumber {
+                guard let numbers = visibleKey(["more", "numbers", "123"], timeout: 3) else {
                     XCTFail("The visible keyboard has no number-layout switch. \(keyboard.debugDescription)")
                     return
                 }
                 numbers.tap()
+                key = visibleKey(labels, timeout: 8)
             }
-            guard key.waitForExistence(timeout: 3) && key.isHittable else {
-                XCTFail("The visible keyboard must expose key \(label). \(keyboard.debugDescription)")
+            guard let key = key else {
+                XCTFail("The visible keyboard must expose a hittable key \(labels). \(keyboard.debugDescription)")
                 return
             }
             key.tap()
         }
+    }
+
+    func testUIKitSoftwareKeyboardControl() throws {
+        // Independent UIKit input proves whether this Simulator exposes a real
+        // software keyboard, without relying on Lumen's SDL text responder.
+        host.launch()
+        XCUIDevice.shared.orientation = .portrait
+        let field = host.textFields["nativeKeyboardControl"]
+        XCTAssertTrue(field.waitForExistence(timeout: 8))
+        field.tap()
+        tapSoftwareKeyboard("native 123", in: host)
+        XCTAssertEqual(field.value as? String, "native 123")
+        let shot = XCTAttachment(screenshot: host.screenshot())
+        shot.name = "native-uikit-keyboard-control"
+        shot.lifetime = .keepAlways
+        add(shot)
     }
 
     func testSafeAreasTouchRotationKeyboardAndMenuDismissal() throws {
@@ -289,10 +315,25 @@ final class LumenUITests: XCTestCase {
         coordinate(plus).press(forDuration: 0.75)
         XCTAssertTrue(browser.staticTexts["Workspace"].waitForExistence(timeout: 8))
         attach("workspace-menu", windowScreenshot())
-        if portrait["pad"] == 1 {
-            coordinate(CGPoint(x: 12, y: browser.frame.height * 0.5)).tap()
+        // iOS 26 source-anchored action sheets also use an inline popover on
+        // iPhone. UIKit deliberately omits Cancel there; tap the genuine outside
+        // dismissal region, while retaining the explicit Cancel path when shown.
+        // Apple: WWDC25 "Build a UIKit app with the new design", Presentations.
+        let cancelAction = browser.buttons["Cancel"].firstMatch
+        if cancelAction.exists && cancelAction.isHittable {
+            cancelAction.tap()
         } else {
-            browser.buttons["Cancel"].firstMatch.tap()
+            let dismissRegion = browser.otherElements["PopoverDismissRegion"].firstMatch
+            XCTAssertTrue(dismissRegion.waitForExistence(timeout: 3),
+                          "A menu without Cancel must expose UIKit's outside popover dismissal region")
+            let menuSheet = browser.sheets["Workspace"].firstMatch
+            XCTAssertTrue(menuSheet.exists, "The anchored Workspace action sheet must remain visible")
+            let localPoint = CGPoint(x: 12, y: browser.frame.height * 0.5)
+            let screenPoint = CGPoint(x: browser.frame.minX + localPoint.x,
+                                      y: browser.frame.minY + localPoint.y)
+            XCTAssertFalse(menuSheet.frame.contains(screenPoint),
+                           "The real cancellation tap must be outside the visible action sheet")
+            coordinate(localPoint).tap()
         }
         let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: browser.staticTexts["Workspace"])
         XCTAssertEqual(XCTWaiter.wait(for: [dismissed], timeout: 8), .completed)
@@ -300,5 +341,91 @@ final class LumenUITests: XCTestCase {
         tap(rect([0, 85, 204]))
         awaitState("browser resumes after native menu dismissal") { ($0["clicks"] as? [String] ?? []).count > before }
         attach("after-menu-dismissal", windowScreenshot())
+    }
+
+    func testNativeDialogVisibleTapAndClose() throws {
+        // The fixture never dispatches clicks. UIKit taps must reach the actual
+        // rendered controls, then the independent loopback server records DOM events.
+        browser.launchArguments = [base + "/dialog?run=" + run]
+        browser.launch()
+        func events(_ value: [String: Any], _ type: String) -> [[String: Any]] {
+            return (value["events"] as? [[String: Any]] ?? []).filter { $0["type"] as? String == type }
+        }
+        func painted(_ open: Bool) -> XCUIScreenshot {
+            let until = Date().addingTimeInterval(6)
+            repeat {
+                if browser.state == .runningForeground {
+                    let shot = windowScreenshot()
+                    let opener = findRect([0, 85, 204], screenshot: shot)
+                    let panel = findRect([219, 234, 254], screenshot: shot)
+                    let accept = findRect([0, 107, 79], screenshot: shot)
+                    let cancel = findRect([180, 35, 24], screenshot: shot)
+                    if open, let panel = panel, let accept = accept, let cancel = cancel,
+                       panel.width > 200, panel.height > 150,
+                       accept.width > 150, accept.height > 40,
+                       cancel.width > 150, cancel.height > 40,
+                       panel.contains(accept), panel.contains(cancel),
+                       CGRect(origin: .zero, size: browser.frame.size).contains(panel) { return shot }
+                    if !open, opener != nil, panel == nil, accept == nil, cancel == nil { return shot }
+                }
+                RunLoop.current.run(until: Date().addingTimeInterval(0.15))
+            } while Date() < until
+            let shot = windowScreenshot()
+            attach(open ? "dialog-open-paint-failure" : "dialog-closed-paint-failure", shot)
+            XCTFail("Expected real native dialog pixels (open=\(open)) were not presented")
+            return shot
+        }
+        let ready = awaitState("single native dialog fixture startup", timeout: 12) { value in
+            let startup = events(value, "ready")
+            return value["documentRequests"] as? Int == 1 && startup.count == 1 &&
+                startup[0]["dialogOpen"] as? Bool == false && startup[0]["returnValue"] as? String == ""
+        }
+        let nonce = events(ready, "ready").first?["pageNonce"] as? String ?? ""
+        XCTAssertFalse(nonce.isEmpty)
+        var closedShot = painted(false)
+        attach("native-dialog-initially-closed", closedShot)
+        let choices: [(String, String, [UInt8])] = [
+            ("accepted", "accept", [0, 107, 79]), ("cancel", "cancel", [180, 35, 24])
+        ]
+        for (index, choice) in choices.enumerated() {
+            let round = index + 1
+            tap(rect([0, 85, 204], screenshot: closedShot))
+            _ = awaitState("trusted native opener for \(choice.0)", timeout: 8) { value in
+                let opened = events(value, "opened")
+                return opened.count == round && opened.last?["trusted"] as? Bool == true &&
+                    opened.last?["dialogOpen"] as? Bool == true && opened.last?["pageNonce"] as? String == nonce
+            }
+            let openShot = painted(true)
+            attach("native-dialog-\(choice.0)-open", openShot)
+            tap(rect(choice.2, screenshot: openShot))
+            _ = awaitState("native \(choice.0) method=dialog close", timeout: 8) { value in
+                let closed = events(value, "closed")
+                let clicks = events(value, "click")
+                let submits = events(value, "submit")
+                return value["documentRequests"] as? Int == 1 && closed.count == round && clicks.count == round &&
+                    closed.last?["dialogOpen"] as? Bool == false && closed.last?["returnValue"] as? String == choice.0 &&
+                    closed.last?["submits"] as? Int == round && closed.last?["pageNonce"] as? String == nonce &&
+                    submits.count == round && submits.last?["submitter"] as? String == choice.1 &&
+                    clicks.last?["target"] as? String == choice.1 && clicks.last?["trusted"] as? Bool == true
+            }
+            closedShot = painted(false)
+            attach("native-dialog-\(choice.0)-closed", closedShot)
+        }
+        let final = state()
+        let allEvents = final["events"] as? [[String: Any]] ?? []
+        XCTAssertEqual(final["documentRequests"] as? Int, 1, "A dialog form must not navigate")
+        XCTAssertEqual(events(final, "ready").count, 1)
+        XCTAssertEqual(events(final, "opened").count, 2)
+        XCTAssertEqual(events(final, "submit").count, 2)
+        XCTAssertEqual(events(final, "closed").count, 2)
+        XCTAssertTrue(allEvents.allSatisfy {
+            $0["pageNonce"] as? String == nonce && $0["simulation"] as? Bool == true &&
+            $0["authenticated"] as? Bool == false && $0["providerContacted"] as? Bool == false
+        }, "One unchanged local page must retain truthful simulation scope")
+        let data = try JSONSerialization.data(withJSONObject: final, options: [.prettyPrinted, .sortedKeys])
+        let evidence = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+        evidence.name = "native-dialog-independent-events"
+        evidence.lifetime = .keepAlways
+        add(evidence)
     }
 }

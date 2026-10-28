@@ -12,8 +12,8 @@ typedef struct {
     uint32_t *px;
 } R;
 
-void canvas_init(Canvas *c, int w, int h, float scale) { c->w = w; c->h = h; c->stride = w; c->scale = scale; c->punch = NULL; c->punched = false; c->px = xcalloc((size_t)w * (size_t)h, 4); }
-void canvas_free(Canvas *c) { free(c->px); c->px = NULL; }
+void canvas_init(Canvas *c, int w, int h, float scale) { c->w = w; c->h = h; c->stride = w; c->scale = scale; c->punch = NULL; c->punched = false; c->track_media = true; c->media_retry = false; c->media_frames = (PaintFrames){0}; c->px = xcalloc((size_t)w * (size_t)h, 4); }
+void canvas_free(Canvas *c) { free(c->px); c->px = NULL; paint_frames_free(&c->media_frames); }
 
 static inline uint32_t premul(Color c, float cov) {
     uint32_t a = (uint32_t)(COLOR_A(c) * cov + 0.5f);
@@ -246,6 +246,13 @@ static void image(R *r, const DItem *it) {
     int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
     if (px1 <= px0 || py1 <= py0) return;
     if (!im->px) { if (!im->yuv) return; image_yuv_materialize((Image *)im); }
+    /* This draw admitted the source frame/surface to the compositor. Track
+     * one token per media owner, outside all pixel loops. Final submission,
+     * not rasterization or physical pixel visibility, commits the counters. */
+    if (r->c->track_media) {
+        paint_frames_add(&r->c->media_frames, (PaintFrame){ im->media_owner, im->media_frame });
+        if (im->sampled_canvas) paint_frames_merge(&r->c->media_frames, &im->sampled_canvas->media_frames);
+    }
     float kx = im->w / (x1 - x0), ky = im->h / (y1 - y0);
     bool down = kx > 1.5f || ky > 1.5f, rclip = c->round;
     ImgCol *cols = xmalloc(sizeof *cols * (size_t)(px1 - px0));
@@ -334,6 +341,9 @@ static int occluder_inner(const DisplayList *dl, float s, int rx0, int ry0, int 
 void raster(Canvas *cv, const DisplayList *dl, Color clearc) { raster_rect(cv, dl, clearc, 0, 0, cv->w, cv->h); }
 static void raster_rect_(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1, bool occl);
 void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int ry0, int rx1, int ry1) {
+    /* Full repaint replaces the retained surface. Partial repaint retains
+     * its pending tokens; the media owner prunes dead/superseded identities. */
+    if (cv->track_media && rx0 <= 0 && ry0 <= 0 && rx1 >= cv->w && ry1 >= cv->h) cv->media_frames.n = 0;
     static int chk = -1; if (chk < 0) chk = getenv("LUMEN_CHECK_OCCLUDE") != NULL;
     if (!chk) {
         int x0 = LMAX(rx0, 0), y0 = LMAX(ry0, 0), x1 = LMIN(rx1, cv->w), y1 = LMIN(ry1, cv->h), ib[4];
@@ -349,7 +359,7 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
     int first = x1 > x0 && y1 > y0 ? occluder(cv, dl, cv->scale, x0, y0, x1, y1) : 0;
     if (!first) { raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, false); return; }
     raster_rect_(cv, dl, clearc, rx0, ry0, rx1, ry1, false);
-    Canvas t = *cv; t.px = xmalloc((size_t)cv->stride * (size_t)cv->h * 4); memcpy(t.px, cv->px, (size_t)cv->stride * (size_t)cv->h * 4);
+    Canvas t = *cv; t.media_frames = (PaintFrames){0}; t.track_media = false; t.media_retry = false; t.px = xmalloc((size_t)cv->stride * (size_t)cv->h * 4); memcpy(t.px, cv->px, (size_t)cv->stride * (size_t)cv->h * 4);
     raster_rect_(&t, dl, clearc, rx0, ry0, rx1, ry1, true);
     long bad = 0; for (int y = y0; y < y1; y++) for (int x = x0; x < x1; x++) bad += t.px[(size_t)y * (size_t)cv->stride + (size_t)x] != cv->px[(size_t)y * (size_t)cv->stride + (size_t)x];
     fprintf(stderr, "lumen: occlude first=%d %dx%d at %d,%d mismatched px=%ld\n", first, x1 - x0, y1 - y0, x0, y0, bad);

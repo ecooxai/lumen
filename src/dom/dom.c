@@ -1,5 +1,7 @@
 #include "dom.h"
 #include "control.h"
+#include "../base/url.h"
+#include <ctype.h>
 
 #define X(n) const char *A_##n;
 X(html) X(head) X(body) X(title) X(meta) X(link) X(style) X(script) X(noscript) X(base) X(div) X(span) X(p) X(a) X(img) X(br) X(hr)
@@ -108,12 +110,20 @@ void node_insert_before(Node *parent, Node *child, Node *ref) {
 }
 void node_append(Node *parent, Node *child) { node_insert_before(parent, child, NULL); }
 
+/* Non-script DOM users keep the no-op definition. The frame subsystem
+ * overrides it to perform logical removal without reclaiming live V8 owners. */
+__attribute__((weak)) void dom_connected_subtree_removed(Document *document) { (void)document; }
+
 void node_remove(Node *c) {
     Node *p = c->parent; if (!p) return;
+    const bool was_connected = (c->flags & NF_CONNECTED) != 0;
     if (c->prev) c->prev->next = c->next; else p->first = c->next;
     if (c->next) c->next->prev = c->prev; else p->last = c->prev;
     c->parent = c->prev = c->next = NULL;
     mark_connected(c, false);
+    /* Use the previous parent document: cross-document insertion can already
+     * have adopted the removed nodes before reaching this shared primitive. */
+    if (was_connected) dom_connected_subtree_removed(p->doc);
     if (c->doc && c->doc->focus && node_is_inclusive_ancestor(c, c->doc->focus)) c->doc->focus = NULL;
     mark_struct(p->doc, p);
     if (c->refcount) c->refcount--;
@@ -143,11 +153,88 @@ void node_free_tree(Node *n) {
     node_free_one(n);
 }
 void doc_free(Document *d) {
+    if (d->target_element) { node_release(d->target_element); d->target_element = NULL; }
     for (int i = 0; i < 2; i++) if (d->sel[i]) { node_release(d->sel[i]); d->sel[i] = NULL; }
     hm_free(&d->id_cache, NULL);
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
     free(d->url); free(d->base_url); free(d->title); free(d->csp); free(d->permissions_policy); free(d->referrer); free(d);
+}
+
+/* HTML fragment targeting is a document state, not an ID comparison performed
+ * on every selector match. In particular, changing an ID or pushState's URL
+ * must not silently select another node. Shadow roots are not traversed.
+ */
+static Node *fragment_candidate(Document *d, const char *fragment, size_t length) {
+    Node *named_anchor = NULL;
+    for (Node *node = d->node.first; node; node = node_next_in_tree(node, &d->node)) {
+        if (node->type != NODE_ELEMENT) continue;
+        size_t n = 0; const char *id = node_attr_n(node, "id", &n);
+        if (id && n == length && !memcmp(id, fragment, length)) return node;
+        if (!named_anchor && node_is(node, A_a)) {
+            const char *name = node_attr_n(node, "name", &n);
+            if (name && n == length && !memcmp(name, fragment, length)) named_anchor = node;
+        }
+    }
+    return named_anchor;
+}
+
+/* UTF-8 decode without BOM, followed by its lossless UTF-8 representation for
+ * this DOM's byte-counted strings. Invalid sequences use Encoding's maximal
+ * valid-prefix replacement; a following non-continuation byte is reprocessed.
+ */
+static char *fragment_utf8(const unsigned char *bytes, size_t length, size_t *out_length) {
+    SB text; sb_init(&text);
+    size_t i = 0;
+    while (i < length) {
+        size_t start = i; unsigned char first = bytes[i++];
+        if (first < 0x80) { sb_putc(&text, (char)first); continue; }
+        unsigned need = first >= 0xc2 && first <= 0xdf ? 1 :
+                        first >= 0xe0 && first <= 0xef ? 2 :
+                        first >= 0xf0 && first <= 0xf4 ? 3 : 0;
+        unsigned lower = first == 0xe0 ? 0xa0 : first == 0xf0 ? 0x90 : 0x80;
+        unsigned upper = first == 0xed ? 0x9f : first == 0xf4 ? 0x8f : 0xbf;
+        bool valid = need != 0;
+        for (unsigned consumed = 0; valid && consumed < need; ++consumed) {
+            if (i == length || bytes[i] < lower || bytes[i] > upper) { valid = false; break; }
+            ++i; lower = 0x80; upper = 0xbf;
+        }
+        if (valid) sb_put(&text, (const char *)bytes + start, i - start);
+        else sb_put(&text, "\xef\xbf\xbd", 3);
+    }
+    *out_length = text.n;
+    return sb_take(&text);
+}
+
+void doc_update_fragment_target(Document *d) {
+    if (!d) return;
+    Node *target = NULL;
+    URL parsed;
+    if (d->url && url_parse(d->url, &parsed)) {
+        if (parsed.fragment && *parsed.fragment) {
+            const size_t length = strlen(parsed.fragment);
+            target = fragment_candidate(d, parsed.fragment, length);
+            if (!target) {
+                char *bytes = url_decode(parsed.fragment, length);
+                size_t byte_length = length;
+                for (size_t i = 0; i + 2 < length; ++i) {
+                    const unsigned char *s = (const unsigned char *)parsed.fragment;
+                    if (s[i] == '%' && isxdigit(s[i + 1]) && isxdigit(s[i + 2])) { byte_length -= 2; i += 2; }
+                }
+                size_t decoded_length = 0;
+                char *decoded = fragment_utf8((const unsigned char *)bytes, byte_length, &decoded_length);
+                target = fragment_candidate(d, decoded, decoded_length);
+                free(decoded); free(bytes);
+            }
+        }
+        url_free(&parsed);
+    }
+    if (target == d->target_element) return;
+    Node *previous = d->target_element;
+    if (target) node_retain(target);
+    d->target_element = target;
+    if (previous) { doc_mark_style_dirty(previous->doc, previous); node_release(previous); }
+    if (target) doc_mark_style_dirty(d, target);
 }
 
 static int attr_index(const Node *n, const char *name) {
@@ -156,21 +243,37 @@ static int attr_index(const Node *n, const char *name) {
     if (n->ns == NS_HTML) { for (int i = 0; i < n->nattrs; i++) if (str_ieq(n->attrs[i].name, name)) return i; }
     return -1;
 }
-const char *node_attr(const Node *n, const char *name) { if (!n || (n->type != NODE_ELEMENT && n->type != NODE_DOCTYPE)) return NULL; int i = attr_index(n, name); return i >= 0 ? n->attrs[i].value : NULL; }
-bool node_has_attr(const Node *n, const char *name) { return node_attr(n, name) != NULL; }
-void node_set_attr(Node *n, const char *name, const char *value) {
+const char *node_attr_n(const Node *n, const char *name, size_t *length) {
+    if (length) *length = 0;
+    if (!n || (n->type != NODE_ELEMENT && n->type != NODE_DOCTYPE)) return NULL;
+    int i = attr_index(n, name); if (i < 0) return NULL;
+    if (length) *length = n->attrs[i].value_len;
+    return n->attrs[i].value;
+}
+const char *node_attr(const Node *n, const char *name) {
+    size_t length = 0; const char *value = node_attr_n(n, name, &length);
+    /* Never let a legacy navigation or policy consumer interpret only a prefix. */
+    return value && !memchr(value, 0, length) ? value : NULL;
+}
+bool node_has_attr(const Node *n, const char *name) { return node_attr_n(n, name, NULL) != NULL; }
+void node_set_attr(Node *n, const char *name, const char *value) { node_set_attr_n(n, name, value, strlen(value)); }
+void node_set_attr_n(Node *n, const char *name, const char *value, size_t length) {
     bool control_type = node_is(n, A_input) && str_ieq(name, "type");
     unsigned previous_type = control_type ? control_type_snapshot(n) : 0;
     int i = attr_index(n, name);
-    if (i >= 0) { if (!strcmp(n->attrs[i].value, value)) return; free(n->attrs[i].value); n->attrs[i].value = xstrdup(value); }
+    if (i >= 0) {
+        if (n->attrs[i].value_len == length && !memcmp(n->attrs[i].value, value, length)) return;
+        char *copy = xstrndup(value, length); free(n->attrs[i].value); n->attrs[i].value = copy;
+    }
     else {
         if (n->nattrs >= n->attrcap) { n->attrcap = n->attrcap ? n->attrcap * 2 : 4; n->attrs = xrealloc(n->attrs, sizeof(Attr) * (size_t)n->attrcap); }
-        n->attrs[n->nattrs].name = atom(name); n->attrs[n->nattrs].value = xstrdup(value); i = n->nattrs++;
+        n->attrs[n->nattrs].name = atom(name); n->attrs[n->nattrs].value = xstrndup(value, length); i = n->nattrs++;
     }
-    if (n->attrs[i].name == A_id) n->id = n->attrs[i].value;
+    n->attrs[i].value_len = length;
+    if (n->attrs[i].name == A_id) n->id = node_attr(n, A_id);
     if (n->attrs[i].name == A_class) n->ncls = -1;
     /* re-point cached id after realloc */
-    for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
+    for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = node_attr(n, A_id);
     if (control_type) control_type_changed(n, previous_type);
     mark(n->doc, n, !style_only_attr(name));
 }
@@ -182,7 +285,7 @@ void node_remove_attr(Node *n, const char *name) {
     if (n->attrs[i].name == A_class) n->ncls = -1;
     free(n->attrs[i].value);
     memmove(&n->attrs[i], &n->attrs[i + 1], sizeof(Attr) * (size_t)(n->nattrs - i - 1)); n->nattrs--;
-    for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = n->attrs[k].value;
+    for (int k = 0; k < n->nattrs; k++) if (n->attrs[k].name == A_id) n->id = node_attr(n, A_id);
     if (control_type) control_type_changed(n, previous_type);
     mark(n->doc, n, !style_only_attr(name));
 }
@@ -249,10 +352,10 @@ void node_text_append(Node *n, const char *s, size_t len) {
 Node *node_clone(Node *n, bool deep, Document *d) {
     Node *c;
     switch (n->type) {
-    case NODE_ELEMENT: c = node_new_element(d, n->tag, n->ns); for (int i = 0; i < n->nattrs; i++) node_set_attr(c, n->attrs[i].name, n->attrs[i].value); break;
+    case NODE_ELEMENT: c = node_new_element(d, n->tag, n->ns); for (int i = 0; i < n->nattrs; i++) node_set_attr_n(c, n->attrs[i].name, n->attrs[i].value, n->attrs[i].value_len); break;
     case NODE_TEXT: c = node_new_text(d, n->text, n->text_len); break;
     case NODE_COMMENT: c = node_new_comment(d, n->text, n->text_len); break;
-    case NODE_DOCTYPE: c = node_new_doctype(d, n->text); for (int i = 0; i < n->nattrs; i++) node_set_attr(c, n->attrs[i].name, n->attrs[i].value); break;
+    case NODE_DOCTYPE: c = node_new_doctype(d, n->text); for (int i = 0; i < n->nattrs; i++) node_set_attr_n(c, n->attrs[i].name, n->attrs[i].value, n->attrs[i].value_len); break;
     case NODE_PI: c = node_new_pi(d, n->tag, n->text, n->text_len); break;
     case NODE_CDATA: c = node_new_cdata(d, n->text, n->text_len); break;
     default: c = node_new_fragment(d); break;

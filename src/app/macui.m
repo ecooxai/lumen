@@ -1,4 +1,7 @@
 #import <Cocoa/Cocoa.h>
+#import <QuartzCore/CAMetalLayer.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "macui.h"
 
 static Uint32 g_menu_ev;
@@ -143,4 +146,25 @@ int mac_tab_menu(SDL_Window *w, float x, float y, int mode, int lim, bool vctl, 
     NSView *v = win.contentView;
     [m popUpMenuPositioningItem:nil atLocation:(v.isFlipped ? NSMakePoint(x, y) : NSMakePoint(x, v.bounds.size.height - y)) inView:v];
     return g_pick;
+}
+
+
+/* Driven only by existing presentation attempts; no extra timer or redraw. */
+void mac_debug_visibility(SDL_Window *w, void *metal_layer) {
+    static Uint64 next;
+    const char *enabled = getenv("LUMEN_MAC_VISIBILITY");
+    if (!enabled || !*enabled || *enabled == '0') return;
+    Uint64 now = SDL_GetTicks(); if (now < next) return; next = now + 1000;
+    NSWindow *win = (__bridge NSWindow *)SDL_GetPointerProperty(SDL_GetWindowProperties(w), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
+    CAMetalLayer *layer = (__bridge CAMetalLayer *)metal_layer;
+    id delegate = layer.delegate;
+    NSView *view = [delegate isKindOfClass:NSView.class] ? (NSView *)delegate : nil;
+    NSRect frame = win.frame, bounds = view.bounds;
+    fprintf(stderr, "mac: visibility ticks=%llu app_active=%d app_hidden=%d app_running=%d activation_policy=%ld window_exists=%d window_visible=%d miniaturized=%d occlusion=%llu key=%d main=%d can_key=%d can_main=%d active_space=%d level=%ld alpha=%.2f frame=%.0f,%.0f,%.0f,%.0f layer_exists=%d layer_hidden=%d layer_opacity=%.2f layer_parent=%d delegate_view=%d delegate_window_match=%d delegate_hidden=%d delegate_bounds=%.0f,%.0f drawable=%.0f,%.0f\n",
+        (unsigned long long)now, NSApp.isActive, NSApp.isHidden, NSApp.isRunning, (long)NSApp.activationPolicy,
+        win != nil, win.isVisible, win.isMiniaturized, (unsigned long long)win.occlusionState, win.isKeyWindow, win.isMainWindow,
+        win.canBecomeKeyWindow, win.canBecomeMainWindow, win.isOnActiveSpace, (long)win.level, win.alphaValue,
+        frame.origin.x, frame.origin.y, frame.size.width, frame.size.height,
+        layer != nil, layer.hidden, layer.opacity, layer.superlayer != nil, view != nil, view.window == win,
+        view.isHiddenOrHasHiddenAncestor, bounds.size.width, bounds.size.height, layer.drawableSize.width, layer.drawableSize.height);
 }

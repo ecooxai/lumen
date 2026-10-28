@@ -95,6 +95,8 @@ bool js_window_is_closed(JsWindowId id);
 
 /* Exact owned directed-message queue counters for lifecycle/memory tests. */
 void js_windows_pending(size_t *messages, size_t *bytes);
+/* Owned planned-form task counters; byte count includes copied metadata/body. */
+void js_form_navigations_pending(size_t *messages, size_t *bytes);
 /* Pure / loader-thread-safe: strict header policy parse + trustworthy URL gate. */
 JsWindowCoop js_window_coop(const char *url, const char *coop, const char *coep);
 #ifdef __cplusplus

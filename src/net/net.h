@@ -23,6 +23,9 @@ typedef struct NetResponse {
 
 typedef struct NetRequest NetRequest;
 typedef void (*NetDoneFn)(NetRequest *req, NetResponse *resp, void *ud);
+/* Optional owner finalizer: called exactly once after request cleanup, even
+   when cancellation/deadline suppresses callbacks. Must not access the request. */
+typedef void (*NetReleaseFn)(void *ud);
 /* streaming callback; called on the main thread with sequential body chunks if set */
 typedef void (*NetChunkFn)(NetRequest *req, const char *data, size_t n, void *ud);
 
@@ -33,11 +36,16 @@ struct NetRequest {
     char *body; size_t body_len;
     int max_redirects;
     bool no_cookies;
+    bool no_redirects;        /* caller owns redirect policy and each subsequent hop */
+    bool discard_response_body; /* ignore/decode no body; cap headers and close unread connection */
+    bool force_cross_site;    /* retained redirect-chain SameSite taint */
+    double deadline_ms;      /* optional absolute now_ms deadline; DNS remains non-cancellable */
     bool cancelled;
     int priority;          /* lower = sooner */
     NetDoneFn done;
     NetDoneFn head;        /* streaming: response head (no body) before the body arrives */
     NetChunkFn chunk;      /* streaming: decoded body pieces; done then gets an empty body */
+    NetReleaseFn release;  /* optional ownership finalizer, including cancelled requests */
     void *ud;
     uint64_t id;
     char *site_for_cookies;   /* top-level document URL; NULL = same-site (top-level navigation) */
@@ -109,6 +117,7 @@ bool csp_allows_url(const char *csp, const char *doc_url, const char *url, const
 bool csp_allows_style(const char *csp, const char *nonce, const char *body, size_t n);   /* inline <style> */
 bool csp_allows_style_attr(const char *csp, const char *body, size_t n);   /* style= attribute */
 bool csp_allows_attr(const char *csp, const char *body, size_t n);   /* inline event handler (script-src-attr) */
+bool csp_allows_navigation(const char *csp, const char *serialized_url, size_t n); /* javascript: inline navigation, script-src-elem */
 bool csp_allows_eval(const char *csp, bool wasm);                     /* eval/new Function, or WebAssembly compile */
 bool csp_allows_script(const char *csp, const char *doc_url, const char *src_url, const char *nonce,
                        const char *body, size_t n, bool parser_inserted);

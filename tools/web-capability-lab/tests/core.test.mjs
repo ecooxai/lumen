@@ -77,3 +77,30 @@ test('ordinary transport evidence retains the nonzero transport guard and never 
   stats[1]={...stats[1],bytesSent:100,bytesReceived:100};assert.equal(inspectRTCEvidence({stats}).networkStatsObserved,true);
   assert.equal(inspectRTCEvidence({stats,capabilities:{webrtcNetworkTransport:false}}).verified,false);
 });
+
+
+test('reliable stream echo accepts fragmentation only through an exact final EOF', async()=>{
+  const {validateByteStreamEcho}=await import('../core.mjs');
+  const expected=new Uint8Array([11,22,33,44]);
+  const readable=new ReadableStream({start(controller){controller.enqueue(expected.slice(0,1));controller.enqueue(expected.slice(1));controller.close();}});
+  const reader=readable.getReader();
+  assert.equal(await validateByteStreamEcho(reader,expected),4);reader.releaseLock();
+});
+
+test('reliable stream echo rejects missing, changed and trailing bytes', async()=>{
+  const {validateByteStreamEcho}=await import('../core.mjs');
+  const expected=new Uint8Array([11,22,33]);
+  for(const values of [[11,22],[11,90,33],[11,22,33,44]]){
+    const reader=new ReadableStream({start(controller){controller.enqueue(new Uint8Array(values));controller.close();}}).getReader();
+    await assert.rejects(validateByteStreamEcho(reader,expected),/echo/);await reader.cancel();reader.releaseLock();
+  }
+});
+
+test('reliable stream echo requires bytes and bounds endless empty chunks', async()=>{
+  const {validateByteStreamEcho}=await import('../core.mjs');
+  const expected=new Uint8Array([11]);
+  const reader=new ReadableStream({start(controller){controller.enqueue('11');controller.close();}}).getReader();
+  await assert.rejects(validateByteStreamEcho(reader,expected),/byte/);await reader.cancel();reader.releaseLock();
+  let reads=0;const endless={read:async()=>{reads++;return{done:false,value:new Uint8Array(0)};}};
+  await assert.rejects(validateByteStreamEcho(endless,expected),/chunk limit/);assert.equal(reads,1024);
+});

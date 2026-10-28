@@ -1,0 +1,25 @@
+{
+  "state": "source-only; requires independent review and actual Mac gates",
+  "base_package_manifest_sha256": "8b4b43956bb161369862c1b3cc109e6c35765a84a03d493307057d3806dbae63",
+  "device": "A77F68E4-972B-472B-80B8-F65E71D361E5",
+  "original_failed_install_canonical_sha256": "fb225cf19b19d4f5508655b84366ea9d96b4499dd507fff5819ff230320ffe0f",
+  "new_unit_methods": 10,
+  "files": {
+    "verify_ipad006_relocation.py": {
+      "bytes": 17370,
+      "sha256": "b578e20c242d7ff3f78f59b82f5f05518143d357046d568d634efcccfbf31546"
+    },
+    "launch_ipad_smoke_relocated.py": {
+      "bytes": 16924,
+      "sha256": "e2215f57e926242fb338a8c846088e7e38846cfb8906b13ae3a52db9b7de392a"
+    },
+    "test_ipad_relocation.py": {
+      "bytes": 5828,
+      "sha256": "3806c7d3f572869d82aeb1183937643347e95cfe96fb8517980c7e5f1754d9cc"
+    },
+    "IPAD006-RELOCATION-COMMANDS.md": {
+      "bytes": 3805,
+      "sha256": "5095eb032e9967d53589d247972f9c78c4a1a75d47baea54b63b10a69f4bac23"
+    }
+  }
+}

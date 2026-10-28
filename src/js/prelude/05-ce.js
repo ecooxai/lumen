@@ -52,7 +52,11 @@ function mediaAttach(el, src) {
         def(el, '__src', src);
         if (!N.cspMedia((() => { try { return new URL(src, document.baseURI).href; } catch (e) { return String(src); } })())) { mediaLater(el, 'loadstart'); mediaLater(el, 'error'); return; }
         if (ms instanceof MediaSource) ms._attach(el, id);
-        else if (ms && ms._buf) { if (!ms.__file) ms.__file = N.blobFile(ms._buf); N.mediaOpen(id, ms.__file || src); }
+        else if (blobFileOps.isBlob(ms)) {
+            let path = blobFileOps.mediaFile(ms);
+            if (!path) { path = N.blobFile(blobFileOps.copyBuffer(ms)); blobFileOps.mediaFile(ms, path); }
+            N.mediaOpen(id, path || src);
+        }
         else N.mediaOpen(id, src);
     }
     mediaLater(el, 'loadstart');
@@ -120,7 +124,28 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
     });
 });
 Object.assign(H.HTMLMediaElement, { NETWORK_EMPTY: 0, NETWORK_IDLE: 1, NETWORK_LOADING: 2, NETWORK_NO_SOURCE: 3, HAVE_NOTHING: 0, HAVE_METADATA: 1, HAVE_CURRENT_DATA: 2, HAVE_FUTURE_DATA: 3, HAVE_ENOUGH_DATA: 4 });
-mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => { reflectUrl(p, 'poster'); reflectInt(p, 0, 'width', 'height'); methods(p, { get videoWidth() { return this.__mp ? N.mediaState(this.__mp)[8] : 0; }, get videoHeight() { return this.__mp ? N.mediaState(this.__mp)[9] : 0; }, getVideoPlaybackQuality() { return { totalVideoFrames: 0, droppedVideoFrames: 0, corruptedVideoFrames: 0, creationTime: N.now() }; }, requestVideoFrameCallback() { return 0; }, cancelVideoFrameCallback() {} }); });
+const videoQualitySnapshots = new WeakMap();
+H.VideoPlaybackQuality = class VideoPlaybackQuality { constructor() { throw new TypeError('Illegal constructor'); } };
+for (const [index, key] of ['creationTime', 'totalVideoFrames', 'droppedVideoFrames', 'corruptedVideoFrames'].entries()) {
+    Object.defineProperty(H.VideoPlaybackQuality.prototype, key, { configurable: true, enumerable: true, get() {
+        const snapshot = videoQualitySnapshots.get(this);
+        if (!snapshot) throw new TypeError('Illegal invocation');
+        return snapshot[index];
+    } });
+}
+Object.defineProperty(H.VideoPlaybackQuality.prototype, Symbol.toStringTag, { value: 'VideoPlaybackQuality', configurable: true });
+mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => { reflectUrl(p, 'poster'); reflectInt(p, 0, 'width', 'height'); methods(p, {
+    get videoWidth() { return this.__mp ? N.mediaState(this.__mp)[8] : 0; },
+    get videoHeight() { return this.__mp ? N.mediaState(this.__mp)[9] : 0; },
+    getVideoPlaybackQuality() {
+        if (!(this instanceof H.HTMLVideoElement)) throw new TypeError('Illegal invocation');
+        const counts = this.__mp ? N.mediaQuality(this.__mp) : null;
+        const result = Object.create(H.VideoPlaybackQuality.prototype);
+        videoQualitySnapshots.set(result, [N.now(), counts ? counts[0] : 0, counts ? counts[1] : 0, counts ? counts[2] : 0]);
+        return result;
+    },
+    requestVideoFrameCallback() { return 0; }, cancelVideoFrameCallback() {}
+}); });
 mk('HTMLAudioElement', H.HTMLMediaElement, ['audio']);
 function Image(w, h) { const e = document.createElement('img'); if (w !== undefined) e.width = w; if (h !== undefined) e.height = h; return e; }
 Image.prototype = H.HTMLImageElement.prototype;
@@ -128,12 +153,48 @@ function Audio(src) { const e = document.createElement('audio'); if (src !== und
 Audio.prototype = H.HTMLAudioElement.prototype;
 function Option(text = '', value, ds, sel) { const o = document.createElement('option'); o.text = text; if (value !== undefined) o.value = value; if (ds) o.setAttribute('selected', ''); if (sel) o.selected = true; return o; }
 Option.prototype = H.HTMLOptionElement.prototype;
-function urlParts(p, attr) {
-    const get = (el) => { const v = N.attr(el, attr); if (v == null) return null; try { return new URL(v, document.baseURI); } catch (e) { return null; } };
-    acc(p, attr, function () { const u = get(this); return u ? u.href : (N.attr(this, attr) ?? ''); }, function (v) { this.setAttribute(attr, v); });
-    for (const k of ['protocol', 'host', 'hostname', 'port', 'pathname', 'search', 'hash', 'username', 'password']) acc(p, k, function () { const u = get(this); return u ? u[k] : ''; }, function (v) { const u = get(this); if (u) { u[k] = v; this.setAttribute(attr, u.href); } });
-    acc(p, 'origin', function () { const u = get(this); return u ? u.origin : ''; });
-    def(p, 'toString', function () { return this[attr]; });
+function urlParts(p, attr, expectedTag) {
+    const StringIntrinsic = String, TypeErrorIntrinsic = TypeError;
+    const applyIntrinsic = Reflect.apply, toWellFormed = String.prototype.toWellFormed;
+    const defineProperty = Object.defineProperty, ownDescriptor = Object.getOwnPropertyDescriptor;
+    const setAttribute = Element.prototype.setAttribute;
+    const usvString = value => {
+        if (typeof value === 'symbol') throw new TypeErrorIntrinsic('Cannot convert a Symbol value to a string');
+        return applyIntrinsic(toWellFormed, StringIntrinsic(value), []);
+    };
+    const get = element => N.htmlUrl(element, 0, undefined, expectedTag);
+    const hrefDescriptor = ownDescriptor({
+        get [attr]() {
+            const parts = get(this);
+            return parts ? parts[0] : (N.attr(this, attr) ?? '');
+        },
+        set [attr](value) {
+            N.htmlUrl(this, -1, undefined, expectedTag);
+            value = usvString(value);
+            applyIntrinsic(setAttribute, this, [attr, value]);
+        }
+    }, attr);
+    defineProperty(p, attr, hrefDescriptor);
+    const hrefGetter = hrefDescriptor.get;
+    const indices = {protocol: 1, username: 2, password: 3, host: 4, hostname: 5,
+                     port: 6, pathname: 7, search: 8, hash: 9};
+    for (const key of Object.keys(indices)) defineProperty(p, key, ownDescriptor({
+        get [key]() {
+            const parts = get(this);
+            return parts ? parts[indices[key]] : (key === 'protocol' ? ':' : '');
+        },
+        set [key](value) {
+            N.htmlUrl(this, -1, undefined, expectedTag);
+            value = usvString(value);
+            const parts = N.htmlUrl(this, indices[key], value, expectedTag);
+            if (parts) applyIntrinsic(setAttribute, this, [attr, parts[0]]);
+        }
+    }, key));
+    defineProperty(p, 'origin', ownDescriptor({
+        get origin() { const parts = get(this); return parts ? parts[10] : ''; }
+    }, 'origin'));
+    const toString = {toString() { return applyIntrinsic(hrefGetter, this, []); }}.toString;
+    defineProperty(p, 'toString', {value: toString, writable: true, enumerable: true, configurable: true});
 }
 const PLAIN = new Set('abbr address article aside b bdi bdo cite code dd dfn dt em figcaption figure footer header hgroup i kbd main mark nav noscript rp rt ruby s samp search section small strong sub summary sup u var wbr center nobr big tt acronym strike font marquee'.split(' '));
 function protoFor(type, tag, ns) {

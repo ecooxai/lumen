@@ -31,7 +31,7 @@
 
 typedef struct Blob { int refs; uint8_t *p; size_t n; } Blob;
 typedef struct { double t0, t1; uint8_t *p; size_t n; Blob *init; } Seg;
-typedef struct { double pts; Image *im; } VFrame;
+typedef struct { double pts; Image *im; bool renderable; } VFrame;
 typedef struct AChunk { double pts; float *s; int frames, off; struct AChunk *next; } AChunk;
 
 typedef struct Stream {
@@ -68,12 +68,16 @@ struct MediaPlayer {
     VFrame vq[VQ_MAX]; int vqn;
     AChunk *ah, *at; double abuf;
     Image *cur, *grave[3]; int ngrave; double painted;
+    uint64_t quality_owner, quality_frame;
+    MpVideoQuality quality;
+    bool cur_countable, cur_presented;
     float limit; double cpu_ms;            /* tab CPU limiter: max share of a core, decoder-thread CPU used */
 };
 
 void (*media_wakeup)(void);
 static SDL_Mutex *g_mu;
 static MediaPlayer **g_pl; static int g_np, g_cap;
+static uint64_t g_quality_owner;
 
 static void wake(void) { if (media_wakeup) media_wakeup(); }
 static double thread_cpu_ms(void) { struct timespec ts; clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts); return (double)ts.tv_sec * 1e3 + (double)ts.tv_nsec / 1e6; }
@@ -359,11 +363,22 @@ static Image *vt_image(const AVFrame *f) {   /* copy the decoder surface's NV12 
 }
 #endif
 static Image *tiny_image(void) { Image *im = xcalloc(1, sizeof *im); im->w = im->h = 1; im->refs = 1; im->px = xcalloc(1, 4); return im; }
+static void video_corruption(MediaPlayer *m, const AVFrame *f) {
+    if ((f->flags & AV_FRAME_FLAG_CORRUPT) || f->decode_error_flags) m->quality.corrupted++;
+}
+static bool video_conversion_drop(MediaPlayer *m, DecCtx *d, const AVFrame *f) {
+    SDL_LockMutex(m->mu);
+    bool ok = !m->quit && m->epoch == d->epoch;
+    if (ok) { m->quality.total++; m->quality.dropped++; video_corruption(m, f); }
+    SDL_UnlockMutex(m->mu);
+    return ok;
+}
 static bool emit_video(Stream *s, DecCtx *d, AVFrame *f, AVRational tb) {
     MediaPlayer *m = s->m;
     int64_t ts = f->best_effort_timestamp != AV_NOPTS_VALUE ? f->best_effort_timestamp : f->pts;
     double pts = ts == AV_NOPTS_VALUE ? 0 : ts * av_q2d(tb);
-    if (pts < d->skip - 1e-3) return true;
+    /* Seek preroll and decoder dependency-only frames are not display frames. */
+    if (pts < d->skip - 1e-3 || (f->flags & AV_FRAME_FLAG_DISCARD)) return true;
     bool hidden = media_lowmem && (double)SDL_GetTicks() - m->painted > 2000;
     AVFrame *sw = NULL; Image *im = NULL;
 #ifdef __APPLE__
@@ -372,15 +387,15 @@ static bool emit_video(Stream *s, DecCtx *d, AVFrame *f, AVRational tb) {
     if (!hidden && media_yuv && f->format == AV_PIX_FMT_NV12 && f->width <= MAX_W) im = yuv_copy(f->width, f->height, f->data[0], (size_t)f->linesize[0], f->data[1], (size_t)f->linesize[1], yuv_mat(f, f->color_range == AVCOL_RANGE_JPEG));
     if (!im && !hidden && f->format == AV_PIX_FMT_VIDEOTOOLBOX) {
         sw = av_frame_alloc();
-        if (!sw || av_hwframe_transfer_data(sw, f, 0) < 0) { av_frame_free(&sw); return true; }
+        if (!sw || av_hwframe_transfer_data(sw, f, 0) < 0) { av_frame_free(&sw); return video_conversion_drop(m, d, f); }
     }
     if (!im) im = hidden ? tiny_image() : to_image(&d->sws, sw ? sw : f);
     av_frame_free(&sw);
-    if (!im) return true;
+    if (!im) return video_conversion_drop(m, d, f);
     SDL_LockMutex(m->mu);
     while (m->vqn == VQ_MAX && !m->quit && m->epoch == d->epoch) SDL_WaitCondition(m->cv, m->mu);
     bool ok = !m->quit && m->epoch == d->epoch;
-    if (ok) { m->vq[m->vqn++] = (VFrame){ pts, im }; if (m->w != f->width || m->h != f->height) { m->w = f->width; m->h = f->height; } }
+    if (ok) { m->vq[m->vqn++] = (VFrame){ pts, im, !hidden }; video_corruption(m, f); if (m->w != f->width || m->h != f->height) { m->w = f->width; m->h = f->height; } }
     SDL_UnlockMutex(m->mu);
     if (!ok) image_unref(im); else wake();
     return ok;
@@ -694,6 +709,7 @@ MediaPlayer *mp_new(Node *el) {
     m->mu = SDL_CreateMutex(); m->cv = SDL_CreateCondition(); m->node = el;
     m->duration = NAN; m->volume = 1; m->base_wall = now_ms();
     SDL_LockMutex(g_mu);
+    m->quality_owner = ++g_quality_owner;
     if (g_np == g_cap) { g_cap = g_cap ? g_cap * 2 : 8; g_pl = xrealloc(g_pl, sizeof *g_pl * (size_t)g_cap); }
     g_pl[g_np++] = m;
     SDL_UnlockMutex(g_mu);
@@ -847,6 +863,8 @@ void mp_seek(MediaPlayer *m, double t) {
     if (!isnan(m->duration) && t > m->duration) t = m->duration;
     if (t < 0) t = 0;
     m->epoch++; m->target = t; m->seeking = true; m->ended = false;
+    /* Explicit seek cancellation is not a missed presentation deadline. */
+    m->cur_countable = false;
     for (int i = 0; i < m->nst; i++) m->st[i]->eof = false;   /* else a seek after EOF completes (and re-ends) before the reader restarts */
     for (int i = 0; i < m->vqn; i++) image_unref(m->vq[i].im);
     m->vqn = 0;
@@ -874,6 +892,11 @@ void mp_state(MediaPlayer *m, MpState *o) {
     o->error = m->error; o->errmsg = m->err;
     o->time = m->seeking ? m->target : clock_of(m); o->duration = m->duration; o->w = m->w; o->h = m->h;
     SDL_UnlockMutex(m->mu);
+}
+void mp_video_quality(MediaPlayer *m, MpVideoQuality *q) {
+    if (!q) return;
+    if (!m) { *q = (MpVideoQuality){0}; return; }
+    SDL_LockMutex(m->mu); *q = m->quality; SDL_UnlockMutex(m->mu);
 }
 void mp_free(MediaPlayer *m) {
     if (!m) return;
@@ -905,9 +928,14 @@ void mp_free(MediaPlayer *m) {
     SDL_DestroyCondition(m->cv); SDL_DestroyMutex(m->mu); free(m);
 }
 
-static void present(MediaPlayer *m, Image *im) {
+static void present(MediaPlayer *m, VFrame frame) {
+    /* Selection is not presentation. A selected frame superseded before the
+     * compositor acknowledges it was dropped; queued future frames are not. */
+    if (m->cur_countable && !m->cur_presented) { m->quality.total++; m->quality.dropped++; }
     if (m->cur) { if (m->ngrave == 3) { image_unref(m->grave[0]); memmove(m->grave, m->grave + 1, sizeof m->grave[0] * 2); m->ngrave--; } m->grave[m->ngrave++] = m->cur; }
-    m->cur = im;
+    m->cur = frame.im; m->cur_countable = true; m->cur_presented = false;
+    m->quality_frame++;
+    if (frame.renderable) { frame.im->media_owner = m->quality_owner; frame.im->media_frame = m->quality_frame; }
 }
 int media_tick(void) {
     if (!g_mu) return 0;
@@ -927,10 +955,10 @@ int media_tick(void) {
         if (getenv("LUMEN_MEDIA_DEBUG")) { static double last; if (now_ms() - last > 500) { last = now_ms(); fprintf(stderr, "mp %p play=%d seek=%d wait=%d eos=%d vqn=%d ah=%p abuf=%.2f clk=%.2f dev=%p ea=%d", (void *)m, m->playing, m->seeking, m->waiting, m->eos, m->vqn, (void *)m->ah, m->abuf, clock_of(m), (void *)m->dev, m->expect_audio); for (int k = 0; k < m->nst; k++) fprintf(stderr, " s%d[eof=%d v=%d a=%d]", k, m->st[k]->eof, m->st[k]->has_video, m->st[k]->has_audio); fprintf(stderr, "\n"); } }
         if (m->seeking && (m->vqn || (!vid && m->abuf > 0) || all_eof)) {
             m->seeking = false;
-            if (m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
+            if (m->vqn) { present(m, m->vq[0]); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
             m->base_t = m->aclock = m->target; m->base_wall = now_ms();
         }
-        if (!m->cur && m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
+        if (!m->cur && m->vqn) { present(m, m->vq[0]); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
         if (aud_live(m) && aud_eof && !m->ah) { m->base_t = m->aclock; m->base_wall = now_ms(); m->expect_audio = false; }
         if (m->playing && !m->seeking) {
             bool starve = aud_live(m) ? (!m->ah && !aud_eof) : (vid && !m->vqn && !all_eof);
@@ -945,8 +973,8 @@ int media_tick(void) {
             if (all_eof && !aud_live(m) && !isnan(m->duration) && t >= m->duration - 0.01) while (m->ah) {
                 AChunk *c = m->ah; m->ah = c->next; if (!m->ah) m->at = NULL; free(c->s); free(c); m->abuf = 0;
             }
-            if (all_eof && !isnan(m->duration) && t >= m->duration - 0.01) while (m->vqn) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
-            while (m->vqn && m->vq[0].pts <= t + 0.008) { present(m, m->vq[0].im); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
+            if (all_eof && !isnan(m->duration) && t >= m->duration - 0.01) while (m->vqn) { present(m, m->vq[0]); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
+            while (m->vqn && m->vq[0].pts <= t + 0.008) { present(m, m->vq[0]); memmove(m->vq, m->vq + 1, sizeof m->vq[0] * (size_t)--m->vqn); popped = true; }
             if (all_eof && !m->vqn && !m->ah && (m->eos || (m->nst && m->st[0]->progressive))) {
                 m->base_t = isnan(m->duration) ? t : m->duration; m->playing = false; m->ended = true;
             }
@@ -981,6 +1009,51 @@ int media_timeout_ms(void) {
     }
     SDL_UnlockMutex(g_mu);
     return to;
+}
+/* g_mu is held by the caller; owner identities are not recycled pointers.
+ * The main thread records compositor submission once per selected frame.
+ * Decoder threads only update corruption/conversion-drop counters under mu. */
+static bool video_frame_pending(uint64_t owner, uint64_t frame, bool submitted) {
+    if (!owner || !frame) return false;
+    for (int i = 0; i < g_np; i++) {
+        MediaPlayer *m = g_pl[i];
+        if (m->quality_owner != owner) continue;
+        SDL_LockMutex(m->mu);
+        bool pending = m->quality_frame == frame && m->cur_countable && !m->cur_presented;
+        if (pending && submitted) { m->cur_presented = true; m->quality.total++; }
+        SDL_UnlockMutex(m->mu); return pending;
+    }
+    return false;
+}
+void media_frame_presented(const Image *im) {
+    if (!g_mu || !im) return;
+    SDL_LockMutex(g_mu); video_frame_pending(im->media_owner, im->media_frame, true); SDL_UnlockMutex(g_mu);
+}
+void media_canvas_prune(Canvas *cv) {
+    if (!g_mu || !cv || !cv->media_frames.n) return;
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < cv->media_frames.n;) {
+        PaintFrame p = cv->media_frames.v[i];
+        if (!video_frame_pending(p.owner, p.frame, false))
+            cv->media_frames.v[i] = cv->media_frames.v[--cv->media_frames.n];
+        else i++;
+    }
+    SDL_UnlockMutex(g_mu);
+    if (!cv->media_frames.n) cv->media_retry = false;
+}
+void media_canvas_submission(Canvas *cv, bool succeeded) {
+    if (!cv) return;
+    /* A failed software upload must copy the whole retained frame on retry;
+     * unrelated later damage must not acknowledge an uncopied video frame. */
+    cv->media_retry = !succeeded && cv->media_frames.n > 0;
+    if (!succeeded || !g_mu || !cv->media_frames.n) return;
+    SDL_LockMutex(g_mu);
+    for (int i = 0; i < cv->media_frames.n; i++) {
+        PaintFrame p = cv->media_frames.v[i];
+        video_frame_pending(p.owner, p.frame, true);
+    }
+    cv->media_frames.n = 0;
+    SDL_UnlockMutex(g_mu);
 }
 bool media_is_frame(const Image *im) {
     if (!g_mu || !im) return false;

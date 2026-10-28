@@ -26,7 +26,7 @@ static void segs_from(Segs *p, const char *path) {
 }
 static bool is_alpha(int c) { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'); }
 static bool drive_letter(const char *s, size_t n, bool normalized) { return n == 2 && is_alpha((unsigned char)s[0]) && (s[1] == ':' || (!normalized && s[1] == '|')); }
-static bool starts_drive(const char *s, size_t n) { return n >= 2 && drive_letter(s, 2, false) && (n == 2 || strchr("/\\?#", s[2])); }
+static bool starts_drive(const char *s, size_t n) { return n >= 2 && drive_letter(s, 2, false) && (n == 2 || (s[2] != 0 && strchr("/\\?#", s[2]))); }
 static void shorten(Segs *p, const char *scheme) {
     if (!strcmp(scheme, "file") && p->n == 1 && drive_letter(p->v[0], strlen(p->v[0]), true)) return;
     if (p->n) free(p->v[--p->n]);
@@ -45,7 +45,52 @@ static bool in_set(unsigned char c, int set) {
     return strchr("/:;=@[\\]|", c) != NULL;
 }
 static void pe(SB *b, unsigned char c, int set) { if (in_set(c, set)) sb_printf(b, "%%%02X", c); else sb_putc(b, (char)c); }
+/* HTML URL consumers supply their document's output encoding. Modern URL
+ * APIs continue to call the UTF-8 entry points below. The whole query is sent
+ * through one encoder invocation so ISO-2022-JP state is not reset per scalar.
+ */
+typedef struct {
+    SB *output;
+    int percent_set;
+} URLQueryEncoder;
+
+static bool query_encoded_byte(void *opaque, unsigned char byte) {
+    URLQueryEncoder *encoder = opaque;
+    pe(encoder->output, byte, encoder->percent_set);
+    return true;
+}
+
+static bool query_encoding_error(void *opaque, uint32_t scalar) {
+    URLQueryEncoder *encoder = opaque;
+    /* URL's percent-encode-after-encoding error mode, not HTML source text. */
+    sb_printf(encoder->output, "%%26%%23%u%%3B", (unsigned)scalar);
+    return true;
+}
+
+static bool append_query(SB *output, const char *scheme, WebEncoding encoding,
+                         const char *input, size_t length) {
+    bool is_special = special(scheme);
+    if (!is_special || !strcmp(scheme, "ws") || !strcmp(scheme, "wss"))
+        encoding = WEB_ENC_UTF8;
+    else
+        encoding = web_encoding_output(encoding);
+    int percent_set = is_special ? PE_SQUERY : PE_QUERY;
+    if (encoding == WEB_ENC_UTF8) {
+        /* Preserve the existing modern URL byte path. HTML and WebIDL callers
+         * have already converted their input to scalar-value UTF-8 strings. */
+        for (size_t i = 0; i < length; i++)
+            pe(output, (unsigned char)input[i], percent_set);
+        return true;
+    }
+    URLQueryEncoder encoder = { output, percent_set };
+    return web_encoding_encode_n(encoding, input, length,
+                                 query_encoded_byte, query_encoding_error,
+                                 &encoder);
+}
+
 static int hexv(int c) { if (c >= '0' && c <= '9') return c - '0'; c = lc(c); if (c >= 'a' && c <= 'f') return c - 'a' + 10; return -1; }
+
+static char *url_decode_bytes(const char *s, size_t n, size_t *decoded_length);
 
 static bool ipv6_parse(const char *s, size_t n, uint16_t a[8]) {
     memset(a, 0, 16);
@@ -202,9 +247,11 @@ static char *host_parse(const char *s, size_t n, bool opaque) {
         return sb_take(&o);
     }
     {
-        char *dec = url_decode(s, n); size_t dn = strlen(dec); bool simple = true;
+        size_t dn = 0; char *dec = url_decode_bytes(s, n, &dn); bool simple = true;
         for (size_t i = 0; i < dn; i++) { unsigned char c = (unsigned char)dec[i]; if (c >= 0x80) simple = false; dec[i] = (char)(c >= 'A' && c <= 'Z' ? c + 32 : c); }
-        if (simple && strstr(dec, "xn--")) simple = false;
+        /* The non-strict URL domain parser preserves ASCII labels, including
+           xn-- labels that fail Unicode ToASCII validation. Forbidden domain
+           code points are still rejected below. */
         bool ok = simple ? (sb_put(&o, dec, dn), true) : idna_to_ascii(dec, dn, &o);
         free(dec);
         if (!ok || !o.n) goto fail;
@@ -220,9 +267,12 @@ fail:
 enum { S_SCHEME_START, S_SCHEME, S_NO_SCHEME, S_SPECIAL_REL_OR_AUTH, S_PATH_OR_AUTH, S_RELATIVE, S_REL_SLASH, S_SPECIAL_AUTH_SLASHES,
        S_SPECIAL_AUTH_IGNORE, S_AUTHORITY, S_HOST, S_PORT, S_FILE, S_FILE_SLASH, S_FILE_HOST, S_PATH_START, S_PATH, S_OPAQUE, S_QUERY, S_FRAGMENT };
 
-static bool parse(const char *raw, const URL *base, URL *u) {
+static bool parse(const char *raw, size_t raw_length, const URL *base, WebEncoding encoding, URL *u) {
+    if (!u) return false;
     memset(u, 0, sizeof *u);
-    size_t a = 0, z = strlen(raw);
+    if ((!raw && raw_length) || encoding < WEB_ENC_UTF8 || encoding >= WEB_ENC_COUNT) return false;
+    if (!raw) raw = "";
+    size_t a = 0, z = raw_length;
     while (a < z && (unsigned char)raw[a] <= 0x20) a++;
     while (z > a && (unsigned char)raw[z - 1] <= 0x20) z--;
     char *in = xmalloc(z - a + 1); size_t n = 0;
@@ -387,7 +437,7 @@ static bool parse(const char *raw, const URL *base, URL *u) {
             break;
         case S_QUERY:
             if (c == '#' || c == -1) {
-                for (size_t k = 0; k < buf.n; k++) pe(&q, (unsigned char)buf.s[k], sp ? PE_SQUERY : PE_QUERY);
+                if (!append_query(&q, scheme, encoding, buf.s ? buf.s : "", buf.n)) goto done;
                 sb_clear(&buf);
                 if (c == '#') { hf = true; st = S_FRAGMENT; }
             } else sb_putc(&buf, (char)c);
@@ -418,11 +468,206 @@ done:
 #undef COPY_PATH
 #undef COPY_QUERY
 }
-bool url_parse(const char *in, URL *u) { return parse(in, NULL, u); }
-bool url_resolve(const URL *base, const char *rel, URL *o) { return parse(rel, base, o); }
+/* URL component mutation follows the basic URL parser's state overrides.
+ * Parsing a new URL is intentionally separate: setters do not trim C0 bytes,
+ * cannot change between special and non-special schemes, and do not rebuild
+ * opaque URLs as an authority URL. Host setters can commit a valid host before
+ * rejecting a later invalid port, as the URL state machine specifies.
+ */
+static bool setter_has_credentials(const URL *u) {
+    return u->userinfo && u->userinfo[0];
+}
+
+static bool setter_can_have_credentials(const URL *u) {
+    return u->host && u->host[0] && strcmp(u->scheme, "file");
+}
+
+static bool setter_port(URL *u, const char *input, size_t length) {
+    unsigned value = 0;
+    size_t i = 0;
+    while (i < length && input[i] >= '0' && input[i] <= '9') {
+        value = value * 10 + (unsigned)(input[i] - '0');
+        if (value > 65535) return false;
+        i++;
+    }
+    if (!i) return false;
+    u->has_port = (int)value != url_default_port(u->scheme) || !special(u->scheme);
+    u->port = u->has_port ? (int)value : url_default_port(u->scheme);
+    return true;
+}
+
+static void setter_credentials(URL *u, URLComponent component, const char *input, size_t length) {
+    SB encoded, value;
+    sb_init(&encoded); sb_init(&value);
+    for (size_t i = 0; i < length; i++) pe(&encoded, (unsigned char)input[i], PE_USER);
+    const char *old = u->userinfo ? u->userinfo : "";
+    const char *colon = strchr(old, ':');
+    if (component == URL_SET_USERNAME) {
+        sb_put(&value, encoded.s ? encoded.s : "", encoded.n);
+        if (colon && colon[1]) { sb_putc(&value, ':'); sb_puts(&value, colon + 1); }
+    } else {
+        sb_put(&value, old, colon ? (size_t)(colon - old) : strlen(old));
+        if (encoded.n) { sb_putc(&value, ':'); sb_put(&value, encoded.s, encoded.n); }
+    }
+    char *replacement = value.n ? sdup(&value) : NULL;
+    free(u->userinfo); u->userinfo = replacement;
+    sb_free(&encoded); sb_free(&value);
+}
+
+static void setter_path(URL *u, const char *input, size_t length) {
+    bool sp = special(u->scheme);
+    Segs path = { 0 };
+    SB segment, output;
+    sb_init(&segment); sb_init(&output);
+    size_t start = 0;
+    if (length && (input[0] == '/' || (sp && input[0] == '\\'))) start = 1;
+    if (!length && !sp && u->host) {
+        /* A non-special URL with a host can have an empty path list. */
+    } else {
+        for (size_t i = start; i <= length; i++) {
+            int c = i < length ? (unsigned char)input[i] : -1;
+            bool slash = c == '/' || (sp && c == '\\');
+            if (c == -1 || slash) {
+                char *part = sdup(&segment);
+                bool parent = !strcmp(part, "..") || !strcasecmp(part, ".%2e") ||
+                    !strcasecmp(part, "%2e.") || !strcasecmp(part, "%2e%2e");
+                bool current = !strcmp(part, ".") || !strcasecmp(part, "%2e");
+                if (parent) {
+                    shorten(&path, u->scheme);
+                    if (!slash) segs_push(&path, xstrdup(""));
+                    free(part);
+                } else if (current) {
+                    if (!slash) segs_push(&path, xstrdup(""));
+                    free(part);
+                } else {
+                    if (!strcmp(u->scheme, "file") && !path.n && drive_letter(part, strlen(part), false)) part[1] = ':';
+                    segs_push(&path, part);
+                }
+                sb_clear(&segment);
+            } else {
+                /* '?' and '#' are path data in a pathname state override. */
+                pe(&segment, (unsigned char)c, PE_PATH);
+            }
+        }
+    }
+    for (int i = 0; i < path.n; i++) { sb_putc(&output, '/'); sb_puts(&output, path.v[i]); }
+    char *replacement = sdup(&output);
+    free(u->path); u->path = replacement;
+    segs_free(&path); sb_free(&segment); sb_free(&output);
+}
+
+bool url_set_component_n(URL *u, URLComponent component, const char *raw, size_t length) {
+    if (!u || !u->scheme || (!raw && length) || component < URL_SET_PROTOCOL || component > URL_SET_HASH) return false;
+    if (!raw) raw = "";
+    if (component == URL_SET_USERNAME || component == URL_SET_PASSWORD) {
+        if (!setter_can_have_credentials(u)) return false;
+        /* Credential setters percent-encode directly; tabs/newlines are data. */
+        setter_credentials(u, component, raw, length);
+        return true;
+    }
+    if ((component == URL_SET_HOST || component == URL_SET_HOSTNAME || component == URL_SET_PATHNAME) && u->opaque) return false;
+    if (component == URL_SET_PORT && !setter_can_have_credentials(u)) return false;
+    if (component == URL_SET_PORT && !length) {
+        u->has_port = false; u->port = url_default_port(u->scheme);
+        return true;
+    }
+    if ((component == URL_SET_SEARCH || component == URL_SET_HASH) && !length) {
+        char **part = component == URL_SET_SEARCH ? &u->query : &u->fragment;
+        free(*part); *part = NULL;
+        return true;
+    }
+
+    /* The single leading query/fragment marker is removed before the basic
+     * parser strips ASCII tabs and newlines; there is no C0/space trimming. */
+    size_t first = 0;
+    if (length && ((component == URL_SET_SEARCH && raw[0] == '?') ||
+                   (component == URL_SET_HASH && raw[0] == '#'))) first = 1;
+    SB input;
+    sb_init(&input);
+    for (size_t i = first; i < length; i++) {
+        if (raw[i] != '\t' && raw[i] != '\n' && raw[i] != '\r') sb_putc(&input, raw[i]);
+    }
+    const char *text = input.s ? input.s : "";
+    bool accepted = false;
+
+    if (component == URL_SET_PROTOCOL) {
+        size_t end = 0;
+        while (end < input.n && text[end] != ':') end++;
+        if (!end || !is_alpha((unsigned char)text[0])) goto done;
+        for (size_t i = 1; i < end; i++) {
+            unsigned char c = (unsigned char)text[i];
+            if (!is_alpha(c) && !(c >= '0' && c <= '9') && c != '+' && c != '-' && c != '.') goto done;
+        }
+        char *scheme = xstrndup(text, end);
+        for (size_t i = 0; i < end; i++) scheme[i] = (char)lc((unsigned char)scheme[i]);
+        bool forbidden = special(u->scheme) != special(scheme) ||
+            (!strcmp(scheme, "file") && (setter_has_credentials(u) || u->has_port)) ||
+            (!strcmp(u->scheme, "file") && u->host && !u->host[0]);
+        if (forbidden) { free(scheme); goto done; }
+        free(u->scheme); u->scheme = scheme;
+        if (u->has_port && u->port == url_default_port(u->scheme) && special(u->scheme)) u->has_port = false;
+        if (!u->has_port) u->port = url_default_port(u->scheme);
+        accepted = true;
+    } else if (component == URL_SET_HOST || component == URL_SET_HOSTNAME) {
+        bool sp = special(u->scheme), file = !strcmp(u->scheme, "file"), brackets = false, port_seen = false;
+        size_t end = 0;
+        for (; end < input.n; end++) {
+            unsigned char c = (unsigned char)text[end];
+            if (c == '/' || c == '?' || c == '#' || (sp && c == '\\')) break;
+            if (!file && c == ':' && !brackets) {
+                if (!end || component == URL_SET_HOSTNAME) goto done;
+                port_seen = true;
+                break;
+            }
+            if (c == '[') brackets = true;
+            if (c == ']') brackets = false;
+        }
+        if (!file && !end && (sp || setter_has_credentials(u) || u->has_port)) goto done;
+        char *host = file && !end ? xstrdup("") : host_parse(text, end, !sp);
+        if (!host) goto done;
+        if (file && !strcmp(host, "localhost")) { free(host); host = xstrdup(""); }
+        free(u->host); u->host = host;
+        accepted = !port_seen || setter_port(u, text + end + 1, input.n - end - 1);
+    } else if (component == URL_SET_PORT) {
+        accepted = setter_port(u, text, input.n);
+    } else if (component == URL_SET_PATHNAME) {
+        setter_path(u, text, input.n);
+        accepted = true;
+    } else if (component == URL_SET_SEARCH || component == URL_SET_HASH) {
+        SB value;
+        sb_init(&value);
+        int set = component == URL_SET_HASH ? PE_FRAG : special(u->scheme) ? PE_SQUERY : PE_QUERY;
+        for (size_t i = 0; i < input.n; i++) pe(&value, (unsigned char)text[i], set);
+        char *replacement = sdup(&value);
+        char **part = component == URL_SET_SEARCH ? &u->query : &u->fragment;
+        free(*part); *part = replacement;
+        sb_free(&value);
+        accepted = true;
+    }
+done:
+    sb_free(&input);
+    return accepted;
+}
+
+bool url_parse_encoding_n(const char *in, size_t length, WebEncoding encoding, URL *u) { return parse(in, length, NULL, encoding, u); }
+bool url_resolve_encoding_n(const URL *base, const char *rel, size_t length, WebEncoding encoding, URL *o) { return parse(rel, length, base, encoding, o); }
+bool url_parse_n(const char *in, size_t length, URL *u) { return parse(in, length, NULL, WEB_ENC_UTF8, u); }
+bool url_resolve_n(const URL *base, const char *rel, size_t length, URL *o) { return parse(rel, length, base, WEB_ENC_UTF8, o); }
+bool url_parse(const char *in, URL *u) { return url_parse_n(in, strlen(in), u); }
+bool url_resolve(const URL *base, const char *rel, URL *o) { return url_resolve_n(base, rel, strlen(rel), o); }
 char *url_origin(const URL *u) {
+    /* A blob URL can inherit an HTTP(S) origin; file remains opaque. */
+    if (!strcmp(u->scheme, "blob") && u->path) {
+        URL nested;
+        if (url_parse(u->path, &nested)) {
+            char *origin = (!strcmp(nested.scheme, "http") || !strcmp(nested.scheme, "https")) ? url_origin(&nested) : NULL;
+            url_free(&nested);
+            if (origin) return origin;
+        }
+    }
     SB b; sb_init(&b);
-    if (u->opaque || !u->host) { sb_puts(&b, "null"); return sb_take(&b); }
+    /* Only ftp/http/https/ws/wss have tuple origins. File uses an opaque origin. */
+    if (u->opaque || !u->host || !url_default_port(u->scheme)) { sb_puts(&b, "null"); return sb_take(&b); }
     sb_printf(&b, "%s://%s", u->scheme, u->host);
     if (u->has_port) sb_printf(&b, ":%d", u->port);
     return sb_take(&b);
@@ -451,19 +696,25 @@ char *url_to_string(const URL *u) {
     if (u->fragment) { sb_putc(&b, '#'); sb_puts(&b, u->fragment); }
     return sb_take(&b);
 }
-char *url_join(const char *base, const char *rel) {
+char *url_join_encoding_n(const char *base, const char *rel, size_t length, WebEncoding encoding) {
     URL b, o; bool hb = base && url_parse(base, &b);
-    if (!url_resolve(hb ? &b : NULL, rel, &o)) { if (hb) url_free(&b); return NULL; }
+    if (!url_resolve_encoding_n(hb ? &b : NULL, rel, length, encoding, &o)) { if (hb) url_free(&b); return NULL; }
     char *r = url_to_string(&o); url_free(&o); if (hb) url_free(&b); return r;
 }
-char *url_decode(const char *s, size_t n) {
+char *url_join_n(const char *base, const char *rel, size_t length) {
+    return url_join_encoding_n(base, rel, length, WEB_ENC_UTF8);
+}
+char *url_join(const char *base, const char *rel) { return url_join_n(base, rel, strlen(rel)); }
+static char *url_decode_bytes(const char *s, size_t n, size_t *decoded_length) {
     SB b; sb_init(&b);
     for (size_t i = 0; i < n; i++) {
         if (s[i] == '%' && i + 2 < n && hexv((unsigned char)s[i + 1]) >= 0 && hexv((unsigned char)s[i + 2]) >= 0) { sb_putc(&b, (char)(hexv((unsigned char)s[i + 1]) * 16 + hexv((unsigned char)s[i + 2]))); i += 2; }
         else sb_putc(&b, s[i]);
     }
+    if (decoded_length) *decoded_length = b.n;
     return sb_take(&b);
 }
+char *url_decode(const char *s, size_t n) { return url_decode_bytes(s, n, NULL); }
 char *url_encode_component(const char *s) {
     SB b; sb_init(&b);
     for (; *s; s++) { unsigned char c = (unsigned char)*s; if (isalnum(c) || strchr("-_.!~*'()", c)) sb_putc(&b, (char)c); else sb_printf(&b, "%%%02X", c); }

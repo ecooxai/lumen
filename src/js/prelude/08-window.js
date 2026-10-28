@@ -49,10 +49,18 @@ const localStorage = storageProxy(new Storage(ssOrigin === 'null' ? null : (m, o
 }));
 try { N.busOrigin(ssOrigin); } catch {}
 try { if (ssOrigin !== 'null') { const a = N.lsGet(ssOrigin); for (let i = 0; i + 1 < a.length; i += 2) localStorage._m.set(a[i], a[i + 1]); localStorage._recount(); } } catch {}
+// Location navigation has its own parse-failure exception. Convert the input
+// before parsing so exceptions from user conversion are preserved unchanged.
+function parseLocationNavigation(value) {
+    if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
+    const parsed = N.urlParse(String(value), document.baseURI);
+    if (!parsed) throw new DOMException('The provided URL is invalid', 'SyntaxError');
+    return {href: parsed[0], hash: parsed[9]};
+}
 class Location {
     get href() { return N.url(); } set href(v) { this.assign(v); }
-    assign(u) { const n = new URL(String(u), document.baseURI); const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.hash) { const old = cur.href; N.setUrl(n.href, true); setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: n.href }))); } else N.navigate(n.href); }
-    replace(u) { N.navigate(new URL(String(u), document.baseURI).href, true); }
+    assign(u) { if (!arguments.length) throw new TypeError('Location.assign requires a URL'); const n = parseLocationNavigation(u); const cur = new URL(N.url()); if (n.href.split('#')[0] === cur.href.split('#')[0] && n.hash) { const old = cur.href; N.setUrl(n.href, true); setTimeout(() => dispatch(G, new HashChangeEvent('hashchange', { oldURL: old, newURL: n.href }))); } else N.navigate(n.href); }
+    replace(u) { if (!arguments.length) throw new TypeError('Location.replace requires a URL'); N.navigate(parseLocationNavigation(u).href, true); }
     reload() { N.navigate(N.url()); }
     toString() { return N.url(); }
     get ancestorOrigins() { return []; }
@@ -100,7 +108,14 @@ const navigator = {
     hardwareConcurrency: N.cpus(), deviceMemory: 8, get maxTouchPoints() { return N.deviceInfo()[4]; }, plugins: [], mimeTypes: [],
     userAgentData: __uaChrome ? { brands: [{ brand: 'Google Chrome', version: __uaChrome }, { brand: 'Not?A_Brand', version: '8' }, { brand: 'Chromium', version: __uaChrome }], mobile: false, platform: N.platform() === 'MacIntel' ? 'macOS' : 'Linux', getHighEntropyValues() { return Promise.resolve({}); }, toJSON() { return {}; } } : undefined,
     connection: { effectiveType: '4g', downlink: 10, rtt: 50, saveData: false, addEventListener() {}, removeEventListener() {} },
-    javaEnabled() { return false; }, sendBeacon() { return true; }, vibrate() { return false; }, registerProtocolHandler() {},
+    javaEnabled() { return false; }, sendBeacon(url, data = null) {
+        if (this !== navigator) throw new TypeError('Illegal invocation');
+        if (arguments.length === 0) throw new TypeError('sendBeacon requires a URL argument');
+        if (typeof url === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
+        url = String(url);
+        data = beaconBodyValue(data);
+        return queueBeacon(url, data);
+    }, vibrate() { return false; }, registerProtocolHandler() {},
     clipboard: Object.assign(new EventTarget(), {
         writeText(t) { N.clipSet(String(t)); return Promise.resolve(); },
         readText() { return Promise.resolve(N.clipGet()); },
@@ -315,14 +330,18 @@ const cancelAnimationFrame = (id) => N.cancelRaf(id);
 const requestIdleCallback = (fn, o) => setTimeout(() => fn({ didTimeout: false, timeRemaining() { return 10; } }), 1);
 const cancelIdleCallback = clearTimeout;
 const queueMicrotask = (fn) => { Promise.resolve().then(() => { try { fn(); } catch (e) { report(e); } }); };
+// The exception constructor is the original lexical interface of this realm.
+N.initCloneIntrinsic((message, name) => new DOMException(message, name));
 function structuredClone(v, seen = new Map()) {
     if (v === null || typeof v !== 'object') { if (typeof v === 'function' || typeof v === 'symbol') throw new DOMException('could not be cloned.', 'DataCloneError'); return v; }
+    // Platform identity is checked before any public tag, prototype or getter.
+    if (N.cloneUnsupported(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
     if (seen.has(v)) return seen.get(v);
     const tag = Object.prototype.toString.call(v).slice(8, -1);
     if (tag === 'Date') return new Date(Date.prototype.getTime.call(v)); if (tag === 'RegExp') return new RegExp(v.source, v.flags);
     if (tag === 'ArrayBuffer') { const b = new ArrayBuffer(v.byteLength); new Uint8Array(b).set(new Uint8Array(v)); seen.set(v, b); return b; }
     if (ArrayBuffer.isView(v)) { const b = structuredClone(v.buffer, seen); return tag === 'DataView' ? new DataView(b, v.byteOffset, v.byteLength) : new globalThis[tag](b, v.byteOffset, v.length); }
-    if (v instanceof Blob || tag === 'Blob' || tag === 'File') return v; if (N.isNode(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
+    if (blobFileOps.isBlob(v)) return v; if (N.isNode(v)) throw new DOMException('could not be cloned.', 'DataCloneError');
     if (tag === 'Map') { const m = new Map(); seen.set(v, m); for (const [k, x] of v) m.set(structuredClone(k, seen), structuredClone(x, seen)); return m; }
     if (tag === 'Set') { const s = new Set(); seen.set(v, s); for (const x of v) s.add(structuredClone(x, seen)); return s; }
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = structuredClone(v[k], seen); return o;
@@ -601,6 +620,26 @@ function fireAnim(t, type, name, elapsed, anim) {
         ...N.capMics().map((l, i) => ({ deviceId: i ? 'mic' + i : 'default', groupId: 'm' + i, kind: 'audioinput', label: state('microphone') === 'granted' ? l : '', toJSON() { return { ...this }; } }))]);
     md.getSupportedConstraints = () => ({ deviceId: true, width: true, height: true, frameRate: true, sampleRate: true, channelCount: true });
     const NA = () => new DOMException('Permission denied', 'NotAllowedError'), NF = k => new DOMException('Requested device not found (' + k + ')', 'NotFoundError');
+    /* ConstrainDOMString: bare values are preferences, exact values filter
+     * devices, and empty lists impose no restriction (SelectSettings). */
+    const selectCamera = (devices, constraint) => {
+        const list = value => value === undefined ? [] : (Array.isArray(value) ? value : [value]).map(String);
+        const parameters = constraint !== null && typeof constraint === 'object' && !Array.isArray(constraint);
+        const exact = parameters ? list(constraint.exact) : [];
+        const preferred = parameters ? list(constraint.ideal) : list(constraint);
+        let candidates = devices.map((_, index) => index);
+        if (exact.length) candidates = candidates.filter(index => exact.includes('cam' + index));
+        if (!candidates.length) {
+            const error = new DOMException('No camera satisfies the requested deviceId', 'OverconstrainedError');
+            Object.defineProperty(error, 'constraint', { value: 'deviceId', enumerable: true });
+            throw error;
+        }
+        for (const id of preferred) {
+            const index = candidates.find(index => 'cam' + index === id);
+            if (index !== undefined) return index;
+        }
+        return candidates[0];
+    };
     const cameraReady = id => new Promise((resolve, reject) => {
         let frameWait = null;
         const check = () => {
@@ -622,8 +661,9 @@ function fireAnim(t, type, name, elapsed, anim) {
         const tracks = []; let openingCamera = 0;
         try {
             if ((c.video && !N.capAllowed('camera')) || (c.audio && !N.capAllowed('microphone'))) throw NA();
-            if (c.video) { const cams = N.capCameras(); if (!cams.length) throw NF('camera'); if (!ask('camera')) throw NA();
-                const v = typeof c.video === 'object' ? c.video : {}; let idx = 0; const did = ideal(v.deviceId); if (typeof did === 'string' && /^cam\d+$/.test(did)) idx = +did.slice(3);
+            if (c.video) { const cams = N.capCameras(); if (!cams.length) throw NF('camera');
+                const v = typeof c.video === 'object' ? c.video : {}; const idx = selectCamera(cams, v.deviceId);
+                if (!ask('camera')) throw NA();
                 const id = N.capCamOpen(idx, ideal(v.width), ideal(v.height), ideal(v.frameRate)); if (id < 0) throw NA(); if (!id) throw new DOMException('Could not start video source', 'NotReadableError');
                 openingCamera = id; await cameraReady(id);
                 const t = new MediaStreamTrack(RTC_INTERNAL, 'video', cams[idx]); t._.cam = id; t._.dev = 'cam' + idx; tracks.push(t); openingCamera = 0; }
@@ -818,14 +858,18 @@ function fireAnim(t, type, name, elapsed, anim) {
 (() => {
     const enabled = N.rtcLoopbackEnabled();
     const native = !enabled && nativeRTCGlobals !== null;
+    const nativeWT = typeof nativeWebTransportGlobals !== 'undefined' && nativeWebTransportGlobals !== null;
     Object.defineProperty(navigator, 'lumenCapabilities', { value: Object.freeze({
         engine: 'Lumen', webrtcNetworkTransport: native, webrtcMediaTransport: false,
         webrtcBackend: native ? 'libdatachannel-0.24.6' : enabled ? 'in-process-loopback' : 'unsupported',
         experimentalRTC: enabled ? 'in-process-loopback' : 'disabled',
-        geolocationProvider: 'ip-approximation', webTransport: false,
+        geolocationProvider: 'ip-approximation', webTransport: nativeWT,
+        webTransportBackend: nativeWT ? 'wtransport-0.7.2' : 'unsupported',
+        webTransportBYOB: false, webTransportGracefulRemoteClose: false,
     }), configurable: false, writable: false });
     if (!enabled) for (const k of ['RTCPeerConnection', 'webkitRTCPeerConnection', 'RTCSessionDescription', 'RTCIceCandidate', 'RTCPeerConnectionIceEvent', 'RTCPeerConnectionIceErrorEvent', 'RTCDataChannel', 'RTCDataChannelEvent', 'RTCTrackEvent', 'RTCRtpSender', 'RTCRtpReceiver', 'RTCRtpTransceiver', 'RTCIceTransport', 'RTCDtlsTransport', 'RTCSctpTransport', 'RTCCertificate', 'RTCStatsReport', 'RTCError', 'RTCErrorEvent']) delete globalThis[k];
     if (native) Object.assign(globalThis, nativeRTCGlobals, {RTCSessionDescription, RTCIceCandidate, RTCPeerConnectionIceEvent});
+    if (nativeWT) Object.assign(globalThis, nativeWebTransportGlobals);
 })();
 
 /* WebIDL attributes are enumerable accessors: libraries copy events with for-in (video.js fixEvent needs e.type) */
@@ -857,6 +901,13 @@ function busDeliver(kind, name, data, id, same) {
         globalThis.dispatchEvent(new StorageEvent('storage', { key: k, oldValue: o, newValue: v, url, storageArea: localStorage }));
     }
 }
-const windowCloneBlocked = Object.entries(globals).filter(([name, value]) => /^[A-Z]/.test(name) && name !== 'DOMException' && typeof value === 'function' && value.prototype).map(([, value]) => value.prototype);
+// Inspect constructor data properties without invoking Window getters. In
+// particular, length/frameElement can create or wrap a child frame before the
+// native caller has installed the protoFor function returned by this prelude.
+const windowCloneBlocked = Object.keys(globals)
+    .filter(name => /^[A-Z]/.test(name) && name !== 'DOMException' && name !== 'URL' && name !== 'URLSearchParams' && name !== 'FileReader' && name !== 'FileReaderSync')
+    .map(name => Object.getOwnPropertyDescriptor(globals, name).value)
+    .filter(value => typeof value === 'function' && value.prototype)
+    .map(value => value.prototype);
 return { DOMException, windowCloneBlocked, receiveWindowMessage, busDeliver, queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, controlSelectionChanged, mediaChanged, deviceChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

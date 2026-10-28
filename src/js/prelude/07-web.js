@@ -3,15 +3,12 @@ class TextDecoder { constructor(l = 'utf-8') { this.encoding = String(l).toLower
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 function btoa(s) { s = String(s); let r = ''; for (let i = 0; i < s.length; i += 3) { const a = s.charCodeAt(i), b = s.charCodeAt(i + 1), c = s.charCodeAt(i + 2); if (a > 255 || b > 255 || c > 255) throw new DOMException('The string to be encoded contains characters outside of the Latin1 range.', 'InvalidCharacterError'); const n = (a << 16) | ((b || 0) << 8) | (c || 0); r += B64[n >> 18 & 63] + B64[n >> 12 & 63] + (i + 1 < s.length ? B64[n >> 6 & 63] : '=') + (i + 2 < s.length ? B64[n & 63] : '='); } return r; }
 function atob(s) { s = String(s).replace(/[\t\n\f\r ]/g, ''); if (s.length % 4 === 0) s = s.replace(/==?$/, ''); if (s.length % 4 === 1 || /[^A-Za-z0-9+/]/.test(s)) throw new DOMException('The string to be decoded is not correctly encoded.', 'InvalidCharacterError'); let r = '', bits = 0, n = 0; for (const ch of s) { n = (n << 6) | B64.indexOf(ch); bits += 6; if (bits >= 8) { bits -= 8; r += String.fromCharCode((n >> bits) & 255); } } return r; }
-const toBytes = (p) => typeof p === 'string' ? N.encode(p) : p instanceof ArrayBuffer ? p : ArrayBuffer.isView(p) ? p.buffer.slice(p.byteOffset, p.byteOffset + p.byteLength) : p instanceof Blob ? p._buf : N.encode(String(p));
-class Blob {
-    constructor(parts = [], o = {}) { const bufs = parts.map(toBytes); const len = bufs.reduce((a, b) => a + b.byteLength, 0); const u = new Uint8Array(len); let off = 0; for (const b of bufs) { u.set(new Uint8Array(b), off); off += b.byteLength; } def(this, '_buf', u.buffer); this.type = String(o.type || '').toLowerCase(); }
-    get size() { return this._buf.byteLength; }
-    slice(a = 0, b = this.size, t = '') { return new Blob([this._buf.slice(a, b)], { type: t }); }
-    arrayBuffer() { return Promise.resolve(this._buf.slice(0)); } text() { return Promise.resolve(N.decode(this._buf)); } bytes() { return Promise.resolve(new Uint8Array(this._buf.slice(0))); }
-    stream() { const b = this._buf; return new ReadableStream({ start(c) { c.enqueue(new Uint8Array(b)); c.close(); } }); }
-}
-class File extends Blob { constructor(p, name, o = {}) { super(p, o); this.name = String(name); this.lastModified = o.lastModified || Date.now(); } }
+const blobFileOps = createBlobFileInterfaces(nativeIDL, {
+    blobState: N.blobState, encode: N.encode, decode: N.decode,
+    stream: bytes => new ReadableStream({start(controller) { controller.enqueue(bytes); controller.close(); }}),
+});
+const {Blob, File} = blobFileOps;
+const toBytes = (p) => typeof p === 'string' ? N.encode(p) : blobFileOps.isBlob(p) ? blobFileOps.copyBuffer(p) : p instanceof ArrayBuffer ? p : ArrayBuffer.isView(p) ? p.buffer.slice(p.byteOffset, p.byteOffset + p.byteLength) : N.encode(String(p));
 class FileList {
     constructor(files = []) { files.forEach((f, i) => { this[i] = f; }); def(this, 'length', files.length); }
     item(i) { return this[i] ?? null; }
@@ -25,7 +22,7 @@ class DataTransferItem {
 }
 class DataTransferItemList extends Array {
     static get [Symbol.species]() { return Array; }
-    add(d, type) { const it = d instanceof File ? new DataTransferItem('file', d.type, d) : new DataTransferItem('string', String(type).toLowerCase(), String(d)); this.push(it); return it; }
+    add(d, type) { const it = blobFileOps.isFile(d) ? new DataTransferItem('file', blobFileOps.type(d), d) : new DataTransferItem('string', String(type).toLowerCase(), String(d)); this.push(it); return it; }
     remove(i) { this.splice(i, 1); } clear() { this.length = 0; }
 }
 class DataTransfer {
@@ -38,13 +35,16 @@ class DataTransfer {
     clearData(t) { for (let i = this._items.length - 1; i >= 0; i--) { const x = this._items[i]; if (x.kind === 'string' && (t == null || x.type === String(t).toLowerCase())) this._items.splice(i, 1); } }
     setDragImage() {}
 }
-class FileReader extends EventTarget {
-    constructor() { super(); this.result = null; this.readyState = 0; this.error = null; }
-    _read(b, f) { this.readyState = 1; setTimeout(() => { this.result = f(b); this.readyState = 2; for (const t of ['load', 'loadend']) { const ev = new ProgressEvent(t); if (this['on' + t]) this['on' + t](ev); dispatch(this, ev); } }); }
-    readAsText(b) { this._read(b, x => N.decode(x._buf)); } readAsArrayBuffer(b) { this._read(b, x => x._buf.slice(0)); }
-    readAsDataURL(b) { this._read(b, x => 'data:' + (x.type || 'application/octet-stream') + ';base64,' + btoa(((u, s) => { for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return s; })(new Uint8Array(x._buf), ''))); }
-    abort() {}
-}
+const { FileReader } = createFileReaderInterfaces(nativeIDL, {
+    schedule: callback => N.timer(callback, 0, false),
+    cancel: N.clearTimer,
+    blobState: N.blobState,
+    package: N.fileReaderPackage,
+    fire(reader, name, loaded, total, queued) {
+        const event = new ProgressEvent(name, { lengthComputable: total > 0, loaded, total });
+        dispatch(reader, event, true, queued ? N.fileReaderCheckpoint : undefined, true);
+    },
+}, false);
 const streamCtl = (s) => ({
     enqueue(x) { if (s._done || s._err) throw new TypeError('Cannot enqueue a chunk into a closed stream'); s._q.push(x); s._wake(); },
     close() { s._done = true; s._wake(); }, error(e) { if (!s._done) { s._err = e === undefined ? new TypeError('errored') : e; s._wake(); } },
@@ -335,48 +335,27 @@ if (typeof WebAssembly === 'object' && !WebAssembly.compileStreaming) {
         instantiateStreaming: { value: async function instantiateStreaming(src, imports) { return WebAssembly.instantiate(await wasmBody(src, 'instantiateStreaming'), imports); }, writable: true, configurable: true },
     });
 }
-class URLSearchParams {
-    constructor(init = '') {
-        def(this, '_l', []); def(this, '_u', null);
-        if (init instanceof URLSearchParams) this._l = init._l.map(x => x.slice());
-        else if (typeof init === 'object' && init) { if (Symbol.iterator in init) for (const [k, v] of init) this._l.push([String(k), String(v)]); else for (const k of Object.keys(init)) this._l.push([k, String(init[k])]); }
-        else { init = String(init); if (init[0] === '?') init = init.slice(1); for (const p of init.split('&')) { if (!p) continue; const i = p.indexOf('='); const dec = (s) => { try { return decodeURIComponent(s.replace(/\+/g, ' ')); } catch (e) { return s; } }; this._l.push(i < 0 ? [dec(p), ''] : [dec(p.slice(0, i)), dec(p.slice(i + 1))]); } }
-    }
-    _upd() { if (this._u) { const s = this.toString(); this._u._set('search', s ? '?' + s : ''); } }
-    get size() { return this._l.length; }
-    append(k, v) { this._l.push([String(k), String(v)]); this._upd(); }
-    delete(k, v) { k = String(k); this._l = this._l.filter(([a, b]) => a !== k || (v !== undefined && b !== String(v))); this._upd(); }
-    get(k) { const e = this._l.find(([a]) => a === String(k)); return e ? e[1] : null; }
-    getAll(k) { return this._l.filter(([a]) => a === String(k)).map(e => e[1]); }
-    has(k, v) { return this._l.some(([a, b]) => a === String(k) && (v === undefined || b === String(v))); }
-    set(k, v) { k = String(k); const i = this._l.findIndex(([a]) => a === k); if (i < 0) this._l.push([k, String(v)]); else { this._l[i][1] = String(v); this._l = this._l.filter(([a], j) => a !== k || j === i); } this._upd(); }
-    sort() { this._l.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0); this._upd(); }
-    forEach(fn, self) { for (const [k, v] of this._l) fn.call(self, v, k, this); }
-    keys() { return this._l.map(e => e[0])[Symbol.iterator](); } values() { return this._l.map(e => e[1])[Symbol.iterator](); }
-    entries() { return this._l.map(e => e.slice())[Symbol.iterator](); } [Symbol.iterator]() { return this.entries(); }
-    toString() { const enc = (s) => encodeURIComponent(s).replace(/%20/g, '+').replace(/[!'()~]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase()); return this._l.map(([k, v]) => enc(k) + '=' + enc(v)).join('&'); }
-}
-const URL_KEYS = ['href', 'protocol', 'username', 'password', 'host', 'hostname', 'port', 'pathname', 'search', 'hash', 'origin'];
-class URL {
-    constructor(u, base) { const r = N.urlParse(String(u), base === undefined ? null : String(base)); if (!r) throw new TypeError(`Failed to construct 'URL': Invalid URL`); def(this, '_p', r); def(this, '_sp', null); }
-    _set(k, v) {
-        const p = this._p, i = URL_KEYS.indexOf(k);
-        if (k === 'href') { const r = N.urlParse(String(v), null); if (!r) throw new TypeError('Invalid URL'); this._p = r; }
-        else {
-            v = String(v);
-            if (k === 'search' && v && v[0] !== '?') v = '?' + v; if (k === 'hash' && v && v[0] !== '#') v = '#' + v; if (k === 'protocol' && !v.endsWith(':')) v += ':';
-            if (k === 'pathname' && v[0] !== '/') v = '/' + v;
-            p[i] = v; if (k === 'hostname' || k === 'port') p[4] = p[5] + (p[6] ? ':' + p[6] : '');
-            const auth = p[2] ? p[2] + (p[3] ? ':' + p[3] : '') + '@' : '';
-            const r = N.urlParse(p[1] + '//' + auth + p[4] + p[7] + p[8] + p[9], null); if (r) this._p = r;
+const urlSearchParamsOps = createURLSearchParams(nativeIDL);
+const { URLSearchParams } = urlSearchParamsOps;
+const { URL, keys: URL_KEYS } = createURLInterface(N.urlParse, N.urlSet, urlSearchParamsOps, {
+    create(b) {
+        const isBlob = blobFileOps.isBlob(b);
+        if (!isBlob && !(typeof MediaSource !== 'undefined' && b instanceof MediaSource)) throw new TypeError('Object URL requires a Blob or MediaSource');
+        const u = 'blob:' + location.origin + '/' + (++objectURLSeq).toString(16).padStart(8, '0') + '-lumen';
+        objectURLs.set(u, b);
+        if (isBlob) {
+            const type = blobFileOps.type(b);
+            if (blobFileOps.size(b) < 8e6 && (!type || /javascript|ecmascript/i.test(type)))
+                N.blobMod(u, N.decode(blobFileOps.copyBuffer(b)));
         }
-        if (this._sp && k !== 'search') { this._sp._l = new URLSearchParams(this._p[8])._l; }
-    }
-    get searchParams() { if (!this._sp) { const sp = new URLSearchParams(this._p[8]); sp._u = this; def(this, '_sp', sp); } return this._sp; }
-    toString() { return this._p[0]; } toJSON() { return this._p[0]; }
-    static canParse(u, b) { return !!N.urlParse(String(u), b === undefined ? null : String(b)); }
-    static parse(u, b) { try { return new URL(u, b); } catch (e) { return null; } }
-    static createObjectURL(b) { const u = 'blob:' + location.origin + '/' + (++objectURLSeq).toString(16).padStart(8, '0') + '-lumen'; objectURLs.set(u, b); if (b && b._buf && b._buf.byteLength < 8e6 && (!b.type || /javascript|ecmascript/i.test(b.type))) N.blobMod(u, new TextDecoder().decode(b._buf)); return u; }
-    static revokeObjectURL(u) { const b = objectURLs.get(u); if (b && b.__file) { N.blobFileFree(b.__file); b.__file = null; } if (objectURLs.delete(u)) N.blobMod(String(u)); }
-}
-URL_KEYS.forEach((k, i) => acc(URL.prototype, k, function () { return this._p[i]; }, k === 'origin' ? undefined : function (v) { this._set(k, v); }));
+        return u;
+    },
+    revoke(u) {
+        const b = objectURLs.get(u);
+        if (blobFileOps.isBlob(b)) {
+            const path = blobFileOps.mediaFile(b);
+            if (path) { N.blobFileFree(path); blobFileOps.mediaFile(b, null); }
+        }
+        if (objectURLs.delete(u)) N.blobMod(u);
+    },
+}, nativeIDL);

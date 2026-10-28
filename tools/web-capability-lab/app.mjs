@@ -1,4 +1,4 @@
-import { ReportStore, ResourceScope, errorState, within, validateEcho, inspectRTCEvidence } from './core.mjs';
+import { ReportStore, ResourceScope, errorState, within, validateEcho, inspectRTCEvidence, validateByteStreamEcho } from './core.mjs';
 
 const definitions = [
   ['camera','Camera','CAM','Request a live video track. Preview stops after 15 seconds.','device'],
@@ -163,8 +163,15 @@ const probes={
     requireSecure();if(!window.WebTransport)return unsupported('WebTransport is not exposed by this engine.');
     if(!config.webtransport?.available)return {state:'configuration',detail:'Start the optional HTTP/3 server to test WebTransport / QUIC.',evidence:{apiPresent:true,quicVerified:false}};
     const settings=config.webtransport;const options={serverCertificateHashes:[{algorithm:'sha-256',value:new Uint8Array(settings.certificateHash)}]};const transport=new WebTransport(settings.url,options);transport.closed.catch(()=>{});scope.add(()=>transport.close());await transport.ready;
-    const writer=transport.datagrams.writable.getWriter(),reader=transport.datagrams.readable.getReader();scope.add(()=>{writer.releaseLock();reader.cancel().catch(()=>{});reader.releaseLock();});const sent=`lume-h3-${crypto.randomUUID?.()||Date.now()}`;await writer.write(new TextEncoder().encode(sent));const {value,done}=await reader.read();if(done)throw new Error('WebTransport datagram stream closed without echo');validateEcho(sent,new TextDecoder().decode(value));
-    scope.dispose();return {detail:'Datagram echo matched over the HTTP/3-only QUIC endpoint.',evidence:{payloadMatched:true,endpoint:settings.url,serverTransport:'HTTP/3 over QUIC only',quicVerified:true,bytes:value.byteLength}};
+    const writer=transport.datagrams.writable.getWriter(),reader=transport.datagrams.readable.getReader();scope.add(()=>{try{writer.releaseLock();}catch{}reader.cancel().catch(()=>{});try{reader.releaseLock();}catch{}});
+    const sent=`lume-h3-datagram-${crypto.randomUUID?.()||Date.now()}`;await writer.write(new TextEncoder().encode(sent));const {value,done}=await reader.read();if(done)throw new Error('WebTransport datagram stream closed without echo');validateEcho(sent,new TextDecoder().decode(value));
+    if(typeof transport.createBidirectionalStream!=='function')throw new Error('WebTransport reliable bidirectional streams are unavailable');
+    const stream=await transport.createBidirectionalStream();const streamWriter=stream.writable.getWriter(),streamReader=stream.readable.getReader();
+    scope.add(()=>{streamWriter.abort().catch(()=>{});streamReader.cancel().catch(()=>{});try{streamWriter.releaseLock();}catch{}try{streamReader.releaseLock();}catch{}});
+    const streamPayload=new TextEncoder().encode(`lume-h3-stream-${crypto.randomUUID?.()||Date.now()}`);await streamWriter.write(streamPayload);await streamWriter.close();
+    const streamBytes=await validateByteStreamEcho(streamReader,streamPayload);
+    transport.close({closeCode:0,reason:'Capability probe completed'});await transport.closed;
+    scope.dispose();return {detail:'Fresh datagram and reliable stream echoes matched over HTTP/3; stream EOF and session closure verified.',evidence:{payloadMatched:true,datagramEchoMatched:true,reliableStreamEchoMatched:true,streamFinished:true,closedPromiseResolved:true,endpoint:settings.url,serverTransport:'HTTP/3 over QUIC only',quicVerified:true,bytes:value.byteLength,streamBytes}};
   },
   async google(scope){return simulateIdentity('Google',scope);},
   async apple(scope){return simulateIdentity('Apple',scope);}

@@ -6,6 +6,11 @@
 #include <chrono>
 /* Native functions (the `N` object) backing the JS DOM/Web API prelude */
 #include "js_int.h"
+#include "url_parts.h"
+#include "idl_state.h"
+#include "blob_state.h"
+#include "file_reader.h"
+#include "clone_brand.h"
 #include "../dom/control.h"
 #include <thread>
 #ifndef __APPLE__
@@ -86,9 +91,14 @@ FN(setText) {
     clear_children(n);
     if (!s.empty()) node_append(n, node_new_text(c->doc, s.data(), s.size()));
 }
-FN(attr) { CTX; ARGN(n, 0); std::string k = S(1); RET(nstr(iso, n->type == NODE_ELEMENT || n->type == NODE_DOCTYPE ? node_attr(n, k.c_str()) : nullptr)); }
+FN(attr) {
+    CTX; ARGN(n, 0); std::string k = S(1);
+    if (k.find('\0') != std::string::npos) { RET(v8::Null(iso)); return; }
+    size_t length = 0; const char *value = node_attr_n(n, k.c_str(), &length);
+    if (value) RET(jstr(iso, value, (int)length)); else RET(v8::Null(iso));
+}
 FN(setAttr) {
-    CTX; ARGN(n, 0); std::string k = S(1), v = S(2); node_set_attr(n, atom(k.c_str()), v.c_str());
+    CTX; ARGN(n, 0); std::string k = S(1), v = S(2); node_set_attr_n(n, atom(k.c_str()), v.data(), v.size());
     if (k == "style") { if (a.Length() > 3 && a[3]->IsTrue()) n->flags |= NF_STYLE_CSSOM; else n->flags &= ~(uint32_t)NF_STYLE_CSSOM; }
 }
 FN(cspExempt) { CTX; ARGN(n, 0); if (!(n->flags & NF_CSP_STYLE_CHECKED)) n->flags |= NF_CSP_STYLE_CHECKED; }   /* <style> filled by CSSOM / constructed sheets */
@@ -98,7 +108,7 @@ FN(attrs) {
     v8::Local<v8::Array> r = v8::Array::New(iso, n->nattrs * 2);
     for (int i = 0; i < n->nattrs; i++) {
         (void)r->Set(ctx, 2 * i, jstr(iso, n->attrs[i].name));
-        (void)r->Set(ctx, 2 * i + 1, jstr(iso, n->attrs[i].value ? n->attrs[i].value : ""));
+        (void)r->Set(ctx, 2 * i + 1, jstr(iso, n->attrs[i].value ? n->attrs[i].value : "", (int)n->attrs[i].value_len));
     }
     RET(r);
 }
@@ -335,6 +345,71 @@ static const char *origin_url(JsCtx *c) {
 FN(cookie) { CTX; if (c->sb_opaque) { RET(jstr(iso, "")); return; } char *s = cookies_get_document(origin_url(c), js_top_url(c)); RET(jstr(iso, s ? s : "")); free(s); }
 FN(setCookie) { CTX; if (c->sb_opaque) return; std::string s = S(0); cookies_set_document(origin_url(c), js_top_url(c), s.c_str()); }
 FN(url) { CTX; RET(jstr(iso, c->doc->url ? c->doc->url : "about:blank")); }
+/* These receiver-based callbacks retain no borrowed JsCtx pointer. Authentic
+ * DOM wrappers identify their own document, including adopted elements and
+ * retained objects whose former frame is now inactive. */
+FN(documentEncoding) {
+    v8::Isolate *iso = a.GetIsolate();
+    Node *node = junwrap(a[0]);
+    if (!node || node->type != NODE_DOCUMENT) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Illegal invocation")));
+        return;
+    }
+    const char *name = web_encoding_name(((Document *)node)->encoding);
+    RET(jstr(iso, name ? name : "UTF-8"));
+}
+
+FN(documentBaseUrl) {
+    v8::Isolate *iso = a.GetIsolate();
+    Node *node = junwrap(a[0]);
+    if (!node || node->type != NODE_DOCUMENT) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Illegal invocation")));
+        return;
+    }
+    std::string base = js_document_base_url((Document *)node, true);
+    RET(jstr(iso, base.data(), base.size()));
+}
+
+FN(htmlUrl) {
+    v8::Isolate *iso = a.GetIsolate();
+    v8::Local<v8::Context> context = iso->GetCurrentContext();
+    Node *element = junwrap(a[0]);
+    const std::string tag = a[3]->IsString() ? jcstr(iso, a[3]) : "";
+    const bool genuine = (tag == "a" && node_is(element, A_a)) ||
+        (tag == "area" && node_is(element, A_area));
+    if (!genuine || !element->doc) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Illegal invocation")));
+        return;
+    }
+    if (!a[1]->IsInt32()) return;
+    int component = a[1].As<v8::Int32>()->Value();
+    /* The JS binding performs receiver validation before WebIDL conversion,
+     * then calls again to read the possibly reentrantly changed attribute. */
+    if (component == -1) { RET(v8::True(iso)); return; }
+    if (component < 0 || component > URL_SET_HASH ||
+        (component && !a[2]->IsString())) return;
+    a.GetReturnValue().SetNull();
+    size_t length = 0;
+    const char *href = node_attr_n(element, "href", &length);
+    if (!href) return;
+    Document *document = element->doc;
+    std::string base = js_document_base_url(document, true);
+    URL base_url{}, url{};
+    bool has_base = url_parse_n(base.data(), base.size(), &base_url);
+    bool ok = url_resolve_encoding_n(has_base ? &base_url : nullptr, href, length,
+                                     document->encoding, &url);
+    if (has_base) url_free(&base_url);
+    if (!ok) return;
+    if (component) {
+        std::string input = jcstr(iso, a[2]);
+        /* HTML hyperlink search assignment uses the basic parser's UTF-8
+         * default, unlike resolving a raw href in the document encoding. */
+        (void)url_set_component_n(&url, (URLComponent)component, input.data(), input.size());
+    }
+    RET(jsg_url_parts(iso, context, url));
+    url_free(&url);
+}
+
 FN(baseUrl) { CTX; RET(jstr(iso, js_windows_base_url(c, false).c_str())); }
 FN(referrer) { CTX; RET(jstr(iso, c->doc && c->doc->referrer ? c->doc->referrer : "")); }
 /* HTML "can have its URL rewritten": same origin alone is insufficient for
@@ -355,15 +430,29 @@ static bool history_url_allowed(const char *current, const char *next) {
     return ok;
 }
 FN(setUrl) {
-    CTX; std::string u = S(0);
-    if (!history_url_allowed(c->doc->url, u.c_str())) { RET(false); return; }
+    CTX; std::string u = S(0); URL parsed{};
+    if (!url_parse_n(u.data(), u.size(), &parsed)) { RET(false); return; }
+    char *canonical = url_to_string(&parsed); url_free(&parsed);
+    if (!canonical || !history_url_allowed(c->doc->url, canonical)) { free(canonical); RET(false); return; }
+    u = canonical; free(canonical);
     free(c->doc->url); c->doc->url = xstrdup(u.c_str());
     if (c->host.set_url) c->host.set_url(c->host.ud, u.c_str(), BOOL(1));
     RET(true);
 }
-FN(navigate) { CTX; std::string u = S(0); if (js_windows_navigate(js_window_caller(iso), c, u, BOOL(1))) return; if (c->parent) { frame_nav(c, u.c_str()); return; } if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str()); }
+static bool navigation_url(JsCtx *c, std::string &input) {
+    const std::string base = js_windows_base_url(c, true);
+    char *canonical = url_join_n(base.c_str(), input.data(), input.size());
+    if (!canonical) return false;
+    input = canonical; free(canonical); return true;
+}
+FN(navigate) {
+    CTX; std::string u = S(0); if (!navigation_url(c, u)) return;
+    if (js_windows_navigate(js_window_caller(iso), c, u, BOOL(1))) return;
+    if (c->parent) { frame_nav(c, u); return; }
+    if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str());
+}
 FN(navigatePost) {
-    CTX; std::string u = S(0), t = S(2); const char *bp; size_t bn; std::string b;
+    CTX; std::string u = S(0), t = S(2); if (!navigation_url(c, u)) return; const char *bp; size_t bn; std::string b;
     if (bytes_of(a[1], &bp, &bn)) b.assign(bp, bn); else b = S(1);
     if (c->host.navigate_post) c->host.navigate_post(c->host.ud, u.c_str(), b.data(), b.size(), t.c_str());
     else if (c->host.navigate) c->host.navigate(c->host.ud, u.c_str());
@@ -433,7 +522,8 @@ FN(idbGet) {
 }
 FN(idbPut) {
     CTX; v8::Local<v8::Context> cx = iso->GetCurrentContext();
-    v8::ValueSerializer ser(iso); ser.WriteHeader();
+    JsgCloneDelegate delegate(iso);
+    v8::ValueSerializer ser(iso, &delegate); ser.WriteHeader();
     if (!ser.WriteValue(cx, a[2]).FromMaybe(false)) return;
     std::pair<uint8_t *, size_t> r = ser.Release();
     std::lock_guard<std::mutex> g(g_ls_mu); IdbOrigin &D = idb_get(S(0)); std::string n = S(1);
@@ -467,7 +557,8 @@ void js_bus_listen(const void *key, std::function<void()> wake) {
 }
 bool js_bus_post(v8::Isolate *iso, v8::Local<v8::Context> cx, v8::Local<v8::Value> v, const std::string &origin,
                  const std::string &kind, const std::string &name, const void *sender, double id) {
-    v8::ValueSerializer ser(iso);
+    JsgCloneDelegate delegate(iso);
+    v8::ValueSerializer ser(iso, &delegate);
     ser.WriteHeader();
     if (!ser.WriteValue(cx, v).FromMaybe(false)) return false;
     std::pair<uint8_t *, size_t> r = ser.Release();
@@ -575,6 +666,52 @@ FN(raf) {
 }
 FN(cancelRaf) { CTX; c->rafs.erase((uint32_t)NUM(0)); }
 FN(now) { CTX; RET(now_ms() - c->t0); }
+
+/* RFC6265bis document site-for-cookies audits every inclusive ancestor. A
+ * sandboxed document uses its URI origin; other documents use their immutable
+ * principal, including inherited about:blank/srcdoc origins. */
+static std::string beacon_cookie_origin(JsCtx *c) {
+    if (!c) return "null";
+    if (!c->sb_opaque) return ctx_origin(c);
+    URL parsed = {};
+    if (!c->doc || !c->doc->url) return "null";
+    if (!url_parse(c->doc->url, &parsed)) { url_free(&parsed); return "null"; }
+    char *raw = url_origin(&parsed);
+    std::string result = raw ? raw : "null";
+    free(raw); url_free(&parsed);
+    return result;
+}
+static std::string beacon_cookie_site(JsCtx *c, bool *cross_site) {
+    JsCtx *top = c;
+    while (top && top->parent) top = top->parent;
+    std::string origin = beacon_cookie_origin(top);
+    *cross_site = !net_beacon_same_site(origin.c_str(), origin.c_str());
+    for (JsCtx *ancestor = c; ancestor; ancestor = ancestor->parent) {
+        std::string current = beacon_cookie_origin(ancestor);
+        if (!net_beacon_same_site(origin.c_str(), current.c_str())) *cross_site = true;
+    }
+    return origin;
+}
+FN(sendBeacon) {
+    CTX;
+    std::string url = S(0), type = S(2);
+    const char *body = nullptr; size_t bytes = 0;
+    if ((!a[1]->IsNullOrUndefined() && !bytes_of(a[1], &body, &bytes)) ||
+        url.find('\0') != std::string::npos || type.find('\0') != std::string::npos) {
+        RET(false); return;
+    }
+    if (!c->keepalive_group) c->keepalive_group = net_keepalive_group_new();
+    std::string origin = ctx_origin(c);
+    NetBeaconOptions options{};
+    std::string site = beacon_cookie_site(c, &options.force_cross_site);
+    options.origin = origin.c_str();
+    options.document_url = c->doc && c->doc->url ? c->doc->url : "";
+    options.top_origin = site.c_str();
+    options.referrer_policy = c->doc ? c->doc->referrer_policy : "";
+    options.csp = c->doc ? c->doc->csp : nullptr;
+    options.coep_require_corp = c->doc && c->doc->coep_require_corp;
+    RET(net_beacon_queue(c->keepalive_group, &options, url.c_str(), type.c_str(), body, bytes));
+}
 
 static NetRequest *mkreq(JsCtx *c, const FCI &a, int credentials_arg) {
     v8::Isolate *iso = c->iso;
@@ -747,6 +884,12 @@ FN(mediaState) {
     };
     RET(v8::Array::New(iso, v, 11));
 }
+FN(mediaQuality) {
+    CTX; MP; MpVideoQuality q; mp_video_quality(mp, &q);
+    v8::Local<v8::Value> v[] = { v8::Integer::NewFromUnsigned(iso, q.total),
+        v8::Integer::NewFromUnsigned(iso, q.dropped), v8::Integer::NewFromUnsigned(iso, q.corrupted) };
+    RET(v8::Array::New(iso, v, 3));
+}
 FN(mediaCanPlay) { CTX; RET((double)media_can_play(S(0).c_str(), BOOL(1))); }
 FN(fetch) {
     CTX;
@@ -901,36 +1044,52 @@ FN(currentScript) { CTX; RET(jwrap(c, c->current_script)); }
 FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
 FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
 FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
+FN(initCloneIntrinsic) { jsg_init_clone_intrinsic(a); }
+FN(cloneUnsupported) { jsg_clone_unsupported(a); }
+FN(idlGet) { jsg_idl_get(a); }
+FN(idlPut) { jsg_idl_put(a); }
+FN(idlRegister) { jsg_idl_register(a); }
+FN(idlFallback) { jsg_idl_fallback(a); }
 FN(urlParse) {
-    CTX; std::string s = S(0);
+    // URL records do not require a retained document owner.
+    v8::Isolate *iso = a.GetIsolate();
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    std::string s = S(0);
     URL u = {}, b = {};
     bool ok;
-    if (a[1]->IsNullOrUndefined()) ok = url_parse(s.c_str(), &u);
+    if (a[1]->IsNullOrUndefined()) ok = url_parse_n(s.data(), s.size(), &u);
     else {
         std::string bs = S(1);
-        ok = url_parse(bs.c_str(), &b) && url_resolve(&b, s.c_str(), &u);
+        ok = url_parse_n(bs.data(), bs.size(), &b) && url_resolve_n(&b, s.data(), s.size(), &u);
         url_free(&b);
     }
     if (!ok || !u.scheme) { url_free(&u); RET(v8::Null(iso)); return; }
-    char *href = url_to_string(&u);
-    std::string user, pass;
-    if (u.userinfo) { const char *col = strchr(u.userinfo, ':'); user = col ? std::string(u.userinfo, (size_t)(col - u.userinfo)) : u.userinfo; if (col) pass = col + 1; }
-    std::string hostname = u.host ? u.host : "";
-    std::string port = u.has_port ? std::to_string(u.port) : "";
-    std::string host = hostname + (port.empty() ? "" : ":" + port);
-    std::string origin = "null";
-    if (!u.opaque && u.host) { char *o = url_origin(&u); if (o) { origin = o; free(o); } }
-    std::string f[11] = { href ? href : s, std::string(u.scheme) + ":", user, pass, host, hostname, port, u.path ? u.path : "",
-                          u.query && *u.query ? std::string("?") + u.query : "", u.fragment && *u.fragment ? std::string("#") + u.fragment : "", origin };
-    free(href);
+    auto result = jsg_url_parts(iso, ctx, u);
     url_free(&u);
-    v8::Local<v8::Array> r = v8::Array::New(iso, 11);
-    for (int i = 0; i < 11; i++) (void)r->Set(ctx, i, jstr(iso, f[i].c_str(), (int)f[i].size()));
-    RET(r);
+    RET(result);
 }
-FN(encode) { CTX; v8::String::Utf8Value u(iso, a[0]); RET(mkab(iso, *u ? *u : "", *u ? (size_t)u.length() : 0)); }
+FN(urlSet) {
+    // URL records do not require a retained document owner.
+    v8::Isolate *iso = a.GetIsolate();
+    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+    std::string href = S(0), value = S(2);
+    URL u = {};
+    if (!url_parse_n(href.data(), href.size(), &u)) { url_free(&u); RET(v8::Null(iso)); return; }
+    int component = a[1]->Int32Value(ctx).FromMaybe(0);
+    // A host can be committed before an invalid port. Serialize the actual
+    // resulting record even when the override reports an ignored/rejected part.
+    (void)url_set_component_n(&u, (URLComponent)component, value.data(), value.size());
+    auto result = jsg_url_parts(iso, ctx, u);
+    url_free(&u);
+    RET(result);
+}
+FN(blobState) { jsg_blob_state(a); }
+FN(fileReaderPackage) { jsg_file_reader_package(a); }
+FN(fileReaderCheckpoint) { jsg_file_reader_checkpoint(a); }
+
+FN(encode) { v8::Isolate *iso = a.GetIsolate(); v8::String::Utf8Value u(iso, a[0]); RET(mkab(iso, *u ? *u : "", *u ? (size_t)u.length() : 0)); }
 FN(decode) {
-    CTX; const char *p = ""; size_t n = 0;
+    v8::Isolate *iso = a.GetIsolate(); const char *p = ""; size_t n = 0;
     bytes_of(a[0], &p, &n);
     if (n >= 3 && (unsigned char)p[0] == 0xEF && (unsigned char)p[1] == 0xBB && (unsigned char)p[2] == 0xBF) { p += 3; n -= 3; }
     RET(jstr(iso, p, (int)n));
@@ -1189,9 +1348,9 @@ void js_run_inserted(JsCtx *c, Node *root) {
         s->flags |= NF_SCRIPT_STARTED;
         bool mod = jsg_module_script(s);
         if (!mod && !jsg_classic_script(s)) continue;
-        const char *src = node_attr(s, "src");
+        size_t src_length = 0; const char *src = node_attr_n(s, "src", &src_length);
         if (mod) {
-            char *t = src ? nullptr : node_text_content(s), *u = src && *src ? url_join(c->doc->url, src) : nullptr;
+            char *t = src ? nullptr : node_text_content(s), *u = src && src_length ? url_join_n(c->doc->url, src, src_length) : nullptr;
             if (src && !u) jfire(c, s, "error");
             else js_run_module(c, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : c->doc->url);
             free(t); free(u);
@@ -1203,12 +1362,12 @@ void js_run_inserted(JsCtx *c, Node *root) {
             free(t);
             continue;
         }
-        char *u = *src ? url_join(c->doc->url, src) : nullptr;
+        char *u = src_length ? url_join_n(c->doc->url, src, src_length) : nullptr;
         if (!u) { jfire(c, s, "error"); continue; }
         jwrap(c, s);
         NetRequest *rq = net_request_ctx("GET", u, js_top_url(c));
         if (char *ref = net_referrer(c->doc->url, u, c->doc->referrer_policy)) { headers_add(&rq->headers, "Referer", ref); free(ref); }
-        if (c->doc->url && !node_attr(s, "crossorigin")) { rq->no_cors_origin = strdup(c->doc->url); rq->coep_require_corp = c->doc->coep_require_corp; }
+        if (c->doc->url && !node_has_attr(s, "crossorigin")) { rq->no_cors_origin = strdup(c->doc->url); rq->coep_require_corp = c->doc->coep_require_corp; }
         start_fetch(c, rq, new Fetch{ c, 0, {}, s });
         free(u);
     }
@@ -1229,11 +1388,11 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(baseUrl); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);
     REG(histLen); REG(ssGet); REG(ssSet); REG(lsGet); REG(lsSet); REG(lsDel); REG(drainMicrotasks); REG(idbGen); REG(idbGet); REG(idbPut); REG(idbDel); REG(idbNames); REG(storageUsage);
     REG(busPost);
-    REG(busOrigin); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
+    REG(busOrigin); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(sendBeacon); REG(fetch); REG(fetchSync);
     REG(abort); REG(mediaNew); REG(mediaFree); REG(mediaOpen); REG(blobFile); REG(blobFileFree); REG(mediaAddBuffer); REG(mediaAppend); REG(mediaRemove); REG(mediaAbort);
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
-    REG(sbFlags); REG(compileHandler); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(deviceInfo); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
-    REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
+    REG(sbFlags); REG(compileHandler); REG(ctxOrigin); REG(mediaVolume); REG(mediaState); REG(mediaQuality); REG(mediaCanPlay); REG(log); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(deviceInfo); REG(scrollTo); REG(hit); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(readyState); REG(quirks); REG(coi);
+    REG(currentScript); REG(media); REG(cssSupports); REG(cssSelText); REG(urlParse); REG(urlSet); REG(documentEncoding); REG(documentBaseUrl); REG(htmlUrl); REG(idlGet); REG(idlPut); REG(idlRegister); REG(idlFallback); REG(initCloneIntrinsic); REG(cloneUnsupported); REG(blobState); REG(fileReaderPackage); REG(fileReaderCheckpoint); REG(encode); REG(decode); REG(random); REG(cDigest); REG(cHmac); REG(cAes); REG(cEcGen); REG(cEcDerive); REG(cEcSign); REG(cEcVerify); REG(cSpki); REG(cSpkiParse); REG(cPkcs8Parse); REG(cEcFromD); REG(cHkdf); REG(cPbkdf2);
     REG(heap); REG(imgSize); REG(userAgent); REG(platform); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_windows(c, N); js_install_workers(c, N); js_install_canvas(c, N); js_install_webgpu(c, N); js_install_capture(c, N);

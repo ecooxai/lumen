@@ -32,8 +32,8 @@ struct Fixture {
         auto *self = static_cast<Fixture *>(opaque);
         ++self->url_writes; self->last_push = push; self->last_url = url;
     }
-    Fixture() {
-        document = doc_new("https://sender.test/start");
+    explicit Fixture(const char *url = "https://sender.test/start") {
+        document = doc_new(url);
         const char *html = "<!doctype html><html><body></body></html>";
         html_parse(document, html, strlen(html));
         JsHost host{}; host.ud = this; host.set_url = set_url;
@@ -90,6 +90,26 @@ int main(int argc, char **argv) {
             "try { history.pushState(function(){},'','/not-installed'); } catch(e) { cloneError=e.name; }"
             "cloneError==='DataCloneError' && history.state===savedState && location.href==='https://sender.test/b#two'"));
         CHECK("clone failure does not reach the native URL host", f.url_writes == previous_writes);
+    }
+    /* Equal opaque serializations must never merge native document principals. */
+    for (const char *url : {"file:///opaque.html", "non-special://host/path", "data:text/html,opaque", "blob:ftp://host/path", "blob:blob:https://sender.test/path", "blob:file:///opaque.html"}) {
+        Fixture first(url), second(url);
+        CHECK("opaque origins serialize as null", ctx_origin(first.context) == "null" &&
+            ctx_origin(second.context) == "null");
+        CHECK("opaque documents retain distinct native identities", first.context->opaque_origin &&
+            second.context->opaque_origin && first.context->opaque_origin != second.context->opaque_origin);
+        CHECK("separate opaque documents are cross-origin", !js_windows_same_origin(first.context, second.context));
+        CHECK("an opaque document remains same-origin with itself", js_windows_same_origin(first.context, first.context));
+        CHECK("web URL origin serializes opaque schemes as null", value(first.context, "new URL(location.href).origin==='null'"));
+    }
+    {
+        Fixture first("https://sender.test/a"), second("https://SENDER.test:443/b");
+        CHECK("ordinary tuple documents are not opaque", !first.context->opaque_origin && !second.context->opaque_origin);
+        CHECK("canonical tuple equality is preserved", js_windows_same_origin(first.context, second.context));
+        Fixture blob("blob:https://SENDER.test:443/object");
+        CHECK("HTTP(S) blob documents inherit a canonical tuple", !blob.context->opaque_origin && ctx_origin(blob.context) == "https://sender.test");
+        CHECK("HTTP(S) blob principal matches its embedded origin", js_windows_same_origin(first.context, blob.context));
+        CHECK("web blob origin agrees with the native principal", value(blob.context, "new URL(location.href).origin==='https://sender.test'"));
     }
     net_shutdown();
     printf("RESULTS history-origin %s (%d/%d checks)\n", failures ? "FAIL" : "PASS", checks - failures, checks);

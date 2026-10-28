@@ -16,7 +16,7 @@ std::string feature(const char *name) {
     return name;
 }
 std::string canonical_origin(const std::string &text) {
-    URL url{}; if(!url_parse(text.c_str(),&url)) return {};
+    URL url{}; if(!url_parse_n(text.data(),text.size(),&url)) return {};
     char *s=url_origin(&url); std::string out=s?s:"";free(s);url_free(&url);return out;
 }
 bool origin_token(std::string item,const std::string &self,const std::string &target,const std::string &src) {
@@ -46,16 +46,20 @@ bool header_allows(const char *text,const std::string &name,const std::string &s
     return true;
 }
 std::string source_origin(const JsCtx *child) {
-    const char *src=child->frame_el?node_attr(child->frame_el,"src"):nullptr;
-    if(!src || !*src || !strncmp(src,"about:blank",11) || !strncmp(src,"about:srcdoc",12))return child->parent->origin;
-    char *resolved=url_join(child->parent->doc->url,src);std::string out=resolved?canonical_origin(resolved):std::string();free(resolved);return out;
+    size_t length=0; const char *src=child->frame_el?node_attr_n(child->frame_el,"src",&length):nullptr;
+    if(!src || !length)return child->parent->origin;
+    char *resolved=url_join_n(child->parent->doc->url,src,length);
+    if(!resolved)return {};
+    const bool inherited=!strcmp(resolved,"about:blank") || !strncmp(resolved,"about:blank#",12) ||
+                         !strcmp(resolved,"about:srcdoc") || !strncmp(resolved,"about:srcdoc#",13);
+    std::string out=inherited?child->parent->origin:canonical_origin(resolved);free(resolved);return out;
 }
 bool frame_allows(const JsCtx *child,const std::string &name) {
     const JsCtx *parent=child->parent;
-    const char *text=child->frame_el?node_attr(child->frame_el,"allow"):nullptr;
+    size_t length=0; const char *text=child->frame_el?node_attr_n(child->frame_el,"allow",&length):nullptr;
     bool matched=false;
     if(text){
-        std::istringstream in(text);std::string directive;
+        std::istringstream in{std::string(text,length)};std::string directive;
         while(std::getline(in,directive,';')){
             directive=trim(directive);size_t space=directive.find_first_of(" \t\r\n");
             if(directive.substr(0,space)!=name)continue;matched=true;

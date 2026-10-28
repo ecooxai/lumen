@@ -5,6 +5,8 @@
  */
 #include "../src/js/worker.cc"
 #include <thread>
+#include <fstream>
+#include <iterator>
 #include <arpa/inet.h>
 #include <poll.h>
 #include <sys/socket.h>
@@ -169,6 +171,310 @@ static void check_shared_buffer_lifetime(int order) {
     CHECK("owner teardown releases delivered and undelivered shared buffers", backing.expired());
 }
 
+/* Exercise the actual worker isolate, global bindings and cross-thread pump.
+ * This source is loaded from the repository so it also remains a readable JS
+ * regression. Its cases are separate from the upstream WPT assertion counts.
+ */
+static void check_worker_eventtarget_receivers() {
+    printf("CASE worker-eventtarget receivers\n");
+    std::ifstream input("tests/js/worker-eventtarget-regression.js", std::ios::binary);
+    std::string source((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+    CHECK("worker receiver regression source is available", !input.bad() && !source.empty() && source.size() < 65536);
+    if (input.bad() || source.empty() || source.size() >= 65536) return;
+
+    Document *d = doc_new("https://worker.test/eventtarget.html");
+    const char *html = "<!doctype html><html><body></body></html>";
+    html_parse(d, html, strlen(html));
+    JsHost host{};
+    JsCtx *c = js_new(d, &host);
+    {
+        JS_ENTER(c);
+        (void)ctx->Global()->Set(ctx, jstr(iso, "__workerReceiverSource"), jstr(iso, source.c_str()));
+    }
+    js_eval(c, R"JS(
+globalThis.__workerReceiverRows = null;
+globalThis.__workerReceiverReady = false;
+globalThis.__workerReceiverErrors = [];
+globalThis.__workerReceiver = new Worker(URL.createObjectURL(new Blob(
+    [__workerReceiverSource], {type: 'text/javascript'})));
+const receiverFailure = message => {
+    __workerReceiverErrors.push(String(message));
+    document.documentElement.setAttribute('data-worker-receiver-error', __workerReceiverErrors.join('; '));
+};
+__workerReceiver.onerror = event => receiverFailure('worker error: ' + event.message);
+__workerReceiver.onmessageerror = () => receiverFailure('worker messageerror');
+__workerReceiver.onmessage = event => {
+    const data = event.data;
+    if (!data || typeof data !== 'object') { receiverFailure('invalid message'); return; }
+    if (data.kind === 'lumen-eventtarget-ready') {
+        if (__workerReceiverReady || data.completed !== 47 || data.expected !== 48) {
+            receiverFailure('invalid or repeated ready message'); return;
+        }
+        __workerReceiverReady = true;
+        __workerReceiver.postMessage({kind: 'lumen-eventtarget-ping'});
+    } else if (data.kind === 'lumen-eventtarget-results') {
+        if (!__workerReceiverReady || __workerReceiverRows !== null || data.expected !== 48 ||
+            !Array.isArray(data.rows) || data.rows.length !== 48 ||
+            data.rows.some(row => !row || typeof row.name !== 'string' ||
+                (row.status !== 'PASS' && row.status !== 'FAIL')) ||
+            new Set(data.rows.map(row => row.name)).size !== 48) {
+            receiverFailure('invalid, duplicate or incomplete result rows'); return;
+        }
+        __workerReceiverRows = data.rows;
+        document.documentElement.setAttribute('data-worker-receiver-complete', 'true');
+    } else {
+        receiverFailure('unexpected worker message');
+    }
+};
+)JS", "test:worker-eventtarget-receivers");
+
+    bool complete = false;
+    const double deadline = now_ms() + 5000;
+    while (now_ms() < deadline) {
+        js_tick(c);
+        const char *done = node_attr(d->html, "data-worker-receiver-complete");
+        complete = done && !strcmp(done, "true");
+        if (complete || node_attr(d->html, "data-worker-receiver-error")) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    const char *protocol_error = node_attr(d->html, "data-worker-receiver-error");
+    CHECK("actual worker completes all 48 unique receiver cases before the deadline", complete && !protocol_error);
+    if (protocol_error) fprintf(stderr, "worker receiver protocol error: %s\n", protocol_error);
+    if (complete && !protocol_error) {
+        JS_ENTER(c);
+        v8::Local<v8::Value> value;
+        bool found = ctx->Global()->Get(ctx, jstr(iso, "__workerReceiverRows")).ToLocal(&value) && value->IsArray();
+        CHECK("worker receiver results remain an intact 48-row array", found && value.As<v8::Array>()->Length() == 48);
+        if (found && value.As<v8::Array>()->Length() == 48) {
+            auto rows = value.As<v8::Array>();
+            for (uint32_t i = 0; i < rows->Length(); ++i) {
+                v8::Local<v8::Value> row_value, name_value, status_value;
+                bool shape = rows->Get(ctx, i).ToLocal(&row_value) && row_value->IsObject();
+                if (shape) {
+                    auto row = row_value.As<v8::Object>();
+                    shape = row->Get(ctx, jstr(iso, "name")).ToLocal(&name_value) &&
+                            row->Get(ctx, jstr(iso, "status")).ToLocal(&status_value);
+                }
+                std::string name = shape ? jcstr(iso, name_value) : "malformed worker receiver row";
+                bool passed = shape && jcstr(iso, status_value) == "PASS";
+                CHECK(name.c_str(), passed);
+                if (!passed && shape) {
+                    v8::Local<v8::Value> message;
+                    if (row_value.As<v8::Object>()->Get(ctx, jstr(iso, "message")).ToLocal(&message))
+                        fprintf(stderr, "  %s\n", jcstr(iso, message).c_str());
+                }
+            }
+        }
+    }
+    // Cleanup remains bounded even when the pre-fix worker fails or times out.
+    js_eval(c, "__workerReceiver.terminate(); __workerReceiver = null; __workerReceiverSource = null;",
+            "test:worker-eventtarget-receiver-cleanup");
+    js_free(c); doc_free(d);
+    CHECK("worker receiver regression releases its thread and owner", wait_worker_threads(5000));
+}
+
+
+static void check_worker_native_urls() {
+    printf("CASE worker-url native bindings\n");
+    std::ifstream input("tests/js/worker-url-regression.js", std::ios::binary);
+    std::string source((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+    CHECK("worker URL regression source is available", !input.bad() && !source.empty() && source.size() < 65536);
+    if (input.bad() || source.empty() || source.size() >= 65536) return;
+
+    Document *d = doc_new("https://worker.test/url.html");
+    const char *html = "<!doctype html><html><body></body></html>";
+    html_parse(d, html, strlen(html));
+    JsHost host{};
+    JsCtx *c = js_new(d, &host);
+    {
+        JS_ENTER(c);
+        (void)ctx->Global()->Set(ctx, jstr(iso, "__workerURLRegressionSource"), jstr(iso, source.c_str()));
+    }
+    js_eval(c, R"JS(
+globalThis.__workerURLRegressionRows = null;
+globalThis.__workerURLRegressionReady = false;
+globalThis.__workerURLRegressionErrors = [];
+globalThis.__workerURLRegression = new Worker(URL.createObjectURL(new Blob(
+    [__workerURLRegressionSource], {type: 'text/javascript'})));
+const URLFailure = message => {
+    __workerURLRegressionErrors.push(String(message));
+    document.documentElement.setAttribute('data-worker-url-error', __workerURLRegressionErrors.join('; '));
+};
+__workerURLRegression.onerror = event => URLFailure('worker error: ' + event.message);
+__workerURLRegression.onmessageerror = () => URLFailure('worker messageerror');
+__workerURLRegression.onmessage = event => {
+    const data = event.data;
+    if (!data || typeof data !== 'object') { URLFailure('invalid message'); return; }
+    if (data.kind === 'lumen-url-ready') {
+        if (__workerURLRegressionReady || data.completed !== 73 || data.expected !== 74) {
+            URLFailure('invalid or repeated ready message'); return;
+        }
+        __workerURLRegressionReady = true;
+        __workerURLRegression.postMessage({kind: 'lumen-url-ping'});
+    } else if (data.kind === 'lumen-url-results') {
+        if (!__workerURLRegressionReady || __workerURLRegressionRows !== null || data.expected !== 74 ||
+            !Array.isArray(data.rows) || data.rows.length !== 74 ||
+            data.rows.some(row => !row || typeof row.name !== 'string' ||
+                (row.status !== 'PASS' && row.status !== 'FAIL')) ||
+            new Set(data.rows.map(row => row.name)).size !== 74) {
+            URLFailure('invalid, duplicate or incomplete result rows'); return;
+        }
+        __workerURLRegressionRows = data.rows;
+        document.documentElement.setAttribute('data-worker-url-complete', 'true');
+    } else {
+        URLFailure('unexpected worker message');
+    }
+};
+)JS", "test:worker-native-url");
+
+    bool complete = false;
+    const double deadline = now_ms() + 5000;
+    while (now_ms() < deadline) {
+        js_tick(c);
+        const char *done = node_attr(d->html, "data-worker-url-complete");
+        complete = done && !strcmp(done, "true");
+        if (complete || node_attr(d->html, "data-worker-url-error")) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    const char *protocol_error = node_attr(d->html, "data-worker-url-error");
+    CHECK("actual worker completes all 74 unique URL cases before the deadline", complete && !protocol_error);
+    if (protocol_error) fprintf(stderr, "worker URL protocol error: %s\n", protocol_error);
+    if (complete && !protocol_error) {
+        JS_ENTER(c);
+        v8::Local<v8::Value> value;
+        bool found = ctx->Global()->Get(ctx, jstr(iso, "__workerURLRegressionRows")).ToLocal(&value) && value->IsArray();
+        CHECK("worker URL results remain an intact 74-row array", found && value.As<v8::Array>()->Length() == 74);
+        if (found && value.As<v8::Array>()->Length() == 74) {
+            auto rows = value.As<v8::Array>();
+            for (uint32_t i = 0; i < rows->Length(); ++i) {
+                v8::Local<v8::Value> row_value, name_value, status_value;
+                bool shape = rows->Get(ctx, i).ToLocal(&row_value) && row_value->IsObject();
+                if (shape) {
+                    auto row = row_value.As<v8::Object>();
+                    shape = row->Get(ctx, jstr(iso, "name")).ToLocal(&name_value) &&
+                            row->Get(ctx, jstr(iso, "status")).ToLocal(&status_value);
+                }
+                std::string name = shape ? jcstr(iso, name_value) : "malformed worker URL row";
+                bool passed = shape && jcstr(iso, status_value) == "PASS";
+                CHECK(name.c_str(), passed);
+                if (!passed && shape) {
+                    v8::Local<v8::Value> message;
+                    if (row_value.As<v8::Object>()->Get(ctx, jstr(iso, "message")).ToLocal(&message))
+                        fprintf(stderr, "  %s\n", jcstr(iso, message).c_str());
+                }
+            }
+        }
+    }
+    // Cleanup remains bounded even when the pre-fix worker fails or times out.
+    js_eval(c, "__workerURLRegression.terminate(); __workerURLRegression = null; __workerURLRegressionSource = null;",
+            "test:worker-native-url-cleanup");
+    js_free(c); doc_free(d);
+    CHECK("worker URL regression releases its thread and owner", wait_worker_threads(5000));
+}
+
+static void check_worker_query_bodies() {
+    printf("CASE worker-query-body native bindings\n");
+    std::ifstream common_input("tests/js/url-params-body-regression.js", std::ios::binary);
+    std::ifstream input("tests/js/worker-query-body-regression.js", std::ios::binary);
+    std::string common((std::istreambuf_iterator<char>(common_input)), std::istreambuf_iterator<char>());
+    std::string driver((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+    bool available = !common_input.bad() && !input.bad() && !common.empty() && !driver.empty() &&
+        common.size() + driver.size() + 1 < 65536;
+    CHECK("worker query/body regression source is available", available);
+    if (!available) return;
+    std::string source = common + "\n" + driver;
+
+    Document *d = doc_new("https://worker.test/query-body.html");
+    const char *html = "<!doctype html><html><body></body></html>";
+    html_parse(d, html, strlen(html));
+    JsHost host{};
+    JsCtx *c = js_new(d, &host);
+    {
+        JS_ENTER(c);
+        (void)ctx->Global()->Set(ctx, jstr(iso, "__workerQueryBodyRegressionSource"), jstr(iso, source.c_str()));
+    }
+    js_eval(c, R"JS(
+globalThis.__workerQueryBodyRegressionRows = null;
+globalThis.__workerQueryBodyRegressionReady = false;
+globalThis.__workerQueryBodyRegressionErrors = [];
+globalThis.__workerQueryBodyRegression = new Worker(URL.createObjectURL(new Blob(
+    [__workerQueryBodyRegressionSource], {type: 'text/javascript'})));
+const QueryBodyFailure = message => {
+    __workerQueryBodyRegressionErrors.push(String(message));
+    document.documentElement.setAttribute('data-worker-query-body-error', __workerQueryBodyRegressionErrors.join('; '));
+};
+__workerQueryBodyRegression.onerror = event => QueryBodyFailure('worker error: ' + event.message);
+__workerQueryBodyRegression.onmessageerror = () => QueryBodyFailure('worker messageerror');
+__workerQueryBodyRegression.onmessage = event => {
+    const data = event.data;
+    if (!data || typeof data !== 'object') { QueryBodyFailure('invalid message'); return; }
+    if (data.kind === 'lumen-query-body-ready') {
+        if (__workerQueryBodyRegressionReady || data.completed !== 72 || data.expected !== 73) {
+            QueryBodyFailure('invalid or repeated ready message'); return;
+        }
+        __workerQueryBodyRegressionReady = true;
+        __workerQueryBodyRegression.postMessage({kind: 'lumen-query-body-ping'});
+    } else if (data.kind === 'lumen-query-body-results') {
+        if (!__workerQueryBodyRegressionReady || __workerQueryBodyRegressionRows !== null || data.expected !== 73 ||
+            !Array.isArray(data.rows) || data.rows.length !== 73 ||
+            data.rows.some(row => !row || typeof row.name !== 'string' ||
+                (row.status !== 'PASS' && row.status !== 'FAIL')) ||
+            new Set(data.rows.map(row => row.name)).size !== 73) {
+            QueryBodyFailure('invalid, duplicate or incomplete result rows'); return;
+        }
+        __workerQueryBodyRegressionRows = data.rows;
+        document.documentElement.setAttribute('data-worker-query-body-complete', 'true');
+    } else {
+        QueryBodyFailure('unexpected worker message');
+    }
+};
+)JS", "test:worker-query-body");
+
+    bool complete = false;
+    const double deadline = now_ms() + 5000;
+    while (now_ms() < deadline) {
+        js_tick(c);
+        const char *done = node_attr(d->html, "data-worker-query-body-complete");
+        complete = done && !strcmp(done, "true");
+        if (complete || node_attr(d->html, "data-worker-query-body-error")) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    const char *protocol_error = node_attr(d->html, "data-worker-query-body-error");
+    CHECK("actual worker completes all 73 unique query/body cases before the deadline", complete && !protocol_error);
+    if (protocol_error) fprintf(stderr, "worker query/body protocol error: %s\n", protocol_error);
+    if (complete && !protocol_error) {
+        JS_ENTER(c);
+        v8::Local<v8::Value> value;
+        bool found = ctx->Global()->Get(ctx, jstr(iso, "__workerQueryBodyRegressionRows")).ToLocal(&value) && value->IsArray();
+        CHECK("worker query/body results remain an intact 73-row array", found && value.As<v8::Array>()->Length() == 73);
+        if (found && value.As<v8::Array>()->Length() == 73) {
+            auto rows = value.As<v8::Array>();
+            for (uint32_t i = 0; i < rows->Length(); ++i) {
+                v8::Local<v8::Value> row_value, name_value, status_value;
+                bool shape = rows->Get(ctx, i).ToLocal(&row_value) && row_value->IsObject();
+                if (shape) {
+                    auto row = row_value.As<v8::Object>();
+                    shape = row->Get(ctx, jstr(iso, "name")).ToLocal(&name_value) &&
+                            row->Get(ctx, jstr(iso, "status")).ToLocal(&status_value);
+                }
+                std::string name = shape ? jcstr(iso, name_value) : "malformed worker query/body row";
+                bool passed = shape && jcstr(iso, status_value) == "PASS";
+                CHECK(name.c_str(), passed);
+                if (!passed && shape) {
+                    v8::Local<v8::Value> message;
+                    if (row_value.As<v8::Object>()->Get(ctx, jstr(iso, "message")).ToLocal(&message))
+                        fprintf(stderr, "  %s\n", jcstr(iso, message).c_str());
+                }
+            }
+        }
+    }
+    // Cleanup remains bounded even when the pre-fix worker fails or times out.
+    js_eval(c, "__workerQueryBodyRegression.terminate(); __workerQueryBodyRegression = null; __workerQueryBodyRegressionSource = null;",
+            "test:worker-query-body-cleanup");
+    js_free(c); doc_free(d);
+    CHECK("worker query/body regression releases its thread and owner", wait_worker_threads(5000));
+}
+
 int main(int argc, char **argv) {
     dom_init(); net_init(2); font_init(); js_global_init(argv[0]);
     Document *d = doc_new("file:///worker-lifecycle.html");
@@ -188,6 +494,9 @@ int main(int argc, char **argv) {
         printf("RESULTS worker-exit returning through the registered backstop\n");
         return 0;
     }
+    check_worker_eventtarget_receivers();
+    check_worker_native_urls();
+    check_worker_query_bodies();
     js_eval(c,
         "globalThis.received = []; globalThis.closedWorker = new Worker(URL.createObjectURL(new Blob(["
         "\"postMessage('before-close'); close(); postMessage('after-close');\""

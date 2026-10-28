@@ -2,6 +2,11 @@
    Messages cross threads as V8 ValueSerializer buffers. */
 #include "js_int.h"
 #include "jsglue.h"
+#include "url_parts.h"
+#include "idl_state.h"
+#include "blob_state.h"
+#include "file_reader.h"
+#include "clone_brand.h"
 #include <libplatform/libplatform.h>
 #include <pthread.h>
 #include <algorithm>
@@ -27,6 +32,7 @@ enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
 struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
+    bool creator_secure = false; /* native owner setting, captured before thread creation */
     std::string url, src, ua, platform, name, top; bool have_src = false, module = false, coi = false;
     std::string ocsp, odoc; bool has_ocsp = false;   /* creator document's CSP: worker-src check, inherited by blob:/data: workers */
     std::mutex mu; std::condition_variable cv;
@@ -94,10 +100,9 @@ void wm_meta(v8::Local<v8::Context> ctx, v8::Local<v8::Module> m, v8::Local<v8::
 void wake() { if (js_wakeup) js_wakeup(); }
 
 /* WebAssembly.Module and SharedArrayBuffer cross threads by reference (compiled code / backing store). */
-struct SerDel : v8::ValueSerializer::Delegate {
+struct SerDel : JsgCloneDelegate {
     v8::Isolate *iso; std::shared_ptr<Side> side = std::make_shared<Side>();
-    explicit SerDel(v8::Isolate *i) : iso(i) {}
-    void ThrowDataCloneError(v8::Local<v8::String> m) override { iso->ThrowException(v8::Exception::Error(m)); }
+    explicit SerDel(v8::Isolate *i) : JsgCloneDelegate(i), iso(i) {}
     v8::Maybe<uint32_t> GetWasmModuleTransferId(v8::Isolate *, v8::Local<v8::WasmModuleObject> m) override {
         side->wasm.push_back(m->GetCompiledModule()); return v8::Just<uint32_t>((uint32_t)side->wasm.size() - 1);
     }
@@ -216,7 +221,7 @@ void throw_dom(v8::Isolate *iso, v8::Local<v8::Context> ctx, const std::string &
     else iso->ThrowException(v8::Exception::Error(jstr(iso, msg.c_str())));
 }
 std::string resolve(WEnv *E, const std::string &rel, const char *base = nullptr) {
-    char *u = url_join(base ? base : E->w->url.c_str(), rel.c_str());
+    char *u = url_join_n(base ? base : E->w->url.c_str(), rel.data(), rel.size());
     std::string r = u ? u : ""; free(u); return r;
 }
 
@@ -242,6 +247,9 @@ WFN(close) {
 }
 WFN(now) { WENV; a.GetReturnValue().Set(now_ms() - E->t0); }
 WFN(log) { WENV; if (getenv("LUMEN_CONSOLE")) fprintf(stderr, "[worker %d] %.2000s\n", a[0]->Int32Value(ctx).FromMaybe(1), jcstr(iso, a[1]).c_str()); }
+WFN(blobState) { jsg_blob_state(a); }
+WFN(fileReaderPackage) { jsg_file_reader_package(a); }
+WFN(fileReaderCheckpoint) { jsg_file_reader_checkpoint(a); }
 WFN(decode) {
     WENV; const char *p; size_t n;
     if (!bytes_of(a[0], p, n)) { a.GetReturnValue().Set(jstr(iso, "")); return; }
@@ -254,6 +262,44 @@ WFN(resolve) {
     std::string r = resolve(E, jcstr(iso, a[0]), base.c_str());
     if (r.empty()) a.GetReturnValue().SetNull(); else a.GetReturnValue().Set(jstr(iso, r.c_str()));
 }
+// URL construction has an optional base; fetch/import resolution keeps the
+// separate worker-relative W.resolve path. Both URL realms share the native
+// parser, state overrides and record serialization.
+WFN(initCloneIntrinsic) { jsg_init_clone_intrinsic(a); }
+WFN(idlGet) { jsg_idl_get(a); }
+WFN(idlPut) { jsg_idl_put(a); }
+WFN(idlRegister) { jsg_idl_register(a); }
+WFN(idlFallback) { jsg_idl_fallback(a); }
+WFN(urlParse) {
+    WENV; std::string input = jcstr(iso, a[0]);
+    URL url = {}, base = {};
+    bool ok;
+    if (a[1]->IsNullOrUndefined()) ok = url_parse_n(input.data(), input.size(), &url);
+    else {
+        std::string value = jcstr(iso, a[1]);
+        ok = url_parse_n(value.data(), value.size(), &base) &&
+             url_resolve_n(&base, input.data(), input.size(), &url);
+        url_free(&base);
+    }
+    if (!ok || !url.scheme) { url_free(&url); a.GetReturnValue().SetNull(); return; }
+    auto result = jsg_url_parts(iso, ctx, url);
+    url_free(&url);
+    a.GetReturnValue().Set(result);
+}
+WFN(urlSet) {
+    WENV; std::string href = jcstr(iso, a[0]), value = jcstr(iso, a[2]);
+    URL url = {};
+    if (!url_parse_n(href.data(), href.size(), &url)) {
+        url_free(&url); a.GetReturnValue().SetNull(); return;
+    }
+    int component = a[1]->Int32Value(ctx).FromMaybe(0);
+    // A valid host may commit before an invalid port: return the actual record.
+    (void)url_set_component_n(&url, (URLComponent)component, value.data(), value.size());
+    auto result = jsg_url_parts(iso, ctx, url);
+    url_free(&url);
+    a.GetReturnValue().Set(result);
+}
+
 WFN(fetch) {
     WENV; std::string u = jcstr(iso, a[0]), m = a[1]->IsString() ? jcstr(iso, a[1]) : "GET";
     NetRequest *rq = net_request_ctx(m.c_str(), u.c_str(), E->w->top.empty() ? nullptr : E->w->top.c_str());
@@ -327,8 +373,9 @@ if (typeof WebAssembly === 'object' && !WebAssembly.compileStreaming) {
 }
 'use strict';
 const def = (o, k, v) => Object.defineProperty(o, k, { value: v, writable: true, configurable: true, enumerable: false });
-const codes = { IndexSizeError: 1, HierarchyRequestError: 3, WrongDocumentError: 4, InvalidCharacterError: 5, NotFoundError: 8, NotSupportedError: 9, InvalidStateError: 11, SyntaxError: 12, InvalidModificationError: 13, NamespaceError: 14, InvalidAccessError: 15, SecurityError: 18, NetworkError: 19, AbortError: 20, URLMismatchError: 21, QuotaExceededError: 22, TimeoutError: 23, DataCloneError: 25 };
-class DOMException extends Error { constructor(message = '', name = 'Error') { super(String(message)); def(this, 'name', String(name)); } get code() { return codes[this.name] || 0; } }
+const nativeIDL = { get: W.idlGet, put: W.idlPut, register: W.idlRegister, fallback: W.idlFallback };
+const DOMException = createDOMExceptionInterface(nativeIDL);
+W.initCloneIntrinsic((message, name) => new DOMException(message, name));
 class Event {
     constructor(type, init) { init = init || {}; this.type = String(type); this.bubbles = !!init.bubbles; this.cancelable = !!init.cancelable; this.composed = !!init.composed; this.defaultPrevented = false; this.target = null; this.currentTarget = null; this.eventPhase = 0; this.isTrusted = false; this.timeStamp = W.now(); def(this, '_stop', false); }
     preventDefault() { if (this.cancelable) this.defaultPrevented = true; }
@@ -340,54 +387,81 @@ class MessageEvent extends Event { constructor(t, i) { super(t, i); i = i || {};
 class ErrorEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.message = i.message || ''; this.filename = i.filename || ''; this.lineno = i.lineno || 0; this.colno = i.colno || 0; this.error = i.error; } }
 class CustomEvent extends Event { constructor(t, i) { super(t, i); this.detail = i && i.detail !== undefined ? i.detail : null; } }
 class PromiseRejectionEvent extends Event { constructor(t, i) { super(t, i); this.promise = i && i.promise; this.reason = i && i.reason; } }
-const lsn = new WeakMap();
-const listeners = t => { let m = lsn.get(t); if (!m) lsn.set(t, m = new Map()); return m; };
-function fireOn(t, e, skipHandler) {
+// Web IDL operations substitute this realm's global for a null/undefined
+// receiver, then require an object that implements the interface. The map
+// brands actual EventTargets; inheriting their prototype is not sufficient.
+const lsn = new WeakMap([[G, new Map()]]);
+const eventTargetReceiver = receiver => {
+    const target = receiver === null || receiver === undefined ? G : receiver;
+    if (!lsn.has(target)) throw new TypeError('Illegal invocation');
+    return target;
+};
+const listeners = t => lsn.get(t);
+function fireOn(t, e, skipHandler, checkpoint) {
     e.target = t; e.currentTarget = t; e.eventPhase = 2;
-    const h = t['on' + e.type];
-    if (!skipHandler && typeof h === 'function') { try { const r = h.call(t, e); if (r === false && e.type !== 'error') e.preventDefault(); } catch (x) { W.reportErr(x); } }
+    if (!skipHandler) {
+        const h = t['on' + e.type];
+        if (typeof h === 'function') {
+            try {
+                let result;
+                try { result = h.call(t, e); }
+                finally { if (checkpoint) checkpoint(); }
+                if (result === false && e.type !== 'error') e.preventDefault();
+            } catch (error) { W.reportErr(error); if (checkpoint) checkpoint(); }
+        }
+    }
     for (const l of (listeners(t).get(e.type) || []).slice()) {
         if (l.removed) continue;
         if (l.once) t.removeEventListener(e.type, l.fn);
-        try { if (typeof l.fn === 'function') l.fn.call(t, e); else if (l.fn && typeof l.fn.handleEvent === 'function') l.fn.handleEvent(e); } catch (x) { W.reportErr(x); }
+        try {
+            try { if (typeof l.fn === 'function') l.fn.call(t, e); else if (l.fn && typeof l.fn.handleEvent === 'function') l.fn.handleEvent(e); }
+            finally { if (checkpoint) checkpoint(); }
+        } catch (error) { W.reportErr(error); if (checkpoint) checkpoint(); }
         if (e._stop) break;
     }
     e.currentTarget = null; e.eventPhase = 0;
     return !e.defaultPrevented;
 }
 class EventTarget {
-    addEventListener(t, fn, o) { if (!fn) return; t = String(t); const L = listeners(this).get(t) || []; if (L.some(x => x.fn === fn)) return; L.push({ fn, once: !!(o && typeof o === 'object' && o.once) }); listeners(this).set(t, L); }
-    removeEventListener(t, fn) { const L = listeners(this).get(String(t)); if (!L) return; const i = L.findIndex(x => x.fn === fn); if (i >= 0) { L[i].removed = true; L.splice(i, 1); } }
-    dispatchEvent(e) { if (!(e instanceof Event)) throw new TypeError("parameter 1 is not of type 'Event'."); return fireOn(this, e); }
+    constructor() { lsn.set(this, new Map()); }
+    addEventListener(t, fn, o) { const target = eventTargetReceiver(this); if (!fn) return; t = String(t); const L = listeners(target).get(t) || []; if (L.some(x => x.fn === fn)) return; L.push({ fn, once: !!(o && typeof o === 'object' && o.once) }); listeners(target).set(t, L); }
+    removeEventListener(t, fn) { const target = eventTargetReceiver(this); const L = listeners(target).get(String(t)); if (!L) return; const i = L.findIndex(x => x.fn === fn); if (i >= 0) { L[i].removed = true; L.splice(i, 1); } }
+    dispatchEvent(e) { const target = eventTargetReceiver(this); if (!(e instanceof Event)) throw new TypeError("parameter 1 is not of type 'Event'."); return fireOn(target, e, nativeIDL.get(4, target) !== undefined); }
 }
 class WorkerGlobalScope extends EventTarget {}
 class DedicatedWorkerGlobalScope extends WorkerGlobalScope {}
 Object.setPrototypeOf(G, DedicatedWorkerGlobalScope.prototype);
 
-const URLRE = /^([a-zA-Z][a-zA-Z0-9+.-]*:)(?:\/\/(?:[^@\/?#]*@)?(\[[^\]]*\]|[^\/?#:]*)(?::(\d*))?)?([^?#]*)(\?[^#]*)?(#.*)?$/;
-function parts(href) {
-    const m = URLRE.exec(href) || [];
-    const protocol = m[1] || '', hostname = m[2] || '', port = m[3] || '', host = hostname + (port ? ':' + port : '');
-    const origin = /^(https?|wss?|ftp):$/.test(protocol) ? protocol + '//' + host : protocol === 'blob:' ? parts(m[4] || '').origin : 'null';
-    return { href, protocol, host, hostname, port, pathname: m[4] || '', search: m[5] && m[5] !== '?' ? m[5] : '', hash: m[6] && m[6] !== '#' ? m[6] : '', origin };
-}
-class URLSearchParams {
-    constructor(q) { def(this, '_p', []); q = String(q ?? '').replace(/^\?/, ''); if (q) for (const kv of q.split('&')) { const i = kv.indexOf('='), d = s => decodeURIComponent(s.replace(/\+/g, ' ')); this._p.push(i < 0 ? [d(kv), ''] : [d(kv.slice(0, i)), d(kv.slice(i + 1))]); } }
-    get(k) { const e = this._p.find(p => p[0] === k); return e ? e[1] : null; } getAll(k) { return this._p.filter(p => p[0] === k).map(p => p[1]); } has(k) { return this._p.some(p => p[0] === k); }
-    append(k, v) { this._p.push([String(k), String(v)]); } set(k, v) { this.delete(k); this.append(k, v); } delete(k) { this._p = this._p.filter(p => p[0] !== k); }
-    forEach(f) { for (const [k, v] of this._p) f(v, k, this); } entries() { return this._p[Symbol.iterator](); } [Symbol.iterator]() { return this._p[Symbol.iterator](); }
-    toString() { return this._p.map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&'); }
-}
-class URL {
-    constructor(u, base) { const h = W.resolve(String(u), base === undefined ? undefined : String(base)); if (h == null) throw new TypeError("Failed to construct 'URL': Invalid URL"); Object.assign(this, parts(h)); this.searchParams = new URLSearchParams(this.search); }
-    toString() { return this.href; } toJSON() { return this.href; }
-    static createObjectURL(b) { const u = 'blob:' + self.location.origin + '/' + (++URL._seq).toString(16).padStart(8, '0') + '-lumenw'; URL._map.set(u, b); return u; }
-    static revokeObjectURL(u) { URL._map.delete(String(u)); }
-    static canParse(u, b) { try { new URL(u, b); return true; } catch { return false; } }
-}
-URL._seq = 0; URL._map = new Map();
+)JS"
+#include "dom_exception.inc"
+#include "url_interface.inc"
+#include "url_search_params.inc"
+#include "file_reader.inc"
+#include "blob_file.inc"
+R"JS(
+const urlSearchParamsOps = createURLSearchParams(nativeIDL);
+const { URLSearchParams } = urlSearchParamsOps;
+const workerObjectURLs = new Map(); let workerObjectURLSeq = 0;
+const { URL, keys: URL_KEYS } = createURLInterface(W.urlParse, W.urlSet, urlSearchParamsOps, {
+    create(blob) {
+        if (!blobFileOps.isBlob(blob)) throw new TypeError('Object URL requires a Blob');
+        const href = 'blob:' + self.location.origin + '/' + (++workerObjectURLSeq).toString(16).padStart(8, '0') + '-lumenw';
+        workerObjectURLs.set(href, blob); return href;
+    },
+    revoke(input) { workerObjectURLs.delete(input); },
+}, nativeIDL);
+
 class WorkerLocation { toString() { return this.href; } }
-const location = Object.assign(Object.create(WorkerLocation.prototype), parts(W.url)); delete location.searchParams;
+const locationRecord = W.urlParse(W.url, null);
+if (!locationRecord) throw new TypeError('Invalid worker location');
+const location = Object.create(WorkerLocation.prototype);
+for (let index = 0; index < URL_KEYS.length; index++) {
+    const key = URL_KEYS[index];
+    if (key !== 'username' && key !== 'password') {
+        Object.defineProperty(location, key, { value: locationRecord[index], enumerable: true });
+    }
+}
+
 class WorkerNavigator {}
 const ua = W.ua, navigator = Object.assign(Object.create(WorkerNavigator.prototype), { userAgent: ua, appVersion: ua.replace(/^Mozilla\//, ''), appName: 'Netscape', appCodeName: 'Mozilla', product: 'Gecko', platform: W.platform, language: 'en-US', languages: ['en-US'], onLine: true, hardwareConcurrency: W.cores });
 
@@ -433,46 +507,325 @@ class Headers {
     delete(k) { this._m.delete(String(k).toLowerCase()); } forEach(f) { this._m.forEach((v, k) => f(v, k, this)); }
     entries() { return this._m.entries(); } keys() { return this._m.keys(); } values() { return this._m.values(); } [Symbol.iterator]() { return this._m.entries(); }
 }
-const blobBytes = parts => {
-    const bufs = (parts || []).map(x => x instanceof Blob ? x._b : x instanceof ArrayBuffer ? new Uint8Array(x) : ArrayBuffer.isView(x) ? new Uint8Array(x.buffer, x.byteOffset, x.byteLength) : new TextEncoder().encode(String(x)));
-    const out = new Uint8Array(bufs.reduce((n, b) => n + b.length, 0)); let o = 0; for (const b of bufs) { out.set(b, o); o += b.length; } return out;
-};
-class Blob {
-    constructor(parts, opts) { Object.defineProperty(this, '_b', { value: blobBytes(parts) }); this.type = opts && opts.type ? String(opts.type).toLowerCase() : ''; }
-    get size() { return this._b.length; }
-    slice(a = 0, b = this.size, type = '') { const n = this.size, f = x => x < 0 ? Math.max(n + x, 0) : Math.min(x, n); return new Blob([this._b.slice(f(a), Math.max(f(a), f(b)))], { type }); }
-    arrayBuffer() { return Promise.resolve(this._b.slice().buffer); }
-    bytes() { return Promise.resolve(this._b.slice()); }
-    text() { return Promise.resolve(W.decode(this._b.slice().buffer)); }
-    get [Symbol.toStringTag]() { return 'Blob'; }
+const blobFileOps = createBlobFileInterfaces(nativeIDL, {
+    blobState: W.blobState, encode: urlSearchParamsOps.utf8Bytes, decode: W.decode,
+});
+const {Blob, File} = blobFileOps;
+class ProgressEvent extends Event {
+    constructor(type, init) { super(type, init); init = init || {}; this.lengthComputable = !!init.lengthComputable; this.loaded = init.loaded || 0; this.total = init.total || 0; }
 }
-class File extends Blob { constructor(parts, name, opts) { super(parts, opts); this.name = String(name); this.lastModified = opts && opts.lastModified || Date.now(); } }
-class Response {
-    constructor(body = null, init = {}) { def(this, '_buf', body); this.status = init.status ?? 200; this.statusText = init.statusText || ''; this.url = init.url || ''; this.headers = new Headers(init.headers); this.bodyUsed = false; this.type = 'basic'; }
-    get ok() { return this.status >= 200 && this.status < 300; }
-    arrayBuffer() { this.bodyUsed = true; const b = this._buf; return Promise.resolve(b instanceof ArrayBuffer ? b : ArrayBuffer.isView(b) ? b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) : new TextEncoder().encode(b == null ? '' : String(b)).buffer); }
-    async text() { return W.decode(await this.arrayBuffer()); }
-    async json() { return JSON.parse(await this.text()); }
-    clone() { return new Response(this._buf, this); }
+const { FileReader, FileReaderSync } = createFileReaderInterfaces(nativeIDL, {
+    schedule: callback => W.timer(callback, 0, false, []),
+    cancel: W.clear,
+    blobState: W.blobState,
+    package: W.fileReaderPackage,
+    fire(reader, name, loaded, total, queued) {
+        const event = new ProgressEvent(name, { lengthComputable: total > 0, loaded, total });
+        event.isTrusted = true;
+        fireOn(reader, event, true, queued ? W.fileReaderCheckpoint : undefined);
+    },
+}, true);
+// Dedicated-worker byte bodies. These classes share the URLencoded codec with
+// window URLSearchParams; body parsing never strips a query-data BOM first.
+const workerFormSlots = new WeakMap(), workerBodySlots = new WeakMap();
+const workerRequestSlots = new WeakMap(), workerResponseSlots = new WeakMap();
+function workerSlot(map, object) {
+    const state = map.get(object);
+    if (!state) throw new TypeError('Illegal invocation');
+    return state;
 }
-function fetch(input, init) {
-    init = init || {};
+function workerArguments(count, minimum) {
+    if (count < minimum) throw new TypeError('Not enough arguments');
+}
+const workerUSV = urlSearchParamsOps.usv;
+const workerPairIteratorSlots = new WeakMap();
+const workerFormIteratorPrototype = Object.create(Object.getPrototypeOf(Object.getPrototypeOf([][Symbol.iterator]())));
+Object.defineProperties(workerFormIteratorPrototype, {
+    next: { value: { next() {
+        const iterator = workerSlot(workerPairIteratorSlots, this);
+        const list = workerSlot(workerFormSlots, iterator.target).list;
+        if (iterator.index >= list.length) return { value: undefined, done: true };
+        const pair = list[iterator.index++];
+        return { value: iterator.kind === 0 ? pair[0] : iterator.kind === 1 ? pair[1] : [pair[0], pair[1]], done: false };
+    } }.next, writable: true, enumerable: true, configurable: true },
+    [Symbol.toStringTag]: { value: 'FormData Iterator', configurable: true },
+});
+function workerFormIterator(target, kind) {
+    workerSlot(workerFormSlots, target);
+    const value = Object.create(workerFormIteratorPrototype);
+    workerPairIteratorSlots.set(value, { target, kind, index: 0 });
+    return value;
+}
+function workerFormValue(value, filename, hasFilename) {
+    if (hasFilename && !blobFileOps.isBlob(value)) throw new TypeError('A filename requires a Blob value');
+    if (!blobFileOps.isBlob(value)) return workerUSV(value);
+    if (filename !== undefined) return new File([value], workerUSV(filename), { type: blobFileOps.type(value), lastModified: blobFileOps.isFile(value) ? blobFileOps.modified(value) : undefined });
+    return blobFileOps.isFile(value) ? value : new File([value], 'blob', { type: blobFileOps.type(value) });
+}
+class FormData {
+    constructor(form = undefined) {
+        if (form !== undefined) throw new TypeError('A worker has no HTML form elements');
+        workerFormSlots.set(this, { list: [] });
+    }
+    append(name, value, filename = undefined) {
+        const state = workerSlot(workerFormSlots, this); workerArguments(arguments.length, 2);
+        name = workerUSV(name); value = workerFormValue(value, filename, arguments.length >= 3);
+        state.list.push([name, value]);
+    }
+    delete(name) {
+        const state = workerSlot(workerFormSlots, this); workerArguments(arguments.length, 1);
+        name = workerUSV(name); state.list = state.list.filter(pair => pair[0] !== name);
+    }
+    get(name) {
+        const state = workerSlot(workerFormSlots, this); workerArguments(arguments.length, 1);
+        name = workerUSV(name); const pair = state.list.find(pair => pair[0] === name);
+        return pair ? pair[1] : null;
+    }
+    getAll(name) {
+        const state = workerSlot(workerFormSlots, this); workerArguments(arguments.length, 1);
+        name = workerUSV(name); return state.list.filter(pair => pair[0] === name).map(pair => pair[1]);
+    }
+    has(name) {
+        const state = workerSlot(workerFormSlots, this); workerArguments(arguments.length, 1);
+        name = workerUSV(name); return state.list.some(pair => pair[0] === name);
+    }
+    set(name, value, filename = undefined) {
+        const state = workerSlot(workerFormSlots, this); workerArguments(arguments.length, 2);
+        name = workerUSV(name); value = workerFormValue(value, filename, arguments.length >= 3);
+        const list = []; let found = false;
+        for (const pair of state.list) {
+            if (pair[0] !== name) list.push(pair);
+            else if (!found) { list.push([name, value]); found = true; }
+        }
+        if (!found) list.push([name, value]);
+        state.list = list;
+    }
+    forEach(callback, thisArg = undefined) {
+        const state = workerSlot(workerFormSlots, this); workerArguments(arguments.length, 1);
+        if (typeof callback !== 'function') throw new TypeError('Callback is not callable');
+        for (let index = 0; index < state.list.length; index++) {
+            const pair = state.list[index]; Reflect.apply(callback, thisArg, [pair[1], pair[0], this]);
+        }
+    }
+    keys() { return workerFormIterator(this, 0); }
+    values() { return workerFormIterator(this, 1); }
+    entries() { return workerFormIterator(this, 2); }
+}
+Object.defineProperty(FormData.prototype, Symbol.iterator, {
+    value: FormData.prototype.entries, writable: true, configurable: true,
+});
+
+function workerMultipart(form, boundary) {
+    const parts = [], newline = value => value.replace(/\r\n|\r|\n/g, '\r\n');
+    const escaped = value => newline(value).replace(/\n/g, '%0A').replace(/\r/g, '%0D').replace(/"/g, '%22');
+    for (const [name, value] of workerSlot(workerFormSlots, form).list) {
+        let header = '--' + boundary + '\r\nContent-Disposition: form-data; name="' + escaped(name) + '"';
+        if (blobFileOps.isFile(value)) {
+            header += '; filename="' + escaped(blobFileOps.name(value)) + '"\r\nContent-Type: ' + (blobFileOps.type(value) || 'application/octet-stream');
+            parts.push(urlSearchParamsOps.utf8Bytes(header + '\r\n\r\n'), new Uint8Array(blobFileOps.copyBuffer(value)), new Uint8Array([13, 10]));
+        } else parts.push(urlSearchParamsOps.utf8Bytes(header + '\r\n\r\n' + newline(value) + '\r\n'));
+    }
+    parts.push(urlSearchParamsOps.utf8Bytes('--' + boundary + '--\r\n'));
+    const bytes = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+    let offset = 0;
+    for (const part of parts) { bytes.set(part, offset); offset += part.length; }
+    return bytes;
+}
+function workerExtractBody(value, headers) {
+    if (value === null || value === undefined) return null;
+    let bytes, type = null;
+    if (urlSearchParamsOps.isURLSearchParams(value)) {
+        bytes = urlSearchParamsOps.utf8Bytes(urlSearchParamsOps.serializeParams(value));
+        type = 'application/x-www-form-urlencoded;charset=UTF-8';
+    } else if (workerFormSlots.has(value)) {
+        const boundary = '----LumenWorkerFormBoundary' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        bytes = workerMultipart(value, boundary); type = 'multipart/form-data; boundary=' + boundary;
+    } else if (blobFileOps.isBlob(value)) {
+        bytes = new Uint8Array(blobFileOps.copyBuffer(value)); type = blobFileOps.type(value) || null;
+    } else if (value instanceof ArrayBuffer) bytes = new Uint8Array(value.slice(0));
+    else if (ArrayBuffer.isView(value)) {
+        if (!(value.buffer instanceof ArrayBuffer)) throw new TypeError('A shared buffer is not a BodyInit');
+        bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength).slice();
+    } else {
+        bytes = urlSearchParamsOps.utf8Bytes(workerUSV(value)); type = 'text/plain;charset=UTF-8';
+    }
+    if (type !== null && !headers.has('content-type')) headers.set('content-type', type);
+    return bytes;
+}
+function workerConsumeBody(object, convert) {
+    let bytes;
     try {
-        const u = W.resolve(String(input && input.url || input));
-        if (u == null) throw new TypeError('Failed to fetch: invalid URL');
-        const method = String(init.method || (input && input.method) || 'GET').toUpperCase();
-        const hdrs = new Headers(init.headers || (input && input.headers) || undefined);
-        let body = init.body == null ? undefined : init.body;
-        if (body instanceof URLSearchParams) { if (!hdrs.has('content-type')) hdrs.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8'); body = body.toString(); }
-        else if (typeof body === 'string') { if (!hdrs.has('content-type')) hdrs.set('content-type', 'text/plain;charset=UTF-8'); }
-        else if (body !== undefined && !(body instanceof ArrayBuffer) && !ArrayBuffer.isView(body)) body = String(body);
-        const flat = []; hdrs.forEach((v, k) => flat.push(k, v));
-        const r = W.fetch(u, method, body, flat, init.credentials === 'omit');
-        if (!r) return Promise.reject(new TypeError('Failed to fetch'));
-        const rh = new Headers(); for (let i = 0; i + 1 < r[3].length; i += 2) rh.append(r[3][i], r[3][i + 1]);
-        return Promise.resolve(new Response(r[2], { status: r[0], url: r[1], headers: rh }));
-    } catch (e) { return Promise.reject(e); }
+        const state = workerSlot(workerBodySlots, object);
+        if (state.used) throw new TypeError('Body has already been consumed');
+        bytes = state.bytes === null ? new Uint8Array(0) : state.bytes;
+        if (state.bytes !== null) {
+            state.used = true;
+            // The pending conversion owns these bytes. Keeping the consumed
+            // Request/Response alive must not retain another body reference.
+            state.bytes = null;
+        }
+    } catch (error) { return Promise.reject(error); }
+    return Promise.resolve().then(() => convert(bytes));
 }
+function workerBodyHeaders(object) {
+    const state = workerRequestSlots.get(object) || workerResponseSlots.get(object);
+    if (!state) throw new TypeError('Illegal invocation');
+    return state.headers;
+}
+function workerDecodedText(bytes) {
+    const text = urlSearchParamsOps.utf8Decode(bytes);
+    return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+const workerBodyMethods = {
+    get bodyUsed() { return workerSlot(workerBodySlots, this).used; },
+    arrayBuffer() { return workerConsumeBody(this, bytes => bytes.buffer); },
+    bytes() { return workerConsumeBody(this, bytes => bytes); },
+    text() { return workerConsumeBody(this, workerDecodedText); },
+    json() { return workerConsumeBody(this, bytes => JSON.parse(workerDecodedText(bytes))); },
+    blob() { return workerConsumeBody(this, bytes => new Blob([bytes], { type: workerBodyHeaders(this).get('content-type') || '' })); },
+    formData() {
+        return workerConsumeBody(this, bytes => {
+            const essence = (workerBodyHeaders(this).get('content-type') || '').split(';', 1)[0].trim().toLowerCase();
+            if (essence !== 'application/x-www-form-urlencoded') throw new TypeError('Unsupported form-data media type');
+            const form = new FormData();
+            workerFormSlots.get(form).list = urlSearchParamsOps.parseBytes(bytes);
+            return form;
+        });
+    },
+};
+function workerDictionary(value) {
+    if (value === undefined || value === null) return {};
+    if (typeof value !== 'object' && typeof value !== 'function') throw new TypeError('Expected a dictionary');
+    return value;
+}
+function workerMethod(value) {
+    value = workerUSV(value);
+    if (!/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(value)) throw new TypeError('Invalid HTTP method');
+    const upper = value.toUpperCase();
+    if (['CONNECT', 'TRACE', 'TRACK'].includes(upper)) throw new TypeError('Forbidden HTTP method');
+    return ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT'].includes(upper) ? upper : value;
+}
+class Request {
+    constructor(input, init = {}) {
+        workerArguments(arguments.length, 1); init = workerDictionary(init);
+        const source = workerRequestSlots.get(input), sourceBody = source && workerSlot(workerBodySlots, input);
+        const url = new URL(source ? source.url : workerUSV(input), location.href);
+        if (url.username || url.password) throw new TypeError('Request URLs cannot contain credentials');
+        const suppliedMethod = init.method;
+        const method = workerMethod(suppliedMethod === undefined ? source ? source.method : 'GET' : suppliedMethod);
+        const suppliedHeaders = init.headers;
+        const headers = new Headers(suppliedHeaders === undefined ? source && source.headers : suppliedHeaders);
+        const state = { url: url.href, method, headers };
+        for (const [key, fallback] of Object.entries({ credentials: 'same-origin', mode: 'cors', cache: 'default',
+            redirect: 'follow', referrer: 'about:client', referrerPolicy: '', integrity: '', keepalive: false, priority: 'auto' })) {
+            const suppliedValue = init[key];
+            const value = suppliedValue === undefined ? source ? source[key] : fallback : suppliedValue;
+            state[key] = key === 'keepalive' ? !!value : workerUSV(value);
+        }
+        if (!['omit', 'same-origin', 'include'].includes(state.credentials)) throw new TypeError('Invalid credentials mode');
+        if (!['navigate', 'same-origin', 'no-cors', 'cors'].includes(state.mode) || state.mode === 'navigate') throw new TypeError('Invalid Request mode');
+        if (!['default', 'no-store', 'reload', 'no-cache', 'force-cache', 'only-if-cached'].includes(state.cache)) throw new TypeError('Invalid Request cache mode');
+        if (state.cache === 'only-if-cached' && state.mode !== 'same-origin') throw new TypeError('Cache mode requires same-origin mode');
+        if (!['follow', 'error', 'manual'].includes(state.redirect)) throw new TypeError('Invalid Request redirect mode');
+        if (!['high', 'low', 'auto'].includes(state.priority)) throw new TypeError('Invalid Request priority');
+        const suppliedBody = init.body, supplied = suppliedBody !== undefined && suppliedBody !== null;
+        if (!supplied && sourceBody && sourceBody.used) throw new TypeError('Source request body has been consumed');
+        const bytes = supplied ? workerExtractBody(suppliedBody, headers) : sourceBody ? sourceBody.bytes : null;
+        if ((method === 'GET' || method === 'HEAD') && bytes !== null) throw new TypeError('GET and HEAD requests cannot have a body');
+        workerRequestSlots.set(this, state); workerBodySlots.set(this, { bytes, used: false });
+        if (!supplied && sourceBody && bytes !== null) { sourceBody.used = true; sourceBody.bytes = null; }
+    }
+    clone() {
+        const state = workerSlot(workerRequestSlots, this), body = workerSlot(workerBodySlots, this);
+        if (body.used) throw new TypeError('Body has already been consumed');
+        const copy = Object.create(Request.prototype);
+        workerRequestSlots.set(copy, { ...state, headers: new Headers(state.headers) });
+        workerBodySlots.set(copy, { bytes: body.bytes === null ? null : body.bytes.slice(), used: false });
+        return copy;
+    }
+}
+function workerResponse(object, body, init, internal = false) {
+    init = workerDictionary(init);
+    const headers = new Headers(init.headers), suppliedStatus = init.status;
+    const number = suppliedStatus === undefined ? 200 : +suppliedStatus;
+    const status = Number.isFinite(number) ? ((Math.trunc(number) % 65536) + 65536) % 65536 : 0;
+    if (!internal && (status < 200 || status > 599)) throw new RangeError('Invalid response status');
+    const suppliedStatusText = init.statusText;
+    const statusText = workerUSV(suppliedStatusText === undefined ? '' : suppliedStatusText);
+    if (/[^\x00-\xFF]|[\r\n]/.test(statusText)) throw new TypeError('Invalid response status text');
+    const bytes = workerExtractBody(body, headers);
+    if ([101, 103, 204, 205, 304].includes(status) && bytes !== null) throw new TypeError('This response status cannot have a body');
+    workerResponseSlots.set(object, { status, statusText, headers, type: 'default', url: '', redirected: false });
+    workerBodySlots.set(object, { bytes, used: false });
+}
+class Response {
+    constructor(body = null, init = {}) { workerResponse(this, body, init); }
+    get ok() { const status = workerSlot(workerResponseSlots, this).status; return status >= 200 && status < 300; }
+    clone() {
+        const state = workerSlot(workerResponseSlots, this), body = workerSlot(workerBodySlots, this);
+        if (body.used) throw new TypeError('Body has already been consumed');
+        const copy = Object.create(Response.prototype);
+        workerResponseSlots.set(copy, { ...state, headers: new Headers(state.headers) });
+        workerBodySlots.set(copy, { bytes: body.bytes === null ? null : body.bytes.slice(), used: false });
+        return copy;
+    }
+    static error() {
+        const response = Object.create(Response.prototype); workerResponse(response, null, { status: 0 }, true);
+        workerResponseSlots.get(response).type = 'error'; return response;
+    }
+    static redirect(url, status = 302) {
+        workerArguments(arguments.length, 1);
+        const parsed = new URL(workerUSV(url), location.href), number = +status;
+        const converted = Number.isFinite(number) ? ((Math.trunc(number) % 65536) + 65536) % 65536 : 0;
+        if (![301, 302, 303, 307, 308].includes(converted)) throw new RangeError('Invalid redirect status');
+        return new Response(null, { status: converted, headers: { location: parsed.href } });
+    }
+    static json(data, init = {}) {
+        workerArguments(arguments.length, 1);
+        const encoded = JSON.stringify(data);
+        if (encoded === undefined) throw new TypeError('Value cannot be represented as JSON');
+        init = workerDictionary(init);
+        const headers = new Headers(init.headers);
+        if (!headers.has('content-type')) headers.set('content-type', 'application/json');
+        return new Response(encoded, { headers, status: init.status, statusText: init.statusText });
+    }
+}
+for (const [Constructor, map, names] of [
+    [Request, workerRequestSlots, ['url', 'method', 'headers', 'credentials', 'mode', 'cache', 'redirect', 'referrer', 'referrerPolicy', 'integrity', 'keepalive', 'priority']],
+    [Response, workerResponseSlots, ['status', 'statusText', 'headers', 'type', 'url', 'redirected']],
+]) {
+    for (const name of names) Object.defineProperty(Constructor.prototype, name, {
+        get() { return workerSlot(map, this)[name]; }, enumerable: true, configurable: true,
+    });
+    Object.defineProperties(Constructor.prototype, Object.getOwnPropertyDescriptors(workerBodyMethods));
+}
+for (const Constructor of [FormData, Request, Response]) {
+    Object.defineProperty(Constructor.prototype, Symbol.toStringTag, { value: Constructor.name, configurable: true });
+    for (const name of Object.getOwnPropertyNames(Constructor.prototype)) {
+        if (name !== 'constructor') Object.defineProperty(Constructor.prototype, name, {
+            ...Object.getOwnPropertyDescriptor(Constructor.prototype, name), enumerable: true,
+        });
+    }
+}
+for (const name of ['error', 'redirect', 'json']) Object.defineProperty(Response, name, {
+    ...Object.getOwnPropertyDescriptor(Response, name), enumerable: true,
+});
+function fetch(input, init) {
+    try {
+        const request = new Request(input, init), state = workerRequestSlots.get(request), body = workerBodySlots.get(request);
+        const flat = []; state.headers.forEach((value, name) => flat.push(name, value));
+        const bytes = body.bytes;
+        if (bytes !== null) { body.used = true; body.bytes = null; }
+        const result = W.fetch(state.url, state.method, bytes === null ? undefined : bytes, flat, state.credentials === 'omit');
+        if (!result) throw new TypeError('Failed to fetch');
+        const headers = new Headers();
+        for (let index = 0; index + 1 < result[3].length; index += 2) headers.append(result[3][index], result[3][index + 1]);
+        const response = new Response([101, 103, 204, 205, 304].includes(result[0]) ? null : result[2], { status: result[0], headers });
+        Object.assign(workerResponseSlots.get(response), { url: result[1], type: 'basic', redirected: result[1] !== state.url });
+        return Promise.resolve(response);
+    } catch (error) { return Promise.reject(error); }
+}
+
 const toFn = f => typeof f === 'function' ? f : (0, eval)('(function(){' + String(f) + '\n})');
 const performance = { now: () => W.now(), timeOrigin: W.timeOrigin, mark() {}, measure() {}, getEntriesByName() { return []; }, getEntriesByType() { return []; }, toJSON() { return { timeOrigin: W.timeOrigin }; } };
 const fmt = a => a.map(x => typeof x === 'string' ? x : x instanceof Error ? x.stack || String(x) : (() => { try { return JSON.stringify(x); } catch (e) { return String(x); } })()).join(' ');
@@ -502,7 +855,7 @@ class MessagePort extends EventTarget {
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const api = {
-    self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: location.protocol === 'https:', crossOriginIsolated: !!W.coi,
+    self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: !!W.secure, crossOriginIsolated: !!W.coi,
     onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
     postMessage(m, t) { if (arguments.length < 1) throw new TypeError("Failed to execute 'postMessage': 1 argument required, but only 0 present."); const ps = (Array.isArray(t) ? t : t && t.transfer || []).filter(p => p instanceof MessagePort); if (!ps.length) return W.post(m); W.post({ __lumenXfer: ps.map(p => { const k = -(++wpseq); p._k = k; if (p._other) wports.set(k, p._other); return k; }), data: portSub(m, ps) }); },
     close() { W.close(); },
@@ -510,8 +863,8 @@ const api = {
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
     queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: v => W.clone(v),
-    btoa, atob, TextEncoder, TextDecoder, Blob, File, URL, URLSearchParams, Headers, Response, fetch, performance, console,
-    Event, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
+    btoa, atob, TextEncoder, TextDecoder, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, FormData, Headers, Request, Response, fetch, performance, console,
+    Event, ProgressEvent, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });
 return {
@@ -599,10 +952,11 @@ void worker_main(std::shared_ptr<Worker> w) {
         v8::Context::Scope cs(ctx);
         v8::Local<v8::Object> W = v8::Object::New(iso);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
-        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(resolve); WREG(fetch); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
+        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(blobState); WREG(fileReaderPackage); WREG(fileReaderCheckpoint); WREG(resolve); WREG(urlParse); WREG(urlSet); WREG(idlGet); WREG(idlPut); WREG(idlRegister); WREG(idlFallback); WREG(initCloneIntrinsic); WREG(fetch); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };
         setS("url", w->url); setS("ua", w->ua); setS("platform", w->platform); setS("name", w->name);
         (void)W->Set(ctx, jstr(iso, "coi"), v8::Boolean::New(iso, w->coi));
+        (void)W->Set(ctx, jstr(iso, "secure"), v8::Boolean::New(iso, w->creator_secure));
         (void)W->Set(ctx, jstr(iso, "cores"), v8::Integer::New(iso, (int)std::max(1u, std::thread::hardware_concurrency())));
         double wall = (double)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count() / 1000.0;
         (void)W->Set(ctx, jstr(iso, "timeOrigin"), v8::Number::New(iso, wall));
@@ -740,7 +1094,7 @@ v8::MaybeLocal<v8::Module> wm_compile(WEnv *E, const std::string &u, const std::
 std::string wm_resolve(const std::string &spec, const std::string &base) {
     bool rel = !spec.compare(0, 1, "/") || !spec.compare(0, 2, "./") || !spec.compare(0, 3, "../");
     if (!rel && spec.find(':') == std::string::npos) return "";
-    char *u = url_join(base.c_str(), spec.c_str()); std::string r = u ? u : ""; free(u); return r;
+    char *u = url_join_n(base.c_str(), spec.data(), spec.size()); std::string r = u ? u : ""; free(u); return r;
 }
 bool wm_graph(WEnv *E, v8::Local<v8::Module> m) {
     v8::Isolate *iso = E->iso;
@@ -818,6 +1172,7 @@ void n_workerNew(const FCI &a) {
     { std::lock_guard<std::mutex> lock(threads.mu); if (threads.stopping) { a.GetReturnValue().Set(0); return; } }
     auto w = std::make_shared<Worker>();
     w->id = ++g_wseq; w->owner = jctx(iso); w->coi = w->owner && w->owner->doc && w->owner->doc->cross_origin_isolated;
+    w->creator_secure = js_windows_is_secure(w->owner);
     if (const char *t = js_top_url(w->owner)) w->top = t;
     if (w->owner && w->owner->doc && w->owner->doc->csp) { w->ocsp = w->owner->doc->csp; w->odoc = w->owner->doc->url ? w->owner->doc->url : ""; w->has_ocsp = true; }
     w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);

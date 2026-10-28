@@ -1,0 +1,64 @@
+{
+  "WHATWG-LICENSE": {
+    "bytes": 16315,
+    "sha256": "85dc6f5ccb57a6fe8c33d158f9fc8fc7ee5655a5d3db2cdd131c6a3d0f48a864"
+  },
+  "commit_url_revision": "be17ac5c49881336538acfc7b40dba3c8009144b",
+  "encoding_decode_data.inc": {
+    "bytes": 924557,
+    "sha256": "759a6b5cb49e450b6aab966e176a7f410c7cdcb0e140abee88ea009a2d8d9a65"
+  },
+  "git_object_chain_verified": false,
+  "input_sha256": {
+    "LICENSE": "85dc6f5ccb57a6fe8c33d158f9fc8fc7ee5655a5d3db2cdd131c6a3d0f48a864",
+    "encodings.json": "078212b3697f60b81225b6671bd9da2604497abff0aa8e96e4d46605c02ac9e7",
+    "indexes.json": "b7c8961095f0b4cae8f4a16a5011e7c84047a60c1277e28ee8df9e56074ee509"
+  },
+  "production_installed": false,
+  "source_provenance_sha256": "0c1d80cbdaf14a71315e6d9d60fd5255618342dfd8defca10e32ab22a0dd49db",
+  "statistics": {
+    "canonical_names": 40,
+    "forward_entries": {
+      "kDecodeBig5": 19782,
+      "kDecodeEucKr": 23940,
+      "kDecodeGb18030": 23940,
+      "kDecodeIBM866": 128,
+      "kDecodeISO_8859_10": 128,
+      "kDecodeISO_8859_13": 128,
+      "kDecodeISO_8859_14": 128,
+      "kDecodeISO_8859_15": 128,
+      "kDecodeISO_8859_16": 128,
+      "kDecodeISO_8859_2": 128,
+      "kDecodeISO_8859_3": 128,
+      "kDecodeISO_8859_4": 128,
+      "kDecodeISO_8859_5": 128,
+      "kDecodeISO_8859_6": 128,
+      "kDecodeISO_8859_7": 128,
+      "kDecodeISO_8859_8": 128,
+      "kDecodeJis0208": 11280,
+      "kDecodeJis0212": 8836,
+      "kDecodeKOI8_R": 128,
+      "kDecodeKOI8_U": 128,
+      "kDecodeMACINTOSH": 128,
+      "kDecodeWINDOWS_1250": 128,
+      "kDecodeWINDOWS_1251": 128,
+      "kDecodeWINDOWS_1252": 128,
+      "kDecodeWINDOWS_1253": 128,
+      "kDecodeWINDOWS_1254": 128,
+      "kDecodeWINDOWS_1255": 128,
+      "kDecodeWINDOWS_1256": 128,
+      "kDecodeWINDOWS_1257": 128,
+      "kDecodeWINDOWS_1258": 128,
+      "kDecodeWINDOWS_874": 128,
+      "kDecodeX_MAC_CYRILLIC": 128
+    },
+    "gb18030_ranges": 207,
+    "labels": 228,
+    "lookup": "direct index; binary search for labels and 207-style gb18030 ranges",
+    "numeric_readonly_bytes": 366592,
+    "per_realm_tables": false,
+    "shared_iso8859_8_table": true
+  },
+  "status": "immutable_decoder_data_generated_not_installed",
+  "tests_executed": false
+}

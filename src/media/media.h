@@ -6,6 +6,7 @@
 #include <stdint.h>
 typedef struct Node Node;
 typedef struct Image Image;
+typedef struct Canvas Canvas;
 
 typedef struct MediaPlayer MediaPlayer;
 
@@ -16,6 +17,8 @@ typedef struct MpState {
     int w, h;
     const char *errmsg;
 } MpState;
+
+typedef struct MpVideoQuality { uint32_t total, dropped, corrupted; } MpVideoQuality;
 
 MediaPlayer *mp_new(Node *element);
 void mp_free(MediaPlayer *m);
@@ -32,6 +35,7 @@ void mp_pause(MediaPlayer *m);
 void mp_seek(MediaPlayer *m, double t);
 void mp_set_volume(MediaPlayer *m, float volume, bool muted);
 void mp_state(MediaPlayer *m, MpState *s);
+void mp_video_quality(MediaPlayer *m, MpVideoQuality *q);
 bool media_state_for(Node *el, MpState *s);   /* state of the player attached to <video>/<audio> el */
 
 /* 0 = no, 1 = maybe, 2 = probably */
@@ -45,6 +49,11 @@ Image *media_frame_for(Node *element);
 const void *media_owner_of(const Image *im);   /* player showing im, or NULL */
 Image *media_owner_frame(const void *owner);   /* current frame of that player if it still exists */
 bool media_is_frame(const Image *im);   /* borrowed; valid until a later media_tick */
+/* Report the real compositor result; failure retains retry tokens. These
+ * counters describe frame submissions, not per-pixel/physical visibility. */
+void media_canvas_submission(Canvas *canvas, bool succeeded);
+void media_canvas_prune(Canvas *canvas);
+void media_frame_presented(const Image *im);
 extern void (*media_wakeup)(void);
 size_t media_mem_bytes(size_t *frames);
 /* Tab CPU limiter: decoder-thread CPU (ms) of players in `d`, and cap them to `lim` of a core (0 = none). */

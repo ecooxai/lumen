@@ -16,12 +16,8 @@ function report(e) {
     reporting = false;
 }
 
-const DOMEX = { IndexSizeError: 1, HierarchyRequestError: 3, WrongDocumentError: 4, InvalidCharacterError: 5, NoModificationAllowedError: 7, NotFoundError: 8, NotSupportedError: 9, InUseAttributeError: 10, InvalidStateError: 11, SyntaxError: 12, InvalidModificationError: 13, NamespaceError: 14, InvalidAccessError: 15, TypeMismatchError: 17, SecurityError: 18, NetworkError: 19, AbortError: 20, URLMismatchError: 21, QuotaExceededError: 22, TimeoutError: 23, InvalidNodeTypeError: 24, DataCloneError: 25 };
-class DOMException extends Error {
-    constructor(message = '', name = 'Error') { super(message); def(this, 'name', name); }
-    get code() { return DOMEX[this.name] || 0; }
-}
-['INDEX_SIZE_ERR', 'DOMSTRING_SIZE_ERR', 'HIERARCHY_REQUEST_ERR', 'WRONG_DOCUMENT_ERR', 'INVALID_CHARACTER_ERR', 'NO_DATA_ALLOWED_ERR', 'NO_MODIFICATION_ALLOWED_ERR', 'NOT_FOUND_ERR', 'NOT_SUPPORTED_ERR', 'INUSE_ATTRIBUTE_ERR', 'INVALID_STATE_ERR', 'SYNTAX_ERR', 'INVALID_MODIFICATION_ERR', 'NAMESPACE_ERR', 'INVALID_ACCESS_ERR', 'VALIDATION_ERR', 'TYPE_MISMATCH_ERR', 'SECURITY_ERR', 'NETWORK_ERR', 'ABORT_ERR', 'URL_MISMATCH_ERR', 'QUOTA_EXCEEDED_ERR', 'TIMEOUT_ERR', 'INVALID_NODE_TYPE_ERR', 'DATA_CLONE_ERR'].forEach((k, i) => { for (const o of [DOMException, DOMException.prototype]) Object.defineProperty(o, k, { value: i + 1, enumerable: true }); });
+const nativeIDL = { get: N.idlGet, put: N.idlPut, register: N.idlRegister, fallback: N.idlFallback };
+const DOMException = createDOMExceptionInterface(nativeIDL);
 class DOMRectReadOnly {
     constructor(x = 0, y = 0, w = 0, h = 0) { this.x = x; this.y = y; this.width = w; this.height = h; }
     get left() { return Math.min(this.x, this.x + this.width); } get right() { return Math.max(this.x, this.x + this.width); }
@@ -111,7 +107,7 @@ class EventTarget {
     }
     dispatchEvent(ev) {
         if (!(ev instanceof Event)) throw new TypeError("Failed to execute 'dispatchEvent': parameter 1 is not of type 'Event'.");
-        return dispatch(this, ev);
+        return dispatch(this, ev, false, undefined, nativeIDL.get(4, this) !== undefined);
     }
 }
 function parentForEvent(t, ev) {
@@ -127,15 +123,18 @@ function parentForEvent(t, ev) {
 }
 /* Blink fires webkit-prefixed listeners on a target only when it has no unprefixed ones */
 const LEGACY_EV = { animationstart: 'webkitAnimationStart', animationend: 'webkitAnimationEnd', animationiteration: 'webkitAnimationIteration', transitionend: 'webkitTransitionEnd' };
-function invoke(t, ev, phase) {
+function invoke(t, ev, phase, checkpoint, skipHandler) {
     ev._ct = t;
-    if (phase !== 1) {
+    if (phase !== 1 && !skipHandler) {
         let h = null;
         try { h = t['on' + ev._type]; } catch (e) {}
         if (typeof h === 'function') {
             let r;
             const winErr = t === G && ev._type === 'error' && ev instanceof ErrorEvent;
-            try { r = winErr ? h.call(t, ev.message, ev.filename, ev.lineno, ev.colno, ev.error) : h.call(t, ev); } catch (e) { report(e); }
+            try {
+                try { r = winErr ? h.call(t, ev.message, ev.filename, ev.lineno, ev.colno, ev.error) : h.call(t, ev); }
+                finally { if (checkpoint) checkpoint(); }
+            } catch (e) { report(e); if (checkpoint) checkpoint(); }
             if (r === false || (winErr && r === true)) ev.preventDefault();
             if (ev._imm) return;
         }
@@ -151,23 +150,25 @@ function invoke(t, ev, phase) {
         if (phase === 3 && l.capture) continue;
         if (l.once) t.removeEventListener(ev._type, l.fn, l.capture);
         ev._passive = l.passive;
-        try { if (typeof l.fn === 'function') l.fn.call(t, ev); else if (l.fn && typeof l.fn.handleEvent === 'function') l.fn.handleEvent(ev); }
-        catch (e) { report(e); }
+        try {
+            try { if (typeof l.fn === 'function') l.fn.call(t, ev); else if (l.fn && typeof l.fn.handleEvent === 'function') l.fn.handleEvent(ev); }
+            finally { if (checkpoint) checkpoint(); }
+        } catch (e) { report(e); if (checkpoint) checkpoint(); }
         ev._passive = false;
         if (ev._imm) break;
     }
     ev._type = type;
 }
-function dispatch(target, ev, trusted) {
+function dispatch(target, ev, trusted, checkpoint, skipHandler) {
     ev.target = target; if (trusted) ev.isTrusted = true;
     ev._stop = ev._imm = false;
     const path = [];
     for (let t = parentForEvent(target, ev); t; t = parentForEvent(t, ev)) path.push(t);
     ev._path = [target].concat(path);
     ev.eventPhase = 1;
-    for (let i = path.length - 1; i >= 0 && !ev._stop; i--) invoke(path[i], ev, 1);
-    if (!ev._stop) { ev.eventPhase = 2; invoke(target, ev, 2); }
-    if (ev.bubbles) { ev.eventPhase = 3; for (const t of path) { if (ev._stop) break; invoke(t, ev, 3); } }
+    for (let i = path.length - 1; i >= 0 && !ev._stop; i--) invoke(path[i], ev, 1, checkpoint, false);
+    if (!ev._stop) { ev.eventPhase = 2; invoke(target, ev, 2, checkpoint, skipHandler); }
+    if (ev.bubbles) { ev.eventPhase = 3; for (const t of path) { if (ev._stop) break; invoke(t, ev, 3, checkpoint, false); } }
     ev.eventPhase = 0; ev._ct = null;
     return !ev.defaultPrevented;
 }

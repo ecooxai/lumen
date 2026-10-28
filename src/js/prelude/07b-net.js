@@ -94,10 +94,29 @@ function bodyInit(b, h) {
     if (typeof b === 'string') { if (h && !h.has('content-type')) h.set('Content-Type', 'text/plain;charset=UTF-8'); return N.encode(b); }
     if (b instanceof URLSearchParams) { if (h && !h.has('content-type')) h.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8'); return N.encode(b.toString()); }
     if (b instanceof FormData) { const bd = '----LumenFormBoundary' + Math.random().toString(36).slice(2); if (h && !h.has('content-type')) h.set('Content-Type', 'multipart/form-data; boundary=' + bd); return multipartBody([...b], bd).buffer; }
-    if (b instanceof Blob) { if (h && b.type && !h.has('content-type')) h.set('Content-Type', b.type); return b._buf; }
+    if (blobFileOps.isBlob(b)) { const type = blobFileOps.type(b); if (h && type && !h.has('content-type')) h.set('Content-Type', type); return blobFileOps.copyBuffer(b); }
     if (b instanceof ReadableStream) return b;
     return toBytes(b);
 }
+// Web IDL converts URL and the BodyInit union before running sendBeacon's
+// algorithm. Extracting a stream is later and fails with keepalive enabled.
+function beaconBodyValue(value) {
+    if (value == null) return null;
+    if (blobFileOps.isBlob(value) || value instanceof FormData || value instanceof URLSearchParams ||
+        value instanceof ReadableStream || value instanceof ArrayBuffer || ArrayBuffer.isView(value)) return value;
+    if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
+    return String(value);
+}
+function queueBeacon(url, data) {
+    const parsed = N.urlParse(url, document.baseURI);
+    if (!parsed || (parsed[1] !== 'http:' && parsed[1] !== 'https:'))
+        throw new TypeError('sendBeacon requires a valid HTTP or HTTPS URL');
+    if (data instanceof ReadableStream) throw new TypeError('A keepalive request cannot have a stream body');
+    const headers = new Headers();
+    const body = bodyInit(data, headers);
+    return N.sendBeacon(parsed[0], body, headers.get('content-type') || '');
+}
+
 class Body {
     _take() {
         if (this.bodyUsed) return Promise.reject(new TypeError('Body has already been consumed.'));
@@ -110,7 +129,17 @@ class Body {
     get body() { if (!this._b) return null; const b = this._b; if (b instanceof ReadableStream) return b; return new ReadableStream({ start(c) { c.enqueue(new Uint8Array(b)); c.close(); } }); }
     arrayBuffer() { return this._take(); } text() { return this._take().then(N.decode); } json() { return this.text().then(JSON.parse); }
     blob() { return this._take().then(b => new Blob([b], { type: (this.headers.get('content-type') || '') })); } bytes() { return this._take().then(b => new Uint8Array(b)); }
-    formData() { return this.text().then(t => { const f = new FormData(); for (const [k, v] of new URLSearchParams(t)) f.append(k, v); return f; }); }
+    formData() {
+        return this._take().then(body => {
+            const essence = (this.headers.get('content-type') || '').split(';', 1)[0].trim().toLowerCase();
+            if (essence !== 'application/x-www-form-urlencoded') throw new TypeError('Unsupported form-data media type');
+            const bytes = body instanceof ArrayBuffer ? new Uint8Array(body) :
+                new Uint8Array(body.buffer, body.byteOffset, body.byteLength);
+            const form = new FormData();
+            for (const [name, value] of urlSearchParamsOps.parseBytes(bytes)) form.append(name, value);
+            return form;
+        });
+    }
 }
 class Request extends Body {
     constructor(input, init = {}) {
@@ -142,7 +171,7 @@ class Response extends Body {
     static redirect(u, s = 302) { return new Response(null, { status: s, headers: { location: String(u) } }); }
 }
 function localBody(url) {
-    if (url.startsWith('blob:')) { const b = objectURLs.get(url); return b ? [b._buf, b.type] : null; }
+    if (url.startsWith('blob:')) { const b = objectURLs.get(url); return blobFileOps.isBlob(b) ? [blobFileOps.copyBuffer(b), blobFileOps.type(b)] : null; }
     const m = /^data:([^,]*?)(;base64)?,(.*)$/s.exec(url); if (!m) return undefined;
     const raw = m[2] ? atob(decodeURIComponent(m[3])) : decodeURIComponent(m[3]);
     const u = new Uint8Array(raw.length); for (let i = 0; i < raw.length; i++) u[i] = raw.charCodeAt(i) & 255;
@@ -193,20 +222,114 @@ function fetch(input, init) {
         req.signal.addEventListener('abort', () => { N.abort(id); if (ctl) { try { ctl.error(req.signal.reason); } catch (e) {} ctl = null; } reject(req.signal.reason); });
     });
 }
-function multipartBody(entries, bd) {
-    const esc = s => String(s).replace(/"/g, '%22').replace(/\r?\n/g, '%0D%0A'), parts = [];
-    for (const [k, v] of entries) {
-        if (v instanceof Blob) { parts.push(new Uint8Array(N.encode(`--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"; filename="${esc(v.name ?? 'blob')}"\r\nContent-Type: ${v.type || 'application/octet-stream'}\r\n\r\n`))); parts.push(new Uint8Array(v._buf)); parts.push(new Uint8Array(N.encode('\r\n'))); }
-        else parts.push(new Uint8Array(N.encode(`--${bd}\r\nContent-Disposition: form-data; name="${esc(k)}"\r\n\r\n${v}\r\n`)));
+// Newlines in field names and string values are normalized during serialization,
+// leaving FormData entries and file byte sequences unchanged.
+function formLineEndings(value) {
+    return String(value).replace(/\r\n?|\n/g, '\r\n');
+}
+function* formEntryPairs(entries) {
+    for (const [name, value] of entries) yield [formLineEndings(name),
+        formLineEndings(blobFileOps.isBlob(value) ? (blobFileOps.isFile(value) ? blobFileOps.name(value) : 'blob') : value)];
+}
+function formAddBytes(total, amount) {
+    // Match windows.cc's existing 64 MiB navigation request bound before the
+    // aggregate is allocated. Fetch/XHR multipart does not use this bound.
+    if (!Number.isSafeInteger(amount) || amount < 0 || amount > 64 * 1024 * 1024 - total)
+        throw new RangeError('Encoded form exceeds the request byte limit');
+    return total + amount;
+}
+function formURLEncoded(entries, encoding) {
+    const parts = [];
+    let length = 0;
+    for (const [name, value] of formEntryPairs(entries)) {
+        const key = N.formEncode(name, encoding, 2), body = N.formEncode(value, encoding, 2);
+        length = formAddBytes(length, key.length);
+        length = formAddBytes(length, body.length);
+        length = formAddBytes(length, parts.length ? 2 : 1); // '=' and any '&'.
+        parts.push(key + '=' + body);
     }
-    parts.push(new Uint8Array(N.encode(`--${bd}--\r\n`)));
-    const out = new Uint8Array(parts.reduce((n, p) => n + p.byteLength, 0)); let o = 0;
-    for (const p of parts) { out.set(p, o); o += p.byteLength; }
+    return parts.join('&');
+}
+function formPlainText(entries, encoding) {
+    const parts = [];
+    let length = 0;
+    for (const [name, value] of formEntryPairs(entries)) {
+        length = formAddBytes(length, N.formUtf8Length(name));
+        length = formAddBytes(length, N.formUtf8Length(value));
+        length = formAddBytes(length, 3); // '=' and CRLF.
+        parts.push(name + '=' + value + '\r\n');
+    }
+    return N.formEncode(parts.join(''), encoding, 0);
+}
+function multipartPart(value, encoding, parameter) {
+    const text = String(value);
+    if (encoding !== undefined) return new Uint8Array(N.formEncode(text, encoding, parameter ? 1 : 0));
+    // Fetch/XHR FormData keeps its UTF-8 path without the navigation byte limit.
+    const bytes = new Uint8Array(N.encode(text));
+    if (!parameter) return bytes;
+    let length = bytes.byteLength;
+    for (const byte of bytes) if (byte === 10 || byte === 13 || byte === 34) length += 2;
+    if (length === bytes.byteLength) return bytes;
+    const escaped = new Uint8Array(length), digits = '0123456789ABCDEF';
+    let at = 0;
+    for (const byte of bytes) {
+        if (byte === 10 || byte === 13 || byte === 34) {
+            escaped[at++] = 37;
+            escaped[at++] = digits.charCodeAt(byte >> 4);
+            escaped[at++] = digits.charCodeAt(byte & 15);
+        } else escaped[at++] = byte;
+    }
+    return escaped;
+}
+function multipartBody(entries, bd, encoding = undefined) {
+    const ascii = text => new Uint8Array(N.encode(text)), parts = [];
+    let length = 0;
+    const append = (...items) => {
+        for (const part of items) {
+            length = encoding === undefined ? length + part.byteLength : formAddBytes(length, part.byteLength);
+            parts.push(part);
+        }
+    };
+    for (const [name, value] of entries) {
+        append(ascii(`--${bd}\r\nContent-Disposition: form-data; name="`),
+            multipartPart(formLineEndings(name), encoding, true), ascii('"'));
+        if (blobFileOps.isBlob(value)) {
+            // Filenames are escaped after encoding, without newline normalization.
+            append(ascii('; filename="'), multipartPart(blobFileOps.isFile(value) ? blobFileOps.name(value) : 'blob', encoding, true),
+                ascii(`"\r\nContent-Type: ${blobFileOps.type(value) || 'application/octet-stream'}\r\n\r\n`));
+            // Reject an oversized navigation payload before allocating its private copy.
+            if (encoding !== undefined) formAddBytes(formAddBytes(length, blobFileOps.size(value)), 2);
+            append(new Uint8Array(blobFileOps.copyBuffer(value)), ascii('\r\n'));
+        } else append(ascii('\r\n\r\n'), multipartPart(formLineEndings(value), encoding, false), ascii('\r\n'));
+    }
+    append(ascii(`--${bd}--\r\n`));
+    const out = new Uint8Array(length);
+    let offset = 0;
+    for (const part of parts) { out.set(part, offset); offset += part.byteLength; }
     return out;
 }
+function formEntries(form, encoding) {
+    const entries = [];
+    for (const element of form.elements) {
+        if (!element.name || element.disabled) continue;
+        const type = element.type;
+        if ((type === 'checkbox' || type === 'radio') && !element.checked) continue;
+        if (type === 'file') {
+            const files = [...element.files];
+            if (!files.length) entries.push([element.name, new File([], '', {type: 'application/octet-stream'})]);
+            for (const file of files) entries.push([element.name, file]);
+            continue;
+        }
+        if (/^(submit|button|reset|image)$/.test(type)) continue;
+        const charset = type === 'hidden' && N.name(element) === 'input' &&
+            String(element.name).toLowerCase() === '_charset_';
+        entries.push([element.name, charset ? encoding : element.value]);
+    }
+    return entries;
+}
 class FormData {
-    constructor(form) { def(this, '_l', []); if (form) for (const e of form.elements) { if (!e.name || e.disabled) continue; const t = e.type; if ((t === 'checkbox' || t === 'radio') && !e.checked) continue; if (t === 'file') { const fs = [...e.files]; if (!fs.length) this._l.push([e.name, new File([], '', { type: 'application/octet-stream' })]); for (const f of fs) this._l.push([e.name, f]); continue; } if (/^(submit|button|reset|image)$/.test(t)) continue; this._l.push([e.name, e.value]); } }
-    append(k, v, fn) { this._l.push([String(k), v instanceof Blob ? (fn ? new File([v], fn, v) : v) : String(v)]); }
+    constructor(form) { def(this, '_l', form ? formEntries(form, 'UTF-8') : []); }
+    append(k, v, fn) { this._l.push([String(k), blobFileOps.isBlob(v) ? (fn ? new File([v], fn, {type: blobFileOps.type(v), lastModified: blobFileOps.isFile(v) ? blobFileOps.modified(v) : undefined}) : v) : String(v)]); }
     set(k, v, fn) { this.delete(k); this.append(k, v, fn); } delete(k) { this._l = this._l.filter(e => e[0] !== String(k)); }
     get(k) { const e = this._l.find(x => x[0] === String(k)); return e ? e[1] : null; } getAll(k) { return this._l.filter(x => x[0] === String(k)).map(x => x[1]); }
     has(k) { return this._l.some(x => x[0] === String(k)); } forEach(fn, s) { for (const [k, v] of this._l) fn.call(s, v, k, this); }
@@ -468,7 +591,7 @@ class Worker extends EventTarget {
         if (arguments.length < 1) throw new TypeError("Failed to construct 'Worker': 1 argument required, but only 0 present.");
         const u = new URL(String(url), document.baseURI || N.url());
         let src = null;
-        if (u.protocol === 'blob:') { const b = objectURLs.get(u.href); if (b) src = new TextDecoder().decode(b._buf); }
+        if (u.protocol === 'blob:') { const b = objectURLs.get(u.href); if (blobFileOps.isBlob(b)) src = N.decode(blobFileOps.copyBuffer(b)); }
         else if (u.protocol === 'data:') { const lb = localBody(u.href); if (lb) src = new TextDecoder().decode(lb[0]); }
         else if (u.origin !== location.origin) throw new DOMException(`Failed to construct 'Worker': Script at '${u.href}' cannot be accessed from origin '${location.origin}'.`, 'SecurityError');
         this.onmessage = null; this.onmessageerror = null; this.onerror = null;

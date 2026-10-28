@@ -18,6 +18,7 @@ extern "C" {
 #include "js.h"
 #include "jsglue.h"
 #include "../net/net.h"
+#include "../net/beacon.h"
 #include "../base/url.h"
 #include "../media/media.h"
 extern const char *g_user_agent;
@@ -80,6 +81,7 @@ struct JsCtx {
     uint32_t next_raf = 1;
     double last_raf = 0, t0 = 0;
     std::map<uint64_t, Fetch *> fetches;
+    NetKeepaliveGroup *keepalive_group = nullptr; /* queued jobs retain the quota after document teardown */
     std::map<uint32_t, struct WsSock *> sockets;
     uint32_t next_ws = 1;
     std::vector<Document *> docs;
@@ -152,6 +154,11 @@ void js_rtc_close(JsCtx *c);
 double js_rtc_deadline(JsCtx *c);
 void js_rtc_deliver(JsCtx *c);
 size_t js_rtc_live_peers();
+void js_install_webtransport(JsCtx *c, v8::Local<v8::Object> N);
+void js_webtransport_close(JsCtx *c);
+double js_webtransport_deadline(JsCtx *c);
+void js_webtransport_deliver(JsCtx *c);
+void js_webtransport_resource_counts(uint64_t out[6]);
 void js_run_inserted(JsCtx *c, Node *root);
 extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
 extern "C" JsCtx *owner_ctx(Document *d);
@@ -162,7 +169,14 @@ void frames_scan(JsCtx *c);
 void frames_inserted(JsCtx *c, Node *root);
 void frames_forget(JsCtx *c);
 void frame_kill(JsCtx *k);
-void frame_nav(JsCtx *k, const char *u);
+void frame_nav(JsCtx *k, const std::string &u);
+/* Copied navigation inputs supplied by the initiating form document. This is
+ * intentionally independent of the target frame's mutable/current document. */
+struct FrameSubmission {
+    bool post = false;
+    std::string body, content_type, origin, referrer, top_url, csp, policy_url;
+};
+void frame_submit(JsCtx *target, const std::string &url, const FrameSubmission &submission);
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_windows(JsCtx *c, v8::Local<v8::Object> N);
 void js_windows_attach(JsCtx *c);
@@ -172,6 +186,7 @@ double js_windows_deadline(JsCtx *c);
 bool js_windows_same_origin(const JsCtx *a, const JsCtx *b);
 JsCtx *js_window_caller(v8::Isolate *iso);
 std::string js_windows_base_url(JsCtx *c, bool include_element);
+std::string js_document_base_url(Document *document, bool include_element);
 bool js_windows_navigate(JsCtx *source, JsCtx *target, const std::string &url, bool replace);
 bool js_windows_target_origin(JsCtx *source, JsCtx *target, const std::string &wanted, bool *valid);
 v8::Local<v8::Value> js_window_value(JsCtx *viewer, JsWindowId id);

@@ -22,8 +22,8 @@ mk('HTMLTableElement', HTMLElement, ['table'], p => methods(p, { get rows() { re
 mk('HTMLTableSectionElement', HTMLElement, ['tbody', 'thead', 'tfoot'], p => methods(p, { get rows() { return nodeList(elKids(this).filter(e => N.name(e) === 'tr')); } }));
 mk('HTMLTableRowElement', HTMLElement, ['tr'], p => methods(p, { get cells() { return nodeList(elKids(this).filter(e => /^t[dh]$/.test(N.name(e)))); }, insertCell(i = -1) { const td = N.create('td', 0); const c = this.cells; insertNode(this, td, i < 0 || i >= c.length ? null : c[i]); return td; } }));
 mk('HTMLTableCellElement', HTMLElement, ['td', 'th'], p => reflectInt(p, 1, 'colSpan', 'rowSpan'));
-mk('HTMLAnchorElement', HTMLElement, ['a'], p => { reflectStr(p, 'target', 'download', 'rel', 'hreflang', 'type', 'referrerPolicy'); urlParts(p, 'href'); textProp(p); methods(p, { get relList() { return new DOMTokenList(this, 'rel'); } }); });
-mk('HTMLAreaElement', HTMLElement, ['area'], p => { urlParts(p, 'href'); reflectStr(p, 'alt', 'target'); });
+mk('HTMLAnchorElement', HTMLElement, ['a'], p => { reflectStr(p, 'target', 'download', 'rel', 'hreflang', 'type', 'referrerPolicy'); urlParts(p, 'href', 'a'); textProp(p); methods(p, { get relList() { return new DOMTokenList(this, 'rel'); } }); });
+mk('HTMLAreaElement', HTMLElement, ['area'], p => { urlParts(p, 'href', 'area'); reflectStr(p, 'alt', 'target'); });
 mk('HTMLImageElement', HTMLElement, ['img'], p => {
     reflectUrl(p, 'src'); reflectStr(p, 'alt', 'srcset', 'sizes', 'crossOrigin', 'useMap', 'referrerPolicy', 'decoding', 'loading', 'fetchPriority');
     methods(p, {
@@ -47,14 +47,41 @@ mk('HTMLTemplateElement', HTMLElement, ['template'], p => methods(p, { get conte
 mk('HTMLSlotElement', HTMLElement, ['slot'], p => { reflectStr(p, 'name'); methods(p, { assignedNodes() { return []; }, assignedElements() { return []; }, assign() {} }); });
 mk('HTMLIFrameElement', HTMLElement, ['iframe'], p => { reflectUrl(p, 'src'); reflectStr(p, 'srcdoc', 'name', 'allow', 'width', 'height', 'referrerPolicy', 'loading'); methods(p, { get sandbox() { if (!this.__sb) def(this, '__sb', new DOMTokenList(this, 'sandbox')); return this.__sb; }, set sandbox(v) { this.setAttribute('sandbox', v); }, get contentWindow() { return asWin(N.frameWin(this)); }, get contentDocument() { return N.frameDoc(this); } }); });
 mk('HTMLCanvasElement', HTMLElement, ['canvas'], p => { reflectInt(p, 300, 'width'); reflectInt(p, 150, 'height'); methods(p, { getContext(t) { return t === '2d' ? (this._ctx2d || (this._ctx2d = new CanvasRenderingContext2D(this))) : null; }, toDataURL() { return 'data:,'; }, toBlob(cb) { setTimeout(() => cb(null)); } }); });
+// These reflected attributes share the ordinary attribute mutation path, but
+// page overrides of setAttribute must not replace the platform setter.
+const formReflectSetAttribute = Element.prototype.setAttribute;
+const formReflectApply = Reflect.apply, formReflectString = String, formReflectTypeError = TypeError;
+function formReflectionBrand(element, tag) {
+    if (!N.isNode(element) || N.type(element) !== 1 || N.ns(element) !== 0 || N.name(element) !== tag)
+        throw new formReflectTypeError('Illegal invocation');
+}
+function formEnctype(raw) {
+    const value = raw === null ? '' : asciiLower(raw);
+    return value === 'multipart/form-data' || value === 'text/plain' ? value : 'application/x-www-form-urlencoded';
+}
+function formReflectAttribute(proto, tag, key, attribute, read) {
+    const descriptor = Object.getOwnPropertyDescriptor({
+        get [key]() { formReflectionBrand(this, tag); return read(N.attr(this, attribute)); },
+        set [key](value) {
+            formReflectionBrand(this, tag);
+            if (typeof value === 'symbol') throw new formReflectTypeError('Cannot convert a Symbol value to a string');
+            value = formReflectString(value);
+            formReflectApply(formReflectSetAttribute, this, [attribute, value]);
+        },
+    }, key);
+    Object.defineProperty(proto, key, descriptor);
+}
+function formMethod(raw) { const method = (raw || '').toLowerCase(); return method === 'post' || method === 'dialog' ? method : 'get'; }
 mk('HTMLFormElement', HTMLElement, ['form'], p => {
-    reflectUrl(p, 'action'); reflectStr(p, 'name', 'target', 'acceptCharset', 'autocomplete'); reflectBool(p, 'noValidate');
+    reflectUrl(p, 'action'); reflectStr(p, 'name', 'target', 'autocomplete'); reflectBool(p, 'noValidate');
+    formReflectAttribute(p, 'form', 'enctype', 'enctype', formEnctype);
+    formReflectAttribute(p, 'form', 'encoding', 'enctype', formEnctype);
+    formReflectAttribute(p, 'form', 'acceptCharset', 'accept-charset', value => value ?? '');
     methods(p, {
-        get method() { return (N.attr(this, 'method') || 'get').toLowerCase() === 'post' ? 'post' : 'get'; }, set method(v) { this.setAttribute('method', v); },
-        get enctype() { return N.attr(this, 'enctype') || 'application/x-www-form-urlencoded'; },
+        get method() { return formMethod(N.attr(this, 'method')); }, set method(v) { this.setAttribute('method', v); },
         get elements() { const l = nodeList(N.query(this, 'input,select,textarea,button,fieldset,output', true)); def(l, 'namedItem', k => { k = String(k); const m = Array.prototype.filter.call(l, e => e.id === k || e.getAttribute('name') === k); return m.length > 1 ? Object.assign(nodeList(m), { get value() { const c = m.find(e => e.checked); return c ? c.value : ''; } }) : m[0] || null; }); for (const e of l) for (const k of [e.id, e.getAttribute('name')]) if (k && !(k in l)) def(l, k, l.namedItem(k)); return l; }, get length() { return this.elements.length; },
         submit() { submitForm(this, null); },
-        requestSubmit(s) { if (dispatch(this, new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: s || null }), true)) submitForm(this, s); },
+        requestSubmit(s) { if (N.formCanNavigate(this) && dispatch(this, new SubmitEvent('submit', { bubbles: true, cancelable: true, submitter: s || null }), true)) submitForm(this, s); },
         reset() { if (dispatch(this, new Event('reset', { bubbles: true, cancelable: true }))) for (const e of this.elements) N.setValue(e, null); },
         checkValidity() { return true; }, reportValidity() { return true; },
     });
@@ -114,6 +141,7 @@ const INPUT_TYPES = /^(hidden|text|search|tel|url|email|password|date|month|week
 const INPUT_DEFAULT_VALUE_TYPES = /^(hidden|submit|image|reset|button|checkbox|radio)$/;
 mk('HTMLInputElement', HTMLElement, ['input'], p => {
     reflectStr(p, 'name', 'placeholder', 'accept', 'alt', 'autocomplete', 'inputMode', 'max', 'min', 'pattern', 'step', 'enterKeyHint');
+    formReflectAttribute(p, 'input', 'formEnctype', 'formenctype', value => value === null ? '' : formEnctype(value));
     reflectBool(p, 'disabled', 'readOnly', 'required', 'multiple'); reflectUrl(p, 'src'); reflectInt(p, 20, 'size'); reflectInt(p, -1, 'maxLength', 'minLength'); formControl(p);
     methods(p, {
         get type() { const t = (N.attr(this, 'type') || 'text').toLowerCase(); return INPUT_TYPES.test(t) ? t : 'text'; }, set type(v) { this.setAttribute('type', v); },
@@ -141,6 +169,7 @@ mk('HTMLTextAreaElement', HTMLElement, ['textarea'], p => {
 });
 mk('HTMLButtonElement', HTMLElement, ['button'], p => {
     reflectStr(p, 'name', 'value'); reflectBool(p, 'disabled'); formControl(p);
+    formReflectAttribute(p, 'button', 'formEnctype', 'formenctype', value => value === null ? '' : formEnctype(value));
     methods(p, { get type() { const t = (N.attr(this, 'type') || 'submit').toLowerCase(); return t === 'reset' || t === 'button' ? t : 'submit'; }, set type(v) { this.setAttribute('type', v); } });
 });
 mk('HTMLSelectElement', HTMLElement, ['select'], p => {
@@ -170,5 +199,21 @@ mk('HTMLOptionElement', HTMLElement, ['option'], p => {
 mk('HTMLLabelElement', HTMLElement, ['label'], p => { acc(p, 'htmlFor', function () { return N.attr(this, 'for') ?? ''; }, function (v) { this.setAttribute('for', v); }); methods(p, { get control() { const f = N.attr(this, 'for'); return f ? N.byId(f) : this.querySelector('input,select,textarea,button'); } }); });
 mk('HTMLFieldSetElement', HTMLElement, ['fieldset'], p => reflectBool(p, 'disabled'));
 mk('HTMLDetailsElement', HTMLElement, ['details'], p => acc(p, 'open', function () { return N.attr(this, 'open') != null; }, function (v) { const was = this.open; this.toggleAttribute('open', !!v); if (was !== !!v) setTimeout(() => dispatch(this, new Event('toggle'))); }));
-mk('HTMLDialogElement', HTMLElement, ['dialog'], p => { reflectBool(p, 'open'); methods(p, { show() { this.open = true; }, showModal() { this.open = true; N.setPseudo(this, 0, true); }, close(rv) { if (!this.open) return; this.open = false; N.setPseudo(this, 0, false); if (rv !== undefined) this.returnValue = rv; dispatch(this, new Event('close')); } }); });
+const dialogReturnValues = new WeakMap();
+function closeDialog(dialog, result) {
+    if (!dialog.open) return;
+    dialog.open = false; N.setPseudo(dialog, 0, false);
+    if (result !== undefined) dialog.returnValue = result;
+    dispatch(dialog, new Event('close'));
+}
+mk('HTMLDialogElement', HTMLElement, ['dialog'], p => {
+    reflectBool(p, 'open');
+    methods(p, {
+        get returnValue() { return dialogReturnValues.get(this) || ''; },
+        set returnValue(value) { dialogReturnValues.set(this, controlString(value)); },
+        show() { this.open = true; },
+        showModal() { this.open = true; N.setPseudo(this, 0, true); },
+        close(result) { closeDialog(this, result); },
+    });
+});
 mk('HTMLUnknownElement', HTMLElement, []);

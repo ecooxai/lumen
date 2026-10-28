@@ -1,0 +1,7 @@
+{
+  "name": "lumen-apple-qa-gpt6-astra-pro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Isolated Chrome comparison and acceptance tests; no access to user browser profiles",
+  "dependencies": {"playwright": "1.62.1"}
+}

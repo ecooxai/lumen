@@ -1,4 +1,5 @@
 #include <strings.h>
+#include <ctype.h>
 /* HTTP/1.1 client with TLS (OpenSSL), keep-alive connection pooling, redirects, decompression. */
 #include "net.h"
 #include <pthread.h>
@@ -56,7 +57,8 @@ void headers_free(Headers *h) { for (int i = 0; i < h->n; i++) { free(h->v[i].na
    or the next request to reuse a connection. Never invoke callbacks here. */
 static pthread_mutex_t g_io_mu = PTHREAD_MUTEX_INITIALIZER;
 static bool request_cancelled(const NetRequest *r) {
-    return r && __atomic_load_n(&r->cancelled, __ATOMIC_RELAXED);
+    return r && (__atomic_load_n(&r->cancelled, __ATOMIC_RELAXED) ||
+                 (r->deadline_ms > 0 && now_ms() >= r->deadline_ms));
 }
 void net_request_cancel(NetRequest *r) {
     if (!r) return;
@@ -136,13 +138,17 @@ static int connect_tcp(const char *host, int port, char **err, NetRequest *owner
     char ps[16]; snprintf(ps, sizeof ps, "%d", port);
     const char *h = host; char hb[256];
     if (host[0] == '[') { size_t n = strlen(host); snprintf(hb, sizeof hb, "%.*s", (int)(n - 2), host + 1); h = hb; }
-    /* LUMEN_HOST_MAP="suffix=ip,..." resolves matching hosts to a fixed address (test harnesses only) */
+    /* Test-only address overrides. Legacy entries match a hostname and its subdomains.
+       LUMEN_HOST_MAP_MODE=exact restricts matches to explicitly listed hostnames,
+       preserving normal DNS failure for unlisted WPT nonexistent subdomains. */
     const char *map = getenv("LUMEN_HOST_MAP"); char mip[64];
+    const char *map_mode = getenv("LUMEN_HOST_MAP_MODE");
+    bool map_exact = map_mode && !strcmp(map_mode, "exact");
     for (const char *m = map; m && *m;) {
         const char *eq = strchr(m, '='), *end = strchr(m, ','); if (!end) end = m + strlen(m);
         if (!eq || eq > end) break;
         size_t sl = (size_t)(eq - m), hl = strlen(h);
-        if (sl && (hl == sl || (hl > sl && h[hl - sl - 1] == '.')) && !strncasecmp(h + hl - sl, m, sl)) { snprintf(mip, sizeof mip, "%.*s", (int)(end - eq - 1), eq + 1); h = mip; break; }
+        if (sl && (hl == sl || (!map_exact && hl > sl && h[hl - sl - 1] == '.')) && !strncasecmp(h + hl - sl, m, sl)) { snprintf(mip, sizeof mip, "%.*s", (int)(end - eq - 1), eq + 1); h = mip; break; }
         m = *end ? end + 1 : end;
     }
     int gr = getaddrinfo(h, ps, &hints, &res);
@@ -238,11 +244,25 @@ static bool conn_readline(Conn *c, SB *line) {
         if (conn_fill(c) <= 0) return line->n > 0;
         char *s = c->rbuf + c->rpos; size_t n = c->rlen - c->rpos;
         char *nl = memchr(s, '\n', n);
+        size_t piece = nl ? (size_t)(nl - s) : n;
+        if (c->owner && c->owner->discard_response_body &&
+            (piece > 65536 || line->n > 65536 - piece)) return false;
         if (nl) { sb_put(line, s, (size_t)(nl - s)); c->rpos += (size_t)(nl - s) + 1; if (line->n && line->s[line->n - 1] == '\r') line->s[--line->n] = 0; return true; }
         sb_put(line, s, n); c->rpos = c->rlen;
         if (line->n > 1 << 20) return false;
     }
 }
+/* Detached fire-and-forget requests never retain unbounded response metadata.
+ * Ordinary requests keep their existing line limit and parsing behavior. */
+static bool response_header_line(Conn *c, SB *line, size_t *bytes) {
+    if (!conn_readline(c, line)) return false;
+    if (c->owner && c->owner->discard_response_body) {
+        if (line->n > 65536 - 2 || *bytes > 65536 - line->n - 2) return false;
+        *bytes += line->n + 2;
+    }
+    return true;
+}
+
 static bool conn_readn(Conn *c, SB *out, size_t n) {
     while (n) {
         if (conn_fill(c) <= 0) return false;
@@ -385,23 +405,36 @@ static NetResponse *http_once(NetRequest *request, const char *method, const URL
 
     SB line; sb_init(&line);
     int status = 0;
+    size_t header_bytes = 0;
     do {
-        if (!conn_readline(c, &line)) { sb_free(&line); conn_close(c); r->error = xstrdup("no response"); *retryable = reused; return r; }
+        if (!response_header_line(c, &line, &header_bytes)) { sb_free(&line); conn_close(c); r->error = xstrdup(request->discard_response_body ? "no response or response headers too large" : "no response"); *retryable = reused; return r; }
         if (strncmp(line.s, "HTTP/", 5)) { sb_free(&line); conn_close(c); r->error = xstrdup("bad status line"); return r; }
         const char *sp = strchr(line.s, ' ');
         status = sp ? atoi(sp + 1) : 0;
         const char *sp2 = sp ? strchr(sp + 1, ' ') : NULL;
         free(r->status_text); r->status_text = xstrdup(sp2 ? sp2 + 1 : "");
         headers_free(&r->headers);
-        while (conn_readline(c, &line) && line.n) {
+        bool headers_complete = false;
+        while (response_header_line(c, &line, &header_bytes)) {
+            if (!line.n) { headers_complete = true; break; }
             char *colon = strchr(line.s, ':'); if (!colon) continue;
             *colon = 0; char *v = colon + 1; while (*v == ' ' || *v == '\t') v++;
             for (char *e = v + strlen(v); e > v && (e[-1] == ' ' || e[-1] == '\t'); ) *--e = 0;
             headers_add(&r->headers, line.s, v);
             if (cookies && str_ieq(line.s, "set-cookie")) cookies_set_from_header(u, v, t_cross);
         }
+        if (request->discard_response_body && !headers_complete) {
+            sb_free(&line); conn_close(c); r->error = xstrdup("incomplete or oversized response headers"); return r;
+        }
     } while (status >= 100 && status < 200 && status != 101);
     r->status = status;
+    if (request->discard_response_body) {
+        /* A body that no consumer can observe must not be buffered, decoded or
+           pooled unread. Closing also bounds large and never-ending responses. */
+        sb_free(&line); conn_close(c);
+        r->body = xcalloc(1, 1); r->body_len = 0; r->t_end = now_ms();
+        return r;
+    }
     bool streaming = t_stream && !(status >= 300 && status < 400 && status != 304 && headers_get(&r->headers, "location"));
     Dec dec = {0};
     if (streaming) {
@@ -454,26 +487,83 @@ static NetResponse *http_once(NetRequest *request, const char *method, const URL
 
 static NetResponse *data_url(const char *url) {
     NetResponse *r = xcalloc(1, sizeof *r);
-    const char *p = url + 5, *comma = strchr(p, ',');
+    URL parsed;
+    if (!url_parse(url, &parsed)) { r->error = xstrdup("bad data url"); return r; }
+    r->url = url_to_string(&parsed);
+    bool data_scheme = !strcmp(parsed.scheme, "data");
+    url_free(&parsed);
+    if (!data_scheme) { r->error = xstrdup("bad data url scheme"); return r; }
+
+    /* Fetch's data-URL processor serializes with exclude-fragment=true. Keep
+     * the full URL on the response for navigation, but never decode its hash
+     * into the response bytes (including for base64 or a comma in the hash).
+     */
+    const char *p = r->url + 5;
+    const char *end = strchr(p, '#');
+    if (!end) end = p + strlen(p);
+    const char *comma = memchr(p, ',', (size_t)(end - p));
     if (!comma) { r->error = xstrdup("bad data url"); return r; }
-    char *meta = xstrndup(p, (size_t)(comma - p));
-    bool b64 = strstr(meta, ";base64") != NULL;
-    char *semi = strstr(meta, ";base64"); if (semi) *semi = 0;
-    headers_add(&r->headers, "content-type", meta[0] ? meta : "text/plain;charset=US-ASCII");
-    char *dec = url_decode(comma + 1, strlen(comma + 1));
-    if (b64) {
-        size_t n = strlen(dec); char *out = xmalloc(n + 1); size_t o = 0; uint32_t acc = 0; int bits = 0;
-        for (size_t i = 0; i < n; i++) {
-            int c = (unsigned char)dec[i], v;
-            if (c >= 'A' && c <= 'Z') v = c - 'A'; else if (c >= 'a' && c <= 'z') v = c - 'a' + 26; else if (c >= '0' && c <= '9') v = c - '0' + 52;
-            else if (c == '+' || c == '-') v = 62; else if (c == '/' || c == '_') v = 63; else continue;
-            acc = (acc << 6) | (uint32_t)v; bits += 6;
-            if (bits >= 8) { bits -= 8; out[o++] = (char)((acc >> bits) & 0xff); }
+    while (p < comma && *p == ' ') ++p;
+    const char *meta_end = comma;
+    while (meta_end > p && meta_end[-1] == ' ') --meta_end;
+    char *meta = xstrndup(p, (size_t)(meta_end - p));
+    size_t meta_len = strlen(meta);
+    bool b64 = false;
+    if (meta_len >= 6 && !strcasecmp(meta + meta_len - 6, "base64")) {
+        size_t marker = meta_len - 6;
+        while (marker && meta[marker - 1] == ' ') --marker;
+        if (marker && meta[marker - 1] == ';') {
+            b64 = true;
+            meta[marker - 1] = 0;
         }
-        free(dec); r->body = out; r->body_len = o;
-    } else { r->body = dec; r->body_len = strlen(dec); }
+    }
+    if (meta[0] == ';') {
+        SB mime; sb_init(&mime); sb_puts(&mime, "text/plain"); sb_puts(&mime, meta);
+        free(meta); meta = sb_take(&mime);
+    }
+    headers_add(&r->headers, "content-type", meta[0] ? meta : "text/plain;charset=US-ASCII");
     free(meta);
-    r->status = 200; r->status_text = xstrdup("OK"); r->url = xstrdup(url);
+
+    const size_t encoded_len = (size_t)(end - comma - 1);
+    char *decoded = url_decode(comma + 1, encoded_len);
+    size_t decoded_len = encoded_len;
+    for (size_t i = 0; i + 2 < encoded_len; ++i) {
+        const unsigned char *s = (const unsigned char *)comma + 1;
+        if (s[i] == '%' && isxdigit(s[i + 1]) && isxdigit(s[i + 2])) { decoded_len -= 2; i += 2; }
+    }
+    if (b64) {
+        /* Forgiving-base64 decode: ASCII whitespace and optional final padding
+         * are permitted; other bytes (including a decoded NUL) are failures.
+         * Compaction and decoding shrink this owned allocation in place.
+         */
+        size_t n = 0;
+        for (size_t i = 0; i < decoded_len; ++i) {
+            unsigned char ch = (unsigned char)decoded[i];
+            if (ch != '\t' && ch != '\n' && ch != '\f' && ch != '\r' && ch != ' ') decoded[n++] = (char)ch;
+        }
+        if (n % 4 == 0) {
+            if (n && decoded[n - 1] == '=') --n;
+            if (n && decoded[n - 1] == '=') --n;
+        }
+        bool valid = n % 4 != 1;
+        size_t written = 0; unsigned bits = 0; uint32_t accumulator = 0;
+        for (size_t i = 0; valid && i < n; ++i) {
+            unsigned char ch = (unsigned char)decoded[i]; int value;
+            if (ch >= 'A' && ch <= 'Z') value = ch - 'A';
+            else if (ch >= 'a' && ch <= 'z') value = ch - 'a' + 26;
+            else if (ch >= '0' && ch <= '9') value = ch - '0' + 52;
+            else if (ch == '+') value = 62;
+            else if (ch == '/') value = 63;
+            else { valid = false; break; }
+            accumulator = (accumulator << 6) | (uint32_t)value; bits += 6;
+            if (bits >= 8) { bits -= 8; decoded[written++] = (char)((accumulator >> bits) & 0xff); }
+        }
+        if (!valid) { free(decoded); r->error = xstrdup("invalid base64 data url"); return r; }
+        decoded_len = written;
+    }
+    decoded[decoded_len] = 0;
+    r->body = decoded; r->body_len = decoded_len;
+    r->status = 200; r->status_text = xstrdup("OK");
     return r;
 }
 
@@ -520,7 +610,7 @@ static NetResponse *fetch_sync(NetRequest *req) {
         if (strcmp(u.scheme, "http") && strcmp(u.scheme, "https")) { r = xcalloc(1, sizeof *r); r->error = xstrdup("unsupported scheme"); url_free(&u); break; }
         bool retry;
         t_url = url;
-        t_cross = req->site_for_cookies && !net_url_same_site(req->site_for_cookies, url);
+        t_cross = req->force_cross_site || (req->site_for_cookies && !net_url_same_site(req->site_for_cookies, url));
         if (cookies && req->credentials_origin) {
             char *origin = url_origin(&u);
             /* A cross-origin hop makes the Fetch response non-basic for the rest
@@ -532,7 +622,7 @@ static NetResponse *fetch_sync(NetRequest *req) {
         if (r->error && retry && !request_cancelled(req)) { net_response_free(r); r = http_once(req, method, &u, &req->headers, body, blen, cookies, &retry); }
         if (!r->error && r->status) hsts_note(&u, headers_get(&r->headers, "strict-transport-security"));
         const char *loc = headers_get(&r->headers, "location");
-        if (r->status >= 300 && r->status < 400 && r->status != 304 && loc && redirects-- > 0) {
+        if (!req->no_redirects && r->status >= 300 && r->status < 400 && r->status != 304 && loc && redirects-- > 0) {
             char *nu = url_join(url, loc);
             if (r->status == 303 || ((r->status == 301 || r->status == 302) && !strcmp(method, "POST"))) { free(method); method = xstrdup("GET"); body = NULL; blen = 0; }
             net_response_free(r); r = NULL; url_free(&u);
@@ -584,7 +674,15 @@ NetRequest *net_request_ctx(const char *method, const char *url, const char *top
     if (top_url && *top_url) r->site_for_cookies = xstrdup(top_url);
     return r;
 }
-void net_request_free(NetRequest *r) { if (!r) return; free(r->method); free(r->url); headers_free(&r->headers); free(r->body); free(r->site_for_cookies); free(r->credentials_origin); free(r->no_cors_origin); free(r->csp); free(r->csp_doc); free(r); }
+void net_request_free(NetRequest *r) {
+    if (!r) return;
+    NetReleaseFn release = r->release;
+    void *ud = r->ud;
+    free(r->method); free(r->url); headers_free(&r->headers); free(r->body);
+    free(r->site_for_cookies); free(r->credentials_origin); free(r->no_cors_origin);
+    free(r->csp); free(r->csp_doc); free(r);
+    if (release) release(ud);
+}
 
 /* ---------- async worker pool ---------- */
 typedef struct Job { NetRequest *req; NetResponse *resp; struct Job *next, *rnext; } Job;

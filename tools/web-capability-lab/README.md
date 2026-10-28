@@ -37,8 +37,8 @@ python3 -m venv .venv
 
 Start the HTTP server in another terminal and reload the page. The optional
 server listens on UDP `127.0.0.1:4433`, negotiates **HTTP/3 only**, accepts the
-WebTransport extended CONNECT on `/echo`, and echoes datagrams. There is no
-HTTP/2/TCP fallback. A verified datagram roundtrip therefore demonstrates actual
+WebTransport extended CONNECT on `/echo`, and echoes datagrams and reliable
+bidirectional streams. There is no HTTP/2/TCP fallback. Verified echoes therefore demonstrate actual
 QUIC traffic for this endpoint. `output/webtransport-events.jsonl` records byte
 counts and the `h3-quic` transport marker without message payloads.
 
@@ -63,14 +63,16 @@ comma-separated `LUME_LAB_ORIGINS` allowlist before starting the HTTP/3 server.
 | Iframe | Loaded child, verified message source/origin and policy observations | Camera/mic/location inside the child require their own buttons |
 | WebRTC | Exact local channel echo; recorded ICE/DTLS status when exposed | Does not prove external connectivity, actual protocol implementation, STUN or TURN |
 | WebSocket | Exact text echoed by the local server | Does not prove every third-party WebSocket service |
-| WebTransport / QUIC | Exact datagram echoed by the HTTP/3-only server | Engine support and certificate-hash support are required |
+| WebTransport / QUIC | Fresh exact datagram and reliable stream echoes, stream EOF, and resolved session closure against the HTTP/3-only server | Engine support and certificate-hash support are required |
 | Google / Apple | Explicit UI simulation, or navigation to the real provider page | Neither action verifies an authenticated OAuth callback |
 
 ### WebGPU presentation modes
 
-**Native WebGPU canvas** is the default. It renders both to the visible
-WebGPU canvas and an offscreen texture used for byte verification. A driver or
-canvas-presentation error remains a failure; there is no automatic fallback.
+**Native WebGPU canvas** is the default. It renders to the actual canvas texture
+with `COPY_SRC` enabled and reads that same texture back for byte verification.
+That proves the submitted canvas texture contains the expected pixels; actual
+window/compositor visibility requires the separately captured screen evidence.
+A driver or canvas-presentation error remains a failure; there is no automatic fallback.
 
 **Offscreen GPU + pixel readback** is an explicit user selection. It runs the
 same WGSL graphics pipeline, copies the rendered texture back from the GPU, and

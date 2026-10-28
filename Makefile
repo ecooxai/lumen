@@ -81,6 +81,27 @@ endif
 RTC_ENABLED := $(if $(filter 0,$(RTC)),0,$(if $(RTC_COMPLETE),1,0))
 RTC_LIBS := $(if $(filter 1,$(RTC_ENABLED)),$(RTC_ARCHIVES))
 
+# WebTransport remains explicit opt-in until real browser acceptance passes.
+# Its target builder supplies pinned archive/header provenance and measured
+# Rust native-static-libs flags. No platform framework list is guessed here.
+WT ?= 0
+WT_PLATFORM := $(if $(IOS),$(PLAT),$(if $(filter Darwin,$(UNAME)),macos,linux))
+WT_PREFIX ?= $(CURDIR)/build-deps/webtransport/$(WT_PLATFORM)
+WT_ARCHIVE := $(WT_PREFIX)/lib/liblumen_webtransport_native.a
+WT_MANIFEST := $(WT_PREFIX)/manifest.json
+WT_HEADER := $(WT_PREFIX)/include/lumen_wt.h
+ifeq ($(filter $(WT),0 1),)
+  $(error WT must be 0 or 1)
+endif
+WT_ENABLED := $(WT)
+ifeq ($(WT_ENABLED),1)
+  ifeq ($(and $(wildcard $(WT_ARCHIVE)),$(wildcard $(WT_MANIFEST)),$(wildcard $(WT_HEADER))),)
+    $(error WT=1 requires the pinned target backend in $(WT_PREFIX))
+  endif
+endif
+WT_INPUTS := $(if $(filter 1,$(WT_ENABLED)),$(WT_ARCHIVE) $(WT_MANIFEST) $(WT_HEADER))
+WT_LIBS := $(if $(filter 1,$(WT_ENABLED)),$(WT_ARCHIVE) @$(BUILD)/webtransport-link.rsp)
+
 BASE_SRC := $(wildcard src/base/*.c)
 NET_SRC := $(wildcard src/net/*.c)
 CORE_SRC := $(BASE_SRC) $(NET_SRC) $(wildcard src/html/*.c src/dom/*.c src/css/*.c src/text/*.c src/layout/*.c src/paint/*.c src/media/*.c src/gpu/*.c src/js/*.c)
@@ -105,6 +126,16 @@ FORCE_RTC_CONFIG:
 .PHONY: FORCE_RTC_CONFIG
 $(BUILD)/src/js/rtc_native.cc.o: $(BUILD)/rtc-config.h $(RTC_LIBS)
 $(BUILD)/src/js/rtc_native.cc.o: CXXFLAGS += -I$(BUILD) -I$(RTC_PREFIX)/include -DRTC_STATIC -DRTC_ENABLE_MEDIA=0 -DRTC_ENABLE_WEBSOCKET=0 -fno-rtti
+
+# Content-stable output also invalidates the bridge on a prefix/manifest change.
+$(BUILD)/webtransport-config.h: FORCE_WT_CONFIG tools/prepare-webtransport-link.py $(WT_INPUTS)
+	python3 tools/prepare-webtransport-link.py --enabled "$(WT_ENABLED)" --platform "$(WT_PLATFORM)" --prefix "$(WT_PREFIX)" --header "$@" --response "$(BUILD)/webtransport-link.rsp"
+$(BUILD)/webtransport-link.rsp: $(BUILD)/webtransport-config.h
+	@test -f "$@"
+FORCE_WT_CONFIG:
+.PHONY: FORCE_WT_CONFIG
+$(BUILD)/src/js/webtransport_native.cc.o: $(BUILD)/webtransport-config.h $(WT_INPUTS)
+$(BUILD)/src/js/webtransport_native.cc.o: CXXFLAGS += -I$(BUILD) -I$(WT_PREFIX)/include
 
 # Relink GPU consumers when the selected library changes, including an
 # explicit return to the Homebrew prefix. Do not apply macOS selection to iOS.
@@ -146,7 +177,7 @@ FORCE:
 .PHONY: FORCE
 $(addprefix $(BUILD)/,lumen jsrun test_js_device_capabilities test_grid_rows test_overflow_clip test_sticky_position test_media_lifecycle test_worker_lifecycle test_promise_rejections): $(V8LINK_RSP)
 endif
-LIBS := $(RTC_LIBS) $(NETLIBS) -lfreetype -lharfbuzz -lSDL3 $(V8LIBS) -lwgpu_native \
+LIBS := $(WT_LIBS) $(RTC_LIBS) $(NETLIBS) -lfreetype -lharfbuzz -lSDL3 $(V8LIBS) -lwgpu_native \
         -lavcodec -lavformat -lavutil -lswscale -lswresample -lpng -ljpeg -lwebp -lwebpdemux -lsharpyuv -lgif $(if $(IOS),-ldav1d) $(PLATLIBS)
 
 $(BUILD)/lumen: $(call OBJ,$(CORE_SRC) $(APP_SRC) $(JS_SRC))
@@ -163,13 +194,23 @@ $(BUILD)/test_net: $(call OBJ,tests/test_net.c $(BASE_SRC) src/net/cookies.c src
 $(BUILD)/test_net_cancel: $(call OBJ,tests/test_net_cancel.c $(BASE_SRC) $(NET_SRC))
 	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS) -lpthread
 
+$(BUILD)/test_host_map: $(call OBJ,tests/test_host_map.c $(BASE_SRC) $(NET_SRC))
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS) -lpthread
+
 $(BUILD)/test_grid_rows: $(call OBJ,tests/test_grid_rows.c $(CORE_SRC) $(JS_SRC))
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 
-test: $(BUILD)/test_geolocation_contract $(BUILD)/test_capture_policy $(BUILD)/test_gpu_present $(BUILD)/test_device_capabilities $(BUILD)/test_js_device_capabilities $(BUILD)/test_present_retry $(BUILD)/test_css_transforms $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_net_cancel $(BUILD)/test_grid_rows $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_sticky_position $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle $(BUILD)/test_promise_rejections $(BUILD)/test_control $(BUILD)/test_js_control_selection $(BUILD)/test_js_control_input $(BUILD)/test_app_control $(BUILD)/test_control_paint $(BUILD)/test_control_geometry $(BUILD)/test_video_punch $(BUILD)/test_history_origin $(BUILD)/test_app_window_queue $(BUILD)/test_composer_paint $(BUILD)/test_window_lifecycle $(BUILD)/test_app_windows
+test: $(BUILD)/test_geolocation_contract $(BUILD)/test_capture_policy $(BUILD)/test_gpu_present $(BUILD)/test_device_capabilities $(BUILD)/test_js_device_capabilities $(BUILD)/test_present_retry $(BUILD)/test_css_transforms $(BUILD)/test_url $(BUILD)/test_net $(BUILD)/test_net_cancel $(BUILD)/test_grid_rows $(BUILD)/test_css_viewport $(BUILD)/test_overflow_clip $(BUILD)/test_sticky_position $(BUILD)/test_app_viewport $(BUILD)/test_touch_contacts $(BUILD)/test_media_lifecycle $(BUILD)/test_worker_lifecycle $(BUILD)/test_promise_rejections $(BUILD)/test_control $(BUILD)/test_js_control_selection $(BUILD)/test_js_control_input $(BUILD)/test_app_control $(BUILD)/test_control_paint $(BUILD)/test_control_geometry $(BUILD)/test_video_punch $(BUILD)/test_history_origin $(BUILD)/test_app_window_queue $(BUILD)/test_composer_paint $(BUILD)/test_window_lifecycle $(BUILD)/test_app_windows $(BUILD)/test_form_dialog $(BUILD)/test_css_computed_keywords $(BUILD)/test_presentation_tokens $(BUILD)/test_video_quality $(BUILD)/test_video_quality_js $(BUILD)/test_dialog_intrinsic_height $(BUILD)/test_host_map $(BUILD)/test_url_dom
+	$(BUILD)/test_presentation_tokens
+	$(BUILD)/test_video_quality
+	$(BUILD)/test_video_quality_js
+	$(BUILD)/test_dialog_intrinsic_height
+	$(BUILD)/test_form_dialog
+	$(BUILD)/test_css_computed_keywords
 	$(BUILD)/test_geolocation_contract
 	$(BUILD)/test_capture_policy
 	$(BUILD)/test_history_origin
+	$(BUILD)/test_url_dom
 	$(BUILD)/test_app_window_queue
 	$(BUILD)/test_composer_paint
 	$(BUILD)/test_window_lifecycle
@@ -186,6 +227,7 @@ test: $(BUILD)/test_geolocation_contract $(BUILD)/test_capture_policy $(BUILD)/t
 	$(BUILD)/test_url
 	$(BUILD)/test_net
 	$(BUILD)/test_net_cancel
+	$(BUILD)/test_host_map
 	$(BUILD)/test_grid_rows
 	$(BUILD)/test_css_viewport
 	$(BUILD)/test_css_transforms
@@ -271,6 +313,9 @@ $(BUILD)/src/js/prelude.inc: $(PRELUDE_JS)
 	{ printf 'R"JS('; cat $(PRELUDE_JS); printf ')JS"'; } > $@
 $(BUILD)/src/js/js.cc.o: $(BUILD)/src/js/prelude.inc
 $(BUILD)/src/js/worker.cc.o: CXXFLAGS += -fno-rtti
+# V8 serializer delegates must use the no-RTTI contract of the V8 library.
+$(BUILD)/src/js/frames.cc.o $(BUILD)/src/js/jsnative.cc.o: CXXFLAGS += -fno-rtti
+$(BUILD)/src/js/frames.cc.o $(BUILD)/src/js/jsnative.cc.o: Makefile
 $(BUILD)/src/js/js.cc.o: CXXFLAGS += -I$(BUILD)/src/js
 $(BUILD)/jsrun: $(call OBJ,tests/jsrun.c $(CORE_SRC) $(JS_SRC))
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
@@ -327,7 +372,11 @@ $(BUILD)/test_control: $(call OBJ,tests/test_control.c src/dom/control.c src/dom
 $(BUILD)/test_composer_paint: $(call OBJ,tests/test_composer_paint.c $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 $(BUILD)/tests/test_history_origin.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/tests/test_url_dom.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
 $(BUILD)/test_history_origin: $(call OBJ,tests/test_history_origin.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+$(BUILD)/test_url_dom: $(call OBJ,tests/test_url_dom.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
 $(BUILD)/tests/test_js_control_input.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
 $(BUILD)/test_js_control_input: $(call OBJ,tests/test_js_control_input.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
@@ -381,6 +430,139 @@ test-audio-capture: $(BUILD)/jsrun
 test-camera-authorization:
 	node tests/test_camera_authorization.mjs
 
+$(BUILD)/tests/test_webtransport_native.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_webtransport_native: $(call OBJ,tests/test_webtransport_native.cc $(CORE_SRC) $(JS_SRC))
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
 $(BUILD)/tests/test_rtc_native.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
 $(BUILD)/test_rtc_native: $(call OBJ,tests/test_rtc_native.cc $(CORE_SRC) $(JS_SRC))
 	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Actual V8/DOM dialog submission and CSS computed-value regressions.
+$(BUILD)/tests/test_form_dialog.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_form_dialog: $(call OBJ,tests/test_form_dialog.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+$(BUILD)/test_css_computed_keywords: $(call OBJ,tests/test_css_computed_keywords.c $(CSS_TEST_SRC))
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
+
+# Actual media compositor accounting and intrinsic modal sizing regressions.
+$(BUILD)/test_presentation_tokens: tests/test_presentation_tokens.c src/paint/presentation.h
+	$(CC) $(CFLAGS) -UNDEBUG $< -o $@
+
+$(BUILD)/test_video_quality: $(call OBJ,tests/test_video_quality.c $(filter-out src/media/media.c,$(CORE_SRC)) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+$(BUILD)/tests/test_video_quality_js.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_video_quality_js: $(call OBJ,tests/test_video_quality_js.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+$(BUILD)/test_dialog_intrinsic_height: $(call OBJ,tests/test_dialog_intrinsic_height.c $(LAYOUT_TEST_SRC))
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS) -lfreetype -lharfbuzz
+
+# Native Beacon delivery and keepalive ownership regressions.
+$(BUILD)/tests/test_beacon.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_beacon: $(call OBJ,tests/test_beacon.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+$(BUILD)/test_net_keepalive: $(call OBJ,tests/test_net_keepalive.c $(BASE_SRC) $(NET_SRC))
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS) -lpthread
+
+# Public query/body regression gate in a real V8 window realm.
+$(BUILD)/tests/test_url_params.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_url_params: $(call OBJ,tests/test_url_params.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# A single private URLSearchParams implementation is compiled into both realms.
+$(BUILD)/src/js/url_search_params.inc: src/js/prelude/06z-urlsearchparams.js
+	@mkdir -p $(dir $@)
+	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
+$(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o: $(BUILD)/src/js/url_search_params.inc
+$(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o: CXXFLAGS += -I$(BUILD)/src/js
+
+# Public URL/DOMException Web IDL checks in actual window/child/worker realms.
+$(BUILD)/tests/test_url_idl.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG -I$(BUILD)/src/js
+$(BUILD)/tests/test_url_idl.cc.o: $(BUILD)/src/js/url_search_params.inc
+$(BUILD)/test_url_idl: $(call OBJ,tests/test_url_idl.cc $(CORE_SRC) $(filter-out src/js/worker.cc,$(JS_SRC))) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Shared interface factories and private native state in window and worker.
+$(BUILD)/src/js/dom_exception.inc: src/js/prelude/06x-domexception.js
+	@mkdir -p $(dir $@)
+	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
+$(BUILD)/src/js/url_interface.inc: src/js/prelude/06y-urlinterface.js
+	@mkdir -p $(dir $@)
+	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
+$(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: $(BUILD)/src/js/dom_exception.inc $(BUILD)/src/js/url_interface.inc
+$(BUILD)/src/js/jsnative.cc.o $(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: src/js/idl_state.h
+
+# Actual dedicated-worker secure-context inheritance and message delivery.
+$(BUILD)/tests/test_worker_security.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_worker_security: $(call OBJ,tests/test_worker_security.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Public platform-brand serialization in real window, child and worker realms.
+$(BUILD)/tests/test_clone_brand.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_clone_brand: $(call OBJ,tests/test_clone_brand.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Shared private serialization recognition and intrinsic exception factories.
+$(BUILD)/src/js/jsnative.cc.o $(BUILD)/src/js/frames.cc.o $(BUILD)/src/js/windows.cc.o $(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: src/js/clone_brand.h src/js/idl_state.h
+
+# Public FileReader behavior in actual window, parsed-child and worker realms.
+$(BUILD)/tests/test_file_reader.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_file_reader: $(call OBJ,tests/test_file_reader.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# One FileReader factory and immutable decoding tables for all JavaScript realms.
+$(BUILD)/src/js/file_reader.inc: src/js/prelude/06w-filereader.js
+	@mkdir -p $(dir $@)
+	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
+$(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: $(BUILD)/src/js/file_reader.inc
+$(BUILD)/src/js/jsnative.cc.o $(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: src/js/blob_state.h src/js/file_reader.h src/base/encoding.h
+$(BUILD)/src/base/encoding.c.o: src/base/encoding_decode_data.inc
+$(BUILD)/tests/test_encoding.c.o: CFLAGS += -UNDEBUG
+$(BUILD)/test_encoding: $(call OBJ,tests/test_encoding.c src/base/encoding.c src/base/util.c)
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ -lm
+
+# Actual planned form tasks, named iframe GET/POST and request ownership.
+$(BUILD)/tests/test_form_navigation.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_form_navigation: $(call OBJ,tests/test_form_navigation.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -Wl,-export_dynamic -o $@ $(LIBS)
+
+# Public HTTP document encoding/HTML URL boundary and shared scalar encoder.
+$(BUILD)/tests/test_document_encoding.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_document_encoding: $(call OBJ,tests/test_document_encoding.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+$(BUILD)/tests/test_url_encoding.c.o $(BUILD)/tests/test_encoding_encoder.c.o: CFLAGS += -UNDEBUG
+$(BUILD)/test_url_encoding: $(call OBJ,tests/test_url_encoding.c $(BASE_SRC))
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(BASELIBS)
+$(BUILD)/test_encoding_encoder: $(call OBJ,tests/test_encoding_encoder.c src/base/encoding.c src/base/util.c)
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ -lm
+
+# Shared reverse pointer indexes supplement the existing forward decoder data.
+$(BUILD)/src/base/encoding.c.o: src/base/encoding_encode_index.inc
+
+# Synchronous iframe removing steps with retained native realm ownership.
+$(BUILD)/tests/test_frame_removal.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_frame_removal: $(call OBJ,tests/test_frame_removal.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# Byte-response documents and streaming HTML input preprocessing.
+$(BUILD)/test_parser_input: $(call OBJ,tests/test_parser_input.c $(BASE_SRC) $(NET_SRC) $(wildcard src/dom/*.c) src/html/html.c src/html/entities.c)
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS)
+
+# Raw HTTP form serialization with the shared Encoding Standard encoder.
+$(BUILD)/tests/test_form_encoding.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_form_encoding: $(call OBJ,tests/test_form_encoding.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -Wl,-export_dynamic -o $@ $(LIBS)
+
+# Public Blob/File behavior in actual window, parsed-child and worker realms.
+$(BUILD)/tests/test_blob_file.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_blob_file: $(call OBJ,tests/test_blob_file.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS)
+
+# One immutable Blob/File factory is compiled into window and worker realms.
+$(BUILD)/src/js/blob_file.inc: src/js/prelude/06v-blob.js
+	@mkdir -p $(dir $@)
+	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
+$(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: $(BUILD)/src/js/blob_file.inc

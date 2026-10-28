@@ -1,9 +1,12 @@
 #ifndef LUMEN_PAINT_H
 #define LUMEN_PAINT_H
 #include "../layout/layout.h"
+#include "presentation.h"
+
+typedef struct Canvas Canvas;
 
 /* Decoded image: premultiplied 0xAARRGGBB pixels */
-typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; uint8_t *yuv; int yuv_mat; /* NV12 video frame; mat: 1 = BT.709, 2 = full range */ bool opaque; uint32_t ver; /* bumped when px is redrawn in place (iframes) */ } Image;
+typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px per CSS px, 0 = 1 */ struct ImgAnim *anim; uint8_t *yuv; int yuv_mat; /* NV12 video frame; mat: 1 = BT.709, 2 = full range */ bool opaque; uint32_t ver; /* bumped when px is redrawn in place (iframes) */ uint64_t media_owner, media_frame; const Canvas *sampled_canvas; /* decoded frame or cached child-surface submission tokens */ } Image;
 static inline float image_css_w(const Image *im) { return im->scale > 0 ? im->w / im->scale : (float)im->w; }
 static inline float image_css_h(const Image *im) { return im->scale > 0 ? im->h / im->scale : (float)im->h; }
 
@@ -47,7 +50,7 @@ extern bool dl_caret_on; /* paint the caret in the focused text control */
 void dl_clear(DisplayList *dl);
 
 /* punch: image whose pixels raster leaves as alpha-0 holes (composited by the GPU); punched is set when it was hit. */
-typedef struct Canvas { int w, h, stride; uint32_t *px; float scale; const void *punch; bool punched; } Canvas;
+struct Canvas { int w, h, stride; uint32_t *px; float scale; const void *punch; bool punched, track_media, media_retry; PaintFrames media_frames; };
 void canvas_init(Canvas *c, int w, int h, float scale);
 void canvas_free(Canvas *c);
 void raster(Canvas *c, const DisplayList *dl, Color clear);

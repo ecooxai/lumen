@@ -259,7 +259,7 @@ static std::string mod_resolve(const std::string &spec, const std::string &base)
     bool rel = !spec.compare(0, 1, "/") || !spec.compare(0, 2, "./") || !spec.compare(0, 3, "../");
     bool abs = spec.find("://") != std::string::npos || !spec.compare(0, 5, "data:") || !spec.compare(0, 5, "blob:");
     if (!rel && !abs) return "";
-    char *u = url_join(base.c_str(), spec.c_str());
+    char *u = url_join_n(base.c_str(), spec.data(), spec.size());
     std::string r = u ? u : "";
     free(u);
     return r;
@@ -270,7 +270,8 @@ static void imap_add(JsCtx *c, v8::Local<v8::Context> ctx, v8::Local<v8::Value> 
     for (uint32_t i = 0; i < ks->Length(); i++) {
         v8::Local<v8::Value> k, v;
         if (!ks->Get(ctx, i).ToLocal(&k) || !o.As<v8::Object>()->Get(ctx, k).ToLocal(&v) || !v->IsString()) continue;
-        char *u = url_join(c->doc && c->doc->url ? c->doc->url : "", jcstr(iso, v).c_str());
+        std::string address = jcstr(iso, v);
+        char *u = url_join_n(c->doc && c->doc->url ? c->doc->url : "", address.data(), address.size());
         if (u) c->imap.emplace_back(jcstr(iso, k), u);
         free(u);
     }
@@ -633,14 +634,15 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     if (parent) parent->kids.push_back(c);
     c->doc = d;
     if (parent) { c->sb_opaque = parent->sb_opaque; c->sb_noscript = parent->sb_noscript; }
-    if (const char *sb = frame ? node_attr(frame, "sandbox") : nullptr) {
-        auto has = [sb](const char *tok) {
-            size_t n = strlen(tok);
-            for (const char *p = sb; *p;) {
-                while (*p && isspace((unsigned char)*p)) p++;
-                const char *e = p; while (*e && !isspace((unsigned char)*e)) e++;
-                if ((size_t)(e - p) == n && !strncasecmp(p, tok, n)) return true;
-                p = e;
+    size_t sandbox_length = 0;
+    if (const char *sb = frame ? node_attr_n(frame, "sandbox", &sandbox_length) : nullptr) {
+        auto has = [sb, sandbox_length](const char *tok) {
+            const size_t n = strlen(tok);
+            for (size_t p = 0; p < sandbox_length;) {
+                while (p < sandbox_length && isspace((unsigned char)sb[p])) ++p;
+                size_t end = p; while (end < sandbox_length && !isspace((unsigned char)sb[end])) ++end;
+                if (end - p == n && !strncasecmp(sb + p, tok, n)) return true;
+                p = end;
             }
             return false;
         };
@@ -683,6 +685,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     v8::Local<v8::Object> N = v8::Object::New(iso);
     js_install_native(c, N);
     js_install_rtc(c, N);
+    js_install_webtransport(c, N);
     v8::TryCatch tc(iso);
     v8::ScriptOrigin origin(jstr(iso, "lumen:prelude"));
     v8::Local<v8::Script> s;
@@ -775,6 +778,7 @@ void js_free(JsCtx *c) {
     workers_kill(c);
     js_capture_close(c);
     js_rtc_close(c);
+    js_webtransport_close(c);
     for (JsCtx *k : std::vector<JsCtx *>(c->kids)) js_free(k);
     frames_forget(c);
     if (c->parent) {
@@ -798,6 +802,7 @@ void js_free(JsCtx *c) {
         v8::Isolate::Scope is(c->iso);
         v8::HandleScope hs(c->iso);
         for (auto &kv : c->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
+        net_keepalive_group_release(c->keepalive_group); c->keepalive_group = nullptr;
         c->fetches.clear(); for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
         c->timers.clear();
         c->rejections.clear();
@@ -825,7 +830,7 @@ bool js_script_mime_blocked(const char *ct) {
 }
 static bool csp_script_ok(JsCtx *c, Node *script, const char *url, const char *src, size_t n) {
     if (!script || !c->doc || !c->doc->csp) return true;
-    bool ext = node_attr(script, "src") != nullptr;
+    bool ext = node_has_attr(script, "src");
     if (csp_allows_script(c->doc->csp, c->doc->url, ext ? url : nullptr, node_attr(script, "nonce"), src, n, script->flags & NF_PARSER_INSERTED)) return true;
     fprintf(stderr, "lumen: CSP blocked %s script %.120s nonce=%s parser=%d %.60s\n", ext ? "external" : "inline", ext && url ? url : "",
             node_attr(script, "nonce") ? "yes" : "no", (script->flags & NF_PARSER_INSERTED) ? 1 : 0, ext ? "" : src);
@@ -842,7 +847,7 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
     c->current_script = script;
     run_source(c, src, n, name);
     c->current_script = prev;
-    if (script && node_attr(script, "src")) {
+    if (script && node_has_attr(script, "src")) {
         JS_ENTER(c);
         jfire(c, script, "load");
     }
@@ -853,7 +858,7 @@ void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char
     if (script) script->flags |= NF_SCRIPT_STARTED;
     if (c->dead || c->sb_noscript || js_window_is_closed(c->window_id)) return;
     if (!csp_script_ok(c, script, url, src, n)) return;
-    bool ext = script && node_attr(script, "src"), ok = false;
+    bool ext = script && node_has_attr(script, "src"), ok = false;
     {
         JS_ENTER(c);
         v8::TryCatch tc(iso);
@@ -979,6 +984,7 @@ void js_control_selection_changed(JsCtx *c, Node *target) {
 
 void js_set_ready_state(JsCtx *c, int state) {
     if (!c) return;
+    if (c->doc->ready_state == 0 && state > 0) doc_update_fragment_target(c->doc);
     c->doc->ready_state = state;
     JS_ENTER(c);
     jfire(c, &c->doc->node, "readystatechange");
@@ -994,6 +1000,7 @@ double js_next_deadline(JsCtx *c) {
     d = std::min(d, workers_deadline(c));
     d = std::min(d, js_windows_deadline(c));
     d = std::min(d, js_rtc_deadline(c));
+    d = std::min(d, js_webtransport_deadline(c));
     return d;
 }
 
@@ -1030,6 +1037,7 @@ static void tick_one(JsCtx *c) {
     js_bus_deliver(c);
     js_windows_deliver(c);
     js_rtc_deliver(c);
+    js_webtransport_deliver(c);
     double now = now_ms();
     std::vector<std::pair<double, uint32_t>> due;
     for (auto &kv : c->timers) if (kv.second.due <= now) due.push_back({ kv.second.due, kv.first });

@@ -90,9 +90,9 @@ static bool hash_match(const char *t, size_t n, const char *body, size_t bn) {
 
 static bool policy_allows(const char *p, const char *e, const char *doc_url, const char *src_url, const URL *su,
                           const char *nonce, const char *body, size_t bn, bool parser, int kind) {
-    /* kind: 0 <script>, 1 inline event handler attribute, 2 eval/new Function, 3 WebAssembly compile, 4 inline <style>, 5 style= attribute */
-    const char *ve, *v = kind == 0 ? find_dir(p, e, "script-src-elem", &ve) : kind == 1 ? find_dir(p, e, "script-src-attr", &ve) : kind == 4 ? find_dir(p, e, "style-src-elem", &ve) : kind == 5 ? find_dir(p, e, "style-src-attr", &ve) : NULL;
-    if (!v) v = find_dir(p, e, kind >= 4 ? "style-src" : "script-src", &ve);
+    /* kind: 0 <script>, 1 handler attribute, 2 eval, 3 WebAssembly, 4 <style>, 5 style=, 6 javascript navigation */
+    const char *ve, *v = (kind == 0 || kind == 6) ? find_dir(p, e, "script-src-elem", &ve) : kind == 1 ? find_dir(p, e, "script-src-attr", &ve) : kind == 4 ? find_dir(p, e, "style-src-elem", &ve) : kind == 5 ? find_dir(p, e, "style-src-attr", &ve) : NULL;
+    if (!v) v = find_dir(p, e, (kind == 4 || kind == 5) ? "style-src" : "script-src", &ve);
     if (!v) v = find_dir(p, e, "default-src", &ve);
     if (!v) return true;
     bool ui = false, sd = false, nh = false, host = false, uh = false, ue = false, we = false, hm = false;
@@ -119,7 +119,7 @@ static bool policy_allows(const char *p, const char *e, const char *doc_url, con
     if (kind == 5) return (hm && uh) || (ui && !nh);
     if (kind == 2) return ue;
     if (kind == 3) return ue || we;
-    if (kind == 1) return (hm && uh) || (ui && !nh && !sd);
+    if (kind == 1 || kind == 6) return (hm && uh) || (ui && !nh && !sd);
     if (!src_url) return (sd && !parser) || (ui && !nh && !sd);
     if (sd) return !parser;
     return host;
@@ -159,6 +159,7 @@ bool csp_allows_style(const char *csp, const char *nonce, const char *body, size
 }
 bool csp_allows_style_attr(const char *csp, const char *body, size_t n) { return csp_all(csp, body, n, 5); }
 bool csp_allows_attr(const char *csp, const char *body, size_t n) { return csp_all(csp, body, n, 1); }
+bool csp_allows_navigation(const char *csp, const char *serialized_url, size_t n) { return csp_all(csp, serialized_url, n, 6); }
 bool csp_allows_eval(const char *csp, bool wasm) { return csp_all(csp, NULL, 0, wasm ? 3 : 2); }
 
 /* Fetch directives: dir is the most specific directive; falls back per CSP3 (e.g. style-src-elem -> style-src -> default-src). */
@@ -172,7 +173,8 @@ static bool url_policy_allows(const char *p, const char *e, const char *doc_url,
     for (int i = 0; chains[i][0]; i++) if (!strcmp(chains[i][0], dir)) ch = chains[i] + 1;
     if (ch) { for (int i = 0; i < 3 && !v; i++) v = find_dir(p, e, ch[i], &ve); if (!v && !strcmp(dir, "worker-src")) v = find_dir(p, e, "default-src", &ve); }
     else v = find_dir(p, e, dir, &ve);
-    if (!v) v = find_dir(p, e, "default-src", &ve);
+    /* form-action is a navigation directive with no default-src fallback. */
+    if (!v && strcmp(dir, "form-action")) v = find_dir(p, e, "default-src", &ve);
     if (!v) return true;
     for (const char *q = v; q < ve;) {
         while (q < ve && isspace((unsigned char)*q)) q++;
