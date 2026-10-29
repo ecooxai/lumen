@@ -423,6 +423,19 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
             m = (LMAX(0, inset_height) - oh) / 2;
         } else m = LMAX(0, m); /* preserve the existing vertical-writing path */
         a->m[0] = a->m[2] = m;
+    } else if (!tA && !bA && (mtA != mbA) &&
+        (!cb->st || !cb->st->writing_mode) && !s->writing_mode &&
+        (mode == SZ_FORCED || mode == SZ_ABS_SHRINK || wdef) &&
+        a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE && !area && ordinary_try &&
+        !s->pos_try && !s->pos_anchor && !s->pos_area &&
+        !s->anchor_ins[0] && !s->anchor_ins[1] && !s->anchor_ins[2] && !s->anchor_ins[3] &&
+        !s->anchor_sz[0] && !s->anchor_sz[1]) {
+        /* The admitted sizing paths preserve the original containing-block
+           basis of the opposite used margin. Give the single auto margin
+           all remaining block-axis space, including a negative remainder. */
+        float remaining = LMAX(0, ph - t - bt) - oh;
+        if (mtA) a->m[0] = remaining - a->m[2];
+        else a->m[2] = remaining - a->m[0];
     }
     float x, y;
     float sx = a->sx, sy = a->sy;
