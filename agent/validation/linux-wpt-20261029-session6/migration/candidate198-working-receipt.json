@@ -1,0 +1,22 @@
+{
+  "candidate": 198,
+  "base": "4bad2c3444592a8d471ec1eb50562bb678c67866",
+  "prepared_utc": "2026-10-29T20:19:49.003172+00:00",
+  "files": {
+    "src/layout/box.c": {
+      "before": "2a09104ef64040a2c05bddde74ad3d0782b4baf5cbfec1d0f4ed7a9021872ade",
+      "after": "e5e6b2a0273e5203893c20f1afb6837a15b039da906a164c44411e95d85fab6d"
+    },
+    "src/layout/flex.c": {
+      "before": "ea1f2b71367e4462876b2bfe0ce14f2bc3c381ef8b298f9581b8991d111e209c",
+      "after": "f4be4335da5d4a026851ccc088041bc3ca5e47a3736feef6ba86951a79406856"
+    },
+    "src/layout/inline.c": {
+      "before": "44c04ef4115b85593bbe497cac9f43e1907cd37e2f170c58ca1eb1d1a46f1947",
+      "after": "3e9910807d89d8c35fc6ac6be26bb6aface31eafb8a686213a406ddd6c90c61b"
+    }
+  },
+  "patch_sha256": "a8c494a930a1aaf8e317bfd1dd8fe478c56abd936afd5772a86adb3f24800bfa",
+  "scope": "Preserve fixed inline edge contributions across atomic break opportunities; honor horizontal RTL flex direction and text-free direct atomic inline order. No general bidi implementation.",
+  "integrated_utc": "2026-10-29T20:21:04.051050+00:00"
+}

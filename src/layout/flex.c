@@ -56,6 +56,7 @@ static float flex_cross_stretch_size(Layout *L, Box *c, bool row, float availabl
 float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
     bool row = s->flex_direction <= FD_ROW_REVERSE, rev = s->flex_direction == FD_ROW_REVERSE || s->flex_direction == FD_COLUMN_REVERSE;
+    if (row && !s->writing_mode && s->direction) rev = !rev;
     float mgap = row ? s->column_gap : s->row_gap, cgap = row ? s->row_gap : s->column_gap;
     if (row && s->column_gap_l.pct) mgap = res(s->column_gap_l, cw);
     VEC(FItem) it = {0}; int idx = 0;

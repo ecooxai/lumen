@@ -1,7 +1,7 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Building candidate 197: horizontal intrinsic width constraints",
-  "iteration": 197,
+  "phase": "Building candidate 198: repair intrinsic edge and RTL regressions",
+  "iteration": 198,
   "score": null,
   "iteration_quality": null,
   "score_note": "19/100 is a historical estimate without a reproducible formula. Current overall assessment is pending; scoped checks are reported separately.",
@@ -13,19 +13,19 @@
   "current_evidence": [
     [
       "Accepted candidate 196",
-      "89/184 upstream angle assertions; 473/832 authored fields, with zero prior-pass losses."
+      "89/184 upstream angle assertions and 473/832 authored fields, with no lost prior passes."
     ],
     [
-      "Retained behavior",
-      "All 3,268 CSSOM observations, 200 scanner observations and 27 string checks remain unchanged."
+      "Candidate 197 withheld",
+      "Upstream 76/148 and native 140/140 pass, but 16 new authored geometry failures must be repaired."
     ],
     [
-      "Next candidate",
-      "Candidate 197 is being checked against 148 upstream assertions, 3,528 mutation fields and 672 descendant-edge fields."
+      "Candidate 198",
+      "Separate edge-contribution and bounded RTL repair, with unchanged original controls and a fresh 336-field supplement."
     ],
     [
-      "Performance qualification",
-      "The accepted setter optimization has a measured local benefit; full-workload speedup remains inconclusive."
+      "Overall assessment",
+      "Pending final frozen broad comparison; scoped pass counts are not browser parity."
     ]
   ],
   "coverage": "Five whole angle files and 832 authored observations validate candidate 196. Broad 640-case results remain pinned to immutable 176 and 187 until the final rerun.",
@@ -37,7 +37,7 @@
     "Chromium is faster in the measured CPU DOM, style/layout and grid phases. A separate diagnostic located CSSOM setter overhead; a narrow optimization is awaiting independent semantics and balanced performance checks.",
     "URL conformance remains deferred. Current whole-browser assessment is pending; focused scores are explicitly scoped."
   ],
-  "active_iteration": 197,
+  "active_iteration": 198,
   "accepted_binary_sha256": "57a96003f1e7c789d06db637812bd043472963a10ac7d8a066ec3d323fc952d9",
   "accepted_binary_scope": "Candidate 195: canonical pixel-size setter optimization with unchanged semantics; broad timing remains inconclusive.",
   "agent_session": "active",
@@ -547,7 +547,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 197,
+  "current_candidate": 198,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1333,7 +1333,7 @@
     },
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   },
-  "session6_current": "Candidate 196 is accepted with 58 upstream and 72 authored angle gains, with no lost prior passes. Candidate 197 adds bounded intrinsic width constraints and restores measurement state.",
+  "session6_current": "Candidate 197 is withheld after 16 newly failing authored geometry fields, despite upstream gains and 140/140 native tests. Candidate 198 repairs those defects; accepted candidate 196 remains the release checkpoint.",
   "session6_current_summary": "Accepted candidate 195; angle candidate 196 is being built.",
   "overall_assessment": "pending",
   "accepted_scope_label": "Angle upstream assertions",

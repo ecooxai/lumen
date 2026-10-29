@@ -371,12 +371,19 @@ bool text_break_after(const Box *t, int gi) {
     return false;
 }
 
-typedef struct { float line, mx, word, mn; } IState;
+typedef struct { float line, mx, word, mn, edge_prefix; unsigned contents; bool after_atomic; } IState;
 static void inline_intrinsic(Layout *L, Box *b, IState *s) {
     for (Box *c = b->first; c; c = c->next) {
         if (c->abs) continue;
         if (c->kind == BX_TEXT) {
             text_ensure_shaped(c);
+            if (c->sh.n) {
+                if (s->after_atomic) {
+                    s->mn = LMAX(s->mn, LMAX(0, s->word - s->edge_prefix));
+                    s->word = s->edge_prefix; s->after_atomic = false;
+                }
+                s->edge_prefix = 0; s->contents++;
+            }
             bool wrap = c->st->white_space != WS_NOWRAP && c->st->white_space != WS_PRE;
             for (int i = 0; i < c->sh.n; i++) {
                 char ch = c->text[c->sh.g[i].cluster];
@@ -386,16 +393,24 @@ static void inline_intrinsic(Layout *L, Box *b, IState *s) {
                 if (ch == ' ' && wrap) { s->mn = LMAX(s->mn, s->word); s->word = 0; }
                 else { s->word += a; if (wrap && (c->st->word_break == 1 || text_break_after(c, i))) { s->mn = LMAX(s->mn, s->word); s->word = 0; } }
             }
-        } else if (c->kind == BX_BR) { s->mx = LMAX(s->mx, s->line); s->line = 0; s->mn = LMAX(s->mn, s->word); s->word = 0; }
+        } else if (c->kind == BX_BR) { s->mx = LMAX(s->mx, s->line); s->line = 0; s->mn = LMAX(s->mn, s->word); s->word = 0; s->edge_prefix = 0; s->after_atomic = false; s->contents++; }
         else if (c->kind == BX_INLINE) {
             compute_mbp(c, 0);
             float l = c->m[3] + c->b[3] + c->p[3], r = c->m[1] + c->b[1] + c->p[1];
-            s->line += l; s->word += l; inline_intrinsic(L, c, s); s->line += r; s->word += r;
+            unsigned before = s->contents;
+            s->line += l; s->word += l; s->edge_prefix += l;
+            inline_intrinsic(L, c, s);
+            s->line += r; s->word += r;
+            if (s->contents == before) s->edge_prefix += r;
         } else {
             float mn, mx; intrinsic_outer(L, c, &mn, &mx);
             if (c->floated) { s->mn = LMAX(s->mn, mn); s->line += mx; continue; }
-            s->mn = LMAX(s->mn, LMAX(s->word, 0)); s->word = 0;
-            s->mn = LMAX(s->mn, mn); s->line += mx;
+            /* An atomic inline permits a break on either side. Opening
+               inline edges stay with this item; closing edges subsequently
+               extend its contribution instead of disappearing at the break. */
+            s->mn = LMAX(s->mn, LMAX(s->word - s->edge_prefix, 0));
+            s->word = s->edge_prefix + mn; s->edge_prefix = 0;
+            s->after_atomic = true; s->contents++; s->line += mx;
         }
     }
 }
