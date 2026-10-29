@@ -57,7 +57,23 @@ v8::MaybeLocal<v8::Value> domexception_stack_value(v8::Isolate *iso, v8::Local<v
             if (formatter->IsObject()) return v8::Undefined(iso);
             break;
         }
-        return stored.As<v8::Object>()->Get(ctx, jstr(iso, "stack"));
+        auto captured = stored.As<v8::Object>();
+        bool labeled;
+        if (!captured->HasOwnProperty(ctx, jstr(iso, "message")).To(&labeled)) return {};
+        if (!labeled) {
+            // The unexposed snapshot needs labels only when its stack is used.
+            // Read associated data, never the original object's public getters.
+            v8::Local<v8::Value> state, message, name;
+            if (!object->GetPrivate(ctx, domexception_key(iso)).ToLocal(&state) || !state->IsArray() ||
+                !state.As<v8::Array>()->Get(ctx, 0).ToLocal(&message) ||
+                !state.As<v8::Array>()->Get(ctx, 1).ToLocal(&name)) return {};
+            if (!captured->DefineOwnProperty(ctx, jstr(iso, "message"), message, v8::DontEnum).FromMaybe(false) ||
+                !captured->DefineOwnProperty(ctx, jstr(iso, "name"), name, v8::DontEnum).FromMaybe(false)) return {};
+        }
+        v8::Local<v8::Value> stack;
+        if (!captured->Get(ctx, jstr(iso, "stack")).ToLocal(&stack)) return {};
+        // Optional stack data is a string or absent, never an author object.
+        return stack->IsString() ? stack : v8::Local<v8::Value>(v8::Undefined(iso));
     }
     return stored;
 }
@@ -82,15 +98,23 @@ void domexception_state(const v8::FunctionCallbackInfo<v8::Value> &a) {
             iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Invalid DOMException state")));
             return;
         }
+        const bool from_clone = a.Length() > 4;
+        if (from_clone && !a[4]->IsString() && !a[4]->IsUndefined()) {
+            iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Invalid DOMException stack")));
+            return;
+        }
+        // Snapshot the pristine Error before adding our private state. A clone
+        // already has associated stack data and needs no discarded snapshot.
+        v8::Local<v8::Object> captured;
+        if (!from_clone) captured = obj->Clone();
         v8::Local<v8::Value> fields[] = { a[1], a[2] };
         auto record = v8::Array::New(iso, fields, 2);
         if (!obj->SetPrivate(ctx, domexception_key(iso), record).FromMaybe(false)) return;
-        // Retain the captured native Error stack without eagerly formatting it.
-        // Later public name/message/stack getters must not run while cloning.
-        auto captured = obj->Clone();
-        if (!captured->DefineOwnProperty(ctx, jstr(iso, "message"), a[1], v8::DontEnum).FromMaybe(false) ||
-            !captured->DefineOwnProperty(ctx, jstr(iso, "name"), a[2], v8::DontEnum).FromMaybe(false) ||
-            !obj->SetPrivate(ctx, domexception_stack_key(iso), captured).FromMaybe(false)) return;
+        if (from_clone) {
+            if (obj->SetPrivate(ctx, domexception_stack_key(iso), a[4]).FromMaybe(false)) a.GetReturnValue().Set(record);
+            return;
+        }
+        if (!obj->SetPrivate(ctx, domexception_stack_key(iso), captured).FromMaybe(false)) return;
         if (a.Length() > 3 && a[3]->IsFunction())
             (void)obj->SetPrivate(ctx, domexception_stack_error_key(iso), a[3]);
         a.GetReturnValue().Set(record);

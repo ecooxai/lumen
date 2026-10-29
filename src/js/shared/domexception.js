@@ -25,6 +25,15 @@ class DOMException extends Error {
     get message() { return domExceptionState(this)[0]; }
     get code() { return DOMEX[domExceptionState(this)[1]] || 0; }
 }
+// Internal deserialization: associated strings and stack were already read
+// from private state. Avoid capturing a second snapshot that would be discarded.
+function domExceptionClone(state, stack) {
+    const self = DOMEX_CONSTRUCT(DOMEX_ERROR, [], DOMException);
+    const associatedStack = typeof stack === 'string' ? stack : undefined;
+    N.domExceptionState(self, state[0], state[1], DOMEX_ERROR, associatedStack);
+    if (typeof associatedStack === 'string') def(self, 'stack', associatedStack); else delete self.stack;
+    return self;
+}
 Object.setPrototypeOf(DOMException, Function.prototype);
 Object.defineProperty(DOMException.prototype, Symbol.toStringTag, { value: 'DOMException', configurable: true });
 for (const key of ['name', 'message', 'code']) {

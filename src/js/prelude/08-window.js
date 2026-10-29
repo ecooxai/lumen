@@ -486,10 +486,8 @@ function cloneValue(v, seen) {
     // @@toStringTag, and serialize their Web IDL data rather than public getters.
     const domState = N.domExceptionState(v);
     if (domState !== undefined) {
-        const e = new DOMException(domState[0], domState[1]); seen.set(v, e);
-        const stack = N.domExceptionStack(v); N.domExceptionStack(e, stack);
-        if (typeof stack === 'string') def(e, 'stack', stack); else delete e.stack;
-        return e;
+        const e = domExceptionClone(domState, N.domExceptionStack(v));
+        seen.set(v, e); return e;
     }
     const tag = Object.prototype.toString.call(v).slice(8, -1);
     if (tag === 'Boolean') { const b = Object(Boolean.prototype.valueOf.call(v)); seen.set(v, b); return b; } if (tag === 'Number') { const b = Object(Number.prototype.valueOf.call(v)); seen.set(v, b); return b; }
