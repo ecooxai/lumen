@@ -1,0 +1,217 @@
+{
+  "acceptanceScope": "Exact official Google Chrome for Testing 156.0.8078.47 Linux x86_64 distribution identity and independent direct command-line behavior. This is not generic Chrome parity, latest-version parity, or normative correctness of the observed URL cases.",
+  "accepted": true,
+  "directCLI": {
+    "bothNaturalExitZero": true,
+    "casesPerExecutable": 6,
+    "existingSeconds": 0.8123746879973623,
+    "fixtureSHA256": "63c652d10a945c1c5f0e567012d3a858571859ec2394576b1bdd4bd9570e098d",
+    "freshIndependentProfiles": true,
+    "freshSeconds": 0.6928791000027559,
+    "method": "direct --headless --dump-dom local HTML; fresh profile; no CDP, Playwright, WPT or injected scripts",
+    "noCDPOrWPTTransportUsed": true,
+    "observedCases": [
+      {
+        "error": null,
+        "href": "http://example%20example.com/",
+        "input": "http://example example.com",
+        "origin": "http://example%20example.com"
+      },
+      {
+        "error": null,
+        "href": "https://x%20x:12/",
+        "input": "https://x x:12",
+        "origin": "https://x%20x:12"
+      },
+      {
+        "error": null,
+        "href": "file:///tmp/mock/c:/foo/bar.html",
+        "input": "file:c:/foo/bar.html",
+        "origin": "file://"
+      },
+      {
+        "error": null,
+        "href": "blob:ftp://host/path",
+        "input": "blob:ftp://host/path",
+        "origin": "ftp://host"
+      },
+      {
+        "error": null,
+        "href": "https://example.com/",
+        "input": "https://example.com/",
+        "origin": "https://example.com"
+      },
+      {
+        "error": "TypeError: Failed to construct 'URL': Invalid URL",
+        "input": "http://exa%mple.com"
+      }
+    ],
+    "parentLoaderVariablesObservedAbsent": [
+      "LD_PRELOAD",
+      "LD_LIBRARY_PATH"
+    ],
+    "resultsIdentical": true
+  },
+  "fullWPTComparisonDisposition": "The existing complete reference uses the byte-identical officially retrieved executable. No rerun is required solely for distribution identity; all comparison claims remain version/platform/cohort qualified.",
+  "independentReadback": {
+    "allEqualToRecorded": true,
+    "archiveSHA256": "e6c94490f0b6b337225aeb2d2a5034858516b7017356980ba94f5176d8774a50",
+    "computedMD5MatchesObservedObjectETag": true,
+    "existingExecutableSHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+    "freshExecutableSHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+    "integrityQualification": "HTTPS official manifest and object, Content-Length, exact ZIP CRCs and repeated SHA256 readback; computed MD5 equals the observed Google object ETag. No detached publisher signature or publisher SHA256 was asserted.",
+    "publisherXGoogHashMD5Present": false
+  },
+  "monitoring": {
+    "direct-cli-monitor.json": {
+      "collector_error": null,
+      "duration_s": 3.01,
+      "max_sampling_gap_s": 1.014,
+      "natural_exit_code": 0,
+      "rss_peak_mb": 841.734,
+      "samples": 3,
+      "sampling_interval_s": 1
+    },
+    "recovery-monitor.json": {
+      "collector_error": null,
+      "duration_s": 10.013,
+      "max_sampling_gap_s": 1.005,
+      "natural_exit_code": 0,
+      "rss_peak_mb": 38.238,
+      "samples": 10,
+      "sampling_interval_s": 1
+    }
+  },
+  "officialManifestSHA256": "e2deb2900ca06dd96d2d0c2655af4ba37211cd5a4f8dca92fcb9d5151e4ec018",
+  "officialManifestTimestamp": "2026-10-29T12:22:14.510Z",
+  "officialManifestURL": "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json",
+  "officialVersionEntry": {
+    "downloads": {
+      "chrome": [
+        {
+          "platform": "linux-arm64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/linux-arm64/chrome-linux-arm64.zip"
+        },
+        {
+          "platform": "linux64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/linux64/chrome-linux64.zip"
+        },
+        {
+          "platform": "mac-arm64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/mac-arm64/chrome-mac-arm64.zip"
+        },
+        {
+          "platform": "mac-x64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/mac-x64/chrome-mac-x64.zip"
+        },
+        {
+          "platform": "win32",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/win32/chrome-win32.zip"
+        },
+        {
+          "platform": "win64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/win64/chrome-win64.zip"
+        }
+      ],
+      "chrome-headless-shell": [
+        {
+          "platform": "linux-arm64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/linux-arm64/chrome-headless-shell-linux-arm64.zip"
+        },
+        {
+          "platform": "linux64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/linux64/chrome-headless-shell-linux64.zip"
+        },
+        {
+          "platform": "mac-arm64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/mac-arm64/chrome-headless-shell-mac-arm64.zip"
+        },
+        {
+          "platform": "mac-x64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/mac-x64/chrome-headless-shell-mac-x64.zip"
+        },
+        {
+          "platform": "win32",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/win32/chrome-headless-shell-win32.zip"
+        },
+        {
+          "platform": "win64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/win64/chrome-headless-shell-win64.zip"
+        }
+      ],
+      "chromedriver": [
+        {
+          "platform": "linux-arm64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/linux-arm64/chromedriver-linux-arm64.zip"
+        },
+        {
+          "platform": "linux64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/linux64/chromedriver-linux64.zip"
+        },
+        {
+          "platform": "mac-arm64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/mac-arm64/chromedriver-mac-arm64.zip"
+        },
+        {
+          "platform": "mac-x64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/mac-x64/chromedriver-mac-x64.zip"
+        },
+        {
+          "platform": "win32",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/win32/chromedriver-win32.zip"
+        },
+        {
+          "platform": "win64",
+          "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/win64/chromedriver-win64.zip"
+        }
+      ]
+    },
+    "revision": "1706539",
+    "version": "156.0.8078.47"
+  },
+  "preservedExcludedArtifacts": {
+    "classification": "Incomplete temporary downloads preserved outside accepted raw; no browser profile, binary, large ZIP or partial download is included in the evidence archive.",
+    "partialDownloadShadows": [
+      {
+        "bytes": 56623104,
+        "name": ".chrome-linux64.zip.download.C5PxBA"
+      },
+      {
+        "bytes": 82575360,
+        "name": ".chrome-linux64.zip.download.ehSEyH"
+      }
+    ]
+  },
+  "productSourceChanged": false,
+  "rawArchive": {
+    "bytes": 101410,
+    "entries": 19,
+    "path": "raw-evidence.tar.gz",
+    "sha256": "022aef96d999b2bb051c3436f73b71959ba0f006f64079cc733c790014c17a0e"
+  },
+  "recordedUTC": "2026-10-29T15:50:06.466450+00:00",
+  "recovery": {
+    "allZipMembersCRCPassed": true,
+    "archiveBytes": 200206486,
+    "archiveMD5Hex": "72fa68617cc55ecf4e2bbe697e2f7584",
+    "archiveSHA256": "e6c94490f0b6b337225aeb2d2a5034858516b7017356980ba94f5176d8774a50",
+    "binary": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-official-chrome/verified-exact-156/chrome-linux64/chrome",
+    "binaryBytes": 300842312,
+    "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+    "declaredBytes": "200206486",
+    "etag": "\"72fa68617cc55ecf4e2bbe697e2f7584\"",
+    "finalURL": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/linux64/chrome-linux64.zip",
+    "finishedUTC": "2026-10-29T15:44:58.570505+00:00",
+    "generation": "1792451271847937",
+    "manifestSHA256": "e2deb2900ca06dd96d2d0c2655af4ba37211cd5a4f8dca92fcb9d5151e4ec018",
+    "reportedVersion": "Google Chrome for Testing 156.0.8078.47",
+    "revision": "1706539",
+    "seconds": 9.739106671997433,
+    "startedUTC": "2026-10-29T15:44:48.831439+00:00",
+    "status": 200,
+    "url": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/linux64/chrome-linux64.zip",
+    "version": "156.0.8078.47"
+  },
+  "resourceQualification": "Short download and process-launch observations only; no sustained CPU or scrolling acceptance is derived.",
+  "schemaVersion": 1
+}

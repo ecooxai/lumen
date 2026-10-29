@@ -1,0 +1,78 @@
+{
+  "direct-cli-monitor.csv": {
+    "bytes": 137,
+    "sha256": "8cfad329a0ed6ae5075c6b2e8d6f5fab1186db8e2ae84b763ad0135ebf567ed7"
+  },
+  "direct-cli-monitor.json": {
+    "bytes": 2184,
+    "sha256": "68c7dfd59769a621216c105eb64ac854273d7fcf32488a69c8d6505203d1da70"
+  },
+  "direct-cli-monitor.log": {
+    "bytes": 1691,
+    "sha256": "7f8910738b7b4314d0f62dce71933f3057cf77a66104aa2f00da45faca9b6a09"
+  },
+  "direct-cli-pair.json": {
+    "bytes": 6421,
+    "sha256": "285c0fc5ba347d25545a8ef6104582d8d11c60691282bbd1a11961a7f397441c"
+  },
+  "direct-cli-url.html": {
+    "bytes": 563,
+    "sha256": "63c652d10a945c1c5f0e567012d3a858571859ec2394576b1bdd4bd9570e098d"
+  },
+  "direct-existing/receipt.json": {
+    "bytes": 2202,
+    "sha256": "71616aba3c4eca0f3ef0f90ff296741a892d9150c854e2a0b33497cdcc12274e"
+  },
+  "direct-existing/stderr.log": {
+    "bytes": 6430,
+    "sha256": "5cde6ef0e730e66709b3ffe337ab701957c0634bb489d6af67e175588c5a066e"
+  },
+  "direct-existing/stdout.html": {
+    "bytes": 1402,
+    "sha256": "bcd53b458ff1a2cf2b39d5b92cfa26d7595860991242b35c9d8e74957b71682a"
+  },
+  "direct-official-redownload/receipt.json": {
+    "bytes": 2360,
+    "sha256": "417e715722b5d351cd82d8b7973c57445f0b29c340aa46d65f2a6235b3fd4f05"
+  },
+  "direct-official-redownload/stderr.log": {
+    "bytes": 6284,
+    "sha256": "e070b553985ece12053dafc909cd73249d09689e79ca4378eb4da882c14adce9"
+  },
+  "direct-official-redownload/stdout.html": {
+    "bytes": 1402,
+    "sha256": "bcd53b458ff1a2cf2b39d5b92cfa26d7595860991242b35c9d8e74957b71682a"
+  },
+  "direct_cli_url_probe.py": {
+    "bytes": 3021,
+    "sha256": "ac4fed0ff8a37c3ef71e9f84003ea715051ca50e699b2bfc38410a8bff2f327d"
+  },
+  "known-good-versions-with-downloads.json.gz": {
+    "bytes": 143282,
+    "sha256": "f705bf02765b85cebe9f0652dc654655277269dbe190d1e82ab3ef6b5e8329bd"
+  },
+  "manifest-receipt.json": {
+    "bytes": 7453,
+    "sha256": "0a8d63aa74f22152e723e894b437f288dbf088f8e79c5668b6c0ca7d30aecfc4"
+  },
+  "official-exact-recovery.json": {
+    "bytes": 1158,
+    "sha256": "471f4f34628966475aad8ad8a2ed033f6ffa5f41efb35f7192bd8c5f1f8fbd3f"
+  },
+  "recover_exact_distribution.py": {
+    "bytes": 3322,
+    "sha256": "39b2a2bfc132a76855092bb4f8fa7307218ac2cb5dfcf66fa4ad352e18fbdbff"
+  },
+  "recovery-monitor.csv": {
+    "bytes": 325,
+    "sha256": "465562956d297dd0d822b6267b7291a8ea541befb30e3fb53603e1c08dfbba4c"
+  },
+  "recovery-monitor.json": {
+    "bytes": 2183,
+    "sha256": "6010691deebf82754910045caf008a92732289cccca213488b249408a97376dc"
+  },
+  "recovery-monitor.log": {
+    "bytes": 398,
+    "sha256": "53e31f979aa1e5af93182fce8cb2e81673ce341ee855d7adf9e43a65e54185bd"
+  }
+}
