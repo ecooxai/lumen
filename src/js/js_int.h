@@ -149,6 +149,17 @@ void js_bus_listen(const void *key, std::function<void()> wake);   /* worker thr
 v8::MaybeLocal<v8::Value> jcall(JsCtx *c, v8::Local<v8::Function> f, v8::Local<v8::Value> recv, int argc, v8::Local<v8::Value> *argv);
 void jfire(JsCtx *c, Node *n, const char *type);
 void jreport(JsCtx *c, v8::Local<v8::Value> exc, v8::Local<v8::Message> msg);
+/* Native synchronous I/O does not consume the active JavaScript task budget.
+ * The previous elapsed budget is restored; this never cancels termination. */
+class JsNativeWait {
+    double started_;
+    std::vector<std::pair<JsCtx *, double>> suspended_;
+public:
+    explicit JsNativeWait(JsCtx *context);
+    ~JsNativeWait();
+    JsNativeWait(const JsNativeWait &) = delete;
+    JsNativeWait &operator=(const JsNativeWait &) = delete;
+};
 void js_install_native(JsCtx *c, v8::Local<v8::Object> N);
 void js_install_rtc(JsCtx *c, v8::Local<v8::Object> N);
 void js_rtc_close(JsCtx *c);

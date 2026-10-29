@@ -1,0 +1,9 @@
+[js log] SYNC_WATCHDOG_MARK {"phase":"started"}
+[js log] SYNC_WATCHDOG_MARK {"phase":"before_wait"}
+lumen: script exceeded 1000 ms, terminating
+    at _done (lumen:prelude:5309:10)
+    at send (lumen:prelude:5349:156)
+    at  (http://127.0.0.1:44971/?case=combined_active_work_below_budget:13:5)
+[js log] SYNC_WATCHDOG_MARK {"phase":"next_script"}
+[js log] SYNC_WATCHDOG_MARK {"phase":"next_task"}
+jsrun: context 64.6ms, 2 scripts 1654.6ms, dom_version 28

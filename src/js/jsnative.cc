@@ -103,7 +103,8 @@ FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
 static v8::Local<v8::Private> dom_state_key(v8::Isolate *iso, int slot) {
     static const char *names[] = { "lumen.dom.attr", "lumen.dom.attrs", "lumen.dom.name",
                                   "lumen.dom.content-type", "lumen.dom.document-interface", "lumen.dom.event",
-                                  "lumen.fetch.headers", "lumen.encoding.encoder", "lumen.encoding.decoder", "lumen.dom.window-handlers" };
+                                  "lumen.fetch.headers", "lumen.encoding.encoder", "lumen.encoding.decoder", "lumen.dom.window-handlers",
+                                  "lumen.dom.progress-event", "lumen.fetch.form-data", "lumen.xhr.event-target", "lumen.xhr.request" };
     if (slot < 0 || slot >= (int)ARRLEN(names)) return v8::Local<v8::Private>();
     return v8::Private::ForApi(iso, jstr(iso, names[slot]));
 }
@@ -1185,7 +1186,11 @@ FN(fetchSync) {
     CTX;
     NetRequest *rq = mkreq(c, a, 4);
     if (!rq) return;
-    NetResponse *r = net_fetch_sync(rq);
+    NetResponse *r;
+    {
+        JsNativeWait wait(c);
+        r = net_fetch_sync(rq);
+    }
     net_request_free(rq);
     v8::Local<v8::Value> out[6];
     resp_args(iso, r, out);

@@ -1,0 +1,424 @@
+{
+  "startedUTC": "2026-10-29T13:48:42.041894+00:00",
+  "scope": "Focused native synchronous XHR watchdog regression, not upstream WPT",
+  "binary": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-linux-worker/build-candidate-4/jsrun",
+  "binarySHA256": "5bd527c56bfdf60e2ef68b92eaff0d84ce157edf15e60551fffc62ed0229fc5c",
+  "fixtureSHA256": "d1c31e53828468dbce1c251debe3ecd63651358399ef05b4b657bbac656bdff4",
+  "serverDelayMilliseconds": 1400,
+  "cases": [
+    {
+      "name": "native_wait_excluded",
+      "budget": 500,
+      "pre": 0,
+      "post": 0,
+      "loop": "none",
+      "terminate": false,
+      "durationSeconds": 1.536,
+      "exitCode": 0,
+      "error": null,
+      "markers": [
+        {
+          "phase": "started"
+        },
+        {
+          "phase": "before_wait"
+        },
+        {
+          "phase": "after_wait",
+          "status": 200,
+          "body": "SYNC_WATCHDOG_OK",
+          "elapsed": 1407.987985998392
+        },
+        {
+          "phase": "completed"
+        },
+        {
+          "phase": "next_script"
+        },
+        {
+          "phase": "next_task"
+        }
+      ],
+      "watchdogDiagnostics": [],
+      "requests": [
+        {
+          "case": "native_wait_excluded",
+          "startedMonotonic": 25588.438493183,
+          "responseWritten": true,
+          "waitSeconds": 1.4001111750003474
+        }
+      ],
+      "checks": [
+        {
+          "name": "native process exited normally",
+          "passed": true
+        },
+        {
+          "name": "script started",
+          "passed": true
+        },
+        {
+          "name": "following classic script survives",
+          "passed": true
+        },
+        {
+          "name": "following task survives stale interrupts",
+          "passed": true
+        },
+        {
+          "name": "exactly one delayed HTTP response was delivered",
+          "passed": true
+        },
+        {
+          "name": "real server waited beyond JS budget",
+          "passed": true
+        },
+        {
+          "name": "sync XHR returns the real response",
+          "passed": true
+        },
+        {
+          "name": "client observed the blocking wait",
+          "passed": true
+        },
+        {
+          "name": "native wait does not exhaust active JavaScript budget",
+          "passed": true
+        },
+        {
+          "name": "all bounded active work completes",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "log": "out/10292019r-sync-watchdog/candidate-v4-native_wait_excluded.log",
+      "logSHA256": "009b0b086d2521c2a1762225069f6d9eaef959f7acfa4894cb9275d181a1f726"
+    },
+    {
+      "name": "busy_before_wait_terminates",
+      "budget": 500,
+      "pre": 0,
+      "post": 0,
+      "loop": "before",
+      "terminate": true,
+      "durationSeconds": 0.651,
+      "exitCode": 0,
+      "error": null,
+      "markers": [
+        {
+          "phase": "started"
+        },
+        {
+          "phase": "next_script"
+        },
+        {
+          "phase": "next_task"
+        }
+      ],
+      "watchdogDiagnostics": [
+        "500"
+      ],
+      "requests": [],
+      "checks": [
+        {
+          "name": "native process exited normally",
+          "passed": true
+        },
+        {
+          "name": "script started",
+          "passed": true
+        },
+        {
+          "name": "following classic script survives",
+          "passed": true
+        },
+        {
+          "name": "following task survives stale interrupts",
+          "passed": true
+        },
+        {
+          "name": "busy loop terminates before native request",
+          "passed": true
+        },
+        {
+          "name": "watchdog still terminates excess active JavaScript",
+          "passed": true
+        },
+        {
+          "name": "code after excessive active work is unreachable",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "log": "out/10292019r-sync-watchdog/candidate-v4-busy_before_wait_terminates.log",
+      "logSHA256": "855126d2fb05cf78339e59e2bf5933b84383b30ecba792b1155eac9492d8b421"
+    },
+    {
+      "name": "busy_after_wait_terminates",
+      "budget": 500,
+      "pre": 0,
+      "post": 0,
+      "loop": "after",
+      "terminate": true,
+      "durationSeconds": 2.124,
+      "exitCode": 0,
+      "error": null,
+      "markers": [
+        {
+          "phase": "started"
+        },
+        {
+          "phase": "before_wait"
+        },
+        {
+          "phase": "after_wait",
+          "status": 200,
+          "body": "SYNC_WATCHDOG_OK",
+          "elapsed": 1403.1676009967923
+        },
+        {
+          "phase": "next_script"
+        },
+        {
+          "phase": "next_task"
+        }
+      ],
+      "watchdogDiagnostics": [
+        "500"
+      ],
+      "requests": [
+        {
+          "case": "busy_after_wait_terminates",
+          "startedMonotonic": 25590.618948578,
+          "responseWritten": true,
+          "waitSeconds": 1.400101449999056
+        }
+      ],
+      "checks": [
+        {
+          "name": "native process exited normally",
+          "passed": true
+        },
+        {
+          "name": "script started",
+          "passed": true
+        },
+        {
+          "name": "following classic script survives",
+          "passed": true
+        },
+        {
+          "name": "following task survives stale interrupts",
+          "passed": true
+        },
+        {
+          "name": "exactly one delayed HTTP response was delivered",
+          "passed": true
+        },
+        {
+          "name": "real server waited beyond JS budget",
+          "passed": true
+        },
+        {
+          "name": "sync XHR returns the real response",
+          "passed": true
+        },
+        {
+          "name": "client observed the blocking wait",
+          "passed": true
+        },
+        {
+          "name": "watchdog still terminates excess active JavaScript",
+          "passed": true
+        },
+        {
+          "name": "code after excessive active work is unreachable",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "log": "out/10292019r-sync-watchdog/candidate-v4-busy_after_wait_terminates.log",
+      "logSHA256": "c0b41b46c6e134df82ef521c78331808766a4be6814c15767052f22d29deb769"
+    },
+    {
+      "name": "prior_active_budget_preserved",
+      "budget": 1000,
+      "pre": 700,
+      "post": 750,
+      "loop": "none",
+      "terminate": true,
+      "durationSeconds": 2.647,
+      "exitCode": 0,
+      "error": null,
+      "markers": [
+        {
+          "phase": "started"
+        },
+        {
+          "phase": "before_wait"
+        },
+        {
+          "phase": "after_wait",
+          "status": 200,
+          "body": "SYNC_WATCHDOG_OK",
+          "elapsed": 1403.6135489977896
+        },
+        {
+          "phase": "next_script"
+        },
+        {
+          "phase": "next_task"
+        }
+      ],
+      "watchdogDiagnostics": [
+        "1000"
+      ],
+      "requests": [
+        {
+          "case": "prior_active_budget_preserved",
+          "startedMonotonic": 25593.461951719,
+          "responseWritten": true,
+          "waitSeconds": 1.4007577070005937
+        }
+      ],
+      "checks": [
+        {
+          "name": "native process exited normally",
+          "passed": true
+        },
+        {
+          "name": "script started",
+          "passed": true
+        },
+        {
+          "name": "following classic script survives",
+          "passed": true
+        },
+        {
+          "name": "following task survives stale interrupts",
+          "passed": true
+        },
+        {
+          "name": "exactly one delayed HTTP response was delivered",
+          "passed": true
+        },
+        {
+          "name": "real server waited beyond JS budget",
+          "passed": true
+        },
+        {
+          "name": "sync XHR returns the real response",
+          "passed": true
+        },
+        {
+          "name": "client observed the blocking wait",
+          "passed": true
+        },
+        {
+          "name": "watchdog still terminates excess active JavaScript",
+          "passed": true
+        },
+        {
+          "name": "code after excessive active work is unreachable",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "log": "out/10292019r-sync-watchdog/candidate-v4-prior_active_budget_preserved.log",
+      "logSHA256": "64a121a1d1474045c318dfaa174af0a4f75bb9e6282595ac0484efaec14442f4"
+    },
+    {
+      "name": "combined_active_work_below_budget",
+      "budget": 1000,
+      "pre": 250,
+      "post": 250,
+      "loop": "none",
+      "terminate": false,
+      "durationSeconds": 2.02,
+      "exitCode": 0,
+      "error": null,
+      "markers": [
+        {
+          "phase": "started"
+        },
+        {
+          "phase": "before_wait"
+        },
+        {
+          "phase": "after_wait",
+          "status": 200,
+          "body": "SYNC_WATCHDOG_OK",
+          "elapsed": 1402.517190001905
+        },
+        {
+          "phase": "completed"
+        },
+        {
+          "phase": "next_script"
+        },
+        {
+          "phase": "next_task"
+        }
+      ],
+      "watchdogDiagnostics": [],
+      "requests": [
+        {
+          "case": "combined_active_work_below_budget",
+          "startedMonotonic": 25595.631492045,
+          "responseWritten": true,
+          "waitSeconds": 1.4000975640010438
+        }
+      ],
+      "checks": [
+        {
+          "name": "native process exited normally",
+          "passed": true
+        },
+        {
+          "name": "script started",
+          "passed": true
+        },
+        {
+          "name": "following classic script survives",
+          "passed": true
+        },
+        {
+          "name": "following task survives stale interrupts",
+          "passed": true
+        },
+        {
+          "name": "exactly one delayed HTTP response was delivered",
+          "passed": true
+        },
+        {
+          "name": "real server waited beyond JS budget",
+          "passed": true
+        },
+        {
+          "name": "sync XHR returns the real response",
+          "passed": true
+        },
+        {
+          "name": "client observed the blocking wait",
+          "passed": true
+        },
+        {
+          "name": "native wait does not exhaust active JavaScript budget",
+          "passed": true
+        },
+        {
+          "name": "all bounded active work completes",
+          "passed": true
+        }
+      ],
+      "passed": true,
+      "log": "out/10292019r-sync-watchdog/candidate-v4-combined_active_work_below_budget.log",
+      "logSHA256": "fbdd209175ba960c103dad116df8cf9ffa7ad8f47e90aeac7e94ecd0a40258cc"
+    }
+  ],
+  "passed": true,
+  "checksPassed": 47,
+  "checksTotal": 47,
+  "durationSeconds": 9.312,
+  "finishedUTC": "2026-10-29T13:48:51.353518+00:00"
+}

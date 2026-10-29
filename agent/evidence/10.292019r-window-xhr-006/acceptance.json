@@ -1,0 +1,47 @@
+{
+  "scope": "Final native Linux Window XHR IDL and native-I/O active-script-budget corrections",
+  "sourceManifestSHA256": "199a33e45bb03169e8769cae8868626f3cb910eeab121268f35f81bf3bc69905",
+  "binarySHA256": "61821bcae30b9e143b518e029581641f2fc3b84a1181c96884ac72209adeacc8",
+  "compiledSourceFilesUnchanged": true,
+  "nativeChecks": {
+    "workerLifecycle": [
+      266,
+      266
+    ],
+    "asyncWorkerLifecycle": [
+      118,
+      118
+    ],
+    "responseHeaders": [
+      36,
+      36
+    ],
+    "workerProgressEvent": [
+      16,
+      16
+    ]
+  },
+  "wptControls": {
+    "variantsPassed": 133,
+    "variantsRecorded": 133,
+    "assertionsPassed": 24732,
+    "assertionsFailed": 0,
+    "fullFrozenVariants": 1515,
+    "unrunInThisInvocation": 1382,
+    "groups": [
+      "encoding-streams",
+      "encoding-core",
+      "dom",
+      "events"
+    ]
+  },
+  "separateAcceptedControls": {
+    "watchdog": "agent/evidence/10.292019r-sync-watchdog.json: same native-I/O source behavior validated35/47\u219247/47 onv4",
+    "crossRealm": "Independent fixture32/32 onthisv6binary, v4baseline24/32, Chrome32/32; companiondeliveryevidence"
+  },
+  "performanceAcceptance": false,
+  "fullWPTPassRate": null,
+  "projectScore": 55,
+  "rawArchiveSHA256": "f8a96d580aefe9fc6836e649c4bb35177bd17c0eaf76bc7c671d86667122e9d4",
+  "rawFileCount": 311
+}

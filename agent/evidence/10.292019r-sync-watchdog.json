@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T13:50:09.197394+00:00",
+  "title": "Real native synchronous XHR excludes blocking HTTP wait from active JavaScript watchdog budget",
+  "platform": "Linux x86_64, actual Lumen jsrun with official prebuilt V8 15.7.112.12",
+  "scope": "Five focused regression cases through public XMLHttpRequest; not WPT, macOS, Simulator, iOS device or signed IPA evidence",
+  "fixture": {
+    "path": "tests/test_sync_xhr_watchdog.py",
+    "sha256": "d1c31e53828468dbce1c251debe3ecd63651358399ef05b4b657bbac656bdff4",
+    "unchangedBetweenRuns": true
+  },
+  "baseline": {
+    "binarySHA256": "f08658d4d945e59775f1c4d3045aeb591cd279c53af1aad7e85709b369eccd03",
+    "checksPassed": 35,
+    "checksTotal": 47,
+    "casesPassed": 1,
+    "durationSeconds": 8.032,
+    "startedUTC": "2026-10-29T13:47:39.611340+00:00",
+    "finishedUTC": "2026-10-29T13:47:47.643176+00:00",
+    "receipt": "agent/evidence/10.292019r-sync-watchdog/baseline-enabled.json"
+  },
+  "candidate": {
+    "binarySHA256": "5bd527c56bfdf60e2ef68b92eaff0d84ce157edf15e60551fffc62ed0229fc5c",
+    "checksPassed": 47,
+    "checksTotal": 47,
+    "casesPassed": 5,
+    "durationSeconds": 9.312,
+    "startedUTC": "2026-10-29T13:48:42.041894+00:00",
+    "finishedUTC": "2026-10-29T13:48:51.353518+00:00",
+    "receipt": "agent/evidence/10.292019r-sync-watchdog/candidate-v4.json"
+  },
+  "behaviorValidated": [
+    "1400 ms real HTTP wait succeeds with a 500 ms active-JavaScript budget",
+    "Infinite JavaScript before a native request remains terminated",
+    "Infinite JavaScript after a completed native wait remains terminated",
+    "700 ms before plus 750 ms after a wait still exhausts a cumulative 1000 ms active budget",
+    "250 ms before plus 250 ms after a wait remains below a 1000 ms budget",
+    "Following classic script and next timer execute, rejecting stale cross-task watchdog interruption"
+  ],
+  "monitoring": "Both runs sampled owned process CPU/RSS each second; busy-loop controls intentionally use one CPU core, no GUI scrolling performance claim. Monitor natural exits verified.",
+  "rejectedSetupAttempt": {
+    "receipt": "out/10292019r-sync-watchdog/baseline.json",
+    "reason": "Console logging was not enabled, so it cannot establish observable marker-based RED or GREEN; retained separately."
+  },
+  "passed": true,
+  "files": {
+    "agent/evidence/10.292019r-sync-watchdog/baseline-enabled-busy_after_wait_terminates.log": {
+      "sha256": "7557fc5dd5732c71abe72dc0b371c8f293b7d9f879dce5f8c1f5fd9fb105c187",
+      "bytes": 448
+    },
+    "agent/evidence/10.292019r-sync-watchdog/baseline-enabled-busy_before_wait_terminates.log": {
+      "sha256": "a5f43c4074dbe5fe1a3231d877a191ea8af1487b922b8094d5dec27bfd61d8d3",
+      "bytes": 322
+    },
+    "agent/evidence/10.292019r-sync-watchdog/baseline-enabled-combined_active_work_below_budget.log": {
+      "sha256": "5d662f8ab27e9cca3640d645b1a3a70220520c4e02531a79035b27d7933c32ac",
+      "bytes": 456
+    },
+    "agent/evidence/10.292019r-sync-watchdog/baseline-enabled-monitor.csv": {
+      "sha256": "518326dbc3de6170942f352ba9f782f7fb29e2d446d26810fd574d3ee5cb2579",
+      "bytes": 292
+    },
+    "agent/evidence/10.292019r-sync-watchdog/baseline-enabled-monitor.json": {
+      "sha256": "326e04247c5eae8ae2582ed9e892d7b162dba30f1db9fa90fc097e137998175b",
+      "bytes": 2217
+    },
+    "agent/evidence/10.292019r-sync-watchdog/baseline-enabled-monitor.log": {
+      "sha256": "1372122818c86ea66f8884784de5585de82a8269655b2b1be74d6d91e99c5286",
+      "bytes": 211
+    },
+    "agent/evidence/10.292019r-sync-watchdog/baseline-enabled-native_wait_excluded.log": {
+      "sha256": "54de9caa88be04abe01bdfb1e6453e91b784073f927ae86e6454aa21bf6d629f",
+      "bytes": 442
+    },
+    "agent/evidence/10.292019r-sync-watchdog/baseline-enabled-prior_active_budget_preserved.log": {
+      "sha256": "621bbe8f0ed13937e867454d4bc93c0f357664445352aa7c5ee01b6028920d7c",
+      "bytes": 452
+    },
+    "agent/evidence/10.292019r-sync-watchdog/baseline-enabled.json": {
+      "sha256": "a6d6752a6ded54ec1868d90621c3152e1fd751999fcece9d4577cf2c0bc07f5b",
+      "bytes": 10148
+    },
+    "agent/evidence/10.292019r-sync-watchdog/candidate-v4-busy_after_wait_terminates.log": {
+      "sha256": "c0b41b46c6e134df82ef521c78331808766a4be6814c15767052f22d29deb769",
+      "bytes": 494
+    },
+    "agent/evidence/10.292019r-sync-watchdog/candidate-v4-busy_before_wait_terminates.log": {
+      "sha256": "855126d2fb05cf78339e59e2bf5933b84383b30ecba792b1155eac9492d8b421",
+      "bytes": 322
+    },
+    "agent/evidence/10.292019r-sync-watchdog/candidate-v4-combined_active_work_below_budget.log": {
+      "sha256": "fbdd209175ba960c103dad116df8cf9ffa7ad8f47e90aeac7e94ecd0a40258cc",
+      "bytes": 428
+    },
+    "agent/evidence/10.292019r-sync-watchdog/candidate-v4-monitor.csv": {
+      "sha256": "c0cea624d6d6043f802d5337facc62a6cbf6062f83ac65150c99118fae90e132",
+      "bytes": 326
+    },
+    "agent/evidence/10.292019r-sync-watchdog/candidate-v4-monitor.json": {
+      "sha256": "bd5f896936fe10d4aa51cb43f424e5c4795218722e93c50f146c635a714db1a7",
+      "bytes": 2178
+    },
+    "agent/evidence/10.292019r-sync-watchdog/candidate-v4-monitor.log": {
+      "sha256": "4b46ea0f8176dc48d39ab2f0a8a37053cd638505d1383ad4013b0b6ba579c2ba",
+      "bytes": 211
+    },
+    "agent/evidence/10.292019r-sync-watchdog/candidate-v4-native_wait_excluded.log": {
+      "sha256": "009b0b086d2521c2a1762225069f6d9eaef959f7acfa4894cb9275d181a1f726",
+      "bytes": 428
+    },
+    "agent/evidence/10.292019r-sync-watchdog/candidate-v4-prior_active_budget_preserved.log": {
+      "sha256": "64a121a1d1474045c318dfaa174af0a4f75bb9e6282595ac0484efaec14442f4",
+      "bytes": 575
+    },
+    "agent/evidence/10.292019r-sync-watchdog/candidate-v4.json": {
+      "sha256": "4134681a60bb1389db56bfe145f9112d0eca2478ad74657556e865e320f979fd",
+      "bytes": 10800
+    },
+    "agent/evidence/10.292019r-sync-watchdog/baseline-source-manifest.json": {
+      "sha256": "d6e16dc47fa744245e28422043fc19d92be9f54cd45c88bc3e61621dfdeb099b",
+      "bytes": 13478
+    },
+    "agent/evidence/10.292019r-sync-watchdog/candidate-source-manifest.json": {
+      "sha256": "a42dbc8e0676d2a8ac340413384b8d05531ae2644936c06e42e7702f04fbeccb",
+      "bytes": 13478
+    }
+  }
+}

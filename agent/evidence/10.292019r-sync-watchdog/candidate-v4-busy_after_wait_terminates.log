@@ -1,0 +1,8 @@
+[js log] SYNC_WATCHDOG_MARK {"phase":"started"}
+[js log] SYNC_WATCHDOG_MARK {"phase":"before_wait"}
+[js log] SYNC_WATCHDOG_MARK {"phase":"after_wait","status":200,"body":"SYNC_WATCHDOG_OK","elapsed":1403.1676009967923}
+lumen: script exceeded 500 ms, terminating
+    at  (http://127.0.0.1:38527/?case=busy_after_wait_terminates:15:27)
+[js log] SYNC_WATCHDOG_MARK {"phase":"next_script"}
+[js log] SYNC_WATCHDOG_MARK {"phase":"next_task"}
+jsrun: context 58.4ms, 2 scripts 2003.7ms, dom_version 28

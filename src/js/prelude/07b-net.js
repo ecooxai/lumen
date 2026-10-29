@@ -397,24 +397,60 @@ function formEntries(form, encoding) {
     }
     return entries;
 }
+const formDataBrands = privateDOMState(11);
 class FormData {
-    constructor(form) { def(this, '_l', form ? formEntries(form, 'UTF-8') : []); }
-    append(k, v, fn) { this._l.push([String(k), blobFileOps.isBlob(v) ? (fn ? new File([v], fn, {type: blobFileOps.type(v), lastModified: blobFileOps.isFile(v) ? blobFileOps.modified(v) : undefined}) : v) : String(v)]); }
-    set(k, v, fn) { this.delete(k); this.append(k, v, fn); } delete(k) { this._l = this._l.filter(e => e[0] !== String(k)); }
+    constructor(form = undefined) {
+        if (form !== undefined) formReflectionBrand(form, 'form');
+        def(this, '_l', form ? formEntries(form, 'UTF-8') : []); formDataBrands.set(this, {});
+    }
+    append(k, v, fn = undefined) { this._l.push([String(k), blobFileOps.isBlob(v) ? (fn ? new File([v], fn, {type: blobFileOps.type(v), lastModified: blobFileOps.isFile(v) ? blobFileOps.modified(v) : undefined}) : v) : String(v)]); }
+    set(k, v, fn = undefined) { this.delete(k); this.append(k, v, fn); } delete(k) { this._l = this._l.filter(e => e[0] !== String(k)); }
     get(k) { const e = this._l.find(x => x[0] === String(k)); return e ? e[1] : null; } getAll(k) { return this._l.filter(x => x[0] === String(k)).map(x => x[1]); }
-    has(k) { return this._l.some(x => x[0] === String(k)); } forEach(fn, s) { for (const [k, v] of this._l) fn.call(s, v, k, this); }
+    has(k) { return this._l.some(x => x[0] === String(k)); } forEach(fn, s = undefined) { for (const [k, v] of this._l) fn.call(s, v, k, this); }
     entries() { return this._l.map(x => x.slice())[Symbol.iterator](); } keys() { return this._l.map(x => x[0])[Symbol.iterator](); } values() { return this._l.map(x => x[1])[Symbol.iterator](); }
     [Symbol.iterator]() { return this.entries(); }
 }
-class XMLHttpRequestEventTarget extends EventTarget {}
+// Brand checks apply to every public operation and event-handler attribute.
+function checkIDLPrototype(prototype, brand, required = {}) {
+    for (const [name, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(prototype))) {
+        if (name === 'constructor' || name.startsWith('_')) continue;
+        for (const key of ['value', 'get', 'set']) if (typeof descriptor[key] === 'function') {
+            const original = descriptor[key];
+            const checked = function(...args) {
+                if (!brand.has(this)) throw new TypeError('Illegal invocation');
+                if (args.length < (required[name] || 0)) throw new TypeError(name + ' requires more arguments');
+                return Reflect.apply(original, this, args);
+            };
+            Object.defineProperties(checked, {
+                name: {value: key === 'value' ? name : key + ' ' + name},
+                length: {value: original.length},
+            });
+            descriptor[key] = checked;
+        }
+        descriptor.enumerable = true;
+        Object.defineProperty(prototype, name, descriptor);
+    }
+}
+checkIDLPrototype(FormData.prototype, formDataBrands, {append: 2, set: 2, delete: 1, get: 1, getAll: 1, has: 1, forEach: 1});
+Object.defineProperty(FormData.prototype, Symbol.iterator, {
+    value: FormData.prototype.entries, writable: true, configurable: true,
+});
+const xhrTargetToken = {}, xhrTargetBrands = privateDOMState(12), xhrBrands = privateDOMState(13);
+class XMLHttpRequestEventTarget extends EventTarget {
+    constructor(...args) {
+        if (args[0] !== xhrTargetToken) illegal();
+        super(); xhrTargetBrands.set(this, {});
+    }
+}
 installHandlers(XMLHttpRequestEventTarget.prototype, false, ['abort', 'error', 'load', 'loadend', 'loadstart', 'progress', 'timeout']);
+checkIDLPrototype(XMLHttpRequestEventTarget.prototype, xhrTargetBrands);
 const XHR_FORBIDDEN = new Set(['accept-charset', 'accept-encoding', 'access-control-request-headers', 'access-control-request-method', 'connection', 'content-length', 'cookie', 'cookie2', 'date', 'dnt', 'expect', 'host', 'keep-alive', 'origin', 'referer', 'set-cookie', 'te', 'trailer', 'transfer-encoding', 'upgrade', 'via']);
 const HTTP_TOKEN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 let xhrMakeUpload = false;
-class XMLHttpRequestUpload extends XMLHttpRequestEventTarget { constructor() { if (!xhrMakeUpload) illegal(); super(); } }
+class XMLHttpRequestUpload extends XMLHttpRequestEventTarget { constructor() { if (!xhrMakeUpload) illegal(); super(xhrTargetToken); } }
 class XMLHttpRequest extends XMLHttpRequestEventTarget {
     constructor() {
-        super();
+        super(xhrTargetToken); xhrBrands.set(this, {});
         for (const [k, v] of Object.entries({ _rs: 0, _st: 0, _stt: '', _url: '', _rt: '', _to: 0, _wc: false, _gen: 0, _send: false, _async: true, _hdrs: [], _body: null, _resp: undefined, _mime: null, _up: null, _upDone: true, _id: 0, _timer: 0, _m: 'GET', _u: '' })) def(this, k, v);
         def(this, '_rh', new Headers());
     }
@@ -436,7 +472,8 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
     _fire(t, tgt = this, n = 0, tot = 0, lc = false) { dispatch(tgt, new ProgressEvent(t, { lengthComputable: lc, loaded: n, total: tot })); }
     _terminate() { this._gen++; if (this._id) { N.abort(this._id); this._id = 0; } if (this._timer) { clearTimeout(this._timer); this._timer = 0; } }
     _reset() { this._st = 0; this._stt = ''; this._url = ''; this._hdrs = []; this._body = null; this._resp = undefined; }
-    open(method, url, async, user, pass) {
+    open(method, url, ...optional) {
+        let [async, user, pass] = optional;
         if (arguments.length < 2) throw new TypeError(`Failed to execute 'open' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`);
         method = String(method); url = String(url);
         if (arguments.length > 2) { async = !!async; if (user != null) user = String(user); if (pass != null) pass = String(pass); } else async = true;
@@ -497,7 +534,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         this._send = false; this._state(4); if (gen !== this._gen) return;
         this._fire('load', this, n, tot, lc); this._fire('loadend', this, n, tot, lc);
     }
-    send(body) {
+    send(body = null) {
         if (this._rs !== 1 || this._send) throw new DOMException("The object's state must be OPENED.", 'InvalidStateError');
         if (this._m !== 'GET' && this._m !== 'HEAD' && body != null) {
             const isDoc = typeof Document === 'function' && body instanceof Document;
@@ -567,6 +604,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
     }
 }
 installHandlers(XMLHttpRequest.prototype, false, ['readystatechange']);
+checkIDLPrototype(XMLHttpRequest.prototype, xhrBrands, {open: 2, setRequestHeader: 2, getResponseHeader: 1, overrideMimeType: 1});
 for (const [k, v] of Object.entries({ UNSENT: 0, OPENED: 1, HEADERS_RECEIVED: 2, LOADING: 3, DONE: 4 })) { Object.defineProperty(XMLHttpRequest, k, { value: v, enumerable: true }); Object.defineProperty(XMLHttpRequest.prototype, k, { value: v, enumerable: true }); }
 class CloseEvent extends Event {
     constructor(t, i = {}) { super(t, i); def(this, '_c', { wasClean: !!i.wasClean, code: i.code | 0, reason: i.reason === undefined ? '' : String(i.reason) }); }

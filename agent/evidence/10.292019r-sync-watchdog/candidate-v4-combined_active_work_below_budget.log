@@ -1,0 +1,7 @@
+[js log] SYNC_WATCHDOG_MARK {"phase":"started"}
+[js log] SYNC_WATCHDOG_MARK {"phase":"before_wait"}
+[js log] SYNC_WATCHDOG_MARK {"phase":"after_wait","status":200,"body":"SYNC_WATCHDOG_OK","elapsed":1402.517190001905}
+[js log] SYNC_WATCHDOG_MARK {"phase":"completed"}
+[js log] SYNC_WATCHDOG_MARK {"phase":"next_script"}
+[js log] SYNC_WATCHDOG_MARK {"phase":"next_task"}
+jsrun: context 46.5ms, 2 scripts 1905.1ms, dom_version 28

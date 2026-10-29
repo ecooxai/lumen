@@ -118,7 +118,27 @@ static void js_leave(JsCtx *c) {
     if (c->wd_fired.exchange(false)) c->iso->CancelTerminateExecution();
 }
 
-static void on_watchdog(v8::Isolate *iso, void *) {
+JsNativeWait::JsNativeWait(JsCtx *context) : started_(now_ms()) {
+    for (JsCtx *c = context; c; c = c->parent) {
+        double started = c->busy_since.exchange(0);
+        if (started > 0) suspended_.emplace_back(c, started);
+    }
+}
+
+JsNativeWait::~JsNativeWait() {
+    const double elapsed = now_ms() - started_;
+    for (const auto &entry : suspended_) entry.first->busy_since = entry.second + elapsed;
+}
+
+static void on_watchdog(v8::Isolate *iso, void *data) {
+    JsCtx *c = static_cast<JsCtx *>(data);
+    /* An interrupt queued before native I/O or the end of a task can run later.
+     * Recheck the current active budget instead of terminating the next task. */
+    const double started = c->busy_since;
+    if (started <= 0 || now_ms() - started <= g_js_timeout_ms) {
+        c->wd_fired = false;
+        return;
+    }
     fprintf(stderr, "lumen: script exceeded %.0f ms, terminating\n", g_js_timeout_ms);
     v8::HandleScope hs(iso);
     v8::Local<v8::StackTrace> st = v8::StackTrace::CurrentStackTrace(iso, 12);
@@ -134,7 +154,7 @@ static void watchdog_run(JsCtx *c) {
     while (!c->wd_stop) {
         c->wd_cv.wait_for(lk, std::chrono::milliseconds(250));
         double t = c->busy_since;
-        if (t > 0 && now_ms() - t > g_js_timeout_ms && !c->wd_fired.exchange(true)) c->iso->RequestInterrupt(on_watchdog, nullptr);
+        if (t > 0 && now_ms() - t > g_js_timeout_ms && !c->wd_fired.exchange(true)) c->iso->RequestInterrupt(on_watchdog, c);
     }
 }
 

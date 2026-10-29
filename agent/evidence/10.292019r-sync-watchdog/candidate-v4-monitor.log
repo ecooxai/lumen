@@ -1,0 +1,6 @@
+PASS native_wait_excluded
+PASS busy_before_wait_terminates
+PASS busy_after_wait_terminates
+PASS prior_active_budget_preserved
+PASS combined_active_work_below_budget
+RESULTS sync-xhr-watchdog PASS (47/47 checks)

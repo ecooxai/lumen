@@ -111,7 +111,40 @@ class KeyboardEvent extends UIEvent {
 }
 class InputEvent extends UIEvent { constructor(t, i) { super(t, i); i = i || {}; this.data = i.data ?? null; this.inputType = i.inputType || ''; this.isComposing = !!i.isComposing; } }
 class ErrorEvent extends Event { constructor(t, i) { super(t, i); eventState(this).errorEvent = true; i = i || {}; this.message = i.message || ''; this.filename = i.filename || ''; this.lineno = i.lineno || 0; this.colno = i.colno || 0; this.error = i.error; } }
-class ProgressEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.lengthComputable = !!i.lengthComputable; this.loaded = i.loaded || 0; this.total = i.total || 0; } }
+const progressEventSlots = {
+    get: event => N.domStateGet(event, 10),
+    set: (event, state) => N.domStateSet(event, 10, state),
+};
+const progressEventState = event => {
+    const state = progressEventSlots.get(event);
+    if (!state) throw new TypeError('Illegal invocation');
+    return state;
+};
+function progressUnsignedLongLong(value) {
+    value = +value;
+    if (!Number.isFinite(value) || value === 0) return 0;
+    const remainder = Math.trunc(value) % 18446744073709551616;
+    if (remainder === 0) return 0;
+    return remainder < 0 ? remainder + 18446744073709551616 : remainder;
+}
+class ProgressEvent extends Event {
+    constructor(type, init = {}) {
+        if (!arguments.length) throw new TypeError('ProgressEvent requires a type');
+        if (init !== null && typeof init !== 'object' && typeof init !== 'function')
+            throw new TypeError('ProgressEvent options must be a dictionary');
+        super(type, init); init = init || {};
+        progressEventSlots.set(this, { lengthComputable: !!init.lengthComputable,
+            loaded: progressUnsignedLongLong(init.loaded), total: progressUnsignedLongLong(init.total) });
+    }
+    get lengthComputable() { return progressEventState(this).lengthComputable; }
+    get loaded() { return progressEventState(this).loaded; }
+    get total() { return progressEventState(this).total; }
+}
+for (const name of ['lengthComputable', 'loaded', 'total']) {
+    const descriptor = Object.getOwnPropertyDescriptor(ProgressEvent.prototype, name);
+    descriptor.enumerable = true; Object.defineProperty(ProgressEvent.prototype, name, descriptor);
+}
+Object.defineProperty(ProgressEvent.prototype, Symbol.toStringTag, { value: 'ProgressEvent', configurable: true });
 class MessageEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.data = i.data; this.origin = i.origin || ''; this.lastEventId = i.lastEventId || ''; this.source = i.source || null; this.ports = i.ports || []; } }
 class PopStateEvent extends Event { #state; constructor(t, i) { super(t, i); this.#state = i && i.state !== undefined ? i.state : null; } get state() { return this.#state; } }
 class HashChangeEvent extends Event { constructor(t, i) { super(t, i); i = i || {}; this.oldURL = i.oldURL || ''; this.newURL = i.newURL || ''; } }
