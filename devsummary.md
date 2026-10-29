@@ -771,3 +771,36 @@ The final167 rendering cohort finished at00:49:56UTC with37PASS,61FAIL,1UNSUPPOR
 Iteration start 2026-10-29T00:51:25.803629+00:00, checkpoint end 2026-10-29T00:57:57.719606+00:00, cost 6.5319 minutes; session wall time 131.0787 minutes from22:46:53UTC. Agents: root, engine_lead_20261029, conformance_20261029, progress_20261029. Whole-goal score19/100; target98/100. Overlapping agent intervals are not summed. The user-authorized repair extension has hard deadline02:46:53UTC; original normal deadline01:46:53UTC is unchanged.
 
 This is a qualified experimental checkpoint pending final matchedv2 performance, full100 rendering and fixed4200 comparison. Native font sanitizer proof remains the clean16774-control run with unchanged font.c; it does not cover new168inline code. Instrumented browser shutdown remains unproven after actual-9 exits and loader/LLVM diagnostics. Public source stays163 until final review. The15-second168compile had1s shared cgroup CPU and2s live RAM, without a separate owned-compile RSS/PSS CSV; no compile-memory peak is claimed. Startup/tests retained their own1s process-tree CPU/RAM artifacts.
+
+## Session 4 final validation and delivery — qualified experimental 168
+
+Documentation cutoff **2026-10-29 02:33:29 UTC**, **226.6 minutes (3h46m36s)** from original2026-10-28 22:46:53. Normal3h plus necessary repair/validation extension; hard deadline02:46:53. This as-of point is separate from later actual closing. Six substantive candidates, all overall **19/100**, target98 unmet; same-capability root/engine/conformance/progress agents. Overlapping intervals are not summed.
+
+|Candidate|Start UTC|Checkpoint end UTC|Minutes|Outcome|
+|---|---|---|---:|---|
+|163|10-28 22:46:53|10-28 23:03:05.705822|16.2118|Focused accepted|
+|164|10-28 23:03:05.705822|10-28 23:57:38|54.5382|Rejected294→300px|
+|165|10-28 23:27:05.620381|10-29 00:03:11.387386|36.0961|Rejected border initial reset|
+|166|10-29 00:03:11.387386|10-29 00:23:09.496265|19.9685|Rejected real1056-byte font leak|
+|167|10-29 00:23:09.496265|10-29 00:33:47.277606|10.6297|Qualified checkpoint, later rendering rejection|
+|168|10-29 00:51:25.803629|10-29 00:57:57.719606|6.5319|Qualified focused checkpoint; later final evidence|
+
+Root accepted168 ONLY qualified experimental at02:03:24. Tested source **fbbf127b9e082d2805b750e5238a77d7f8c30aa2**; immutable binary SHA **127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052**. All605 inputs preserved. Fresh normal140/140, actual22 whitespace/74 font/186 border controls; repaired exact rendering case0 differing pixels.
+
+The fixed selected4,200-variant corpus ran01:08:56.667→01:52:59.457061: **1629full/4200;199362/215657 subtestPASS**, versus fresh162 **1628full;199263/215657PASS**. Full-pass means harnessOK, at least one registered subtest and all registered subtests PASS. Observed102PASS gains/3losses/29other changes, zero added/missing; two full gains/one loss. Incomplete-harness subtests remain counted as observed statuses, not all causal improvements. All54 lifecycles cleaned:53nativeexit0+same IndexedDB40s deadline-9.
+
+Original losses remain: undefined referrer header result, delayed promise-rejection assertion, scroll fourth PASS→NOTRUN behind TIMEOUT. Media additionally worsened from completedFAIL to outerTIMEOUT.16 fixed162→168→162→168 controls: referrerall4/4; promise targetPASS/alloverall39PASS+4TIMEOUT; media sameFAIL; scroll all1PASS/1TIMEOUT/2NOTRUN. They do not resolve batch/history risk or replace broad rows. Original-prefix961 pair **NOT EXECUTED**, a bounded cleanup route was not established through the permitted public interface; the two help usage errors do not show that cancellation is absent; no protected source/guard bypass.
+
+Rendering100 **38PASS/60FAIL/1UNSUPPORTED/1TIMEOUT**, all statuses match dated162;198actualnativeexit0,197captures800×600/DPR1. DatedChrome94/5/0/1. Final v2:21/21PASS,7perengine,actual9395checks; medians162→168 DOM40.622→38.418/style339.506→332.838/Grid134.530→137.891; Chrome10.0/55.9/47.2. All trials retained including227.386ms Grid; overlapping ranges, no general speedup/stable-regression claim. Interim1674275-check DOM/style run remains separate.
+
+Native font sanitizer proof is167/unchangedfont.c only. Browser actualchildren-9/post-marker loader+LLVM diagnostics remain incomplete; new168inline code not covered. No clean whole-browser sanitizer or regression-free claim.
+
+Exact source archive **bddd9f93afca4d8fbbf036229c1bcbe2f8e20aaec53caf48c73d6f0457458277**,4451575bytes/699safe files/all605inputs. Fresh extracted configure/build02:12:22.849193→02:13:19.936005,57.087s/jobs2/600s cap; lumen+two targets built,22/74 actualcontrols0/noskip,699bytesets unchanged/146compilation units internal. All owned processes drained.57one-second samples: CPUmedian135.0005%/max196.002%, sampledRSSpeak697.598MB/PSS514.745MB. Optionalpsutil preparation failed before launch; stdlib/proc actualworker used no new dependencies. Distinct built binary **b498a8dae4cd0bc4896304b5aace8c4176bc6476f899cf9667b63152797910df** does not inherit WPT results. Declared external dependencies; not hermetic/bit-identical/Android/full140/browser-runtime coverage.
+
+Public source-only **2e04f123b584b8b6acce08a1e6416f1bf2793845**, verified02:16:30.732877, independent root/no private ancestry. Showcase payload **b8a0137382fe9cac3b08a267b7bf6435052eb261**,12assets HTTP200/exact by02:24:09.010003. Receipt-only **8a77e748b38ce6020486496471c2005dbba98960**; receipt HTTP200 at02:28:09.906806,18022bytes/SHA **ab011ccf140219cf8358c28ce4d91fa4e42efa8f656a9b2ce9b37bf70473de47**. URLs: https://ecooxai.github.io/lumen/ and https://github.com/ecooxai/lumen.
+
+Five actual168captures drained02:04:47.359604; two34s4:3 videos drained02:15:17.552463. Capture wrapper1/missing-marker and unknown actual child exit remain artifact-only qualifications. No desktop restart. FileHarbor403/Surgeauth not successful; private history/harness exports remain blocked.
+
+Evidence under agent/validation/linux-wpt-20261029-session4: final-native4200/independent-summary.json and identity-comparison.json; final168-validation-recommendation.json; render100-final168/independent-review.json; performance-v2-final168/independent-summary.json; archive168-closure-independent-review.json (SHA78127ac050b8d87548ea31812db56776dc227c648b93b24fd76eae15277f8bcd); publication168-delivery-independent-review.json (SHA499e74447d1c1a61732b7a191fc49179a13d8638bb62333089446252ea367caf).
+
+AGENTS standing prefix preserved; old session3 section archived verbatim. Task and7original untracked fixtures unchanged. Feedback ended02:33:19.619605; lastpoll02:33:20.969460 zero messages; dashboard statusclosed. Later local docs commit/preservation receipt: agent/validation/linux-wpt-20261029-session4/final-docs-commit-receipt.json. No new tests/engine changes during docs.

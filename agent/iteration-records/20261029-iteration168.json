@@ -1,9 +1,9 @@
 {
   "iteration": 168,
   "session_iteration": 6,
-  "status": "accepted qualified EXPERIMENTAL source checkpoint; final v2 performance/render100/4200 pending, not a clean release",
+  "status": "accepted ONLY qualified experimental after final measurements; original broad losses and incomplete browser sanitizer shutdown retained",
   "accepted": true,
-  "published": false,
+  "published": true,
   "started_utc": "2026-10-29T00:51:25.803629+00:00",
   "start_basis": "first immutable staged whitespace repair receipt; paired162/167 rendering classification retained separately",
   "ended_utc": "2026-10-29T00:57:57.719606+00:00",
@@ -79,10 +79,216 @@
     "shared_cpu_csv": "agent/progress/runtime/private-prepared/session4-progress/shared-cgroup-repair.csv"
   },
   "limits": [
-    "Whole-browser Chromium/WPT parity is not achieved; whole-goal score stays19.",
-    "Public source remains163 until final comparison review.",
-    "External real fonts are runtime test prerequisites, not bundled source inputs.",
-    "Instrumented native font evidence is167 with unchanged font.c, not fresh168 sanitizer coverage.",
-    "Full branch/history and denied private harness exports remain blocked."
-  ]
+    "Whole readiness19/100, goal98 unmet.",
+    "Original3 broad PASS losses and media failure-mode decline retained;16 isolated controls do not resolve batch risk.",
+    "A bounded cleanup route was not established through the permitted public interface; the two help usage errors do not show that cancellation is absent.",
+    "Font sanitizer is167/unchangedfont.c only; browser shutdown incomplete, new168 inline code not covered.",
+    "External fonts not bundled; archive build not hermetic/bit-identical/Android/full140.",
+    "Private history and denied harness exports remain blocked."
+  ],
+  "original_qualified_checkpoint": {
+    "iteration": 168,
+    "session_iteration": 6,
+    "status": "accepted qualified EXPERIMENTAL source checkpoint; final v2 performance/render100/4200 pending, not a clean release",
+    "accepted": true,
+    "published": false,
+    "started_utc": "2026-10-29T00:51:25.803629+00:00",
+    "start_basis": "first immutable staged whitespace repair receipt; paired162/167 rendering classification retained separately",
+    "ended_utc": "2026-10-29T00:57:57.719606+00:00",
+    "end_basis": "root qualified checkpoint approval and independent normal gate seal; final measurements get separate timestamps",
+    "elapsed_minutes": 6.5319,
+    "session_elapsed_minutes": 131.0787,
+    "agents": [
+      "root",
+      "engine_lead_20261029",
+      "conformance_20261029",
+      "progress_20261029"
+    ],
+    "whole_goal_score": 19,
+    "target_score": 98,
+    "normal_deadline_utc": "2026-10-29T01:46:53+00:00",
+    "authorized_repair_hard_deadline_utc": "2026-10-29T02:46:53+00:00",
+    "repair": "Count preserved trailing-space advance in both WS_BREAK_SPACES line-fit paths; keep other modes hanging and space classification unchanged. Correct ch metrics retained.",
+    "changed_inputs": [
+      "src/layout/inline.c",
+      "CMakeLists.txt",
+      "tests/test_break_spaces.c"
+    ],
+    "native_ctest": {
+      "pass": 140,
+      "total": 140,
+      "actual_font_controls": 74,
+      "preserved_space_controls": 22,
+      "border_controls_retained": 186
+    },
+    "fresh_browser": {
+      "font4": [
+        6,
+        20
+      ],
+      "negative_margin": [
+        13,
+        13
+      ],
+      "fixed_regression_status": "PASS",
+      "fixed_regression_different_pixels": 0,
+      "guard_children": 7,
+      "guard_exit0": 7,
+      "all_profiles_pids_absent": true,
+      "common_status_or_registration_losses_in_font_and_negative_groups": 0
+    },
+    "reused_evidence": [
+      {
+        "candidate": 166,
+        "scope": "unchangedCSS logical/sizing/animation and normal stylesheet metadata/lifecycle cohorts, explicitly not relabeled168"
+      },
+      {
+        "candidate": 167,
+        "scope": "native instrumented74 font-owner controls clean; instrumented browser shutdown incomplete, remains an open limitation"
+      }
+    ],
+    "new168_inline_code_sanitizer_coverage": false,
+    "browser_sanitizer_shutdown": "unproven; previous actual children -9 and loader/LLVM diagnostics retained; no clean-browser claim",
+    "independent_review_sha256": "573d778addde7fac88ea02bd7ccd47abc4d77cbfef45902ff0b82b1f3de92828",
+    "qualification_sha256": "929cd22b7fcc29dc5c79c8cdd32fe48a95a33e1c6a68ae4c1df979d4d07f6d11",
+    "binary": "build/codex-native/lumen-astra-i168",
+    "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+    "source_manifest_sha256": "caddfbad3c0df624b82cd3a846ce42475d49a6544ec5f53cb136e58753a4bdc7",
+    "recorded_source_inputs": 605,
+    "source_unchanged_during_build": true,
+    "base_commit": "0ab04bf2199659f443936b17372311f9fb5dc500",
+    "build": {
+      "started_utc": "2026-10-29T00:54:40+00:00",
+      "finished_utc": "2026-10-29T00:54:55+00:00",
+      "build_exit": 0,
+      "startup_exit": 0,
+      "monitoring": "1s shared cgroup CPU and 2s live RAM during compile; no separate owned-compile RSS/PSS CSV, so no compile peak-memory claim. Startup and normal tests have their own1s owned CPU/RAM samples.",
+      "startup_resource_summary": "agent/validation/iteration-168/startup-resources.summary.json",
+      "shared_cpu_csv": "agent/progress/runtime/private-prepared/session4-progress/shared-cgroup-repair.csv"
+    },
+    "limits": [
+      "Whole-browser Chromium/WPT parity is not achieved; whole-goal score stays19.",
+      "Public source remains163 until final comparison review.",
+      "External real fonts are runtime test prerequisites, not bundled source inputs.",
+      "Instrumented native font evidence is167 with unchanged font.c, not fresh168 sanitizer coverage.",
+      "Full branch/history and denied private harness exports remain blocked."
+    ]
+  },
+  "experimental": true,
+  "regression_free": false,
+  "engine_source_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
+  "documentation_cutoff_utc": "2026-10-29T02:33:29Z",
+  "session_elapsed_minutes_at_documentation_cutoff": 226.6,
+  "cutoff_is_final_closing": false,
+  "final_qualified_decision_utc": "2026-10-29T02:03:24Z",
+  "final_broad": {
+    "full": 1629,
+    "total": 4200,
+    "pass": 199362,
+    "subtests": 215657,
+    "baseline_full": 1628,
+    "baseline_pass": 199263,
+    "gains": 102,
+    "losses": 3,
+    "other_changes": 29,
+    "added": 0,
+    "missing": 0,
+    "guard_exit0": 53,
+    "deadline_minus9": 1,
+    "cleanup_complete": true,
+    "started_utc": "2026-10-29T01:08:56.667Z",
+    "finished_utc": "2026-10-29T01:52:59.457061Z",
+    "scope": "fixed selected4200 corpus",
+    "full_pass_definition": "harnessOK, at least one registered subtest, all registered subtestsPASS"
+  },
+  "isolated_controls": {
+    "runs": 16,
+    "order": [
+      162,
+      168,
+      162,
+      168
+    ],
+    "referrer": "all4/4PASS",
+    "promise": "targetPASS all; each39PASS+4TIMEOUT",
+    "media": "same completedFAIL all",
+    "scroll": "all1PASS+1TIMEOUT+2NOTRUN",
+    "original_rows_retained": true,
+    "batch_cause_resolved": false
+  },
+  "prefix961_executed": false,
+  "final_render": {
+    "pass": 38,
+    "fail": 60,
+    "unsupported": 1,
+    "timeout": 1,
+    "all_statuses_match_dated162": true,
+    "exit0": 198,
+    "captures": 197
+  },
+  "final_performance": {
+    "trials": 21,
+    "checks_each": 9395,
+    "all_pass": true,
+    "medians_ms": {
+      "baseline": [
+        40.622,
+        339.506,
+        134.53
+      ],
+      "final": [
+        38.418,
+        332.838,
+        137.891
+      ],
+      "chromium": [
+        10,
+        55.9,
+        47.2
+      ]
+    },
+    "all_trials_retained": true,
+    "ranges_overlap": true,
+    "protocol_sha256": "6b064fce68a034e4bbe56338a4722c3c43945d701dc52aabe675de50bb1338f2",
+    "workload_sha256": "730267e57bea73cd13dc95bf7e3dcc636a5bdffa9c5092a037e1bd2ea259282b",
+    "mode": "CPU-only",
+    "css_viewport": [
+      748,
+      596
+    ],
+    "dpr": 1
+  },
+  "interim167_checks": 4275,
+  "source_closure": {
+    "archive_sha256": "bddd9f93afca4d8fbbf036229c1bcbe2f8e20aaec53caf48c73d6f0457458277",
+    "archive_bytes": 4451575,
+    "files": 699,
+    "inputs": 605,
+    "seconds": 57.087,
+    "jobs": 2,
+    "spaces": 22,
+    "font": 74,
+    "skipped": false,
+    "source_unchanged": true,
+    "compile_entries_internal": 146,
+    "cleanup_complete": true,
+    "binary_sha256": "b498a8dae4cd0bc4896304b5aace8c4176bc6476f899cf9667b63152797910df",
+    "samples": 57,
+    "cpu_max": 196.002,
+    "rss_peak_mb": 697.598,
+    "pss_peak_mb": 514.745,
+    "hermetic": false,
+    "bit_identical": false,
+    "full140_rerun": false,
+    "browser_run": false,
+    "review_sha256": "78127ac050b8d87548ea31812db56776dc227c648b93b24fd76eae15277f8bcd"
+  },
+  "publication": {
+    "source": "2e04f123b584b8b6acce08a1e6416f1bf2793845",
+    "payload": "b8a0137382fe9cac3b08a267b7bf6435052eb261",
+    "receipt": "8a77e748b38ce6020486496471c2005dbba98960",
+    "receipt_sha256": "ab011ccf140219cf8358c28ce4d91fa4e42efa8f656a9b2ce9b37bf70473de47",
+    "served_verified_utc": "2026-10-29T02:28:09.906806Z"
+  },
+  "prefix961_reason": "A bounded cleanup route was not established through the permitted public interface; the two help usage errors do not show that cancellation is absent."
 }
