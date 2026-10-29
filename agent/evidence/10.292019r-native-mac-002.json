@@ -194,7 +194,12 @@
     "bytes": 229947,
     "files": 35
   },
-  "rawArchiveDurableTransfer": "Requested from delivery agent; exact remote archive and hash bound above. Do not infer local presence until verified.",
+  "rawArchiveDurableTransfer": {
+    "status": "saved and authenticated metadata verified",
+    "libraryFileId": "libfile_d4c14a8ff0448191b148a713174217cd",
+    "libraryUrl": "https://chatgpt.com/library?file_id=libfile_d4c14a8ff0448191b148a713174217cd&account_id=personal",
+    "checkpointReceipt": "agent/evidence/10.292019r-mac002-durable-checkpoint.json"
+  },
   "priorAnomaly": "The earlier Linux100-requested run ended after77cycles and remains unexplained/rejected in10.292019r-worker-lifetime.json; this actual Mac100cycle natural-exit evidence does not erase that failed receipt.",
   "times": {
     "guiAndNavigationSeconds": 282.651,

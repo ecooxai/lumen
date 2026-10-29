@@ -1,0 +1,39 @@
+{
+  "sourceCommit": "4573fb06e9bebb3236055a9e8aecde5718c8eb06",
+  "sourceSHA256": "9302a825f2b9a12212e84b23d12ecafef827d557dc2d4d9dfaf5b2eeacf72e0d",
+  "sourceBytes": 37141675,
+  "startedUTC": "2026-10-29T14:33:21.388878+00:00",
+  "sourceScope": "Reviewed committed4573 source plus portable Git history; compiled Mac source137 and later b816 remain separately identified. No active branch or native fixture changed.",
+  "liveUpdated": true,
+  "surgeUpdated": true,
+  "stages": [
+    {
+      "name": "build-reviewed-view",
+      "seconds": 0.094,
+      "exitCode": 0
+    },
+    {
+      "name": "existing-authentication",
+      "seconds": 0.422,
+      "exitCode": 0
+    },
+    {
+      "name": "surge-publish",
+      "seconds": 4.129,
+      "exitCode": 0
+    }
+  ],
+  "liveSourceFullSHA256Verified": true,
+  "publicURL": "https://lume-102900614-gpt6-astra-pro.surge.sh",
+  "liveURL": "https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz",
+  "publicSourceFullSHA256Verified": true,
+  "publishedUIHashes": {
+    "index.html": "9e2e75f31351e7e91b3258bc0808fe312454b2702a88c06989f91cde33bfd596",
+    "app.js": "8d9bcadf9813a624fe0d3d201b9681d97cbfcf2d91d30fc8719f5debf3eab68f",
+    "style.css": "51035af4185859b0b0f8e5b172fb2afc33618e87310a214d9019e6da168ddc9a",
+    "config.json": "f2db1bcc8bf369c43e1ff4821ba3aa271aca7ef3799b3412568764b2841725bf"
+  },
+  "privateMessageNamespacePreserved": true,
+  "durationSeconds": 11.942,
+  "finishedUTC": "2026-10-29T14:33:33.331037+00:00"
+}

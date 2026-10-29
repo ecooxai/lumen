@@ -1,0 +1,339 @@
+{
+  "createdUTC": "2026-10-29T14:04:42.115883+00:00",
+  "accepted": true,
+  "scope": "Actual native Mac d5 expanded frozen priority inventory; original fixed279 separately retained; full official WPT and score are not these percentages.",
+  "fullOfficialWptPassPercent": null,
+  "sourceCommit": "d5a3bc44216f65ce430163518ced2aa10411cfc4",
+  "binary": {
+    "path": "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-001/lumen-4bf30d0ec0979362",
+    "sha256": "4bf30d0ec0979362fa9994b63ef0bc10e3debce1dee9cd9174aada1be0ebbefd"
+  },
+  "compiledSourceFiles": 158,
+  "sourceManifestSHA256": "0cad708bb2f1bfe2236d538ee92f53cc6f2f3ab044a0df573461367ff9d1f595",
+  "summary": {
+    "scheduled": 1515,
+    "recorded": 1027,
+    "fullyPassing": 991,
+    "unrun": 488,
+    "passPercentOfRecorded": 96.49464459591042,
+    "harnessStatuses": {
+      "OK": 992,
+      "TIMEOUT": 18,
+      "ERROR": 17
+    },
+    "assertions": {
+      "PASS": 733324,
+      "FAIL": 7,
+      "TIMEOUT": 1
+    },
+    "qualifiedPassingAssertions": 733324,
+    "measurementErrorVariants": 0
+  },
+  "fixed279": {
+    "scheduled": 279,
+    "recorded": 279,
+    "fullyPassing": 248,
+    "unrun": 0,
+    "passPercentOfRecorded": 88.88888888888889,
+    "harnessStatuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "assertions": {
+      "PASS": 38754,
+      "FAIL": 7
+    },
+    "qualifiedPassingAssertions": 38754,
+    "measurementErrorVariants": 0
+  },
+  "expandedOnly": {
+    "scheduled": 1236,
+    "recorded": 748,
+    "fullyPassing": 743,
+    "unrun": 488,
+    "passPercentOfRecorded": 99.33155080213903,
+    "harnessStatuses": {
+      "TIMEOUT": 3,
+      "ERROR": 2,
+      "OK": 743
+    },
+    "assertions": {
+      "PASS": 694570,
+      "TIMEOUT": 1
+    },
+    "qualifiedPassingAssertions": 694570,
+    "measurementErrorVariants": 0
+  },
+  "newNonPassingVariants": [
+    {
+      "test": "/encoding/encodeInto.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "message": null,
+      "subtests": []
+    },
+    {
+      "test": "/encoding/encodeInto.any.sharedworker.html",
+      "status": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtests": []
+    },
+    {
+      "test": "/encoding/idlharness.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "message": null,
+      "subtests": []
+    },
+    {
+      "test": "/encoding/idlharness.any.sharedworker.html",
+      "status": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtests": []
+    },
+    {
+      "test": "/encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-stateful.html",
+      "status": "TIMEOUT",
+      "message": null,
+      "subtests": [
+        {
+          "name": "Form submission using ISO-2022-JP correctly replaces unencodables",
+          "status": "TIMEOUT",
+          "message": "Test timed out"
+        }
+      ]
+    }
+  ],
+  "planSHA256": "1b68c4aaf8d66e32e59fba2de4f52712c702e43e0d64d7f90a00de895577438a",
+  "evidence": {
+    "encoding-streams": {
+      "resultsSHA256": "25d4efd636beb78f3795ee939faf005170f0877096881e685abab64e5d2b822b",
+      "runSHA256": "25136e579a1ce2e5b3f24d916959bb25c47b84548fb5069993720ace9bbc27ca",
+      "scheduleSHA256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "recorded": 26
+    },
+    "dom": {
+      "resultsSHA256": "7d69c82550b04b212cf1be8b2524884cc55ae62e6354eab499c8ef2475191259",
+      "runSHA256": "83a19cd54ac6ad26f4b845a712e67e46d1d073317a444705bd271707a58fc663",
+      "scheduleSHA256": "90a94ec5fea249cfa78a39b39fafaa83f0d076b56644924c5f72790665e270be",
+      "recorded": 14
+    },
+    "events": {
+      "resultsSHA256": "5fbbb53cfe9cc8af88db7fa472dc31115ec4fb90add6c03dd9d34b8303414f69",
+      "runSHA256": "089ee8636ef1811b227147dc6e4ac6f4898bd19db76dc3993e5c8e318fbe0f5c",
+      "scheduleSHA256": "c9c1c2e46a30c6ef14a700bc76463ec2411f1771afda7681344fd7d5e65cb3b7",
+      "recorded": 16
+    },
+    "url": {
+      "resultsSHA256": "f96f646cac7328c727e65ca40826a7e599a3a9c289a35edde5618eda4cf955b6",
+      "runSHA256": "c2582e1746ad20bf2fe8fb22d5ed84cfbc515931c41ec852684fcdb006f1081d",
+      "scheduleSHA256": "c4e44f2d5a5eaa7ed66c834f506ca484bd73ff6d3f7e77b27cf7f2337ef23132",
+      "recorded": 77
+    },
+    "storage": {
+      "resultsSHA256": "79bca66a6edb0a545eca0d481f6f8ec4d9e42c62648cc6c44cfa992264098304",
+      "runSHA256": "8b0355b35e8655cce40776511af0e5d525846958d795694851aa10147ee866ba",
+      "scheduleSHA256": "723fca15a68d3d61c26604fb5c55f26615e639da5f7b888f6bd79f8fae403c9d",
+      "recorded": 7
+    },
+    "microtasks": {
+      "resultsSHA256": "27ac389c688cf059b813049dc27d3f4716dec20d7a256b04f16371505bbe72d2",
+      "runSHA256": "a56ca5d3d4a05658fe18ce07a3c2dcbaea593e0f4fcf52d9010dc6bc9b161c1a",
+      "scheduleSHA256": "eda081ad150c45a430ade8649a55bf454eff67bac460df798efc90dd947c2177",
+      "recorded": 10
+    },
+    "headers": {
+      "resultsSHA256": "83895df8e927389c284a0053c407379cd9dc1f7dac03b75c127479038283d17c",
+      "runSHA256": "4c347d9cd029aa20cefd9389e0948fd5222741adde03de175ad605f46bd8444a",
+      "scheduleSHA256": "1db7998184521c0b6928d41468874a4c77db98c26feedc407ae7bcf8324e8a17",
+      "recorded": 52
+    },
+    "encoding-core": {
+      "resultsSHA256": "838b931722d343b16d8d2a23d4035b847f15668e1caf16546fb32b5a7db8fa54",
+      "runSHA256": "b9447a7631436305e80b285326152e97aca7b30de8f9ac581140119f8f2fc527",
+      "scheduleSHA256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+      "recorded": 77
+    },
+    "encoding-rest": {
+      "resultsSHA256": "f83ac638dee3e3e4ec13d001b5accb795c9ea83196f3682e21beec55386955d4",
+      "runSHA256": "427113a0c442e9797a6882b8cdf6ac5c91b09eb83dc0ca4b281e6b547642d6f5",
+      "scheduleSHA256": "e6cbf1acb7726dd3f78a24eb1c2366c8d5fbfe0021df08fe07ccd992876d0b07",
+      "recorded": 748
+    }
+  },
+  "observedResultsSHA256": "fc8648b1628da965cd087f2bd8fc74bdbce97f1f8fb3f5ec7906b1f937295545",
+  "rawArchive": {
+    "path": "out/10292019r-mac/independent-expanded-001/raw-evidence.tar.gz",
+    "bytes": 7235670,
+    "sha256": "7db306dff5cc9fe0d0de0e6ee4ffb203ea81aabe654703933afb009b7245ced0",
+    "files": [
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/cohort.json",
+        "bytes": 1106597,
+        "sha256": "1b68c4aaf8d66e32e59fba2de4f52712c702e43e0d64d7f90a00de895577438a"
+      },
+      {
+        "path": "out/10292019r-mac/native-worker-001/compiled-source-sha256.json",
+        "bytes": 15464,
+        "sha256": "0cad708bb2f1bfe2236d538ee92f53cc6f2f3ab044a0df573461367ff9d1f595"
+      },
+      {
+        "path": "out/10292019r-mac/native-worker-001/summary.json",
+        "bytes": 8174,
+        "sha256": "4c806f25c3b9db1a900ac9693f93bce0063ae0204b0a37bb15195eb373b8017e"
+      },
+      {
+        "path": "out/10292019r-mac/independent-worker-acceptance-001/receipt.json",
+        "bytes": 4107,
+        "sha256": "51597c76b4aad940b723965b134ee052e515b1a538c7fa37466a2e9e33bc86b3"
+      },
+      {
+        "path": "out/10292019r-mac/independent-worker-acceptance-001/wpt-audit.json",
+        "bytes": 18118,
+        "sha256": "033c0868b0116dc8204996b11a4c42ff34d9e438cb981029d33661a193fb6d83"
+      },
+      {
+        "path": "out/10292019r-mac/cors-fixture-audit/receipt.json",
+        "bytes": 25439,
+        "sha256": "224b72aa76703640b64feb6be5b557567637cf25c749f0a273bbda1e8f4590ac"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-streams/run.json",
+        "bytes": 11984,
+        "sha256": "25136e579a1ce2e5b3f24d916959bb25c47b84548fb5069993720ace9bbc27ca"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-streams/schedule.json",
+        "bytes": 10971,
+        "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-streams/results.jsonl",
+        "bytes": 104882,
+        "sha256": "25d4efd636beb78f3795ee939faf005170f0877096881e685abab64e5d2b822b"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/dom/run.json",
+        "bytes": 11294,
+        "sha256": "83a19cd54ac6ad26f4b845a712e67e46d1d073317a444705bd271707a58fc663"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/dom/schedule.json",
+        "bytes": 3187,
+        "sha256": "90a94ec5fea249cfa78a39b39fafaa83f0d076b56644924c5f72790665e270be"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/dom/results.jsonl",
+        "bytes": 145339,
+        "sha256": "7d69c82550b04b212cf1be8b2524884cc55ae62e6354eab499c8ef2475191259"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/events/run.json",
+        "bytes": 11453,
+        "sha256": "089ee8636ef1811b227147dc6e4ac6f4898bd19db76dc3993e5c8e318fbe0f5c"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/events/schedule.json",
+        "bytes": 4670,
+        "sha256": "c9c1c2e46a30c6ef14a700bc76463ec2411f1771afda7681344fd7d5e65cb3b7"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/events/results.jsonl",
+        "bytes": 46044,
+        "sha256": "5fbbb53cfe9cc8af88db7fa472dc31115ec4fb90add6c03dd9d34b8303414f69"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/url/run.json",
+        "bytes": 14459,
+        "sha256": "c2582e1746ad20bf2fe8fb22d5ed84cfbc515931c41ec852684fcdb006f1081d"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/url/schedule.json",
+        "bytes": 25515,
+        "sha256": "c4e44f2d5a5eaa7ed66c834f506ca484bd73ff6d3f7e77b27cf7f2337ef23132"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/url/results.jsonl",
+        "bytes": 1461789,
+        "sha256": "f96f646cac7328c727e65ca40826a7e599a3a9c289a35edde5618eda4cf955b6"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/storage/run.json",
+        "bytes": 10835,
+        "sha256": "8b0355b35e8655cce40776511af0e5d525846958d795694851aa10147ee866ba"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/storage/schedule.json",
+        "bytes": 1490,
+        "sha256": "723fca15a68d3d61c26604fb5c55f26615e639da5f7b888f6bd79f8fae403c9d"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/storage/results.jsonl",
+        "bytes": 102316,
+        "sha256": "79bca66a6edb0a545eca0d481f6f8ec4d9e42c62648cc6c44cfa992264098304"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/microtasks/run.json",
+        "bytes": 11336,
+        "sha256": "a56ca5d3d4a05658fe18ce07a3c2dcbaea593e0f4fcf52d9010dc6bc9b161c1a"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/microtasks/schedule.json",
+        "bytes": 3593,
+        "sha256": "eda081ad150c45a430ade8649a55bf454eff67bac460df798efc90dd947c2177"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/microtasks/results.jsonl",
+        "bytes": 25757,
+        "sha256": "27ac389c688cf059b813049dc27d3f4716dec20d7a256b04f16371505bbe72d2"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/headers/run.json",
+        "bytes": 13895,
+        "sha256": "4c347d9cd029aa20cefd9389e0948fd5222741adde03de175ad605f46bd8444a"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/headers/schedule.json",
+        "bytes": 21365,
+        "sha256": "1db7998184521c0b6928d41468874a4c77db98c26feedc407ae7bcf8324e8a17"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/headers/results.jsonl",
+        "bytes": 180604,
+        "sha256": "83895df8e927389c284a0053c407379cd9dc1f7dac03b75c127479038283d17c"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-core/run.json",
+        "bytes": 14963,
+        "sha256": "b9447a7631436305e80b285326152e97aca7b30de8f9ac581140119f8f2fc527"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-core/schedule.json",
+        "bytes": 44730,
+        "sha256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-core/results.jsonl",
+        "bytes": 2461967,
+        "sha256": "838b931722d343b16d8d2a23d4035b847f15668e1caf16546fb32b5a7db8fa54"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-rest/run.json",
+        "bytes": 118464,
+        "sha256": "427113a0c442e9797a6882b8cdf6ac5c91b09eb83dc0ca4b281e6b547642d6f5"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-rest/schedule.json",
+        "bytes": 379346,
+        "sha256": "e6cbf1acb7726dd3f78a24eb1c2366c8d5fbfe0021df08fe07ccd992876d0b07"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-rest/results.jsonl",
+        "bytes": 56124428,
+        "sha256": "f83ac638dee3e3e4ec13d001b5accb795c9ea83196f3682e21beec55386955d4"
+      }
+    ]
+  },
+  "fixed279Unchanged": true,
+  "finishedUTC": "2026-10-29T14:04:44.631389+00:00",
+  "durationSeconds": 2.519
+}

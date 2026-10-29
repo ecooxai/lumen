@@ -1,0 +1,5560 @@
+{
+  "canonicalManifestSHA256": "0b6ad55d581390e7a7cd17bb29e6a5e3541427545d90401e4e762a224c9a6a0a",
+  "manifestRawSHA256": "02f29f625260bae2f8d5dc6035d0b066b7c5316e6a8a8640bc0c9f606fe2ce76",
+  "canonicalSelectedScheduleSHA256": "fa9e22943aa16fa93466a7d9556377928c695d871fa8ac6fc4bce6a1e3e9b792",
+  "schedule": [
+    {
+      "test": "/dom/events/CustomEvent.html",
+      "type": "testharness",
+      "source": "dom/events/CustomEvent.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/events/Event-constructors.any.html",
+      "type": "testharness",
+      "source": "dom/events/Event-constructors.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Event constructors"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/dom/events/Event-constructors.any.worker.html",
+      "type": "testharness",
+      "source": "dom/events/Event-constructors.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Event constructors"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-add-listener-platform-object.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-add-listener-platform-object.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-add-remove-listener.any.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-add-remove-listener.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "EventTarget's addEventListener + removeEventListener"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-add-remove-listener.any.worker.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-add-remove-listener.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "EventTarget's addEventListener + removeEventListener"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-addEventListener.any.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-addEventListener.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "EventTarget.addEventListener"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-addEventListener.any.worker.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-addEventListener.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "EventTarget.addEventListener"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-constructible.any.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-constructible.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-constructible.any.worker.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-constructible.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-dispatchEvent-returnvalue.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-dispatchEvent-returnvalue.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-dispatchEvent.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-dispatchEvent.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-removeEventListener.any.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-removeEventListener.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "EventTarget.removeEventListener"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-removeEventListener.any.worker.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-removeEventListener.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "EventTarget.removeEventListener"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-this-of-listener.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-this-of-listener.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/events/EventTarget-window-constructor.html",
+      "type": "testharness",
+      "source": "dom/events/EventTarget-window-constructor.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.html",
+      "type": "testharness",
+      "source": "dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Document-adoptNode.html",
+      "type": "testharness",
+      "source": "dom/nodes/Document-adoptNode.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Document-createAttribute.html",
+      "type": "testharness",
+      "source": "dom/nodes/Document-createAttribute.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Document-createElement-namespace.html",
+      "type": "testharness",
+      "source": "dom/nodes/Document-createElement-namespace.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Document-createElement.html",
+      "type": "testharness",
+      "source": "dom/nodes/Document-createElement.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Document-createElementNS.html",
+      "type": "testharness",
+      "source": "dom/nodes/Document-createElementNS.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Document-importNode.html",
+      "type": "testharness",
+      "source": "dom/nodes/Document-importNode.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Node-cloneNode-XMLDocument.html",
+      "type": "testharness",
+      "source": "dom/nodes/Node-cloneNode-XMLDocument.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.html",
+      "type": "testharness",
+      "source": "dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Node-cloneNode-document-with-doctype.html",
+      "type": "testharness",
+      "source": "dom/nodes/Node-cloneNode-document-with-doctype.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Node-cloneNode-external-stylesheet-no-bc.sub.html",
+      "type": "testharness",
+      "source": "dom/nodes/Node-cloneNode-external-stylesheet-no-bc.sub.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Node-cloneNode-parser-created-names.html",
+      "type": "testharness",
+      "source": "dom/nodes/Node-cloneNode-parser-created-names.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Node-cloneNode-svg.html",
+      "type": "testharness",
+      "source": "dom/nodes/Node-cloneNode-svg.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/dom/nodes/Node-cloneNode.html",
+      "type": "testharness",
+      "source": "dom/nodes/Node-cloneNode.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/api-basics.any.html",
+      "type": "testharness",
+      "source": "encoding/api-basics.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: Basics"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-basics.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/api-basics.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: Basics"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-invalid-label.any.html?1-1000",
+      "type": "testharness",
+      "source": "encoding/api-invalid-label.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: invalid label"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-last"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-invalid-label.any.html?1001-2000",
+      "type": "testharness",
+      "source": "encoding/api-invalid-label.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: invalid label"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-last"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-invalid-label.any.html?2001-3000",
+      "type": "testharness",
+      "source": "encoding/api-invalid-label.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: invalid label"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-last"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-invalid-label.any.html?3001-last",
+      "type": "testharness",
+      "source": "encoding/api-invalid-label.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: invalid label"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-last"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-invalid-label.any.worker.html?1-1000",
+      "type": "testharness",
+      "source": "encoding/api-invalid-label.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: invalid label"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-last"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-invalid-label.any.worker.html?1001-2000",
+      "type": "testharness",
+      "source": "encoding/api-invalid-label.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: invalid label"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-last"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-invalid-label.any.worker.html?2001-3000",
+      "type": "testharness",
+      "source": "encoding/api-invalid-label.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: invalid label"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-last"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-invalid-label.any.worker.html?3001-last",
+      "type": "testharness",
+      "source": "encoding/api-invalid-label.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: invalid label"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-last"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-replacement-encodings.any.html",
+      "type": "testharness",
+      "source": "encoding/api-replacement-encodings.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: replacement encoding"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-replacement-encodings.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/api-replacement-encodings.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: replacement encoding"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-surrogates-utf8.any.html",
+      "type": "testharness",
+      "source": "encoding/api-surrogates-utf8.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: Invalid UTF-16 surrogates with UTF-8 encoding"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/api-surrogates-utf8.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/api-surrogates-utf8.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: Invalid UTF-16 surrogates with UTF-8 encoding"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/big5-encoder.html",
+      "type": "testharness",
+      "source": "encoding/big5-encoder.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/bom-handling.html",
+      "type": "testharness",
+      "source": "encoding/bom-handling.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/encodeInto.any.html",
+      "type": "testharness",
+      "source": "encoding/encodeInto.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "/common/sab.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/encodeInto.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/encodeInto.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "/common/sab.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/idlharness.any.html",
+      "type": "testharness",
+      "source": "encoding/idlharness.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "/resources/WebIDLParser.js"
+          ],
+          [
+            "script",
+            "/resources/idlharness.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/idlharness.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/idlharness.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "/resources/WebIDLParser.js"
+          ],
+          [
+            "script",
+            "/resources/idlharness.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/iso-2022-jp-decoder.any.html",
+      "type": "testharness",
+      "source": "encoding/iso-2022-jp-decoder.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/iso-2022-jp-decoder.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/iso-2022-jp-decoder.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/iso-2022-jp-encoder.html",
+      "type": "testharness",
+      "source": "encoding/iso-2022-jp-encoder.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/json-document-utf8.html",
+      "type": "testharness",
+      "source": "encoding/json-document-utf8.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/remove-only-one-bom.html",
+      "type": "testharness",
+      "source": "encoding/remove-only-one-bom.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.html",
+      "type": "testharness",
+      "source": "encoding/replacement-encodings.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: replacement encoding"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "resources/decoding-helpers.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/replacement-encodings.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: replacement encoding"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "resources/decoding-helpers.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/sharedarraybuffer.https.html",
+      "type": "testharness",
+      "source": "encoding/sharedarraybuffer.https.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/single-byte-decoder-iframe.window.html",
+      "type": "testharness",
+      "source": "encoding/single-byte-decoder-iframe.window.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "resources/single-byte-decoder.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/single-byte-decoder.any.html?TextDecoder",
+      "type": "testharness",
+      "source": "encoding/single-byte-decoder.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?XMLHttpRequest"
+          ],
+          [
+            "variant",
+            "?TextDecoder"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "resources/single-byte-decoder.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/single-byte-decoder.any.html?XMLHttpRequest",
+      "type": "testharness",
+      "source": "encoding/single-byte-decoder.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?XMLHttpRequest"
+          ],
+          [
+            "variant",
+            "?TextDecoder"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "resources/single-byte-decoder.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/sniffing.html",
+      "type": "testharness",
+      "source": "encoding/sniffing.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/backpressure.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/backpressure.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/backpressure.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/backpressure.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-attributes.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-attributes.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-attributes.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-attributes.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-bad-chunks.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-bad-chunks.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-bad-chunks.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-bad-chunks.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-ignore-bom.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-ignore-bom.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-ignore-bom.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-ignore-bom.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-incomplete-input.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-incomplete-input.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-incomplete-input.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-incomplete-input.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-non-utf8.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-non-utf8.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-non-utf8.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-split-character.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-split-character.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-split-character.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-split-character.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-utf8.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-utf8.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ],
+          [
+            "script",
+            "/common/sab.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/decode-utf8.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/decode-utf8.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ],
+          [
+            "script",
+            "/common/sab.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/encode-bad-chunks.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/encode-bad-chunks.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/encode-bad-chunks.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/encode-bad-chunks.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/encode-utf8.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/encode-utf8.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/encode-utf8.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/encode-utf8.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/readable-stream-from-array.js"
+          ],
+          [
+            "script",
+            "resources/readable-stream-to-array.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/invalid-realm.window.html",
+      "type": "testharness",
+      "source": "encoding/streams/invalid-realm.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/readable-writable-properties.any.html",
+      "type": "testharness",
+      "source": "encoding/streams/readable-writable-properties.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/readable-writable-properties.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/streams/readable-writable-properties.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/streams/realms.window.html",
+      "type": "testharness",
+      "source": "encoding/streams/realms.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-arguments.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-arguments.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: TextDecoder decode() optional arguments"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-arguments.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-arguments.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: TextDecoder decode() optional arguments"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-byte-order-marks.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-byte-order-marks.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: Byte-order marks"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-byte-order-marks.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-byte-order-marks.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: Byte-order marks"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-copy.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-copy.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "/common/sab.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-copy.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-copy.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "/common/sab.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-eof.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-eof.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-eof.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-eof.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.html?1-1000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.html?1001-2000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.html?2001-3000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.html?3001-4000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.html?4001-5000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.html?5001-6000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.html?6001-7000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.html?7001-last",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?1-1000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?1001-2000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?2001-3000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?3001-4000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?4001-5000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?5001-6000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?6001-7000",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?7001-last",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-single-byte.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag for single byte encodings"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?1-1000"
+          ],
+          [
+            "variant",
+            "?1001-2000"
+          ],
+          [
+            "variant",
+            "?2001-3000"
+          ],
+          [
+            "variant",
+            "?3001-4000"
+          ],
+          [
+            "variant",
+            "?4001-5000"
+          ],
+          [
+            "variant",
+            "?5001-6000"
+          ],
+          [
+            "variant",
+            "?6001-7000"
+          ],
+          [
+            "variant",
+            "?7001-last"
+          ],
+          [
+            "script",
+            "/common/subset-tests.js"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-streaming.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-streaming.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: End-of-file"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal-streaming.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal-streaming.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: End-of-file"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-fatal.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-fatal.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: Fatal flag"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-ignorebom.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-ignorebom.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: TextDecoder ignoreBOM option"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-ignorebom.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-ignorebom.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: TextDecoder ignoreBOM option"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-labels.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-labels.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: Encoding labels"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-labels.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-labels.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: Encoding labels"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-mistakes.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-mistakes.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-mistakes.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-mistakes.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-streaming.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-streaming.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: Streaming decode"
+          ],
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "/common/sab.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-streaming.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-streaming.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: Streaming decode"
+          ],
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ],
+          [
+            "script",
+            "/common/sab.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-utf16-surrogates.any.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-utf16-surrogates.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: UTF-16 surrogate handling"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textdecoder-utf16-surrogates.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textdecoder-utf16-surrogates.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: UTF-16 surrogate handling"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textencoder-constructor-non-utf.any.html",
+      "type": "testharness",
+      "source": "encoding/textencoder-constructor-non-utf.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: Legacy encodings"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textencoder-constructor-non-utf.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textencoder-constructor-non-utf.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: Legacy encodings"
+          ],
+          [
+            "script",
+            "resources/encodings.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textencoder-utf16-surrogates.any.html",
+      "type": "testharness",
+      "source": "encoding/textencoder-utf16-surrogates.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: USVString surrogate handling when encoding"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/textencoder-utf16-surrogates.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/textencoder-utf16-surrogates.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker"
+          ],
+          [
+            "title",
+            "Encoding API: USVString surrogate handling when encoding"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.html",
+      "type": "testharness",
+      "source": "encoding/unsupported-encodings.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: unsupported encodings"
+          ],
+          [
+            "script",
+            "resources/decoding-helpers.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "type": "testharness",
+      "source": "encoding/unsupported-encodings.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Encoding API: unsupported encodings"
+          ],
+          [
+            "script",
+            "resources/decoding-helpers.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/encoding/unsupported-labels.window.html",
+      "type": "testharness",
+      "source": "encoding/unsupported-labels.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/utf-32-from-win1252.html",
+      "type": "testharness",
+      "source": "encoding/utf-32-from-win1252.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/encoding/utf-32.html",
+      "type": "testharness",
+      "source": "encoding/utf-32.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-setcookie.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-setcookie.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers set-cookie special cases"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-setcookie.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers set-cookie special cases"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-setcookie.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers set-cookie special cases"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-setcookie.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-setcookie.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers set-cookie special cases"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-last-event-id.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values-last-event-id.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Fetch: non-ASCII Last-Event-ID header value"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values-last-event-id.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Fetch: non-ASCII Last-Event-ID header value"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values-last-event-id.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Fetch: non-ASCII Last-Event-ID header value"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-last-event-id.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values-last-event-id.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Fetch: non-ASCII Last-Event-ID header value"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-normalize.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values-normalize.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Header value normalizing test"
+          ],
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values-normalize.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Header value normalizing test"
+          ],
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values-normalize.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Header value normalizing test"
+          ],
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-normalize.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values-normalize.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Header value normalizing test"
+          ],
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Header value test"
+          ],
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Header value test"
+          ],
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Header value test"
+          ],
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/header-values.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Header value test"
+          ],
+          [
+            "global",
+            "window,worker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-basic.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-basic.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers structure"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-basic.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers structure"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-basic.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers structure"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-basic.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-basic.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers structure"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-casing.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-casing.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers case management"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-casing.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers case management"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-casing.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers case management"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-casing.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-casing.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers case management"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-combine.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-combine.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers have combined (and sorted) values"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-combine.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers have combined (and sorted) values"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-combine.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers have combined (and sorted) values"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-combine.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-combine.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers have combined (and sorted) values"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-errors.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-errors.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers errors"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-errors.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers errors"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-errors.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers errors"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-errors.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-errors.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers errors"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-forbidden-override.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-forbidden-override.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-forbidden-override.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-forbidden-override.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-forbidden-override.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-forbidden-override.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-no-cors.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-no-cors.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-no-cors.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-no-cors.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-no-cors.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-no-cors.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-normalize.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-normalize.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers normalize values"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-normalize.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers normalize values"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-normalize.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers normalize values"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-normalize.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-normalize.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers normalize values"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-record.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-record.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-record.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-record.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-record.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-record.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-structure.any.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-structure.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers basic"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-structure.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers basic"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-structure.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers basic"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-structure.any.worker.html",
+      "type": "testharness",
+      "source": "fetch/api/headers/headers-structure.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Headers basic"
+          ],
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-cross-realm-callback-report-exception.html",
+      "type": "testharness",
+      "source": "html/webappapis/microtask-queuing/queue-microtask-cross-realm-callback-report-exception.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.html",
+      "type": "testharness",
+      "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+      "type": "testharness",
+      "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+      "type": "testharness",
+      "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.worker.html",
+      "type": "testharness",
+      "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.any.html",
+      "type": "testharness",
+      "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+      "type": "testharness",
+      "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+      "type": "testharness",
+      "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.any.worker.html",
+      "type": "testharness",
+      "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,worker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.window.html",
+      "type": "testharness",
+      "source": "html/webappapis/microtask-queuing/queue-microtask.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/IdnaTestV2-removed.any.html",
+      "type": "testharness",
+      "source": "url/IdnaTestV2-removed.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/IdnaTestV2.any.html",
+      "type": "testharness",
+      "source": "url/IdnaTestV2.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/a-element-origin-xhtml.xhtml",
+      "type": "testharness",
+      "source": "url/a-element-origin-xhtml.xhtml",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/a-element-origin.html",
+      "type": "testharness",
+      "source": "url/a-element-origin.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/a-element-xhtml.xhtml?exclude=(file|javascript|mailto)",
+      "type": "testharness",
+      "source": "url/a-element-xhtml.xhtml",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/a-element-xhtml.xhtml?include=file",
+      "type": "testharness",
+      "source": "url/a-element-xhtml.xhtml",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/a-element-xhtml.xhtml?include=javascript",
+      "type": "testharness",
+      "source": "url/a-element-xhtml.xhtml",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/a-element-xhtml.xhtml?include=mailto",
+      "type": "testharness",
+      "source": "url/a-element-xhtml.xhtml",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/a-element.html?exclude=(file|javascript|mailto)",
+      "type": "testharness",
+      "source": "url/a-element.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/a-element.html?include=file",
+      "type": "testharness",
+      "source": "url/a-element.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/a-element.html?include=javascript",
+      "type": "testharness",
+      "source": "url/a-element.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/a-element.html?include=mailto",
+      "type": "testharness",
+      "source": "url/a-element.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/data-uri-fragment.html",
+      "type": "testharness",
+      "source": "url/data-uri-fragment.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/failure.html",
+      "type": "testharness",
+      "source": "url/failure.html",
+      "timeout": "long",
+      "metadata": {
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/url/historical.any.html",
+      "type": "testharness",
+      "source": "url/historical.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/historical.any.worker.html",
+      "type": "testharness",
+      "source": "url/historical.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/idlharness.any.html",
+      "type": "testharness",
+      "source": "url/idlharness.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/resources/WebIDLParser.js"
+          ],
+          [
+            "script",
+            "/resources/idlharness.js"
+          ],
+          [
+            "global",
+            "window,dedicatedworker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/idlharness.any.worker.html",
+      "type": "testharness",
+      "source": "url/idlharness.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/resources/WebIDLParser.js"
+          ],
+          [
+            "script",
+            "/resources/idlharness.js"
+          ],
+          [
+            "global",
+            "window,dedicatedworker"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/javascript-urls.window.html",
+      "type": "testharness",
+      "source": "url/javascript-urls.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/percent-encoding.window.html",
+      "type": "testharness",
+      "source": "url/percent-encoding.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/toascii.window.html",
+      "type": "testharness",
+      "source": "url/toascii.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-constructor.any.html?exclude=(file|javascript|mailto)",
+      "type": "testharness",
+      "source": "url/url-constructor.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-constructor.any.html?include=file",
+      "type": "testharness",
+      "source": "url/url-constructor.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-constructor.any.html?include=javascript",
+      "type": "testharness",
+      "source": "url/url-constructor.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-constructor.any.html?include=mailto",
+      "type": "testharness",
+      "source": "url/url-constructor.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-constructor.any.worker.html?exclude=(file|javascript|mailto)",
+      "type": "testharness",
+      "source": "url/url-constructor.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-constructor.any.worker.html?include=file",
+      "type": "testharness",
+      "source": "url/url-constructor.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-constructor.any.worker.html?include=javascript",
+      "type": "testharness",
+      "source": "url/url-constructor.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-constructor.any.worker.html?include=mailto",
+      "type": "testharness",
+      "source": "url/url-constructor.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-origin.any.html",
+      "type": "testharness",
+      "source": "url/url-origin.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-origin.any.worker.html",
+      "type": "testharness",
+      "source": "url/url-origin.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-searchparams.any.html",
+      "type": "testharness",
+      "source": "url/url-searchparams.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-searchparams.any.worker.html",
+      "type": "testharness",
+      "source": "url/url-searchparams.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-setters-a-area.window.html?exclude=(file|javascript|mailto)",
+      "type": "testharness",
+      "source": "url/url-setters-a-area.window.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters-a-area.window.html?include=file",
+      "type": "testharness",
+      "source": "url/url-setters-a-area.window.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters-a-area.window.html?include=javascript",
+      "type": "testharness",
+      "source": "url/url-setters-a-area.window.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters-a-area.window.html?include=mailto",
+      "type": "testharness",
+      "source": "url/url-setters-a-area.window.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters-stripping.any.html",
+      "type": "testharness",
+      "source": "url/url-setters-stripping.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-setters-stripping.any.worker.html",
+      "type": "testharness",
+      "source": "url/url-setters-stripping.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-setters.any.html?exclude=(file|javascript|mailto)",
+      "type": "testharness",
+      "source": "url/url-setters.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters.any.html?include=file",
+      "type": "testharness",
+      "source": "url/url-setters.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters.any.html?include=javascript",
+      "type": "testharness",
+      "source": "url/url-setters.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters.any.html?include=mailto",
+      "type": "testharness",
+      "source": "url/url-setters.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters.any.worker.html?exclude=(file|javascript|mailto)",
+      "type": "testharness",
+      "source": "url/url-setters.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters.any.worker.html?include=file",
+      "type": "testharness",
+      "source": "url/url-setters.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters.any.worker.html?include=javascript",
+      "type": "testharness",
+      "source": "url/url-setters.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-setters.any.worker.html?include=mailto",
+      "type": "testharness",
+      "source": "url/url-setters.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "script",
+            "/common/subset-tests-by-key.js"
+          ],
+          [
+            "variant",
+            "?include=file"
+          ],
+          [
+            "variant",
+            "?include=javascript"
+          ],
+          [
+            "variant",
+            "?include=mailto"
+          ],
+          [
+            "variant",
+            "?exclude=(file|javascript|mailto)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "test": "/url/url-statics-canparse.any.html",
+      "type": "testharness",
+      "source": "url/url-statics-canparse.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-statics-canparse.any.worker.html",
+      "type": "testharness",
+      "source": "url/url-statics-canparse.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-statics-parse.any.html",
+      "type": "testharness",
+      "source": "url/url-statics-parse.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-statics-parse.any.worker.html",
+      "type": "testharness",
+      "source": "url/url-statics-parse.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-tojson.any.html",
+      "type": "testharness",
+      "source": "url/url-tojson.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/url-tojson.any.worker.html",
+      "type": "testharness",
+      "source": "url/url-tojson.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlencoded-parser.any.html",
+      "type": "testharness",
+      "source": "url/urlencoded-parser.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlencoded-parser.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlencoded-parser.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-append.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-append.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-append.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-append.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-constructor.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-constructor.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-constructor.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-constructor.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-delete.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-delete.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-delete.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-delete.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-foreach.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-foreach.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-foreach.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-foreach.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-get.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-get.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-get.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-get.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-getall.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-getall.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-getall.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-getall.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-has.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-has.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-has.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-has.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-set.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-set.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-set.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-set.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-size.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-size.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-size.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-size.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-sort.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-sort.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-sort.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-sort.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-stringifier.any.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-stringifier.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/url/urlsearchparams-stringifier.any.worker.html",
+      "type": "testharness",
+      "source": "url/urlsearchparams-stringifier.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/webstorage/storage_clear.window.html",
+      "type": "testharness",
+      "source": "webstorage/storage_clear.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/webstorage/storage_getitem.window.html",
+      "type": "testharness",
+      "source": "webstorage/storage_getitem.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/webstorage/storage_key.window.html",
+      "type": "testharness",
+      "source": "webstorage/storage_key.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/webstorage/storage_key_empty_string.window.html",
+      "type": "testharness",
+      "source": "webstorage/storage_key_empty_string.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/webstorage/storage_length.window.html",
+      "type": "testharness",
+      "source": "webstorage/storage_length.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/webstorage/storage_removeitem.window.html",
+      "type": "testharness",
+      "source": "webstorage/storage_removeitem.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "test": "/webstorage/storage_setitem.window.html",
+      "type": "testharness",
+      "source": "webstorage/storage_setitem.window.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    }
+  ],
+  "sourceSHA256": {
+    "common/get-host-info.sub.js": "9fa3d3004fbe6d0d6c1f46b8c8824afd8b84d72aade671b78e7bd964678cb9ca",
+    "dom/events/CustomEvent.html": "4aaf8d6fdedafb2522239727d463734e0053546f858dd346c643ef83936d7bf5",
+    "dom/events/Event-constructors.any.js": "860c64f2813cc3e31547aeb49f0a56ec9dde1e1bdfe0a4be7d94155bfbc1028b",
+    "dom/events/EventTarget-add-listener-platform-object.html": "154c5d4765e20ed038833b12a3edacecfbd118343d1f6f2d5f7b3daa7a2b6efe",
+    "dom/events/EventTarget-add-remove-listener.any.js": "f1c1c806afb2a3fa88e8fc8e8c1fbbe2c1c9d3d5b7a5cc0df96680717f46f830",
+    "dom/events/EventTarget-addEventListener.any.js": "7045782f35952ce90ee537a23a8e19b8623c03c2e42714c2097102b2a029783e",
+    "dom/events/EventTarget-constructible.any.js": "f345e70db0bfcfe8a6a5e0ba4251ad55c79ce6955998991243d6e3277b80ae0e",
+    "dom/events/EventTarget-dispatchEvent-returnvalue.html": "a1892b3d3f67f32c7c623768ac3d080e92fa3138b42fa52e8a4f0f4a2ece29e6",
+    "dom/events/EventTarget-dispatchEvent.html": "e4901dcbc2b8607a8ac6b41a5c65d711369f3a1f0691fba6312159ca7c34ac68",
+    "dom/events/EventTarget-removeEventListener.any.js": "5575deb3d90c09224a002a78fa398c0b16ca3ec856348467b642bb45bcefd384",
+    "dom/events/EventTarget-this-of-listener.html": "e972d5d702242bb7219dd91476bdd9fe6aecb21c372ce88317d314b2364da086",
+    "dom/events/EventTarget-window-constructor.html": "174831ca7588de119336348f92b82f1358543d2cad100d2ecfcf08ee2855e17f",
+    "dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.js": "1abbde1cfb0633ec0b072140cddc0e412fc7c328a608e689fa539ac0aeb60d53",
+    "dom/nodes/Document-adoptNode.html": "9ab076dbda5988a63c8773814fea332d1b4c71bbeaf2a6ba432e17709458e239",
+    "dom/nodes/Document-createAttribute.html": "bcf1e33813119383e76b42ef3e8736e9a68aca40caab72fb36d3c9baf82bb9b5",
+    "dom/nodes/Document-createElement-namespace.html": "c2037330b704b3479b09345545a05f7e58a3280945eb9b5513eec5e87cb4df04",
+    "dom/nodes/Document-createElement.html": "bc29eb43b538602cd7a1ad86fb3b9f12f81ebabf6dc9d4590374e3d06e493e67",
+    "dom/nodes/Document-createElementNS.html": "dd33dabb7f49766f816015e7972593a2788b5210b03bf0d87f6b84865aef6ce5",
+    "dom/nodes/Document-importNode.html": "29c7c454629a06c7b92f14d373e690d6364cd1d851e566f412154978516b411d",
+    "dom/nodes/Node-cloneNode-XMLDocument.html": "2c0d8cda8119d0019e48b421c275428a1505007c943ed79ae5126304effcab88",
+    "dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.js": "9491d7cc897f8734ae714f54c214617c8ed8a79292fe4a751f42632b307199e5",
+    "dom/nodes/Node-cloneNode-document-with-doctype.html": "85184ec3ba652cfedb4575bf701259f4f6006b2840d5656cd220a0267f6719f5",
+    "dom/nodes/Node-cloneNode-external-stylesheet-no-bc.sub.html": "bcdeda5e19c6c205d1058407ba9042e333ee0a0463860ca9d7fd129069cafedb",
+    "dom/nodes/Node-cloneNode-parser-created-names.html": "3d5a40d0fde0ba543d496bb94ec07fb8239244370ffd253cf48dc76f39dc66c2",
+    "dom/nodes/Node-cloneNode-svg.html": "ee883a6303b30c29c59497e4f4a91ce1068625ed7e3df109ced519308d032da2",
+    "dom/nodes/Node-cloneNode.html": "0789489cf7d5eac64925f8a0fe02c8a06827c08b189d165a362ea4f11d1de6cb",
+    "encoding/api-basics.any.js": "fa0a7e0dadb315e6b8b9c2572f7e620b54f37148d3319af500a477f9d14a93a6",
+    "encoding/api-invalid-label.any.js": "a1ecb84af46501f1fbd585224c3361508ec0689e7dfca0d4f04cb281b3479955",
+    "encoding/api-replacement-encodings.any.js": "0401e4275880ed9d652059d594fa382d4bf11d5e5bbb64b24b5aa238d9dd5e87",
+    "encoding/api-surrogates-utf8.any.js": "66c441e9f6718f6e38c8bffeb52e25de785e8c4e1bc76d57b3cf1da98730b873",
+    "encoding/big5-encoder.html": "0d12de658370727092899ba8e6357b54a263838171ade191645b3a0290383176",
+    "encoding/bom-handling.html": "4d792a32751c9fda7fd473976d2c62c008d102124e3220de031a8075a679721d",
+    "encoding/encodeInto.any.js": "b2c34ea99026d067f5130159ad09c4be48db7a17613047410b8f2079b67656d3",
+    "encoding/idlharness.any.js": "08b6e289aa9d2fe71226f909abe39eba05bb6994171a1e310ec15226a8ee77d6",
+    "encoding/iso-2022-jp-decoder.any.js": "58a1d6da949d4bd09f966dc5c311624efba887474fa26310127d8e07417a704d",
+    "encoding/iso-2022-jp-encoder.html": "904fc0bc930138c6490c7243591a01a1476376e890c923cfe58fe9004f6fbabf",
+    "encoding/json-document-utf8.html": "2dcac139597cd9d5904db8474532ea4883946ee690d5cfc9e2fdfbb2a0626b07",
+    "encoding/remove-only-one-bom.html": "ba23029b3cdb7e8a7bf8a1223a4c9b12769b1956be796f56417e3ff14528e412",
+    "encoding/replacement-encodings.any.js": "fd9ea5ba1800676284553dc88aae23e66bbcbd7496dd545ced679757e63081a7",
+    "encoding/sharedarraybuffer.https.html": "1b3b7dd82bfc5ff41702a00d57c98dddbbf4fac6981df1b62aeaafbd373dd043",
+    "encoding/single-byte-decoder-iframe.window.js": "63971f4ed768e17b821cb4c49224231a43be06c124f7b3f4fa741182e08abf76",
+    "encoding/single-byte-decoder.any.js": "14b14ebdb501e03f2c0833514d0d4da9e7132548537beb22e577aedda75f9ae6",
+    "encoding/sniffing.html": "0e61c409779bfca7555f18749fb0ef0ed676a46b4356f0712ded2c880100e7c2",
+    "encoding/streams/backpressure.any.js": "cfef1d83ef7facfc46f25c841e1a9b2ab8b26f67e268dfbd80ffb2e6e93273f5",
+    "encoding/streams/decode-attributes.any.js": "d6be42515849e7e9232b31a0774d04befff7870799a7e1ed3830a0dd5a4bb997",
+    "encoding/streams/decode-bad-chunks.any.js": "4c686b42ff693266bd4da6e721fc5627d7777a62344d0d202e19293f1f5c3315",
+    "encoding/streams/decode-ignore-bom.any.js": "53a3e9b27e6c4392bc254a96f47ead47039e9fe5e4bf86837fb47d0f9f017b2f",
+    "encoding/streams/decode-incomplete-input.any.js": "31ddc1ea13ace7d8bbd347bac03ad54221bb8a7f004cc570e3a025163b61a127",
+    "encoding/streams/decode-non-utf8.any.js": "868e8fc21eba904acb35ee1387a69e4d7cd04776c22fc35d8a1c4ea002646d73",
+    "encoding/streams/decode-split-character.any.js": "076a1ccdc9db48b7fb0256b9809a751bc5c23285fc63047b6e1faee75b10458b",
+    "encoding/streams/decode-utf8.any.js": "869c03cf7ae7fe2a150df5e504913d2f6c7a08c6aceeac5e556a94a6964fc050",
+    "encoding/streams/encode-bad-chunks.any.js": "8cbe37c932054be14d3e66ca80256590ed29dbd27d318bd9afc4fb11b841fcff",
+    "encoding/streams/encode-utf8.any.js": "1549234d7184e4517a3b207a3eaa4c547c90ed325f446c0e6e2d72337c00dfac",
+    "encoding/streams/invalid-realm.window.js": "64857a66cc5a0267d73fc34fd15062d17d0a3be5cd35ecc856ed9f5e24df6893",
+    "encoding/streams/readable-writable-properties.any.js": "32f7ffc950c6cad67ccac7b53ce79d80a26ff2f66ffdab3d3b59889b058f8364",
+    "encoding/streams/realms.window.js": "155fd3b24067902907003a1fb227414dc53dfd06bb594489e86ba47bb07936e3",
+    "encoding/textdecoder-arguments.any.js": "ac82bce4b2364615737cb2e1348c6a7cc6155b107afc79ecae22057694808d78",
+    "encoding/textdecoder-byte-order-marks.any.js": "dd73fab542fe5d7fea58b5ca7bffc916c3535dd0069bc537ae5f41d4c3996361",
+    "encoding/textdecoder-copy.any.js": "ea6c797666f6159b68a7525a47a5cc07fdae352dd5f3ee438ac0832ea50b95db",
+    "encoding/textdecoder-eof.any.js": "cf01fd20aa0dc4ea6f450e276aeaed7e477bd58811bb2b0c97897e7ddb204ed1",
+    "encoding/textdecoder-fatal-single-byte.any.js": "a4c8f7664ccf35a7192e813341f591216e46dad696d113252364df050038dd8e",
+    "encoding/textdecoder-fatal-streaming.any.js": "f57d56e829f93ecf33b96d0bb640e693b3ea54bb1baae1fcd3309867de58658b",
+    "encoding/textdecoder-fatal.any.js": "083a058a10a2bdc77e1da32d0acda791b568a6701c49db10cec2bfa1f7b9eab8",
+    "encoding/textdecoder-ignorebom.any.js": "f0ecc2649c9d12e1ea0556d3eac82d78de15d9466301ec4997add573d39bebe1",
+    "encoding/textdecoder-labels.any.js": "be155d59592f430d7fcc0827d64a0c39e00a56e8c83323127178e6e18113654f",
+    "encoding/textdecoder-mistakes.any.js": "a33ebeaf55b64ecb476be889aa50a28e3460ed5abdf0c2963e98508eb35440e5",
+    "encoding/textdecoder-streaming.any.js": "082646a9a94c8803e5fb7b278f1299df5c6cb91f157afc31b3babb981e93be10",
+    "encoding/textdecoder-utf16-surrogates.any.js": "f04fabfe9a6fe3f24eb66e4967637cb73b6b874a33bd5214d27af1d38ed17f3f",
+    "encoding/textencoder-constructor-non-utf.any.js": "7d475912b1eb15e8bdd27f1b35797d1949c142134874715349a4679ba34a3c5d",
+    "encoding/textencoder-utf16-surrogates.any.js": "9f62d3946b7734822ce9a1be906f9204718315df50c034f779afae894ae0753f",
+    "encoding/unsupported-encodings.any.js": "e40c58a455527ee78ce33bd7972f31c4fa00f5fcc31d8fbaa57a6c405cb9ddfd",
+    "encoding/unsupported-labels.window.js": "0535c9db070eeee3add37389aae61db5f322cc3f7abc291e2a512d826c7a95d4",
+    "encoding/utf-32-from-win1252.html": "275a301afe1b58e45c886da87afeb5da94fc122492f1a203561bf47936e66f14",
+    "encoding/utf-32.html": "a836009fd81533d62834c37cdc396387f5b21b329ff0ce3f875d13454131e1e9",
+    "fetch/api/cors/resources/not-cors-safelisted.json": "ab9125bd514161d9621e02c4ebbca387274207b99171c6420fee8f396f498a3c",
+    "fetch/api/headers/header-setcookie.any.js": "b587804553ca837bf953fea9b40c94237af803710f56f45e98750b450da42be2",
+    "fetch/api/headers/header-values-last-event-id.any.js": "a619b5cf75fa3f0d1626701d52454055caec7e53619c10d3db2ed679823789f1",
+    "fetch/api/headers/header-values-normalize.any.js": "f980881b68c6cd572b2b7b61970585ca0ca5f6a6b175438357ee1ab5cec86d62",
+    "fetch/api/headers/header-values.any.js": "4cf2193a093ece13fc88295a531662d9c1ed193159a1bf37d20c1154b52d8045",
+    "fetch/api/headers/headers-basic.any.js": "596cd577710773b42a5edf7c6150138fd0502e005a76b383a8331b5fcaf2cfeb",
+    "fetch/api/headers/headers-casing.any.js": "f9034ff6ddc3c23e2aa16419738005d229e19a0b40eb5791af465b16df3ab877",
+    "fetch/api/headers/headers-combine.any.js": "8bc26fcc318dc1fb0d0b60f2a4dd6d5fdaa8ac2e148d20856f6186b5d4f4971d",
+    "fetch/api/headers/headers-errors.any.js": "4b4b9c8d9b72a52c5200feaa67f018cc91d05e9ee0c98a2a18ad56f44873047b",
+    "fetch/api/headers/headers-forbidden-override.any.js": "1e007c7ab7ace17e9f8ffeef50badbdcb3e096629f5f6af6943591e1f6dbd0d8",
+    "fetch/api/headers/headers-no-cors.any.js": "4ca3dc516dc745cc0a7073a3cb1e12b20a4938afc63f7f1e849d4de2e2c13b39",
+    "fetch/api/headers/headers-normalize.any.js": "8f914199d80ed14cd5dec7992464a10981e0b5b74fd26b70768f04f1fd1fb4c1",
+    "fetch/api/headers/headers-record.any.js": "79dbf361fd95af103c725c77c20510f8a43ccbeb744b98b2e4a5d62fa6d0a31b",
+    "fetch/api/headers/headers-structure.any.js": "50f222c12d865e69b860ce02b471accd4b6983a516bec380ece51fbda3a72bec",
+    "html/webappapis/microtask-queuing/queue-microtask-cross-realm-callback-report-exception.html": "508fc09f9a1e4e24a63f4a33b13346e36155e954ffc8413331c4d50c9ea5ae98",
+    "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js": "c2c7e9d955f49b61e832ebe25341e48aab91742526246aad213033b329d499bd",
+    "html/webappapis/microtask-queuing/queue-microtask.any.js": "715bcb23b288b8d00107e5ffdd2e451e28a4492580243d4bc8d91385386ae21e",
+    "html/webappapis/microtask-queuing/queue-microtask.window.js": "4a0f7a626ea5d3f21785f5dc30649430c5cf9cfcf2a016759eb41270500402e4",
+    "resources/idlharness.js": "93e8d18f3fe470966eaf0ac50aadc3882bf4db53c250e8f2161e1ca2a1bc7cd9",
+    "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+    "resources/webidl2/lib/webidl2.js": "954444f6daf0f8068d2fce513eac8e6a5d53189a910b9a5675e8d8e8a2808070",
+    "url/IdnaTestV2-removed.any.js": "099cbbfcab23c97c19492cd41c92c355f0c8c101bfd4b1ea9e24471ca0608388",
+    "url/IdnaTestV2.any.js": "77814a40292f7a23b57ad518a4cf1583b68b108055c227c1f4b73c27f9dcf1c5",
+    "url/a-element-origin-xhtml.xhtml": "6012bba28a174b765191943c2116143374dbac3fa31029af6664f30bab8cff04",
+    "url/a-element-origin.html": "22d3d11da2ee1e25cd48706decd890ea39963820279e9a416aa6a5cf4da94fa7",
+    "url/a-element-xhtml.xhtml": "614a455cee94a1bb103ae6a91ac4ffd5030d30e2689e5e249ab8b445595e07d1",
+    "url/a-element.html": "8d2e4b4118dfa3c31f826011e6f177385ef6a7347112fdc747079c46a236f714",
+    "url/data-uri-fragment.html": "4c93f62873c1404f9c7ccc34e274c421688bb428bebc8aaaa58c317e2258d251",
+    "url/failure.html": "473ffce642b6cbb43c0aa9cd2fc9cae9ceee517d5adb7945e878f83547fc5c5d",
+    "url/historical.any.js": "26ab7394f148921eafa0d952fe707d08af29a1203b5a579884c571b5e70491be",
+    "url/idlharness.any.js": "e844fb33d883373589526efc2b867968cc89989bbd43185c0ab42902f9d6637b",
+    "url/javascript-urls.window.js": "e92e6e6307f72b356482ae4aa825284f12039da02af3f5c949254b91692b6395",
+    "url/percent-encoding.window.js": "8fc6df455d6eb2fe373bb55983286a769cce0352cb1cbba3fd18fc1e5f68485f",
+    "url/toascii.window.js": "f6f4a99679b482159a9dad5525e124f78233a03a1e98c1ab871b58e675501cdb",
+    "url/url-constructor.any.js": "a3e629bad181d5fd9eb92c8403ce3c5e57b4d873ee8e87108e439ea3ff6bf066",
+    "url/url-origin.any.js": "8dd7c8f2d9fed48f923afbe4243fbfd172993214bd104ad77dc45e6fc1372ea1",
+    "url/url-searchparams.any.js": "c8aac0f9c4ddcb1c7acf2b5848315e237b7edf84d1d91d61cc4608a1a4d32302",
+    "url/url-setters-a-area.window.js": "a2c95b540420c10fecc4f3e745901b7b85b2e4a9ac3039062d52c221ae60c271",
+    "url/url-setters-stripping.any.js": "a093710d40414f97a0644c066c006e9f3bc7559e083460836aec5f1e244a5798",
+    "url/url-setters.any.js": "24ed92338a1423b7e0952b0ff5bb0e8dd8fd349cee83a690af9ac83f0484d6c9",
+    "url/url-statics-canparse.any.js": "65aac5c10f153bc2ac851a0b88257a69dd5f4c92cb5e70a225b6fb06f1300de1",
+    "url/url-statics-parse.any.js": "a0d32f83ad40a43682e3ffd6bf6f766932d84109785b428641f42b5ca3ccbf49",
+    "url/url-tojson.any.js": "dc5707460963a2cc4dd2e77d48b369ac174515b8fd2f76083f0ade9328b5551a",
+    "url/urlencoded-parser.any.js": "9d3514f33a6bce8ab4d0163a77d79f0231ef30239ca237cf75f9e206a8b0c3e8",
+    "url/urlsearchparams-append.any.js": "b3fdef26237562dee586c7768af5b484b3ff9d372595d8a8e59b7ebd1099c19b",
+    "url/urlsearchparams-constructor.any.js": "165a7dcdff9a20b2bcef7e249e1609eb6383b6fdd74f85b4dac44d15ed12aa24",
+    "url/urlsearchparams-delete.any.js": "946cf6e91d89a4d40ca848430ec8298e2de6fbbd3a9d1efd7b47425ce90a55c1",
+    "url/urlsearchparams-foreach.any.js": "93e1c9dc0b32d13cdf6de9a100ab9c92a197ac361d1a8d6f164d562b433a4b8d",
+    "url/urlsearchparams-get.any.js": "0bfd999026f963ffc3f021cf509d1e8f3300cddd52c21ebffcd392d8d43bca34",
+    "url/urlsearchparams-getall.any.js": "f6501e719a9ab88c648d1bff0da30b2efda7aaa16d9e4220e95a952fdc17be8c",
+    "url/urlsearchparams-has.any.js": "568dcc6cb4b4ff7c9fbf59482bcde7b38c1c9da4247dd121894e1fedb8ddf352",
+    "url/urlsearchparams-set.any.js": "41771dec1616c4715c33a2a77b3125483c4bce24998e344222e9b8d1f49d68de",
+    "url/urlsearchparams-size.any.js": "cc17292db2bc179bd2629be9867ded0b413de399a6ce1fbf8943d012894cac94",
+    "url/urlsearchparams-sort.any.js": "cdfc1ef89cfcefa5fae94ebdeaa2a869c47b47b47d08aba4c7db0b6e44b31fca",
+    "url/urlsearchparams-stringifier.any.js": "14f7b8871fec6a02dbbe324a5f8943932ecb149285e5cc149fdf34ae769d52c0",
+    "webstorage/storage_clear.window.js": "f496eb594e350bdc94111f814f88f02d1024be2c536c39ac2f18a026038a3d1b",
+    "webstorage/storage_getitem.window.js": "a3001c874ea1bc3fd921787f8c998ab07b7c2f83dbafedf18f43f3d7007b10df",
+    "webstorage/storage_key.window.js": "909afa83c048bd3afd6690e36379eda31ac18cfbe122e03eeca540259a46dc14",
+    "webstorage/storage_key_empty_string.window.js": "9c309c1efdb542d30603f94c3290019e2fced56aebd589a5a6023db38a9c0483",
+    "webstorage/storage_length.window.js": "085b7eb92de2448b21f76d199464da1459e63fea9bd4b362df18cdbe5a56573c",
+    "webstorage/storage_removeitem.window.js": "757831e2b5d15ba60e8b902c00b868d584b4b2323a669309298eea229469b7c8",
+    "webstorage/storage_setitem.window.js": "cea134bb56f91f3ac1793ce8307b0caa16e737ae45b78fb258c431770b3d8bdf"
+  },
+  "manifestTopDigests": {
+    "crashtest": {
+      "dom": "9b75196a47ab7d89f906ab470a1e65693faeca36cbb1dd1c182e03bb2b061127",
+      "encoding": "3c5f190e7364373df5c1c6be71cfeb665223e49205a85d133e855ac52c6e70d2"
+    },
+    "manual": {
+      "webstorage": "026a38b54cd12559a682a0a579861abbe06d8cc0ee65daa3b62ee83c89503c1c"
+    },
+    "reftest": {
+      "dom": "f23d94eb6cea623209038e8050df19f39b49bd7040b667b2e6a16788b8f66633",
+      "encoding": "c45d97cf1d95ba91dbd95ea89486496403222ffefe41a961e87e59fb42a7b1d2"
+    },
+    "support": {
+      ".azure-pipelines.yml": "4b60659318c3bfb3d4316e8dea19f2b7e9826196debf683eec83eb1278ac4968",
+      ".gitattributes": "fc612bbcf9c3aee69650d2255250ed4d7ec6ff2e29a8e20ba55194c540f28e54",
+      ".gitignore": "35fc359e3e875554a5c51999d0c873f71ffcb22d5195ce6f2869dd3183aa0db8",
+      ".mailmap": "30891dd00f0837c630f4f952bac118a90a9f88671ae5a5a29db91548ec5fc9a1",
+      ".python-version": "c0fed562f2b34a8383121f6209104d802d3a032d8836a23b9369712fde2eb8ec",
+      ".taskcluster.yml": "10b3fb4b7d0f4473dc02a08a0b72a540105e89021c90706e1a53c84310d16f63",
+      "CODEOWNERS": "4f6ad04f75b7adf2109485f7206af86a38214e22c708ba9e49409580adbc23fe",
+      "CODE_OF_CONDUCT.md": "b178369cffa582777c1dcc491c5462d44b59c9cc4190f05165a7f3eb4c2ab0da",
+      "CONTRIBUTING.md": "66f362165bcb83d8b7303da645927230ccdcf6b05c7564f280e8a51c3de0ef63",
+      "LICENSE.md": "552ac6418daa0f99b13ecccbeb99c56c2a0e1e0239f861d136e65b2580235e77",
+      "README.md": "9c4ea39a64e2748b494329365f05ce7a4e89bf2aa18797da6cb1e121cb99e0c9",
+      "common": "2b4dd2f75a23c17f7438a2ee10bc916d01dbc3b2ada07d5dfd32d1bf72633529",
+      "docs": "e9a685137b284c2dfd9fb4dcc3811279f31eed8287db992d53743bc28b8fa22c",
+      "dom": "b0f633637b9d4a846e317d645b30dd85be002ce0fed4158596a6e011e3193c89",
+      "encoding": "11de38777ff05d5062be5b9fa9ae2e56e7fe08bb41e8300abcdb738758dc4275",
+      "fetch": "e639e466ab822ba83230798ab673205da36ed2a372e8e47ffa4ff7f44865b94f",
+      "html": "ebf51b799551d08c999a7e93bad74320d1c880e84ae9dbd0681f1cade99a169a",
+      "interfaces": "ec353d2dce6f029c0f309dcf6b2c4c8b3abd04a976b455cf6a713ef875d56951",
+      "lint.ignore": "fd3cb86ca97a3c0b1a109787fd0a17150dd8707153986a4311d78c34223a8c7e",
+      "resources": "3c545aaa7147c226b89e1d910956e9e2f96e55443f0f2f7563e4e4c059130731",
+      "tools": "d102a8fc20dabbc7f6f7d4581f822b2631ac34190709c4c578c1c3f288d424bc",
+      "url": "e5f4fcdeaac270aca138121184b8c8f86ca5f2d79993db4169f2f760ae1e6ee8",
+      "webstorage": "660dafbde561ec5ea8848a90cdc31cea07b46c5e7c071975997fd7b12d731620",
+      "wpt": "9a0ed3a75fb5123b286cc7f54918afff1f2bfebe85baa1d253cec83d1815ceb2",
+      "wpt.py": "ece5aea937c19ee8056a763a1296287a3923980ff4dc8ebb8aa7059d4fa1a431"
+    },
+    "testharness": {
+      "dom": "7307a9dd9e1c2c46f797b2e3d7a3dba9797947cd076a0b8041887d57dd8bdefc",
+      "encoding": "a76f1eb05ab4ebf18db1a0cee7649820b1ea43e9b9c8e49e5cdbbb25d09444bb",
+      "fetch": "ac2231e0d81459ef3b25106e81d87a32580afc69c9002df9f3f0bddc35fc6ec4",
+      "html": "163aa61a0243ea256a6ec256419162f43c994be97cd74f2260a281cff14d1ed4",
+      "url": "bd0606bfbc95ffbda8219ec6b07567019c48cc04c1123bf5dc2f6d76c8827c47",
+      "webstorage": "5b80bab67e4f39852ca8db8b99f497b0a8bdecc910804834a135272456d20b53"
+    }
+  },
+  "protocol": {
+    "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+    "collector_sha256": "f279529ae78f58916a1d87170bc068ad34b15f175072a0a01f63695bc8e44a6b",
+    "reporter_sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "monitor_sha256": "46bda36325c6881ceed174ef6fc19fd4745b64894c833717949ea60e4a18d3e1",
+    "origin": "http://web-platform.test:18800",
+    "secure_origin": "https://web-platform.test:18443",
+    "h2_origin": "https://web-platform.test:18900",
+    "timeout_s": 15,
+    "long_timeout_s": 65
+  }
+}

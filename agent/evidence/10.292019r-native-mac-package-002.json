@@ -359,5 +359,13 @@
     "sha256": "efd943a165782c7b57d20c5150b220a5e8b0331c2ec89737240c27d8646d146c"
   },
   "durationSeconds": 19.435,
-  "deliveryStatus": "Actual ZIP exists on Mac with recorded hash; delivery agent owns durable artifact transfer. Do not claim portable standalone installation."
+  "deliveryStatus": "Exact ZIP downloaded with matching hash, finalized in the user-owned Library, and metadata read back. This remains a local-development Mac bundle with external dependencies.",
+  "durableArtifact": {
+    "fileName": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac002-f8ba8d52-development.zip",
+    "sha256": "6fbfab18db0ca5bd6df61049d7d6503a2ab11f8a8e377f6edc33b6bb147a931d",
+    "bytes": 10812794,
+    "libraryFileId": "libfile_d3e13baa97908191bf3495e9e4699fa8",
+    "libraryUrl": "https://chatgpt.com/library?file_id=libfile_d3e13baa97908191bf3495e9e4699fa8&account_id=personal",
+    "savedUTC": "2026-10-29T14:46:07.668444Z"
+  }
 }

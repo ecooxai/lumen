@@ -3,8 +3,8 @@
   "tools": [
     {
       "path": "tools/apple-session-gpt6as/audit_final_priority_10292019r.py",
-      "bytes": 7791,
-      "sha256": "6f1148ae3246de383de9d538cdc2a1ad9f550a604eea27cb7124bec7748c30b6"
+      "bytes": 8177,
+      "sha256": "81252b6e6898b9e57e177a197a7ffd46aa0d33b1768852b0e1b87930d13c450c"
     },
     {
       "path": "tools/apple-session-gpt6as/compare_final_chrome279_10292019r.py",

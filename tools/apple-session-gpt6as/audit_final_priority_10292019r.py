@@ -42,14 +42,21 @@ try:
  iso_status={'test':iso,'baselineStatus':old_iso[0]['status'],'baselineFullyPassing':A.fully_passes(old_iso[0]),'candidateStatus':new_iso[0]['status']if new_iso else'UNRUN','candidateFullyPassing':A.fully_passes(new_iso[0])if new_iso else False,'candidateAssertionCount':len(new_iso[0].get('subtests',[]))if new_iso else 0}
  observed=out/'observed-results.json';atomic(observed,{'count':len(current['rows']),'rows':current['rows']});atomic(out/'baseline-regression.json',regression);atomic(out/'fixed279-regression.json',fixedcomparison)
  files=[target_plan,manifestpath,builddir/'summary.json',base/'independent-expanded-001/receipt.json',base/'fixture-comparison-diagnostic-002/receipt.json',out/'baseline-regression.json',out/'fixed279-regression.json']
- for name in current['evidence']:files.extend(A.group_paths(target_plan.parent,name))
+ case_evidence_count=0
+ for name in current['evidence']:
+  paths=A.group_paths(target_plan.parent,name);files.extend(paths);directory=paths[0].parent
+  for pattern in ['case-*.console.log','case-*.metrics.jsonl']:
+   for sample in sorted(directory.glob(pattern)):
+    if sample.is_symlink()or not sample.is_file():raise ValueError('Unexpected case evidence member')
+    files.append(sample);case_evidence_count+=1
+
  for row in build['stages']:files.extend([root/row['log'],root/row['monitor']])
  files=list(dict.fromkeys(files));file_manifest=[{'path':str(p.relative_to(root)),'bytes':p.stat().st_size,'sha256':A.sha(p)}for p in files];raw=out/'raw-evidence.tar.gz'
  with tarfile.open(raw,'w:gz')as archive:
   for p in files:archive.add(p,arcname=str(p.relative_to(root)),recursive=False)
  if any(A.sha(root/entry['path'])!=entry['sha256']for entry in file_manifest):raise ValueError('Evidence changed during final audit; do not audit active writer')
  nonpasses=[{'test':r['test'],'status':r['status'],'assertions':[t for t in r.get('subtests',[])if t['status']!='PASS']}for r in current['rows']if not A.fully_passes(r)]
- receipt.update(acceptedEvidence=True,noRegression=regression['noRegression'],compiledSourcesMatchCommit=True,compiledSourceFiles=len(manifest),sourceManifestSHA256=A.sha(manifestpath),binary=current['plan']['binary'],summary=current['summary'],fullFrozenInventoryExecuted=len(current['rows'])==1515,baselineSummary=before['summary'],priorPassingAssertionsLost=len(regression['lostPassingAssertions']),priorPassingVariantsLost=len(regression['lostFullyPassingVariants']),priorRecordedVariantsMissing=len(regression['missingCandidateVariants']),priorAssertionsGained=len(regression['gainedPassingAssertions']),newlyObserved=A.summarize_rows(new,1515-len(before['rows'])),fixed279=fixedsummary,fixed279NoRegression=fixedcomparison['noRegression'],iso2022=iso_status,nonPassingVariants=nonpasses,planSHA256=current['planSHA256'],evidence=current['evidence'],observedResultsSHA256=A.sha(observed),rawArchive={'path':str(raw.relative_to(root)),'bytes':raw.stat().st_size,'sha256':A.sha(raw)},rawFiles=file_manifest)
+ receipt.update(acceptedEvidence=True,noRegression=regression['noRegression'],compiledSourcesMatchCommit=True,compiledSourceFiles=len(manifest),sourceManifestSHA256=A.sha(manifestpath),binary=current['plan']['binary'],summary=current['summary'],fullFrozenInventoryExecuted=len(current['rows'])==1515,baselineSummary=before['summary'],priorPassingAssertionsLost=len(regression['lostPassingAssertions']),priorPassingVariantsLost=len(regression['lostFullyPassingVariants']),priorRecordedVariantsMissing=len(regression['missingCandidateVariants']),priorAssertionsGained=len(regression['gainedPassingAssertions']),newlyObserved=A.summarize_rows(new,1515-len(before['rows'])),fixed279=fixedsummary,fixed279NoRegression=fixedcomparison['noRegression'],iso2022=iso_status,nonPassingVariants=nonpasses,planSHA256=current['planSHA256'],evidence=current['evidence'],observedResultsSHA256=A.sha(observed),rawArchive={'path':str(raw.relative_to(root)),'bytes':raw.stat().st_size,'sha256':A.sha(raw)},rawFiles=file_manifest,archivedCaseConsoleAndTelemetryFiles=case_evidence_count)
 except Exception as error:receipt['error']=type(error).__name__+': '+str(error)
 receipt['finishedUTC']=datetime.now(timezone.utc).isoformat();receipt['durationSeconds']=round(time.monotonic()-began,3);atomic(out/'receipt.json',receipt)
 print(json.dumps({'accepted':receipt['acceptedEvidence'],'noRegression':receipt['noRegression'],'summary':receipt.get('summary'),'lostAssertions':receipt.get('priorPassingAssertionsLost'),'fixed279':receipt.get('fixed279',{}).get('fullyPassing'),'iso2022Pass':receipt.get('iso2022',{}).get('candidateFullyPassing'),'error':receipt.get('error'),'receipt':str((out/'receipt.json').relative_to(root))},separators=(',',':')))

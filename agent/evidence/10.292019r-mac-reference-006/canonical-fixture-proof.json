@@ -1,0 +1,57 @@
+{
+  "accepted": true,
+  "mutation": false,
+  "errors": [],
+  "canonicalManifestEqual": false,
+  "nativeManifestRawSHA256": "7f2b0405286816226928047248543c709d4df237a2cfbe720e5c05e7a3554b24",
+  "referenceManifestRawSHA256": "02f29f625260bae2f8d5dc6035d0b066b7c5316e6a8a8640bc0c9f606fe2ce76",
+  "nativeCanonicalManifestSHA256": "bec3fcbb936319d40e83cc74636bc64ecd9068fb4ea786ca4a3f9b80ee986a13",
+  "referenceCanonicalManifestSHA256": "0b6ad55d581390e7a7cd17bb29e6a5e3541427545d90401e4e762a224c9a6a0a",
+  "canonicalSelectedScheduleEqual": true,
+  "selectedScheduleSHA256": "fa9e22943aa16fa93466a7d9556377928c695d871fa8ac6fc4bce6a1e3e9b792",
+  "sourceMismatches": [],
+  "sourceCount": 136,
+  "manifestTopDifferences": [
+    "crashtest/dom",
+    "reftest/dom",
+    "support/LICENSE.md",
+    "support/CODEOWNERS",
+    "support/resources",
+    "support/interfaces",
+    "support/common",
+    "support/.python-version",
+    "support/.mailmap",
+    "support/CODE_OF_CONDUCT.md",
+    "support/docs",
+    "support/wpt.py",
+    "support/.azure-pipelines.yml",
+    "support/.taskcluster.yml",
+    "support/tools",
+    "support/html",
+    "support/lint.ignore",
+    "support/wpt",
+    "support/.gitattributes",
+    "support/dom",
+    "support/CONTRIBUTING.md",
+    "support/README.md",
+    "support/.gitignore",
+    "support/fetch",
+    "testharness/dom",
+    "testharness/fetch"
+  ],
+  "readinessPID": 23670,
+  "oldPIDLive": false,
+  "oldStartMatches": false,
+  "liveProbes": {
+    "http": {
+      "listenerRows": [
+        "p97846",
+        "cPython",
+        "f11"
+      ],
+      "reporterStatus": 200,
+      "reporterSHA256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+      "reporterMatches": true
+    }
+  }
+}

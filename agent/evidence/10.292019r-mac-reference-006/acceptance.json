@@ -1,0 +1,315 @@
+{
+  "scope": "Independent Mac d5 source-bound expanded991 acceptance, qualified cross-platform Chrome279 reference, and reviewed public source delivery; not full officialWPT/mobile acceptance",
+  "sourceCommit": "d5a3bc44216f65ce430163518ced2aa10411cfc4",
+  "nativeBinary": {
+    "path": "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-001/lumen-4bf30d0ec0979362",
+    "sha256": "4bf30d0ec0979362fa9994b63ef0bc10e3debce1dee9cd9174aada1be0ebbefd"
+  },
+  "expanded": {
+    "scheduled": 1515,
+    "recorded": 1027,
+    "fullyPassing": 991,
+    "unrun": 488,
+    "passPercentOfRecorded": 96.49464459591042,
+    "harnessStatuses": {
+      "OK": 992,
+      "TIMEOUT": 18,
+      "ERROR": 17
+    },
+    "assertions": {
+      "PASS": 733324,
+      "FAIL": 7,
+      "TIMEOUT": 1
+    },
+    "qualifiedPassingAssertions": 733324,
+    "measurementErrorVariants": 0
+  },
+  "fixed279": {
+    "scheduled": 279,
+    "recorded": 279,
+    "fullyPassing": 248,
+    "unrun": 0,
+    "passPercentOfRecorded": 88.88888888888889,
+    "harnessStatuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "assertions": {
+      "PASS": 38754,
+      "FAIL": 7
+    },
+    "qualifiedPassingAssertions": 38754,
+    "measurementErrorVariants": 0
+  },
+  "chrome279": {
+    "scheduled": 279,
+    "recorded": 279,
+    "fullyPassing": 234,
+    "unrun": 0,
+    "passPercentOfRecorded": 83.87096774193549,
+    "harnessStatuses": {
+      "OK": 279
+    },
+    "assertions": {
+      "PASS": 38382,
+      "FAIL": 895
+    },
+    "qualifiedPassingAssertions": 38382,
+    "measurementErrorVariants": 0
+  },
+  "nativeChromePASSRetention": {
+    "retained": 37866,
+    "reference": 38382,
+    "missing": 516,
+    "missingAllUnsupportedServiceSharedWorker": true,
+    "serviceWorkerMissing": 258,
+    "sharedWorkerMissing": 258
+  },
+  "canonicalFixtureProof": {
+    "selectedVariants": 279,
+    "selectedSourceAndHelperHashesVerified": 136,
+    "canonicalSelectedScheduleEqual": true,
+    "wholeManifestBytesEqual": false,
+    "wholeManifestDifferenceScope": "Generated sparse-checkout manifest includes different unselected tests/support files; selected full variant metadata and actual pinned source/helper bytes are equal. This qualifies only the selected279 comparison.",
+    "manifestTopDifferences": [
+      "crashtest/dom",
+      "reftest/dom",
+      "support/LICENSE.md",
+      "support/CODEOWNERS",
+      "support/resources",
+      "support/interfaces",
+      "support/common",
+      "support/.python-version",
+      "support/.mailmap",
+      "support/CODE_OF_CONDUCT.md",
+      "support/docs",
+      "support/wpt.py",
+      "support/.azure-pipelines.yml",
+      "support/.taskcluster.yml",
+      "support/tools",
+      "support/html",
+      "support/lint.ignore",
+      "support/wpt",
+      "support/.gitattributes",
+      "support/dom",
+      "support/CONTRIBUTING.md",
+      "support/README.md",
+      "support/.gitignore",
+      "support/fetch",
+      "testharness/dom",
+      "testharness/fetch"
+    ],
+    "proofSHA256": "d4fe06784ae93b62abc586b0ec0f3f6b4c3666ae179fecabcd74d32dcf4a0973",
+    "expectedReferenceSHA256": "847c383cf66052eba59be92e29e7f328830b809ef2abc9a7d0931a4ee6fd04a7",
+    "referenceWholeManifestSHA256": "02f29f625260bae2f8d5dc6035d0b066b7c5316e6a8a8640bc0c9f606fe2ce76"
+  },
+  "durableExpandedRaw": {
+    "libraryFileId": "libfile_a98a98cadf1c81918fcf88021ad000bb",
+    "path": "out/10292019r-mac/independent-expanded-001/raw-evidence.tar.gz",
+    "bytes": 7235670,
+    "sha256": "7db306dff5cc9fe0d0de0e6ee4ffb203ea81aabe654703933afb009b7245ced0",
+    "files": [
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/cohort.json",
+        "bytes": 1106597,
+        "sha256": "1b68c4aaf8d66e32e59fba2de4f52712c702e43e0d64d7f90a00de895577438a"
+      },
+      {
+        "path": "out/10292019r-mac/native-worker-001/compiled-source-sha256.json",
+        "bytes": 15464,
+        "sha256": "0cad708bb2f1bfe2236d538ee92f53cc6f2f3ab044a0df573461367ff9d1f595"
+      },
+      {
+        "path": "out/10292019r-mac/native-worker-001/summary.json",
+        "bytes": 8174,
+        "sha256": "4c806f25c3b9db1a900ac9693f93bce0063ae0204b0a37bb15195eb373b8017e"
+      },
+      {
+        "path": "out/10292019r-mac/independent-worker-acceptance-001/receipt.json",
+        "bytes": 4107,
+        "sha256": "51597c76b4aad940b723965b134ee052e515b1a538c7fa37466a2e9e33bc86b3"
+      },
+      {
+        "path": "out/10292019r-mac/independent-worker-acceptance-001/wpt-audit.json",
+        "bytes": 18118,
+        "sha256": "033c0868b0116dc8204996b11a4c42ff34d9e438cb981029d33661a193fb6d83"
+      },
+      {
+        "path": "out/10292019r-mac/cors-fixture-audit/receipt.json",
+        "bytes": 25439,
+        "sha256": "224b72aa76703640b64feb6be5b557567637cf25c749f0a273bbda1e8f4590ac"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-streams/run.json",
+        "bytes": 11984,
+        "sha256": "25136e579a1ce2e5b3f24d916959bb25c47b84548fb5069993720ace9bbc27ca"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-streams/schedule.json",
+        "bytes": 10971,
+        "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-streams/results.jsonl",
+        "bytes": 104882,
+        "sha256": "25d4efd636beb78f3795ee939faf005170f0877096881e685abab64e5d2b822b"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/dom/run.json",
+        "bytes": 11294,
+        "sha256": "83a19cd54ac6ad26f4b845a712e67e46d1d073317a444705bd271707a58fc663"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/dom/schedule.json",
+        "bytes": 3187,
+        "sha256": "90a94ec5fea249cfa78a39b39fafaa83f0d076b56644924c5f72790665e270be"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/dom/results.jsonl",
+        "bytes": 145339,
+        "sha256": "7d69c82550b04b212cf1be8b2524884cc55ae62e6354eab499c8ef2475191259"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/events/run.json",
+        "bytes": 11453,
+        "sha256": "089ee8636ef1811b227147dc6e4ac6f4898bd19db76dc3993e5c8e318fbe0f5c"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/events/schedule.json",
+        "bytes": 4670,
+        "sha256": "c9c1c2e46a30c6ef14a700bc76463ec2411f1771afda7681344fd7d5e65cb3b7"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/events/results.jsonl",
+        "bytes": 46044,
+        "sha256": "5fbbb53cfe9cc8af88db7fa472dc31115ec4fb90add6c03dd9d34b8303414f69"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/url/run.json",
+        "bytes": 14459,
+        "sha256": "c2582e1746ad20bf2fe8fb22d5ed84cfbc515931c41ec852684fcdb006f1081d"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/url/schedule.json",
+        "bytes": 25515,
+        "sha256": "c4e44f2d5a5eaa7ed66c834f506ca484bd73ff6d3f7e77b27cf7f2337ef23132"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/url/results.jsonl",
+        "bytes": 1461789,
+        "sha256": "f96f646cac7328c727e65ca40826a7e599a3a9c289a35edde5618eda4cf955b6"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/storage/run.json",
+        "bytes": 10835,
+        "sha256": "8b0355b35e8655cce40776511af0e5d525846958d795694851aa10147ee866ba"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/storage/schedule.json",
+        "bytes": 1490,
+        "sha256": "723fca15a68d3d61c26604fb5c55f26615e639da5f7b888f6bd79f8fae403c9d"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/storage/results.jsonl",
+        "bytes": 102316,
+        "sha256": "79bca66a6edb0a545eca0d481f6f8ec4d9e42c62648cc6c44cfa992264098304"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/microtasks/run.json",
+        "bytes": 11336,
+        "sha256": "a56ca5d3d4a05658fe18ce07a3c2dcbaea593e0f4fcf52d9010dc6bc9b161c1a"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/microtasks/schedule.json",
+        "bytes": 3593,
+        "sha256": "eda081ad150c45a430ade8649a55bf454eff67bac460df798efc90dd947c2177"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/microtasks/results.jsonl",
+        "bytes": 25757,
+        "sha256": "27ac389c688cf059b813049dc27d3f4716dec20d7a256b04f16371505bbe72d2"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/headers/run.json",
+        "bytes": 13895,
+        "sha256": "4c347d9cd029aa20cefd9389e0948fd5222741adde03de175ad605f46bd8444a"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/headers/schedule.json",
+        "bytes": 21365,
+        "sha256": "1db7998184521c0b6928d41468874a4c77db98c26feedc407ae7bcf8324e8a17"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/headers/results.jsonl",
+        "bytes": 180604,
+        "sha256": "83895df8e927389c284a0053c407379cd9dc1f7dac03b75c127479038283d17c"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-core/run.json",
+        "bytes": 14963,
+        "sha256": "b9447a7631436305e80b285326152e97aca7b30de8f9ac581140119f8f2fc527"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-core/schedule.json",
+        "bytes": 44730,
+        "sha256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-core/results.jsonl",
+        "bytes": 2461967,
+        "sha256": "838b931722d343b16d8d2a23d4035b847f15668e1caf16546fb32b5a7db8fa54"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-rest/run.json",
+        "bytes": 118464,
+        "sha256": "427113a0c442e9797a6882b8cdf6ac5c91b09eb83dc0ca4b281e6b547642d6f5"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-rest/schedule.json",
+        "bytes": 379346,
+        "sha256": "e6cbf1acb7726dd3f78a24eb1c2366c8d5fbfe0021df08fe07ccd992876d0b07"
+      },
+      {
+        "path": "out/10292019r-mac/wpt-candidate-001/cohort/encoding-rest/results.jsonl",
+        "bytes": 56124428,
+        "sha256": "f83ac638dee3e3e4ec13d001b5accb795c9ea83196f3682e21beec55386955d4"
+      }
+    ]
+  },
+  "durableMetadataArchiveLibraryFileId": "libfile_b64da77572b48191b8958645c8453097",
+  "publication": {
+    "sourceCommit": "4573fb06e9bebb3236055a9e8aecde5718c8eb06",
+    "sourceSHA256": "9302a825f2b9a12212e84b23d12ecafef827d557dc2d4d9dfaf5b2eeacf72e0d",
+    "liveUpdated": true,
+    "surgeUpdated": true,
+    "fullPublicBytesVerified": true
+  },
+  "files": [
+    {
+      "path": "chrome279-comparison.json",
+      "bytes": 683219,
+      "sha256": "cd046a35c859565ceb9a42b6790903fba24da57ab81f01d1121ada4737c6f915"
+    },
+    {
+      "path": "canonical-fixture-proof.json",
+      "bytes": 1726,
+      "sha256": "d4fe06784ae93b62abc586b0ec0f3f6b4c3666ae179fecabcd74d32dcf4a0973"
+    },
+    {
+      "path": "canonical-reference.json",
+      "bytes": 145745,
+      "sha256": "847c383cf66052eba59be92e29e7f328830b809ef2abc9a7d0931a4ee6fd04a7"
+    },
+    {
+      "path": "expanded991-acceptance.json",
+      "bytes": 13146,
+      "sha256": "e2f48e391add8f0b716e8112d493255d5c4f9145484dd277a38e321dc1d70eed"
+    },
+    {
+      "path": "source4573-publication.json",
+      "bytes": 1475,
+      "sha256": "2d41a74b87344d3f5ed3a69e86fb5f0cfe46a464d4871ae64490138c852c011b"
+    }
+  ]
+}

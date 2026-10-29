@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "accepted": true,
+  "scope": "Durable checkpoint of exact native Mac002 source13742445/f8ba8d52 and earlier D5 expanded WPT evidence; not final native003 evidence.",
+  "method": "Current unchanged official ChatGPT Library batch uploader; four files finalized and metadata read back in authenticated owned Library.",
+  "files": [
+    {
+      "fileName": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac002-f8ba8d52-raw-evidence.tar.gz",
+      "sourcePath": "out/10292019r-mac/native-audit-002/GPT6-Astra-Pro_builtin-agents_devinmac3d-native-acceptance-raw.tar.gz",
+      "sha256": "da1a7ad6a3dd0b9003c30082dbdafa1112d73d233a3bf05b89b4bb92119b5b33",
+      "bytes": 229947,
+      "libraryFileId": "libfile_d4c14a8ff0448191b148a713174217cd",
+      "libraryUrl": "https://chatgpt.com/library?file_id=libfile_d4c14a8ff0448191b148a713174217cd&account_id=personal",
+      "savedUTC": "2026-10-29T14:46:07.662402Z",
+      "downloadHashVerified": true,
+      "uploaderFinalized": true,
+      "localMetadataApplied": true,
+      "authenticatedLibraryMetadataReadbackMatched": true
+    },
+    {
+      "fileName": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac002-f8ba8d52-development.zip",
+      "sourcePath": "out/10292019r-mac/native-package-002/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac-development.zip",
+      "sha256": "6fbfab18db0ca5bd6df61049d7d6503a2ab11f8a8e377f6edc33b6bb147a931d",
+      "bytes": 10812794,
+      "libraryFileId": "libfile_d3e13baa97908191bf3495e9e4699fa8",
+      "libraryUrl": "https://chatgpt.com/library?file_id=libfile_d3e13baa97908191bf3495e9e4699fa8&account_id=personal",
+      "savedUTC": "2026-10-29T14:46:07.668444Z",
+      "downloadHashVerified": true,
+      "uploaderFinalized": true,
+      "localMetadataApplied": true,
+      "authenticatedLibraryMetadataReadbackMatched": true
+    },
+    {
+      "fileName": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac002-audit-metadata.tar.gz",
+      "sourcePath": "out/10292019r-artifact-shipment-002-v2/GPT6-Astra-Pro_builtin-agents_devinmac3d-Mac002-audit-metadata.tar.gz",
+      "sha256": "e9d8247c98dcf1fab912dfc0ccc984f4a8387cc9ff005d572575fca9d5da54b4",
+      "bytes": 54609,
+      "libraryFileId": "libfile_b64da77572b48191b8958645c8453097",
+      "libraryUrl": "https://chatgpt.com/library?file_id=libfile_b64da77572b48191b8958645c8453097&account_id=personal",
+      "savedUTC": "2026-10-29T14:46:07.662824Z",
+      "downloadHashVerified": true,
+      "uploaderFinalized": true,
+      "localMetadataApplied": true,
+      "authenticatedLibraryMetadataReadbackMatched": true
+    },
+    {
+      "fileName": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac001-d5a3bc44-expanded991-raw.tar.gz",
+      "sourcePath": "out/10292019r-mac/independent-expanded-001/raw-evidence.tar.gz",
+      "sha256": "7db306dff5cc9fe0d0de0e6ee4ffb203ea81aabe654703933afb009b7245ced0",
+      "bytes": 7235670,
+      "libraryFileId": "libfile_a98a98cadf1c81918fcf88021ad000bb",
+      "libraryUrl": "https://chatgpt.com/library?file_id=libfile_a98a98cadf1c81918fcf88021ad000bb&account_id=personal",
+      "savedUTC": "2026-10-29T14:46:07.655829Z",
+      "downloadHashVerified": true,
+      "uploaderFinalized": true,
+      "localMetadataApplied": true,
+      "authenticatedLibraryMetadataReadbackMatched": true
+    }
+  ],
+  "initialAutomaticApprovalRejection": {
+    "cause": "Destination ownership and payload authorization were not yet established.",
+    "resolvedBy": "One same-workflow safer retry after explicit original user Library instruction, read-only authenticated owned-root proof, and all four reviewed payload hashes.",
+    "workaroundUsed": false
+  },
+  "temporaryTransferCleanup": {
+    "accepted": true,
+    "rootTransportCommand": 6318,
+    "teardownExitCode": 0,
+    "formerArtifactHTTPStatus": 404,
+    "durationSeconds": 2.193,
+    "remoteReceipt": "out/10292019r-artifact-shipment-002-v2/cleanup-receipt.json",
+    "scope": "Only the fresh task nonce transfer site and its copied staging files; existing live progress/source publication unchanged."
+  }
+}
