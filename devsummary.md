@@ -857,3 +857,80 @@ Standard guarded WPT cohorts provided actual production browser results.
 As of 2026-10-29T14:05:56.497950+00:00, total task wall time is **26.27 minutes**.
 Session continues. Next gates: repair worker message loss, rerun paired production controls, then
 fresh matched non-URL954 and broader selected comparison; Grid containing-area repair is a separate lane.
+
+### Session5 iteration172 — focused repair verified; private stack getter holdout prompted follow-up173
+
+- Recorded build/startup: 2026-10-29T14:07:41Z → 2026-10-29T14:08:07Z (0.433 min). Whole-goal score19/100; goal98/100.
+- Production browser: CSSOM100/100, nativecascade39/39, clone22/22, worker payload7/7, worker transport20/20; 125 flex cohort +82 exact PASS gains versus168 with zero losses, missing or added. All138 non-URL CTests passed. Three introduced worker message-loss regressions repaired; three older brand failures also repaired. Public stack getter side effects addressed in173, so172 is not final accepted release.
+- Binary SHA256 `fe874113f1f51fb44a48f6efdb368fa27034ceb7db5a85b12dbbe4d1a0b55e2c`; unchanged source manifest `9d8995f03b14a7ab4b7700a1f741f9cbf786cb86431af0f2447887cf822cc3fc`.
+- Agents: engine_lead, conformance_review, operations, root. Evidence `agent/validation/linux-wpt-20261029-session5/iteration-172-record.json`.
+
+### Session5 iteration173 — build and native layout controls verified; independent browser gates pending
+
+- Recorded build/startup: 2026-10-29T14:15:11Z → 2026-10-29T14:15:49Z (0.633 min). Whole-goal score19/100; goal98/100.
+- Frozen combined Grid containing-block and private stack candidate built and startup passed. 13/13 native Grid/flex/position control tests passed including96 independent Chromium-derived coordinates; production browser focused gates and matched954 comparison pending.
+- Binary SHA256 `298c16f2bb0f95a6588beb88a64d6c8637a01fb070456d9a600dce31210c438f`; unchanged source manifest `77fe529f4dcc42cf6e20ca69fccfbfd7294e9598754f8431cda9267a7762c787`.
+- Agents: engine_lead, conformance_review, operations, root. Evidence `agent/validation/linux-wpt-20261029-session5/iteration-173-record.json`.
+
+Session5 cumulative wall time at 2026-10-29T14:17:37.682980+00:00: 37.961 minutes. No dedicated URL conformance tests run; native gate excludes url, url_host_nul, data_url. No scope expansion of score from selected passes.
+
+### Session5 host restart and artifact recovery
+
+- Environment failure: previous host journal ended2026-10-29T14:18:08Z; new boot began14:20:05Z (operations evidence). Ruby reconnected on coordinated attempt7 at14:25:18Z after six failures, with30s spacing; no duplicate tests or mutation retries were launched during uncertain outcomes.
+- Candidate173 focused metadata claimed completion, but substantive JSONL/cleanup/log/resource files were zero-byte after reboot. That receipt is INVALID and is preserved; no engine failure or successful gate is inferred from metadata alone. One unique focused rerun is pending healthy restored runtime.
+- Candidate173 binary SHA remains298c16f2bb0f95a6588beb88a64d6c8637a01fb070456d9a600dce31210c438f (QA). All21 session-modified engine/test source inputs match the sealed173 manifest at14:27:50Z; receipt source-integrity-after-reboot173.json. Baseline and172 raw comparison rows survive (QA).
+- Untested align-content174 draft remained outside the remote engine throughout the outage. Independent review identified an equal-size stretch definiteness holdout; draft updated, still no validation claim.
+- Current whole-goal score19/100. Recorded at2026-10-29T14:29:12.049532+00:00; elapsedwalltime49.534min.
+
+### Session5 candidate173 focused qualification and source checkpoint
+
+- Source preservation completed2026-10-29T14:35:00.229061Z: clone commit817fba4ede1c4bb662cd0c96212d09938465d7c9 and Grid/final source commit7fd477398e71f964e394b19229bef7c6a74c461a. All21 session engine/test inputs match the sealed173 build manifest (candidate173-git-map.json). This qualifies the focused checkpoint for broader comparison; it is not a global conformance or release-parity claim.
+- Fresh recovery gate ran14:33:23→14:33:33UTC (0.167min test subinterval),145harnessOK with all three native browser exits0; authored100/39/22/7/20/12 allPASS. Fixed125 improved65→70 fullypassing and847→929 passed registered assertions (+82 exact gains, zero losses). DOM14 has11fullypassing,250PASS11FAIL. Raw receipt conformance/focused173-145-after-reboot is durable; the pre-reboot zero-byte receipt remains invalid.
+- Grid upstream3 improved144/300→300/300; independent28-case flex geometry work is a new untested next-iteration holdout and is not included in this acceptance.
+- Build and test windows are explicitly subintervals. Overlapping implementation/review start times for169–173 were not separately instrumented; no total per-iteration development duration is invented. At source checkpoint, total wall time from13:39:40UTC was55.337min. Agents: engine_lead, conformance_review, operations, root. Whole-goal score remains19/100, target98/100.
+- Next comparison plan approved by root: preserve173 as intermediate; run fixed954 baseline168, then a bounded candidate174 integration/build/focused window, followed by the SAME954 corpus and protocol on the final qualified candidate and Chromium. If a new patch is unready or introduces focused failures, omit it rather than indefinitely delay comparison.
+
+### Session5 candidate174 rejection and candidate175 baseline repair
+
+- Candidate174 source committed before build: graph a9a1d4799c9edd5139c1f6ad675fc456cecd7c95, combined source192c90931d82cc2014de098904a53fdbe9860b68. First offline draft checkpoint14:21:35.563324UTC; integration14:42:57.185200→14:42:57.241489UTC. Build/startup14:42:57→14:43:20UTC (0.383min), source diff empty. These exact transaction/build intervals are not the whole development duration.
+- Candidate174 native140/140 passed in40.07s;393 was not yet the native count (the original392geometry controls passed). Actual browser150 had all harnessOK and all authored392geometry+46graph controls passing, but identity comparison found310gains and ONE introduced loss: flex-align-baseline-overflow-001.html, '.target > * 7', offsetTop10→100. Candidate174 is REJECTED for broader acceptance; passing native gates do not override the real-browser regression.
+- Diagnosis: generic last-baseline→end fallback was incorrectly applied to in-flow baseline participants. Full baseline-sharing groups are not implemented in this path. Preserve their established placement instead of claiming grouping support. Native holdout reproduces the previously passing negative-overflow case; the fresh Chromium report passes all12 upstream assertions, including expected offsetTop10. No WPT expectations or selection changed.
+- Candidate175 repair committedf07fb4c0c992ae0f99c9f191c197d0d420915de2 at14:50:52.968614UTC; build/startup14:51:47→14:51:59UTC (0.200min). Native393/393geometry,336declaration,96Grid controls pass; actual-browser150 zero-loss comparison is pending.
+- Ops identified a separate single-trial DOMException allocation diagnostic cost in173 (~2.3x construction/~2.2x clone versus168, absolute construction increment~2.8microseconds), with identical46,536 correctness checks. It is not the final benchmark; QA investigates a bounded safe optimization separately.
+- Whole-goal score19/100; goal98/100. Agents: engine_lead, conformance_review, operations, root. At2026-10-29T14:54:09.860676+00:00, total wall time from13:39:40UTC is74.498min.
+
+### Session 5 candidate 175 focused acceptance and fresh matrix caveat
+
+Candidate 175 preserves the accepted 173 assertions on the identical 150-variant browser cohort: 305 exact PASS gains, zero lost/missing/added assertions, all 150 harnesses OK, and all three actual browser exits zero. The fixed 125-variant flex/CSSOM/cascade subset improves from 70 fully passing / 929 PASS assertions on 173 to 76 fully passing / 1,134 PASS on 175. The 392-coordinate browser holdout and 46 graph-identity controls pass. Native focused controls pass 393 flex geometry assertions, 336 declaration/cascade checks, and 96 Grid coordinates. The precise negative-overflow last-baseline regression is repaired; five apparent gains present only in rejected candidate 174 are deliberately relinquished because full baseline-sharing groups remain incomplete.
+
+Source commit f07fb4c0c992ae0f99c9f191c197d0d420915de2 and immutable binary SHA256 52ed7b9d7bbdfb8a1e3e44d66fefdf1722adc0c82a197bbd52c26cc0b7e1ff48 are linked by candidate175-git-map.json; all 24 session source inputs match committed bytes. Focused acceptance is not broad release acceptance.
+
+The fresh 954-variant matrix candidate leg drained at 15:01:54 UTC. Its initial exact comparison is 350→353 fully passing variants and 68 surviving-identity PASS gains, but /html/cross-origin-embedder-policy/none-sw-from-none.https.html changed harness OK→ERROR and omitted 13 assertions, including 10 prior PASS assertions. This is a material unresolved acceptance blocker, not a clean zero-regression result. QA retains original outputs and is reproducing the exact case/history. All 16 candidate child lifecycles closed (15 exit zero, one IndexedDB deadline termination). Whole-goal score remains 19/100.
+
+A separate bounded candidate 176 performance experiment is approved for review/build/control testing; it cannot conceal or waive the COEP blocker.
+
+Recorded 2026-10-29T15:04:47.783985+00:00; total session wall time 85.130 minutes. Coding/review overlaps remain separately labeled, not inferred from build duration.
+
+### Session 5 candidate 176 bounded DOMException allocation experiment
+
+The reviewed change defers private stack label definitions until formatting and constructs page clones directly with their already-associated stack, avoiding a discarded private snapshot. Native host transport tags, native Error identity, private DOMException state, and no-author-hook checks remain unchanged. The three baseline and three result source hashes matched the independently reviewed staged patch. Source and the eight page/worker holdout controls are preserved in commit b4d8147c7b7945f5eddc11cfc444a80dd5a9ff13.
+
+Build/startup ran 2026-10-29T15:07:14Z to 2026-10-29T15:07:35Z (0.350 minutes), exited zero, and source manifest a777e6f708be6e983762b9f371dc3eafea82e4e580bafd4f75d753d7ca353964 remained unchanged. Immutable binary SHA256 648145f52b7c11b0a95c2c4aa99f0527879a757969998fade4de15773ce70f01. All 25 current session inputs match both committed bytes and the build manifest. This build interval is not the full overlapping coding/review duration. Exact process-tree CPU/RSS was sampled every second, PSS every five seconds, in build176/resources.csv. Browser correctness and matched timing gates remain pending; this is not release acceptance and cannot waive the original COEP954 missing-assertion failure.
+
+Recorded 2026-10-29T15:08:22.327991+00:00; total session wall time 88.705 minutes; whole-goal score 19/100. Agents: conformance_review (draft/controls), engine_lead (review/integration/build), operations (diagnostics), root (evaluation).
+
+Candidate176 focused browser qualification preserves all2,615 common assertions on151 variants, with zero losses/missing/added/status changes; all151 harnesses OK and allthree actualbrowser exits zero. The eight new page/worker stack controls also pass on immutable175. Three balanced timing trials each on175/176/Chromium pass all46,536 checks pertrial;175→176 medianconstruction53.315→41.232ms (22.7% lower),medianclone55.253→48.423ms (12.4% lower). Observedthree-trial ranges do not overlap. This is a bounded allocation diagnostic, not a comprehensive browserperformance claim. Artifacts: conformance/focused176-151 and operations/domexception-diagnostic175-176.
+
+Four isolated/immediate-predecessor COEP probes reproduce the same13 assertions(10PASS/3FAIL)on168 and175; they do not erase the original missing-harness failure. Exact56-page lifetime pair began15:11:54UTC. The original failure-window telemetry shows some shared quota throttling, but aggregatecorrelation cannot establish cause or justify changing the measured protocol. Native140 and coreASan/UBSan are held while these paired diagnostics run.
+
+Recorded 2026-10-29T15:12:43.806833+00:00; total sessionwalltime 93.063minutes; whole-goalscore remains19/100.
+
+### Final candidate 176 native and core sanitizer qualification
+
+The exact 56-page history pair reproduced the COEP missing-harness failure on both original 168 and candidate 175, at 5,120 ms and 5,114 ms respectively. Each completed 56 rows (44 harness OK, six ERROR, six TIMEOUT), with its single actual browser exiting zero and immutable hashes unchanged. The immediately preceding pages completed normal harness assertions. This demonstrates a pre-existing history-dependent stability limitation; it does not repair or discard the original failure. The retained public server warning log lacks per-request timestamps, so the precise bootstrap/network cause remains undetermined. No deadlines, recycling rules, policy checks, expectations, or result filters were relaxed.
+
+Final source 176 passed all 140 native tests after excluding the three dedicated URL tests as requested. CTest executed for 40.10 seconds; the monitored interval was 2026-10-29T15:18:51.275712Z to 15:19:32.345084Z. The existing sanitizer build was reconfigured without changing its AddressSanitizer/UndefinedBehaviorSanitizer flags, then only the three changed core targets were rebuilt. All three tests passed: 336 flex declaration checks, 393 alignment checks, and 96 Grid checks. Actual stderr contains no sanitizer diagnostics; the tested binaries contain static ASan and UBSan runtime symbols. Leak detection remains at the default and no suppressions or sanitizer overrides were added. This core-only gate does not establish that the previously problematic full-browser sanitizer shutdown is clean.
+
+All jobs and their owned monitors drained before the next public WPT cohort. Source176 remains b4d8147c7b7945f5eddc11cfc444a80dd5a9ff13; the final comparison uses this exact immutable binary and separately retains the prior175 result. Evidence: native140-176; sanitize-configure176; sanitize-build176; sanitize-core176 (including instrumentation.json and ctest-detail.log).
+
+Recorded 2026-10-29T15:21:33.416272+00:00; total session wall time 101.89 minutes; whole-goal score remains 19/100. Final segmented WPT/Chromium comparison is pending.
