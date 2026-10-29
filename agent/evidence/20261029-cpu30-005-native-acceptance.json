@@ -1,0 +1,2998 @@
+{
+  "iteration": "20261029-cpu30-005",
+  "accepted": true,
+  "started_utc": "2026-10-29T05:17:11+00:00",
+  "finished_utc": "2026-10-29T06:04:22.598879+00:00",
+  "started_Asia_Shanghai": "2026-10-29T13:17:11+08:00",
+  "finished_Asia_Shanghai": "2026-10-29T14:04:22.598879+08:00",
+  "elapsed_seconds": 2831.599,
+  "total_session_seconds": 13537.599,
+  "score": 55,
+  "scoreIsWptPercentage": false,
+  "fullOfficialWptPassPercent": null,
+  "status": "Important-bug extension: detached document streams accepted; eager initial network DSD remains deferred. Apple execution and full frozen coverage remain incomplete.",
+  "extensionBudgetBoundaryUTC": "2026-10-29T05:18:45Z",
+  "extensionHardDeadlineUTC": "2026-10-29T06:18:45Z",
+  "artifact": {
+    "sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+    "path": "out/lume-20261029-cpu30/native-dsd-2/lumen-c259da2597a6e064",
+    "sourceCommit": "15ab329736c26a3bbb907b718af376206c115436",
+    "buildSourceBaseCommit": "186666fe7ad94ef08d6cc80486e8cc808b99144e",
+    "sourceManifestPath": "agent/evidence/20261029-cpu30-005/compiled-source-sha256.json",
+    "sourceManifestSHA256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+    "compiledInputsVerified": 142
+  },
+  "broadWpt": {
+    "schema": 1,
+    "updatedUTC": "2026-10-29T05:57:49.450891+00:00",
+    "binarySHA256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+    "cohortSHA256": "a9952946f7f2e7c865712f567e6b3e7c86aa4fdcadee383cc95fa2e469f521e9",
+    "scope": "Native-only frozen priority cohort; never full WPT or Chrome parity",
+    "scheduled": 1515,
+    "run": 279,
+    "fullyPassing": 246,
+    "unrun": 1236,
+    "passingPercentOfRun": 88.172,
+    "verifiedPassingCoveragePercent": 16.238,
+    "harnessStatuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "assertions": {
+      "PASS": 38728,
+      "FAIL": 33
+    },
+    "categories": {
+      "dom": {
+        "scheduled": 14,
+        "run": 14,
+        "fullyPassing": 14,
+        "unrun": 0,
+        "passingPercentOfRun": 100.0
+      },
+      "events": {
+        "scheduled": 16,
+        "run": 16,
+        "fullyPassing": 16,
+        "unrun": 0,
+        "passingPercentOfRun": 100.0
+      },
+      "url": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 76,
+        "unrun": 0,
+        "passingPercentOfRun": 98.701
+      },
+      "encoding": {
+        "scheduled": 1339,
+        "run": 103,
+        "fullyPassing": 101,
+        "unrun": 1236,
+        "passingPercentOfRun": 98.058
+      },
+      "headers": {
+        "scheduled": 52,
+        "run": 52,
+        "fullyPassing": 26,
+        "unrun": 0,
+        "passingPercentOfRun": 50.0
+      },
+      "microtasks": {
+        "scheduled": 10,
+        "run": 10,
+        "fullyPassing": 6,
+        "unrun": 0,
+        "passingPercentOfRun": 60.0
+      },
+      "storage": {
+        "scheduled": 7,
+        "run": 7,
+        "fullyPassing": 7,
+        "unrun": 0,
+        "passingPercentOfRun": 100.0
+      }
+    },
+    "groups": {
+      "encoding-streams": {
+        "scheduled": 26,
+        "run": 26,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "dom": {
+        "scheduled": 14,
+        "run": 14,
+        "fullyPassing": 14,
+        "unrun": 0
+      },
+      "events": {
+        "scheduled": 16,
+        "run": 16,
+        "fullyPassing": 16,
+        "unrun": 0
+      },
+      "url": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 76,
+        "unrun": 0
+      },
+      "storage": {
+        "scheduled": 7,
+        "run": 7,
+        "fullyPassing": 7,
+        "unrun": 0
+      },
+      "microtasks": {
+        "scheduled": 10,
+        "run": 10,
+        "fullyPassing": 6,
+        "unrun": 0
+      },
+      "headers": {
+        "scheduled": 52,
+        "run": 52,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "encoding-core": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 75,
+        "unrun": 0
+      },
+      "encoding-rest": {
+        "scheduled": 1236,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 1236
+      }
+    },
+    "failures": [
+      {
+        "test": "/url/IdnaTestV2.any.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "ToASCII(\"\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u10be\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\ucbd95\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac.\u0729.\ucbd95\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          }
+        ]
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "csiso2022kr - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "hz-gb-2312 - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-kr - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "replacement - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "replacement - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          }
+        ]
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "UTF-7 should not be supported",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-7 should not be supported",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32 with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32 with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32 with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32 with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32LE with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32LE with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32le with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32le with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32be with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32be with BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32be with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32be with BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          }
+        ]
+      }
+    ],
+    "invocationWallSeconds": 400.317
+  },
+  "fixedEncodingWpt": {
+    "scheduled": 1515,
+    "run": 103,
+    "fullyPassing": 101,
+    "unrun": 1412,
+    "passingPercentOfRun": 98.058,
+    "assertions": {
+      "PASS": 23632,
+      "FAIL": 26
+    },
+    "harnessStatuses": {
+      "OK": 103
+    },
+    "groups": {
+      "encoding-streams": {
+        "scheduled": 26,
+        "run": 26,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "dom": {
+        "scheduled": 14,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 14
+      },
+      "events": {
+        "scheduled": 16,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 16
+      },
+      "url": {
+        "scheduled": 77,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 77
+      },
+      "storage": {
+        "scheduled": 7,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 7
+      },
+      "microtasks": {
+        "scheduled": 10,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 10
+      },
+      "headers": {
+        "scheduled": 52,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 52
+      },
+      "encoding-core": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 75,
+        "unrun": 0
+      },
+      "encoding-rest": {
+        "scheduled": 1236,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 1236
+      }
+    }
+  },
+  "originalSubset": {
+    "task": "20261029-cpu30",
+    "startedUTC": "2026-10-29T05:50:37.783708+00:00",
+    "binarySHA256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+    "command": [
+      "/opt/homebrew/opt/python@3.15/bin/python3.15",
+      "tools/apple-session-gpt6as/probe_native_wpt.py",
+      "--binary",
+      "build/lumen-task20261029-cpu30-compat-dsd-2-c259da2597a6e064",
+      "--expected-sha256",
+      "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "--output",
+      "output/native-wpt-task20261029-cpu30-compat-dsd-2-c259da2597a6e064",
+      "--seconds-per-test",
+      "25"
+    ],
+    "scope": "Unmodified original six-file upstream gate,1850 assertions; distinct from frozen1515-variant priority cohort.",
+    "passed": true,
+    "exitCode": 0,
+    "report": "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task20261029-cpu30-compat-dsd-2-c259da2597a6e064/wpt-report.json",
+    "reportSHA256": "891e2c11861ddc64fa49949bb116d1f4013e582abaa55420b962fad571bb0b89",
+    "files": 6,
+    "fullyPassing": 6,
+    "assertions": {
+      "PASS": 1850
+    },
+    "finishedUTC": "2026-10-29T05:50:47.033450+00:00",
+    "durationSeconds": 9.25,
+    "binarySHA256After": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849"
+  },
+  "cohortPlanEvidence": "agent/evidence/20261029-cpu30-005/frozen-cohort-plan.json",
+  "nativeResources": {
+    "startedUTC": "2026-10-29T05:58:36.353347+00:00",
+    "artifact": {
+      "path": "out/lume-20261029-cpu30/native-dsd-2/lumen-c259da2597a6e064",
+      "sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "bytes": 14057768
+    },
+    "buildSummary": "out/lume-20261029-cpu30/native-dsd-2/summary.json",
+    "buildSummarySHA256": "e473bfd188f7174e9ad9e41d8042e6ec2d3b4b0e65cf886d3164f3ba975c966d",
+    "runnerSHA256": "b957f810f6f49a9133b57165af9e369e12b7514da4fab3c8d8d921bb01f08f1a",
+    "userScrollCPUCeilingPercent": 30,
+    "cpuDefinition": "One-second cumulative process-tree CPU time deltas; 100% is one logical core. RSS sums resident process sets and can double-count shared pages.",
+    "scope": "Visible native Mac browser with synthetic SDL wheel events and actual page navigations; isolated profile. This does not claim OS-input, iPad, or IPA validation.",
+    "scenarios": [
+      {
+        "name": "scroll",
+        "startedUTC": "2026-10-29T05:58:36.353904+00:00",
+        "output": "out/lume-20261029-cpu30/native-resources-dsd-2/scroll",
+        "runnerPID": 15557,
+        "exitCode": 0,
+        "captureExitCode": 0,
+        "finishedUTC": "2026-10-29T06:00:32.572477+00:00",
+        "durationSeconds": 116.088,
+        "accepted": true,
+        "receipt": "out/lume-20261029-cpu30/native-resources-dsd-2/scroll/receipt.json",
+        "receiptSHA256": "49ddab3d30c2f780f124382b93884ead9e6db484f5b15aa733539ce0d62ddaec",
+        "issues": [],
+        "phaseMetrics": {
+          "startup": {
+            "samples": 16,
+            "observed_samples": 16,
+            "duration_seconds": 15.0,
+            "cpu_mean_percent": 2.264,
+            "cpu_median_percent": 1.0,
+            "cpu_p95_percent": 16.978,
+            "cpu_peak_percent": 16.978,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 19.031,
+            "rss_end_mib": 159.484,
+            "rss_peak_mib": 159.531,
+            "rss_change_mib": 140.453,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 1
+          },
+          "scrolling": {
+            "samples": 35,
+            "observed_samples": 35,
+            "duration_seconds": 33.992,
+            "cpu_mean_percent": 10.118,
+            "cpu_median_percent": 11.003,
+            "cpu_p95_percent": 12.997,
+            "cpu_peak_percent": 13.051,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 162.984,
+            "rss_end_mib": 154.0,
+            "rss_peak_mib": 164.547,
+            "rss_change_mib": -8.984,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          },
+          "settle:after": {
+            "samples": 15,
+            "observed_samples": 15,
+            "duration_seconds": 14.0,
+            "cpu_mean_percent": 0.072,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 1.002,
+            "cpu_peak_percent": 1.002,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 154.0,
+            "rss_end_mib": 153.219,
+            "rss_peak_mib": 154.0,
+            "rss_change_mib": -0.781,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          },
+          "idle:after": {
+            "samples": 50,
+            "observed_samples": 50,
+            "duration_seconds": 48.998,
+            "cpu_mean_percent": 0.061,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 2.002,
+            "samples_above_threshold": 0,
+            "cpu_threshold_percent": 3,
+            "cpu_status": "within_threshold",
+            "rss_start_mib": 153.219,
+            "rss_end_mib": 153.219,
+            "rss_peak_mib": 153.219,
+            "rss_change_mib": 0.0,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          }
+        },
+        "settledRSSComparison": null,
+        "nativeCounterComparison": null,
+        "visibleWindow": {
+          "captured": true,
+          "screenshot": "out/lume-20261029-cpu30/native-resources-dsd-2/scroll/native-window/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png",
+          "screenshotSHA256": "5245b668fdf081c1d237bc1b55735d49c786bc50c86ce643b1ff7688072061ee",
+          "width": 1000,
+          "height": 700,
+          "issue": null
+        },
+        "gpuErrors": []
+      },
+      {
+        "name": "navigation",
+        "startedUTC": "2026-10-29T06:00:32.573235+00:00",
+        "output": "out/lume-20261029-cpu30/native-resources-dsd-2/navigation",
+        "runnerPID": 17833,
+        "exitCode": 0,
+        "finishedUTC": "2026-10-29T06:03:18.773047+00:00",
+        "durationSeconds": 166.095,
+        "accepted": true,
+        "receipt": "out/lume-20261029-cpu30/native-resources-dsd-2/navigation/receipt.json",
+        "receiptSHA256": "772b873bdb26668f5b18954f56c8a3911da4c73e53c9ae7e4da41c0b67e6ef0b",
+        "issues": [],
+        "phaseMetrics": {
+          "startup": {
+            "samples": 16,
+            "observed_samples": 16,
+            "duration_seconds": 15.002,
+            "cpu_mean_percent": 1.069,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 15.028,
+            "cpu_peak_percent": 15.028,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 19.031,
+            "rss_end_mib": 157.078,
+            "rss_peak_mib": 157.172,
+            "rss_change_mib": 138.047,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 1
+          },
+          "idle:before": {
+            "samples": 15,
+            "observed_samples": 15,
+            "duration_seconds": 14.002,
+            "cpu_mean_percent": 0.071,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 1.0,
+            "cpu_peak_percent": 1.0,
+            "samples_above_threshold": 0,
+            "cpu_threshold_percent": 3,
+            "cpu_status": "within_threshold",
+            "rss_start_mib": 157.078,
+            "rss_end_mib": 157.078,
+            "rss_peak_mib": 157.078,
+            "rss_change_mib": 0.0,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          },
+          "navigation": {
+            "samples": 58,
+            "observed_samples": 58,
+            "duration_seconds": 56.991,
+            "cpu_mean_percent": 1.879,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 7.058,
+            "cpu_peak_percent": 8.002,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 157.953,
+            "rss_end_mib": 158.516,
+            "rss_peak_mib": 158.797,
+            "rss_change_mib": 0.562,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          },
+          "settle:after": {
+            "samples": 15,
+            "observed_samples": 15,
+            "duration_seconds": 14.0,
+            "cpu_mean_percent": 0.0,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 158.484,
+            "rss_end_mib": 158.453,
+            "rss_peak_mib": 158.484,
+            "rss_change_mib": -0.031,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          },
+          "idle:after": {
+            "samples": 62,
+            "observed_samples": 62,
+            "duration_seconds": 60.991,
+            "cpu_mean_percent": 0.049,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 1.01,
+            "samples_above_threshold": 0,
+            "cpu_threshold_percent": 3,
+            "cpu_status": "within_threshold",
+            "rss_start_mib": 158.453,
+            "rss_end_mib": 146.406,
+            "rss_peak_mib": 158.453,
+            "rss_change_mib": -12.047,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          }
+        },
+        "settledRSSComparison": {
+          "initial_median_mib": 157.078125,
+          "final_median_mib": 146.40625,
+          "growth_mib": -10.671875,
+          "growth_fraction": -0.06793991843230876
+        },
+        "nativeCounterComparison": {
+          "initial": {
+            "malloc_in_use": 0.6,
+            "nodes": 1218.0,
+            "styles": 11.0,
+            "css_parsed": 0.0,
+            "workers": 0.0,
+            "heap": 0.0,
+            "ext": 0.0
+          },
+          "final": {
+            "malloc_in_use": 0.6,
+            "nodes": 1218.0,
+            "styles": 11.0,
+            "css_parsed": 0.1,
+            "workers": 0.0,
+            "heap": 0.0,
+            "ext": 0.0
+          }
+        },
+        "gpuErrors": []
+      }
+    ],
+    "accepted": true,
+    "finishedUTC": "2026-10-29T06:03:18.773654+00:00",
+    "durationSeconds": 282.419
+  },
+  "chromeComparison": {
+    "taskId": "20261029-cpu30",
+    "createdUTC": "2026-10-29T05:58:32.816615+00:00",
+    "nativeBinarySHA256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+    "chromeBinarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+    "scope": "Same frozen279 variants. QualifiedChrome103+176 are explicitly disjoint executions on one artifact/protocol. Native missing/failed contexts remain in the denominator; no overall engine ranking.",
+    "groups": {
+      "encoding-core": {
+        "variants": 77,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 23107,
+          "native_PASS__chrome_FAIL": 167,
+          "native_FAIL__chrome_PASS": 26
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 64,
+          "native_PASS__chrome_not_PASS": 11,
+          "native_not_PASS__chrome_PASS": 2
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 77
+        },
+        "nativeRawSHA256": "dc749a7de4a40cbbb8ecaeb00a1bf9241e68f4619b26673e9b895fe918f0135a",
+        "chromeRawSHA256": "4bbf1535b81a001f9b171206e3c8ae12628a1e09256180bc23be54c7350869ff",
+        "scheduleSHA256": "6ec47e6f74edcd585cad897c02a3b97079c264b65f6af4d8527fa8ef9cae9ba9"
+      },
+      "encoding-streams": {
+        "variants": 26,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 344,
+          "native_PASS__chrome_FAIL": 14
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 23,
+          "native_PASS__chrome_not_PASS": 3
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 26
+        },
+        "nativeRawSHA256": "ca647ff3bfd267e65a49a6ca71a743959711ce79b16ec8468998dc2dead5c29b",
+        "chromeRawSHA256": "a2563dd5a73401fc47325ee7efca0257a25adc75e933b8c3a7425cc64a1c1de3",
+        "scheduleSHA256": "86c9bb4c01e0394b7052abab611088e7c68c7674cb083dd84ceefa6b063d594d"
+      },
+      "dom": {
+        "variants": 14,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 984,
+          "native_PASS__chrome_FAIL": 12
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 13,
+          "native_PASS__chrome_not_PASS": 1
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 14
+        },
+        "nativeRawSHA256": "48053ada73780edf1eed3f185ab33a2c7bc530fee83b9c2d55ea19e8c2ac460b",
+        "chromeRawSHA256": "0be317cac7683c41fab09a2f0e5f944093c800a236aa0f50320ba206233efa0d",
+        "scheduleSHA256": "6fe614abb37dc1d11f2ac087984cb5ac9bcc8f40d68ab70f596516ba80a80689"
+      },
+      "events": {
+        "variants": 16,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 78
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 16
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 16
+        },
+        "nativeRawSHA256": "a1a84900c32453bd1621a3bc774019659ec30d5f89016476d67526b201bb8117",
+        "chromeRawSHA256": "2e11537a5b0d890f52ad15440084fb8db7c45bad89c5c7f39f32181621dd85a8",
+        "scheduleSHA256": "86ab13dadb55d19bf875ca972fca9beb7c1560e717bfa1a5f2d36564f189f93e"
+      },
+      "url": {
+        "variants": 77,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 11621,
+          "native_PASS__chrome_FAIL": 695,
+          "native_FAIL__chrome_FAIL": 7
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 47,
+          "native_not_PASS__chrome_not_PASS": 1,
+          "native_PASS__chrome_not_PASS": 29
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 77
+        },
+        "nativeRawSHA256": "1205e15ff5d83af86e1a302552715cc77e860e8f9c8a81ee3190b1811cb60d00",
+        "chromeRawSHA256": "00a93f64b3c9eb3351689f001332e41446c2c7c8485b34d1bfda65329029b82d",
+        "scheduleSHA256": "b180a83552f49f36cf046e251ffa92dbfcc36467af2dc3a441fa7bc80dc6bb50"
+      },
+      "storage": {
+        "variants": 7,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 1152
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 7
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 7
+        },
+        "nativeRawSHA256": "beb4400e1fba18adbfae6a72acea7897b274680ba63346b6a1e3f140bf921100",
+        "chromeRawSHA256": "7e171c24462c5ca1894a9bd0ce1c4c31a5cd776132f705d9b934149aaddf3857",
+        "scheduleSHA256": "37ea6de0542117f1ac0600e5f87ac3b2bb95c7b04eb3c0cecf0147f127015e43"
+      },
+      "microtasks": {
+        "variants": 10,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 15,
+          "native_MISSING__chrome_PASS": 12
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 6,
+          "native_not_PASS__chrome_PASS": 4
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 6,
+          "native_TIMEOUT__chrome_OK": 2,
+          "native_ERROR__chrome_OK": 2
+        },
+        "nativeRawSHA256": "9d9200d811fa254f4d7eeef56d59b2c88222a52401fab42521484ff8ff2a6cc6",
+        "chromeRawSHA256": "19eed770e9dd4bf63d865feca95aab329444006ae972034480cb78854f54f24a",
+        "scheduleSHA256": "782b903f614382083dd961c9834743171bda5e757c3b7c2a8c73f4f32f42a0ba"
+      },
+      "headers": {
+        "variants": 52,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 539,
+          "native_MISSING__chrome_PASS": 504
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 26,
+          "native_not_PASS__chrome_PASS": 26
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 26,
+          "native_TIMEOUT__chrome_OK": 13,
+          "native_ERROR__chrome_OK": 13
+        },
+        "nativeRawSHA256": "996d068d69bb6ea862d23dd8cd9c2eb20e65d840b7b520db0f44e8cdc476466e",
+        "chromeRawSHA256": "6f12f38b4f77f0290812dc50f7af26c0f5c168a82981aaad560f4571bb0bf7ee",
+        "scheduleSHA256": "f12a0f08d535d46a342b6d448eae918bbc834efd2daf7f5971977daec5f8bece"
+      }
+    },
+    "frozenVariants": 1515,
+    "recorded": 279,
+    "unrun": 1236,
+    "assertionClasses": {
+      "native_PASS__chrome_PASS": 37840,
+      "native_PASS__chrome_FAIL": 888,
+      "native_FAIL__chrome_PASS": 26,
+      "native_FAIL__chrome_FAIL": 7,
+      "native_MISSING__chrome_PASS": 516
+    },
+    "variantClasses": {
+      "native_PASS__chrome_PASS": 202,
+      "native_PASS__chrome_not_PASS": 44,
+      "native_not_PASS__chrome_PASS": 32,
+      "native_not_PASS__chrome_not_PASS": 1
+    },
+    "harnessClasses": {
+      "native_OK__chrome_OK": 249,
+      "native_TIMEOUT__chrome_OK": 15,
+      "native_ERROR__chrome_OK": 15
+    },
+    "missingNativeAssertions": [
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 1,
+        "chromeAssertions": 1
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 1,
+        "chromeAssertions": 1
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 5,
+        "chromeAssertions": 5
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 5,
+        "chromeAssertions": 5
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 24,
+        "chromeAssertions": 24
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 24,
+        "chromeAssertions": 24
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 1,
+        "chromeAssertions": 1
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 1,
+        "chromeAssertions": 1
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 31,
+        "chromeAssertions": 31
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 31,
+        "chromeAssertions": 31
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 4,
+        "chromeAssertions": 4
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 4,
+        "chromeAssertions": 4
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 23,
+        "chromeAssertions": 23
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 23,
+        "chromeAssertions": 23
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 4,
+        "chromeAssertions": 4
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 4,
+        "chromeAssertions": 4
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 6,
+        "chromeAssertions": 6
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 6,
+        "chromeAssertions": 6
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 18,
+        "chromeAssertions": 18
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 18,
+        "chromeAssertions": 18
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 90,
+        "chromeAssertions": 90
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 90,
+        "chromeAssertions": 90
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 27,
+        "chromeAssertions": 27
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 27,
+        "chromeAssertions": 27
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 3,
+        "chromeAssertions": 3
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 3,
+        "chromeAssertions": 3
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 13,
+        "chromeAssertions": 13
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 13,
+        "chromeAssertions": 13
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 8,
+        "chromeAssertions": 8
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 8,
+        "chromeAssertions": 8
+      }
+    ],
+    "nativeFailedAssertionsOnChromePass": [
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "csiso2022kr - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "replacement - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-kr - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "hz-gb-2312 - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "replacement - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32 with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32be with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32be with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32 with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32LE with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32be with BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-7 should not be supported",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32LE with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32le with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32be with BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32le with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-7 should not be supported",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32 with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32 with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      }
+    ],
+    "chromePassingAssertions": 38382,
+    "nativePassesAmongChromePassingAssertions": 37840,
+    "chromePassingVariants": 234,
+    "nativeFullyPassesAmongChromePassingVariants": 202,
+    "complete": true
+  },
+  "chromeComparison103": {
+    "taskId": "20261029-cpu30",
+    "createdUTC": "2026-10-29T05:53:54.355614+00:00",
+    "nativeBinarySHA256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+    "chromeBinarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+    "scope": "Named-assertion comparison of the same103 pinned upstream variants. Qualified Chrome has real failures, retained separately. This is not full WPT or an overall engine ranking.",
+    "groups": {
+      "encoding-core": {
+        "variants": 77,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 23107,
+          "native_PASS__chrome_FAIL": 167,
+          "native_FAIL__chrome_PASS": 26
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 64,
+          "native_PASS__chrome_not_PASS": 11,
+          "native_not_PASS__chrome_PASS": 2
+        },
+        "nativeRawSHA256": "dc749a7de4a40cbbb8ecaeb00a1bf9241e68f4619b26673e9b895fe918f0135a",
+        "chromeRawSHA256": "4bbf1535b81a001f9b171206e3c8ae12628a1e09256180bc23be54c7350869ff",
+        "scheduleSHA256": "6ec47e6f74edcd585cad897c02a3b97079c264b65f6af4d8527fa8ef9cae9ba9"
+      },
+      "encoding-streams": {
+        "variants": 26,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 344,
+          "native_PASS__chrome_FAIL": 14
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 23,
+          "native_PASS__chrome_not_PASS": 3
+        },
+        "nativeRawSHA256": "ca647ff3bfd267e65a49a6ca71a743959711ce79b16ec8468998dc2dead5c29b",
+        "chromeRawSHA256": "a2563dd5a73401fc47325ee7efca0257a25adc75e933b8c3a7425cc64a1c1de3",
+        "scheduleSHA256": "86c9bb4c01e0394b7052abab611088e7c68c7674cb083dd84ceefa6b063d594d"
+      }
+    },
+    "fullFrozenVariants": 1515,
+    "unrun": 1412,
+    "harnessStatuses": {
+      "both_OK": 103
+    },
+    "assertionClasses": {
+      "native_PASS__chrome_PASS": 23451,
+      "native_PASS__chrome_FAIL": 181,
+      "native_FAIL__chrome_PASS": 26
+    },
+    "variantClasses": {
+      "native_PASS__chrome_PASS": 87,
+      "native_PASS__chrome_not_PASS": 14,
+      "native_not_PASS__chrome_PASS": 2
+    },
+    "nativeFailuresOnChromePassingAssertions": [
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "csiso2022kr - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "hz-gb-2312 - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-kr - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "replacement - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "replacement - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-7 should not be supported",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-7 should not be supported",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32 with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32 with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32 with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32 with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32LE with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32LE with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32le with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32le with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32be with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32be with BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32be with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32be with BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      }
+    ],
+    "chromePassingAssertions": 23477,
+    "nativePassesAmongChromePassingAssertions": 23451,
+    "chromePassingVariants": 89,
+    "nativeFullyPassesAmongChromePassingVariants": 87,
+    "complete": true
+  },
+  "customChecks": {
+    "prior718Passed": true,
+    "allOriginalEightControlsPass": true,
+    "supportedTargetsPass": true,
+    "fixtureAssertionsUnchanged": true,
+    "full37": {
+      "total": 37,
+      "passed": 26,
+      "failed": 11,
+      "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+      "allPassed": false,
+      "checks": [
+        {
+          "i": 0,
+          "name": "network open root content and native ShadowRoot brand",
+          "ok": false,
+          "error": "Error: expected truthy value"
+        },
+        {
+          "i": 1,
+          "name": "declarative template is absent from light DOM",
+          "ok": false,
+          "error": "Error: expected null, got {}"
+        },
+        {
+          "i": 2,
+          "name": "shadow descendants retain owner document and connectivity",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+        },
+        {
+          "i": 3,
+          "name": "closed root rejects a conflicting imperative mode",
+          "ok": false,
+          "error": "Error: expected NotSupportedError"
+        },
+        {
+          "i": 4,
+          "name": "invalid mode remains ordinary inert template",
+          "ok": true
+        },
+        {
+          "i": 5,
+          "name": "invalid host remains ordinary inert template",
+          "ok": true
+        },
+        {
+          "i": 6,
+          "name": "second declarative template remains light template",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+        },
+        {
+          "i": 7,
+          "name": "nested declarative shadow roots use separate hosts",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+        },
+        {
+          "i": 8,
+          "name": "enumerated shadow mode is ASCII case insensitive",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+        },
+        {
+          "i": 9,
+          "name": "shadow mode whitespace is not stripped",
+          "ok": true
+        },
+        {
+          "i": 10,
+          "name": "ordinary template stays inert with a separate owner",
+          "ok": true
+        },
+        {
+          "i": 11,
+          "name": "DOMParser keeps declarative shadow parsing disabled",
+          "ok": true
+        },
+        {
+          "i": 12,
+          "name": "innerHTML keeps declarative shadow parsing disabled",
+          "ok": true
+        },
+        {
+          "i": 13,
+          "name": "fragment parsing does not attach a root to context",
+          "ok": true
+        },
+        {
+          "i": 14,
+          "name": "shallow document clone preserves allow-declarative policy",
+          "ok": true
+        },
+        {
+          "i": 15,
+          "name": "deep document clone preserves allow-declarative policy",
+          "ok": true
+        },
+        {
+          "i": 16,
+          "name": "cloned detached document keeps copied policy again",
+          "ok": true
+        },
+        {
+          "i": 17,
+          "name": "new HTML document write keeps declarative parsing disabled",
+          "ok": true
+        },
+        {
+          "i": 18,
+          "name": "DOMParser document clone preserves disabled policy",
+          "ok": true
+        },
+        {
+          "i": 19,
+          "name": "detached writes do not insert into active document",
+          "ok": true
+        },
+        {
+          "i": 20,
+          "name": "split writes retain tokenizer state across tags",
+          "ok": true
+        },
+        {
+          "i": 21,
+          "name": "two detached parsers can interleave independently",
+          "ok": true
+        },
+        {
+          "i": 22,
+          "name": "open detaches old nodes without invalidating held wrappers",
+          "ok": true
+        },
+        {
+          "i": 23,
+          "name": "open disposes an unfinished parser before replacement",
+          "ok": true
+        },
+        {
+          "i": 24,
+          "name": "intervening DOM removal leaves parser state alive",
+          "ok": true
+        },
+        {
+          "i": 25,
+          "name": "detached Unicode writes preserve leading FEFF",
+          "ok": true
+        },
+        {
+          "i": 26,
+          "name": "detached scripts do not execute in the active realm",
+          "ok": true
+        },
+        {
+          "i": 27,
+          "name": "close handles an unclosed declarative template",
+          "ok": true
+        },
+        {
+          "i": 28,
+          "name": "declarative attachment options are native state",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'delegatesFocus')"
+        },
+        {
+          "i": 29,
+          "name": "clonable root children copy even on shallow host clone",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+        },
+        {
+          "i": 30,
+          "name": "matching imperative mode reuses and clears declarative root",
+          "ok": false,
+          "error": "Error: expected null, got {}"
+        },
+        {
+          "i": 31,
+          "name": "conflicting imperative mode leaves declarative content intact",
+          "ok": false,
+          "error": "Error: expected NotSupportedError"
+        },
+        {
+          "i": 32,
+          "name": "ordinary imperative open and closed roots remain supported",
+          "ok": true
+        },
+        {
+          "i": 33,
+          "name": "imperative attachment rejects missing or invalid mode",
+          "ok": true
+        },
+        {
+          "i": 34,
+          "name": "imperative attachment rejects invalid HTML and foreign hosts",
+          "ok": true
+        },
+        {
+          "i": 35,
+          "name": "unfinished detached parser remains owned until realm teardown",
+          "ok": true
+        },
+        {
+          "i": 36,
+          "name": "held descendant retains detached subtree ancestry after open",
+          "ok": true
+        }
+      ]
+    },
+    "selection": {
+      "originalEightControls": [
+        {
+          "i": 4,
+          "name": "invalid mode remains ordinary inert template"
+        },
+        {
+          "i": 5,
+          "name": "invalid host remains ordinary inert template"
+        },
+        {
+          "i": 9,
+          "name": "shadow mode whitespace is not stripped"
+        },
+        {
+          "i": 10,
+          "name": "ordinary template stays inert with a separate owner"
+        },
+        {
+          "i": 11,
+          "name": "DOMParser keeps declarative shadow parsing disabled"
+        },
+        {
+          "i": 12,
+          "name": "innerHTML keeps declarative shadow parsing disabled"
+        },
+        {
+          "i": 13,
+          "name": "fragment parsing does not attach a root to context"
+        },
+        {
+          "i": 32,
+          "name": "ordinary imperative open and closed roots remain supported"
+        }
+      ],
+      "supportedTargets": [
+        {
+          "i": 14,
+          "name": "shallow document clone preserves allow-declarative policy"
+        },
+        {
+          "i": 15,
+          "name": "deep document clone preserves allow-declarative policy"
+        },
+        {
+          "i": 16,
+          "name": "cloned detached document keeps copied policy again"
+        },
+        {
+          "i": 17,
+          "name": "new HTML document write keeps declarative parsing disabled"
+        },
+        {
+          "i": 18,
+          "name": "DOMParser document clone preserves disabled policy"
+        },
+        {
+          "i": 19,
+          "name": "detached writes do not insert into active document"
+        },
+        {
+          "i": 20,
+          "name": "split writes retain tokenizer state across tags"
+        },
+        {
+          "i": 21,
+          "name": "two detached parsers can interleave independently"
+        },
+        {
+          "i": 22,
+          "name": "open detaches old nodes without invalidating held wrappers"
+        },
+        {
+          "i": 23,
+          "name": "open disposes an unfinished parser before replacement"
+        },
+        {
+          "i": 24,
+          "name": "intervening DOM removal leaves parser state alive"
+        },
+        {
+          "i": 25,
+          "name": "detached Unicode writes preserve leading FEFF"
+        },
+        {
+          "i": 26,
+          "name": "detached scripts do not execute in the active realm"
+        },
+        {
+          "i": 27,
+          "name": "close handles an unclosed declarative template"
+        },
+        {
+          "i": 33,
+          "name": "imperative attachment rejects missing or invalid mode"
+        },
+        {
+          "i": 34,
+          "name": "imperative attachment rejects invalid HTML and foreign hosts"
+        },
+        {
+          "i": 35,
+          "name": "unfinished detached parser remains owned until realm teardown"
+        },
+        {
+          "i": 36,
+          "name": "held descendant retains detached subtree ancestry after open"
+        }
+      ],
+      "deferredInitialNetworkDependentIndices": [
+        0,
+        1,
+        2,
+        3,
+        6,
+        7,
+        8,
+        28,
+        29,
+        30,
+        31
+      ],
+      "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+      "selectionFixedBeforeRun": true
+    },
+    "priorCustomChecks": {
+      "passed": 718,
+      "total": 718
+    },
+    "legacyUnchanged": {
+      "passed": 10,
+      "total": 15,
+      "intentionalDifferences": 5
+    },
+    "passingCustomChecksAcrossPriorAggregateAndWhole37": 744,
+    "scopeNote": "718 previous controls plus26 passing rows in the unchanged37 fixture;11 deferred initial-network rows still FAIL. This is not755/755. Lifetime122v2 and34 are separate disposal controls, not within-live-realm GC proof."
+  },
+  "declarativeShadow": {
+    "scope": "Detached-document streams and cloned document policy. Initial network/frame DSD parsing is explicitly deferred. Full 37 and six whole upstream files retain all unsupported outcomes.",
+    "rejectedEagerCandidateSHA256": "6528f5de82184891a39f024ee5559afbd604c1d0e6eb137f067df3ea4ab621c4",
+    "scopeLedger": {
+      "prior718Passed": true,
+      "allOriginalEightControlsPass": true,
+      "supportedTargetsPass": true,
+      "fixtureAssertionsUnchanged": true,
+      "full37": {
+        "total": 37,
+        "passed": 26,
+        "failed": 11,
+        "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+        "allPassed": false,
+        "checks": [
+          {
+            "i": 0,
+            "name": "network open root content and native ShadowRoot brand",
+            "ok": false,
+            "error": "Error: expected truthy value"
+          },
+          {
+            "i": 1,
+            "name": "declarative template is absent from light DOM",
+            "ok": false,
+            "error": "Error: expected null, got {}"
+          },
+          {
+            "i": 2,
+            "name": "shadow descendants retain owner document and connectivity",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+          },
+          {
+            "i": 3,
+            "name": "closed root rejects a conflicting imperative mode",
+            "ok": false,
+            "error": "Error: expected NotSupportedError"
+          },
+          {
+            "i": 4,
+            "name": "invalid mode remains ordinary inert template",
+            "ok": true
+          },
+          {
+            "i": 5,
+            "name": "invalid host remains ordinary inert template",
+            "ok": true
+          },
+          {
+            "i": 6,
+            "name": "second declarative template remains light template",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+          },
+          {
+            "i": 7,
+            "name": "nested declarative shadow roots use separate hosts",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+          },
+          {
+            "i": 8,
+            "name": "enumerated shadow mode is ASCII case insensitive",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+          },
+          {
+            "i": 9,
+            "name": "shadow mode whitespace is not stripped",
+            "ok": true
+          },
+          {
+            "i": 10,
+            "name": "ordinary template stays inert with a separate owner",
+            "ok": true
+          },
+          {
+            "i": 11,
+            "name": "DOMParser keeps declarative shadow parsing disabled",
+            "ok": true
+          },
+          {
+            "i": 12,
+            "name": "innerHTML keeps declarative shadow parsing disabled",
+            "ok": true
+          },
+          {
+            "i": 13,
+            "name": "fragment parsing does not attach a root to context",
+            "ok": true
+          },
+          {
+            "i": 14,
+            "name": "shallow document clone preserves allow-declarative policy",
+            "ok": true
+          },
+          {
+            "i": 15,
+            "name": "deep document clone preserves allow-declarative policy",
+            "ok": true
+          },
+          {
+            "i": 16,
+            "name": "cloned detached document keeps copied policy again",
+            "ok": true
+          },
+          {
+            "i": 17,
+            "name": "new HTML document write keeps declarative parsing disabled",
+            "ok": true
+          },
+          {
+            "i": 18,
+            "name": "DOMParser document clone preserves disabled policy",
+            "ok": true
+          },
+          {
+            "i": 19,
+            "name": "detached writes do not insert into active document",
+            "ok": true
+          },
+          {
+            "i": 20,
+            "name": "split writes retain tokenizer state across tags",
+            "ok": true
+          },
+          {
+            "i": 21,
+            "name": "two detached parsers can interleave independently",
+            "ok": true
+          },
+          {
+            "i": 22,
+            "name": "open detaches old nodes without invalidating held wrappers",
+            "ok": true
+          },
+          {
+            "i": 23,
+            "name": "open disposes an unfinished parser before replacement",
+            "ok": true
+          },
+          {
+            "i": 24,
+            "name": "intervening DOM removal leaves parser state alive",
+            "ok": true
+          },
+          {
+            "i": 25,
+            "name": "detached Unicode writes preserve leading FEFF",
+            "ok": true
+          },
+          {
+            "i": 26,
+            "name": "detached scripts do not execute in the active realm",
+            "ok": true
+          },
+          {
+            "i": 27,
+            "name": "close handles an unclosed declarative template",
+            "ok": true
+          },
+          {
+            "i": 28,
+            "name": "declarative attachment options are native state",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'delegatesFocus')"
+          },
+          {
+            "i": 29,
+            "name": "clonable root children copy even on shallow host clone",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+          },
+          {
+            "i": 30,
+            "name": "matching imperative mode reuses and clears declarative root",
+            "ok": false,
+            "error": "Error: expected null, got {}"
+          },
+          {
+            "i": 31,
+            "name": "conflicting imperative mode leaves declarative content intact",
+            "ok": false,
+            "error": "Error: expected NotSupportedError"
+          },
+          {
+            "i": 32,
+            "name": "ordinary imperative open and closed roots remain supported",
+            "ok": true
+          },
+          {
+            "i": 33,
+            "name": "imperative attachment rejects missing or invalid mode",
+            "ok": true
+          },
+          {
+            "i": 34,
+            "name": "imperative attachment rejects invalid HTML and foreign hosts",
+            "ok": true
+          },
+          {
+            "i": 35,
+            "name": "unfinished detached parser remains owned until realm teardown",
+            "ok": true
+          },
+          {
+            "i": 36,
+            "name": "held descendant retains detached subtree ancestry after open",
+            "ok": true
+          }
+        ]
+      },
+      "selection": {
+        "originalEightControls": [
+          {
+            "i": 4,
+            "name": "invalid mode remains ordinary inert template"
+          },
+          {
+            "i": 5,
+            "name": "invalid host remains ordinary inert template"
+          },
+          {
+            "i": 9,
+            "name": "shadow mode whitespace is not stripped"
+          },
+          {
+            "i": 10,
+            "name": "ordinary template stays inert with a separate owner"
+          },
+          {
+            "i": 11,
+            "name": "DOMParser keeps declarative shadow parsing disabled"
+          },
+          {
+            "i": 12,
+            "name": "innerHTML keeps declarative shadow parsing disabled"
+          },
+          {
+            "i": 13,
+            "name": "fragment parsing does not attach a root to context"
+          },
+          {
+            "i": 32,
+            "name": "ordinary imperative open and closed roots remain supported"
+          }
+        ],
+        "supportedTargets": [
+          {
+            "i": 14,
+            "name": "shallow document clone preserves allow-declarative policy"
+          },
+          {
+            "i": 15,
+            "name": "deep document clone preserves allow-declarative policy"
+          },
+          {
+            "i": 16,
+            "name": "cloned detached document keeps copied policy again"
+          },
+          {
+            "i": 17,
+            "name": "new HTML document write keeps declarative parsing disabled"
+          },
+          {
+            "i": 18,
+            "name": "DOMParser document clone preserves disabled policy"
+          },
+          {
+            "i": 19,
+            "name": "detached writes do not insert into active document"
+          },
+          {
+            "i": 20,
+            "name": "split writes retain tokenizer state across tags"
+          },
+          {
+            "i": 21,
+            "name": "two detached parsers can interleave independently"
+          },
+          {
+            "i": 22,
+            "name": "open detaches old nodes without invalidating held wrappers"
+          },
+          {
+            "i": 23,
+            "name": "open disposes an unfinished parser before replacement"
+          },
+          {
+            "i": 24,
+            "name": "intervening DOM removal leaves parser state alive"
+          },
+          {
+            "i": 25,
+            "name": "detached Unicode writes preserve leading FEFF"
+          },
+          {
+            "i": 26,
+            "name": "detached scripts do not execute in the active realm"
+          },
+          {
+            "i": 27,
+            "name": "close handles an unclosed declarative template"
+          },
+          {
+            "i": 33,
+            "name": "imperative attachment rejects missing or invalid mode"
+          },
+          {
+            "i": 34,
+            "name": "imperative attachment rejects invalid HTML and foreign hosts"
+          },
+          {
+            "i": 35,
+            "name": "unfinished detached parser remains owned until realm teardown"
+          },
+          {
+            "i": 36,
+            "name": "held descendant retains detached subtree ancestry after open"
+          }
+        ],
+        "deferredInitialNetworkDependentIndices": [
+          0,
+          1,
+          2,
+          3,
+          6,
+          7,
+          8,
+          28,
+          29,
+          30,
+          31
+        ],
+        "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+        "selectionFixedBeforeRun": true
+      },
+      "priorCustomChecks": {
+        "passed": 718,
+        "total": 718
+      },
+      "legacyUnchanged": {
+        "passed": 10,
+        "total": 15,
+        "intentionalDifferences": 5
+      },
+      "passingCustomChecksAcrossPriorAggregateAndWhole37": 744,
+      "scopeNote": "718 previous controls plus26 passing rows in the unchanged37 fixture;11 deferred initial-network rows still FAIL. This is not755/755. Lifetime122v2 and34 are separate disposal controls, not within-live-realm GC proof."
+    },
+    "lifetimeChecks": 122,
+    "lifetimeFixtureVersion": 2,
+    "lifetimeFixtureSHA256": "65de63021f681862ae6d2ee1bddcb8729cfeb398b1660a252cb2e3e0f6e00438",
+    "adoptionLifetimeChecks": 34,
+    "upstreamDiagnosticSummary": {
+      "baseline": {
+        "recorded": 6,
+        "scheduled": 6,
+        "fullyPassing": 1,
+        "assertions": {
+          "FAIL": 26,
+          "PASS": 3
+        },
+        "harness": {
+          "OK": 6
+        }
+      },
+      "candidate": {
+        "recorded": 6,
+        "scheduled": 6,
+        "fullyPassing": 1,
+        "assertions": {
+          "FAIL": 26,
+          "PASS": 3
+        },
+        "harness": {
+          "OK": 6
+        }
+      },
+      "chrome": {
+        "recorded": 6,
+        "scheduled": 6,
+        "fullyPassing": 6,
+        "assertions": {
+          "PASS": 29
+        },
+        "harness": {
+          "OK": 6
+        }
+      }
+    },
+    "supplementalCountsSeparateFromFrozen279": true,
+    "borrowedForeignRealmMethods": "Only normal own-realm active document.write behavior is preserved; generic borrowed cross-realm active-method semantics remain outside this fix."
+  },
+  "timingsSeconds": {
+    "buildAndCustomChecks": 22.634,
+    "incrementalBuild": 2.094,
+    "originalAndFixed103": 73.356,
+    "priorityExpansion": 347.626,
+    "guiAndSoak": 282.419,
+    "lifetime": 2.273,
+    "adoptionLifetime": 2.25,
+    "supplementalUpstreamPair": 8.86
+  },
+  "timingMethod": "Wall time from actual timestamps; overlapping agents and tests are not summed. Broader worker-context timeouts are retained, including attempts lasting over five minutes. Subsecond lifetime tests have no complete1Hz CPU interval.",
+  "evidence": {
+    "agent/evidence/20261029-cpu30-005/native-current-scoped-build.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/summary.json",
+      "sha256": "e473bfd188f7174e9ad9e41d8042e6ec2d3b4b0e65cf886d3164f3ba975c966d",
+      "bytes": 65321
+    },
+    "agent/evidence/20261029-cpu30-005/current-independent-source-audit.json": {
+      "source": "out/lume-20261029-cpu30/detached-writer-source-audit.json",
+      "sha256": "237b88291f8aca8010f8d005eb2c3891d25df21afec6eacedeb0c4c61f1271b7",
+      "bytes": 13161
+    },
+    "agent/evidence/20261029-cpu30-005/fixed103-summary.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/summary.json",
+      "sha256": "d3f008a7ba7666937ee48c45f943f720558a090809bf41461a427a16edd319e7",
+      "bytes": 12471
+    },
+    "agent/evidence/20261029-cpu30-005/broad279-summary.json": {
+      "source": "out/lume-20261029-cpu30/priority-expansion-dsd-2/summary.json",
+      "sha256": "177b55540456661a6c9b2ec213dbc244c4602ed7062d7b84f95569a5590fbf25",
+      "bytes": 30807
+    },
+    "agent/evidence/20261029-cpu30-005/lifetime-v2-current-summary.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/summary.json",
+      "sha256": "18978e10f65f25200acc9b25a636cfae49c09f03ea1b2e19d53fe454e62acec0",
+      "bytes": 10362
+    },
+    "agent/evidence/20261029-cpu30-005/adoption-current-summary.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-adoption-2/summary.json",
+      "sha256": "11533d4671d41e1fe0b3897e2b6771f418c74055ea5b96923e7813a79a170a39",
+      "bytes": 4394
+    },
+    "agent/evidence/20261029-cpu30-005/native-resource-summary.json": {
+      "source": "out/lume-20261029-cpu30/native-resources-dsd-2/summary.json",
+      "sha256": "576ab6ca88c1013c09f783c15c2fc04f0b5c59e9b7398a46bae7fbea47a5fdc9",
+      "bytes": 9206
+    },
+    "agent/evidence/20261029-cpu30-005/paired-chrome279.json": {
+      "source": "out/lume-20261029-cpu30/paired-chrome279-detached-audit.json",
+      "sha256": "3a967af72b73962a4ebfbcfa6d77f9ce320844285edde616695b6a82a5430267",
+      "bytes": 16306
+    },
+    "agent/evidence/20261029-cpu30-005/paired-chrome103.json": {
+      "source": "out/lume-20261029-cpu30/paired-chrome103-detached-audit.json",
+      "sha256": "ffabde197d57c59ca362c98d6796231f92842f4c19cd6eaadc1f1b05ac65b12f",
+      "bytes": 10184
+    },
+    "agent/evidence/20261029-cpu30-005/raw279-regression-audit.json": {
+      "source": "out/lume-20261029-cpu30/detached-writer-wpt-regression-audit.json",
+      "sha256": "7faa908ee766eaa816655581cf50a3a3450441e8a0104931cf4b2222d0fc6558",
+      "bytes": 16586
+    },
+    "agent/evidence/20261029-cpu30-005/whole6-current-summary.json": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-2/summary.json",
+      "sha256": "233d701321c15320f28df718c1b4dba4160456e5c6c52573d5116f8c9e54cdba",
+      "bytes": 76817
+    },
+    "agent/evidence/20261029-cpu30-005/rejected-full-network-build.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-1/summary.json",
+      "sha256": "769718c7208b50b0bcd901321810602ea5f5ac9fafd7f5599f39676aaaed35aa",
+      "bytes": 41927
+    },
+    "agent/evidence/20261029-cpu30-005/rejected-full-network-compiled-manifest.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-1/compiled-source-sha256.json",
+      "sha256": "40fca579d5b18047b4911ab6e6f35edd61765137d2df594c9beced14a7882e14",
+      "bytes": 13767
+    },
+    "agent/evidence/20261029-cpu30-005/rejected-full-network-source/src/html/html.c": {
+      "source": "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/preimages/src/html/html.c",
+      "sha256": "4651ead84e6a70bea0c68a5c3bb50e7b5730bab845d7ee07341f2bea02ac9a55",
+      "bytes": 65733
+    },
+    "agent/evidence/20261029-cpu30-005/rejected-full-network-source/src/js/frames.cc": {
+      "source": "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/preimages/src/js/frames.cc",
+      "sha256": "8f0e1818cb770dd66c262e1a1dfabd86663b3b71a59f016aa8f322e58fc37f00",
+      "bytes": 27419
+    },
+    "agent/evidence/20261029-cpu30-005/rejected-full-network-source-audit.json": {
+      "source": "out/lume-20261029-cpu30/declarative-shadow-source-audit.json",
+      "sha256": "ac72b02bd013e63e7934514a0c7ce9efc1bc73b32f232edf4bffebbfa5d4f332",
+      "bytes": 5413
+    },
+    "agent/evidence/20261029-cpu30-005/rejected-full-network-whole6-summary.json": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-1/summary.json",
+      "sha256": "d3d7c6ec72fd48a25f00d71fd55111c015fbee2cd70e8c867de814a8ea47f115",
+      "bytes": 77570
+    },
+    "agent/evidence/20261029-cpu30-005/original36-red-summary.json": {
+      "source": "out/lume-20261029-cpu30/declarative-shadow-red-1/summary.json",
+      "sha256": "b2e35652ca7aed4cb37d4a98e853de851ca799405d1a4d1f54cd1baece6be784",
+      "bytes": 13738
+    },
+    "agent/evidence/20261029-cpu30-005/versioned37-red-summary.json": {
+      "source": "out/lume-20261029-cpu30/declarative-shadow-red-2/summary.json",
+      "sha256": "d88592b7d94e04d4104ea34f9980befdfb1255ef19ff6b36b7f13891a87452bb",
+      "bytes": 14153
+    },
+    "agent/evidence/20261029-cpu30-005/full-network-patch-receipt.json": {
+      "source": "out/lume-20261029-cpu30/declarative-shadow-patch-1/receipt.json",
+      "sha256": "76188039632437bf8b244c10060064b43ea24e100fe4d6174e827f25c48f5e2b",
+      "bytes": 2488
+    },
+    "agent/evidence/20261029-cpu30-005/narrowed-scope-patch-receipt.json": {
+      "source": "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/receipt.json",
+      "sha256": "e380c7bcdf66055b7ded970ff5faec7756d4a30cb41bc96af92be276d76c1ba7",
+      "bytes": 1428
+    },
+    "agent/evidence/20261029-cpu30-005/scope-selection-frozen-before-run.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/scope-selection.json",
+      "sha256": "5ce5898509dc98c9226e9fc5cb5f2a3fb751c6eb4d9220efd5d9289a6ad8d4d9",
+      "bytes": 2822
+    },
+    "agent/evidence/20261029-cpu30-005/lifetime-original122-red.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-lifetime-red-1/summary.json",
+      "sha256": "8b06542c7f8c2df6ac8d1ee1b0900908c5861ad667c7e132eb22cbd8bdaaa580",
+      "bytes": 9711
+    },
+    "agent/evidence/20261029-cpu30-005/lifetime-original122-full-network-green.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-lifetime-green-1/summary.json",
+      "sha256": "4856b8fc7382eb8f35c7b053b30b05e5be67bde76b7e4bf53bf717d76c4300eb",
+      "bytes": 10144
+    },
+    "agent/evidence/20261029-cpu30-005/adoption-full-network-green.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-adoption-1/summary.json",
+      "sha256": "bc2c49f75e0e1eea11837115e78051593788f6ffaf51d641cee41be291514377",
+      "bytes": 4399
+    },
+    "agent/evidence/20261029-cpu30-005/qualified-chrome-original36.json": {
+      "source": "out/lume-20261029-cpu30/dsd-chrome-control-1/summary.json",
+      "sha256": "fd02cb3bed611275e90e4776ff0ce79a74c1a8f3dc9c64dad6142580fb483e20",
+      "bytes": 10902
+    },
+    "agent/evidence/20261029-cpu30-005/qualified-chrome-versioned37.json": {
+      "source": "out/lume-20261029-cpu30/dsd-chrome-control-2/summary.json",
+      "sha256": "2d08df9122a21d9415c819514b4e4b12efbdef20a61c274a10bf71bf656a99d9",
+      "bytes": 12078
+    },
+    "agent/evidence/20261029-cpu30-005/fixed103-before-broad-expansion.json": {
+      "source": "out/lume-20261029-cpu30/priority-expansion-dsd-2/cohort-before.json",
+      "sha256": "9559ff6d255e006088ab295fb7334dae3656f5488fc994385c699e5381802531",
+      "bytes": 9384
+    },
+    "agent/evidence/20261029-cpu30-005/original-six-receipt.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/original-six-receipt.json",
+      "sha256": "94547ed57082787241c776a2ab82cf51c417f924a8dfa29cbc3a95d2804c9c66",
+      "bytes": 1263
+    },
+    "agent/evidence/20261029-cpu30-005/independent-ownership-review.json": {
+      "source": "out/lume-20261029-cpu30/integration-materials-005/independent-ownership-review.json",
+      "sha256": "a5336165cd2d8ef147534121bf4607d6a20f67648bc91b7553507803779078cb",
+      "bytes": 8264
+    },
+    "agent/evidence/20261029-cpu30-005/performance-source-allowlist.json": {
+      "source": "out/lume-20261029-cpu30/integration-materials-005/performance-source-allowlist.json",
+      "sha256": "e633ae61e7d5e8d105f931b67915dd6a8b8066ed1aa943a6781dc7a801086f73",
+      "bytes": 1773
+    },
+    "agent/evidence/20261029-cpu30-005/prebuilt-v8-identity.json": {
+      "source": "out/lume-20261029-cpu30/v8-prebuilt-identity.json",
+      "sha256": "fd3cdbb701d65f4b30ee46cb27a39418a3f8b535519d07bc6e16db28f9d133cf",
+      "bytes": 2530
+    },
+    "agent/evidence/20261029-cpu30-005/original-six-raw.json": {
+      "source": "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task20261029-cpu30-compat-dsd-2-c259da2597a6e064/wpt-report.json",
+      "sha256": "891e2c11861ddc64fa49949bb116d1f4013e582abaa55420b962fad571bb0b89",
+      "bytes": 299997
+    },
+    "agent/evidence/20261029-cpu30-005/lifetime-compiled-source-manifest.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/compiled-source-sha256.json",
+      "sha256": "cb9b82648967c8627d42d92c2afc190a468a151d8b6892843bb34b6ef5c2c981",
+      "bytes": 15613
+    },
+    "agent/evidence/20261029-cpu30-005/adoption-compiled-source-manifest.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/compiled-source-sha256.json",
+      "sha256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+      "bytes": 13767
+    },
+    "agent/evidence/20261029-cpu30-005/build-build-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/build.json",
+      "sha256": "6271dadb4e5087c22fe262f3de331943676ee79985fd083faab28192f57fad7c",
+      "bytes": 2033
+    },
+    "agent/evidence/20261029-cpu30-005/build-build.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/build.log",
+      "sha256": "140bcff247a31ac738707cfe5e7aadadd770ef642c7c1c21081cf73e95f91f83",
+      "bytes": 21372
+    },
+    "agent/evidence/20261029-cpu30-005/build-detached-writer-scope-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/detached-writer-scope.json",
+      "sha256": "d66d02f264bc51e91666befdaad0905dd0ffef4c99614659313611ec93030f5d",
+      "bytes": 2046
+    },
+    "agent/evidence/20261029-cpu30-005/build-detached-writer-scope.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/detached-writer-scope.log",
+      "sha256": "d4fd8f551ca2ddddc9128937bcc158686fa2abc4f586be2e56cd0cf1fc61ebfe",
+      "bytes": 4769
+    },
+    "agent/evidence/20261029-cpu30-005/build-fatal-codec-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/fatal-codec.json",
+      "sha256": "46bdc5cdb9e0e17ed81ffa841c7f954c85ea2da886b354ccf3e8f815b81e1125",
+      "bytes": 2001
+    },
+    "agent/evidence/20261029-cpu30-005/build-fatal-codec.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/fatal-codec.log",
+      "sha256": "01bc5c93b74f82ed3bbd2db19ebcfab0f15cafbcd0a3c7b9aa37aa0b28933c67",
+      "bytes": 28640
+    },
+    "agent/evidence/20261029-cpu30-005/build-html-bom-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/html-bom.json",
+      "sha256": "c9d0c14e0a1e34892ce5a8ed3e1f61837b00ac927f789592603e8286c78d6649",
+      "bytes": 2005
+    },
+    "agent/evidence/20261029-cpu30-005/build-html-bom.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/html-bom.log",
+      "sha256": "d280e37b0091c0b7ab5cb19c55d71e1707cfd08922dae5de243c5c1ca14b455d",
+      "bytes": 3353
+    },
+    "agent/evidence/20261029-cpu30-005/build-json-document-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/json-document.json",
+      "sha256": "0c676fd3747cb23cbe3b7b892b09b58f7cb8b91913d804f2e8da855a839712a1",
+      "bytes": 2020
+    },
+    "agent/evidence/20261029-cpu30-005/build-json-document.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/json-document.log",
+      "sha256": "eae3504640df2452fa1285aaee82f41201831d459057e1bb8c30147fb0cb4172",
+      "bytes": 2982
+    },
+    "agent/evidence/20261029-cpu30-005/build-driver-parent-charset-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/driver-parent-charset.json",
+      "sha256": "d49478f6b11ef83cc265b37f14dcd232e2df1294cd0ff89b7ce4e38460d85d39",
+      "bytes": 2005
+    },
+    "agent/evidence/20261029-cpu30-005/build-driver-parent-charset.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/driver-parent-charset.log",
+      "sha256": "5a770d1bd778102537e287979c6e5bc295ca22c00d90ce2f2b663c1d3998d0c0",
+      "bytes": 2982
+    },
+    "agent/evidence/20261029-cpu30-005/build-legacy-frame-policy-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/legacy-frame-policy.json",
+      "sha256": "507c085019c82b42ac47b3b8bc818a3e5e65dc8310a5fb68d0ad1c26b09fc731",
+      "bytes": 2060
+    },
+    "agent/evidence/20261029-cpu30-005/build-legacy-frame-policy.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/legacy-frame-policy.log",
+      "sha256": "8bd813e34c4f13917dea149a2f23936f87c6973b407414d385ec7ed2ada0e76d",
+      "bytes": 2224
+    },
+    "agent/evidence/20261029-cpu30-005/build-xhr-encoding-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/xhr-encoding.json",
+      "sha256": "0ceb430ce81c2ed29b96f2d8abd7db937206910fd56bf1ad6fad978c9864994e",
+      "bytes": 2005
+    },
+    "agent/evidence/20261029-cpu30-005/build-xhr-encoding.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/xhr-encoding.log",
+      "sha256": "d1a74b67d3e7210f9e9d90890505a35e51415e4bdf709d136528efa03d53821d",
+      "bytes": 4590
+    },
+    "agent/evidence/20261029-cpu30-005/build-html-meta-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/html-meta.json",
+      "sha256": "e69ad669b955afa94a2f0084ab1550d738c61eae1252ff3d3467abf8117d4f7b",
+      "bytes": 2017
+    },
+    "agent/evidence/20261029-cpu30-005/build-html-meta.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/html-meta.log",
+      "sha256": "371814273fc504e081fbd77c1b9bd234f4ac7630d773be8e42f0e6f1b9a0aa9d",
+      "bytes": 5036
+    },
+    "agent/evidence/20261029-cpu30-005/build-document-encoding-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/document-encoding.json",
+      "sha256": "94159d0ad725290be38b8db6993ea37858646a9c35ae31fd6204728c3e6d43b5",
+      "bytes": 2004
+    },
+    "agent/evidence/20261029-cpu30-005/build-document-encoding.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/document-encoding.log",
+      "sha256": "951d1fad04152778fc17ce36777774b590d1b6c177ec1210452aacfad2c37db8",
+      "bytes": 5104
+    },
+    "agent/evidence/20261029-cpu30-005/build-parser-input-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/parser-input.json",
+      "sha256": "4cd8d5973930ec73a443588457c14aaa2c655e3aa1c07f0d41d9dc271033827f",
+      "bytes": 2004
+    },
+    "agent/evidence/20261029-cpu30-005/build-parser-input.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/parser-input.log",
+      "sha256": "223555e5612e9415a045db5b5dd6949ac34974a9b83f45dacfaa74f48edac2ae",
+      "bytes": 2466
+    },
+    "agent/evidence/20261029-cpu30-005/build-test_render_overdraw-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/test_render_overdraw.json",
+      "sha256": "029f3a71e6fd39f28c0a380bbfc522e9ba93890ea94e115c383a4aeeedff280a",
+      "bytes": 2004
+    },
+    "agent/evidence/20261029-cpu30-005/build-test_render_overdraw.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/test_render_overdraw.log",
+      "sha256": "04341450e0dfb63e562ba0fd8d7701b0d8db8daf079fde4b9542ec3fab28d369",
+      "bytes": 46
+    },
+    "agent/evidence/20261029-cpu30-005/build-test_gpu_present-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/test_gpu_present.json",
+      "sha256": "f1550abc0b2c8c37a84eecea056721400c3fd459ca9ab0361e6bd22a21889fc1",
+      "bytes": 2005
+    },
+    "agent/evidence/20261029-cpu30-005/build-test_gpu_present.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/test_gpu_present.log",
+      "sha256": "a00302b05386e15ce22fabcdaffb8331c19f72fb11b2d838b8587d6dcec75433",
+      "bytes": 3236
+    },
+    "agent/evidence/20261029-cpu30-005/build-test_app_wheel-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/test_app_wheel.json",
+      "sha256": "5dded2f2a272a6778260c6948d2d6c944b8478705a7c7cd2fbd97743267f7357",
+      "bytes": 2005
+    },
+    "agent/evidence/20261029-cpu30-005/build-test_app_wheel.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/test_app_wheel.log",
+      "sha256": "f2255b4799d8fd5ac9250a44c65daaec47dab6aef1a3cb92ca76dd70a841e7bd",
+      "bytes": 38
+    },
+    "agent/evidence/20261029-cpu30-005/build-html-default-boundary-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/html-default-boundary.json",
+      "sha256": "1b1429c64666312c92eb849b96b0a86636d052cfeba0246f2d3379b262b6aa93",
+      "bytes": 2004
+    },
+    "agent/evidence/20261029-cpu30-005/build-html-default-boundary.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/html-default-boundary.log",
+      "sha256": "910b4b27aa4aacfca38af5cd7114a209af55fe50cdea4a61258b17311c8b73a0",
+      "bytes": 1078
+    },
+    "agent/evidence/20261029-cpu30-005/build-html-default-navigation-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/html-default-navigation.json",
+      "sha256": "a49857ef6323b741cf3ad008a5e8600bca1a6af4b8594d559788b901207096fe",
+      "bytes": 2032
+    },
+    "agent/evidence/20261029-cpu30-005/build-html-default-navigation.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/html-default-navigation.log",
+      "sha256": "07ecb55eca81d4d5bce93949142637a214263a057a2ee283c41e7e6126efca4f",
+      "bytes": 9163
+    },
+    "agent/evidence/20261029-cpu30-005/lifetime-build-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/build.json",
+      "sha256": "a9fad7fbd289412a3ec02641fcb53e8c403b18cdb2f7c599af89e2bb1fc49a37",
+      "bytes": 2004
+    },
+    "agent/evidence/20261029-cpu30-005/lifetime-build.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/build.log",
+      "sha256": "2596f17753927dc2781fb85bea1bb38ffba8e58f21dfe612c8c3a596e0db51c9",
+      "bytes": 4595
+    },
+    "agent/evidence/20261029-cpu30-005/lifetime-lifetime-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/lifetime.json",
+      "sha256": "25ed42e756444c1c53c691be6715b86d54c473ac73d9fc52876448118961d429",
+      "bytes": 2002
+    },
+    "agent/evidence/20261029-cpu30-005/lifetime-lifetime.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/lifetime.log",
+      "sha256": "89a0327175deea820fde27830e8c0de28481593a3ecf16cd925034647a347680",
+      "bytes": 11756
+    },
+    "agent/evidence/20261029-cpu30-005/adoption-build-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-adoption-2/build.json",
+      "sha256": "3e4b6fee6fbcc6d4fb9ecd06a7ae178f9640fc2b00f73d390e704706a5d3be2c",
+      "bytes": 2004
+    },
+    "agent/evidence/20261029-cpu30-005/adoption-build.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-adoption-2/build.log",
+      "sha256": "0b66d7741113ad4c4688953e615a556d736cd277be4eb870fc7898f2113cd56c",
+      "bytes": 3701
+    },
+    "agent/evidence/20261029-cpu30-005/adoption-adoption-monitor.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-adoption-2/adoption.json",
+      "sha256": "c832be5981b6d930912254a7bfea6238fb93b4079c038f6a4af28ca8bd4088ec",
+      "bytes": 2004
+    },
+    "agent/evidence/20261029-cpu30-005/adoption-adoption.log": {
+      "source": "out/lume-20261029-cpu30/native-dsd-adoption-2/adoption.log",
+      "sha256": "3244608001d5290027b8f4c4f9a60242bc1d9bc369f7a12fc2efbc1927b0341b",
+      "bytes": 2908
+    },
+    "agent/evidence/20261029-cpu30-005/declarative-shadow-red-1-monitor.json": {
+      "source": "out/lume-20261029-cpu30/declarative-shadow-red-1/dsd.json",
+      "sha256": "1390ef8e215b6adb7fd7f03fd98ef08a9eb4348fa2f5af91b95130e4ffae2f14",
+      "bytes": 2046
+    },
+    "agent/evidence/20261029-cpu30-005/declarative-shadow-red-2-monitor.json": {
+      "source": "out/lume-20261029-cpu30/declarative-shadow-red-2/dsd.json",
+      "sha256": "92833d8841decd576b749491538562ac23f1b8492f5243806dbb2c6a1d65b613",
+      "bytes": 2042
+    },
+    "agent/evidence/20261029-cpu30-005/compiled-source-sha256.json": {
+      "source": "out/lume-20261029-cpu30/native-dsd-2/compiled-source-sha256.json",
+      "sha256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+      "bytes": 13767
+    },
+    "agent/evidence/20261029-cpu30-005/frozen-cohort-plan.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/cohort.json",
+      "sha256": "a9952946f7f2e7c865712f567e6b3e7c86aa4fdcadee383cc95fa2e469f521e9",
+      "bytes": 1106598
+    },
+    "agent/evidence/20261029-cpu30-005/encoding-core-run.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/encoding-core/run.json",
+      "sha256": "2678a5032efddf173abfdba67161c3daa02e46323b1b00b9863da7c190235597",
+      "bytes": 14963
+    },
+    "agent/evidence/20261029-cpu30-005/encoding-core-schedule.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/encoding-core/schedule.json",
+      "sha256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+      "bytes": 44730
+    },
+    "agent/evidence/20261029-cpu30-005/encoding-core-results.jsonl": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/encoding-core/results.jsonl",
+      "sha256": "dc749a7de4a40cbbb8ecaeb00a1bf9241e68f4619b26673e9b895fe918f0135a",
+      "bytes": 2454952
+    },
+    "agent/evidence/20261029-cpu30-005/encoding-core-summary.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/encoding-core/summary.json",
+      "sha256": "9605e91422260f04ef51c30bfc2786e6cb0cc610ae24fb81ed0f59f6417f9aae",
+      "bytes": 2020
+    },
+    "agent/evidence/20261029-cpu30-005/encoding-streams-run.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/encoding-streams/run.json",
+      "sha256": "951f3de258c7dafceadf2a5519cbe41e0bb688b0fc7e9aa4f727eb06366a0344",
+      "bytes": 11984
+    },
+    "agent/evidence/20261029-cpu30-005/encoding-streams-schedule.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/encoding-streams/schedule.json",
+      "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "bytes": 10971
+    },
+    "agent/evidence/20261029-cpu30-005/encoding-streams-results.jsonl": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/encoding-streams/results.jsonl",
+      "sha256": "ca647ff3bfd267e65a49a6ca71a743959711ce79b16ec8468998dc2dead5c29b",
+      "bytes": 101631
+    },
+    "agent/evidence/20261029-cpu30-005/encoding-streams-summary.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/encoding-streams/summary.json",
+      "sha256": "2f22b13c5ac3f958442a6d1a65aeec269ef6e0c0290807376fcab1707b902ee4",
+      "bytes": 1862
+    },
+    "agent/evidence/20261029-cpu30-005/dom-run.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/dom/run.json",
+      "sha256": "6ee1843840b899d700e7c70899dd67704a8258c85d5777d1d8afa89812c759bb",
+      "bytes": 11294
+    },
+    "agent/evidence/20261029-cpu30-005/dom-schedule.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/dom/schedule.json",
+      "sha256": "90a94ec5fea249cfa78a39b39fafaa83f0d076b56644924c5f72790665e270be",
+      "bytes": 3187
+    },
+    "agent/evidence/20261029-cpu30-005/dom-results.jsonl": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/dom/results.jsonl",
+      "sha256": "48053ada73780edf1eed3f185ab33a2c7bc530fee83b9c2d55ea19e8c2ac460b",
+      "bytes": 143589
+    },
+    "agent/evidence/20261029-cpu30-005/dom-summary.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/dom/summary.json",
+      "sha256": "449153030e1e2289e1c52ff89d11381f73dda5b60932d2db5088b32d51bde414",
+      "bytes": 1862
+    },
+    "agent/evidence/20261029-cpu30-005/events-run.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/events/run.json",
+      "sha256": "2e6a967964b89d6e21a19eeef9eb102084511e8cc2a3f0cce9bb373559ae47b3",
+      "bytes": 11453
+    },
+    "agent/evidence/20261029-cpu30-005/events-schedule.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/events/schedule.json",
+      "sha256": "c9c1c2e46a30c6ef14a700bc76463ec2411f1771afda7681344fd7d5e65cb3b7",
+      "bytes": 4670
+    },
+    "agent/evidence/20261029-cpu30-005/events-results.jsonl": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/events/results.jsonl",
+      "sha256": "a1a84900c32453bd1621a3bc774019659ec30d5f89016476d67526b201bb8117",
+      "bytes": 44040
+    },
+    "agent/evidence/20261029-cpu30-005/events-summary.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/events/summary.json",
+      "sha256": "0e8c35ef5ae81628ffd18a3cf178c16c4a4265a154143ce57ef0d7d8b73b39ab",
+      "bytes": 1858
+    },
+    "agent/evidence/20261029-cpu30-005/url-run.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/url/run.json",
+      "sha256": "47fc3e12e4caa4466a7d2c4dca726ebeae08d72a2d6d48182c5cb5e6920a2904",
+      "bytes": 14459
+    },
+    "agent/evidence/20261029-cpu30-005/url-schedule.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/url/schedule.json",
+      "sha256": "c4e44f2d5a5eaa7ed66c834f506ca484bd73ff6d3f7e77b27cf7f2337ef23132",
+      "bytes": 25515
+    },
+    "agent/evidence/20261029-cpu30-005/url-results.jsonl": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/url/results.jsonl",
+      "sha256": "1205e15ff5d83af86e1a302552715cc77e860e8f9c8a81ee3190b1811cb60d00",
+      "bytes": 1452139
+    },
+    "agent/evidence/20261029-cpu30-005/url-summary.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/url/summary.json",
+      "sha256": "1f184662b00d446a53f498c8360567f350a89db2c4c9c6088d29c43d48a789e1",
+      "bytes": 2016
+    },
+    "agent/evidence/20261029-cpu30-005/storage-run.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/storage/run.json",
+      "sha256": "63919d540899c4808199b0acbde72dd2df2f3411585310d47aa0b3d4a81d7a4b",
+      "bytes": 10835
+    },
+    "agent/evidence/20261029-cpu30-005/storage-schedule.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/storage/schedule.json",
+      "sha256": "723fca15a68d3d61c26604fb5c55f26615e639da5f7b888f6bd79f8fae403c9d",
+      "bytes": 1490
+    },
+    "agent/evidence/20261029-cpu30-005/storage-results.jsonl": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/storage/results.jsonl",
+      "sha256": "beb4400e1fba18adbfae6a72acea7897b274680ba63346b6a1e3f140bf921100",
+      "bytes": 101436
+    },
+    "agent/evidence/20261029-cpu30-005/storage-summary.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/storage/summary.json",
+      "sha256": "a63bd445f14a7b76bc2a03e5c8880e9a0415c4b9bc6ecccabd96776abb3ae8a6",
+      "bytes": 1854
+    },
+    "agent/evidence/20261029-cpu30-005/microtasks-run.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/microtasks/run.json",
+      "sha256": "6887ff6c88a0afc58ffbf1c76e86a73b098a22c99a099705d676b41cdbb5204d",
+      "bytes": 11336
+    },
+    "agent/evidence/20261029-cpu30-005/microtasks-schedule.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/microtasks/schedule.json",
+      "sha256": "eda081ad150c45a430ade8649a55bf454eff67bac460df798efc90dd947c2177",
+      "bytes": 3593
+    },
+    "agent/evidence/20261029-cpu30-005/microtasks-results.jsonl": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/microtasks/results.jsonl",
+      "sha256": "9d9200d811fa254f4d7eeef56d59b2c88222a52401fab42521484ff8ff2a6cc6",
+      "bytes": 24503
+    },
+    "agent/evidence/20261029-cpu30-005/microtasks-summary.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/microtasks/summary.json",
+      "sha256": "596988fb40e03b64ac811f4b1e94a17c350e87716b8216b6ddd0a37921e001a0",
+      "bytes": 1986
+    },
+    "agent/evidence/20261029-cpu30-005/headers-run.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/headers/run.json",
+      "sha256": "850a42dcb351376de29aa98f0f4e4ead712e157c8868f315394fa2ec8b8fd26c",
+      "bytes": 13895
+    },
+    "agent/evidence/20261029-cpu30-005/headers-schedule.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/headers/schedule.json",
+      "sha256": "1db7998184521c0b6928d41468874a4c77db98c26feedc407ae7bcf8324e8a17",
+      "bytes": 21365
+    },
+    "agent/evidence/20261029-cpu30-005/headers-results.jsonl": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/headers/results.jsonl",
+      "sha256": "996d068d69bb6ea862d23dd8cd9c2eb20e65d840b7b520db0f44e8cdc476466e",
+      "bytes": 174144
+    },
+    "agent/evidence/20261029-cpu30-005/headers-summary.json": {
+      "source": "out/lume-20261029-cpu30/compat-dsd-2/cohort/headers/summary.json",
+      "sha256": "450f9356f9ebc4127761f003aedbcc46feae5306ed4b86ff9f83a74ea4bda7c3",
+      "bytes": 2032
+    },
+    "agent/evidence/20261029-cpu30-005/scroll-receipt.json": {
+      "source": "out/lume-20261029-cpu30/native-resources-dsd-2/scroll/receipt.json",
+      "sha256": "49ddab3d30c2f780f124382b93884ead9e6db484f5b15aa733539ce0d62ddaec",
+      "bytes": 13120
+    },
+    "agent/evidence/20261029-cpu30-005/scroll-process-summary.json": {
+      "source": "out/lume-20261029-cpu30/native-resources-dsd-2/scroll/process-summary.json",
+      "sha256": "b02a61e83b06637de3007bb8e8c7f7c5f71502ceb75f8c3b20a5330fe1375c79",
+      "bytes": 3401
+    },
+    "agent/evidence/20261029-cpu30-005/scroll-process-samples.jsonl": {
+      "source": "out/lume-20261029-cpu30/native-resources-dsd-2/scroll/process-samples.jsonl",
+      "sha256": "15a568e8cf75e578a2646e9054db9b2733afe2ab0751efbcc449baf3828ddbe4",
+      "bytes": 72789
+    },
+    "agent/evidence/20261029-cpu30-005/navigation-receipt.json": {
+      "source": "out/lume-20261029-cpu30/native-resources-dsd-2/navigation/receipt.json",
+      "sha256": "772b873bdb26668f5b18954f56c8a3911da4c73e53c9ae7e4da41c0b67e6ef0b",
+      "bytes": 23793
+    },
+    "agent/evidence/20261029-cpu30-005/navigation-process-summary.json": {
+      "source": "out/lume-20261029-cpu30/native-resources-dsd-2/navigation/process-summary.json",
+      "sha256": "d46b1b005a6144ec1de9efd14c8b2870e3bed0acc889bbe5ecabaf7cb2a8bb86",
+      "bytes": 4006
+    },
+    "agent/evidence/20261029-cpu30-005/navigation-process-samples.jsonl": {
+      "source": "out/lume-20261029-cpu30/native-resources-dsd-2/navigation/process-samples.jsonl",
+      "sha256": "46a1ec990568180f86b8b065039691ef18beac2132781ebdbb0b3a8e230f65fe",
+      "bytes": 103833
+    },
+    "agent/evidence/20261029-cpu30-005/supplemental-dsd-baseline-raw.json": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-2/baseline/results.json",
+      "sha256": "6bdd697fdff506ac3aafa9a07a147162c7ab1a30d35e03189134ed2c5d059f7a",
+      "bytes": 21705
+    },
+    "agent/evidence/20261029-cpu30-005/supplemental-dsd-candidate-raw.json": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-2/candidate/results.json",
+      "sha256": "4cf2863702e771df5407783f00d3c41eb0335baf9fb3dadc351667cc0963a24e",
+      "bytes": 21714
+    },
+    "agent/evidence/20261029-cpu30-005/supplemental-dsd-chrome-raw.json": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/results.json",
+      "sha256": "2137c4754a642574b9c0d3c60a9d052c470ee5285274cb86f1a7ab6f564a5d8a",
+      "bytes": 8263
+    },
+    "agent/evidence/20261029-cpu30-005/upstream-fixture/shadow-dom/declarative/declarative-shadow-dom-basic.html": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-2/upstream-fixture/shadow-dom/declarative/declarative-shadow-dom-basic.html",
+      "sha256": "f4eb6d3e2a5459e08453f1ff25ffcbc9da0cfe696c76221d194f646532274bca",
+      "bytes": 16529
+    },
+    "agent/evidence/20261029-cpu30-005/upstream-fixture/shadow-dom/declarative/declarative-after-attachshadow.html": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-2/upstream-fixture/shadow-dom/declarative/declarative-after-attachshadow.html",
+      "sha256": "567de552e82a32f8b7d698dd5e2b45b1cbbe474210f47e1397ff19a6e7319227",
+      "bytes": 1626
+    },
+    "agent/evidence/20261029-cpu30-005/upstream-fixture/shadow-dom/declarative/innerhtml-on-ordinary-template.html": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-2/upstream-fixture/shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+      "sha256": "1693cd57a8b99e80e6600fc423dd40b97cf699120f995fd08a68bf90587bc116",
+      "bytes": 2104
+    },
+    "agent/evidence/20261029-cpu30-005/upstream-fixture/shadow-dom/declarative/declarative-shadow-dom-repeats.html": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-2/upstream-fixture/shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+      "sha256": "3b5120ec28b5d94f51679a7c9e99711771fc41774c1f0ef6dff0757bcaa550ed",
+      "bytes": 3798
+    },
+    "agent/evidence/20261029-cpu30-005/upstream-fixture/shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-2/upstream-fixture/shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+      "sha256": "cd0ba36bbce56f8fcd800007e0df73451db6c38a46a76edea769ade1d8710ce2",
+      "bytes": 872
+    },
+    "agent/evidence/20261029-cpu30-005/upstream-fixture/shadow-dom/declarative/declarative-parser-interaction.html": {
+      "source": "out/lume-20261029-cpu30/dsd-upstream-pair-2/upstream-fixture/shadow-dom/declarative/declarative-parser-interaction.html",
+      "sha256": "957c6660ae31f816a2d4c2e3e0b6db853ce4d55a9d22e1c8d1691cbdd652d64d",
+      "bytes": 1009
+    }
+  },
+  "publicFinalSourceRefreshRequired": true
+}

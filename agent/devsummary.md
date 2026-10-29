@@ -362,3 +362,28 @@ Score55/100. Broad242/279 includes all15TIMEOUT/15ERROR; frozen1515 retains1236u
 }
 
 Score55/100; fixed101/103 and broad245/279 are separate selections.718 current-policy checks pass; original15 legacy fixture retains10pass/5explicit policy deltas. All1236unrun/15TIMEOUT/15ERROR remain counted. Native source commit94feccb482c508a2461bb6b8a1a52c011829c883 is verified against every compiled Git blob; build-base7d remains separately recorded. Final source publication/reverification follows this documentation commit. Evidence agent/evidence/20261029-cpu30-004-native-acceptance.json
+
+
+## 20261029-cpu30-005 — important-bug extension, detached-document streams
+
+{
+  "started_utc": "2026-10-29T05:17:11+00:00",
+  "finished_utc": "2026-10-29T06:04:22.598879+00:00",
+  "started_Asia_Shanghai": "2026-10-29T13:17:11+08:00",
+  "finished_Asia_Shanghai": "2026-10-29T14:04:22.598879+08:00",
+  "elapsed_seconds": 2831.599,
+  "total_session_seconds": 13537.599,
+  "timingsSeconds": {
+    "buildAndCustomChecks": 22.634,
+    "incrementalBuild": 2.094,
+    "originalAndFixed103": 73.356,
+    "priorityExpansion": 347.626,
+    "guiAndSoak": 282.419,
+    "lifetime": 2.273,
+    "adoptionLifetime": 2.25,
+    "supplementalUpstreamPair": 8.86
+  },
+  "timingMethod": "Wall time from actual timestamps; overlapping agents and tests are not summed. Broader worker-context timeouts are retained, including attempts lasting over five minutes. Subsecond lifetime tests have no complete1Hz CPU interval."
+}
+
+Score 55/100. Full network DSD candidate6528 rejected; the accepted artifact is restricted to detached streams and cloned policy. All full37 and supplementary6 outcomes remain visible. Evidence agent/evidence/20261029-cpu30-005-native-acceptance.json

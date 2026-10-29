@@ -18,9 +18,9 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
       ],
-      "evidence_generation": "final_exact_artifact_20261029_cpu30",
+      "evidence_generation": "detached_writer_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -46,13 +46,21 @@
             "agent/evidence/20261029-cpu30-001/original-six-receipt.json"
           ],
           "note": "Six unchanged pinned upstream files; absolute native results only, separate from selected103 and full WPT."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Final artifact passes the original six unchanged upstream files, separately from279 priority variants."
         }
       ],
       "evidence_format": "native_absolute_wpt",
       "passed": 1850,
       "denominator": 1850,
-      "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
-      "note": "Final artifact passes the original six unchanged upstream files, separately from279 priority variants."
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "note": "Exact current artifact retains original six unchanged upstream files, separately from279 selected variants."
     },
     {
       "id": "wpt_expanded",
@@ -62,7 +70,7 @@
       "status": "incomplete",
       "earned": 0,
       "evidence": [
-        "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
       ],
       "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
@@ -84,8 +92,8 @@
           "generation": "inherited_previous_task"
         }
       ],
-      "note": "245/279 observed variants fully pass;15TIMEOUT and15ERROR remain;1236 of1515 frozen variants unrun. Full WPT unknown.",
-      "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce"
+      "note": "246/279 selected variants fully pass;15TIMEOUT/15ERROR and1236unrun remain. Full WPT unknown.",
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849"
     },
     {
       "id": "wpt_no_regression",
@@ -95,9 +103,9 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
       ],
-      "evidence_generation": "final_exact_artifact_20261029_cpu30",
+      "evidence_generation": "detached_writer_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -131,10 +139,18 @@
             "agent/evidence/20261029-cpu30-001/compiled-source-sha256.json"
           ],
           "note": "Current scope is203 custom render/GPU/wheel checks, original1850 assertions, and unchanged103-variant Encoding cohort. Historical826 custom checks are not claimed as rerun; broader and same103 Chrome comparison remain separate."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "718 current-policy custom checks, unchanged original1850 and fixed103 plus279 priority variants verified on3ad. The unchanged old15-case frame fixture intentionally has10pass/5explicit default-policy differences, all retained; not claimed as15/15."
         }
       ],
-      "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
-      "note": "718 current-policy custom checks, unchanged original1850 and fixed103 plus279 priority variants verified on3ad. The unchanged old15-case frame fixture intentionally has10pass/5explicit default-policy differences, all retained; not claimed as15/15."
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "note": "718 previous custom checks retained; full37 fixture preserves deferred-feature failures and explicit supported detached-stream targets. Original1850/fixed103/broad279 and whole supplemental6 reviewed, with no new harness failure. Unchanged legacy15 remains10PASS/5explicit policy differences."
     },
     {
       "id": "ipa_mac",
@@ -196,9 +212,9 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
       ],
-      "evidence_generation": "final_exact_artifact_20261029_cpu30",
+      "evidence_generation": "detached_writer_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85",
@@ -278,11 +294,19 @@
             "agent/evidence/20261029-cpu30-001/native-resource-summary.json"
           ],
           "note": "Current artifact settles near0\u20131%CPU over49s scroll-final and61s navigation-final idle windows. CPU is one logical core=100%; synthetic controlled fixture scope."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Fresh exact-artifact controlled final idle windows, with1Hz process-tree samples; not whole-host or arbitrary-site performance."
         }
       ],
-      "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
-      "note": "Fresh exact-artifact controlled final idle windows, with1Hz process-tree samples; not whole-host or arbitrary-site performance.",
-      "cpu_p95_percent": 0.996
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "note": "Fresh exact-artifact controlled idle; process-tree1 Hz samples, separate from host RAM/CPU.",
+      "cpu_p95_percent": 0.0
     },
     {
       "id": "perf_interaction",
@@ -292,9 +316,9 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
       ],
-      "evidence_generation": "final_exact_artifact_20261029_cpu30",
+      "evidence_generation": "detached_writer_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
@@ -340,13 +364,21 @@
             "agent/evidence/20261029-cpu30-001/cto-visible-window-review.json"
           ],
           "note": "User revised scroll ceiling30%;34 samples over33.010s, p9511.085%, peak11.137%, all observed scroll intervals below30%. Synthetic SDL wheel input, not OS-input proof; typing remains separately unmeasured."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Fresh controlled SDL scrolling; all observed intervals below30%, actual owned window captured and CTO-reviewed. OS-level typing remains unmeasured."
         }
       ],
-      "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
-      "scroll_cpu_p95_percent": 15.823,
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "scroll_cpu_p95_percent": 12.997,
       "ceiling_percent": 30,
-      "note": "Fresh controlled SDL scrolling; all observed intervals below30%, actual owned window captured and CTO-reviewed. OS-level typing remains unmeasured.",
-      "scroll_cpu_peak_percent": 16.018
+      "note": "Fresh controlled native scroll gate and owned window visual review; no arbitrary-site or OS typing claim.",
+      "scroll_cpu_peak_percent": 13.051
     },
     {
       "id": "perf_soak",
@@ -356,9 +388,9 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
       ],
-      "evidence_generation": "final_exact_artifact_20261029_cpu30",
+      "evidence_generation": "detached_writer_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
@@ -437,10 +469,18 @@
             "agent/evidence/20261029-cpu30-001/native-resource-summary.json"
           ],
           "note": "Controlled20-navigation workload: settled RSS157.34375\u2192146.5625MiB (-10.78125MiB), native counters stable and GPU clean; not universal memory stability."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Fresh20-navigation exact-artifact soak, settled RSS change -10.609375MiB; stable native counters and clean GPU. Not universal leak proof."
         }
       ],
-      "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
-      "note": "Fresh20-navigation exact-artifact soak, settled RSS change -10.609375MiB; stable native counters and clean GPU. Not universal leak proof."
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "note": "Fresh20-navigation settled RSS change -10.671875MiB;24+8 separate real realm teardown cycles restore native nodes exactly."
     },
     {
       "id": "perf_budgets",
@@ -450,9 +490,9 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
       ],
-      "evidence_generation": "final_exact_artifact_20261029_cpu30",
+      "evidence_generation": "detached_writer_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -481,12 +521,20 @@
             "agent/evidence/20261029-cpu30-001/publication-policy-red-green.json"
           ],
           "note": "Incremental build2.103s;203 checks plus build5.550s; WPT73.420s; GUI+soak282.666s; publication RED/GREEN2.167s. Existing prebuilt V8 reused.1Hz collectors valid; subsecond tests lack meaningful steady CPU samples."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Existing pinnedV8 reused. Build/custom/WPT/resource durations and1Hz monitors retained. Broader >5min run is explained by genuine service-worker timeouts."
         }
       ],
-      "build_seconds": 3.107,
+      "build_seconds": 2.094,
       "prebuilt_v8": true,
-      "note": "Existing pinnedV8 reused. Build/custom/WPT/resource durations and1Hz monitors retained. Broader >5min run is explained by genuine service-worker timeouts.",
-      "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce"
+      "note": "Same prebuilt V8 bytes reused; all build/test durations retained. Long worker-context timeouts are classified, not removed.",
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849"
     },
     {
       "id": "repro_tdd",
@@ -496,9 +544,9 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
       ],
-      "evidence_generation": "final_exact_artifact_20261029_cpu30",
+      "evidence_generation": "detached_writer_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -529,10 +577,18 @@
             "agent/evidence/20261029-cpu30-001/publication-policy-red-green.json"
           ],
           "note": "Unchanged five-case publication contract:3/5 RED to5/5 GREEN, proving current and historical out/ material are excluded from public source archives."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Unchanged JSON/BOM/fatalUTF8 and default-policy RED/GREEN fixtures retained; rejected JSON carrier and five old-policy deltas are explicit."
         }
       ],
-      "note": "Unchanged JSON/BOM/fatalUTF8 and default-policy RED/GREEN fixtures retained; rejected JSON carrier and five old-policy deltas are explicit.",
-      "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce"
+      "note": "Original36 and versioned37 REDs remain immutable. Full-network candidate exposed a real upstream harness ERROR and was rejected; narrow detached-stream ledger and fresh no-regression gates are explicit.",
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849"
     },
     {
       "id": "repro_source",
@@ -542,9 +598,9 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
       ],
-      "evidence_generation": "final_exact_artifact_20261029_cpu30",
+      "evidence_generation": "detached_writer_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -573,10 +629,18 @@
             "agent/evidence/20261029-cpu30-001/build-and-203-custom-checks.json"
           ],
           "note": "All compiled tracked src/Makefile/ios inputs match frozen committed source df4ae3 exactly. Current documentation HEAD is separate; unaccepted engine work remains unstaged."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Every compiled manifest entry matches Git objects at94feccb482c508a2461bb6b8a1a52c011829c883; build-base7d is separately recorded. PrebuiltV8 dependency bytes remain pinned."
         }
       ],
-      "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
-      "note": "Every compiled manifest entry matches Git objects at94feccb482c508a2461bb6b8a1a52c011829c883; build-base7d is separately recorded. PrebuiltV8 dependency bytes remain pinned."
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "note": "All 142 compiled Git blobs match source 15ab329736c26a3bbb907b718af376206c115436; original build-base186 remains separately recorded."
     },
     {
       "id": "release_progress",
@@ -617,11 +681,11 @@
       "archive_sha256": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167"
     }
   ],
-  "updated_utc": "2026-10-29T05:09:23.967673+00:00",
-  "current_baseline_binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+  "updated_utc": "2026-10-29T06:04:22.598879+00:00",
+  "current_baseline_binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
   "full_official_wpt_pass_percent": null,
-  "current_native_source_base_commit": "7d2f27c1bacfeec19915a2c8b0b417cfa84c0963",
-  "current_native_source_commit": "94feccb482c508a2461bb6b8a1a52c011829c883",
+  "current_native_source_base_commit": "186666fe7ad94ef08d6cc80486e8cc808b99144e",
+  "current_native_source_commit": "15ab329736c26a3bbb907b718af376206c115436",
   "accepted_artifact_status": "current_native_partial_acceptance",
   "source_branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-20261029-cpu30",
   "inherited_scorecard": "agent/scorecard-20261029-cpu30-inherited.json",
@@ -634,15 +698,15 @@
     "original_subset_files_total": 6,
     "priority_frozen_variants": 1515,
     "priority_recorded_variants": 279,
-    "priority_fully_passed_variants": 245,
+    "priority_fully_passed_variants": 246,
     "priority_unrun_variants": 1236,
-    "priority_observed_variant_pass_rate_percent": 87.81362007168458,
+    "priority_observed_variant_pass_rate_percent": 88.17204301075269,
     "fixed_encoding_comparison": {
       "baseline_passed": 96,
       "current_passed": 101,
       "total": 103
     },
-    "reference_status": "Qualified same279 controls retained; matched missing contexts count."
+    "reference_status": "Qualified exact279 controls retained; missing contexts count. Additional six DSD files remain separate."
   },
   "inherited_history": [
     {
@@ -825,9 +889,18 @@
       "total_session_seconds": 10238.968,
       "score": 55,
       "status": "Final exact-artifact native source/WPT/resource acceptance; Apple execution and full frozen coverage remain incomplete"
+    },
+    {
+      "iteration": "20261029-cpu30-005",
+      "started_utc": "2026-10-29T05:17:11+00:00",
+      "finished_utc": "2026-10-29T06:04:22.598879+00:00",
+      "elapsed_seconds": 2831.599,
+      "total_session_seconds": 13537.599,
+      "score": 55,
+      "status": "Important-bug extension: detached document streams accepted; eager initial network DSD remains deferred. Apple execution and full frozen coverage remain incomplete."
     }
   ],
-  "current_native_source_manifest": "agent/evidence/20261029-cpu30-004/compiled-source-sha256.json",
+  "current_native_source_manifest": "agent/evidence/20261029-cpu30-005/compiled-source-sha256.json",
   "historical_baseline_score": 50,
   "candidate_artifacts": [
     {
@@ -1051,6 +1124,6 @@
     "evidence": "agent/evidence/20261029-cpu30-003/broad-priority-summary.json",
     "resource_acceptance": "pending"
   },
-  "current_native_source_manifest_sha256": "0cd15150cf85c9699ea847fd1859ab8a8097694e802ca2ca66e650262dc38ab7",
-  "current_native_acceptance_receipt": "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+  "current_native_source_manifest_sha256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+  "current_native_acceptance_receipt": "agent/evidence/20261029-cpu30-005-native-acceptance.json"
 }
