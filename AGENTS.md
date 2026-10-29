@@ -2,6 +2,12 @@
 
 Read `agent/task.md`, `agent/continue.md`, this file and relevant `CONTINUE.md` history before work.
 
+## Start here: environment recovery
+
+Canonical workspace is `/Users/devin/repos/lumen`. Child-agent `devinmac3d` calls hang; use the parent transport immediately instead of repeating an eight-minute child probe. Recover these instructions through GitHub `ecooxai/lumen` when needed, then give the parent small agent-authored relay scripts. Root only transports and evaluates; the same-model agents retain implementation/test ownership. The Mac parent relay is working again. Local full-history fallback is `/workspace/scratch/2b90c4e9e7b5/project/lumen`.
+
+Mac native CLT builds and existing prebuilt V8 are healthy. Direct Apple CoreSimulator backing tools are signed and valid; the Xcode27 bundle metadata describes zero backed files. Do not patch vendor bundles or infer that simulator tooling proves a Lumen app launch. Actual mobile dependency/signing closure, shared signed device IPA on Mac, and iPad app execution remain separate unearned gates.
+
 ## Current scope and execution
 
 - User goal: Apple browser compatibility approaching Chrome; measured important WPT first, Mac and iPad simulator execution, shared signed iOS device IPA on Mac, ordinary scrolling below 30% CPU. Prefer compatible prebuilt V8.
@@ -55,4 +61,4 @@ Baseline assessment is55/100 under the existing fixed task rubric, not a WPT per
 
 ## Next-agent context
 
-Continue from the task branch and `agent/continue.md`. Validated subsystem checkpoint6596e87 includes real C transport background completion and the monitor PID guard; the full V8 worker candidate remains unaccepted. Independent worker factory26/26 and actual Chrome header fixture36/36 are explicitly different evidence classes. First check whether the Mac connector has recovered. Preserve the accepted c259 baseline and the complete historical raw WPT receipts. Finish real worker async/XHR source changes with independent lifetime/abort tests, then run fixed native/Chromium selections and fresh native resources on the exact candidate. Expand coverage without dropping failed contexts. Establish actual compatible iPad and signed shared-IPA execution before awarding those gates. Keep full-suite uncertainty explicit.
+Continue from the task branch and `agent/continue.md`. Engine checkpointd5a3bc44216f65ce430163518ced2aa10411cfc4 is compiled on Linux and Mac. Real worker async118/118 and lifecycle266/266 pass; immutable native Linux header fixture12/36→36/36 and unchanged upstream Encoding101/103→103/103 are accepted within their recorded scopes. Mac candidate4bf30d0ec0979362 has fresh native build/custom-test evidence; broad WPT and its own resource acceptance are in progress. The historical c259 246/279 baseline remains visible until the complete Mac candidate audit. Current Chromium279 control hit a navigation infrastructure failure; preserve its zero-assertion errors and repair the fixture route before any Chrome percentage. The frozen1,515 inventory's1,236 unrun entries are legacy Encoding; broader DOM/XHR selections must be separately identified. Establish actual compatible iPad and signed shared-IPA execution before awarding those gates. Keep full-suite uncertainty explicit.

@@ -1,0 +1,34 @@
+[
+  {
+    "role": "baseline",
+    "started": "2026-10-29T13:24:29.145148+00:00",
+    "ended": "2026-10-29T13:25:09.428077+00:00",
+    "durationSeconds": 40.28293694199965,
+    "exitCode": 0,
+    "arguments": [
+      "python3",
+      "tests/wpt/linux_headless_runner.py",
+      "--engine",
+      "lumen",
+      "--binary",
+      "out/10292019r-linux-worker/build-baseline/jsrun",
+      "--binary-sha256",
+      "33ab865d1613029156864317b7cf0a2d7898855b261e47cd416d6c68c21c9a94",
+      "--source-manifest",
+      "out/10292019r-linux-worker/baseline-source-manifest.json",
+      "--runtime-manifest",
+      "out/10292019r-linux-worker/baseline-binaries.json",
+      "--runtime-environment",
+      "out/10292019r-linux-worker/runtime-env.json",
+      "--fixture",
+      "output/wpt-10290244",
+      "--groups",
+      "encoding-streams",
+      "encoding-core",
+      "--output",
+      "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/lumen-10292019r/wpt-baseline-rerun-003/baseline",
+      "--max-seconds",
+      "300"
+    ]
+  }
+]

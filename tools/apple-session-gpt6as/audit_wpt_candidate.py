@@ -149,6 +149,15 @@ def group_paths(directory, name):
             directory / (name + "-results.jsonl"))
 
 
+def validate_recorded_count(metadata, records, scheduled, name):
+    """A completed/logged group must not silently lose persisted raw rows."""
+    if metadata.get("finished_schedule") is True and len(records) != len(scheduled):
+        raise ValueError("Completed group has missing raw results: " + name)
+    declared = metadata.get("summary", {}).get("recorded")
+    if declared is not None and declared != len(records):
+        raise ValueError("Declared group result count differs from raw evidence: " + name)
+
+
 def load_cohort(plan_path, require_binary=True):
     plan_path = Path(plan_path)
     plan = read(plan_path)
@@ -168,7 +177,8 @@ def load_cohort(plan_path, require_binary=True):
         meta_path, schedule_path, results_path = group_paths(plan_path.parent, name)
         if not results_path.is_file():
             continue
-        signature = read(meta_path)["signature"]
+        metadata = read(meta_path)
+        signature = metadata["signature"]
         if signature.get("engine") != "lumen" or signature.get("binary_sha256") != plan["binary"]["sha256"]:
             raise ValueError("Raw native artifact identity differs: " + name)
         if signature.get("schedule_sha256") != plan["groupScheduleSHA256"][name]:
@@ -179,6 +189,7 @@ def load_cohort(plan_path, require_binary=True):
         if scheduled != group:
             raise ValueError("Raw group schedule differs: " + name)
         records = [json.loads(line) for line in results_path.read_text().splitlines() if line.strip()]
+        validate_recorded_count(metadata, records, scheduled, name)
         allowed = indexed(group)
         if not set(indexed(records)).issubset(allowed):
             raise ValueError("Foreign variant result in " + name)
@@ -199,6 +210,12 @@ def compare_cohorts(baseline, candidate):
         a, b = baseline["signatures"][group], candidate["signatures"][group]
         for field in SIGNATURE_FIELDS:
             if field not in a or field not in b or a[field] != b[field]:
+                raise ValueError("Paired protocol differs: " + group + ":" + field)
+        # New explicit execution modes bind their common collector separately.
+        # Legacy Mac records omit both fields; a one-sided/new-mode difference
+        # must never be treated as the same protocol.
+        for field in ("execution_adapter", "collector_sha256"):
+            if a.get(field) != b.get(field):
                 raise ValueError("Paired protocol differs: " + group + ":" + field)
     result = audit_rows(baseline["rows"], candidate["rows"])
     result.update(

@@ -1,0 +1,401 @@
+{
+  "missingCandidateVariants": [],
+  "newlyRecordedVariants": [],
+  "lostFullyPassingVariants": [],
+  "newUnqualifiedHarnesses": [],
+  "lostPassingAssertions": [],
+  "gainedPassingAssertions": [
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "csiso2022kr - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "hz-gb-2312 - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-kr - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "replacement - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "replacement - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32 with BOM should decode as UTF-16LE",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32 with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32LE with BOM should decode as UTF-16LE",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32LE with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32be with BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32be with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-7 should not be supported",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32 with BOM should decode as UTF-16LE",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32 with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32be with BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32be with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32le with BOM should decode as UTF-16LE",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32le with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-7 should not be supported",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    }
+  ],
+  "changedAssertions": [
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "csiso2022kr - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "hz-gb-2312 - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-kr - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "replacement - empty input decodes to empty output.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "replacement - non-empty input decodes to one replacement character.",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32 with BOM should decode as UTF-16LE",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32 with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32LE with BOM should decode as UTF-16LE",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32LE with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32be with BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32be with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-7 should not be supported",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32 with BOM should decode as UTF-16LE",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32 with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32be with BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32be with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32le with BOM should decode as UTF-16LE",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32le with no BOM should decode as UTF-8",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-7 should not be supported",
+      "baselineStatus": "FAIL",
+      "candidateStatus": "PASS"
+    }
+  ],
+  "hasComparableEvidence": true,
+  "noRegression": true,
+  "createdUTC": "2026-10-29T13:26:30.945751+00:00",
+  "scope": "Native frozen-cohort regression audit. Unknown variants remain unrun; this is not full WPT or Chrome parity.",
+  "fullOfficialWptPassPercent": null,
+  "baseline": {
+    "binary": {
+      "path": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-linux-worker/build-baseline/jsrun",
+      "sha256": "33ab865d1613029156864317b7cf0a2d7898855b261e47cd416d6c68c21c9a94"
+    },
+    "planSHA256": "904270e34806adcec3d03fb53650de85efeabce68e387d7f9c070519b9ac4d90",
+    "summary": {
+      "scheduled": 1515,
+      "recorded": 103,
+      "fullyPassing": 101,
+      "unrun": 1412,
+      "passPercentOfRecorded": 98.05825242718447,
+      "harnessStatuses": {
+        "OK": 103
+      },
+      "assertions": {
+        "PASS": 23632,
+        "FAIL": 26
+      },
+      "qualifiedPassingAssertions": 23632,
+      "measurementErrorVariants": 0
+    },
+    "evidence": {
+      "encoding-streams": {
+        "resultsSHA256": "dd7f80b309f05550e6ab77c36246764e37708f3b88549ce7113219c49abf836a",
+        "runSHA256": "77f50ff3884c8e5032018ca37d6e536a043ec7f1db6e92016c138fecbfe4b569",
+        "scheduleSHA256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+        "recorded": 26
+      },
+      "encoding-core": {
+        "resultsSHA256": "dced35c42a955fbf949886e7cf1ea856fc8547fdd9366100c4b5d00e8f9fedcb",
+        "runSHA256": "6146ed6373a6010be42166b147a9ee7aef398cad921bceaa2734424b7f212456",
+        "scheduleSHA256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+        "recorded": 77
+      }
+    }
+  },
+  "candidate": {
+    "binary": {
+      "path": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-linux-worker/build-candidate/jsrun",
+      "sha256": "f08658d4d945e59775f1c4d3045aeb591cd279c53af1aad7e85709b369eccd03"
+    },
+    "planSHA256": "60915efd7073aa9c042456c1c9fa94b738c79ec13033fade05b9c9c49f64e98c",
+    "summary": {
+      "scheduled": 1515,
+      "recorded": 103,
+      "fullyPassing": 103,
+      "unrun": 1412,
+      "passPercentOfRecorded": 100.0,
+      "harnessStatuses": {
+        "OK": 103
+      },
+      "assertions": {
+        "PASS": 23658
+      },
+      "qualifiedPassingAssertions": 23658,
+      "measurementErrorVariants": 0
+    },
+    "evidence": {
+      "encoding-streams": {
+        "resultsSHA256": "d9d0514b4bb957931fc6852c035875785fc5149e01cedbf9240ec7424b8f13c2",
+        "runSHA256": "cc0c7eeac4fdab041e650124f12cba62c3e61430da52ff0644a6c274ace88d60",
+        "scheduleSHA256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+        "recorded": 26
+      },
+      "encoding-core": {
+        "resultsSHA256": "333a9c65f323e363341a0d57a5493630db3f9cdcf6cb82d5cd47400bf957139c",
+        "runSHA256": "a832701af594026b45b7de1a8c43a83f35340771de1d192acdb575e02d1506ba",
+        "scheduleSHA256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+        "recorded": 77
+      }
+    }
+  }
+}

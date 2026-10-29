@@ -1,0 +1,11 @@
+{
+  "scope": "Excluded incomplete persisted baseline receipt; never repaired by inventing a result row.",
+  "resultsPath": "out/lumen-10292019r/wpt-pair-002/baseline/encoding-streams/results.jsonl",
+  "resultsSHA256": "b95bcee899faa3776cb0ae773bacb5ad373be6beb9a6a849bf11901a999a3092",
+  "recorded": 25,
+  "declaredRecorded": 26,
+  "missingVariant": "/encoding/streams/realms.window.html",
+  "rawConsoleExists": true,
+  "disposition": "Preserved in out; fresh entire103 baseline rerun accepted. Cause of missing persisted row remains undetermined.",
+  "currentAuditorRejection": "Completed group has missing raw results: encoding-streams"
+}

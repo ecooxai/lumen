@@ -1,0 +1,152 @@
+{
+  "schema": 1,
+  "task": "10.292019r",
+  "createdUTC": "2026-10-29T13:26:31.341264+00:00",
+  "scope": "Real Linux x86_64 headless Lumen, unchanged pinned upstream103 encoding variants; not Mac/iPad app execution or full WPT.",
+  "wptRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "fullFrozenVariantCount": 1515,
+  "recorded": 103,
+  "unrun": 1412,
+  "baseline": {
+    "binary": {
+      "path": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-linux-worker/build-baseline/jsrun",
+      "sha256": "33ab865d1613029156864317b7cf0a2d7898855b261e47cd416d6c68c21c9a94"
+    },
+    "planSHA256": "904270e34806adcec3d03fb53650de85efeabce68e387d7f9c070519b9ac4d90",
+    "summary": {
+      "scheduled": 1515,
+      "recorded": 103,
+      "fullyPassing": 101,
+      "unrun": 1412,
+      "passPercentOfRecorded": 98.05825242718447,
+      "harnessStatuses": {
+        "OK": 103
+      },
+      "assertions": {
+        "PASS": 23632,
+        "FAIL": 26
+      },
+      "qualifiedPassingAssertions": 23632,
+      "measurementErrorVariants": 0
+    },
+    "evidence": {
+      "encoding-streams": {
+        "resultsSHA256": "dd7f80b309f05550e6ab77c36246764e37708f3b88549ce7113219c49abf836a",
+        "runSHA256": "77f50ff3884c8e5032018ca37d6e536a043ec7f1db6e92016c138fecbfe4b569",
+        "scheduleSHA256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+        "recorded": 26
+      },
+      "encoding-core": {
+        "resultsSHA256": "dced35c42a955fbf949886e7cf1ea856fc8547fdd9366100c4b5d00e8f9fedcb",
+        "runSHA256": "6146ed6373a6010be42166b147a9ee7aef398cad921bceaa2734424b7f212456",
+        "scheduleSHA256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+        "recorded": 77
+      }
+    }
+  },
+  "candidate": {
+    "binary": {
+      "path": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-linux-worker/build-candidate/jsrun",
+      "sha256": "f08658d4d945e59775f1c4d3045aeb591cd279c53af1aad7e85709b369eccd03"
+    },
+    "planSHA256": "60915efd7073aa9c042456c1c9fa94b738c79ec13033fade05b9c9c49f64e98c",
+    "summary": {
+      "scheduled": 1515,
+      "recorded": 103,
+      "fullyPassing": 103,
+      "unrun": 1412,
+      "passPercentOfRecorded": 100.0,
+      "harnessStatuses": {
+        "OK": 103
+      },
+      "assertions": {
+        "PASS": 23658
+      },
+      "qualifiedPassingAssertions": 23658,
+      "measurementErrorVariants": 0
+    },
+    "evidence": {
+      "encoding-streams": {
+        "resultsSHA256": "d9d0514b4bb957931fc6852c035875785fc5149e01cedbf9240ec7424b8f13c2",
+        "runSHA256": "cc0c7eeac4fdab041e650124f12cba62c3e61430da52ff0644a6c274ace88d60",
+        "scheduleSHA256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+        "recorded": 26
+      },
+      "encoding-core": {
+        "resultsSHA256": "333a9c65f323e363341a0d57a5493630db3f9cdcf6cb82d5cd47400bf957139c",
+        "runSHA256": "a832701af594026b45b7de1a8c43a83f35340771de1d192acdb575e02d1506ba",
+        "scheduleSHA256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+        "recorded": 77
+      }
+    }
+  },
+  "gainedAssertions": 26,
+  "lostAssertions": 0,
+  "noRegression": true,
+  "fullOfficialWptPassPercent": null,
+  "sourceArtifacts": {
+    "engineCommit": "d5a3bc44216f65ce430163518ced2aa10411cfc4",
+    "runtime": "Prebuilt Linux V8 15.7.112.12, RTC=0/WT=0; exact runtime/source manifests archived."
+  },
+  "resourceScope": "One-second per-process telemetry is retained; most cases are subsecond and this does not establish idle/scroll memory acceptance.",
+  "exclusion": "Earlier baseline002 persisted102 rows against declared103 and was rejected; no result was backfilled.",
+  "toolTests": {
+    "auditor": 22,
+    "linuxAdapter": 3,
+    "kind": "Tool tests, not browser conformance."
+  },
+  "files": {
+    "raw-evidence.tar.gz": {
+      "sha256": "9188ce2d1e3107c09938754f25537514a023af00582715214ad61177bf52918d",
+      "bytes": 501743
+    },
+    "excluded-receipt.json": {
+      "sha256": "3b18919ccafdb6bb375c0847644f345c13be92272cbb42b8bfbbaff30c43e71d",
+      "bytes": 641
+    },
+    "excluded-baseline-case-000025-3823eb1ce5.console.log.gz": {
+      "sha256": "81577615f8dc82bf337f0fac4aed16c718cf6dc9e35399552e8ba424cd3bb491",
+      "bytes": 533
+    },
+    "baseline-rerun-timings.json": {
+      "sha256": "fdd70fb6f5b21166086bf60d180f12768c0e20f0f621cfb4a0bcc5bdeef2ed86",
+      "bytes": 1029
+    },
+    "initial-pair-timings.json": {
+      "sha256": "ab87b707a18ffaa932d1080b08e9e80938e80ccb21dc788d32cc991b120630ce",
+      "bytes": 2041
+    },
+    "excluded-baseline-case-000025-3823eb1ce5.metrics.jsonl.gz": {
+      "sha256": "ff4250abfacbce308fc7f09799e8d6fe16d54b25ca70ef9160e0f1c40b18f998",
+      "bytes": 100
+    },
+    "excluded-baseline-results.jsonl.gz": {
+      "sha256": "9dfa605c5c78ab51878d975f6d377cc1b34256593b2d789c3e4febd610064337",
+      "bytes": 5019
+    },
+    "raw-manifest.json": {
+      "sha256": "52b35ac8fbffa374b39915d25cbab6d521fa6347f9cf9a9fbd34c9ea41821752",
+      "bytes": 79554
+    },
+    "independent-auditor.py": {
+      "sha256": "1fde4a01891751b49f620353c3ecbe8106fc65864d4eb49aae40c29efee65664",
+      "bytes": 11516
+    },
+    "execution-adapter.py": {
+      "sha256": "1c3f4c553af7d3208a6d3fc3226c3d17be40ed5390a6e012ecc0e789fd98c85b",
+      "bytes": 19959
+    },
+    "auditor-regression-tests.py": {
+      "sha256": "8c211f1406fdf0c62571a51601abbbe7ffabc58820f76ca9e04303ece944d4df",
+      "bytes": 6891
+    },
+    "independent-audit.json": {
+      "sha256": "95bf7ad94b656a0e446b341f9b95c617d23ca271a851d3ab71dd29939195123c",
+      "bytes": 14110
+    },
+    "excluded-baseline-run.json.gz": {
+      "sha256": "24c65a199ad720bc4065f857d61ac9d3815bf96654cdc11329391805c91eed73",
+      "bytes": 1581
+    }
+  }
+}

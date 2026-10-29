@@ -10,7 +10,7 @@
   "score_state": "accepted_historical_baseline_current_candidate_unaccepted",
   "score_is_wpt_percentage": false,
   "full_official_wpt_pass_percent": null,
-  "updated_utc": "2026-10-29T12:57:56.648281+00:00",
+  "updated_utc": "2026-10-29T13:29:24.484654+00:00",
   "rubric": "agent/scorecard-rubric-20261029-cpu30.md",
   "gates": [
     {
@@ -173,7 +173,7 @@
   "current_baseline_binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
   "current_native_source_commit": "15ab329736c26a3bbb907b718af376206c115436",
   "source_branch": "gpt6-astra-pro_builtin-agents_lumen-10.292019r-worker-xhr",
-  "candidate_acceptance": "pending fresh native execution; Linux tooling does not establish Apple conformance",
-  "accepted_subsystem_checkpoint": "6596e87ffe77bc512e95586e0e556a65ed2269db",
-  "current_iteration_evidence": "agent/evidence/10.292019r-delivery-review-002/review.json"
+  "candidate_acceptance": "Mac build/custom tests verified; Linux Encoding103 and Worker headers36 accepted in recorded scope. Fresh full Mac279/resource and actual IPA/iPad gates pending.",
+  "accepted_subsystem_checkpoint": "d5a3bc44216f65ce430163518ced2aa10411cfc4",
+  "current_iteration_evidence": "agent/evidence/10.292019r-encoding-004/acceptance.json"
 }

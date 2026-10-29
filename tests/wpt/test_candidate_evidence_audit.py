@@ -16,6 +16,20 @@ def row(name="/a.html", status="OK", subtests=None):
 
 
 class CandidateAuditTests(unittest.TestCase):
+    def test_completed_group_with_missing_persisted_row_rejected(self):
+        with self.assertRaisesRegex(ValueError, "missing raw results"):
+            _audit.validate_recorded_count({"finished_schedule": True}, [row()], [row(), row("/b")], "core")
+
+    def test_declared_count_with_missing_persisted_row_rejected(self):
+        with self.assertRaisesRegex(ValueError, "count differs"):
+            _audit.validate_recorded_count({"summary": {"recorded": 2}}, [row()], [row(), row("/b")], "core")
+
+    def test_legitimate_partial_group_retains_unrun(self):
+        _audit.validate_recorded_count({"finished_schedule": False, "summary": {"recorded": 1}}, [row()], [row(), row("/b")], "core")
+
+    def test_legacy_metadata_without_counts_remains_readable(self):
+        _audit.validate_recorded_count({}, [row()], [row(), row("/b")], "core")
+
     def cohorts(self):
         plan = {"wptRevision": "revision", "fullFrozenScheduleSHA256": "frozen", "fullFrozenVariantCount": 1,
                 "frozenSchedule": [{"type": "testharness", "test": "/a.html"}], "groups": {"core": [{"type": "testharness", "test": "/a.html"}]},
