@@ -1,0 +1,49 @@
+{
+  "browserSHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "reference": "Official Google Chrome for Testing156.0.8078.47 Linux x86_64",
+  "rows": [
+    {
+      "rawPath": "out/lumen-10292019r/chromium-1515-atomic-005/url/case-000001-c8f75594b3.result.json",
+      "rawSHA256": "67a9d375a22e7ec74bfd93513b10754607fafbc4e728841659e8cee18a9fb5f8",
+      "test": "/url/IdnaTestV2.any.html",
+      "harnessStatus": "OK",
+      "matchingAssertions": [
+        {
+          "name": "ToASCII(\"\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u10be\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\ucbd95\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac.\u0729.\ucbd95\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        }
+      ]
+    }
+  ]
+}

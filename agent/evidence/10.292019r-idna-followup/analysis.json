@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T16:01:15.547981+00:00",
+  "sourceCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "nativeBinarySHA256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+  "pinnedWPTRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "pinnedFixtureSHA256": "84de621e5239676e59e5a3e68ef3e2b1acde9da5480a633d2ef446ef03238b76",
+  "variant": "/url/IdnaTestV2.any.html",
+  "cases": [
+    {
+      "name": "ToASCII(\"\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+      "input": "\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e",
+      "codepoints": [
+        "U+2D0D",
+        "U+3F8CD",
+        "U+A868",
+        "U+05AE",
+        "U+002E",
+        "U+2D1E"
+      ],
+      "expectedASCIIHost": "xn--5cb172r175fug38a.xn--mlj",
+      "observedNative": "Failed to construct 'URL': Invalid URL",
+      "observedNativeStatus": "FAIL",
+      "relevantNewCodePoint": "U+3F8CD"
+    },
+    {
+      "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u10be\")",
+      "input": "\u10ad\ud8be\udccd\ua868\u05ae.\u10be",
+      "codepoints": [
+        "U+10AD",
+        "U+3F8CD",
+        "U+A868",
+        "U+05AE",
+        "U+002E",
+        "U+10BE"
+      ],
+      "expectedASCIIHost": "xn--5cb172r175fug38a.xn--mlj",
+      "observedNative": "Failed to construct 'URL': Invalid URL",
+      "observedNativeStatus": "FAIL",
+      "relevantNewCodePoint": "U+3F8CD"
+    },
+    {
+      "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+      "input": "\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e",
+      "codepoints": [
+        "U+10AD",
+        "U+3F8CD",
+        "U+A868",
+        "U+05AE",
+        "U+002E",
+        "U+2D1E"
+      ],
+      "expectedASCIIHost": "xn--5cb172r175fug38a.xn--mlj",
+      "observedNative": "Failed to construct 'URL': Invalid URL",
+      "observedNativeStatus": "FAIL",
+      "relevantNewCodePoint": "U+3F8CD"
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\ucbd95\")",
+      "input": "\ud8ba\udcac\u3002\u0729\u3002\ucbd95",
+      "codepoints": [
+        "U+3E8AC",
+        "U+3002",
+        "U+0729",
+        "U+3002",
+        "U+CBD9",
+        "U+0035"
+      ],
+      "expectedASCIIHost": "xn--t92s.xn--znb.xn--5-y88f",
+      "observedNative": "Failed to construct 'URL': Invalid URL",
+      "observedNativeStatus": "FAIL",
+      "relevantNewCodePoint": "U+3E8AC"
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5\")",
+      "input": "\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5",
+      "codepoints": [
+        "U+3E8AC",
+        "U+3002",
+        "U+0729",
+        "U+3002",
+        "U+110D",
+        "U+1173",
+        "U+11AC",
+        "U+0035"
+      ],
+      "expectedASCIIHost": "xn--t92s.xn--znb.xn--5-y88f",
+      "observedNative": "Failed to construct 'URL': Invalid URL",
+      "observedNativeStatus": "FAIL",
+      "relevantNewCodePoint": "U+3E8AC"
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac.\u0729.\ucbd95\")",
+      "input": "\ud8ba\udcac.\u0729.\ucbd95",
+      "codepoints": [
+        "U+3E8AC",
+        "U+002E",
+        "U+0729",
+        "U+002E",
+        "U+CBD9",
+        "U+0035"
+      ],
+      "expectedASCIIHost": "xn--t92s.xn--znb.xn--5-y88f",
+      "observedNative": "Failed to construct 'URL': Invalid URL",
+      "observedNativeStatus": "FAIL",
+      "relevantNewCodePoint": "U+3E8AC"
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5\")",
+      "input": "\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5",
+      "codepoints": [
+        "U+3E8AC",
+        "U+002E",
+        "U+0729",
+        "U+002E",
+        "U+110D",
+        "U+1173",
+        "U+11AC",
+        "U+0035"
+      ],
+      "expectedASCIIHost": "xn--t92s.xn--znb.xn--5-y88f",
+      "observedNative": "Failed to construct 'URL': Invalid URL",
+      "observedNativeStatus": "FAIL",
+      "relevantNewCodePoint": "U+3E8AC"
+    }
+  ],
+  "mappingFacts": {
+    "Unicode18LabeledData": {
+      "rangeStart": "U+3D000",
+      "rangeEnd": "U+3FC3F",
+      "status": "valid",
+      "name": "SMALL SEAL CHARACTER",
+      "includes": [
+        "U+3F8CD",
+        "U+3E8AC"
+      ]
+    },
+    "Unicode17Data": {
+      "rangeStart": "U+3347A",
+      "rangeEnd": "U+3FFFD",
+      "status": "disallowed/reserved",
+      "includes": [
+        "U+3F8CD",
+        "U+3E8AC"
+      ]
+    }
+  },
+  "primaryDataSources": [
+    {
+      "url": "https://www.unicode.org/Public/18.0.0/idna/IdnaMappingTable.txt",
+      "finalURL": "https://www.unicode.org/Public/18.0.0/idna/IdnaMappingTable.txt",
+      "status": 200,
+      "bytes": 801680,
+      "sha256": "a03b1eb38032268c696406a83f0972d6a815acd2c8d4151d42ec0fda70ffced1"
+    },
+    {
+      "url": "https://www.unicode.org/Public/17.0.0/idna/IdnaMappingTable.txt",
+      "finalURL": "https://www.unicode.org/Public/17.0.0/idna/IdnaMappingTable.txt",
+      "status": 200,
+      "bytes": 787378,
+      "sha256": "87f05505dc026fdb2bff16132bdc68a8014675836882a9a2b1844540ad3be382"
+    },
+    {
+      "url": "https://www.unicode.org/Public/18.0.0/idna/IdnaTestV2.txt",
+      "finalURL": "https://www.unicode.org/Public/18.0.0/idna/IdnaTestV2.txt",
+      "status": 200,
+      "bytes": 776565,
+      "sha256": "0236b75c5b20dfd857b3b5cf75509887959d6ab00d6c7bda9b7dc3df518c1fde"
+    }
+  ],
+  "dataVersionStatus": {
+    "versionPage": "https://www.unicode.org/versions/Unicode18.0.0/",
+    "observedVersionPageStatus": "Explicit preliminary draft/upcoming release banner observed on2026-10-29; do not call18.0 a confirmed released version.",
+    "uts46Page": "https://www.unicode.org/reports/tr46/",
+    "observedUTS46Status": "The current UTS46 page labels itself version18.0.0 and stable; this does not remove the version-page draft qualification.",
+    "interpretation": "Use18.0.0-labeled mapping/test data, not an unsupported release-status claim."
+  },
+  "fixtureProvenance": {
+    "all2678PinnedDataObjectsMatch18LabeledOfficialData": true,
+    "method": "Pure in-memory call to unchanged pinned parse() with its three existing exclusion flags; generator main()/writer were not called.",
+    "proof": "pinned-expectations-provenance.json"
+  },
+  "referenceBehavior": {
+    "sameSevenIdentityFailuresConfirmed": true,
+    "browser": "Official Google Chrome for Testing156.0.8078.47 Linux x86_64",
+    "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+    "proof": "reference-seven.json"
+  },
+  "likelySubsystem": "src/base/url.c idna_init()/idna_to_ascii(), ICU UTS46 data/options reached for non-ASCII domain names. The observed native return path rejects ICU errors other than the pre-existing lenient DNS-length/hyphen cases.",
+  "rootCauseStatus": "Likely Unicode-data-version compatibility mismatch; exact loaded native UIDNA Unicode data version and specific UIDNAInfo.errors bits were not measured, so the cause is not proven.",
+  "securityAssessment": "These seven observations are constructor rejections where the frozen fixture expects acceptance. They do not show an invalid hostname being accepted, an origin collision or a network request to an unintended host. This narrow failure-direction analysis is not a general URL/security audit.",
+  "nextSteps": [
+    "Measure actual linked UIDNA Unicode version and specific UIDNAInfo.errors in an isolated diagnostic against the exact accepted prebuilt dependency closure.",
+    "Compare the precise versioned mapping rows and current pinned expectations; evaluate a compatible prebuilt ICU/V8 closure update with full URL/IDNA and security controls in a later session.",
+    "Do not suppress UIDNA_ERROR_DISALLOWED, weaken Bidi/Joiner/forbidden-host checks, alter pinned expected outputs, or claim a runtime fix from this read-only analysis."
+  ],
+  "newNativeTestsOrProductChanges": false
+}

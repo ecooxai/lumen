@@ -1,0 +1,562 @@
+{
+  "startedUTC": "2026-10-29T15:08:31.659858+00:00",
+  "officialWPT": false,
+  "scope": "Actual direct data iframe content handlers, CSP positives/negatives, prior callback preservation and parser registration order",
+  "binarySHA256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+  "fixtureSHA256": "351f5affe091d6d9508f8000746568f34a6e17e7692619bcdcdf5df497c6465f",
+  "pageSHA256": "04add444995ba076852f2f1ad48fd612932e515e90fbdeda9a5f280905953f7e",
+  "nativeGui": true,
+  "nativeLumenExecuted": true,
+  "chromiumControlExecuted": false,
+  "total": 36,
+  "rows": [
+    {
+      "index": 0,
+      "name": "body unsafe-inline positive / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "handler"
+      ]
+    },
+    {
+      "index": 1,
+      "name": "body unsafe-inline positive / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "handler"
+      ]
+    },
+    {
+      "index": 2,
+      "name": "body unsafe-inline positive / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "handler"
+      ]
+    },
+    {
+      "index": 3,
+      "name": "body nonce does not authorize attribute / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready",
+        "nonce-script"
+      ],
+      "expected": [
+        "ready",
+        "nonce-script"
+      ]
+    },
+    {
+      "index": 4,
+      "name": "body nonce does not authorize attribute / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready",
+        "nonce-script"
+      ],
+      "expected": [
+        "ready",
+        "nonce-script"
+      ]
+    },
+    {
+      "index": 5,
+      "name": "body nonce does not authorize attribute / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready",
+        "nonce-script"
+      ],
+      "expected": [
+        "ready",
+        "nonce-script"
+      ]
+    },
+    {
+      "index": 6,
+      "name": "body unsafe-hashes exact positive / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "handler"
+      ]
+    },
+    {
+      "index": 7,
+      "name": "body unsafe-hashes exact positive / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "handler"
+      ]
+    },
+    {
+      "index": 8,
+      "name": "body unsafe-hashes exact positive / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "handler"
+      ]
+    },
+    {
+      "index": 9,
+      "name": "body hash without unsafe-hashes denied / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 10,
+      "name": "body hash without unsafe-hashes denied / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 11,
+      "name": "body hash without unsafe-hashes denied / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 12,
+      "name": "body unsafe-hashes mismatching hash denied / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 13,
+      "name": "body unsafe-hashes mismatching hash denied / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 14,
+      "name": "body unsafe-hashes mismatching hash denied / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 15,
+      "name": "earlier IDL survives blocked parsed attribute / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ]
+    },
+    {
+      "index": 16,
+      "name": "earlier IDL survives blocked parsed attribute / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ]
+    },
+    {
+      "index": 17,
+      "name": "earlier IDL survives blocked parsed attribute / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ]
+    },
+    {
+      "index": 18,
+      "name": "earlier IDL survives body without attribute / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ]
+    },
+    {
+      "index": 19,
+      "name": "earlier IDL survives body without attribute / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ]
+    },
+    {
+      "index": 20,
+      "name": "earlier IDL survives body without attribute / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ]
+    },
+    {
+      "index": 21,
+      "name": "getter compiled content handler survives later policy / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready",
+        "getter-observed",
+        "prior-content",
+        "later-listener"
+      ],
+      "expected": [
+        "ready",
+        "getter-observed",
+        "prior-content",
+        "later-listener"
+      ]
+    },
+    {
+      "index": 22,
+      "name": "getter compiled content handler survives later policy / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready",
+        "getter-observed",
+        "prior-content",
+        "later-listener"
+      ],
+      "expected": [
+        "ready",
+        "getter-observed",
+        "prior-content",
+        "later-listener"
+      ]
+    },
+    {
+      "index": 23,
+      "name": "getter compiled content handler survives later policy / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready",
+        "getter-observed",
+        "prior-content",
+        "later-listener"
+      ],
+      "expected": [
+        "ready",
+        "getter-observed",
+        "prior-content",
+        "later-listener"
+      ]
+    },
+    {
+      "index": 24,
+      "name": "head listener precedes parsed body handler / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready",
+        "head-listener",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "handler"
+      ]
+    },
+    {
+      "index": 25,
+      "name": "head listener precedes parsed body handler / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready",
+        "head-listener",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "handler"
+      ]
+    },
+    {
+      "index": 26,
+      "name": "head listener precedes parsed body handler / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready",
+        "head-listener",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "handler"
+      ]
+    },
+    {
+      "index": 27,
+      "name": "dynamic blocked attribute preserves earlier IDL / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready",
+        "prior-idl",
+        "prior-retained"
+      ],
+      "expected": [
+        "ready",
+        "prior-idl",
+        "prior-retained"
+      ]
+    },
+    {
+      "index": 28,
+      "name": "dynamic blocked attribute preserves earlier IDL / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready",
+        "prior-idl",
+        "prior-retained"
+      ],
+      "expected": [
+        "ready",
+        "prior-idl",
+        "prior-retained"
+      ]
+    },
+    {
+      "index": 29,
+      "name": "dynamic blocked attribute preserves earlier IDL / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready",
+        "prior-idl",
+        "prior-retained"
+      ],
+      "expected": [
+        "ready",
+        "prior-idl",
+        "prior-retained"
+      ]
+    },
+    {
+      "index": 30,
+      "name": "frameset restrictive meta denied / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 31,
+      "name": "frameset restrictive meta denied / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 32,
+      "name": "frameset restrictive meta denied / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 33,
+      "name": "frameset unsafe-inline positive / data iframe completed",
+      "ok": true,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "handler"
+      ]
+    },
+    {
+      "index": 34,
+      "name": "frameset unsafe-inline positive / opaque origin and parent DOM denied",
+      "ok": true,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "handler"
+      ]
+    },
+    {
+      "index": 35,
+      "name": "frameset unsafe-inline positive / exact callback policy and registration order",
+      "ok": true,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "handler"
+      ]
+    }
+  ],
+  "infrastructureErrors": [],
+  "metrics": {
+    "samples": 2,
+    "steady_samples": 2,
+    "interval_cpu_samples": 1,
+    "steady_interval_cpu_samples": 1,
+    "max_sampling_gap_s": 1.007,
+    "cpu_mean_percent": 23.15,
+    "steady_cpu_mean_percent": 23.15,
+    "steady_cpu_median_percent": 23.15,
+    "steady_cpu_p95_percent": 46.3,
+    "cpu_peak_percent": 46.3,
+    "interval_cpu_mean_percent": 60.558,
+    "steady_interval_cpu_mean_percent": 60.558,
+    "steady_interval_cpu_median_percent": 60.558,
+    "steady_interval_cpu_p95_percent": 60.558,
+    "interval_cpu_peak_percent": 60.558,
+    "rss_peak_mb": 251.062,
+    "rss_final_mb": 251.062,
+    "rss_steady_median_mb": 125.547,
+    "rss_steady_p95_mb": 251.062,
+    "rss_steady_growth_mb": 251.031,
+    "in_memory_sample_limit": 600,
+    "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+    "quantile_scope": "all recorded samples",
+    "errors": [],
+    "sample_interval_s": 1,
+    "stop_reason": "requested_stop",
+    "telemetry_status": "captured",
+    "interval_cpu_coverage": "available",
+    "observed_span_s": 1.007,
+    "root_start_identity": "Thu Oct 29 08:08:31 2026",
+    "root_cpu_start_identity": null,
+    "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+    "cpu_time_source": "ps time (fractional seconds on macOS)",
+    "cpu_time_resolution_s": null,
+    "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+    "memory_unit": "MiB (legacy field names retain mb)",
+    "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+    "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+    "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+  },
+  "cleanup": {
+    "sent_sigterm": true,
+    "sent_sigkill": false,
+    "error": null,
+    "post_signal_verification": {
+      "allowed_wait_s": 1,
+      "initial_live_members": {},
+      "duration_ms": 20
+    },
+    "process_group_gone": true,
+    "remaining_group_members": {},
+    "root_exit_code": 0
+  },
+  "naturalExitCode": null,
+  "finishedUTC": "2026-10-29T15:08:33.479171+00:00",
+  "durationSeconds": 1.819,
+  "recorded": 36,
+  "passed": 36,
+  "failed": 0,
+  "unrun": 0
+}

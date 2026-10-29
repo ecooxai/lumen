@@ -1,0 +1,463 @@
+{
+  "startedUTC": "2026-10-29T15:07:49.515809+00:00",
+  "sourceBaseCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "branch": "gpt6-astra-pro_builtin-agents_lumen-10.292019r-worker-xhr",
+  "platform": "Darwin arm64",
+  "compiledSourceManifest": "out/10292019r-mac/native-worker-004/compiled-source-sha256.json",
+  "sourceManifestSHA256": "a33bd4cb98e3a2fec4ecdc8f4567747a7ac735e1cd3c43b11104782fd9efa7c2",
+  "fixtures": {
+    "tests/test_worker_async_lifecycle.cc": "f2d2b205e23ae691251c2d63869f0f1137666d14ea1323aa85eab7ef5a63ae83",
+    "tests/test_worker_lifecycle.cc": "d146221825308a98e82e717349947a0ecd348cbece60d092e30073ac274b758f",
+    "tests/test_net_background.c": "53520309eedbfe4ba92965b28c04d4cd93a27f56cf39f6f3a244f1c1a0d397e6",
+    "tests/test_net_cancel.c": "c221a4d1bb02f8067d504ae1a52aa7e3212afe599707712095cd3b21cfc9f1d4",
+    "tests/test_worker_response_headers.py": "9b2c3193da9ec4d5b53ab551c3c23b5f856f1cac5ec500cc519520358874c8a0",
+    "tests/test_worker_progress_event.html": "2b5d2e1478d27798c33ec81c91b9c4597737929d6719cd6f331a1863271bf9e2",
+    "tests/test_worker_progress_event.py": "a59712bf12b6cfa8341d88a968b08e28d53c26e60b2a7898b046a9f83fabc879",
+    "tests/test_blob_range_whitespace.py": "2744b223eea439ff5e0292c6c86baabc71d447037350193fafee3455217996f5",
+    "tests/test_sync_xhr_watchdog.py": "d1c31e53828468dbce1c251debe3ecd63651358399ef05b4b657bbac656bdff4",
+    "tests/test_formdata_realm.py": "9c57415c26165afa728bf4fe021b3c7ce42d74deda2c23e5449badb2ae5b0f96",
+    "tests/test_form_navigation.cc": "a8963d8d022b7e7f9c85ef7100c5602d9560055fadac682e259c36500eb0916e",
+    "tests/test_form_data_navigation.cc": "031191035493c9627f9fa300ce4673c49969de94586e05f9e47a46a27969ac14",
+    "tests/test_csp_inherit.c": "6f275d16cdc66c73376776108850feffbed0fe4b0ce9d625af0653c5e0350292",
+    "tests/test_data_form_csp.py": "74b8b67c2d5c8015da5e7524fbf873012000496c0dbcfac1ec0f1427d5b56749",
+    "tests/test_parser_handler_policy.py": "806a487469ee3fd19ba3e3c7cad576c00a00b141e0a571e11338306e5b8df7db",
+    "tests/fixtures/parser-handler-policy.html": "c20ae4a5082eb6afb1053e986f03d081f04eefd087b266ccab46493b288e84e0",
+    "tests/test_body_window_handlers.py": "04bbd4c2d5044b0d402f4c6354d98e6fab1cc70f94ccfa0d7c4963da4f8948e9",
+    "tests/test_borrowed_window_handlers.py": "3cf3649d288b9cd810b727b33c3af500030d143187115aa1045b54458c590e6c",
+    "tests/test_parser_handler_csp.py": "351f5affe091d6d9508f8000746568f34a6e17e7692619bcdcdf5df497c6465f",
+    "tests/jsrun.c": "d0d12f80aea6e49008cee674c90c164a4e3b5207b7152a2f6f2066d344ad63c1"
+  },
+  "buildCache": "build-apple-load-20261029",
+  "acceptedBaseline": {
+    "path": "out/10292019r-mac/baseline/lumen-accepted-c259da2597a6e064",
+    "sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849"
+  },
+  "prebuiltV8": "Existing /opt/homebrew/opt/v8; no V8 source build",
+  "rtc": true,
+  "webtransport": true,
+  "stages": [
+    {
+      "name": "build",
+      "startedUTC": "2026-10-29T15:07:49.553194+00:00",
+      "finishedUTC": "2026-10-29T15:07:54.598098+00:00",
+      "durationSeconds": 5.081,
+      "passed": true,
+      "command": [
+        "make",
+        "-j3",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/lumen",
+        "build-apple-load-20261029/jsrun",
+        "build-apple-load-20261029/test_worker_lifecycle",
+        "build-apple-load-20261029/test_worker_async_lifecycle",
+        "build-apple-load-20261029/test_net_cancel",
+        "build-apple-load-20261029/test_net_background",
+        "build-apple-load-20261029/test_form_navigation",
+        "build-apple-load-20261029/test_form_data_navigation",
+        "build-apple-load-20261029/test_csp_inherit"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/build.json",
+      "monitorSHA256": "07e98486670060de975911057d5bb7006213eb3787093e07e39698abcf21d05b",
+      "log": "out/10292019r-mac/native-worker-004/build.log",
+      "logSHA256": "9b83c7db55b6877512486db34d77560c1f3d9f8a7ef2fdc621e703fcb53c3fc5",
+      "resultLines": []
+    },
+    {
+      "name": "test_worker_lifecycle",
+      "startedUTC": "2026-10-29T15:07:54.814002+00:00",
+      "finishedUTC": "2026-10-29T15:07:55.880395+00:00",
+      "durationSeconds": 1.109,
+      "passed": true,
+      "command": [
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/test_worker_lifecycle-c9cfb2229e757031"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/test_worker_lifecycle.json",
+      "monitorSHA256": "a2e4a06c168d99bc1e6246db4b2342615b142b74def0ecaad02759f3359a1588",
+      "log": "out/10292019r-mac/native-worker-004/test_worker_lifecycle.log",
+      "logSHA256": "36b233d457ea6cb8ec608af8c75a7b13d9456c93c692630768923ac3738a92e0",
+      "resultLines": [
+        "RESULTS worker-lifecycle PASS (266/266 checks)"
+      ]
+    },
+    {
+      "name": "test_worker_async_lifecycle",
+      "startedUTC": "2026-10-29T15:07:55.919673+00:00",
+      "finishedUTC": "2026-10-29T15:07:57.998089+00:00",
+      "durationSeconds": 2.118,
+      "passed": true,
+      "command": [
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/test_worker_async_lifecycle-e207f490511011d8"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/test_worker_async_lifecycle.json",
+      "monitorSHA256": "796307e584b9c53adcbde38d555eb99d3bd1ae91867f1ed8ed0e5ca6e28566dc",
+      "log": "out/10292019r-mac/native-worker-004/test_worker_async_lifecycle.log",
+      "logSHA256": "6eb01dd9ffb301497715153860f179aae8786c427806a195707c0a70c67c4473",
+      "resultLines": [
+        "RESULTS worker-async-lifecycle PASS (118/118 checks)"
+      ]
+    },
+    {
+      "name": "test_net_cancel",
+      "startedUTC": "2026-10-29T15:07:58.036551+00:00",
+      "finishedUTC": "2026-10-29T15:07:59.107724+00:00",
+      "durationSeconds": 1.108,
+      "passed": true,
+      "command": [
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/test_net_cancel-b864e08e4159e606"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/test_net_cancel.json",
+      "monitorSHA256": "455d5881a17259a9040ab567d2ab75782222582110c1a422b8cd6bb9f121124b",
+      "log": "out/10292019r-mac/native-worker-004/test_net_cancel.log",
+      "logSHA256": "161d2680440eb150658c66d5e64115ccede04f83c017aef83c436f204ce3691e",
+      "resultLines": []
+    },
+    {
+      "name": "test_net_background",
+      "startedUTC": "2026-10-29T15:07:59.141747+00:00",
+      "finishedUTC": "2026-10-29T15:08:00.219572+00:00",
+      "durationSeconds": 1.112,
+      "passed": true,
+      "command": [
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/test_net_background-cdab2d507837980e"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/test_net_background.json",
+      "monitorSHA256": "4bd00a3f180cac803c01d5d8a7ba4235b25dc3149f67b00fa8493b631c52622d",
+      "log": "out/10292019r-mac/native-worker-004/test_net_background.log",
+      "logSHA256": "fe98c3a481a2849f0a186b95a38741b86e96b39cc8ed1dc377e1a93627d4ff88",
+      "resultLines": []
+    },
+    {
+      "name": "test_form_navigation",
+      "startedUTC": "2026-10-29T15:08:00.256478+00:00",
+      "finishedUTC": "2026-10-29T15:08:03.347785+00:00",
+      "durationSeconds": 3.128,
+      "passed": true,
+      "command": [
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/test_form_navigation-7293a91fa2660f42"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/test_form_navigation.json",
+      "monitorSHA256": "fd06a72bfe2e9db85f42ff4e1d42e0f75f77be41401c0e3f03cae8f30825faf5",
+      "log": "out/10292019r-mac/native-worker-004/test_form_navigation.log",
+      "logSHA256": "fc0ad0b30b9119a0e964c8996fdedf78c5b69d1cb903052b78e7556f06b35d14",
+      "resultLines": [
+        "RESULTS form-navigation PASS (67/67 checks)"
+      ]
+    },
+    {
+      "name": "test_form_data_navigation",
+      "startedUTC": "2026-10-29T15:08:03.385529+00:00",
+      "finishedUTC": "2026-10-29T15:08:05.437727+00:00",
+      "durationSeconds": 2.088,
+      "passed": true,
+      "command": [
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/test_form_data_navigation-5a42bec345858d1b"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/test_form_data_navigation.json",
+      "monitorSHA256": "e7ba6464d404be9243e428fe553c93a9dc40b5f374f05e85c8e9dc5957b1c148",
+      "log": "out/10292019r-mac/native-worker-004/test_form_data_navigation.log",
+      "logSHA256": "58bb40a2c1c066dc8c6a45629f4a0e0ce583af8b466693e095093eee43570fa6",
+      "resultLines": [
+        "RESULTS form-data-navigation PASS (52/52 checks)"
+      ]
+    },
+    {
+      "name": "test_csp_inherit",
+      "startedUTC": "2026-10-29T15:08:05.476431+00:00",
+      "finishedUTC": "2026-10-29T15:08:06.559279+00:00",
+      "durationSeconds": 1.122,
+      "passed": true,
+      "command": [
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/test_csp_inherit-6dd9c011e4fcca35"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/test_csp_inherit.json",
+      "monitorSHA256": "1728a49df421bb4c7b973369c585994e7aabd619a4f07aca5afd6eb4365a19a5",
+      "log": "out/10292019r-mac/native-worker-004/test_csp_inherit.log",
+      "logSHA256": "0c917021fa107e67d79acdaa0e4c773d30af03caad5277c4231574e5197ab0d3",
+      "resultLines": [
+        "RESULTS 245/245 checks passed"
+      ]
+    },
+    {
+      "name": "worker-headers",
+      "startedUTC": "2026-10-29T15:08:06.594662+00:00",
+      "finishedUTC": "2026-10-29T15:08:08.672952+00:00",
+      "durationSeconds": 2.113,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_worker_response_headers.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7",
+        "--output",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/worker-headers-receipt.json"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/worker-headers.json",
+      "monitorSHA256": "5dd56c668eedb545048c3840ac049655a16bf00f84c16393cb15f77992a6d0dd",
+      "log": "out/10292019r-mac/native-worker-004/worker-headers.log",
+      "logSHA256": "e296824dcd30cbb5bb4274e02c17710308bafcb81a1f6aa1a138529d350ae735",
+      "resultLines": []
+    },
+    {
+      "name": "progress-event",
+      "startedUTC": "2026-10-29T15:08:08.706279+00:00",
+      "finishedUTC": "2026-10-29T15:08:11.763334+00:00",
+      "durationSeconds": 3.092,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_worker_progress_event.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7",
+        "--output",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/progress-event-receipt.json"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/progress-event.json",
+      "monitorSHA256": "2fc2bfdccc67798f2a8c41040935b5d3424ce3f7655e4304769800cf46a40958",
+      "log": "out/10292019r-mac/native-worker-004/progress-event.log",
+      "logSHA256": "d3800827a809508fe0b73ff2a5206fe0a8ee3dbc032dadacc47c0a84aa5b63c9",
+      "resultLines": []
+    },
+    {
+      "name": "blob-range",
+      "startedUTC": "2026-10-29T15:08:11.803911+00:00",
+      "finishedUTC": "2026-10-29T15:08:12.849774+00:00",
+      "durationSeconds": 1.084,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_blob_range_whitespace.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7",
+        "--output",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/blob-range-receipt.json"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/blob-range.json",
+      "monitorSHA256": "d7318bb0bfcfeabdf862c199bdfc7b035f79e99dcf700ed3d9bb406e26b14da6",
+      "log": "out/10292019r-mac/native-worker-004/blob-range.log",
+      "logSHA256": "533eab4e2261c1a9c5f3cd43c49666ff8684506e2fe490f604ec9b7e2d7cdeed",
+      "resultLines": []
+    },
+    {
+      "name": "sync-watchdog",
+      "startedUTC": "2026-10-29T15:08:12.890023+00:00",
+      "finishedUTC": "2026-10-29T15:08:22.952314+00:00",
+      "durationSeconds": 10.102,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_sync_xhr_watchdog.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7",
+        "--output",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/sync-watchdog-receipt.json"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/sync-watchdog.json",
+      "monitorSHA256": "f540d307a04e0596870080e5c9827f81ad52c84729a963681eab41fc453ab2ea",
+      "log": "out/10292019r-mac/native-worker-004/sync-watchdog.log",
+      "logSHA256": "4b46ea0f8176dc48d39ab2f0a8a37053cd638505d1383ad4013b0b6ba579c2ba",
+      "resultLines": [
+        "RESULTS sync-xhr-watchdog PASS (47/47 checks)"
+      ]
+    },
+    {
+      "name": "cross-realm",
+      "startedUTC": "2026-10-29T15:08:22.989528+00:00",
+      "finishedUTC": "2026-10-29T15:08:24.076569+00:00",
+      "durationSeconds": 1.124,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_formdata_realm.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7",
+        "--output",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/cross-realm-receipt.json"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/cross-realm.json",
+      "monitorSHA256": "4e8a6b8c0200e25960daac6241afee4de671d8d315735186332fc16bcd545ef8",
+      "log": "out/10292019r-mac/native-worker-004/cross-realm.log",
+      "logSHA256": "c50fbf1aea8d16586a13982ce3e404243094985585cee3910c65ae427f5e19f2",
+      "resultLines": []
+    },
+    {
+      "name": "data-policy",
+      "startedUTC": "2026-10-29T15:08:24.114767+00:00",
+      "finishedUTC": "2026-10-29T15:08:25.183312+00:00",
+      "durationSeconds": 1.106,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_data_form_csp.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7",
+        "--output",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/data-policy-receipt.json"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/data-policy.json",
+      "monitorSHA256": "8a63d2c8054b366dac599b60eec1bdb07df7e1388a949396ddebee8289880082",
+      "log": "out/10292019r-mac/native-worker-004/data-policy.log",
+      "logSHA256": "cb4040b04b089513b63306dd7a647476e5ba6be99d4407299a0c6e012af462f3",
+      "resultLines": []
+    },
+    {
+      "name": "parser-handler-policy",
+      "startedUTC": "2026-10-29T15:08:25.219300+00:00",
+      "finishedUTC": "2026-10-29T15:08:27.297997+00:00",
+      "durationSeconds": 2.114,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_parser_handler_policy.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7",
+        "--output",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/parser-handler-policy-receipt.json"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/parser-handler-policy.json",
+      "monitorSHA256": "3bcfcc684f0cfdc6e8d67fc1b203fcf7870f271849b1225e39b4987432bf9678",
+      "log": "out/10292019r-mac/native-worker-004/parser-handler-policy.log",
+      "logSHA256": "ff3e22f343ac61a9ebc222409bef58aa5d6e5d760b51d72111b596fbd7bed574",
+      "resultLines": []
+    },
+    {
+      "name": "parser-handler-controls",
+      "startedUTC": "2026-10-29T15:08:27.333353+00:00",
+      "finishedUTC": "2026-10-29T15:08:29.385459+00:00",
+      "durationSeconds": 2.087,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_parser_handler_csp.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7",
+        "--output",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/parser-handler-controls-receipt.json"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/parser-handler-controls.json",
+      "monitorSHA256": "1087ee324ff34b7ef45b2dc4f5807f3a7d8424528ee966df3bf58c9097a9f0cd",
+      "log": "out/10292019r-mac/native-worker-004/parser-handler-controls.log",
+      "logSHA256": "6bdc37dd2294148de02011c8091fbd143c04cbd236d71719cb2b433fb9953d7e",
+      "resultLines": []
+    },
+    {
+      "name": "body-window-handlers",
+      "startedUTC": "2026-10-29T15:08:29.420787+00:00",
+      "finishedUTC": "2026-10-29T15:08:30.484539+00:00",
+      "durationSeconds": 1.098,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_body_window_handlers.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/body-window-handlers.json",
+      "monitorSHA256": "18046ec822fe3629fb90602768a62b7ef57ad724223b036eac037b3f89ce2ceb",
+      "log": "out/10292019r-mac/native-worker-004/body-window-handlers.log",
+      "logSHA256": "1c65d89d1b46b69affd5a6ad762c93e00b2939e596843ee541440b59f2dfa462",
+      "resultLines": [
+        "RESULTS body-window-handlers PASS (45/45 checks)"
+      ]
+    },
+    {
+      "name": "borrowed-window-handlers",
+      "startedUTC": "2026-10-29T15:08:30.517608+00:00",
+      "finishedUTC": "2026-10-29T15:08:31.581444+00:00",
+      "durationSeconds": 1.097,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_borrowed_window_handlers.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/borrowed-window-handlers.json",
+      "monitorSHA256": "13455268372fba8e691c952686269edf2b6409b1e1dbc8574a335baac3cdb66c",
+      "log": "out/10292019r-mac/native-worker-004/borrowed-window-handlers.log",
+      "logSHA256": "863f88c04393a6ae2e918e48f50a2f52cc86f3d74def19dfa2cc2ee03626cf7b",
+      "resultLines": [
+        "RESULTS borrowed-window-handlers PASS (4/4 checks)"
+      ]
+    },
+    {
+      "name": "parser-handler-gui",
+      "startedUTC": "2026-10-29T15:08:31.614024+00:00",
+      "finishedUTC": "2026-10-29T15:08:33.668604+00:00",
+      "durationSeconds": 2.088,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.12/bin/python3.12",
+        "tests/test_parser_handler_csp.py",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/lumen-f906769431c7a25b",
+        "--native-gui",
+        "--output",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/parser-handler-gui-receipt.json"
+      ],
+      "monitor": "out/10292019r-mac/native-worker-004/parser-handler-gui.json",
+      "monitorSHA256": "7ca1e0522d366d856d93d6ff108e45241483814d26bbdf20837c9c6850736940",
+      "log": "out/10292019r-mac/native-worker-004/parser-handler-gui.log",
+      "logSHA256": "14cd49da67195b183029125d2234a7231aeab24234cdad3ea1b503657ddc1f5d",
+      "resultLines": []
+    }
+  ],
+  "artifacts": {
+    "lumen": {
+      "path": "out/10292019r-mac/native-worker-004/lumen-f906769431c7a25b",
+      "sha256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+      "bytes": 14111560
+    },
+    "jsrun": {
+      "path": "out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7",
+      "sha256": "96693ac8d8f914f75563335fae20876a7c30922f77679525ae9697f9cb1e04cb",
+      "bytes": 13900328
+    },
+    "test_worker_lifecycle": {
+      "path": "out/10292019r-mac/native-worker-004/test_worker_lifecycle-c9cfb2229e757031",
+      "sha256": "c9cfb2229e75703188d6edade2f2a43f1a9dbdddc615e1dfa1cc9da7546aa8b7",
+      "bytes": 13935960
+    },
+    "test_worker_async_lifecycle": {
+      "path": "out/10292019r-mac/native-worker-004/test_worker_async_lifecycle-e207f490511011d8",
+      "sha256": "e207f490511011d839a5b1a253b08acc92bc61c5c9c3cd07ca26636fb4f43304",
+      "bytes": 13961208
+    },
+    "test_net_cancel": {
+      "path": "out/10292019r-mac/native-worker-004/test_net_cancel-b864e08e4159e606",
+      "sha256": "b864e08e4159e60697144b60e49ba160cc59882701d5bdeb0650c83ef1c0e9d3",
+      "bytes": 694832
+    },
+    "test_net_background": {
+      "path": "out/10292019r-mac/native-worker-004/test_net_background-cdab2d507837980e",
+      "sha256": "cdab2d507837980e791d805aa9d7a85e9c2f92aff32c647e6f00ca1af2d75e13",
+      "bytes": 695728
+    },
+    "test_form_navigation": {
+      "path": "out/10292019r-mac/native-worker-004/test_form_navigation-7293a91fa2660f42",
+      "sha256": "7293a91fa2660f427a0dfd894da7faf131a4be4811db3c84a5ab9272d51f3588",
+      "bytes": 13972552
+    },
+    "test_form_data_navigation": {
+      "path": "out/10292019r-mac/native-worker-004/test_form_data_navigation-5a42bec345858d1b",
+      "sha256": "5a42bec345858d1b8974969b22d0ea7bd9ea152b5584997484335949825b517f",
+      "bytes": 13928408
+    },
+    "test_csp_inherit": {
+      "path": "out/10292019r-mac/native-worker-004/test_csp_inherit-6dd9c011e4fcca35",
+      "sha256": "6dd9c011e4fcca352bf6a42e2fd8f0b489040712f3ff8ab4954750d42b54f3a9",
+      "bytes": 693776
+    }
+  },
+  "passed": true,
+  "scope": "Native Mac worker regressions; WPT and GUI/IPA acceptance are separate.",
+  "linkedV8": [
+    "/opt/homebrew/opt/v8/libexec/libv8.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "/opt/homebrew/opt/v8/libexec/libv8_libplatform.dylib (compatibility version 0.0.0, current version 0.0.0)",
+    "/opt/homebrew/opt/v8/libexec/libv8_libbase.dylib (compatibility version 0.0.0, current version 0.0.0)"
+  ],
+  "finishedUTC": "2026-10-29T15:08:33.713743+00:00",
+  "durationSeconds": 44.191
+}

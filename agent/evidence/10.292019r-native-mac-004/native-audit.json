@@ -1,0 +1,174 @@
+{
+  "startedUTC": "2026-10-29T15:52:14.597410+00:00",
+  "auditorVersion": 2,
+  "issues": [],
+  "phases": {
+    "scroll": {
+      "cumulativeCPUIntervalsCrosschecked": 112,
+      "CPUDisagreements": [],
+      "phases": {
+        "scrolling": {
+          "samples": 36,
+          "CPUIntervals": 35,
+          "durationSeconds": 35.04,
+          "maximumGapSeconds": 1.027,
+          "CPUMeanPercent": 12.773,
+          "CPUMedianPercent": 13.947,
+          "CPU_P95Percent": 17.021,
+          "CPUPeakPercent": 18.855,
+          "RSSStartMiB": 161.53125,
+          "RSSEndMiB": 156.109375,
+          "RSSPeakMiB": 166.5625
+        },
+        "idle:after": {
+          "samples": 50,
+          "CPUIntervals": 49,
+          "durationSeconds": 49.015,
+          "maximumGapSeconds": 1.048,
+          "CPUMeanPercent": 0.102,
+          "CPUMedianPercent": 0.0,
+          "CPU_P95Percent": 0.996,
+          "CPUPeakPercent": 0.999,
+          "RSSStartMiB": 155.609375,
+          "RSSEndMiB": 155.609375,
+          "RSSPeakMiB": 155.609375
+        }
+      },
+      "scrollMovement": [
+        {
+          "kind": "scroll-complete",
+          "events": 2718,
+          "lastEventMs": 46374.171000003815,
+          "maxY": 6000.07177734375,
+          "finalY": 6000.07177734375,
+          "url": "http://127.0.0.1:59453/page/0?nonce=1a51e1995cda5e57fc3c77598865a2d2",
+          "step": 0
+        }
+      ],
+      "ownedWindowCapture": {
+        "screenshot": "out/10292019r-mac/native-resources-worker-004/scroll/native-window/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png",
+        "screenshotSHA256": "d230757d5d7659b4763833e3da42aeb14fea0129963949efcb27ed258ad0da78",
+        "width": 1000,
+        "height": 700
+      }
+    },
+    "navigation": {
+      "cumulativeCPUIntervalsCrosschecked": 161,
+      "CPUDisagreements": [],
+      "phases": {
+        "idle:before": {
+          "samples": 15,
+          "CPUIntervals": 14,
+          "durationSeconds": 14.041,
+          "maximumGapSeconds": 1.045,
+          "CPUMeanPercent": 0.072,
+          "CPUMedianPercent": 0.0,
+          "CPU_P95Percent": 1.002,
+          "CPUPeakPercent": 1.002,
+          "RSSStartMiB": 159.125,
+          "RSSEndMiB": 159.125,
+          "RSSPeakMiB": 159.125
+        },
+        "navigation": {
+          "samples": 58,
+          "CPUIntervals": 57,
+          "durationSeconds": 57.012,
+          "maximumGapSeconds": 1.033,
+          "CPUMeanPercent": 1.808,
+          "CPUMedianPercent": 0.0,
+          "CPU_P95Percent": 6.011,
+          "CPUPeakPercent": 7.962,
+          "RSSStartMiB": 160.109375,
+          "RSSEndMiB": 160.3125,
+          "RSSPeakMiB": 160.65625
+        },
+        "idle:after": {
+          "samples": 62,
+          "CPUIntervals": 61,
+          "durationSeconds": 61.013,
+          "maximumGapSeconds": 1.056,
+          "CPUMeanPercent": 0.082,
+          "CPUMedianPercent": 0.0,
+          "CPU_P95Percent": 0.986,
+          "CPUPeakPercent": 2.002,
+          "RSSStartMiB": 160.515625,
+          "RSSEndMiB": 148.34375,
+          "RSSPeakMiB": 160.515625
+        }
+      },
+      "settledRSS": {
+        "initial_median_mib": 159.125,
+        "final_median_mib": 148.34375,
+        "growth_mib": -10.78125,
+        "growth_fraction": -0.06775333857030637
+      },
+      "nativeCounters": {
+        "initial": {
+          "malloc_in_use": 0.6,
+          "nodes": 1218.0,
+          "styles": 11.0,
+          "css_parsed": 0.0,
+          "workers": 0.0,
+          "heap": 0.0,
+          "ext": 0.0
+        },
+        "final": {
+          "malloc_in_use": 0.6,
+          "nodes": 1218.0,
+          "styles": 11.0,
+          "css_parsed": 0.1,
+          "workers": 0.0,
+          "heap": 0.0,
+          "ext": 0.0
+        }
+      }
+    }
+  },
+  "scope": "Exact native Mac binary, synthetic SDL scroll,20 actual navigations and100-cycle native worker fixture; not iPad/IPA or universal resource guarantee",
+  "cpuConvention": "Cumulative process CPU seconds / elapsed seconds *100;100% is one logical core",
+  "passed": true,
+  "buildSummarySHA256": "7d2247dd8f360a646bdba708cec1d54b63153ee5fd947e9daef25ac1a5467307",
+  "sourceBaseCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "sourceManifestSHA256": "a33bd4cb98e3a2fec4ecdc8f4567747a7ac735e1cd3c43b11104782fd9efa7c2",
+  "productArtifact": {
+    "path": "out/10292019r-mac/native-worker-004/lumen-f906769431c7a25b",
+    "sha256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+    "bytes": 14111560
+  },
+  "stress": {
+    "cycles": 100,
+    "checks": 12094,
+    "journalRecords": 2003,
+    "checkpoints": 101,
+    "durationSeconds": 103.046,
+    "CPU_P95Percent": 41.88,
+    "CPUPeakPercent": 46.578,
+    "RSSPeakMiB": 80.703125,
+    "warmRSSMiB": 77.046875,
+    "finalRSSMiB": 61.390625,
+    "warmThreads": 12,
+    "finalThreads": 12,
+    "warmFDs": 4,
+    "finalFDs": 4,
+    "maximumGapSeconds": 1.052,
+    "boundedSettlingObservations": [
+      {
+        "cycle": 39,
+        "initial_threads": 13,
+        "initial_fds": 4,
+        "final_threads": 12,
+        "final_fds": 4,
+        "elapsed_ms": 9,
+        "limit_ms": 500
+      }
+    ]
+  },
+  "archive": {
+    "path": "out/10292019r-mac/native-audit-004/GPT6-Astra-Pro_builtin-agents_devinmac3d-native-acceptance-raw.tar.gz",
+    "sha256": "87ae78243ac044ca5a0496cdd295ed5e5634625a05978dc909aa444f71cf2d57",
+    "bytes": 232183,
+    "files": 35
+  },
+  "finishedUTC": "2026-10-29T15:52:14.660024+00:00",
+  "durationSeconds": 0.063
+}

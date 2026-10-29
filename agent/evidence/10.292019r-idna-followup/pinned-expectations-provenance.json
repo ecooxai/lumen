@@ -1,0 +1,66 @@
+{
+  "method": "Pure in-memory call to the pinned WPT parse() with its three existing exclusions; main() and generation writer were not executed. No fixture bytes changed.",
+  "parserSHA256": "9f5241e76b0aa2ef8a9c89082aa7c4322030bfe424071d5dfbf5208c4e9364ea",
+  "versionedInputSHA256": "0236b75c5b20dfd857b3b5cf75509887959d6ab00d6c7bda9b7dc3df518c1fde",
+  "allPinnedDataMatches18LabeledGeneratedObjects": true,
+  "pinnedEntries": 2678,
+  "generatedEntries": 2678,
+  "sevenMatches": [
+    {
+      "name": "ToASCII(\"\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+      "matches18LabeledTestData": true,
+      "expected": {
+        "input": "\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e",
+        "output": "xn--5cb172r175fug38a.xn--mlj"
+      }
+    },
+    {
+      "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u10be\")",
+      "matches18LabeledTestData": true,
+      "expected": {
+        "input": "\u10ad\ud8be\udccd\ua868\u05ae.\u10be",
+        "output": "xn--5cb172r175fug38a.xn--mlj"
+      }
+    },
+    {
+      "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+      "matches18LabeledTestData": true,
+      "expected": {
+        "input": "\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e",
+        "output": "xn--5cb172r175fug38a.xn--mlj"
+      }
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\ucbd95\")",
+      "matches18LabeledTestData": true,
+      "expected": {
+        "input": "\ud8ba\udcac\u3002\u0729\u3002\ucbd95",
+        "output": "xn--t92s.xn--znb.xn--5-y88f"
+      }
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5\")",
+      "matches18LabeledTestData": true,
+      "expected": {
+        "input": "\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5",
+        "output": "xn--t92s.xn--znb.xn--5-y88f"
+      }
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac.\u0729.\ucbd95\")",
+      "matches18LabeledTestData": true,
+      "expected": {
+        "input": "\ud8ba\udcac.\u0729.\ucbd95",
+        "output": "xn--t92s.xn--znb.xn--5-y88f"
+      }
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5\")",
+      "matches18LabeledTestData": true,
+      "expected": {
+        "input": "\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5",
+        "output": "xn--t92s.xn--znb.xn--5-y88f"
+      }
+    }
+  ]
+}

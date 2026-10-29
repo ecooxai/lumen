@@ -1,0 +1,347 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T16:00:28.665351+00:00",
+  "status": "Accepted scoped native Mac development milestone; not a shared IPA or full-project completion claim",
+  "sourceCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "compiledSourceManifestSHA256": "a33bd4cb98e3a2fec4ecdc8f4567747a7ac735e1cd3c43b11104782fd9efa7c2",
+  "buildSummarySHA256": "7d2247dd8f360a646bdba708cec1d54b63153ee5fd947e9daef25ac1a5467307",
+  "artifact": {
+    "path": "out/10292019r-mac/native-worker-004/lumen-f906769431c7a25b",
+    "sha256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+    "bytes": 14111560
+  },
+  "platform": "Darwin arm64; macOS26.6.2 execution",
+  "model": "GPT-6 Astra Pro",
+  "agent": "built-in lumen_apple_performance",
+  "transport": "Agent-authored carriers relayed through parent devinmac3d; independent local exact-archive readback",
+  "nativeBuildStages": {
+    "passed": 19,
+    "total": 19,
+    "seconds": 44.191
+  },
+  "securityRegression": {
+    "originalActualMacFixtureSHA256": "c20ae4a5082eb6afb1053e986f03d081f04eefd087b266ccab46493b288e84e0",
+    "heldNative003": "7/9 with loaded opaque child prerequisites; later forbidden handlers executed",
+    "currentNative004": "9/9, all prerequisites observed",
+    "actualNative004FocusedCases": "36/36",
+    "scope": "Parser-position CSP handler activation, positives/negatives and earlier callback retention; not universal security certification"
+  },
+  "sampling": {
+    "intervalSeconds": 1,
+    "cpuConvention": "Cumulative process CPU seconds / elapsed seconds *100;100% is one logical core",
+    "rssUnit": "MiB; summed process RSS may double-count shared mappings",
+    "rawCPUIntervalsCrosschecked": 273,
+    "CPUDisagreements": []
+  },
+  "scroll": {
+    "cumulativeCPUIntervalsCrosschecked": 112,
+    "CPUDisagreements": [],
+    "phases": {
+      "scrolling": {
+        "samples": 36,
+        "CPUIntervals": 35,
+        "durationSeconds": 35.04,
+        "maximumGapSeconds": 1.027,
+        "CPUMeanPercent": 12.773,
+        "CPUMedianPercent": 13.947,
+        "CPU_P95Percent": 17.021,
+        "CPUPeakPercent": 18.855,
+        "RSSStartMiB": 161.53125,
+        "RSSEndMiB": 156.109375,
+        "RSSPeakMiB": 166.5625
+      },
+      "idle:after": {
+        "samples": 50,
+        "CPUIntervals": 49,
+        "durationSeconds": 49.015,
+        "maximumGapSeconds": 1.048,
+        "CPUMeanPercent": 0.102,
+        "CPUMedianPercent": 0.0,
+        "CPU_P95Percent": 0.996,
+        "CPUPeakPercent": 0.999,
+        "RSSStartMiB": 155.609375,
+        "RSSEndMiB": 155.609375,
+        "RSSPeakMiB": 155.609375
+      }
+    },
+    "scrollMovement": [
+      {
+        "kind": "scroll-complete",
+        "events": 2718,
+        "lastEventMs": 46374.171000003815,
+        "maxY": 6000.07177734375,
+        "finalY": 6000.07177734375,
+        "url": "http://127.0.0.1:59453/page/0?nonce=1a51e1995cda5e57fc3c77598865a2d2",
+        "step": 0
+      }
+    ],
+    "ownedWindowCapture": {
+      "screenshot": "out/10292019r-mac/native-resources-worker-004/scroll/native-window/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png",
+      "screenshotSHA256": "d230757d5d7659b4763833e3da42aeb14fea0129963949efcb27ed258ad0da78",
+      "width": 1000,
+      "height": 700
+    }
+  },
+  "navigation": {
+    "cumulativeCPUIntervalsCrosschecked": 161,
+    "CPUDisagreements": [],
+    "phases": {
+      "idle:before": {
+        "samples": 15,
+        "CPUIntervals": 14,
+        "durationSeconds": 14.041,
+        "maximumGapSeconds": 1.045,
+        "CPUMeanPercent": 0.072,
+        "CPUMedianPercent": 0.0,
+        "CPU_P95Percent": 1.002,
+        "CPUPeakPercent": 1.002,
+        "RSSStartMiB": 159.125,
+        "RSSEndMiB": 159.125,
+        "RSSPeakMiB": 159.125
+      },
+      "navigation": {
+        "samples": 58,
+        "CPUIntervals": 57,
+        "durationSeconds": 57.012,
+        "maximumGapSeconds": 1.033,
+        "CPUMeanPercent": 1.808,
+        "CPUMedianPercent": 0.0,
+        "CPU_P95Percent": 6.011,
+        "CPUPeakPercent": 7.962,
+        "RSSStartMiB": 160.109375,
+        "RSSEndMiB": 160.3125,
+        "RSSPeakMiB": 160.65625
+      },
+      "idle:after": {
+        "samples": 62,
+        "CPUIntervals": 61,
+        "durationSeconds": 61.013,
+        "maximumGapSeconds": 1.056,
+        "CPUMeanPercent": 0.082,
+        "CPUMedianPercent": 0.0,
+        "CPU_P95Percent": 0.986,
+        "CPUPeakPercent": 2.002,
+        "RSSStartMiB": 160.515625,
+        "RSSEndMiB": 148.34375,
+        "RSSPeakMiB": 160.515625
+      }
+    },
+    "settledRSS": {
+      "initial_median_mib": 159.125,
+      "final_median_mib": 148.34375,
+      "growth_mib": -10.78125,
+      "growth_fraction": -0.06775333857030637
+    },
+    "nativeCounters": {
+      "initial": {
+        "malloc_in_use": 0.6,
+        "nodes": 1218.0,
+        "styles": 11.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      },
+      "final": {
+        "malloc_in_use": 0.6,
+        "nodes": 1218.0,
+        "styles": 11.0,
+        "css_parsed": 0.1,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    }
+  },
+  "workerStress": {
+    "cycles": 100,
+    "checks": 12094,
+    "journalRecords": 2003,
+    "checkpoints": 101,
+    "durationSeconds": 103.046,
+    "CPU_P95Percent": 41.88,
+    "CPUPeakPercent": 46.578,
+    "RSSPeakMiB": 80.703125,
+    "warmRSSMiB": 77.046875,
+    "finalRSSMiB": 61.390625,
+    "warmThreads": 12,
+    "finalThreads": 12,
+    "warmFDs": 4,
+    "finalFDs": 4,
+    "maximumGapSeconds": 1.052,
+    "boundedSettlingObservations": [
+      {
+        "cycle": 39,
+        "initial_threads": 13,
+        "initial_fds": 4,
+        "final_threads": 12,
+        "final_fds": 4,
+        "elapsed_ms": 9,
+        "limit_ms": 500
+      }
+    ]
+  },
+  "resourceVerdict": {
+    "passed": true,
+    "scrollPeakBelow30Percent": true,
+    "universalLeakFreedomClaimed": false,
+    "workerStressCPUIsNotScrollingCPU": true,
+    "postNavigationNodesStylesWorkersStable": true,
+    "settledRSSGrowthAfter20NavigationsObserved": false
+  },
+  "frozenWPT1515": {
+    "scheduled": 1515,
+    "recorded": 1515,
+    "fullyPassing": 1454,
+    "unrun": 0,
+    "passPercentOfRecorded": 95.97359735973598,
+    "harnessStatuses": {
+      "OK": 1455,
+      "TIMEOUT": 30,
+      "ERROR": 30
+    },
+    "assertions": {
+      "PASS": 1166858,
+      "FAIL": 7
+    },
+    "qualifiedPassingAssertions": 1166858,
+    "measurementErrorVariants": 0
+  },
+  "fullOfficialWPTPassRate": null,
+  "chromeReference": {
+    "referenceBinary": {
+      "path": "/tmp/astra10292021-runtime/chrome-linux64/chrome",
+      "sha256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2"
+    },
+    "referenceVersion": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/156.0.8078.47",
+      "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "jsVersion": "15.6.75.19"
+    },
+    "native": {
+      "scheduled": 1515,
+      "recorded": 1515,
+      "fullyPassing": 1454,
+      "unrun": 0,
+      "passPercentOfRecorded": 95.97359735973598,
+      "harnessStatuses": {
+        "OK": 1455,
+        "TIMEOUT": 30,
+        "ERROR": 30
+      },
+      "assertions": {
+        "PASS": 1166858,
+        "FAIL": 7
+      },
+      "qualifiedPassingAssertions": 1166858,
+      "measurementErrorVariants": 0
+    },
+    "chrome": {
+      "scheduled": 1515,
+      "recorded": 1515,
+      "fullyPassing": 1462,
+      "unrun": 0,
+      "passPercentOfRecorded": 96.5016501650165,
+      "harnessStatuses": {
+        "OK": 1515
+      },
+      "assertions": {
+        "PASS": 1166990,
+        "FAIL": 1023
+      },
+      "qualifiedPassingAssertions": 1166990,
+      "measurementErrorVariants": 0
+    },
+    "chromePassingAssertionsRetained": 1165970,
+    "chromePassingAssertionsTotal": 1166990,
+    "chromePassingAssertionsMissing": 1020,
+    "chromePassingVariantsRetained": 1410,
+    "scope": "Every1515 frozen priority variant: actual nativeMac004 versus fresh LinuxChrome156.0.8078.47, identical canonical selected metadata and457pinned source/dependency files. Different platform/V8; not full officialWPT or generalChrome parity."
+  },
+  "referenceDistributionProof": "agent/evidence/10.292019r-official-chrome-provenance/acceptance.json",
+  "coreDurableFiles": [
+    {
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-f9067694-raw-evidence.tar.gz",
+      "bytes": 232183,
+      "sha256": "87ae78243ac044ca5a0496cdd295ed5e5634625a05978dc909aa444f71cf2d57",
+      "libraryFileId": "libfile_f56c40b538488191a38bee0eae391567",
+      "sourcePath": "out/10292019r-mac/native-audit-004/GPT6-Astra-Pro_builtin-agents_devinmac3d-native-acceptance-raw.tar.gz",
+      "currentVersion": 0
+    },
+    {
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-f9067694-development.zip",
+      "bytes": 10817367,
+      "sha256": "55f66f2157dc842c6f1ee5991797996234073abf931cd0bb147f2de71aadb8b2",
+      "libraryFileId": "libfile_ef0c879266848191966b74e9636d4eed",
+      "sourcePath": "out/10292019r-mac/native-package-004/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac-development.zip",
+      "currentVersion": 0
+    },
+    {
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-frozen1515-raw-evidence.tar.gz",
+      "bytes": 22387049,
+      "sha256": "c3907096ab71cb5c4a166a577efbe30c7070b0729fc2f5f3d0eda7f2fc929bfb",
+      "libraryFileId": "libfile_53f1721fcf98819180e082361d6bc4a3",
+      "sourcePath": "out/10292019r-mac/independent-final-004/raw-evidence.tar.gz",
+      "currentVersion": 0
+    },
+    {
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac003-b816-held-WPT-measurement.tar.gz",
+      "bytes": 22258263,
+      "sha256": "195355102fec7f84dcc6c935ffe8b5dc8cff1e300a4d0d7ab44cf18bf9604dee",
+      "libraryFileId": "libfile_93240e1df3948191bc4aa00631538899",
+      "sourcePath": "out/10292019r-mac/independent-final-003/raw-evidence.tar.gz",
+      "currentVersion": 0
+    },
+    {
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-audit-metadata.tar.gz",
+      "bytes": 382112,
+      "sha256": "dda1bd21dfea730222a8a2c3bca3308a84cc10e1086551e8b4842d16f222592d",
+      "libraryFileId": "libfile_fdf94ade349081919b5a80f1359cede8",
+      "sourcePath": "out/10292019r-artifact-shipment-004/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-audit-metadata.tar.gz",
+      "currentVersion": 0
+    }
+  ],
+  "copiedRawMetadata": {
+    "agent/evidence/10.292019r-native-mac-004/build-summary.json": {
+      "sha256": "7d2247dd8f360a646bdba708cec1d54b63153ee5fd947e9daef25ac1a5467307",
+      "bytes": 22298
+    },
+    "agent/evidence/10.292019r-native-mac-004/native-audit.json": {
+      "sha256": "f9502ffcd3e2ba9abffef3cd46f9f5df985a06324acd28adf34666ef35a61306",
+      "bytes": 5474
+    },
+    "agent/evidence/10.292019r-native-mac-004/package-summary.json": {
+      "sha256": "dfb94857d4b5778051c33dbc4ac4b9e8a941f03c68245f27645d6a253d864917",
+      "bytes": 65105
+    },
+    "agent/evidence/10.292019r-native-mac-004/actual-gui-nine.json": {
+      "sha256": "2197c8861d4f7caa350b34dab54d3f83cc32866b5c41b02ea9407e52dcfed552",
+      "bytes": 5765
+    },
+    "agent/evidence/10.292019r-native-mac-004/actual-gui-thirty-six.json": {
+      "sha256": "cced4bed39572fd2a687b5e7393fe268d856adad57f3497720721f66d1988768",
+      "bytes": 13451
+    },
+    "agent/evidence/10.292019r-native-mac-004/wpt-resource-audit.json": {
+      "sha256": "6d1219adab94761094e4dc1a9a1bc0e2b0c34d98f149886cfb94c5203a38249c",
+      "bytes": 26007
+    }
+  },
+  "visibleWindowCapture": {
+    "screenshot": "out/10292019r-mac/native-resources-worker-004/scroll/native-window/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png",
+    "screenshotSHA256": "d230757d5d7659b4763833e3da42aeb14fea0129963949efcb27ed258ad0da78",
+    "width": 1000,
+    "height": 700
+  },
+  "visualReview": "Parent visually inspected the new1000x700 owned window: coherent toolbar, legible rows54\u201373, consistent borders; controlled synthetic page only",
+  "scopeLimits": [
+    "Scroll input uses synthetic SDL wheel events; no OS trackpad or arbitrary-website performance guarantee.",
+    "The100-cycle worker soak is a native engine test executable linked to the same compiled source; it is separate from the GUI scroll workload.",
+    "One worker checkpoint observed a borrowed OS thread settle13\u219212 within9ms under the unchanged500ms lifetime bound; final threads12 and FDs4 are stable.",
+    "The original-six1850 assertion proof and optional additional XHR53 are being preserved in a separate final addendum, not silently included in these five archive hashes.",
+    "Current native iPad application and identical signed IPA execution remain unverified; expected mobile dependency closures and accessible signing/profile prerequisites were absent.",
+    "Full official WPT and the user98/100 overall goal are not established by this selected-test percentage."
+  ]
+}

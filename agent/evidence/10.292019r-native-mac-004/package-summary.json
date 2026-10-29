@@ -1,0 +1,1544 @@
+{
+  "startedUTC": "2026-10-29T15:51:50.703948+00:00",
+  "platform": "Darwin arm64 native macOS application",
+  "scope": "Local development .app, external installed Homebrew dependencies, ad-hoc signature; not IPA, portable distribution or notarized release",
+  "sourceBaseCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "sourceManifestSHA256": "a33bd4cb98e3a2fec4ecdc8f4567747a7ac735e1cd3c43b11104782fd9efa7c2",
+  "buildSummary": "out/10292019r-mac/native-worker-004/summary.json",
+  "buildSummarySHA256": "7d2247dd8f360a646bdba708cec1d54b63153ee5fd947e9daef25ac1a5467307",
+  "productArtifact": {
+    "path": "out/10292019r-mac/native-worker-004/lumen-f906769431c7a25b",
+    "sha256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+    "bytes": 14111560
+  },
+  "reviewedToolHashes": {
+    "tools/mkdevapp.py": "cdb6080a912ca7056e8c07666dd6c5ad96511a4dd0744cf7208410660b2ab6b4",
+    "tools/macos_deployment_closure.py": "1a7bf265eb6fadcf630d8ffc44f173c43e950df9b10cf217176cb0823b8c11c7",
+    "tools/monitor_process.py": "46bda36325c6881ceed174ef6fc19fd4745b64894c833717949ea60e4a18d3e1"
+  },
+  "stages": [
+    {
+      "name": "package",
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tools/mkdevapp.py",
+        "--output",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-package-004/delivery/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r.app",
+        "--binary",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/lumen-f906769431c7a25b",
+        "--expected-binary-sha256",
+        "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+        "--identifier",
+        "ai.ecoox.lumen.gpt6as.10292019r"
+      ],
+      "durationSeconds": 2.038,
+      "monitor": "out/10292019r-mac/native-package-004/package.json",
+      "monitorSHA256": "4f82c77032a6b53d188ad43e0ec2cfd8c2c0a1e505b644dab8a4d551ebc66672",
+      "logSHA256": "0f7144a340400f712061e9d3e17aac44a30df3caab5529128d386d7425ade23d",
+      "maxSamplingGapSeconds": 1.024,
+      "intervalCPU_P95Percent": 27.332,
+      "intervalCPU_PeakPercent": 27.332,
+      "cpuUnit": "percent of one logical CPU; may exceed 100",
+      "rssPeakMiB": 36.156
+    },
+    {
+      "name": "launch",
+      "passed": true,
+      "command": [
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-package-004/delivery/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r.app/Contents/MacOS/lumen",
+        "file:///Users/devin/repos/lumen/out/10292019r-mac/native-package-004/package-launch.html"
+      ],
+      "durationSeconds": 16.061,
+      "monitor": "out/10292019r-mac/native-package-004/launch.json",
+      "monitorSHA256": "560981fc9428ec42c66018b3f651e39b92d68a0fe74959c5af29d8a230bdca1c",
+      "logSHA256": "bda7d51050d988f2271470f2e69823cceaa493526431b7af9182344477dae0a0",
+      "maxSamplingGapSeconds": 1.028,
+      "intervalCPU_P95Percent": 38.223,
+      "intervalCPU_PeakPercent": 38.223,
+      "cpuUnit": "percent of one logical CPU; may exceed 100",
+      "rssPeakMiB": 160.156
+    },
+    {
+      "name": "verify",
+      "passed": true,
+      "command": [
+        "/usr/bin/codesign",
+        "--verify",
+        "--strict",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-package-004/delivery/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r.app"
+      ],
+      "durationSeconds": 0.075,
+      "monitor": "out/10292019r-mac/native-package-004/verify.json",
+      "monitorSHA256": "04eb655f443223f7434d3fc1a6e7c5a7963cdaa0e390444a314ad6ed041e358a",
+      "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "maxSamplingGapSeconds": 0.036,
+      "intervalCPU_P95Percent": null,
+      "intervalCPU_PeakPercent": null,
+      "cpuUnit": "percent of one logical CPU; may exceed 100",
+      "rssPeakMiB": 5.578
+    },
+    {
+      "name": "archive",
+      "passed": true,
+      "command": [
+        "/usr/bin/ditto",
+        "-c",
+        "-k",
+        "--sequesterRsrc",
+        "--keepParent",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-package-004/delivery",
+        "/Users/devin/repos/lumen/out/10292019r-mac/native-package-004/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac-development.zip"
+      ],
+      "durationSeconds": 1.051,
+      "monitor": "out/10292019r-mac/native-package-004/archive.json",
+      "monitorSHA256": "dc0679a2cb1c9da2ebbaed5edd6d5dbfa1f895bd7b339a7c9930b7448f592969",
+      "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "maxSamplingGapSeconds": 1.01,
+      "intervalCPU_P95Percent": null,
+      "intervalCPU_PeakPercent": null,
+      "cpuUnit": "percent of one logical CPU; may exceed 100",
+      "rssPeakMiB": 5.797
+    }
+  ],
+  "passed": true,
+  "priorBundleInspection": {
+    "path": "out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app",
+    "exists": true,
+    "modified": false,
+    "bundleIdentifier": "ai.ecoox.lumen.gpt6as.wasm",
+    "minimumSystemVersion": "26.0",
+    "executableSHA256": "9392c988ad72070a5fce2d1f901a1268d74ec5e704858f7b085bb69f93107c4c",
+    "signatureVerificationExitCode": 0
+  },
+  "package": {
+    "app": "/Users/devin/repos/lumen/out/10292019r-mac/native-package-004/delivery/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r.app",
+    "executable": "/Users/devin/repos/lumen/out/10292019r-mac/native-package-004/delivery/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r.app/Contents/MacOS/lumen",
+    "bundleIdentifier": "ai.ecoox.lumen.gpt6as.10292019r",
+    "developmentOnly": true,
+    "sourceExecutable": "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/lumen-f906769431c7a25b",
+    "expectedBinarySha256Verified": true,
+    "binaryBeforeBundleSigningSha256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+    "binarySha256": "e832a48f9d779368a266a6ff4b73f2b29c239a38082b33a65e844d3dba2c8ffb",
+    "minimumSystemVersion": "26.0",
+    "deploymentClosure": {
+      "schemaVersion": 1,
+      "architecture": "arm64",
+      "platform": "macos",
+      "executable": "/Users/devin/repos/lumen/out/10292019r-mac/native-package-004/delivery/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r.app/Contents/MacOS/lumen",
+      "maximumDeclaredMinimum": "26.0",
+      "nonSystemClosureFullyResolved": true,
+      "files": [
+        {
+          "path": "/Users/devin/repos/lumen/out/10292019r-mac/native-package-004/delivery/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r.app/Contents/MacOS/lumen",
+          "bytes": 14047664,
+          "sha256": "e832a48f9d779368a266a6ff4b73f2b29c239a38082b33a65e844d3dba2c8ffb",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libiconv.2.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/icu4c@78/lib/libicuuc.78.dylib",
+              "resolved": "/opt/homebrew/Cellar/icu4c@78/78.3/lib/libicuuc.78.3.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libssl.3.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libcrypto.3.dylib"
+            },
+            {
+              "installName": "/usr/lib/libz.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/brotli/lib/libbrotlidec.1.dylib",
+              "resolved": "/opt/homebrew/Cellar/brotli/1.2.0/lib/libbrotlidec.1.2.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/zstd/lib/libzstd.1.dylib",
+              "resolved": "/opt/homebrew/Cellar/zstd/1.5.7_1/lib/libzstd.1.5.7.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/freetype/lib/libfreetype.6.dylib",
+              "resolved": "/opt/homebrew/Cellar/freetype/2.14.3/lib/libfreetype.6.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/harfbuzz/lib/libharfbuzz.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/harfbuzz/14.5.1/lib/libharfbuzz.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/sdl3/lib/libSDL3.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/sdl3/3.4.16/lib/libSDL3.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/v8/libexec/libv8.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/v8/libexec/libv8_libplatform.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libplatform.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/v8/libexec/libv8_libbase.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libbase.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/wgpu-native/lib/libwgpu_native.dylib",
+              "resolved": "/opt/homebrew/Cellar/wgpu-native/29.0.1.1/lib/libwgpu_native.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/ffmpeg/lib/libavcodec.63.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavcodec.63.1.102.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/ffmpeg/lib/libavformat.63.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavformat.63.1.102.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/ffmpeg/lib/libavutil.61.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavutil.61.1.102.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/ffmpeg/lib/libswscale.10.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libswscale.10.1.102.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/ffmpeg/lib/libswresample.7.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libswresample.7.1.102.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/libpng/lib/libpng16.16.dylib",
+              "resolved": "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/jpeg-turbo/lib/libjpeg.8.dylib",
+              "resolved": "/opt/homebrew/Cellar/jpeg-turbo/3.2.0/lib/libjpeg.8.3.2.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/webp/lib/libwebp.7.dylib",
+              "resolved": "/opt/homebrew/Cellar/webp/1.6.0/lib/libwebp.7.2.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/webp/lib/libwebpdemux.2.dylib",
+              "resolved": "/opt/homebrew/Cellar/webp/1.6.0/lib/libwebpdemux.2.0.17.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/webp/lib/libsharpyuv.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/webp/1.6.0/lib/libsharpyuv.0.1.2.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/giflib/lib/libgif.dylib",
+              "resolved": "/opt/homebrew/Cellar/giflib/6.1.3/lib/libgif.7.2.0.dylib"
+            },
+            {
+              "installName": "/System/Library/Frameworks/Cocoa.framework/Versions/A/Cocoa",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/QuartzCore.framework/Versions/A/QuartzCore",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/Metal.framework/Versions/A/Metal",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/AVFoundation.framework/Versions/A/AVFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/ScreenCaptureKit.framework/Versions/A/ScreenCaptureKit",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libobjc.A.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/icu4c@78/78.3/lib/libicuuc.78.3.dylib",
+          "bytes": 1859408,
+          "sha256": "a78b3424a391c7afad52c0d69df9cdb7818b6c20f909a14d193ae0c66a5c1119",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "@loader_path/libicudata.78.dylib",
+              "resolved": "/opt/homebrew/Cellar/icu4c@78/78.3/lib/libicudata.78.3.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libssl.3.dylib",
+          "bytes": 890256,
+          "sha256": "014b05445f628540dbb80d755d8ffbfc0e3ec7af475f888afc5bc5f7a52d8ffb",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libcrypto.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libcrypto.3.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libcrypto.3.dylib",
+          "bytes": 4874336,
+          "sha256": "31180b62269748133aaa870deedce8037a9b51547887c6c0be56a58e3a6a9a4a",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/brotli/1.2.0/lib/libbrotlidec.1.2.0.dylib",
+          "bytes": 70128,
+          "sha256": "d3e0c23866ac9123a56ff28b71ad5e0b9ccc4207f5ef56751898f5294e7eaa8b",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "@rpath/libbrotlicommon.1.dylib",
+              "resolved": "/opt/homebrew/Cellar/brotli/1.2.0/lib/libbrotlicommon.1.2.0.dylib"
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/zstd/1.5.7_1/lib/libzstd.1.5.7.dylib",
+          "bytes": 635328,
+          "sha256": "602d50cbe6fad0f0da6d1b73284ae3f75316015aea482ebd55614b6df2406b43",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/freetype/2.14.3/lib/libfreetype.6.dylib",
+          "bytes": 623888,
+          "sha256": "3e85a7f40549dc2d42d68fcd5b18eefd5a41079d1b5a5933888c585b8e1fed9e",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libz.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libbz2.1.0.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/libpng/lib/libpng16.16.dylib",
+              "resolved": "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/harfbuzz/14.5.1/lib/libharfbuzz.0.dylib",
+          "bytes": 1263024,
+          "sha256": "98a7a4136080b89bd457dee953eea72ea8b703eaaf9fdcba18d7b361e6dfbf4b",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/freetype/lib/libfreetype.6.dylib",
+              "resolved": "/opt/homebrew/Cellar/freetype/2.14.3/lib/libfreetype.6.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/glib/lib/libglib-2.0.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/glib/2.90.0/lib/libglib-2.0.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/graphite2/lib/libgraphite2.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib"
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreText.framework/Versions/A/CoreText",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/sdl3/3.4.16/lib/libSDL3.0.dylib",
+          "bytes": 2519824,
+          "sha256": "ae2bdbdc49aa00c2027858eb331b3eb34542c9382c0c2dd4bdaa9e4988eb0bbc",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/Cocoa.framework/Versions/A/Cocoa",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/UniformTypeIdentifiers.framework/Versions/A/UniformTypeIdentifiers",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/ForceFeedback.framework/Versions/A/ForceFeedback",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/Carbon.framework/Versions/A/Carbon",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreAudio.framework/Versions/A/CoreAudio",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/AudioToolbox.framework/Versions/A/AudioToolbox",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/AVFoundation.framework/Versions/A/AVFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/GameController.framework/Versions/A/GameController",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/Metal.framework/Versions/A/Metal",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/QuartzCore.framework/Versions/A/QuartzCore",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreHaptics.framework/Versions/A/CoreHaptics",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libobjc.A.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8.dylib",
+          "bytes": 58725328,
+          "sha256": "0a29ecc47ab9bee167a024816dd22d949fb9b755b9e9606d2bc4a40214e55130",
+          "minimumMacOSVersion": "13.0",
+          "dependencies": [
+            {
+              "installName": "@rpath/libv8_libplatform.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libplatform.dylib"
+            },
+            {
+              "installName": "@rpath/libv8_libbase.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libbase.dylib"
+            },
+            {
+              "installName": "@rpath/libthird_party_abseil-cpp_absl.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_abseil-cpp_absl.dylib"
+            },
+            {
+              "installName": "@rpath/libthird_party_icu_icui18n.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_icu_icui18n.dylib"
+            },
+            {
+              "installName": "@rpath/libicuuc.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libicuuc.dylib"
+            },
+            {
+              "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib"
+            },
+            {
+              "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib"
+            },
+            {
+              "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_shim.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_shim.dylib"
+            },
+            {
+              "installName": "@rpath/libchrome_zlib.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libchrome_zlib.dylib"
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libplatform.dylib",
+          "bytes": 171776,
+          "sha256": "fdfcb079996d81353c65f5cba2ab4d85ad62e0b58f2d15302ff4dab8459120e7",
+          "minimumMacOSVersion": "13.0",
+          "dependencies": [
+            {
+              "installName": "@rpath/libv8_libbase.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libbase.dylib"
+            },
+            {
+              "installName": "@rpath/libthird_party_abseil-cpp_absl.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_abseil-cpp_absl.dylib"
+            },
+            {
+              "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib"
+            },
+            {
+              "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib"
+            },
+            {
+              "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_shim.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_shim.dylib"
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libbase.dylib",
+          "bytes": 435216,
+          "sha256": "4d7a3756a942dc97d0f080864a7ad366c9e7de4a5c50093506146e424338edd4",
+          "minimumMacOSVersion": "13.0",
+          "dependencies": [
+            {
+              "installName": "@rpath/libthird_party_abseil-cpp_absl.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_abseil-cpp_absl.dylib"
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/wgpu-native/29.0.1.1/lib/libwgpu_native.dylib",
+          "bytes": 6773568,
+          "sha256": "c2c93e8df9f116c1a941b572358cd14b446126715a8868c6c8d4f87935aee5c1",
+          "minimumMacOSVersion": "11.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/QuartzCore.framework/Versions/A/QuartzCore",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/Metal.framework/Versions/A/Metal",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libobjc.A.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libiconv.2.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavcodec.63.1.102.dylib",
+          "bytes": 9748848,
+          "sha256": "9ce2e6d93ef08a6674ff50a9ab329694c398e8280779c43e7eaffc6fe067db9a",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libswresample.7.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libswresample.7.1.102.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavutil.61.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavutil.61.1.102.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/libvpx/lib/libvpx.12.dylib",
+              "resolved": "/opt/homebrew/Cellar/libvpx/1.17.0/lib/libvpx.12.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libiconv.2.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/xz/lib/liblzma.5.dylib",
+              "resolved": "/opt/homebrew/Cellar/xz/5.8.4/lib/liblzma.5.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/dav1d/lib/libdav1d.7.dylib",
+              "resolved": "/opt/homebrew/Cellar/dav1d/1.5.4/lib/libdav1d.7.dylib"
+            },
+            {
+              "installName": "/System/Library/Frameworks/AudioToolbox.framework/Versions/A/AudioToolbox",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/lame/lib/libmp3lame.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/lame/4.0/lib/libmp3lame.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/opus/lib/libopus.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/opus/1.6.1/lib/libopus.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/svt-av1/lib/libSvtAv1Enc.4.dylib",
+              "resolved": "/opt/homebrew/Cellar/svt-av1/4.2.0/lib/libSvtAv1Enc.4.2.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/x264/lib/libx264.165.dylib",
+              "resolved": "/opt/homebrew/Cellar/x264/r3222/lib/libx264.165.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/x265/lib/libx265.217.dylib",
+              "resolved": "/opt/homebrew/Cellar/x265/4.3/lib/libx265.217.dylib"
+            },
+            {
+              "installName": "/usr/lib/libz.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/VideoToolbox.framework/Versions/A/VideoToolbox",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libssl.3.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libcrypto.3.dylib"
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavformat.63.1.102.dylib",
+          "bytes": 2373376,
+          "sha256": "282e63f30f3fd0c8bf5dd41493d0764f67a5140683cc74134912816fa51efbae",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavcodec.63.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavcodec.63.1.102.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libswresample.7.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libswresample.7.1.102.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavutil.61.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavutil.61.1.102.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libbz2.1.0.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libz.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libssl.3.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libcrypto.3.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/libvpx/lib/libvpx.12.dylib",
+              "resolved": "/opt/homebrew/Cellar/libvpx/1.17.0/lib/libvpx.12.dylib"
+            },
+            {
+              "installName": "/usr/lib/libiconv.2.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/xz/lib/liblzma.5.dylib",
+              "resolved": "/opt/homebrew/Cellar/xz/5.8.4/lib/liblzma.5.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/dav1d/lib/libdav1d.7.dylib",
+              "resolved": "/opt/homebrew/Cellar/dav1d/1.5.4/lib/libdav1d.7.dylib"
+            },
+            {
+              "installName": "/System/Library/Frameworks/AudioToolbox.framework/Versions/A/AudioToolbox",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/lame/lib/libmp3lame.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/lame/4.0/lib/libmp3lame.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/opus/lib/libopus.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/opus/1.6.1/lib/libopus.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/svt-av1/lib/libSvtAv1Enc.4.dylib",
+              "resolved": "/opt/homebrew/Cellar/svt-av1/4.2.0/lib/libSvtAv1Enc.4.2.0.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/x264/lib/libx264.165.dylib",
+              "resolved": "/opt/homebrew/Cellar/x264/r3222/lib/libx264.165.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/x265/lib/libx265.217.dylib",
+              "resolved": "/opt/homebrew/Cellar/x265/4.3/lib/libx265.217.dylib"
+            },
+            {
+              "installName": "/System/Library/Frameworks/VideoToolbox.framework/Versions/A/VideoToolbox",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavutil.61.1.102.dylib",
+          "bytes": 643584,
+          "sha256": "fece27810ff85c21b2eab640428c737cddcbf09105bac16c3f4856ec721d8818",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libz.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libssl.3.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libcrypto.3.dylib"
+            },
+            {
+              "installName": "/System/Library/Frameworks/VideoToolbox.framework/Versions/A/VideoToolbox",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libswscale.10.1.102.dylib",
+          "bytes": 688752,
+          "sha256": "5aa9795516bd448166c6301df93fb0a3123e58d10db0bb694a248b092b39069c",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavutil.61.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavutil.61.1.102.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libz.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libssl.3.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libcrypto.3.dylib"
+            },
+            {
+              "installName": "/System/Library/Frameworks/VideoToolbox.framework/Versions/A/VideoToolbox",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libswresample.7.1.102.dylib",
+          "bytes": 87104,
+          "sha256": "08f4884a5b93a0e9fca2656c4eba8d967c94c329274291d73bbaddf226b470a9",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavutil.61.dylib",
+              "resolved": "/opt/homebrew/Cellar/ffmpeg/9.0.2/lib/libavutil.61.1.102.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libz.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libssl.3.dylib"
+            },
+            {
+              "installName": "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib",
+              "resolved": "/opt/homebrew/Cellar/openssl@3/3.6.5/lib/libcrypto.3.dylib"
+            },
+            {
+              "installName": "/System/Library/Frameworks/VideoToolbox.framework/Versions/A/VideoToolbox",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/libpng/1.6.59/lib/libpng16.16.dylib",
+          "bytes": 191344,
+          "sha256": "ec95a41f112fac5e0b077f129bccc67acf9b5ad1a01f56cc0ecebae2a8727ff2",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libz.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/jpeg-turbo/3.2.0/lib/libjpeg.8.3.2.dylib",
+          "bytes": 456896,
+          "sha256": "f001712591dd976f2d582fb3d22571dab35ff548e926c4e3da3954dbc6c9ac3a",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/webp/1.6.0/lib/libwebp.7.2.0.dylib",
+          "bytes": 336208,
+          "sha256": "ecc407a45864e2bb9096cd17c9b2a526289bae4826a5bfa9b3c1bf0ced6928df",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "@rpath/libsharpyuv.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/webp/1.6.0/lib/libsharpyuv.0.1.2.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/webp/1.6.0/lib/libwebpdemux.2.0.17.dylib",
+          "bytes": 35376,
+          "sha256": "829d68e54a6be7e9ed2d5c3420ef2f1918ecd01093170666186f99675bda0662",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "@rpath/libwebp.7.dylib",
+              "resolved": "/opt/homebrew/Cellar/webp/1.6.0/lib/libwebp.7.2.0.dylib"
+            },
+            {
+              "installName": "@rpath/libsharpyuv.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/webp/1.6.0/lib/libsharpyuv.0.1.2.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/webp/1.6.0/lib/libsharpyuv.0.1.2.dylib",
+          "bytes": 51872,
+          "sha256": "c003b10375a8d2bd777e4f03b28943b65d5c017821e611180932a64b2e2813a2",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/giflib/6.1.3/lib/libgif.7.2.0.dylib",
+          "bytes": 54976,
+          "sha256": "77e036a84a310be30185307d58f62c8a165e89c563951394ce50ecf396d9a78c",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/icu4c@78/78.3/lib/libicudata.78.3.dylib",
+          "bytes": 33371136,
+          "sha256": "cd7bfc3af59bc6766d4fa50c7afe50b2ec009dd665b23bcc6b467978e22acf77",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/brotli/1.2.0/lib/libbrotlicommon.1.2.0.dylib",
+          "bytes": 150128,
+          "sha256": "eb4c35c72adfea50045e0901767820b32a6b434685c0a4753ca9d3f9b389e44f",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/glib/2.90.0/lib/libglib-2.0.0.dylib",
+          "bytes": 1362864,
+          "sha256": "e23a6acee2d81c533320953756b9d5151201b762d6fd12a332b1bd8acc110d14",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libiconv.2.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/gettext/lib/libintl.8.dylib",
+              "resolved": "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/opt/homebrew/opt/pcre2/lib/libpcre2-8.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib"
+            },
+            {
+              "installName": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libobjc.A.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/graphite2/1.3.15/lib/libgraphite2.3.3.1.dylib",
+          "bytes": 125264,
+          "sha256": "fc59eeb61994433d7dcd349848db14951be1fac332349872ad03f86361473153",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_abseil-cpp_absl.dylib",
+          "bytes": 1232320,
+          "sha256": "abd6aac37103b2164465b3fd25b0e3d5e9bddcbdc5830761922ccc146ccc8ef1",
+          "minimumMacOSVersion": "13.0",
+          "dependencies": [
+            {
+              "installName": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_icu_icui18n.dylib",
+          "bytes": 3690512,
+          "sha256": "d1f9b79eb9200e6dbea866bcf79a4ecee50bb824b8076a51e380c94d8c4a336a",
+          "minimumMacOSVersion": "13.0",
+          "dependencies": [
+            {
+              "installName": "@rpath/libicuuc.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libicuuc.dylib"
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libicuuc.dylib",
+          "bytes": 2186624,
+          "sha256": "ef50ad15259c312d6b4591320f05511ee89d9e748bde4f33bfcebdeb9ad6918c",
+          "minimumMacOSVersion": "13.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib",
+          "bytes": 114512,
+          "sha256": "344e16405017e32cea1773e64ffa340dbde5b063f87dd7b6b46511ed81209e44",
+          "minimumMacOSVersion": "13.0",
+          "dependencies": [
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libobjc.A.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib",
+          "bytes": 449632,
+          "sha256": "e220c81cce4c309fbc004fad1331bf53cb4353f3681c829b5458a71631795cdc",
+          "minimumMacOSVersion": "13.0",
+          "dependencies": [
+            {
+              "installName": "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib"
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_shim.dylib",
+          "bytes": 130320,
+          "sha256": "47a8f4fdb186a55c1b02ad8f4636ce72fea333797b9a3803e274340b0518f8ac",
+          "minimumMacOSVersion": "13.0",
+          "dependencies": [
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib"
+            },
+            {
+              "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib",
+              "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib"
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libobjc.A.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libchrome_zlib.dylib",
+          "bytes": 154480,
+          "sha256": "17abd786cf6838e30eeb2897cb8d015b11e839b2c3db05e0ab22451565e845ca",
+          "minimumMacOSVersion": "13.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/libvpx/1.17.0/lib/libvpx.12.dylib",
+          "bytes": 1747904,
+          "sha256": "b434dc31541ec72a484c209b412579dd1be79f31ed7a5667724a5f0eec20450a",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/xz/5.8.4/lib/liblzma.5.dylib",
+          "bytes": 167520,
+          "sha256": "41cdf225f3e10fb54f952c8eca11c8a847d095470540dc42736ae7bd761beaa4",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/dav1d/1.5.4/lib/libdav1d.7.dylib",
+          "bytes": 830176,
+          "sha256": "60c3a42a79582241ac77bbbba4c0137c2209204aecbc59e5d6392c2dc0a5b439",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/lame/4.0/lib/libmp3lame.0.dylib",
+          "bytes": 215872,
+          "sha256": "5150d16a2b09a8f6f3475dcc837fdf5435d4f97e817ca12306fec8da5614647c",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/opt/homebrew/opt/mpg123/lib/libmpg123.0.dylib",
+              "resolved": "/opt/homebrew/Cellar/mpg123/1.33.7/lib/libmpg123.0.dylib"
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/opus/1.6.1/lib/libopus.0.dylib",
+          "bytes": 357824,
+          "sha256": "435581a316f3dd41982f3101caa6be6ec974572e31765cd0e29c7cbe30198609",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/svt-av1/4.2.0/lib/libSvtAv1Enc.4.2.0.dylib",
+          "bytes": 3057440,
+          "sha256": "bac7066bcd47c31971f61e57cdd0eccabb2ec2ef3ca5aa1e08bd5ca51cd54608",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/x264/r3222/lib/libx264.165.dylib",
+          "bytes": 1263600,
+          "sha256": "e0d737b88c67ac30e8561d9267d10495529cfede1af45838914c0b522c37a26d",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/x265/4.3/lib/libx265.217.dylib",
+          "bytes": 7637808,
+          "sha256": "2e25cd9a70616daf5c3aec2979bad071d577e2150c0493ddc5fd369c174d0b0f",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libc++.1.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/gettext/1.0/lib/libintl.8.dylib",
+          "bytes": 212080,
+          "sha256": "be8f2b23ec17bd294c7bd4fceaa00526c135b6110a55598b82b3aceeb533a601",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libiconv.2.dylib",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+              "systemSharedCache": true
+            },
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/pcre2/10.49/lib/libpcre2-8.0.dylib",
+          "bytes": 574096,
+          "sha256": "c3adcd954967b7e92812831fe12c614a9ca2d12221e897a87ee379df2ac004fd",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        },
+        {
+          "path": "/opt/homebrew/Cellar/mpg123/1.33.7/lib/libmpg123.0.dylib",
+          "bytes": 271856,
+          "sha256": "25751ddb9880cd94b3aedd668b24305edfdcd88454d5a06077f72d93fab82b20",
+          "minimumMacOSVersion": "26.0",
+          "dependencies": [
+            {
+              "installName": "/usr/lib/libSystem.B.dylib",
+              "systemSharedCache": true
+            }
+          ]
+        }
+      ],
+      "systemSharedCacheInstallNames": [
+        "/System/Library/Frameworks/AVFoundation.framework/Versions/A/AVFoundation",
+        "/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit",
+        "/System/Library/Frameworks/AudioToolbox.framework/Versions/A/AudioToolbox",
+        "/System/Library/Frameworks/Carbon.framework/Versions/A/Carbon",
+        "/System/Library/Frameworks/Cocoa.framework/Versions/A/Cocoa",
+        "/System/Library/Frameworks/CoreAudio.framework/Versions/A/CoreAudio",
+        "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+        "/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics",
+        "/System/Library/Frameworks/CoreHaptics.framework/Versions/A/CoreHaptics",
+        "/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia",
+        "/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices",
+        "/System/Library/Frameworks/CoreText.framework/Versions/A/CoreText",
+        "/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo",
+        "/System/Library/Frameworks/ForceFeedback.framework/Versions/A/ForceFeedback",
+        "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+        "/System/Library/Frameworks/GameController.framework/Versions/A/GameController",
+        "/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit",
+        "/System/Library/Frameworks/Metal.framework/Versions/A/Metal",
+        "/System/Library/Frameworks/QuartzCore.framework/Versions/A/QuartzCore",
+        "/System/Library/Frameworks/ScreenCaptureKit.framework/Versions/A/ScreenCaptureKit",
+        "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+        "/System/Library/Frameworks/UniformTypeIdentifiers.framework/Versions/A/UniformTypeIdentifiers",
+        "/System/Library/Frameworks/VideoToolbox.framework/Versions/A/VideoToolbox",
+        "/usr/lib/libSystem.B.dylib",
+        "/usr/lib/libbz2.1.0.dylib",
+        "/usr/lib/libc++.1.dylib",
+        "/usr/lib/libiconv.2.dylib",
+        "/usr/lib/libobjc.A.dylib",
+        "/usr/lib/libz.1.dylib"
+      ],
+      "olderMacOSRuntimeTested": false,
+      "selfContainedDistributionClaimed": false,
+      "elapsedSeconds": 0.799
+    },
+    "minimumDerivedFromActualDependencyClosure": true,
+    "olderMacOSRuntimeTested": false
+  },
+  "launch": {
+    "mode": "Direct owned .app executable; not Finder/LaunchServices automation",
+    "durationRequestedSeconds": 15,
+    "runtimeMarkerObserved": true,
+    "renderCapture": "out/10292019r-mac/native-package-004/gpt6-astra-pro_builtin-agents_devinmac3d_mac-app.png",
+    "renderCaptureSHA256": "e3af9d9a9077943a3f36dab09a92d5179026fca9a6f8aa4285eda4a0a38f6e6c",
+    "width": 1000,
+    "height": 700,
+    "renderCaptureIsOSWindowScreenshot": false
+  },
+  "archive": {
+    "path": "out/10292019r-mac/native-package-004/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac-development.zip",
+    "bytes": 10817367,
+    "sha256": "55f66f2157dc842c6f1ee5991797996234073abf931cd0bb147f2de71aadb8b2"
+  },
+  "finishedUTC": "2026-10-29T15:52:10.249085+00:00",
+  "durationSeconds": 19.545
+}

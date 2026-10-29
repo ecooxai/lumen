@@ -1,0 +1,166 @@
+{
+  "startedUTC": "2026-10-29T15:40:08.558171+00:00",
+  "fixtureSHA256": "c20ae4a5082eb6afb1053e986f03d081f04eefd087b266ccab46493b288e84e0",
+  "scope": "Unchanged9 real-browser regression oracle in actual native Mac Lumen executable; not upstream WPT or IPA",
+  "records": [
+    {
+      "artifact": {
+        "path": "out/10292019r-mac/native-worker-004/lumen-f906769431c7a25b",
+        "sha256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+        "bytes": 14111560
+      },
+      "sourceCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+      "buildSummarySHA256": "7d2247dd8f360a646bdba708cec1d54b63153ee5fd947e9daef25ac1a5467307",
+      "fixtureSHA256": "c20ae4a5082eb6afb1053e986f03d081f04eefd087b266ccab46493b288e84e0",
+      "actualNativeGuiBinary": true,
+      "measurementQualified": true,
+      "completed": true,
+      "passed": 9,
+      "total": 9,
+      "rows": [
+        {
+          "index": 0,
+          "name": "none / actual opaque data document loaded",
+          "ok": true,
+          "observed": [
+            "before"
+          ]
+        },
+        {
+          "index": 1,
+          "name": "none / script before meta executed exactly once",
+          "ok": true,
+          "observed": [
+            "before"
+          ]
+        },
+        {
+          "index": 2,
+          "name": "none / untrusted script after meta blocked",
+          "ok": true,
+          "observed": [
+            "before"
+          ]
+        },
+        {
+          "index": 3,
+          "name": "none / later inline event handler blocked",
+          "ok": true,
+          "observed": [
+            "before"
+          ]
+        },
+        {
+          "index": 4,
+          "name": "nonce / actual opaque data document loaded",
+          "ok": true,
+          "observed": [
+            "before",
+            "after-nonce"
+          ]
+        },
+        {
+          "index": 5,
+          "name": "nonce / script before meta executed exactly once",
+          "ok": true,
+          "observed": [
+            "before",
+            "after-nonce"
+          ]
+        },
+        {
+          "index": 6,
+          "name": "nonce / untrusted script after meta blocked",
+          "ok": true,
+          "observed": [
+            "before",
+            "after-nonce"
+          ]
+        },
+        {
+          "index": 7,
+          "name": "nonce / later inline event handler blocked",
+          "ok": true,
+          "observed": [
+            "before",
+            "after-nonce"
+          ]
+        },
+        {
+          "index": 8,
+          "name": "nonce / nonce-authorized script after meta executed",
+          "ok": true,
+          "observed": [
+            "before",
+            "after-nonce"
+          ]
+        }
+      ],
+      "childPolicyPrerequisitesObserved": true,
+      "denialInterpretation": "Child loaded and before-meta scripts ran; handler/script observations are qualified",
+      "securityOraclePassed": true,
+      "metrics": {
+        "samples": 1,
+        "steady_samples": 1,
+        "interval_cpu_samples": 0,
+        "steady_interval_cpu_samples": 0,
+        "max_sampling_gap_s": 0.022,
+        "cpu_mean_percent": 0.0,
+        "steady_cpu_mean_percent": 0.0,
+        "steady_cpu_median_percent": 0.0,
+        "steady_cpu_p95_percent": 0.0,
+        "cpu_peak_percent": 0.0,
+        "interval_cpu_mean_percent": null,
+        "steady_interval_cpu_mean_percent": null,
+        "steady_interval_cpu_median_percent": null,
+        "steady_interval_cpu_p95_percent": null,
+        "interval_cpu_peak_percent": null,
+        "rss_peak_mb": 0.719,
+        "rss_final_mb": 0.719,
+        "rss_steady_median_mb": 0.719,
+        "rss_steady_p95_mb": 0.719,
+        "rss_steady_growth_mb": 0.0,
+        "in_memory_sample_limit": 600,
+        "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+        "quantile_scope": "all recorded samples",
+        "errors": [],
+        "sample_interval_s": 1,
+        "stop_reason": "requested_stop",
+        "telemetry_status": "partial",
+        "interval_cpu_coverage": "unavailable",
+        "observed_span_s": 0,
+        "root_start_identity": "Thu Oct 29 08:40:08 2026",
+        "root_cpu_start_identity": null,
+        "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+        "cpu_time_source": "ps time (fractional seconds on macOS)",
+        "cpu_time_resolution_s": null,
+        "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+        "memory_unit": "MiB (legacy field names retain mb)",
+        "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+        "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+        "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+      },
+      "cleanup": {
+        "sent_sigterm": true,
+        "sent_sigkill": false,
+        "error": null,
+        "post_signal_verification": {
+          "allowed_wait_s": 1,
+          "initial_live_members": {},
+          "duration_ms": 18
+        },
+        "process_group_gone": true,
+        "remaining_group_members": {},
+        "root_exit_code": 0
+      },
+      "naturalExitCodeBeforeOwnedCleanup": null,
+      "durationSeconds": 0.817,
+      "consoleSHA256": "4842c99a3b562f549f03e370293d6e7b5d3ad863f5dc5fa910c9751ecf39271c",
+      "rawMetricsSHA256": "18ae8e81f1cb3f68893d3ba3a4d34c37d5351c51f8196fcd010132257d200311"
+    }
+  ],
+  "measurementComplete": true,
+  "issues": [],
+  "finishedUTC": "2026-10-29T15:40:09.717540+00:00",
+  "durationSeconds": 1.159
+}

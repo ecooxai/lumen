@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T16:00:28.666438+00:00",
+  "sourceCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "lumenSHA256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+  "fiveFilesSaved": true,
+  "localIdentityAppliedForAllFiles": true,
+  "independentPersistentMetadataReadbackMatchedAllNamesAndSizes": true,
+  "files": [
+    {
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-f9067694-raw-evidence.tar.gz",
+      "bytes": 232183,
+      "sha256": "87ae78243ac044ca5a0496cdd295ed5e5634625a05978dc909aa444f71cf2d57",
+      "libraryFileId": "libfile_f56c40b538488191a38bee0eae391567",
+      "sourcePath": "out/10292019r-mac/native-audit-004/GPT6-Astra-Pro_builtin-agents_devinmac3d-native-acceptance-raw.tar.gz",
+      "currentVersion": 0
+    },
+    {
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-f9067694-development.zip",
+      "bytes": 10817367,
+      "sha256": "55f66f2157dc842c6f1ee5991797996234073abf931cd0bb147f2de71aadb8b2",
+      "libraryFileId": "libfile_ef0c879266848191966b74e9636d4eed",
+      "sourcePath": "out/10292019r-mac/native-package-004/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac-development.zip",
+      "currentVersion": 0
+    },
+    {
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-frozen1515-raw-evidence.tar.gz",
+      "bytes": 22387049,
+      "sha256": "c3907096ab71cb5c4a166a577efbe30c7070b0729fc2f5f3d0eda7f2fc929bfb",
+      "libraryFileId": "libfile_53f1721fcf98819180e082361d6bc4a3",
+      "sourcePath": "out/10292019r-mac/independent-final-004/raw-evidence.tar.gz",
+      "currentVersion": 0
+    },
+    {
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac003-b816-held-WPT-measurement.tar.gz",
+      "bytes": 22258263,
+      "sha256": "195355102fec7f84dcc6c935ffe8b5dc8cff1e300a4d0d7ab44cf18bf9604dee",
+      "libraryFileId": "libfile_93240e1df3948191bc4aa00631538899",
+      "sourcePath": "out/10292019r-mac/independent-final-003/raw-evidence.tar.gz",
+      "currentVersion": 0
+    },
+    {
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-audit-metadata.tar.gz",
+      "bytes": 382112,
+      "sha256": "dda1bd21dfea730222a8a2c3bca3308a84cc10e1086551e8b4842d16f222592d",
+      "libraryFileId": "libfile_fdf94ade349081919b5a80f1359cede8",
+      "sourcePath": "out/10292019r-artifact-shipment-004/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-audit-metadata.tar.gz",
+      "currentVersion": 0
+    }
+  ],
+  "localIndependentDownloadAuditSHA256": "4820c93a85d195beffeb80610524e9eaed04cebca9038bb6260001e4045d070a",
+  "metadataFilesVerified": 55,
+  "rawArchivesVerified": [
+    {
+      "archiveSHA256": "87ae78243ac044ca5a0496cdd295ed5e5634625a05978dc909aa444f71cf2d57",
+      "membersVerified": 36,
+      "uncompressedBytes": 1562983
+    },
+    {
+      "archiveSHA256": "c3907096ab71cb5c4a166a577efbe30c7070b0729fc2f5f3d0eda7f2fc929bfb",
+      "membersVerified": 3102,
+      "uncompressedBytes": 208490043
+    },
+    {
+      "archiveSHA256": "195355102fec7f84dcc6c935ffe8b5dc8cff1e300a4d0d7ab44cf18bf9604dee",
+      "membersVerified": 3092,
+      "uncompressedBytes": 207932710
+    }
+  ],
+  "referenceIdentityVerified": true,
+  "heldNative003ApplicationDelivered": false,
+  "temporaryTransferCleanup": "Pending final addendum save; same nonce-owned site remains scoped to task artifacts",
+  "additionalEvidence": "Original-six and optional XHR53 addendum plus compact final receipt follow separately."
+}
