@@ -10,7 +10,7 @@
   "score_state": "accepted_historical_baseline_current_candidate_unaccepted",
   "score_is_wpt_percentage": false,
   "full_official_wpt_pass_percent": null,
-  "updated_utc": "2026-10-29T13:29:24.484654+00:00",
+  "updated_utc": "2026-10-29T14:02:42.763955+00:00",
   "rubric": "agent/scorecard-rubric-20261029-cpu30.md",
   "gates": [
     {
@@ -173,7 +173,45 @@
   "current_baseline_binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
   "current_native_source_commit": "15ab329736c26a3bbb907b718af376206c115436",
   "source_branch": "gpt6-astra-pro_builtin-agents_lumen-10.292019r-worker-xhr",
-  "candidate_acceptance": "Mac build/custom tests verified; Linux Encoding103 and Worker headers36 accepted in recorded scope. Fresh full Mac279/resource and actual IPA/iPad gates pending.",
-  "accepted_subsystem_checkpoint": "d5a3bc44216f65ce430163518ced2aa10411cfc4",
-  "current_iteration_evidence": "agent/evidence/10.292019r-encoding-004/acceptance.json"
+  "candidate_acceptance": "Mac d5 fixed279 independent no-regression accepted; Linux v6 native133 + supplemental53 + realm32 accepted. Final v6 Mac resources and actual shared IPA/iPad remain unearned.",
+  "accepted_subsystem_checkpoint": "13742445c8b62a020ed8d3ed5c23a0b1008caafc",
+  "current_iteration_evidence": "agent/evidence/10.292019r-xhr-wpt-005/acceptance.json",
+  "candidate_milestones": {
+    "mac_fixed279": {
+      "source": "d5a3bc44216f65ce430163518ced2aa10411cfc4",
+      "fully_passing": 248,
+      "recorded": 279,
+      "scheduled": 1515,
+      "unrun": 1236,
+      "assertion_pass": 38754,
+      "assertion_fail": 7,
+      "resource_acceptance": false
+    },
+    "linux_supplemental_xhr53": {
+      "source": "13742445c8b62a020ed8d3ed5c23a0b1008caafc",
+      "fully_passing": 51,
+      "recorded": 53,
+      "assertion_pass": 609,
+      "assertion_fail": 0,
+      "unsupported_sharedworker_variants": 2,
+      "chrome_passing_assertions_missing": 161
+    },
+    "expanded_mac_report": {
+      "independent_raw_audit_pending": false,
+      "fully_passing": 991,
+      "recorded": 1027,
+      "scheduled": 1515,
+      "unrun": 488,
+      "accepted": true,
+      "assertion_pass": 733324,
+      "assertion_fail": 7,
+      "assertion_timeout": 1,
+      "harness_statuses": {
+        "OK": 992,
+        "TIMEOUT": 18,
+        "ERROR": 17
+      },
+      "evidence": "out/10292019r-mac/independent-expanded-001/receipt.json"
+    }
+  }
 }
