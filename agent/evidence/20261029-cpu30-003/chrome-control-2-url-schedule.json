@@ -1,0 +1,1164 @@
+[
+  {
+    "test": "/url/IdnaTestV2-removed.any.html",
+    "type": "testharness",
+    "source": "url/IdnaTestV2-removed.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/IdnaTestV2.any.html",
+    "type": "testharness",
+    "source": "url/IdnaTestV2.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/a-element-origin-xhtml.xhtml",
+    "type": "testharness",
+    "source": "url/a-element-origin-xhtml.xhtml",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/a-element-origin.html",
+    "type": "testharness",
+    "source": "url/a-element-origin.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/a-element-xhtml.xhtml?exclude=(file|javascript|mailto)",
+    "type": "testharness",
+    "source": "url/a-element-xhtml.xhtml",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/a-element-xhtml.xhtml?include=file",
+    "type": "testharness",
+    "source": "url/a-element-xhtml.xhtml",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/a-element-xhtml.xhtml?include=javascript",
+    "type": "testharness",
+    "source": "url/a-element-xhtml.xhtml",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/a-element-xhtml.xhtml?include=mailto",
+    "type": "testharness",
+    "source": "url/a-element-xhtml.xhtml",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/a-element.html?exclude=(file|javascript|mailto)",
+    "type": "testharness",
+    "source": "url/a-element.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/a-element.html?include=file",
+    "type": "testharness",
+    "source": "url/a-element.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/a-element.html?include=javascript",
+    "type": "testharness",
+    "source": "url/a-element.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/a-element.html?include=mailto",
+    "type": "testharness",
+    "source": "url/a-element.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/data-uri-fragment.html",
+    "type": "testharness",
+    "source": "url/data-uri-fragment.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/failure.html",
+    "type": "testharness",
+    "source": "url/failure.html",
+    "timeout": "long",
+    "metadata": {
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/url/historical.any.html",
+    "type": "testharness",
+    "source": "url/historical.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/historical.any.worker.html",
+    "type": "testharness",
+    "source": "url/historical.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/idlharness.any.html",
+    "type": "testharness",
+    "source": "url/idlharness.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/resources/WebIDLParser.js"
+        ],
+        [
+          "script",
+          "/resources/idlharness.js"
+        ],
+        [
+          "global",
+          "window,dedicatedworker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/idlharness.any.worker.html",
+    "type": "testharness",
+    "source": "url/idlharness.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/resources/WebIDLParser.js"
+        ],
+        [
+          "script",
+          "/resources/idlharness.js"
+        ],
+        [
+          "global",
+          "window,dedicatedworker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/javascript-urls.window.html",
+    "type": "testharness",
+    "source": "url/javascript-urls.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/percent-encoding.window.html",
+    "type": "testharness",
+    "source": "url/percent-encoding.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/toascii.window.html",
+    "type": "testharness",
+    "source": "url/toascii.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-constructor.any.html?exclude=(file|javascript|mailto)",
+    "type": "testharness",
+    "source": "url/url-constructor.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "timeout",
+          "long"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-constructor.any.html?include=file",
+    "type": "testharness",
+    "source": "url/url-constructor.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "timeout",
+          "long"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-constructor.any.html?include=javascript",
+    "type": "testharness",
+    "source": "url/url-constructor.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "timeout",
+          "long"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-constructor.any.html?include=mailto",
+    "type": "testharness",
+    "source": "url/url-constructor.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "timeout",
+          "long"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-constructor.any.worker.html?exclude=(file|javascript|mailto)",
+    "type": "testharness",
+    "source": "url/url-constructor.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "timeout",
+          "long"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-constructor.any.worker.html?include=file",
+    "type": "testharness",
+    "source": "url/url-constructor.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "timeout",
+          "long"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-constructor.any.worker.html?include=javascript",
+    "type": "testharness",
+    "source": "url/url-constructor.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "timeout",
+          "long"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-constructor.any.worker.html?include=mailto",
+    "type": "testharness",
+    "source": "url/url-constructor.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "timeout",
+          "long"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-origin.any.html",
+    "type": "testharness",
+    "source": "url/url-origin.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-origin.any.worker.html",
+    "type": "testharness",
+    "source": "url/url-origin.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-searchparams.any.html",
+    "type": "testharness",
+    "source": "url/url-searchparams.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-searchparams.any.worker.html",
+    "type": "testharness",
+    "source": "url/url-searchparams.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-setters-a-area.window.html?exclude=(file|javascript|mailto)",
+    "type": "testharness",
+    "source": "url/url-setters-a-area.window.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters-a-area.window.html?include=file",
+    "type": "testharness",
+    "source": "url/url-setters-a-area.window.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters-a-area.window.html?include=javascript",
+    "type": "testharness",
+    "source": "url/url-setters-a-area.window.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters-a-area.window.html?include=mailto",
+    "type": "testharness",
+    "source": "url/url-setters-a-area.window.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters-stripping.any.html",
+    "type": "testharness",
+    "source": "url/url-setters-stripping.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-setters-stripping.any.worker.html",
+    "type": "testharness",
+    "source": "url/url-setters-stripping.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-setters.any.html?exclude=(file|javascript|mailto)",
+    "type": "testharness",
+    "source": "url/url-setters.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters.any.html?include=file",
+    "type": "testharness",
+    "source": "url/url-setters.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters.any.html?include=javascript",
+    "type": "testharness",
+    "source": "url/url-setters.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters.any.html?include=mailto",
+    "type": "testharness",
+    "source": "url/url-setters.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters.any.worker.html?exclude=(file|javascript|mailto)",
+    "type": "testharness",
+    "source": "url/url-setters.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters.any.worker.html?include=file",
+    "type": "testharness",
+    "source": "url/url-setters.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters.any.worker.html?include=javascript",
+    "type": "testharness",
+    "source": "url/url-setters.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-setters.any.worker.html?include=mailto",
+    "type": "testharness",
+    "source": "url/url-setters.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "script",
+          "/common/subset-tests-by-key.js"
+        ],
+        [
+          "variant",
+          "?include=file"
+        ],
+        [
+          "variant",
+          "?include=javascript"
+        ],
+        [
+          "variant",
+          "?include=mailto"
+        ],
+        [
+          "variant",
+          "?exclude=(file|javascript|mailto)"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/url/url-statics-canparse.any.html",
+    "type": "testharness",
+    "source": "url/url-statics-canparse.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-statics-canparse.any.worker.html",
+    "type": "testharness",
+    "source": "url/url-statics-canparse.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-statics-parse.any.html",
+    "type": "testharness",
+    "source": "url/url-statics-parse.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-statics-parse.any.worker.html",
+    "type": "testharness",
+    "source": "url/url-statics-parse.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-tojson.any.html",
+    "type": "testharness",
+    "source": "url/url-tojson.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/url-tojson.any.worker.html",
+    "type": "testharness",
+    "source": "url/url-tojson.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlencoded-parser.any.html",
+    "type": "testharness",
+    "source": "url/urlencoded-parser.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlencoded-parser.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlencoded-parser.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-append.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-append.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-append.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-append.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-constructor.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-constructor.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-constructor.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-constructor.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-delete.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-delete.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-delete.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-delete.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-foreach.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-foreach.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-foreach.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-foreach.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-get.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-get.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-get.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-get.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-getall.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-getall.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-getall.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-getall.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-has.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-has.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-has.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-has.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-set.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-set.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-set.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-set.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-size.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-size.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-size.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-size.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-sort.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-sort.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-sort.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-sort.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-stringifier.any.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-stringifier.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/url/urlsearchparams-stringifier.any.worker.html",
+    "type": "testharness",
+    "source": "url/urlsearchparams-stringifier.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  }
+]

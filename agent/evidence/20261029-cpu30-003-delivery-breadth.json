@@ -1,0 +1,554 @@
+{
+  "iteration": "20261029-cpu30-003",
+  "started_utc": "2026-10-29T04:22:09.528169+00:00",
+  "finished_utc": "2026-10-29T04:45:43.833967+00:00",
+  "started_Asia_Shanghai": "2026-10-29T12:22:09.528169+08:00",
+  "finished_Asia_Shanghai": "2026-10-29T12:45:43.833967+08:00",
+  "elapsed_seconds": 1414.306,
+  "total_session_seconds": 8818.834,
+  "score": 55,
+  "scoreIsWptPercentage": false,
+  "status": "Current public source/message/telemetry delivery verified; broader native priority and qualified Chrome controls preserved",
+  "acceptedNativeSHA256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+  "latestMeasuredNativeWpt": {
+    "binary_sha256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+    "fully_passing": 242,
+    "recorded": 279,
+    "scheduled": 1515,
+    "unrun": 1236,
+    "assertions": {
+      "PASS": 38724,
+      "FAIL": 37
+    },
+    "harness_statuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "evidence": "agent/evidence/20261029-cpu30-003/broad-priority-summary.json",
+    "resource_acceptance": "pending"
+  },
+  "timingsSeconds": {
+    "nativeExpansion": 347.703,
+    "chrome103": 29.357,
+    "chromeAdditional176": 52.739,
+    "publicSourceAndFourViews": 19.113,
+    "sourcePushPackage": 5.517
+  },
+  "longTestReview": "Expansion347.703s includes genuine unchanged service-worker10.5s/60.5s timeout costs, primarily headers244.095s+14.098s. Outcomes remain counted; no test timeout was shortened.",
+  "parallelTiming": "Per-stage times overlap and are not summed into session elapsed.",
+  "newNativeSourceIncluded": false,
+  "fullOfficialWptPassPercent": null,
+  "evidence": [
+    {
+      "source": "out/lume-20261029-cpu30/public-delivery-1/receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-003/public-source-ui-proof.json",
+      "sha256": "5f30edcfbdb0a587b14da3c07115e3dba9c14a9f7535d4ea9aed8989f0593080",
+      "bytes": 7499
+    },
+    {
+      "source": "out/lume-20261029-cpu30/public-delivery-1-job/resources.json",
+      "committed": "agent/evidence/20261029-cpu30-003/public-source-ui-monitor.json",
+      "sha256": "beb9f8d2630d0794760d7cce8e54f4203d43ef888f4b0820c6e8b00e9f897fd4",
+      "bytes": 2049
+    },
+    {
+      "source": "output/session-20261029-cpu30/progress-state/server-switch-receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-003/live-message-telemetry-handoff.json",
+      "sha256": "fb81bd6ff31d7bc8741e5eb6063e8be7a5fd2f650b2f01930d836b573ed74470",
+      "bytes": 2225
+    },
+    {
+      "source": "output/session-20261029-cpu30/surge-publication.json",
+      "committed": "agent/evidence/20261029-cpu30-003/surge-publication.json",
+      "sha256": "98a93df199b0ac54ddeb15300e350d4fb597bc180a7fb332311e8149273a59ba",
+      "bytes": 3118
+    },
+    {
+      "source": "out/lume-20261029-cpu30/checkpoint-002-release/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/source-push-package-proof.json",
+      "sha256": "4c65dd5856026a591c49caf77f1ba43f08b7d604dbf329c4711a9d273bb46458",
+      "bytes": 2194
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-parser-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/broad-priority-summary.json",
+      "sha256": "8127ba1ff866bdcea53caf2ba0344762bab08e5b43ce7cd90ac0740f5bd675c8",
+      "bytes": 32370
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-parser-1/cohort-before.json",
+      "committed": "agent/evidence/20261029-cpu30-003/fixed103-before-expansion.json",
+      "sha256": "138bdc2917d2f47040c418519f6f527da092b4537218c2549be235438d31e695",
+      "bytes": 10461
+    },
+    {
+      "source": "out/lume-20261029-cpu30/paired-chrome279-parser-audit.json",
+      "committed": "agent/evidence/20261029-cpu30-003/paired-chrome279.json",
+      "sha256": "c5ec6117776b70f0c149672099c4cea7c6a3a8563ddcaf7ff093f74ad7ef05cf",
+      "bytes": 17053
+    },
+    {
+      "source": "out/lume-20261029-cpu30/paired-chrome103-parser-audit.json",
+      "committed": "agent/evidence/20261029-cpu30-003/paired-chrome103.json",
+      "sha256": "86d2da0266db719248bcc02a49936b81a1cd1a01f200a8c72c9d51b26ee9537f",
+      "bytes": 10980
+    },
+    {
+      "source": "out/lume-20261029-cpu30/worker-wrapper-origin-audit.json",
+      "committed": "agent/evidence/20261029-cpu30-003/worker-wrapper-origins.json",
+      "sha256": "eda1c95bb2d6e1eeead4df25906b0bb31d7f58c8084271682e5ebcf5ac41bb82",
+      "bytes": 16316
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-parser-1/dom-1.json",
+      "committed": "agent/evidence/20261029-cpu30-003/expansion-dom-1-monitor.json",
+      "sha256": "c83b6d5211c18d1aa7173e1cc5da7c991f47187c0b8d3259e56585cd07b9bb1f",
+      "bytes": 2030
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-parser-1/events-1.json",
+      "committed": "agent/evidence/20261029-cpu30-003/expansion-events-1-monitor.json",
+      "sha256": "a2df2049c29522af9158657742be57af09c1f88644b15096ffb1b294b923e45f",
+      "bytes": 2037
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-parser-1/url-1.json",
+      "committed": "agent/evidence/20261029-cpu30-003/expansion-url-1-monitor.json",
+      "sha256": "6b1fc21a18ff19e4919398c05f60c95a031ac1d78c9449666569fc186419a067",
+      "bytes": 2043
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-parser-1/storage-1.json",
+      "committed": "agent/evidence/20261029-cpu30-003/expansion-storage-1-monitor.json",
+      "sha256": "40f6f5788cd0dd0c1674c49bcdae18d4ba4fba4b3ec4971d53c451e34feca6a1",
+      "bytes": 2036
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-parser-1/microtasks-1.json",
+      "committed": "agent/evidence/20261029-cpu30-003/expansion-microtasks-1-monitor.json",
+      "sha256": "08f43eff37398c77b5553f0fe5f1aeda5731c85bbef08c6934babdcab2a4cc06",
+      "bytes": 2035
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-parser-1/headers-1.json",
+      "committed": "agent/evidence/20261029-cpu30-003/expansion-headers-1-monitor.json",
+      "sha256": "a1c39fe5d4a75854e0dc75cb79aff1df73cc8c9cf4a73bb047c549bfc449b315",
+      "bytes": 2037
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-parser-1/headers-2.json",
+      "committed": "agent/evidence/20261029-cpu30-003/expansion-headers-2-monitor.json",
+      "sha256": "b41346bc03e05664efaab6a4df57933013fb088092de9e63ba3e0eea0b505175",
+      "bytes": 2033
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-summary.json",
+      "sha256": "3fe67641d8fd0b1979cb6ba63affa131ed6c4235bf700d25946d53eef9ff98f3",
+      "bytes": 58250
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-1/cohort.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-cohort.json",
+      "sha256": "84c243b9a537bf7496380a98e586d742d3d5cd9e52878f7478b0cacdfc04ad8e",
+      "bytes": 69522
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-1/encoding-core/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-encoding-core-run.json",
+      "sha256": "e436ea34d3448d79af227783250d1c89d22dd3813cc35c6229e85f774cfa05ad",
+      "bytes": 15733
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-1/encoding-core/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-encoding-core-schedule.json",
+      "sha256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+      "bytes": 44730
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-1/encoding-core/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-encoding-core-results.jsonl",
+      "sha256": "4bbf1535b81a001f9b171206e3c8ae12628a1e09256180bc23be54c7350869ff",
+      "bytes": 2341652
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-1/encoding-core/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-encoding-core-summary.json",
+      "sha256": "8ff2254baee48303f78753092296205678ed7b0e35c5f9a4cd62bd05c8cea5df",
+      "bytes": 2028
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-1/encoding-streams/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-encoding-streams-run.json",
+      "sha256": "27a6a227a6b2415a8c1caa6ef3e738a4330e74ca20744de182c5875ce4e7ab09",
+      "bytes": 12533
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-1/encoding-streams/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-encoding-streams-schedule.json",
+      "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "bytes": 10971
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-1/encoding-streams/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-encoding-streams-results.jsonl",
+      "sha256": "a2563dd5a73401fc47325ee7efca0257a25adc75e933b8c3a7425cc64a1c1de3",
+      "bytes": 61244
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-1/encoding-streams/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-encoding-streams-summary.json",
+      "sha256": "48d3e3095636b6b342fa66a79e84f2557191e9ec4129228bb0a903804ddd5848",
+      "bytes": 2018
+    },
+    {
+      "source": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-1/encoding-core-resources.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-encoding-core-monitor.json",
+      "sha256": "00af3f0ab26b44d580894814b3cbb907e0cfda178872aad4a17bc53d0bc9fb73",
+      "bytes": 2052
+    },
+    {
+      "source": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-1/encoding-streams-resources.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-1-encoding-streams-monitor.json",
+      "sha256": "421c7ae6dbab9f8787d3f3f1ef53b7e2746c94d3cafed114773fdbe7c95d31c0",
+      "bytes": 2049
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-summary.json",
+      "sha256": "3fc2625908b86a99cb66db9a5230b1ed8ad19a46e72fe56e350a21c0b39c31c5",
+      "bytes": 211912
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/cohort.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-cohort.json",
+      "sha256": "b6ae5ede64f270d804c2982586676aefca5804ff8f165e68043aefac30970f24",
+      "bytes": 73630
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/dom/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-dom-run.json",
+      "sha256": "239af19dcc913b3204184f6823b505e08408116b1ec2631043a4c328d0d577d1",
+      "bytes": 11093
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/dom/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-dom-schedule.json",
+      "sha256": "90a94ec5fea249cfa78a39b39fafaa83f0d076b56644924c5f72790665e270be",
+      "bytes": 3187
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/dom/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-dom-results.jsonl",
+      "sha256": "0be317cac7683c41fab09a2f0e5f944093c800a236aa0f50320ba206233efa0d",
+      "bytes": 122576
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/dom/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-dom-summary.json",
+      "sha256": "9adb41350f293cfd9034e3dcc6e4f11b9dc45aa94f54896394be4bd63e6405bf",
+      "bytes": 2018
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/events/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-events-run.json",
+      "sha256": "dacdca3d2b1c5959cb1a444a3d39b0b9298fc532061d532f422832b2cf8711b3",
+      "bytes": 11535
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/events/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-events-schedule.json",
+      "sha256": "c9c1c2e46a30c6ef14a700bc76463ec2411f1771afda7681344fd7d5e65cb3b7",
+      "bytes": 4670
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/events/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-events-results.jsonl",
+      "sha256": "2e11537a5b0d890f52ad15440084fb8db7c45bad89c5c7f39f32181621dd85a8",
+      "bytes": 17953
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/events/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-events-summary.json",
+      "sha256": "0e8c35ef5ae81628ffd18a3cf178c16c4a4265a154143ce57ef0d7d8b73b39ab",
+      "bytes": 1858
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/url/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-url-run.json",
+      "sha256": "a3519c65593bf7a8acec025bf58553c881bdccafe5aa265dfd88f5b09a7ec841",
+      "bytes": 14529
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/url/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-url-schedule.json",
+      "sha256": "c4e44f2d5a5eaa7ed66c834f506ca484bd73ff6d3f7e77b27cf7f2337ef23132",
+      "bytes": 25515
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/url/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-url-results.jsonl",
+      "sha256": "00a93f64b3c9eb3351689f001332e41446c2c7c8485b34d1bfda65329029b82d",
+      "bytes": 1386115
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/url/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-url-summary.json",
+      "sha256": "6257b6501980238c56c57e4ef0a0de78e38fda0a1109cbc662a75ce307833ca9",
+      "bytes": 2028
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/storage/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-storage-run.json",
+      "sha256": "5f68559ed97afc40ddc4ffb14140661ce4b426870a8c928adaf71600fc7ff81f",
+      "bytes": 11085
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/storage/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-storage-schedule.json",
+      "sha256": "723fca15a68d3d61c26604fb5c55f26615e639da5f7b888f6bd79f8fae403c9d",
+      "bytes": 1490
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/storage/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-storage-results.jsonl",
+      "sha256": "7e171c24462c5ca1894a9bd0ce1c4c31a5cd776132f705d9b934149aaddf3857",
+      "bytes": 90031
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/storage/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-storage-summary.json",
+      "sha256": "a63bd445f14a7b76bc2a03e5c8880e9a0415c4b9bc6ecccabd96776abb3ae8a6",
+      "bytes": 1854
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/microtasks/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-microtasks-run.json",
+      "sha256": "09db201d86bb1b1ed1284f38eb33a1b835d6dc2c5862359b94a58e180c370490",
+      "bytes": 11031
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/microtasks/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-microtasks-schedule.json",
+      "sha256": "eda081ad150c45a430ade8649a55bf454eff67bac460df798efc90dd947c2177",
+      "bytes": 3593
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/microtasks/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-microtasks-results.jsonl",
+      "sha256": "19eed770e9dd4bf63d865feca95aab329444006ae972034480cb78854f54f24a",
+      "bytes": 9067
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/microtasks/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-microtasks-summary.json",
+      "sha256": "794b2eda7874a61a2115aaaf2fe492bd51ee26f25e643d6fb57eccb95df214da",
+      "bytes": 1858
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/headers/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-headers-run.json",
+      "sha256": "abc546b131caf74b9674b181ea646c797e2448119557ecfced1c10dd82e9f28c",
+      "bytes": 14145
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/headers/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-headers-schedule.json",
+      "sha256": "1db7998184521c0b6928d41468874a4c77db98c26feedc407ae7bcf8324e8a17",
+      "bytes": 21365
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/headers/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-headers-results.jsonl",
+      "sha256": "6f12f38b4f77f0290812dc50f7af26c0f5c168a82981aaad560f4571bb0bf7ee",
+      "bytes": 141127
+    },
+    {
+      "source": "out/lume-20261029-cpu30/chrome-control-2/headers/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-headers-summary.json",
+      "sha256": "449e715efe132b5b6be563170855521f8f707a2bad990581ac5642c48826a603",
+      "bytes": 1866
+    },
+    {
+      "source": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-2/dom-resources.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-dom-monitor.json",
+      "sha256": "3fdb71592712f0d0979ba7021c3a84fcbf550b1c2111ff2874f5a36622bfc9fa",
+      "bytes": 2049
+    },
+    {
+      "source": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-2/events-resources.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-events-monitor.json",
+      "sha256": "6e6888a738d4014982903fa87cceb132c9f35df87e7e48a00e867051beae5822",
+      "bytes": 2047
+    },
+    {
+      "source": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-2/url-resources.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-url-monitor.json",
+      "sha256": "96e0ecbb7709994e98c03c338d4555df5ea79005ca00437accfafc59e34183a7",
+      "bytes": 2058
+    },
+    {
+      "source": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-2/storage-resources.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-storage-monitor.json",
+      "sha256": "3e9439fe7c217bb252219ce32977744347aabffcb84b8b08453139e5513701f0",
+      "bytes": 2043
+    },
+    {
+      "source": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-2/microtasks-resources.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-microtasks-monitor.json",
+      "sha256": "0e8e96729bccd2788dea7260914a50fb2072a1090cfbfa465bc4182f7651e93f",
+      "bytes": 2045
+    },
+    {
+      "source": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-2/headers-resources.json",
+      "committed": "agent/evidence/20261029-cpu30-003/chrome-control-2-headers-monitor.json",
+      "sha256": "c70f7f68ffc86de1ae48cb6ea7c92bb910de00e6bb3d5fdc433289ae98ba949b",
+      "bytes": 2052
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/dom/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-dom-run.json",
+      "sha256": "c7f7e3311a7340d8ebbb31ef9896a19eabe3ec804e366f619140323f367ea4dd",
+      "bytes": 11294
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/dom/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-dom-schedule.json",
+      "sha256": "90a94ec5fea249cfa78a39b39fafaa83f0d076b56644924c5f72790665e270be",
+      "bytes": 3187
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/dom/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/native-dom-results.jsonl",
+      "sha256": "c62008d323572244504d6e244bf0b48474f0a09819ac3f37cd93873be2624629",
+      "bytes": 143630
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/dom/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-dom-summary.json",
+      "sha256": "94dcfadc5d07be82b3b5f0aad922aa2bc63c59b4611ef0f6f76fb97fc1104ed5",
+      "bytes": 2014
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/events/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-events-run.json",
+      "sha256": "68a53ccbd80d3d3ef2b54b2ff5826edeeeaeff8567afa3973d3de5a8a213666c",
+      "bytes": 11453
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/events/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-events-schedule.json",
+      "sha256": "c9c1c2e46a30c6ef14a700bc76463ec2411f1771afda7681344fd7d5e65cb3b7",
+      "bytes": 4670
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/events/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/native-events-results.jsonl",
+      "sha256": "28fe78cd153a45fb8da8b72eacc3f66ae8921045611626b9f9424f6625ef2f14",
+      "bytes": 44061
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/events/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-events-summary.json",
+      "sha256": "0e8c35ef5ae81628ffd18a3cf178c16c4a4265a154143ce57ef0d7d8b73b39ab",
+      "bytes": 1858
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/url/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-url-run.json",
+      "sha256": "43256196e1946728db54a52c324a1d4bbc65597b7fd7523b635ebe6089a40482",
+      "bytes": 14459
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/url/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-url-schedule.json",
+      "sha256": "c4e44f2d5a5eaa7ed66c834f506ca484bd73ff6d3f7e77b27cf7f2337ef23132",
+      "bytes": 25515
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/url/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/native-url-results.jsonl",
+      "sha256": "7698cceff32d58d898ccfd6388103cd764c51d98f9d6805bac262bd32ce86441",
+      "bytes": 1452242
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/url/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-url-summary.json",
+      "sha256": "1f184662b00d446a53f498c8360567f350a89db2c4c9c6088d29c43d48a789e1",
+      "bytes": 2016
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/storage/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-storage-run.json",
+      "sha256": "da0d32cdfc618f7dad356591d0e1d1f2d778b0c77847912234010c97a79c7555",
+      "bytes": 10835
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/storage/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-storage-schedule.json",
+      "sha256": "723fca15a68d3d61c26604fb5c55f26615e639da5f7b888f6bd79f8fae403c9d",
+      "bytes": 1490
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/storage/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/native-storage-results.jsonl",
+      "sha256": "7016de23eb8e07f37ce640956e3d1633c21b2fb240dbc826596b6245c2bba5ab",
+      "bytes": 101439
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/storage/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-storage-summary.json",
+      "sha256": "a63bd445f14a7b76bc2a03e5c8880e9a0415c4b9bc6ecccabd96776abb3ae8a6",
+      "bytes": 1854
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/microtasks/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-microtasks-run.json",
+      "sha256": "844e84a02644436eb20050c4a122dccfa83c3dc59b91ecac720ef3b6a576e579",
+      "bytes": 11336
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/microtasks/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-microtasks-schedule.json",
+      "sha256": "eda081ad150c45a430ade8649a55bf454eff67bac460df798efc90dd947c2177",
+      "bytes": 3593
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/microtasks/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/native-microtasks-results.jsonl",
+      "sha256": "7752fea38925e5af2cded6e337eef7483f84400f57d8f4eadff6c6a32d4e11e5",
+      "bytes": 24513
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/microtasks/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-microtasks-summary.json",
+      "sha256": "596988fb40e03b64ac811f4b1e94a17c350e87716b8216b6ddd0a37921e001a0",
+      "bytes": 1986
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/headers/run.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-headers-run.json",
+      "sha256": "eebb5d9801101cbb27865da98a379165b397a30893bfcc4a3a536272d1006f98",
+      "bytes": 13895
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/headers/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-headers-schedule.json",
+      "sha256": "1db7998184521c0b6928d41468874a4c77db98c26feedc407ae7bcf8324e8a17",
+      "bytes": 21365
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/headers/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-003/native-headers-results.jsonl",
+      "sha256": "556a1aa454b02194d3f6f7f741edaff88f067ec2b51903e395bd152cad4adc80",
+      "bytes": 174145
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/headers/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-003/native-headers-summary.json",
+      "sha256": "450f9356f9ebc4127761f003aedbcc46feae5306ed4b86ff9f83a74ea4bda7c3",
+      "bytes": 2032
+    }
+  ]
+}

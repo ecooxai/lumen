@@ -1,0 +1,997 @@
+{
+  "startedUTC": "2026-10-29T04:22:09.528169+00:00",
+  "binary": {
+    "path": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/native-bom-1/lumen-4b26d5b59edf9f68",
+    "sha256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54"
+  },
+  "cohortPlan": "out/lume-20261029-cpu30/compat-parser-1/cohort/cohort.json",
+  "cohortSHA256": "ce0a4ebfd170d1054929590bdb7bed39d6c4ab372a051ac437c3656abd42a5d9",
+  "overallBudgetSeconds": 720,
+  "frozenInventoryVariants": 1515,
+  "importantVariants": 279,
+  "scope": "Expand coverage on the same executable; failures/timeouts/errors and unrun remain visible. Raw103 comparison remains separately preserved.",
+  "priorSummary": "out/lume-20261029-cpu30/priority-expansion-parser-1/cohort-before.json",
+  "priorSummarySHA256": "138bdc2917d2f47040c418519f6f527da092b4537218c2549be235438d31e695",
+  "stages": [
+    {
+      "group": "dom",
+      "attempt": 1,
+      "startedUTC": "2026-10-29T04:22:09.529129+00:00",
+      "before": {
+        "scheduled": 14,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 14
+      },
+      "finishedUTC": "2026-10-29T04:22:18.629526+00:00",
+      "durationSeconds": 9.1,
+      "after": {
+        "scheduled": 14,
+        "run": 14,
+        "fullyPassing": 13,
+        "unrun": 0
+      },
+      "monitor": "out/lume-20261029-cpu30/priority-expansion-parser-1/dom-1.json",
+      "monitorSHA256": "c83b6d5211c18d1aa7173e1cc5da7c991f47187c0b8d3259e56585cd07b9bb1f",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 8,
+      "cpuPeakPercent": 38.768,
+      "rssPeakMiB": 273.547,
+      "maximumSamplingGapSeconds": 1.024,
+      "executionCompleted": true,
+      "slowestCases": [
+        {
+          "test": "/dom/nodes/Document-createElement-namespace.html",
+          "status": "OK",
+          "duration_ms": 1087
+        },
+        {
+          "test": "/dom/nodes/Document-createElementNS.html",
+          "status": "OK",
+          "duration_ms": 644
+        },
+        {
+          "test": "/dom/nodes/Document-createElement.html",
+          "status": "OK",
+          "duration_ms": 545
+        },
+        {
+          "test": "/dom/nodes/Node-cloneNode.html",
+          "status": "OK",
+          "duration_ms": 528
+        },
+        {
+          "test": "/dom/nodes/Node-cloneNode-svg.html",
+          "status": "OK",
+          "duration_ms": 517
+        }
+      ]
+    },
+    {
+      "group": "events",
+      "attempt": 1,
+      "startedUTC": "2026-10-29T04:22:18.630592+00:00",
+      "before": {
+        "scheduled": 16,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 16
+      },
+      "finishedUTC": "2026-10-29T04:22:27.743864+00:00",
+      "durationSeconds": 9.113,
+      "after": {
+        "scheduled": 16,
+        "run": 16,
+        "fullyPassing": 16,
+        "unrun": 0
+      },
+      "monitor": "out/lume-20261029-cpu30/priority-expansion-parser-1/events-1.json",
+      "monitorSHA256": "a2df2049c29522af9158657742be57af09c1f88644b15096ffb1b294b923e45f",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 8,
+      "cpuPeakPercent": 37.537,
+      "rssPeakMiB": 213.625,
+      "maximumSamplingGapSeconds": 1.023,
+      "executionCompleted": true,
+      "slowestCases": [
+        {
+          "test": "/dom/events/Event-constructors.any.html",
+          "status": "OK",
+          "duration_ms": 520
+        },
+        {
+          "test": "/dom/events/Event-constructors.any.worker.html",
+          "status": "OK",
+          "duration_ms": 520
+        },
+        {
+          "test": "/dom/events/EventTarget-add-remove-listener.any.html",
+          "status": "OK",
+          "duration_ms": 516
+        },
+        {
+          "test": "/dom/events/EventTarget-add-remove-listener.any.worker.html",
+          "status": "OK",
+          "duration_ms": 513
+        },
+        {
+          "test": "/dom/events/EventTarget-dispatchEvent.html",
+          "status": "OK",
+          "duration_ms": 513
+        }
+      ]
+    },
+    {
+      "group": "url",
+      "attempt": 1,
+      "startedUTC": "2026-10-29T04:22:27.744618+00:00",
+      "before": {
+        "scheduled": 77,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 77
+      },
+      "finishedUTC": "2026-10-29T04:23:08.826738+00:00",
+      "durationSeconds": 41.082,
+      "after": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 76,
+        "unrun": 0
+      },
+      "monitor": "out/lume-20261029-cpu30/priority-expansion-parser-1/url-1.json",
+      "monitorSHA256": "6b1fc21a18ff19e4919398c05f60c95a031ac1d78c9449666569fc186419a067",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 40,
+      "cpuPeakPercent": 156.244,
+      "rssPeakMiB": 421.25,
+      "maximumSamplingGapSeconds": 1.022,
+      "executionCompleted": true,
+      "slowestCases": [
+        {
+          "test": "/url/failure.html",
+          "status": "OK",
+          "duration_ms": 1925
+        },
+        {
+          "test": "/url/percent-encoding.window.html",
+          "status": "OK",
+          "duration_ms": 851
+        },
+        {
+          "test": "/url/IdnaTestV2.any.html",
+          "status": "OK",
+          "duration_ms": 713
+        },
+        {
+          "test": "/url/a-element.html?exclude=(file|javascript|mailto)",
+          "status": "OK",
+          "duration_ms": 644
+        },
+        {
+          "test": "/url/url-constructor.any.html?exclude=(file|javascript|mailto)",
+          "status": "OK",
+          "duration_ms": 623
+        }
+      ]
+    },
+    {
+      "group": "storage",
+      "attempt": 1,
+      "startedUTC": "2026-10-29T04:23:08.834540+00:00",
+      "before": {
+        "scheduled": 7,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 7
+      },
+      "finishedUTC": "2026-10-29T04:23:12.938795+00:00",
+      "durationSeconds": 4.104,
+      "after": {
+        "scheduled": 7,
+        "run": 7,
+        "fullyPassing": 7,
+        "unrun": 0
+      },
+      "monitor": "out/lume-20261029-cpu30/priority-expansion-parser-1/storage-1.json",
+      "monitorSHA256": "40f6f5788cd0dd0c1674c49bcdae18d4ba4fba4b3ec4971d53c451e34feca6a1",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 3,
+      "cpuPeakPercent": 35.728,
+      "rssPeakMiB": 209.344,
+      "maximumSamplingGapSeconds": 1.008,
+      "executionCompleted": true,
+      "slowestCases": [
+        {
+          "test": "/webstorage/storage_setitem.window.html",
+          "status": "OK",
+          "duration_ms": 590
+        },
+        {
+          "test": "/webstorage/storage_key.window.html",
+          "status": "OK",
+          "duration_ms": 494
+        },
+        {
+          "test": "/webstorage/storage_length.window.html",
+          "status": "OK",
+          "duration_ms": 490
+        },
+        {
+          "test": "/webstorage/storage_clear.window.html",
+          "status": "OK",
+          "duration_ms": 488
+        },
+        {
+          "test": "/webstorage/storage_key_empty_string.window.html",
+          "status": "OK",
+          "duration_ms": 480
+        }
+      ]
+    },
+    {
+      "group": "microtasks",
+      "attempt": 1,
+      "startedUTC": "2026-10-29T04:23:12.940936+00:00",
+      "before": {
+        "scheduled": 10,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 10
+      },
+      "finishedUTC": "2026-10-29T04:23:39.034108+00:00",
+      "durationSeconds": 26.093,
+      "after": {
+        "scheduled": 10,
+        "run": 10,
+        "fullyPassing": 6,
+        "unrun": 0
+      },
+      "monitor": "out/lume-20261029-cpu30/priority-expansion-parser-1/microtasks-1.json",
+      "monitorSHA256": "08f43eff37398c77b5553f0fe5f1aeda5731c85bbef08c6934babdcab2a4cc06",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 25,
+      "cpuPeakPercent": 36.707,
+      "rssPeakMiB": 211.656,
+      "maximumSamplingGapSeconds": 1.021,
+      "executionCompleted": true,
+      "slowestCases": [
+        {
+          "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 10528
+        },
+        {
+          "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 10494
+        },
+        {
+          "test": "/html/webappapis/microtask-queuing/queue-microtask-cross-realm-callback-report-exception.html",
+          "status": "OK",
+          "duration_ms": 522
+        },
+        {
+          "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.html",
+          "status": "OK",
+          "duration_ms": 493
+        },
+        {
+          "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.worker.html",
+          "status": "OK",
+          "duration_ms": 482
+        }
+      ]
+    },
+    {
+      "group": "headers",
+      "attempt": 1,
+      "startedUTC": "2026-10-29T04:23:39.034862+00:00",
+      "before": {
+        "scheduled": 52,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 52
+      },
+      "finishedUTC": "2026-10-29T04:27:43.132882+00:00",
+      "durationSeconds": 244.095,
+      "after": {
+        "scheduled": 52,
+        "run": 46,
+        "fullyPassing": 23,
+        "unrun": 6
+      },
+      "monitor": "out/lume-20261029-cpu30/priority-expansion-parser-1/headers-1.json",
+      "monitorSHA256": "a1c39fe5d4a75854e0dc75cb79aff1df73cc8c9cf4a73bb047c549bfc449b315",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 243,
+      "cpuPeakPercent": 36.813,
+      "rssPeakMiB": 217.484,
+      "maximumSamplingGapSeconds": 1.037,
+      "executionCompleted": true,
+      "slowestCases": [
+        {
+          "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 60530
+        },
+        {
+          "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 60497
+        },
+        {
+          "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 10498
+        },
+        {
+          "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 10497
+        },
+        {
+          "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 10493
+        }
+      ]
+    },
+    {
+      "group": "headers",
+      "attempt": 2,
+      "startedUTC": "2026-10-29T04:27:43.133977+00:00",
+      "before": {
+        "scheduled": 52,
+        "run": 46,
+        "fullyPassing": 23,
+        "unrun": 6
+      },
+      "finishedUTC": "2026-10-29T04:27:57.232546+00:00",
+      "durationSeconds": 14.098,
+      "after": {
+        "scheduled": 52,
+        "run": 52,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "monitor": "out/lume-20261029-cpu30/priority-expansion-parser-1/headers-2.json",
+      "monitorSHA256": "b41346bc03e05664efaab6a4df57933013fb088092de9e63ba3e0eea0b505175",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 13,
+      "cpuPeakPercent": 39.33,
+      "rssPeakMiB": 210.938,
+      "maximumSamplingGapSeconds": 1.017,
+      "executionCompleted": true,
+      "slowestCases": [
+        {
+          "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 60530
+        },
+        {
+          "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 60497
+        },
+        {
+          "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 10498
+        },
+        {
+          "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 10497
+        },
+        {
+          "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+          "status": "TIMEOUT",
+          "duration_ms": 10493
+        }
+      ]
+    }
+  ],
+  "complete": true,
+  "cohortSummary": {
+    "schema": 1,
+    "updatedUTC": "2026-10-29T04:27:56.468260+00:00",
+    "binarySHA256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+    "cohortSHA256": "ce0a4ebfd170d1054929590bdb7bed39d6c4ab372a051ac437c3656abd42a5d9",
+    "scope": "Native-only frozen priority cohort; never full WPT or Chrome parity",
+    "scheduled": 1515,
+    "run": 279,
+    "fullyPassing": 242,
+    "unrun": 1236,
+    "passingPercentOfRun": 86.738,
+    "verifiedPassingCoveragePercent": 15.974,
+    "harnessStatuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "assertions": {
+      "PASS": 38724,
+      "FAIL": 37
+    },
+    "categories": {
+      "dom": {
+        "scheduled": 14,
+        "run": 14,
+        "fullyPassing": 13,
+        "unrun": 0,
+        "passingPercentOfRun": 92.857
+      },
+      "events": {
+        "scheduled": 16,
+        "run": 16,
+        "fullyPassing": 16,
+        "unrun": 0,
+        "passingPercentOfRun": 100.0
+      },
+      "url": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 76,
+        "unrun": 0,
+        "passingPercentOfRun": 98.701
+      },
+      "encoding": {
+        "scheduled": 1339,
+        "run": 103,
+        "fullyPassing": 98,
+        "unrun": 1236,
+        "passingPercentOfRun": 95.146
+      },
+      "headers": {
+        "scheduled": 52,
+        "run": 52,
+        "fullyPassing": 26,
+        "unrun": 0,
+        "passingPercentOfRun": 50.0
+      },
+      "microtasks": {
+        "scheduled": 10,
+        "run": 10,
+        "fullyPassing": 6,
+        "unrun": 0,
+        "passingPercentOfRun": 60.0
+      },
+      "storage": {
+        "scheduled": 7,
+        "run": 7,
+        "fullyPassing": 7,
+        "unrun": 0,
+        "passingPercentOfRun": 100.0
+      }
+    },
+    "groups": {
+      "encoding-streams": {
+        "scheduled": 26,
+        "run": 26,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "dom": {
+        "scheduled": 14,
+        "run": 14,
+        "fullyPassing": 13,
+        "unrun": 0
+      },
+      "events": {
+        "scheduled": 16,
+        "run": 16,
+        "fullyPassing": 16,
+        "unrun": 0
+      },
+      "url": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 76,
+        "unrun": 0
+      },
+      "storage": {
+        "scheduled": 7,
+        "run": 7,
+        "fullyPassing": 7,
+        "unrun": 0
+      },
+      "microtasks": {
+        "scheduled": 10,
+        "run": 10,
+        "fullyPassing": 6,
+        "unrun": 0
+      },
+      "headers": {
+        "scheduled": 52,
+        "run": 52,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "encoding-core": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 72,
+        "unrun": 0
+      },
+      "encoding-rest": {
+        "scheduled": 1236,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 1236
+      }
+    },
+    "failures": [
+      {
+        "test": "/dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "cloneNode() and document's allow declarative shadow roots",
+            "status": "FAIL",
+            "message": "assert_true: expected true got false"
+          }
+        ]
+      },
+      {
+        "test": "/url/IdnaTestV2.any.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "ToASCII(\"\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u10be\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\ucbd95\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac.\u0729.\ucbd95\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          }
+        ]
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "csiso2022kr - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "hz-gb-2312 - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-kr - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "replacement - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "replacement - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          }
+        ]
+      },
+      {
+        "test": "/encoding/sniffing.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "No (UTF-8) sniffing allowed",
+            "status": "FAIL",
+            "message": "assert_equals: expected \"\u00c2\u20ac\u00c2\u20ac Hello World! \u00c2\u20ac\u00c2\u20ac\" but got \"\u0080\u0080 Hello World! \u0080\u0080\""
+          }
+        ]
+      },
+      {
+        "test": "/encoding/textdecoder-mistakes.any.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "fatal stream: utf-8",
+            "status": "FAIL",
+            "message": "The encoded data is not valid for utf-8"
+          }
+        ]
+      },
+      {
+        "test": "/encoding/textdecoder-mistakes.any.worker.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "fatal stream: utf-8",
+            "status": "FAIL",
+            "message": "The encoded data is not valid for utf-8"
+          }
+        ]
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "UTF-7 should not be supported",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-7 should not be supported",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32 with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32 with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32 with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32 with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32LE with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32LE with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32le with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32le with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32be with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32be with BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32be with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32be with BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          }
+        ]
+      }
+    ],
+    "invocationWallSeconds": 400.545
+  },
+  "finishedUTC": "2026-10-29T04:27:57.234211+00:00",
+  "durationSeconds": 347.703,
+  "binarySHA256After": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+  "sameArtifact": true
+}

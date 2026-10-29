@@ -1,0 +1,57 @@
+{
+  "scheduled_files": 52,
+  "recorded_files": 52,
+  "remaining_files": 0,
+  "file_outcomes": {
+    "ERROR": 13,
+    "OK": 26,
+    "TIMEOUT": 13
+  },
+  "files_passing_all_assertions": 26,
+  "valid_completed_files": 39,
+  "attempted_files": 52,
+  "attempted_file_pass_rate": 0.5,
+  "zero_assertion_testharness_files": 26,
+  "zero_assertion_files_by_type": {
+    "testharness": 26
+  },
+  "all_assertions_pass_file_rate": 0.6666666666666666,
+  "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+  "scheduled_file_pass_fraction": 0.5,
+  "subtest_outcomes": {
+    "PASS": 539
+  },
+  "executed_subtests_excluding_notrun": 539,
+  "subtest_pass_rate": 1.0,
+  "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes.",
+  "by_type": {
+    "testharness": {
+      "scheduled_files": 52,
+      "recorded_files": 52,
+      "remaining_files": 0,
+      "file_outcomes": {
+        "ERROR": 13,
+        "OK": 26,
+        "TIMEOUT": 13
+      },
+      "files_passing_all_assertions": 26,
+      "valid_completed_files": 39,
+      "attempted_files": 52,
+      "attempted_file_pass_rate": 0.5,
+      "zero_assertion_testharness_files": 26,
+      "zero_assertion_files_by_type": {
+        "testharness": 26
+      },
+      "all_assertions_pass_file_rate": 0.6666666666666666,
+      "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+      "scheduled_file_pass_fraction": 0.5,
+      "subtest_outcomes": {
+        "PASS": 539
+      },
+      "executed_subtests_excluding_notrun": 539,
+      "subtest_pass_rate": 1.0,
+      "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes."
+    }
+  },
+  "headline_metric_note": "Report testharness and test262 separately; the combined counters are coverage bookkeeping, not a web-platform pass-rate headline."
+}

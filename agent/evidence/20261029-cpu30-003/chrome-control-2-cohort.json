@@ -1,0 +1,2705 @@
+{
+  "schema": 1,
+  "taskId": "20261029-cpu30",
+  "createdUTC": "2026-10-29T04:34:30.655923+00:00",
+  "engine": "chromium",
+  "binary": {
+    "path": "output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "sha256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4"
+  },
+  "groups": {
+    "dom": [
+      {
+        "test": "/dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.html",
+        "type": "testharness",
+        "source": "dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Document-adoptNode.html",
+        "type": "testharness",
+        "source": "dom/nodes/Document-adoptNode.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Document-createAttribute.html",
+        "type": "testharness",
+        "source": "dom/nodes/Document-createAttribute.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Document-createElement-namespace.html",
+        "type": "testharness",
+        "source": "dom/nodes/Document-createElement-namespace.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Document-createElement.html",
+        "type": "testharness",
+        "source": "dom/nodes/Document-createElement.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Document-createElementNS.html",
+        "type": "testharness",
+        "source": "dom/nodes/Document-createElementNS.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Document-importNode.html",
+        "type": "testharness",
+        "source": "dom/nodes/Document-importNode.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Node-cloneNode-XMLDocument.html",
+        "type": "testharness",
+        "source": "dom/nodes/Node-cloneNode-XMLDocument.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.html",
+        "type": "testharness",
+        "source": "dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Node-cloneNode-document-with-doctype.html",
+        "type": "testharness",
+        "source": "dom/nodes/Node-cloneNode-document-with-doctype.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Node-cloneNode-external-stylesheet-no-bc.sub.html",
+        "type": "testharness",
+        "source": "dom/nodes/Node-cloneNode-external-stylesheet-no-bc.sub.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Node-cloneNode-parser-created-names.html",
+        "type": "testharness",
+        "source": "dom/nodes/Node-cloneNode-parser-created-names.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Node-cloneNode-svg.html",
+        "type": "testharness",
+        "source": "dom/nodes/Node-cloneNode-svg.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/nodes/Node-cloneNode.html",
+        "type": "testharness",
+        "source": "dom/nodes/Node-cloneNode.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      }
+    ],
+    "events": [
+      {
+        "test": "/dom/events/CustomEvent.html",
+        "type": "testharness",
+        "source": "dom/events/CustomEvent.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/events/Event-constructors.any.html",
+        "type": "testharness",
+        "source": "dom/events/Event-constructors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Event constructors"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/dom/events/Event-constructors.any.worker.html",
+        "type": "testharness",
+        "source": "dom/events/Event-constructors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Event constructors"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-add-listener-platform-object.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-add-listener-platform-object.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-add-remove-listener.any.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-add-remove-listener.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "EventTarget's addEventListener + removeEventListener"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-add-remove-listener.any.worker.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-add-remove-listener.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "EventTarget's addEventListener + removeEventListener"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-addEventListener.any.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-addEventListener.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "EventTarget.addEventListener"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-addEventListener.any.worker.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-addEventListener.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "EventTarget.addEventListener"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-constructible.any.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-constructible.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-constructible.any.worker.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-constructible.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-dispatchEvent-returnvalue.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-dispatchEvent-returnvalue.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-dispatchEvent.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-dispatchEvent.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-removeEventListener.any.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-removeEventListener.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "EventTarget.removeEventListener"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-removeEventListener.any.worker.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-removeEventListener.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "EventTarget.removeEventListener"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-this-of-listener.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-this-of-listener.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/dom/events/EventTarget-window-constructor.html",
+        "type": "testharness",
+        "source": "dom/events/EventTarget-window-constructor.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      }
+    ],
+    "url": [
+      {
+        "test": "/url/IdnaTestV2-removed.any.html",
+        "type": "testharness",
+        "source": "url/IdnaTestV2-removed.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/IdnaTestV2.any.html",
+        "type": "testharness",
+        "source": "url/IdnaTestV2.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/a-element-origin-xhtml.xhtml",
+        "type": "testharness",
+        "source": "url/a-element-origin-xhtml.xhtml",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/a-element-origin.html",
+        "type": "testharness",
+        "source": "url/a-element-origin.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/a-element-xhtml.xhtml?exclude=(file|javascript|mailto)",
+        "type": "testharness",
+        "source": "url/a-element-xhtml.xhtml",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/a-element-xhtml.xhtml?include=file",
+        "type": "testharness",
+        "source": "url/a-element-xhtml.xhtml",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/a-element-xhtml.xhtml?include=javascript",
+        "type": "testharness",
+        "source": "url/a-element-xhtml.xhtml",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/a-element-xhtml.xhtml?include=mailto",
+        "type": "testharness",
+        "source": "url/a-element-xhtml.xhtml",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/a-element.html?exclude=(file|javascript|mailto)",
+        "type": "testharness",
+        "source": "url/a-element.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/a-element.html?include=file",
+        "type": "testharness",
+        "source": "url/a-element.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/a-element.html?include=javascript",
+        "type": "testharness",
+        "source": "url/a-element.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/a-element.html?include=mailto",
+        "type": "testharness",
+        "source": "url/a-element.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/data-uri-fragment.html",
+        "type": "testharness",
+        "source": "url/data-uri-fragment.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/failure.html",
+        "type": "testharness",
+        "source": "url/failure.html",
+        "timeout": "long",
+        "metadata": {
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/url/historical.any.html",
+        "type": "testharness",
+        "source": "url/historical.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/historical.any.worker.html",
+        "type": "testharness",
+        "source": "url/historical.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/idlharness.any.html",
+        "type": "testharness",
+        "source": "url/idlharness.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/resources/WebIDLParser.js"
+            ],
+            [
+              "script",
+              "/resources/idlharness.js"
+            ],
+            [
+              "global",
+              "window,dedicatedworker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/idlharness.any.worker.html",
+        "type": "testharness",
+        "source": "url/idlharness.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/resources/WebIDLParser.js"
+            ],
+            [
+              "script",
+              "/resources/idlharness.js"
+            ],
+            [
+              "global",
+              "window,dedicatedworker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/javascript-urls.window.html",
+        "type": "testharness",
+        "source": "url/javascript-urls.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/percent-encoding.window.html",
+        "type": "testharness",
+        "source": "url/percent-encoding.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/toascii.window.html",
+        "type": "testharness",
+        "source": "url/toascii.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-constructor.any.html?exclude=(file|javascript|mailto)",
+        "type": "testharness",
+        "source": "url/url-constructor.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-constructor.any.html?include=file",
+        "type": "testharness",
+        "source": "url/url-constructor.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-constructor.any.html?include=javascript",
+        "type": "testharness",
+        "source": "url/url-constructor.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-constructor.any.html?include=mailto",
+        "type": "testharness",
+        "source": "url/url-constructor.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-constructor.any.worker.html?exclude=(file|javascript|mailto)",
+        "type": "testharness",
+        "source": "url/url-constructor.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-constructor.any.worker.html?include=file",
+        "type": "testharness",
+        "source": "url/url-constructor.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-constructor.any.worker.html?include=javascript",
+        "type": "testharness",
+        "source": "url/url-constructor.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-constructor.any.worker.html?include=mailto",
+        "type": "testharness",
+        "source": "url/url-constructor.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-origin.any.html",
+        "type": "testharness",
+        "source": "url/url-origin.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-origin.any.worker.html",
+        "type": "testharness",
+        "source": "url/url-origin.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-searchparams.any.html",
+        "type": "testharness",
+        "source": "url/url-searchparams.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-searchparams.any.worker.html",
+        "type": "testharness",
+        "source": "url/url-searchparams.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-setters-a-area.window.html?exclude=(file|javascript|mailto)",
+        "type": "testharness",
+        "source": "url/url-setters-a-area.window.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters-a-area.window.html?include=file",
+        "type": "testharness",
+        "source": "url/url-setters-a-area.window.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters-a-area.window.html?include=javascript",
+        "type": "testharness",
+        "source": "url/url-setters-a-area.window.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters-a-area.window.html?include=mailto",
+        "type": "testharness",
+        "source": "url/url-setters-a-area.window.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters-stripping.any.html",
+        "type": "testharness",
+        "source": "url/url-setters-stripping.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-setters-stripping.any.worker.html",
+        "type": "testharness",
+        "source": "url/url-setters-stripping.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-setters.any.html?exclude=(file|javascript|mailto)",
+        "type": "testharness",
+        "source": "url/url-setters.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters.any.html?include=file",
+        "type": "testharness",
+        "source": "url/url-setters.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters.any.html?include=javascript",
+        "type": "testharness",
+        "source": "url/url-setters.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters.any.html?include=mailto",
+        "type": "testharness",
+        "source": "url/url-setters.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters.any.worker.html?exclude=(file|javascript|mailto)",
+        "type": "testharness",
+        "source": "url/url-setters.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters.any.worker.html?include=file",
+        "type": "testharness",
+        "source": "url/url-setters.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters.any.worker.html?include=javascript",
+        "type": "testharness",
+        "source": "url/url-setters.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-setters.any.worker.html?include=mailto",
+        "type": "testharness",
+        "source": "url/url-setters.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "script",
+              "/common/subset-tests-by-key.js"
+            ],
+            [
+              "variant",
+              "?include=file"
+            ],
+            [
+              "variant",
+              "?include=javascript"
+            ],
+            [
+              "variant",
+              "?include=mailto"
+            ],
+            [
+              "variant",
+              "?exclude=(file|javascript|mailto)"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/url/url-statics-canparse.any.html",
+        "type": "testharness",
+        "source": "url/url-statics-canparse.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-statics-canparse.any.worker.html",
+        "type": "testharness",
+        "source": "url/url-statics-canparse.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-statics-parse.any.html",
+        "type": "testharness",
+        "source": "url/url-statics-parse.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-statics-parse.any.worker.html",
+        "type": "testharness",
+        "source": "url/url-statics-parse.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-tojson.any.html",
+        "type": "testharness",
+        "source": "url/url-tojson.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/url-tojson.any.worker.html",
+        "type": "testharness",
+        "source": "url/url-tojson.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlencoded-parser.any.html",
+        "type": "testharness",
+        "source": "url/urlencoded-parser.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlencoded-parser.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlencoded-parser.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-append.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-append.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-append.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-append.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-constructor.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-constructor.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-constructor.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-constructor.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-delete.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-delete.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-delete.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-delete.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-foreach.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-foreach.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-foreach.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-foreach.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-get.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-get.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-get.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-get.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-getall.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-getall.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-getall.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-getall.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-has.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-has.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-has.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-has.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-set.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-set.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-set.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-set.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-size.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-size.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-size.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-size.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-sort.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-sort.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-sort.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-sort.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-stringifier.any.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-stringifier.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/url/urlsearchparams-stringifier.any.worker.html",
+        "type": "testharness",
+        "source": "url/urlsearchparams-stringifier.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      }
+    ],
+    "storage": [
+      {
+        "test": "/webstorage/storage_clear.window.html",
+        "type": "testharness",
+        "source": "webstorage/storage_clear.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/webstorage/storage_getitem.window.html",
+        "type": "testharness",
+        "source": "webstorage/storage_getitem.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/webstorage/storage_key.window.html",
+        "type": "testharness",
+        "source": "webstorage/storage_key.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/webstorage/storage_key_empty_string.window.html",
+        "type": "testharness",
+        "source": "webstorage/storage_key_empty_string.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/webstorage/storage_length.window.html",
+        "type": "testharness",
+        "source": "webstorage/storage_length.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/webstorage/storage_removeitem.window.html",
+        "type": "testharness",
+        "source": "webstorage/storage_removeitem.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/webstorage/storage_setitem.window.html",
+        "type": "testharness",
+        "source": "webstorage/storage_setitem.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      }
+    ],
+    "microtasks": [
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-cross-realm-callback-report-exception.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask-cross-realm-callback-report-exception.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.worker.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.worker.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.window.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      }
+    ],
+    "headers": [
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-setcookie.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers set-cookie special cases"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-setcookie.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers set-cookie special cases"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-setcookie.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers set-cookie special cases"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-setcookie.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers set-cookie special cases"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values-last-event-id.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Fetch: non-ASCII Last-Event-ID header value"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values-last-event-id.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Fetch: non-ASCII Last-Event-ID header value"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values-last-event-id.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Fetch: non-ASCII Last-Event-ID header value"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values-last-event-id.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Fetch: non-ASCII Last-Event-ID header value"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values-normalize.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Header value normalizing test"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values-normalize.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Header value normalizing test"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values-normalize.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Header value normalizing test"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values-normalize.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Header value normalizing test"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Header value test"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Header value test"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Header value test"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Header value test"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-basic.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers structure"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-basic.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers structure"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-basic.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers structure"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-basic.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers structure"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-casing.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers case management"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-casing.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers case management"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-casing.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers case management"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-casing.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers case management"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-combine.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers have combined (and sorted) values"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-combine.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers have combined (and sorted) values"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-combine.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers have combined (and sorted) values"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-combine.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers have combined (and sorted) values"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-errors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers errors"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-errors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers errors"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-errors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers errors"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-errors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers errors"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-forbidden-override.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-forbidden-override.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-forbidden-override.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-forbidden-override.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-no-cors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-no-cors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-no-cors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-no-cors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-normalize.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers normalize values"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-normalize.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers normalize values"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-normalize.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers normalize values"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-normalize.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers normalize values"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-record.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-record.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-record.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-record.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-structure.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers basic"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-structure.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers basic"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-structure.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers basic"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.worker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-structure.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers basic"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      }
+    ]
+  },
+  "fullFrozenVariantCount": 1515,
+  "fullFrozenScheduleSHA256": "adcbf9719f722368b1e53ac1bd61cf38e566d3bd7495d9d6127cad38dd6aeabe",
+  "groupScheduleSHA256": {
+    "dom": "6fe614abb37dc1d11f2ac087984cb5ac9bcc8f40d68ab70f596516ba80a80689",
+    "events": "86ab13dadb55d19bf875ca972fca9beb7c1560e717bfa1a5f2d36564f189f93e",
+    "url": "b180a83552f49f36cf046e251ffa92dbfcc36467af2dc3a441fa7bc80dc6bb50",
+    "storage": "37ea6de0542117f1ac0600e5f87ac3b2bb95c7b04eb3c0cecf0147f127015e43",
+    "microtasks": "782b903f614382083dd961c9834743171bda5e757c3b7c2a8c73f4f32f42a0ba",
+    "headers": "f12a0f08d535d46a342b6d448eae918bbc834efd2daf7f5971977daec5f8bece"
+  },
+  "inputs": {
+    "frozen_selection": {
+      "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/priority-selection-v1.json",
+      "sha256": "46c7dc21e6bea1fff3505c9390663f160c4fcf34aa3d4f897cc1732efd2ed7d9"
+    },
+    "inventory": {
+      "path": "/Users/devin/repos/lumen/output/wpt-10290244/inventory.json",
+      "sha256": "5ceae6d5879ba27038f530511428432d652d5e2d079c4b33a4d017c3fee94d1b"
+    },
+    "fixture_readiness": {
+      "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/fixture-readiness.json",
+      "sha256": "3f0ea2bafc7cac953cc5a141ef2e3717d2613428e5de70ddc09914cd31f25240"
+    },
+    "server_config": {
+      "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/server.config.json",
+      "sha256": "d3d4f26a540e3564d1d9f6137be4c465d99283ce5ad87531b67cd5719c79c9d0"
+    },
+    "browser_environment": {
+      "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/browser-fixture-environment.json",
+      "sha256": "76eb4cd3a5008bf7c770c32ee7702d03af64e4ec0e96472f1f23e740cee90731"
+    },
+    "runner": {
+      "path": "/Users/devin/repos/lumen/tests/wpt/full_runner.py",
+      "sha256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7"
+    },
+    "reporter": {
+      "path": "/Users/devin/repos/lumen/tests/wpt/testharnessreport.js",
+      "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328"
+    },
+    "monitor": {
+      "path": "/Users/devin/repos/lumen/tools/monitor_process.py",
+      "sha256": "e31aa4fc949b149ac9c0e8c6170ce72ec3def971dbab4d6b026635f262d9cd79"
+    },
+    "orchestrator": {
+      "path": "/Users/devin/repos/lumen/tools/apple-session-gpt6as/run_priority_wpt_10290244.py",
+      "sha256": "b2395c8e7b00e4081924025d765cdb5386de19cd6eddb0f4178c4a8c6d6e2987"
+    }
+  },
+  "nativePlan": "out/lume-20261029-cpu30/compat-parser-1/cohort/cohort.json",
+  "nativePlanSHA256": "ce0a4ebfd170d1054929590bdb7bed39d6c4ab372a051ac437c3656abd42a5d9",
+  "scope": "Exact additional176 frozen priority variants on qualified Chrome; not full WPT or native artifact acceptance. Actual Chrome failures are preserved."
+}

@@ -1,0 +1,214 @@
+{
+  "schema": 1,
+  "taskId": "20261029-cpu30",
+  "startedUTC": "2026-10-29T04:39:07.392Z",
+  "passed": true,
+  "scope": "Full public source bytes and real-browser desktop/mobile progress-page smoke. Native Lume performance is measured separately.",
+  "sourceCommit": "963d4ddd72620b4978e950cc75298319615911a2",
+  "expectedArchive": {
+    "bytes": 11681037,
+    "sha256": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167"
+  },
+  "origins": [
+    {
+      "label": "live",
+      "url": "https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz",
+      "verified": true,
+      "archive": {
+        "bytes": 11681037,
+        "sha256": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167",
+        "fullByteHashVerified": true
+      },
+      "sourceManifest": {
+        "source": "/api/progress status.sourceArchive",
+        "sourceCommit": "963d4ddd72620b4978e950cc75298319615911a2",
+        "archiveSHA256": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167"
+      },
+      "config": {
+        "taskId": "20261029-cpu30",
+        "messageSessionId": "102900614",
+        "liveBase": ""
+      },
+      "viewHashes": {
+        "app.js": "5ddc43a9a7888c5376cae642af384f8d08bf6483e5e0bcface87a0ad13156ff0",
+        "index.html": "ed8eccf8d019ba6da7dd758a2efee6b3a900dcb26e47fb8edf1eba2715b068cd",
+        "style.css": "9fb9f02b63e591d3c96be4c76a2a976ce98fffcd3830e845ce3004d067195b19"
+      },
+      "durationSeconds": 1.271
+    },
+    {
+      "label": "surge",
+      "url": "https://lume-102900614-gpt6-astra-pro.surge.sh",
+      "verified": true,
+      "archive": {
+        "bytes": 11681037,
+        "sha256": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167",
+        "fullByteHashVerified": true
+      },
+      "sourceManifest": {
+        "sha256": "4c4667592a4d796076f5c196c4cb3d4418b0ee7819c319995a2b16e9fd9ce618",
+        "sourceCommit": "963d4ddd72620b4978e950cc75298319615911a2"
+      },
+      "config": {
+        "taskId": "20261029-cpu30",
+        "messageSessionId": "102900614",
+        "liveBase": "https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz"
+      },
+      "viewHashes": {
+        "app.js": "5ddc43a9a7888c5376cae642af384f8d08bf6483e5e0bcface87a0ad13156ff0",
+        "index.html": "ed8eccf8d019ba6da7dd758a2efee6b3a900dcb26e47fb8edf1eba2715b068cd",
+        "style.css": "9fb9f02b63e591d3c96be4c76a2a976ce98fffcd3830e845ce3004d067195b19"
+      },
+      "durationSeconds": 0.664
+    }
+  ],
+  "ui": [
+    {
+      "origin": "live",
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 1000,
+        "mobile": false
+      },
+      "passed": true,
+      "privateAccessSurvivedOrdinaryReload": true,
+      "observed": {
+        "title": "Lume 20261029-cpu30 · Apple WPT progress",
+        "connection": "Live · 2s updates",
+        "count": "96 / 103 current-artifact variants · f52a08ca9a1b…",
+        "rate": "93.20%",
+        "cpu": "19.3%",
+        "ram": "16.97 GB",
+        "latency": "68.6 ms",
+        "disks": 13,
+        "width": 1440,
+        "scrollWidth": 1440,
+        "score": "Iteration 2 · 50.00/100 task gates",
+        "artifact": "Current native f52a08ca9a1bc6cd79eb… · source df4ae3bc8d52",
+        "privateAccessEnabled": false
+      },
+      "screenshot": {
+        "path": "out/lume-20261029-cpu30/public-delivery-1/live-desktop.png",
+        "bytes": 205834,
+        "sha256": "eb227e70c2f781a68703a414d6fe4a4ba0075517695f6390c861ae9d8ab71f09",
+        "scope": "Internal visual QA only; excludes private keys and messages"
+      }
+    },
+    {
+      "origin": "live",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "passed": true,
+      "observed": {
+        "title": "Lume 20261029-cpu30 · Apple WPT progress",
+        "connection": "Live · 2s updates",
+        "count": "96 / 103 current-artifact variants · f52a08ca9a1b…",
+        "rate": "93.20%",
+        "cpu": "12.3%",
+        "ram": "17.06 GB",
+        "latency": "70.8 ms",
+        "disks": 13,
+        "width": 390,
+        "scrollWidth": 390,
+        "score": "Iteration 2 · 50.00/100 task gates",
+        "artifact": "Current native f52a08ca9a1bc6cd79eb… · source df4ae3bc8d52",
+        "privateAccessEnabled": true
+      },
+      "screenshot": {
+        "path": "out/lume-20261029-cpu30/public-delivery-1/live-mobile.png",
+        "bytes": 94705,
+        "sha256": "634a1978d23ecda02693b15493bc658944015a5baf72a9679108d576135b89ca",
+        "scope": "Internal visual QA only; excludes private keys and messages"
+      }
+    },
+    {
+      "origin": "surge",
+      "viewport": {
+        "name": "desktop",
+        "width": 1440,
+        "height": 1000,
+        "mobile": false
+      },
+      "passed": true,
+      "privateAccessSurvivedOrdinaryReload": true,
+      "observed": {
+        "title": "Lume 20261029-cpu30 · Apple WPT progress",
+        "connection": "Live · 2s updates",
+        "count": "96 / 103 current-artifact variants · f52a08ca9a1b…",
+        "rate": "93.20%",
+        "cpu": "11.2%",
+        "ram": "17.02 GB",
+        "latency": "68.6 ms",
+        "disks": 13,
+        "width": 1440,
+        "scrollWidth": 1440,
+        "score": "Iteration 2 · 50.00/100 task gates",
+        "artifact": "Current native f52a08ca9a1bc6cd79eb… · source df4ae3bc8d52",
+        "privateAccessEnabled": false
+      },
+      "screenshot": {
+        "path": "out/lume-20261029-cpu30/public-delivery-1/surge-desktop.png",
+        "bytes": 205385,
+        "sha256": "45f0382849ab3ee4d8abf1108dc36ca5c7ca8e929bdd358a1386516274d20494",
+        "scope": "Internal visual QA only; excludes private keys and messages"
+      }
+    },
+    {
+      "origin": "surge",
+      "viewport": {
+        "name": "mobile",
+        "width": 390,
+        "height": 844,
+        "mobile": true
+      },
+      "passed": true,
+      "observed": {
+        "title": "Lume 20261029-cpu30 · Apple WPT progress",
+        "connection": "Live · 2s updates",
+        "count": "96 / 103 current-artifact variants · f52a08ca9a1b…",
+        "rate": "93.20%",
+        "cpu": "11.6%",
+        "ram": "17.02 GB",
+        "latency": "69.7 ms",
+        "disks": 13,
+        "width": 390,
+        "scrollWidth": 390,
+        "score": "Iteration 2 · 50.00/100 task gates",
+        "artifact": "Current native f52a08ca9a1bc6cd79eb… · source df4ae3bc8d52",
+        "privateAccessEnabled": true
+      },
+      "screenshot": {
+        "path": "out/lume-20261029-cpu30/public-delivery-1/surge-mobile.png",
+        "bytes": 94705,
+        "sha256": "634a1978d23ecda02693b15493bc658944015a5baf72a9679108d576135b89ca",
+        "scope": "Internal visual QA only; excludes private keys and messages"
+      }
+    }
+  ],
+  "privateKeysOmitted": true,
+  "currentAcceptedArtifact": {
+    "sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+    "sourceCommit": "df4ae3bc8d52a06778e0d8a1f706138201dd043d",
+    "recorded": 103,
+    "fullyPassing": 96
+  },
+  "publicSourceBytesVerified": true,
+  "browser": {
+    "binarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+    "version": "Chrome/156.0.8078.74",
+    "normalSandbox": true,
+    "profileScope": "Fresh owned test profile; no user profile or session used"
+  },
+  "browserCleanup": {
+    "exitCode": 0,
+    "signalCode": null,
+    "closedThroughCDP": true
+  },
+  "finishedUTC": "2026-10-29T04:39:26.506Z",
+  "durationSeconds": 19.113
+}

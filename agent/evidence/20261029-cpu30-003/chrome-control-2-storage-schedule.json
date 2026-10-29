@@ -1,0 +1,58 @@
+[
+  {
+    "test": "/webstorage/storage_clear.window.html",
+    "type": "testharness",
+    "source": "webstorage/storage_clear.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/webstorage/storage_getitem.window.html",
+    "type": "testharness",
+    "source": "webstorage/storage_getitem.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/webstorage/storage_key.window.html",
+    "type": "testharness",
+    "source": "webstorage/storage_key.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/webstorage/storage_key_empty_string.window.html",
+    "type": "testharness",
+    "source": "webstorage/storage_key_empty_string.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/webstorage/storage_length.window.html",
+    "type": "testharness",
+    "source": "webstorage/storage_length.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/webstorage/storage_removeitem.window.html",
+    "type": "testharness",
+    "source": "webstorage/storage_removeitem.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/webstorage/storage_setitem.window.html",
+    "type": "testharness",
+    "source": "webstorage/storage_setitem.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  }
+]

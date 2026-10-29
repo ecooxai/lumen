@@ -5,7 +5,7 @@
   "session_start_utc": "2026-10-29T02:18:45+00:00",
   "deadline_utc": "2026-10-29T05:18:45+00:00",
   "target_score": 98,
-  "score": 50,
+  "score": 55,
   "score_state": "current_native_artifact_accepted_partial_gates_pending",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-20261029-cpu30.md",
@@ -516,9 +516,12 @@
       "category": "reproducibility_release",
       "weight": 5,
       "name": "Reviewed progress/release delivery",
-      "status": "pending_current_task_delivery",
-      "earned": 0,
-      "evidence": [],
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-003/public-source-ui-proof.json",
+        "agent/evidence/20261029-cpu30-003/live-message-telemetry-handoff.json"
+      ],
       "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
@@ -542,10 +545,12 @@
           "generation": "inherited_previous_task"
         }
       ],
-      "note": "Existing route is reachable, but new task public source/message/telemetry delivery requires fresh verification. Historical release points are withheld until that proof."
+      "note": "Both public routes delivered every source archive byte for963d4ddd; four responsive browser views and old namespace reloads passed. WSS/TLS2.012s telemetry, nonce RTT and private submit/reply verified. Latest documentation HEAD must be repackaged after this checkpoint.",
+      "source_commit": "963d4ddd72620b4978e950cc75298319615911a2",
+      "archive_sha256": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167"
     }
   ],
-  "updated_utc": "2026-10-29T04:25:54.392568+00:00",
+  "updated_utc": "2026-10-29T04:45:43.833967+00:00",
   "current_baseline_binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "df4ae3bc8d52a06778e0d8a1f706138201dd043d",
@@ -730,6 +735,15 @@
       "total_session_seconds": 7629.393,
       "score": 50,
       "status": "JSON/BOM fixes and stable private message namespace functionally verified; changed native resource acceptance and public handoff pending"
+    },
+    {
+      "iteration": "20261029-cpu30-003",
+      "started_utc": "2026-10-29T04:22:09.528169+00:00",
+      "finished_utc": "2026-10-29T04:45:43.833967+00:00",
+      "elapsed_seconds": 1414.306,
+      "total_session_seconds": 8818.834,
+      "score": 55,
+      "status": "Current public source/message/telemetry delivery verified; broader native priority and qualified Chrome controls preserved"
     }
   ],
   "current_native_source_manifest": "agent/evidence/20261029-cpu30-001/compiled-source-sha256.json",
@@ -937,5 +951,23 @@
         "total": 21
       }
     }
-  ]
+  ],
+  "current_task_broad_functional_snapshot": {
+    "binary_sha256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+    "fully_passing": 242,
+    "recorded": 279,
+    "scheduled": 1515,
+    "unrun": 1236,
+    "assertions": {
+      "PASS": 38724,
+      "FAIL": 37
+    },
+    "harness_statuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "evidence": "agent/evidence/20261029-cpu30-003/broad-priority-summary.json",
+    "resource_acceptance": "pending"
+  }
 }

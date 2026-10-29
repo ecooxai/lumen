@@ -1,0 +1,1123 @@
+{
+  "taskId": "20261029-cpu30",
+  "startedUTC": "2026-10-29T04:16:29.077167+00:00",
+  "scope": "Exact same 103 frozen Encoding variants on qualified Chrome; not full WPT or native artifact acceptance. Actual Chrome failures are preserved.",
+  "scheduledFrozenVariants": 1515,
+  "scheduledControlVariants": 103,
+  "nativePlan": "out/lume-20261029-cpu30/compat-baseline-2/cohort/cohort.json",
+  "nativePlanSHA256": "a7746c5d23a3be42d351488a1f77d9bde4f6b194a15213e34f4c3aa6d0cf3e25",
+  "chromeBinarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "groups": {
+    "encoding-core": {
+      "scheduled": 77,
+      "recorded": 77,
+      "fullyPassing": 66,
+      "harnessStatuses": {
+        "OK": 77
+      },
+      "assertions": {
+        "PASS": 23133,
+        "FAIL": 167
+      },
+      "failures": [
+        {
+          "test": "/encoding/encodeInto.any.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            }
+          ]
+        },
+        {
+          "test": "/encoding/encodeInto.any.worker.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with Hi and destination length 0, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A and destination length 10, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06 and destination length 4, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834\udf06A and destination length 3, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \ud834A\udf06A\u00a5Hi and destination length 10, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with A\udf06 and destination length 4, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 0, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 4, filler 0",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 0, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 4, filler 128",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 0, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            },
+            {
+              "name": "encodeInto() into SharedArrayBuffer with \u00a5\u00a5 and destination length 4, offset 4, filler random",
+              "status": "FAIL",
+              "message": "Failed to execute 'encodeInto' on 'TextEncoder': The provided Uint8Array value must not be shared."
+            }
+          ]
+        },
+        {
+          "test": "/encoding/iso-2022-jp-decoder.any.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "iso-2022-jp decoder: reset after a final chunk, fatal=false",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"!\" but got \"\uff61\""
+            },
+            {
+              "name": "iso-2022-jp decoder: reset after an empty flush, fatal=false",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"!\" but got \"\uff61\""
+            },
+            {
+              "name": "iso-2022-jp decoder: reset after a final chunk, fatal=true",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"!\" but got \"\uff61\""
+            },
+            {
+              "name": "iso-2022-jp decoder: reset after an empty flush, fatal=true",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"!\" but got \"\uff61\""
+            }
+          ]
+        },
+        {
+          "test": "/encoding/iso-2022-jp-decoder.any.worker.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "iso-2022-jp decoder: reset after a final chunk, fatal=false",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"!\" but got \"\uff61\""
+            },
+            {
+              "name": "iso-2022-jp decoder: reset after an empty flush, fatal=false",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"!\" but got \"\uff61\""
+            },
+            {
+              "name": "iso-2022-jp decoder: reset after a final chunk, fatal=true",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"!\" but got \"\uff61\""
+            },
+            {
+              "name": "iso-2022-jp decoder: reset after an empty flush, fatal=true",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"!\" but got \"\uff61\""
+            }
+          ]
+        },
+        {
+          "test": "/encoding/sharedarraybuffer.https.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "decoding SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            }
+          ]
+        },
+        {
+          "test": "/encoding/textdecoder-copy.any.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "Modify buffer after passing it in (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': parameter 1 is not of type 'ArrayBuffer'."
+            }
+          ]
+        },
+        {
+          "test": "/encoding/textdecoder-copy.any.worker.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "Modify buffer after passing it in (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': parameter 1 is not of type 'ArrayBuffer'."
+            }
+          ]
+        },
+        {
+          "test": "/encoding/textdecoder-mistakes.any.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "Concatenating two ISO-2022-JP outputs is not always valid",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\u00a5\\ufffd\u00a5\" but got \"\\ufffd\u00a5\\ufffd\u00a5\""
+            },
+            {
+              "name": "Replacement, push back ASCII characters: iso-2022-jp",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\\ufffd\" but got \"\\ufffd$\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,32,161,161",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd \u3000\" but got \"\\ufffd \\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,32,161,161, split at 1",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd \u3000\" but got \"\\ufffd \\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,32,161,161, split at 2",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd \u3000\" but got \"\\ufffd \\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,32,161,161, split at 3",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd \u3000\" but got \"\\ufffd \\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,32,161,161, split at 4",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd \u3000\" but got \"\\ufffd \\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,160,161,161",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u3000\" but got \"\\ufffd\\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,160,161,161, split at 1",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u3000\" but got \"\\ufffd\\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,160,161,161, split at 2",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u3000\" but got \"\\ufffd\\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,160,161,161, split at 3",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u3000\" but got \"\\ufffd\\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,160,161,161, split at 4",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u3000\" but got \"\\ufffd\\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,255,176,161",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u4e9c\" but got \"\\ufffd\u4e02\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,255,176,161, split at 1",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u4e9c\" but got \"\\ufffd\u4e02\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,255,176,161, split at 2",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u4e9c\" but got \"\\ufffd\u4e02\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,255,176,161, split at 3",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u4e9c\" but got \"\\ufffd\u4e02\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,255,176,161, split at 4",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u4e9c\" but got \"\\ufffd\u4e02\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state after a fatal streaming error",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The encoded data was not valid."
+            },
+            {
+              "name": "Sticky multibyte state: iso-2022-jp",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"@\" but got \"\\ufffd@\""
+            },
+            {
+              "name": "Sticky multibyte state: euc-jp",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\u3000\" but got \"\\ufffd\""
+            }
+          ]
+        },
+        {
+          "test": "/encoding/textdecoder-mistakes.any.worker.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "Concatenating two ISO-2022-JP outputs is not always valid",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\u00a5\\ufffd\u00a5\" but got \"\\ufffd\u00a5\\ufffd\u00a5\""
+            },
+            {
+              "name": "Replacement, push back ASCII characters: iso-2022-jp",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\\ufffd\" but got \"\\ufffd$\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,32,161,161",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd \u3000\" but got \"\\ufffd \\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,32,161,161, split at 1",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd \u3000\" but got \"\\ufffd \\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,32,161,161, split at 2",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd \u3000\" but got \"\\ufffd \\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,32,161,161, split at 3",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd \u3000\" but got \"\\ufffd \\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,32,161,161, split at 4",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd \u3000\" but got \"\\ufffd \\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,160,161,161",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u3000\" but got \"\\ufffd\\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,160,161,161, split at 1",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u3000\" but got \"\\ufffd\\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,160,161,161, split at 2",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u3000\" but got \"\\ufffd\\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,160,161,161, split at 3",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u3000\" but got \"\\ufffd\\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,160,161,161, split at 4",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u3000\" but got \"\\ufffd\\ufffd\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,255,176,161",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u4e9c\" but got \"\\ufffd\u4e02\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,255,176,161, split at 1",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u4e9c\" but got \"\\ufffd\u4e02\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,255,176,161, split at 2",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u4e9c\" but got \"\\ufffd\u4e02\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,255,176,161, split at 3",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u4e9c\" but got \"\\ufffd\u4e02\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state: 143,162,255,176,161, split at 4",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\\ufffd\u4e9c\" but got \"\\ufffd\u4e02\""
+            },
+            {
+              "name": "EUC-JP JIS0212 state after a fatal streaming error",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The encoded data was not valid."
+            },
+            {
+              "name": "Sticky multibyte state: iso-2022-jp",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"@\" but got \"\\ufffd@\""
+            },
+            {
+              "name": "Sticky multibyte state: euc-jp",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\u3000\" but got \"\\ufffd\""
+            }
+          ]
+        },
+        {
+          "test": "/encoding/textdecoder-streaming.any.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "Streaming decode: utf-8, 1 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-8, 2 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-8, 3 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-8, 4 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-8, 5 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16le, 1 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16le, 2 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16le, 3 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16le, 4 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16le, 5 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16be, 1 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16be, 2 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16be, 3 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16be, 4 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16be, 5 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: UTF-8 chunk tests (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            }
+          ]
+        },
+        {
+          "test": "/encoding/textdecoder-streaming.any.worker.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "Streaming decode: utf-8, 1 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-8, 2 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-8, 3 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-8, 4 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-8, 5 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16le, 1 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16le, 2 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16le, 3 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16le, 4 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16le, 5 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16be, 1 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16be, 2 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16be, 3 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16be, 4 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: utf-16be, 5 byte window (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            },
+            {
+              "name": "Streaming decode: UTF-8 chunk tests (SharedArrayBuffer)",
+              "status": "FAIL",
+              "message": "Failed to execute 'decode' on 'TextDecoder': The provided ArrayBufferView value must not be shared."
+            }
+          ]
+        }
+      ],
+      "rawResults": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-1/encoding-core/results.jsonl",
+      "rawResultsSHA256": "4bbf1535b81a001f9b171206e3c8ae12628a1e09256180bc23be54c7350869ff",
+      "runMetadataSHA256": "e436ea34d3448d79af227783250d1c89d22dd3813cc35c6229e85f774cfa05ad",
+      "browserVersion": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/156.0.8078.74",
+        "revision": "@d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "jsVersion": "15.6.75.25"
+      },
+      "signatureComparedWithNative": true
+    },
+    "encoding-streams": {
+      "scheduled": 26,
+      "recorded": 26,
+      "fullyPassing": 23,
+      "harnessStatuses": {
+        "OK": 26
+      },
+      "assertions": {
+        "PASS": 344,
+        "FAIL": 14
+      },
+      "failures": [
+        {
+          "test": "/encoding/streams/decode-utf8.any.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "decoding one UTF-8 chunk should give one output string - SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: The provided ArrayBufferView value must not be shared.\""
+            },
+            {
+              "name": "decoding an empty chunk should give no output chunks - SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: The provided ArrayBufferView value must not be shared.\""
+            },
+            {
+              "name": "an initial empty chunk should be ignored - SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: The provided ArrayBufferView value must not be shared.\""
+            },
+            {
+              "name": "a trailing empty chunk should be ignored - SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: The provided ArrayBufferView value must not be shared.\""
+            },
+            {
+              "name": "UTF-8 EOF handling - SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: The provided ArrayBufferView value must not be shared.\""
+            }
+          ]
+        },
+        {
+          "test": "/encoding/streams/decode-utf8.any.worker.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "decoding one UTF-8 chunk should give one output string - SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: The provided ArrayBufferView value must not be shared.\""
+            },
+            {
+              "name": "decoding an empty chunk should give no output chunks - SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: The provided ArrayBufferView value must not be shared.\""
+            },
+            {
+              "name": "an initial empty chunk should be ignored - SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: The provided ArrayBufferView value must not be shared.\""
+            },
+            {
+              "name": "a trailing empty chunk should be ignored - SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: The provided ArrayBufferView value must not be shared.\""
+            },
+            {
+              "name": "UTF-8 EOF handling - SharedArrayBuffer",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: The provided ArrayBufferView value must not be shared.\""
+            }
+          ]
+        },
+        {
+          "test": "/encoding/streams/invalid-realm.window.html",
+          "status": "OK",
+          "message": null,
+          "assertions": [
+            {
+              "name": "TextDecoderStream: write in detached realm should succeed",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: Failed to execute 'write' on 'WritableStreamDefaultWriter': invalid realm\""
+            },
+            {
+              "name": "TextEncoderStream: write in detached realm should succeed",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: Failed to execute 'write' on 'WritableStreamDefaultWriter': invalid realm\""
+            },
+            {
+              "name": "TextEncoderStream: close in detached realm should succeed",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: Failed to execute 'close' on 'WritableStream': invalid realm\""
+            },
+            {
+              "name": "TextDecoderStream: close in detached realm should succeed",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: Failed to execute 'close' on 'WritableStream': invalid realm\""
+            }
+          ]
+        }
+      ],
+      "rawResults": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-1/encoding-streams/results.jsonl",
+      "rawResultsSHA256": "a2563dd5a73401fc47325ee7efca0257a25adc75e933b8c3a7425cc64a1c1de3",
+      "runMetadataSHA256": "27a6a227a6b2415a8c1caa6ef3e738a4330e74ca20744de182c5875ce4e7ab09",
+      "browserVersion": {
+        "protocolVersion": "1.3",
+        "product": "Chrome/156.0.8078.74",
+        "revision": "@d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+        "jsVersion": "15.6.75.25"
+      },
+      "signatureComparedWithNative": true
+    }
+  },
+  "stages": [
+    {
+      "name": "encoding-core",
+      "startedUTC": "2026-10-29T04:16:29.229409+00:00",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:16:50.337516+00:00",
+      "wallSeconds": 21.075,
+      "monitorReceipt": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-1/encoding-core-resources.json",
+      "monitorSHA256": "00af3f0ab26b44d580894814b3cbb907e0cfda178872aad4a17bc53d0bc9fb73",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 20,
+      "cpuPeakPercent": 251.406,
+      "rssPeakMiB": 1703.703,
+      "maximumSamplingGapSeconds": 1.082
+    },
+    {
+      "name": "encoding-streams",
+      "startedUTC": "2026-10-29T04:16:50.354184+00:00",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:16:58.470786+00:00",
+      "wallSeconds": 8.112,
+      "monitorReceipt": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-1/encoding-streams-resources.json",
+      "monitorSHA256": "421c7ae6dbab9f8787d3f3f1ef53b7e2746c94d3cafed114773fdbe7c95d31c0",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 7,
+      "cpuPeakPercent": 191.179,
+      "rssPeakMiB": 1595.781,
+      "maximumSamplingGapSeconds": 1.057
+    }
+  ],
+  "complete": true,
+  "chromeBinary": "output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "nativeBinaryAtScheduling": {
+    "path": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/native-combined-1/lumen-f52a08ca9a1bc6cd",
+    "sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c"
+  },
+  "wptRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "frozenScheduleSHA256": "adcbf9719f722368b1e53ac1bd61cf38e566d3bd7495d9d6127cad38dd6aeabe",
+  "qualificationEvidence": "agent/evidence/102900614-006-chrome-reference.json",
+  "qualificationSHA256": "1e34a36c89d61da6314e975fb8fe8296e0bd2e07ac73cc3836861785fcac5452",
+  "recorded": 103,
+  "fullyPassing": 89,
+  "unrunOfFrozenSchedule": 1412,
+  "passingPercentOfObserved": 86.40776699029126,
+  "assertions": {
+    "PASS": 23477,
+    "FAIL": 181
+  },
+  "harnessStatuses": {
+    "OK": 103
+  },
+  "chromeBinarySHA256After": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "finishedUTC": "2026-10-29T04:16:58.472917+00:00",
+  "wallSeconds": 29.357
+}

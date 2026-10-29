@@ -1,0 +1,61 @@
+{
+  "taskId": "20261029-cpu30",
+  "startedUTC": "2026-10-29T04:28:31.122237+00:00",
+  "publicURL": "https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz",
+  "surgeURL": "https://lume-102900614-gpt6-astra-pro.surge.sh",
+  "oldTask": "102900614",
+  "oldPID": 12706,
+  "scope": "Reuse the existing task HTTPS route and private capability; preserve prior status/archive and all stored messages. Only the exact verified task server is replaced.",
+  "switched": true,
+  "rolledBack": false,
+  "privateKeysOmitted": true,
+  "sourceCommit": "963d4ddd72620b4978e950cc75298319615911a2",
+  "sourceArchiveSHA256": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167",
+  "inboxBefore": {
+    "copiedMessages": 1,
+    "pendingMessages": 0,
+    "inventorySHA256": "7b60e4f09c81d77a43c186b9d37e27a53707d170d313c3771dacc580c5383469"
+  },
+  "inboxAfterStop": {
+    "copiedMessages": 1,
+    "pendingMessages": 0,
+    "inventorySHA256": "7b60e4f09c81d77a43c186b9d37e27a53707d170d313c3771dacc580c5383469"
+  },
+  "newPID": 136,
+  "newIdentity": {
+    "pid": 136,
+    "start": "Wed Oct 28 21:28:31 2026",
+    "args": "node tools/lume-progress-10290244/server.mjs",
+    "cwd": "p136\nfcwd\nn/Users/devin/repos/lumen"
+  },
+  "verification": {
+    "taskId": "20261029-cpu30",
+    "startedUTC": "2026-10-29T04:28:32.472Z",
+    "publicURL": "https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz",
+    "passed": true,
+    "messageSessionId": "102900614",
+    "websocket": {
+      "tlsCertificateValidated": true,
+      "handshakeAcceptVerified": true,
+      "taskIdentityVerified": true,
+      "sampleTimestamps": [
+        "2026-10-29T04:28:31.775Z",
+        "2026-10-29T04:28:33.787Z"
+      ],
+      "observedSampleIntervalSeconds": 2.012,
+      "publicRoundTripMs": [
+        70.862,
+        69.965
+      ],
+      "latencyScope": "Measured round trip from the Mac verifier through the public route; the browser UI independently measures its own client round trip."
+    },
+    "message": {
+      "id": "dec73d93-c6ba-40ec-aadb-2638e16110e8",
+      "stored": true,
+      "replyObserved": true,
+      "privateKeysOmitted": true
+    },
+    "finishedUTC": "2026-10-29T04:28:34.007Z"
+  },
+  "finishedUTC": "2026-10-29T04:28:34.064496+00:00"
+}

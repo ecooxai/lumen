@@ -1,0 +1,51 @@
+{
+  "scheduled_files": 14,
+  "recorded_files": 14,
+  "remaining_files": 0,
+  "file_outcomes": {
+    "OK": 14
+  },
+  "files_passing_all_assertions": 13,
+  "valid_completed_files": 14,
+  "attempted_files": 14,
+  "attempted_file_pass_rate": 0.9285714285714286,
+  "zero_assertion_testharness_files": 0,
+  "zero_assertion_files_by_type": {},
+  "all_assertions_pass_file_rate": 0.9285714285714286,
+  "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+  "scheduled_file_pass_fraction": 0.9285714285714286,
+  "subtest_outcomes": {
+    "FAIL": 12,
+    "PASS": 984
+  },
+  "executed_subtests_excluding_notrun": 996,
+  "subtest_pass_rate": 0.9879518072289156,
+  "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes.",
+  "by_type": {
+    "testharness": {
+      "scheduled_files": 14,
+      "recorded_files": 14,
+      "remaining_files": 0,
+      "file_outcomes": {
+        "OK": 14
+      },
+      "files_passing_all_assertions": 13,
+      "valid_completed_files": 14,
+      "attempted_files": 14,
+      "attempted_file_pass_rate": 0.9285714285714286,
+      "zero_assertion_testharness_files": 0,
+      "zero_assertion_files_by_type": {},
+      "all_assertions_pass_file_rate": 0.9285714285714286,
+      "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+      "scheduled_file_pass_fraction": 0.9285714285714286,
+      "subtest_outcomes": {
+        "FAIL": 12,
+        "PASS": 984
+      },
+      "executed_subtests_excluding_notrun": 996,
+      "subtest_pass_rate": 0.9879518072289156,
+      "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes."
+    }
+  },
+  "headline_metric_note": "Report testharness and test262 separately; the combined counters are coverage bookkeeping, not a web-platform pass-rate headline."
+}

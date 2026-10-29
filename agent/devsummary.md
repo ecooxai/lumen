@@ -318,3 +318,25 @@ Evidence `agent/evidence/20261029-cpu30-001-native-acceptance.json`. Current ful
 Score50/100 remains separate from the current functional candidate98/103 (95.146%). The accepted f52 artifact remains96/103 with its own validated scroll/soak; changed4b26 GUI is pending. Genuine JSON2/16→16/16 and BOM11/21→21/21; invalid carrier RED1 retained and rejected. Delivery two-case0/2→2/2, all8/8GREEN; deployment proof pending. Qualified Chrome89/103 is a scoped diagnostic under investigation, not an overall ranking. All1515 frozen variants remain counted,1412unrun; all29native and181Chrome failing assertions remain visible. Two integration checkpoint attempts stopped before any write: first rejected a display-only fixtureCounts field, then rejected the mutable priority summary during expanded coverage. Acceptance now verifies raw hash-bound logs and the recorded immutable pre-expansion103 snapshot. No browser test failure was hidden by these precondition repairs. No build/test in this checkpoint exceeded5minutes. Parallel durations are not summed as elapsed.
 
 Evidence: agent/evidence/20261029-cpu30-002-functional-checkpoint.json
+
+
+## 20261029-cpu30-003 — delivery and broader coverage
+
+{
+  "started_utc": "2026-10-29T04:22:09.528169+00:00",
+  "finished_utc": "2026-10-29T04:45:43.833967+00:00",
+  "started_Asia_Shanghai": "2026-10-29T12:22:09.528169+08:00",
+  "finished_Asia_Shanghai": "2026-10-29T12:45:43.833967+08:00",
+  "elapsed_seconds": 1414.306,
+  "total_session_seconds": 8818.834,
+  "timingsSeconds": {
+    "nativeExpansion": 347.703,
+    "chrome103": 29.357,
+    "chromeAdditional176": 52.739,
+    "publicSourceAndFourViews": 19.113,
+    "sourcePushPackage": 5.517
+  },
+  "longTestReview": "Expansion347.703s includes genuine unchanged service-worker10.5s/60.5s timeout costs, primarily headers244.095s+14.098s. Outcomes remain counted; no test timeout was shortened."
+}
+
+Score55/100. Broad242/279 includes all15TIMEOUT/15ERROR; frozen1515 retains1236unrun. Qualified disjoint279 and named-assertion parity preserve missing contexts. Accepted f52 remains separate from4b measured WPT and9137 active candidate. Public source/UI/message/telemetry passed; current task continues. Evidence agent/evidence/20261029-cpu30-003-delivery-breadth.json

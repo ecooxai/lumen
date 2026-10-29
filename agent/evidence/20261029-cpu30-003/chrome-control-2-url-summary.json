@@ -1,0 +1,51 @@
+{
+  "scheduled_files": 77,
+  "recorded_files": 77,
+  "remaining_files": 0,
+  "file_outcomes": {
+    "OK": 77
+  },
+  "files_passing_all_assertions": 47,
+  "valid_completed_files": 77,
+  "attempted_files": 77,
+  "attempted_file_pass_rate": 0.6103896103896104,
+  "zero_assertion_testharness_files": 0,
+  "zero_assertion_files_by_type": {},
+  "all_assertions_pass_file_rate": 0.6103896103896104,
+  "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+  "scheduled_file_pass_fraction": 0.6103896103896104,
+  "subtest_outcomes": {
+    "FAIL": 702,
+    "PASS": 11621
+  },
+  "executed_subtests_excluding_notrun": 12323,
+  "subtest_pass_rate": 0.9430333522681166,
+  "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes.",
+  "by_type": {
+    "testharness": {
+      "scheduled_files": 77,
+      "recorded_files": 77,
+      "remaining_files": 0,
+      "file_outcomes": {
+        "OK": 77
+      },
+      "files_passing_all_assertions": 47,
+      "valid_completed_files": 77,
+      "attempted_files": 77,
+      "attempted_file_pass_rate": 0.6103896103896104,
+      "zero_assertion_testharness_files": 0,
+      "zero_assertion_files_by_type": {},
+      "all_assertions_pass_file_rate": 0.6103896103896104,
+      "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+      "scheduled_file_pass_fraction": 0.6103896103896104,
+      "subtest_outcomes": {
+        "FAIL": 702,
+        "PASS": 11621
+      },
+      "executed_subtests_excluding_notrun": 12323,
+      "subtest_pass_rate": 0.9430333522681166,
+      "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes."
+    }
+  },
+  "headline_metric_note": "Report testharness and test262 separately; the combined counters are coverage bookkeeping, not a web-platform pass-rate headline."
+}

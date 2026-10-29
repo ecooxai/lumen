@@ -1,0 +1,982 @@
+[
+  {
+    "test": "/fetch/api/headers/header-setcookie.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-setcookie.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers set-cookie special cases"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-setcookie.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers set-cookie special cases"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-setcookie.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers set-cookie special cases"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-setcookie.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-setcookie.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers set-cookie special cases"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values-last-event-id.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values-last-event-id.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Fetch: non-ASCII Last-Event-ID header value"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values-last-event-id.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Fetch: non-ASCII Last-Event-ID header value"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values-last-event-id.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Fetch: non-ASCII Last-Event-ID header value"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values-last-event-id.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values-last-event-id.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Fetch: non-ASCII Last-Event-ID header value"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values-normalize.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values-normalize.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Header value normalizing test"
+        ],
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "timeout",
+          "long"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values-normalize.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Header value normalizing test"
+        ],
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "timeout",
+          "long"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values-normalize.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Header value normalizing test"
+        ],
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "timeout",
+          "long"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values-normalize.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values-normalize.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Header value normalizing test"
+        ],
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "timeout",
+          "long"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Header value test"
+        ],
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "timeout",
+          "long"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Header value test"
+        ],
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "timeout",
+          "long"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Header value test"
+        ],
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "timeout",
+          "long"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/header-values.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/header-values.any.js",
+    "timeout": "long",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Header value test"
+        ],
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "timeout",
+          "long"
+        ]
+      ],
+      "timeout": "long"
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-basic.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-basic.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers structure"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-basic.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers structure"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-basic.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers structure"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-basic.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-basic.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers structure"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-casing.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-casing.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers case management"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-casing.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers case management"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-casing.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers case management"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-casing.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-casing.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers case management"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-combine.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-combine.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers have combined (and sorted) values"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-combine.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers have combined (and sorted) values"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-combine.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers have combined (and sorted) values"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-combine.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-combine.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers have combined (and sorted) values"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-errors.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-errors.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers errors"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-errors.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers errors"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-errors.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers errors"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-errors.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-errors.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers errors"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-forbidden-override.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-forbidden-override.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-forbidden-override.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-forbidden-override.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-forbidden-override.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-forbidden-override.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-no-cors.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-no-cors.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-no-cors.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-no-cors.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-no-cors.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-no-cors.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-normalize.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-normalize.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers normalize values"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-normalize.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers normalize values"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-normalize.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers normalize values"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-normalize.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-normalize.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers normalize values"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-record.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-record.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-record.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-record.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-record.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-record.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-structure.any.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-structure.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers basic"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-structure.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers basic"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-structure.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers basic"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/fetch/api/headers/headers-structure.any.worker.html",
+    "type": "testharness",
+    "source": "fetch/api/headers/headers-structure.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Headers basic"
+        ],
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  }
+]

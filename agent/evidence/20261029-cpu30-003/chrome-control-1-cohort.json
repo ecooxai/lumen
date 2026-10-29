@@ -1,0 +1,2789 @@
+{
+  "schema": 1,
+  "taskId": "20261029-cpu30",
+  "createdUTC": "2026-10-29T04:16:29.228536+00:00",
+  "engine": "chromium",
+  "binary": {
+    "path": "output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "sha256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4"
+  },
+  "groups": {
+    "encoding-core": [
+      {
+        "test": "/encoding/api-basics.any.html",
+        "type": "testharness",
+        "source": "encoding/api-basics.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: Basics"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-basics.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/api-basics.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: Basics"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-invalid-label.any.html?1-1000",
+        "type": "testharness",
+        "source": "encoding/api-invalid-label.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: invalid label"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-last"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-invalid-label.any.html?1001-2000",
+        "type": "testharness",
+        "source": "encoding/api-invalid-label.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: invalid label"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-last"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-invalid-label.any.html?2001-3000",
+        "type": "testharness",
+        "source": "encoding/api-invalid-label.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: invalid label"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-last"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-invalid-label.any.html?3001-last",
+        "type": "testharness",
+        "source": "encoding/api-invalid-label.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: invalid label"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-last"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-invalid-label.any.worker.html?1-1000",
+        "type": "testharness",
+        "source": "encoding/api-invalid-label.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: invalid label"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-last"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-invalid-label.any.worker.html?1001-2000",
+        "type": "testharness",
+        "source": "encoding/api-invalid-label.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: invalid label"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-last"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-invalid-label.any.worker.html?2001-3000",
+        "type": "testharness",
+        "source": "encoding/api-invalid-label.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: invalid label"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-last"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-invalid-label.any.worker.html?3001-last",
+        "type": "testharness",
+        "source": "encoding/api-invalid-label.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: invalid label"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-last"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-replacement-encodings.any.html",
+        "type": "testharness",
+        "source": "encoding/api-replacement-encodings.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: replacement encoding"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-replacement-encodings.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/api-replacement-encodings.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: replacement encoding"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-surrogates-utf8.any.html",
+        "type": "testharness",
+        "source": "encoding/api-surrogates-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: Invalid UTF-16 surrogates with UTF-8 encoding"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/api-surrogates-utf8.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/api-surrogates-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: Invalid UTF-16 surrogates with UTF-8 encoding"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/big5-encoder.html",
+        "type": "testharness",
+        "source": "encoding/big5-encoder.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/bom-handling.html",
+        "type": "testharness",
+        "source": "encoding/bom-handling.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/encodeInto.any.html",
+        "type": "testharness",
+        "source": "encoding/encodeInto.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/encodeInto.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/encodeInto.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/iso-2022-jp-decoder.any.html",
+        "type": "testharness",
+        "source": "encoding/iso-2022-jp-decoder.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/iso-2022-jp-decoder.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/iso-2022-jp-decoder.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/iso-2022-jp-encoder.html",
+        "type": "testharness",
+        "source": "encoding/iso-2022-jp-encoder.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/json-document-utf8.html",
+        "type": "testharness",
+        "source": "encoding/json-document-utf8.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/remove-only-one-bom.html",
+        "type": "testharness",
+        "source": "encoding/remove-only-one-bom.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.html",
+        "type": "testharness",
+        "source": "encoding/replacement-encodings.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: replacement encoding"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "resources/decoding-helpers.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/replacement-encodings.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: replacement encoding"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "resources/decoding-helpers.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/sharedarraybuffer.https.html",
+        "type": "testharness",
+        "source": "encoding/sharedarraybuffer.https.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/single-byte-decoder-iframe.window.html",
+        "type": "testharness",
+        "source": "encoding/single-byte-decoder-iframe.window.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "resources/single-byte-decoder.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/single-byte-decoder.any.html?TextDecoder",
+        "type": "testharness",
+        "source": "encoding/single-byte-decoder.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?XMLHttpRequest"
+            ],
+            [
+              "variant",
+              "?TextDecoder"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "resources/single-byte-decoder.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/single-byte-decoder.any.html?XMLHttpRequest",
+        "type": "testharness",
+        "source": "encoding/single-byte-decoder.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?XMLHttpRequest"
+            ],
+            [
+              "variant",
+              "?TextDecoder"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "resources/single-byte-decoder.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/sniffing.html",
+        "type": "testharness",
+        "source": "encoding/sniffing.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-arguments.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-arguments.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: TextDecoder decode() optional arguments"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-arguments.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-arguments.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: TextDecoder decode() optional arguments"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-byte-order-marks.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-byte-order-marks.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: Byte-order marks"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-byte-order-marks.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-byte-order-marks.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: Byte-order marks"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-copy.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-copy.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-copy.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-copy.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-eof.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-eof.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-eof.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-eof.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.html?1-1000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.html?1001-2000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.html?2001-3000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.html?3001-4000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.html?4001-5000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.html?5001-6000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.html?6001-7000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.html?7001-last",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?1-1000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?1001-2000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?2001-3000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?3001-4000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?4001-5000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?5001-6000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?6001-7000",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-single-byte.any.worker.html?7001-last",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-single-byte.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag for single byte encodings"
+            ],
+            [
+              "timeout",
+              "long"
+            ],
+            [
+              "variant",
+              "?1-1000"
+            ],
+            [
+              "variant",
+              "?1001-2000"
+            ],
+            [
+              "variant",
+              "?2001-3000"
+            ],
+            [
+              "variant",
+              "?3001-4000"
+            ],
+            [
+              "variant",
+              "?4001-5000"
+            ],
+            [
+              "variant",
+              "?5001-6000"
+            ],
+            [
+              "variant",
+              "?6001-7000"
+            ],
+            [
+              "variant",
+              "?7001-last"
+            ],
+            [
+              "script",
+              "/common/subset-tests.js"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-streaming.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-streaming.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: End-of-file"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal-streaming.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal-streaming.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: End-of-file"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-fatal.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-fatal.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: Fatal flag"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-ignorebom.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-ignorebom.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: TextDecoder ignoreBOM option"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-ignorebom.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-ignorebom.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: TextDecoder ignoreBOM option"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-labels.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-labels.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: Encoding labels"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-labels.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-labels.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: Encoding labels"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-mistakes.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-mistakes.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-mistakes.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-mistakes.any.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-streaming.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-streaming.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: Streaming decode"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-streaming.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-streaming.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: Streaming decode"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-utf16-surrogates.any.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-utf16-surrogates.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: UTF-16 surrogate handling"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-utf16-surrogates.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-utf16-surrogates.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: UTF-16 surrogate handling"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textencoder-constructor-non-utf.any.html",
+        "type": "testharness",
+        "source": "encoding/textencoder-constructor-non-utf.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: Legacy encodings"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textencoder-constructor-non-utf.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textencoder-constructor-non-utf.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: Legacy encodings"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textencoder-utf16-surrogates.any.html",
+        "type": "testharness",
+        "source": "encoding/textencoder-utf16-surrogates.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: USVString surrogate handling when encoding"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textencoder-utf16-surrogates.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/textencoder-utf16-surrogates.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,dedicatedworker"
+            ],
+            [
+              "title",
+              "Encoding API: USVString surrogate handling when encoding"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.html",
+        "type": "testharness",
+        "source": "encoding/unsupported-encodings.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: unsupported encodings"
+            ],
+            [
+              "script",
+              "resources/decoding-helpers.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/unsupported-encodings.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: unsupported encodings"
+            ],
+            [
+              "script",
+              "resources/decoding-helpers.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/unsupported-labels.window.html",
+        "type": "testharness",
+        "source": "encoding/unsupported-labels.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/utf-32-from-win1252.html",
+        "type": "testharness",
+        "source": "encoding/utf-32-from-win1252.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/utf-32.html",
+        "type": "testharness",
+        "source": "encoding/utf-32.html",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      }
+    ],
+    "encoding-streams": [
+      {
+        "test": "/encoding/idlharness.any.html",
+        "type": "testharness",
+        "source": "encoding/idlharness.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "/resources/WebIDLParser.js"
+            ],
+            [
+              "script",
+              "/resources/idlharness.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/idlharness.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/idlharness.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "/resources/WebIDLParser.js"
+            ],
+            [
+              "script",
+              "/resources/idlharness.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/backpressure.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/backpressure.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/backpressure.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/backpressure.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-attributes.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-attributes.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-attributes.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-attributes.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-bad-chunks.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-bad-chunks.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-bad-chunks.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-bad-chunks.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-ignore-bom.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-ignore-bom.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-ignore-bom.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-ignore-bom.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-incomplete-input.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-incomplete-input.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-incomplete-input.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-incomplete-input.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-non-utf8.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-non-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-non-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-split-character.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-split-character.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-split-character.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-split-character.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-utf8.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-utf8.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/encode-bad-chunks.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/encode-bad-chunks.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/encode-bad-chunks.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/encode-bad-chunks.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/encode-utf8.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/encode-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/encode-utf8.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/encode-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/invalid-realm.window.html",
+        "type": "testharness",
+        "source": "encoding/streams/invalid-realm.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/readable-writable-properties.any.html",
+        "type": "testharness",
+        "source": "encoding/streams/readable-writable-properties.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/readable-writable-properties.any.worker.html",
+        "type": "testharness",
+        "source": "encoding/streams/readable-writable-properties.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/realms.window.html",
+        "type": "testharness",
+        "source": "encoding/streams/realms.window.js",
+        "timeout": "normal",
+        "metadata": {},
+        "references": []
+      }
+    ]
+  },
+  "fullFrozenVariantCount": 1515,
+  "fullFrozenScheduleSHA256": "adcbf9719f722368b1e53ac1bd61cf38e566d3bd7495d9d6127cad38dd6aeabe",
+  "groupScheduleSHA256": {
+    "encoding-core": "6ec47e6f74edcd585cad897c02a3b97079c264b65f6af4d8527fa8ef9cae9ba9",
+    "encoding-streams": "86c9bb4c01e0394b7052abab611088e7c68c7674cb083dd84ceefa6b063d594d"
+  },
+  "inputs": {
+    "frozen_selection": {
+      "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/priority-selection-v1.json",
+      "sha256": "46c7dc21e6bea1fff3505c9390663f160c4fcf34aa3d4f897cc1732efd2ed7d9"
+    },
+    "inventory": {
+      "path": "/Users/devin/repos/lumen/output/wpt-10290244/inventory.json",
+      "sha256": "5ceae6d5879ba27038f530511428432d652d5e2d079c4b33a4d017c3fee94d1b"
+    },
+    "fixture_readiness": {
+      "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/fixture-readiness.json",
+      "sha256": "3f0ea2bafc7cac953cc5a141ef2e3717d2613428e5de70ddc09914cd31f25240"
+    },
+    "server_config": {
+      "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/server.config.json",
+      "sha256": "d3d4f26a540e3564d1d9f6137be4c465d99283ce5ad87531b67cd5719c79c9d0"
+    },
+    "browser_environment": {
+      "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/browser-fixture-environment.json",
+      "sha256": "76eb4cd3a5008bf7c770c32ee7702d03af64e4ec0e96472f1f23e740cee90731"
+    },
+    "runner": {
+      "path": "/Users/devin/repos/lumen/tests/wpt/full_runner.py",
+      "sha256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7"
+    },
+    "reporter": {
+      "path": "/Users/devin/repos/lumen/tests/wpt/testharnessreport.js",
+      "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328"
+    },
+    "monitor": {
+      "path": "/Users/devin/repos/lumen/tools/monitor_process.py",
+      "sha256": "e31aa4fc949b149ac9c0e8c6170ce72ec3def971dbab4d6b026635f262d9cd79"
+    },
+    "orchestrator": {
+      "path": "/Users/devin/repos/lumen/tools/apple-session-gpt6as/run_priority_wpt_10290244.py",
+      "sha256": "b2395c8e7b00e4081924025d765cdb5386de19cd6eddb0f4178c4a8c6d6e2987"
+    }
+  },
+  "nativePlan": "out/lume-20261029-cpu30/compat-baseline-2/cohort/cohort.json",
+  "nativePlanSHA256": "a7746c5d23a3be42d351488a1f77d9bde4f6b194a15213e34f4c3aa6d0cf3e25",
+  "scope": "Exact same 103 frozen Encoding variants on qualified Chrome; not full WPT or native artifact acceptance. Actual Chrome failures are preserved."
+}

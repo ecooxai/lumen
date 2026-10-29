@@ -1,0 +1,285 @@
+{
+  "signature": {
+    "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+    "manifest_sha256": "7f2b0405286816226928047248543c709d4df237a2cfbe720e5c05e7a3554b24",
+    "inventory_sha256": "5ceae6d5879ba27038f530511428432d652d5e2d079c4b33a4d017c3fee94d1b",
+    "source_fixture": {
+      "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+      "manifest_sha256": "7f2b0405286816226928047248543c709d4df237a2cfbe720e5c05e7a3554b24",
+      "tracked_upstream_sources_clean": true
+    },
+    "server_config_sha256": "d3d4f26a540e3564d1d9f6137be4c465d99283ce5ad87531b67cd5719c79c9d0",
+    "fixture_manifest_sha256": "3f0ea2bafc7cac953cc5a141ef2e3717d2613428e5de70ddc09914cd31f25240",
+    "selection": {
+      "types": [
+        "testharness"
+      ],
+      "prefixes": [
+        "/encoding/api-basics.any.html",
+        "/encoding/api-basics.any.worker.html",
+        "/encoding/api-invalid-label.any.html?1-1000",
+        "/encoding/api-invalid-label.any.html?1001-2000",
+        "/encoding/api-invalid-label.any.html?2001-3000",
+        "/encoding/api-invalid-label.any.html?3001-last",
+        "/encoding/api-invalid-label.any.worker.html?1-1000",
+        "/encoding/api-invalid-label.any.worker.html?1001-2000",
+        "/encoding/api-invalid-label.any.worker.html?2001-3000",
+        "/encoding/api-invalid-label.any.worker.html?3001-last",
+        "/encoding/api-replacement-encodings.any.html",
+        "/encoding/api-replacement-encodings.any.worker.html",
+        "/encoding/api-surrogates-utf8.any.html",
+        "/encoding/api-surrogates-utf8.any.worker.html",
+        "/encoding/big5-encoder.html",
+        "/encoding/bom-handling.html",
+        "/encoding/encodeInto.any.html",
+        "/encoding/encodeInto.any.worker.html",
+        "/encoding/iso-2022-jp-decoder.any.html",
+        "/encoding/iso-2022-jp-decoder.any.worker.html",
+        "/encoding/iso-2022-jp-encoder.html",
+        "/encoding/json-document-utf8.html",
+        "/encoding/remove-only-one-bom.html",
+        "/encoding/replacement-encodings.any.html",
+        "/encoding/replacement-encodings.any.worker.html",
+        "/encoding/sharedarraybuffer.https.html",
+        "/encoding/single-byte-decoder-iframe.window.html",
+        "/encoding/single-byte-decoder.any.html?TextDecoder",
+        "/encoding/single-byte-decoder.any.html?XMLHttpRequest",
+        "/encoding/sniffing.html",
+        "/encoding/textdecoder-arguments.any.html",
+        "/encoding/textdecoder-arguments.any.worker.html",
+        "/encoding/textdecoder-byte-order-marks.any.html",
+        "/encoding/textdecoder-byte-order-marks.any.worker.html",
+        "/encoding/textdecoder-copy.any.html",
+        "/encoding/textdecoder-copy.any.worker.html",
+        "/encoding/textdecoder-eof.any.html",
+        "/encoding/textdecoder-eof.any.worker.html",
+        "/encoding/textdecoder-fatal-single-byte.any.html?1-1000",
+        "/encoding/textdecoder-fatal-single-byte.any.html?1001-2000",
+        "/encoding/textdecoder-fatal-single-byte.any.html?2001-3000",
+        "/encoding/textdecoder-fatal-single-byte.any.html?3001-4000",
+        "/encoding/textdecoder-fatal-single-byte.any.html?4001-5000",
+        "/encoding/textdecoder-fatal-single-byte.any.html?5001-6000",
+        "/encoding/textdecoder-fatal-single-byte.any.html?6001-7000",
+        "/encoding/textdecoder-fatal-single-byte.any.html?7001-last",
+        "/encoding/textdecoder-fatal-single-byte.any.worker.html?1-1000",
+        "/encoding/textdecoder-fatal-single-byte.any.worker.html?1001-2000",
+        "/encoding/textdecoder-fatal-single-byte.any.worker.html?2001-3000",
+        "/encoding/textdecoder-fatal-single-byte.any.worker.html?3001-4000",
+        "/encoding/textdecoder-fatal-single-byte.any.worker.html?4001-5000",
+        "/encoding/textdecoder-fatal-single-byte.any.worker.html?5001-6000",
+        "/encoding/textdecoder-fatal-single-byte.any.worker.html?6001-7000",
+        "/encoding/textdecoder-fatal-single-byte.any.worker.html?7001-last",
+        "/encoding/textdecoder-fatal-streaming.any.html",
+        "/encoding/textdecoder-fatal-streaming.any.worker.html",
+        "/encoding/textdecoder-fatal.any.html",
+        "/encoding/textdecoder-fatal.any.worker.html",
+        "/encoding/textdecoder-ignorebom.any.html",
+        "/encoding/textdecoder-ignorebom.any.worker.html",
+        "/encoding/textdecoder-labels.any.html",
+        "/encoding/textdecoder-labels.any.worker.html",
+        "/encoding/textdecoder-mistakes.any.html",
+        "/encoding/textdecoder-mistakes.any.worker.html",
+        "/encoding/textdecoder-streaming.any.html",
+        "/encoding/textdecoder-streaming.any.worker.html",
+        "/encoding/textdecoder-utf16-surrogates.any.html",
+        "/encoding/textdecoder-utf16-surrogates.any.worker.html",
+        "/encoding/textencoder-constructor-non-utf.any.html",
+        "/encoding/textencoder-constructor-non-utf.any.worker.html",
+        "/encoding/textencoder-utf16-surrogates.any.html",
+        "/encoding/textencoder-utf16-surrogates.any.worker.html",
+        "/encoding/unsupported-encodings.any.html",
+        "/encoding/unsupported-encodings.any.worker.html",
+        "/encoding/unsupported-labels.window.html",
+        "/encoding/utf-32-from-win1252.html",
+        "/encoding/utf-32.html"
+      ],
+      "order": [
+        "type",
+        "test URL"
+      ],
+      "offset": 0,
+      "limit": null,
+      "eligible_files_before_slice": 77,
+      "selected_files": 77
+    },
+    "schedule_sha256": "6ec47e6f74edcd585cad897c02a3b97079c264b65f6af4d8527fa8ef9cae9ba9",
+    "engine": "chromium",
+    "binary_sha256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+    "runner_sha256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+    "reporter_sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "reporter_delivery": "official WPT /resources/testharnessreport.js exact file alias",
+    "verified_http_reporter_sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "monitor_sha256": "e31aa4fc949b149ac9c0e8c6170ce72ec3def971dbab4d6b026635f262d9cd79",
+    "native_fixture": null,
+    "origin": "http://web-platform.test:18800",
+    "secure_origin": "https://web-platform.test:18443",
+    "h2_origin": "https://web-platform.test:18900",
+    "timeout_s": 15,
+    "long_timeout_s": 65,
+    "strict_infrastructure": false,
+    "chromium_args": [
+      "--host-resolver-rules=MAP not-web-platform.test 127.0.0.1, MAP web-platform.test 127.0.0.1, MAP www.not-web-platform.test 127.0.0.1, MAP www.web-platform.test 127.0.0.1, MAP www.www.not-web-platform.test 127.0.0.1, MAP www.www.web-platform.test 127.0.0.1, MAP www.www1.not-web-platform.test 127.0.0.1, MAP www.www1.web-platform.test 127.0.0.1, MAP www.www2.not-web-platform.test 127.0.0.1, MAP www.www2.web-platform.test 127.0.0.1, MAP www.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP www1.not-web-platform.test 127.0.0.1, MAP www1.web-platform.test 127.0.0.1, MAP www1.www.not-web-platform.test 127.0.0.1, MAP www1.www.web-platform.test 127.0.0.1, MAP www1.www1.not-web-platform.test 127.0.0.1, MAP www1.www1.web-platform.test 127.0.0.1, MAP www1.www2.not-web-platform.test 127.0.0.1, MAP www1.www2.web-platform.test 127.0.0.1, MAP www1.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www1.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP www2.not-web-platform.test 127.0.0.1, MAP www2.web-platform.test 127.0.0.1, MAP www2.www.not-web-platform.test 127.0.0.1, MAP www2.www.web-platform.test 127.0.0.1, MAP www2.www1.not-web-platform.test 127.0.0.1, MAP www2.www1.web-platform.test 127.0.0.1, MAP www2.www2.not-web-platform.test 127.0.0.1, MAP www2.www2.web-platform.test 127.0.0.1, MAP www2.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www2.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www1.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www1.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www2.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www2.web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1",
+      "--ignore-certificate-errors-spki-list=WXjEgm6G9rSgRQQVGbD5q+zOszPmv3ZBSfaIAMv+bY8="
+    ],
+    "chromium_headless": false
+  },
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "started_at_unix_ms": 1793247389497,
+  "binary": "/Users/devin/repos/lumen/output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "lumen_revision": "c7f6ad5651f66cd9fed9c2ce1ec53acb33f51713",
+  "lumen_dirty": true,
+  "full_inventory_counts": {
+    "crashtest": 28,
+    "manual": 2,
+    "reftest": 7,
+    "testharness": 2155
+  },
+  "scheduled_files": 77,
+  "supported_execution_types": [
+    "test262",
+    "testharness"
+  ],
+  "inventory_coverage_by_type": {
+    "crashtest": {
+      "inventory_variants": 28,
+      "selected_variants": 0,
+      "outside_selection_variants": 28,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "manual": {
+      "inventory_variants": 2,
+      "selected_variants": 0,
+      "outside_selection_variants": 2,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "reftest": {
+      "inventory_variants": 7,
+      "selected_variants": 0,
+      "outside_selection_variants": 7,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "testharness": {
+      "inventory_variants": 2155,
+      "selected_variants": 77,
+      "outside_selection_variants": 2078,
+      "executor_available": true,
+      "execution_plan": "SCHEDULED",
+      "reason": "Official server wrapper and synchronous reporter"
+    }
+  },
+  "automation_limitation": "No testdriver/WebDriver actions; manual, reference and protocol tests remain explicitly unrun.",
+  "is_full_suite_schedule": false,
+  "last_invocation_budget_s": 240,
+  "last_invocation_started_unix_ms": 1793247389525,
+  "chromium_sessions": [
+    "/Users/devin/repos/lumen/out/lume-20261029-cpu30/chrome-control-1/encoding-core/chromium-session-xpv8i8ff"
+  ],
+  "browser_version": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.74",
+    "revision": "@d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.25"
+  },
+  "chromium_cleanup": {
+    "process": {
+      "sent_sigterm": false,
+      "sent_sigkill": false,
+      "error": null,
+      "post_signal_verification": {
+        "allowed_wait_s": 10,
+        "initial_live_members": {},
+        "duration_ms": 15
+      },
+      "process_group_gone": true,
+      "remaining_group_members": {},
+      "root_exit_code": 0,
+      "root_exit_before_signal_cleanup": 0,
+      "root_exit_observation_verified": true
+    },
+    "errors": [],
+    "graceful_close": {
+      "method": "Browser.close",
+      "attempted": true,
+      "acknowledged": true,
+      "allowed_drain_s": 20,
+      "exit_requirement": "All live owned-group members must disappear; an exiting process state is not ignored.",
+      "initial_process_state": {
+        "observed_unix_ms": 1793247409359,
+        "members": [
+          {
+            "pid": 83283,
+            "ppid": 83272,
+            "pgid": 83283,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "Rs",
+            "start_identity": "Wed Oct 28 21:16:29 2026",
+            "executable": "/Users/devin/repos/lumen/output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome"
+          },
+          {
+            "pid": 83288,
+            "ppid": 83283,
+            "pgid": 83283,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "S",
+            "start_identity": "Wed Oct 28 21:16:29 2026",
+            "executable": "/Users/devin/repos/lumen/output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.74/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+          },
+          {
+            "pid": 83289,
+            "ppid": 83283,
+            "pgid": 83283,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "S",
+            "start_identity": "Wed Oct 28 21:16:29 2026",
+            "executable": "/Users/devin/repos/lumen/output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.74/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+          },
+          {
+            "pid": 83290,
+            "ppid": 83283,
+            "pgid": 83283,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "S",
+            "start_identity": "Wed Oct 28 21:16:29 2026",
+            "executable": "/Users/devin/repos/lumen/output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.74/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+          },
+          {
+            "pid": 83293,
+            "ppid": 83283,
+            "pgid": 83283,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "Z",
+            "start_identity": "Wed Oct 28 21:16:29 2026",
+            "executable": "<defunct>"
+          },
+          {
+            "pid": 83311,
+            "ppid": 83283,
+            "pgid": 83283,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "S",
+            "start_identity": "Wed Oct 28 21:16:30 2026",
+            "executable": "(Google Chrome He)"
+          }
+        ]
+      },
+      "process_group_gone": true,
+      "drain_duration_ms": 801
+    }
+  },
+  "last_checkpoint_unix_ms": 1793247410192,
+  "finished_schedule": true
+}

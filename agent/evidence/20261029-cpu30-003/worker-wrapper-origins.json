@@ -1,0 +1,321 @@
+{
+  "scope": "Recorded actual URL audit; does not infer secure-context support merely from host mapping. Insecure service-worker attempts must remain precondition evidence, not be relabeled as browser defects.",
+  "nativeSHA256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+  "origins": {
+    "http": "http://web-platform.test:18800",
+    "https": "https://web-platform.test:18443",
+    "h2": "https://web-platform.test:18900"
+  },
+  "recordedWrappers": [
+    {
+      "group": "microtasks",
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "microtasks",
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "microtasks",
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "microtasks",
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/header-setcookie.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/header-setcookie.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/header-values.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/header-values.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/headers-basic.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/headers-basic.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/headers-casing.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/headers-casing.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/headers-combine.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/headers-combine.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/headers-errors.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/headers-errors.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/headers-normalize.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/headers-normalize.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/headers-record.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/headers-record.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+      "url": "https://web-platform.test:18443/fetch/api/headers/headers-structure.any.serviceworker.html",
+      "scheme": "https",
+      "hostname": "web-platform.test",
+      "nativeStatus": "TIMEOUT",
+      "message": null,
+      "subtestCount": 0
+    },
+    {
+      "group": "headers",
+      "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+      "url": "http://web-platform.test:18800/fetch/api/headers/headers-structure.any.sharedworker.html",
+      "scheme": "http",
+      "hostname": "web-platform.test",
+      "nativeStatus": "ERROR",
+      "message": "SharedWorker is not defined",
+      "subtestCount": 0
+    }
+  ],
+  "nativeStatusCounts": {
+    "TIMEOUT": 15,
+    "ERROR": 15
+  },
+  "runnerTestUrlSource": "def test_url(test, args):\n    path = test['test']\n    parsed = urllib.parse.urlsplit(path)\n    # Match upstream tools/manifest/item.py URLManifestItem._flags exactly.\n    flags = set(parsed.path.rsplit('/', 1)[-1].split('.')[1:-1])\n    flags.update(urllib.parse.parse_qs(parsed.query).get('wpt_flags', []))\n    secure = bool(flags & {'https', 'serviceworker', 'serviceworker-module'})\n    origin = args.h2_origin if 'h2' in flags else args.secure_origin if secure else args.origin\n    if 'www' in flags:\n        parts = urllib.parse.urlsplit(origin)\n        origin = urllib.parse.urlunsplit((parts.scheme, 'www.' + parts.netloc, parts.path, parts.query, parts.fragment))\n    return origin.rstrip('/') + '/' + path.lstrip('/')",
+  "runnerSHA256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+  "chromiumArguments": [
+    "--host-resolver-rules=MAP not-web-platform.test 127.0.0.1, MAP web-platform.test 127.0.0.1, MAP www.not-web-platform.test 127.0.0.1, MAP www.web-platform.test 127.0.0.1, MAP www.www.not-web-platform.test 127.0.0.1, MAP www.www.web-platform.test 127.0.0.1, MAP www.www1.not-web-platform.test 127.0.0.1, MAP www.www1.web-platform.test 127.0.0.1, MAP www.www2.not-web-platform.test 127.0.0.1, MAP www.www2.web-platform.test 127.0.0.1, MAP www.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP www1.not-web-platform.test 127.0.0.1, MAP www1.web-platform.test 127.0.0.1, MAP www1.www.not-web-platform.test 127.0.0.1, MAP www1.www.web-platform.test 127.0.0.1, MAP www1.www1.not-web-platform.test 127.0.0.1, MAP www1.www1.web-platform.test 127.0.0.1, MAP www1.www2.not-web-platform.test 127.0.0.1, MAP www1.www2.web-platform.test 127.0.0.1, MAP www1.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www1.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP www2.not-web-platform.test 127.0.0.1, MAP www2.web-platform.test 127.0.0.1, MAP www2.www.not-web-platform.test 127.0.0.1, MAP www2.www.web-platform.test 127.0.0.1, MAP www2.www1.not-web-platform.test 127.0.0.1, MAP www2.www1.web-platform.test 127.0.0.1, MAP www2.www2.not-web-platform.test 127.0.0.1, MAP www2.www2.web-platform.test 127.0.0.1, MAP www2.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www2.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www1.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www1.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www2.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www2.web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1",
+    "--ignore-certificate-errors-spki-list=WXjEgm6G9rSgRQQVGbD5q+zOszPmv3ZBSfaIAMv+bY8="
+  ]
+}

@@ -1,0 +1,186 @@
+[
+  {
+    "test": "/dom/events/CustomEvent.html",
+    "type": "testharness",
+    "source": "dom/events/CustomEvent.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/events/Event-constructors.any.html",
+    "type": "testharness",
+    "source": "dom/events/Event-constructors.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Event constructors"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/dom/events/Event-constructors.any.worker.html",
+    "type": "testharness",
+    "source": "dom/events/Event-constructors.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "Event constructors"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-add-listener-platform-object.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-add-listener-platform-object.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-add-remove-listener.any.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-add-remove-listener.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "EventTarget's addEventListener + removeEventListener"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-add-remove-listener.any.worker.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-add-remove-listener.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "EventTarget's addEventListener + removeEventListener"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-addEventListener.any.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-addEventListener.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "EventTarget.addEventListener"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-addEventListener.any.worker.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-addEventListener.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "EventTarget.addEventListener"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-constructible.any.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-constructible.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-constructible.any.worker.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-constructible.any.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-dispatchEvent-returnvalue.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-dispatchEvent-returnvalue.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-dispatchEvent.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-dispatchEvent.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-removeEventListener.any.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-removeEventListener.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "EventTarget.removeEventListener"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-removeEventListener.any.worker.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-removeEventListener.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "title",
+          "EventTarget.removeEventListener"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-this-of-listener.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-this-of-listener.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/events/EventTarget-window-constructor.html",
+    "type": "testharness",
+    "source": "dom/events/EventTarget-window-constructor.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  }
+]

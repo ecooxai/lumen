@@ -1,0 +1,41 @@
+{
+  "taskId": "20261029-cpu30",
+  "startedUTC": "2026-10-29T04:27:37.321924+00:00",
+  "sourceCommit": "963d4ddd72620b4978e950cc75298319615911a2",
+  "branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-20261029-cpu30",
+  "passed": true,
+  "pushVerified": true,
+  "scope": "Exact committed checkpoint and portable Git history only; unaccepted working source, profiles, credentials and runtime outputs are excluded.",
+  "pushSeconds": 2.225,
+  "packageSeconds": 3.114,
+  "packageResourceReceipt": "out/lume-20261029-cpu30/checkpoint-002-release/package-resources.json",
+  "packageResourceSHA256": "986a4e2233a69779b53652a8985210c05bebc9b54092d5d7d72948f0aa7044ad",
+  "archive": {
+    "archive": "gpt6-astra-pro_release-integrator_builtin-subagents_devinmac3d_lume-20261029-cpu30_963d4ddd7262_source.tar.gz",
+    "sourceCommit": "963d4ddd72620b4978e950cc75298319615911a2",
+    "branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-20261029-cpu30",
+    "bytes": 11681037,
+    "sha256": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167",
+    "sourcePaths": 1301,
+    "gitBundleSHA256": "0896312c689f3a723214c80361ab5e4528a35f2b5504bae5818f04febc0e8bcb",
+    "scannedReachableBlobs": 2634,
+    "createdUTC": "2026-10-29T04:27:41.692673+00:00",
+    "scope": "Committed source and portable Git bundle; no mutable working tree, runtime output, configuration or credentials"
+  },
+  "sourceFileHashesVerified": 1301,
+  "bundleRefs": {
+    "refs/heads/gpt6-astra-pro_builtin-agents_lume-apple-wpt-20261029-cpu30": "963d4ddd72620b4978e950cc75298319615911a2",
+    "HEAD": "963d4ddd72620b4978e950cc75298319615911a2"
+  },
+  "bundleVerified": true,
+  "publicAliasHashVerified": true,
+  "verificationSeconds": 0.177,
+  "publicHttpsBytesVerified": false,
+  "publicVerificationRequired": true,
+  "finishedUTC": "2026-10-29T04:27:42.839282+00:00",
+  "durationSeconds": 5.517,
+  "overallResourceMeasurementValid": true,
+  "overallResourceReceipt": "out/lume-20261029-cpu30/checkpoint-002-release-resources.json",
+  "overallResourceSHA256": "eb02e8c1fc4676fd5b65bf7e0329c74fb7ae4cfdb812c40713be5111690ed3de",
+  "workerSHA256": "b6f178257d063784261c1971ad70ef154f01d8b375d0968d184a312d4565a7fa"
+}

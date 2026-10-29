@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "startedUTC": "2026-10-29T04:29:50.829865+00:00",
+  "domain": "lume-102900614-gpt6-astra-pro.surge.sh",
+  "stages": [
+    {
+      "name": "version-resolution",
+      "startedUTC": "2026-10-29T04:29:51.271359+00:00",
+      "log": "output/session-20261029-cpu30/surge-version-resolution.log",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:29:51.655201+00:00",
+      "wallSeconds": 0.384
+    },
+    {
+      "name": "install",
+      "startedUTC": "2026-10-29T04:29:51.655588+00:00",
+      "log": "output/session-20261029-cpu30/surge-install.log",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:29:52.211100+00:00",
+      "wallSeconds": 0.556
+    },
+    {
+      "name": "existing-authentication",
+      "startedUTC": "2026-10-29T04:29:52.211777+00:00",
+      "log": "output/session-20261029-cpu30/surge-existing-authentication.log",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:29:52.606546+00:00",
+      "wallSeconds": 0.395
+    },
+    {
+      "name": "build-view",
+      "startedUTC": "2026-10-29T04:29:52.606837+00:00",
+      "log": "output/session-20261029-cpu30/surge-build-view.log",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:29:52.634747+00:00",
+      "wallSeconds": 0.028
+    },
+    {
+      "name": "publish",
+      "startedUTC": "2026-10-29T04:29:52.656265+00:00",
+      "log": "output/session-20261029-cpu30/surge-publish.log",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:29:54.995665+00:00",
+      "wallSeconds": 2.339
+    }
+  ],
+  "deployed": true,
+  "credentials": "Existing Surge login or inherited SURGE_TOKEN only; no token is printed or newly created.",
+  "reference": "https://surge.sh/docs/cli/reference",
+  "liveEndpoint": "https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz",
+  "surgeVersion": "0.52.4",
+  "packageLockSHA256": "4dc617e49ee7b1ccc657cf5f338968da2962e8ea49b08d97de430c3277190efe",
+  "existingAuthenticationVerified": true,
+  "sourceCommit": "963d4ddd72620b4978e950cc75298319615911a2",
+  "archive": {
+    "bytes": 11681037,
+    "sha256": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167"
+  },
+  "publishedFileHashes": {
+    "CNAME": "2d95d67bd56e96871432247fb7d1f8d6979414e41d298c039b2ac2a595041442",
+    "app.js": "5ddc43a9a7888c5376cae642af384f8d08bf6483e5e0bcface87a0ad13156ff0",
+    "config.json": "f2db1bcc8bf369c43e1ff4821ba3aa271aca7ef3799b3412568764b2841725bf",
+    "index.html": "ed8eccf8d019ba6da7dd758a2efee6b3a900dcb26e47fb8edf1eba2715b068cd",
+    "source-manifest.json": "4c4667592a4d796076f5c196c4cb3d4418b0ee7819c319995a2b16e9fd9ce618",
+    "src.tar.gz": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167",
+    "style.css": "9fb9f02b63e591d3c96be4c76a2a976ce98fffcd3830e845ce3004d067195b19"
+  },
+  "publicURL": "https://lume-102900614-gpt6-astra-pro.surge.sh",
+  "publicViewHashesVerified": true,
+  "publicArchiveLengthVerified": true,
+  "archiveHashVerificationNote": "Published archive length checked; the local committed source archive SHA-256 is recorded. Full public-byte hash is a separate probe.",
+  "finishedUTC": "2026-10-29T04:29:56.130003+00:00"
+}
