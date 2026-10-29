@@ -54,6 +54,7 @@ int main(void) {
         "<div class=\"flex\" id=\"stretch-equal-natural-wrapped\" style=\"height:100px;flex-wrap:wrap;align-content:stretch;align-items:stretch\"><div class=\"item\" id=\"stretch-equal-natural-wrapped-item0\" style=\"height:auto\"><div style=\"height:100px\"></div><div id=\"stretch-equal-natural-wrapped-percent\" style=\"height:50%;width:20px\"></div></div><div class=\"item\" id=\"stretch-equal-natural-wrapped-item1\" style=\"height:auto\"><div style=\"height:100px\"></div></div></div>"
         "<div class=\"flex\" id=\"stretch-equal-natural-auto-parent\" style=\"height:auto;flex-wrap:wrap;align-content:stretch;align-items:stretch\"><div class=\"item\" id=\"stretch-equal-natural-auto-parent-item0\" style=\"height:auto\"><div style=\"height:100px\"></div><div id=\"stretch-equal-natural-auto-parent-percent\" style=\"height:50%;width:20px\"></div></div><div class=\"item\" id=\"stretch-equal-natural-auto-parent-item1\" style=\"height:auto\"><div style=\"height:100px\"></div></div></div>"
         "<div class=\"flex\" id=\"relative-and-nested-abs\" style=\"align-content:center\"><div class=\"item\" id=\"relative-and-nested-abs-item0\" style=\"position:relative;left:7px;top:9px\"><div id=\"nested-absolute\" style=\"position:absolute;left:3px;top:4px;width:9px;height:11px\"></div></div><div class=\"item\" id=\"relative-and-nested-abs-item1\" style=\"\"></div><div class=\"item\" id=\"relative-and-nested-abs-item2\" style=\"\"></div></div>"
+        "<div id=\"baseline-overflow-target\" style=\"display:flex;position:relative;line-height:0;font-size:20px;width:300px;margin:10px 0;padding:10px;border:3px solid;align-items:last baseline\"><div id=\"baseline-overflow-item\"><span style=\"display:inline-block;width:1em;height:1em\"></span><br><span style=\"display:inline-block;width:1em;height:1em\"></span></div><div style=\"overflow:hidden;width:100px;height:80px;margin:10px;border:5px solid;padding:10px;font-size:30px\"><div style=\"margin-top:-200px\"><span style=\"display:inline-block;width:1em;height:1em\"></span><br><span style=\"display:inline-block;width:1em;height:1em\"></span></div></div></div>"
         "</body></html>";
     const char *css = "body{margin:0}.flex{display:flex;position:relative;box-sizing:content-box;width:120px;height:200px;padding:7px 11px 13px 17px;border:3px solid;flex-wrap:wrap;flex-direction:row;gap:10px;align-items:flex-start;align-content:flex-start}.item{flex:0 0 50px;width:50px;height:20px;box-sizing:content-box}";
     html_parse(d, html, strlen(html));
@@ -173,6 +174,13 @@ int main(void) {
     geometry(d, "relative-and-nested-abs", "relative-and-nested-abs-item1", 80, 85, 50, 20);
     geometry(d, "relative-and-nested-abs", "relative-and-nested-abs-item2", 20, 115, 50, 20);
     geometry(d, "relative-and-nested-abs", "nested-absolute", 30, 98, 9, 11);
+    /* Regression from the independently passing WPT baseline-overflow case:
+       last-baseline participants must not be replaced with end alignment. */
+    Node *baseline_target = doc_get_element_by_id(d, "baseline-overflow-target");
+    Node *baseline_item = doc_get_element_by_id(d, "baseline-overflow-item");
+    same("last-baseline-overflow", "offsetTop",
+         baseline_target && baseline_target->box && baseline_item && baseline_item->box
+             ? baseline_item->box->y - baseline_target->box->y - baseline_target->box->b[0] : NAN, 10);
     layout_free(l); style_engine_free(e); doc_free(d);
     printf("Flex alignment geometry: %u/%u passed\n", checks - failures, checks);
     return failures ? 1 : 0;

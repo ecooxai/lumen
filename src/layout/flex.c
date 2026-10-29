@@ -236,6 +236,10 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
             if (auto_low || auto_high)
                 off = free_item > 0 ? (auto_low ? free_item / (auto_high ? 2 : 1) : 0) : (normal_reverse ? free_item : 0);
             else if (stretch) off = cross_reverse ? free_item : 0;
+            /* Last baseline needs a baseline-sharing group; end placement is
+             * not equivalent. Preserve existing in-flow start placement until
+             * that separate group calculation is implemented. */
+            else if (!strcmp(align, "last baseline")) off = 0;
             else off = flex_cross_offset(align, cross_reverse, normal_reverse, flex_axis_reverse(cs, !row), free_item);
             float target = (row ? cy : cx) + linepos + c->m[low] + off;
             float delta = target - (row ? c->y : c->x);
