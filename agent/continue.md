@@ -1,88 +1,32 @@
-# Lume Apple WPT 102900614 — active continuation
+# Lume Apple WPT 20261029-cpu30 — active continuation
 
-Started 2026-10-28T22:14:41.459Z; deadline 2026-10-29T01:14:41.459Z; task goal98/100. This is an active checkpoint, not a goal-complete handoff.
+Session 2026-10-29T02:18:45+00:00 (10:18:45 Asia/Shanghai) to 2026-10-29T05:18:45+00:00 (13:18:45 Asia/Shanghai); critical-fix-only maximum 2026-10-29T06:18:45+00:00 (14:18:45).
+User's full request is `agent/task.md`; SHA-256 `7d2a3d32545719f96a89f8a5232b23ac944d4f8968c2a7af1704384d19c9944a`.
+Branch `gpt6-astra-pro_builtin-agents_lume-apple-wpt-20261029-cpu30`; intake HEAD `1fcde424dcaa7ac842623478196d50abfa436760`; preserved inherited candidate `f8d3e7380e3e3194c3f34b5cd066113c45dfa1a9`.
+Previous task/AGENTS/continuation are archived with suffix `before-20261029-cpu30-20261029T032952Z`.
 
-## Source and instruction identity
+## Team and current source
 
-- Repository `/Users/devin/repos/lumen` (alias `~/project/lumen`). Branch `gpt6-astra-pro_builtin-agents_lume-apple-wpt-102900614`.
-- Inherited source HEAD `6f811534f33c33016a161bd4b3f548f2d8afb2fd` before current task documentation.
-- Full user request `agent/task.md`, SHA-256 `115ae547eeb991cfd00144e5e3bcbecd074ed5387d117c8f9b8cba275d2043f5`.
-- Previous AGENTS/continuation/task archived under `agent/archive/` with `before-102900614-20261029-062143` suffix.
-- Root is PM and reliable remote I/O broker. Three same-model/reasoning workers: WPT engine, Apple runtime/performance, release/evidence.
+Only integration owns Git/doc/evidence integration. Compatibility owns standards; performance_release owns Apple/runtime/render-cache source and delivery. Root brokers all Mac calls because child calls hang, including canonical scopes. Do not retry the broken path in parallel. All three agents inherit the root model and reasoning.
+Inherited tracked cache changes in src/app/chrome_paint.h, src/app/main.c and tests/test_render_overdraw.c are preserved as unaccepted, not new task work. All inherited untracked tool scripts and verification data remain untouched. Source hashes are recorded in `agent/evidence/20261029-cpu30-000-intake.json`.
 
-## Inherited baseline — not a fresh task run
+## Inherited evidence, kept separate by executable
 
-Prior accepted native `build-apple-load-20261029/lumen-headers-codec-1b9d43ed19cd616b`, SHA-256 `1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9`.
-Original pinned six-file suite1850/1850 assertions,6/6 files. Frozen expanded suite1515 variants across235 source files at revision `7f8d49b5a82606efc771f43d10aad5bce5ccbfeb`; schedule SHA-256 `adcbf9719f722368b1e53ac1bd61cf38e566d3bd7495d9d6127cad38dd6aeabe`.
-Expanded raw matrix158/207 recorded variants fully pass (76.33%);158/1515 scheduled variants (10.43%) recorded fully passing. All unrun and unsupported variants stay visible. Full-suite pass rate unknown.
-Read `agent/gpt6-astra-pro_builtin-agents_devinmac3d_wpt_matrix_10290244.md` and its JSON for raw versus supplemental Headers rows. Preserve original raw denominator and distinct helper-restoration view.
+- Accepted artifact733: `build-apple-load-20261029/lumen-message-transfer-733943aa9496d134`, SHA-256 `733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848`; historical score45/100. Original pinned six-file1850/1850 assertions and targeted222/222 pass. Its recorded scroll p95 was23.054%, previously failing10%; user now accepts below30%. Fresh current-source acceptance is pending.
+- Later separate candidates include GPU2dac (scrollp9518.997%), raster4773 (12.060%), legacy050b, frame4d81029, metadata9e5d, body-windowc2a47e, XHR50eb, EOF0d8426 and parent-encoding07cca318. Do not merge their passing results into one executable's score.
+- Frozen priority schedule:1515variants/235source files, upstream revision7f8d49b5a82606efc771f43d10aad5bce5ccbfeb. Current full WPT rate unknown. Wider displayed226/237 is a historical selected-results view and must be verified for artifact identity before current acceptance.
+- Frame4d's26 Encoding Streams cases pass26/26 with358assertions. The qualified Chrome comparator passes23/26 with344PASS and14FAIL; frame4d retains344/344 Chrome-passing assertions on those same cases. This does not establish general Chrome parity.
+- Latest committed candidate07cca318 includes parent encoding fallback and the separately verified tokenizer EOF correction. Current source still needs combined original WPT, priority rerun, GUI CPU/RSS and navigation-soak validation. No same signed device IPA execution gate is established.
+- Qualified official Chrome SHA-2560a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4; read006reference evidence. Preserve actual URL-related failures and historical quarantine records.
 
-Inherited acceptance50/100. Original-WPT, no-regression, idle, soak, budgets, TDD, source and progress gates passed for the old artifact; expanded WPT, interaction and identical IPA execution did not. Every changed executable requires current-artifact validation. Predecessor scorecard is copied unmodified to `agent/scorecard-102900614-inherited.json`; new task state is `agent/scorecard-102900614.json`.
+## Execution and next work
 
-## Next actions and evidence
+1. Establish current combined source artifact with timed incremental build and1Hz process monitoring; reuse compatible prebuiltV8.
+2. Run focused high-value WPT against that artifact and the exact qualified Chrome control, retaining all failures and contexts. Fix meaningful red tests; avoid score-only changes.
+3. Validate GUI idle, scrolling below30%, typing below10%, and bounded memory on the exact artifact. Reuse and review the inherited Chrome-cache candidate; retain all invalidation correctness controls.
+4. Inspect actual iPad simulator and same-device-IPA requirements. Report signing/runtime blockers exactly; do not mislabel native Mac or simulator execution as same-IPA execution.
+5. Update and verify live progress using existing tools/lume-progress-10290244 and task-owned XDG state; public base last recorded https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz and Surge https://lume-102900614-gpt6-astra-pro.surge.sh need fresh verification. Message capabilities stay private; do not publish tokens. Existing FileHarbor403 is not permission to bypass access.
 
-1. Engine owner: inspect `agent/gpt6-astra-pro_builtin-agents_devinmac3d_runtime_followup_10290244.md`; fix meaningful failed priorities using red/green tests and unchanged upstream assertions. Candidate MessagePort transfer-list loss and stream gaps.
-2. Apple owner: profile high scrolling CPU before further broad testing; inspect actual signing/runtime constraints, use prebuilt V8, attempt supported identical-device-IPA execution. Never equate native/simulator build with device-package proof.
-3. Release owner: restore independently sane official Chrome reference without trust bypass; maintain reviewed commits/source archive, live metrics/message checks, and Surge publication with existing credentials only.
-4. All builds/tests use one-second CPU/RSS, explicit timing, controlled process cleanup and exact executable hashes; only one expensive workload runs at once.
+## Transport incident and timing
 
-Existing helpers: `tools/monitor_process.py`, `tools/apple-session-gpt6as/run_priority_wpt_10290244.py`, `package_source_10290244.py`, `update_priority_progress_10290244.py`, `verify_progress_public_10290244.mjs`, `publish_progress_surge_10290244.py`. Progress stack `tools/lume-progress-10290244/`; public URL must be freshly verified, private access fragments stay out of Git/artifacts/tool output.
-The prior FileHarbor API403 is not permission to seek alternate bypass routes. Git-backed source remains in its remote and reviewed archive; standalone delivery receipts may use Library where appropriate.
-
-See `agent/devsummary.md` for task iterations and per-stage timings. Child Mac MCP was observed to hang again; root brokers all remote operations.
-
-## Checkpoint003 — current native transfer artifact
-
-Current verified native `build-apple-load-20261029/lumen-message-transfer-733943aa9496d134` SHA-256 `733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848`. Source manifest `agent/evidence/102900614-003/compiled-source-sha256.json`. Original1850/1850 and targeted222/222 upstream assertions pass;826 custom regression assertions pass. Current score40/100; prior50 remains historical, fresh soak and task delivery pending. Current final idle passes; scroll p9523.054% fails10% target. GPU and stream candidates must be separately validated and never silently attributed to this snapshot. All broader158/207 priority results remain historical. See `agent/evidence/102900614-003-message-transfer.json`.
-
-## Checkpoint004 — measured GPU candidate
-
-Candidate `build-apple-load-20261029/lumen-gpu-callback-2dacdbcc36c5be7e` SHA-256 `2dacdbcc36c5be7edeaf8027533be38d85fbefe06c717e172ee324c499f2ec03` has68/68 normal and68/68 ASan checks, no actual Metal errors, identical CPU-frame page pixels and scrollp95 `18.997%` versus23.054%. Fixed10% still fails. Current accepted native733 and score40 remain unchanged until fresh combined gates. Originalb62 crash is retained. See `agent/evidence/102900614-004-gpu-upload.json`.
-
-## Checkpoint005 — active public progress
-
-Public base `https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz` is verified with TLS,2.004s system metrics, full source archive and task message/reply. Current score45/100 on accepted733, with GPU2dac candidate tracked separately. Private message capability stays only in ignored task state and the private user artifact; never print or commit it. Tunnel relay12527 uses explicit four XDG directories, server12706 listens18785; verify exact PID identity before any future restart. Commit/archive refresh follows every accepted checkpoint. See `agent/evidence/102900614-005-progress-delivery.json`.
-
-## Checkpoint006 — qualified fresh comparator
-
-Use exact Chrome `output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome` SHA-256 `0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4` with qualification `agent/evidence/102900614-006-chrome-reference.json` (also ignored `output/wpt-102900614/reference-review.json`). Its native URL failures are genuine known implementation differences, retained asFAIL; this qualification does not assert perfect Chrome conformance. Pin both artifacts and upstream schedule in new paired runs. Preserve all old reference/quarantine reports. Current score45, native accepted artifact unchanged.
-
-## Checkpoint007 — verified shared-stream functional candidate
-
-Candidate `build-apple-load-20261029/lumen-text-streams-80a60752a025a3b1` SHA-256 `80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129` passes946 custom assertions and original6/6 files,1850/1850 assertions. Fresh upstream Encoding Streams group23/26 fully passes; non-UTF8 window/worker and cross-realm timeout remain. Accepted resource artifact733 and score45 unchanged until combined current-artifact gates pass. All1515 inventory rows retained. Exact source/evidence: `agent/evidence/102900614-007-shared-streams.json`. Do not merge historical207 results into this candidate's rates.
-
-## Checkpoint008 — measured span/glyph candidate
-
-Native `4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9` passes97/97 raster checks, exact paired page pixels and scoped native capture. Scroll p95 is12.060%, improved from same-stream20.175%, but still fails fixed10%. Idle p95.991%, stable153.203MiB belong only to this exact binary. Current accepted733/score45 unchanged. Source manifest, byte-identical reference and all timing/evidence are in `agent/evidence/102900614-008-raster-glyph.json`.
-
-## Checkpoint009 — legacy decoder candidate
-
-Native050b `050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6` passes178legacy checks,459119sanitizer cases, original1850 and fresh90/103 variants (25/26streams,65/77core).1412 of frozen1515 remain unrun. Cross-realm load still times out in this exact artifact; later frame fix must retain separate identity. Accepted733/score45 unchanged. See `agent/evidence/102900614-009-legacy-codecs.json`.
-
-## Checkpoint010 — queued frame completion
-
-Native4d81029 `4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5` passes7frame checks, existing lifecycle gates and26/26 pinned Encoding Streams variants (358 assertions). Other expanded groups are separate. Source is only src/js/js.cc; meta/body/XHR working changes are excluded. Accepted733/score45 unchanged; combined current-artifact resources, original suite and navigation soak remain required. See `agent/evidence/102900614-010-frame-completion.json`.
-
-## Checkpoint011 — Bounded HTML encoding metadata candidate
-
-Candidate `9e5d9bd983bc7525cfad92c07e14049ef941c2a56796148906e31c4c63c2c7dd`: Frozen real-HTTP metadata checks **9/29 RED →29/29 GREEN**; legacy178, streams74, transfer68, codec170 and native document78 remain green. Build1.128s; ten build/test stages12.175s under1Hz sampling with existing V8 reused. Supplemental ASan exposed a pre-existing tokenizer EOF underflow; its failure remains explicit. Exact historical source staged without overwriting later working changes. Accepted733/score45 unchanged. The inherited tokenizer sanitizer failure remains unresolved in this binary and requires the separately tested correction. See `agent/evidence/102900614-011-html-meta.json`.
-
-## Checkpoint012 — Body and frameset Window handler aliases
-
-Candidate `c2a47e90b142feb848e9dce21296075fa8cbec5ae01b8d973e80608794338a2e`: Frozen body/frameset checks **5/45 RED →45/45 GREEN**; separate borrowed-Window regression **3/4 →4/4**. Existing frame7/14/35, native window445, transfer68, streams74 and legacy178 pass. Build3.091s; all ten stages16.126s. Qualified Chrome actually passes43/45; its pageswap/pagereveal alias failures remain visible. Exact historical source staged without overwriting later working changes. Accepted733/score45 unchanged. The inherited tokenizer sanitizer failure remains unresolved in this binary and requires the separately tested correction. See `agent/evidence/102900614-012-body-window-handlers.json`.
-
-## Checkpoint013 — XHR response encoding and data URL bytes
-
-Candidate `50eb65330c1dc48e13afb42e7543d38294c2841ebcf154898cb536deaf582fe9`: Frozen XHR/data-URL checks **14/42 RED →42/42 GREEN**; meta29, legacy178, streams74, transfer68, codec170 and native document78 remain green. Build9.110s; eleven stages21.265s under1Hz sampling, reusing prebuilt V8. Exact historical source staged without overwriting later working changes. Accepted733/score45 unchanged. The inherited tokenizer sanitizer failure remains unresolved in this binary and requires the separately tested correction. See `agent/evidence/102900614-013-xhr-encoding.json`.
-
-## Checkpoint014 — Correct tokenizer EOF underflow and preserve comment bytes
-
-Candidate `0d84262c11de64f17f4e0ed2c72a475ce5ef024dac121152c1de11bc85cbbd38`: Previously failing ASan parser input now passes55,945 parse calls,57 semantic controls and3 input contracts in3.213s. Independent24-case/172-split EOF semantics pass under sanitizers in3.176s. Native13-stage regression gate passes in15.421s (build1.080s), including metadata29, XHR42, frame7, legacy178, streams74, transfer68, codec170, document78 and existing parser-input coverage. These repair the recorded specific fault; they do not prove every parser path safe. Accepted733/score45 unchanged; later working-tree candidates preserved by exact historical index staging. See `agent/evidence/102900614-014-html-eof.json`.
-
-## Checkpoint015 — Apply eligible same-origin parent encoding fallback
-
-Candidate `07cca318e49e830d25280b9a8b5e345fe9ea7bf57b6515e80d12946f767068e8`: Frozen real-HTTP parent-encoding fixture11/15 RED→15/15 GREEN. Fourteen native build/test stages pass in27.620s (build9.105s), including metadata29, frame7, legacy178, streams74, transfer68, codec170, document78 and native frame/window lifecycle. The compiled source includes the prior EOF correction; no new current-artifact GUI performance or full-WPT result is inferred. Accepted733/score45 unchanged; later working-tree candidates preserved by exact historical index staging. See `agent/evidence/102900614-015-frame-encoding.json`.
-
-## Checkpoint016 — progress catalog
-
-The updater now verifies and displays separate artifact-specific native WPT cohorts, keeps all1515 scheduled variants and real unrun/failures, and shows qualified Chrome23/26 with344PASS/14FAIL. Frame4d retains344/344 Chrome-passing assertions on the same26 cases only. Public rate is a measured cohort rate; full official WPT remains unknown. Run LUME_TASK_ID=102900614 update_priority_progress_10290244.py after each group/checkpoint. Accepted733/score45 unchanged. Evidence `agent/evidence/102900614-016-progress-catalog.json`.
+Initial child integration RUN using tilde workspace hung3361.4s with no output or task ID; two other initial child reads hung3375.8s and3373s. Canonical integration retry hung383.7s. These are transport waits, not build/test durations; no writes were attempted. Root metadata/read broker succeeded and recovered native instructions around03:25UTC. Future requests must use root brokerage with bounded commands and output transcripts. Session timing always remains anchored to02:18:45UTC.

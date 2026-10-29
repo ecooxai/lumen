@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "taskId": "20261029-cpu30",
+  "iteration": 0,
+  "sessionStartUTC": "2026-10-29T02:18:45+00:00",
+  "recordedUTC": "2026-10-29T03:29:52.862509+00:00",
+  "elapsedWallSeconds": 4267.863,
+  "baselineCommit": "1fcde424dcaa7ac842623478196d50abfa436760",
+  "inheritedUnacceptedCheckpoint": "f8d3e7380e3e3194c3f34b5cd066113c45dfa1a9",
+  "inheritedSourceSHA256": {
+    "src/app/chrome_paint.h": "1a85870834b5282ca6b0e53ad3a327073ff0343cdc8964a5d697cc86168eba68",
+    "src/app/main.c": "d76a2f3bd2c22d52e66ca2a4b32a851332aacbbd92b2d684babe475a6d8852fd",
+    "tests/test_render_overdraw.c": "32515b62aece48fd75fe0246866461c7438a195ba196921faaa64ab6c040feb0"
+  },
+  "inheritedDiffSHA256": "1751f71a4fb9c725d2e4a07f76f775688bca5132864edac87d326388024779c4",
+  "branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-20261029-cpu30",
+  "taskTextSHA256": "7d2a3d32545719f96a89f8a5232b23ac944d4f8968c2a7af1704384d19c9944a",
+  "score": 45,
+  "scoreBasis": "Inherited accepted artifact only; no new native tests yet",
+  "newNativeBuilds": 0,
+  "newNativeTests": 0,
+  "transportIncident": {
+    "integrationFirstWaitSeconds": 3361.4,
+    "integrationCanonicalWaitSeconds": 383.7,
+    "sourceWritesAttemptedDuringBlockedCalls": false,
+    "rootBrokerWorks": true
+  },
+  "scrollCPUThresholdPercent": 30,
+  "model": "GPT-6 Astra Pro",
+  "agents": [
+    "integration",
+    "compatibility",
+    "performance_release"
+  ],
+  "separateModelComputeSeconds": null
+}

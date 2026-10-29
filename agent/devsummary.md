@@ -270,3 +270,13 @@ Checkpoint007 commit infrastructure follow-up `2026-10-28T23:29:47.289388+00:00`
 - Six synthetic integrity tests pass. Real local refresh independently checks raw ledgers against each cohort and frozen1515 schedule, with no validation errors. The hero shows latest measured results; separate rows retain other artifact identities, unrun variants and historical207.
 - Qualified Chrome actually passes **23/26** Encoding Streams variants, **344 PASS/14 FAIL** assertions. Exact paired frame4d streams pass26/26 and retain344/344 Chrome-passing assertions. This is one26-case subset, not full browser parity; all Chrome failures remain raw failures.
 - Existing2-second CPU/RAM/disk/latency telemetry and private message path remain intact. Evidence `agent/evidence/102900614-016-progress-catalog.json`.
+
+
+# Session 20261029-cpu30: native Apple WPT and scrolling below30%
+
+Start 2026-10-29T02:18:45+00:00 /10:18:45Asia/Shanghai; normal deadline 2026-10-29T05:18:45+00:00; critical-fix-only maximum 2026-10-29T06:18:45+00:00. Three same-model built-in agents; root CTO and remote I/O broker.
+Intake preserved inherited candidate source in `f8d3e7380e3e3194c3f34b5cd066113c45dfa1a9` and started branch `gpt6-astra-pro_builtin-agents_lume-apple-wpt-20261029-cpu30`. Initial child transport calls hung; no source writes/builds/tests occurred during those waits. Read the exact incident in `agent/evidence/20261029-cpu30-000-intake.json`. Model compute duration unavailable.
+
+| Iteration | Start UTC | End UTC | Wall seconds | Test/build seconds | Score and basis | Result |
+|---|---|---|---:|---|---|---|
+|000 intake|2026-10-29T02:18:45+00:00|2026-10-29T03:29:52.862509+00:00|4267.863|None; transport waits only|45/100 inherited, current validation pending|Recovered native state, preserved unaccepted cache source, archived prior instructions and opened task branch|
