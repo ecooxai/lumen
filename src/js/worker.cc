@@ -709,6 +709,8 @@ const swHandle = async (d, ports) => {
     case 'msgerror': { const e = new ExtendableMessageEvent('messageerror', {}); evTrusted(e); fireOn(G, e); break; }
     }
 };
+// Keep the internal clone operation independent of the writable global.
+function structuredClone(v, options) { if (options && options.transfer) for (const item of options.transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); if (v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${v[Symbol.toStringTag]} object could not be cloned.`, 'DataCloneError'); return W.clone(v); }
 const api = {
     self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: secureContext, crossOriginIsolated: false,
     onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
@@ -718,7 +720,7 @@ const api = {
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
-    queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: (v, options) => { if (options && options.transfer) for (const item of options.transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); if (v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${v[Symbol.toStringTag]} object could not be cloned.`, 'DataCloneError'); return W.clone(v); },
+    queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone,
     btoa, atob, TextEncoder, TextDecoder, TextEncoderStream, TextDecoderStream, CompressionStream, DecompressionStream, ReadableStream, ReadableStreamDefaultReader, ReadableStreamBYOBReader,
     ReadableStreamDefaultController, ReadableByteStreamController, ReadableStreamBYOBRequest, WritableStream, WritableStreamDefaultWriter,
     WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy, CountQueuingStrategy, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, Headers, Request, Response, FormData, fetch, Cache, CacheStorage, caches, URLPattern, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, Performance, PerformanceEntry, PerformanceMark, PerformanceMeasure, PerformanceObserver, PerformanceObserverEntryList, console,

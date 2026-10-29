@@ -1,0 +1,13 @@
+{
+  "candidate": 191,
+  "prototype_started_utc": "2026-10-29T19:18:10.702544+00:00",
+  "integration_utc": "2026-10-29T19:22:59.723891+00:00",
+  "base_head": "4575b0076eff7b57f287f172770f0eb65c45a5e6",
+  "files": {
+    "src/js/shared/streams.js": "4dba2b20bc53341bc17d4321e36f07ca9c6c04036589105c8b48f18a0ff85f0c",
+    "src/js/shared/fetch.js": "9dab9a6d5856280fd3f6022440d2c336e9485262c56edca4402871b464caf671",
+    "src/js/worker.cc": "1b53393c68f813422ad098f52f7ed3768ef9effdf02ecf41c8ed58e2ed4d7aff"
+  },
+  "patch_sha256": "3e856ad9cc8cd6b907e24c00b7411a2f5d84a3572a8b2a9bc4c17b1a9cba1312",
+  "scope": "Fetch internal tee clones active second default-stream branch; public tee sharing and byte tee retained; worker private clone binding preserves existing clone implementation."
+}

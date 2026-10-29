@@ -403,7 +403,7 @@ function bodyAbort(b, reason) {
     if (b.ctl) try { b.ctl.error(reason); } catch (e) {}
 }
 function bodyClone(b) {
-    if (b.stream) { const [x, y] = b.stream.tee(); b.stream = x; b.ctl = null; return { stream: y, bytes: b.bytes, taken: false }; }
+    if (b.stream) { const [x, y] = streamTee(b.stream, true); b.stream = x; b.ctl = null; return { stream: y, bytes: b.bytes, taken: false }; }
     return { stream: null, bytes: b.bytes, taken: false, err: b.err };
 }
 /* new Request(request): the body moves to the new request and the old one becomes used */

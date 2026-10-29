@@ -1270,3 +1270,12 @@ Raw authored digits beyond JSNumber precision and existing stepping/sanitization
 differences remain explicit interoperability holdouts. Fresh588+96 fields,
 upstream step cases, and a quiet4000-read resource comparison are pending.
 Current overall assessment remains pending;19/100 is historical only.
+
+### Iteration 11 / candidate190 — focused validation checkpoint
+- Source4575b0076eff7b57f287f172770f0eb65c45a5e6; binaryf1276c0657f9bdf7164990714e142dba079139d47bd70230247a9625199e30c9. Build/startup exited0,2026-10-29T19:15:34.309053Z→19:15:59.403712Z,25.09s (0.418min). All628 recorded source-set entries remained byte-identical, digest854725371b45900ef30b2c1be0d4e6820a4db4795ad619bc0ea297a187c585eb.
+- Independent fixed588 observations553→572 (+19,0loss;97.28/100 scoped), fixed96 tolerance observations66→96 (+30,0loss;100/100 scoped), all72radio observations retained.16 named stepUp/underflow/raw-precision holdouts remain. The8127 forms fixture passed; full24-file upstream retention receipt still pending at this checkpoint.
+- Bounded4000-read paired controls:18919.7–21.2ms versus19021.3–24.0ms active time; short startup-inclusive RSS155.6–155.7MB versus156.1–156.5MB. This establishes bounded resource behavior for the control, not a general performance gain. Build25one-second samples: CPUmedian30.50%,max98.0%,RSSpeak467.444MB,PSSpeak412.2MB. Owned build/monitor exited.
+- Agents: engine_lead implementation/integration; conformance_qa independent controls; release_ops quiet-window coordination. Overall assessment remains pending; historical19/100 is not a current parity score.
+
+### Iteration 12 / candidate191 — stream body clone source checkpoint
+- Started2026-10-29T19:18:10.702544Z; integrated2026-10-29T19:22:59.723891+00:00; validation pending. Three reviewed source files only: shared streams/fetch and worker prelude clone binding. Fetch uses the specification tee wrapper with branch2 structured cloning, while public default-stream tee still shares object identity. Clone failure errors both branches and cancels the original. No test outcomes changed. Focused score pending; overall assessment pending. Agents: engine_lead, conformance_qa.
