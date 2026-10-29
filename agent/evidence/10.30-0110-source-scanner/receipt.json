@@ -1,0 +1,31 @@
+{
+  "scope": "Exact historical negative-test marker exception; source publication remains conditional on complete Git history scan",
+  "tests": 5,
+  "passed": 5,
+  "unittestSeconds": 0.02,
+  "independentReview": "agent/evidence/10.30-0110-checkpoint-marker-review/review.json",
+  "independentCodeReview": "WPT validation agent reviewed path, Git OID, file SHA256, AST bytes literal and sole raw match before publication; all other matches remain forbidden",
+  "monitoredAtOneSecond": true,
+  "intervalCPUSamples": 0,
+  "cpuClaimed": false,
+  "cpuQualification": "The complete unit suite is shorter than the 1-second sampling interval. No interval CPU conclusion is possible.",
+  "files": [
+    {
+      "path": "security-regressions.json",
+      "bytes": 2150,
+      "sha256": "819890115062b8b70d2d34c403ea0c600c45876da99c4598ccbba508150c5fcf"
+    },
+    {
+      "path": "security-regressions.csv",
+      "bytes": 80,
+      "sha256": "b9b59390452391d040b5358135e98341d93447a77b45c808a31ff2c830536166"
+    },
+    {
+      "path": "security-regressions.log",
+      "bytes": 839,
+      "sha256": "2c76a9060c6581bdd0986429fc93ec173bf2216549bd2daa7b643b53cb831102"
+    }
+  ],
+  "productSourceChanged": false,
+  "historyRewritten": false
+}

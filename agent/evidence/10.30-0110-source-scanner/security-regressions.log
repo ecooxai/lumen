@@ -1,0 +1,10 @@
+test_all_private_key_variants_remain_rejected (__main__.SourceCredentialGuardTests.test_all_private_key_variants_remain_rejected) ... ok
+test_exact_private_value_is_checked_even_in_an_allowed_fixture (__main__.SourceCredentialGuardTests.test_exact_private_value_is_checked_even_in_an_allowed_fixture) ... ok
+test_only_the_two_reviewed_historical_fixture_blobs_are_allowed (__main__.SourceCredentialGuardTests.test_only_the_two_reviewed_historical_fixture_blobs_are_allowed) ... ok
+test_other_credential_patterns_remain_rejected (__main__.SourceCredentialGuardTests.test_other_credential_patterns_remain_rejected) ... ok
+test_plain_source_remains_publishable (__main__.SourceCredentialGuardTests.test_plain_source_remains_publishable) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.020s
+
+OK
