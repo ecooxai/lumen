@@ -1,0 +1,31 @@
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(decode.c.o): in function `DecodeLiteralBlockSwitch':
+(.text+0x82c): undefined reference to `_kBrotliPrefixCodeRanges'
+/usr/bin/ld: (.text+0x938): undefined reference to `_kBrotliContextLookupTable'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(decode.c.o): in function `SafeDecodeLiteralBlockSwitch':
+(.text+0xa32): undefined reference to `_kBrotliPrefixCodeRanges'
+/usr/bin/ld: (.text+0xcae): undefined reference to `_kBrotliContextLookupTable'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(decode.c.o): in function `DecodeCommandBlockSwitch':
+(.text+0xe64): undefined reference to `_kBrotliPrefixCodeRanges'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(decode.c.o): in function `SafeDecodeCommandBlockSwitch':
+(.text+0x1022): undefined reference to `_kBrotliPrefixCodeRanges'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(decode.c.o): in function `DecodeDistanceBlockSwitch':
+(.text+0x13f4): undefined reference to `_kBrotliPrefixCodeRanges'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(decode.c.o): in function `SafeDecodeDistanceBlockSwitch':
+(.text+0x15c2): undefined reference to `_kBrotliPrefixCodeRanges'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(decode.c.o): in function `ProcessCommands':
+(.text+0x382a): undefined reference to `BrotliTransformDictionaryWord'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(decode.c.o): in function `SafeProcessCommands':
+(.text+0x4248): undefined reference to `BrotliTransformDictionaryWord'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(decode.c.o): in function `BrotliDecoderAttachDictionary':
+(.text+0x4fc1): undefined reference to `BrotliSharedDictionaryAttach'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(decode.c.o): in function `BrotliDecoderDecompressStream':
+(.text+0x58e0): undefined reference to `_kBrotliPrefixCodeRanges'
+/usr/bin/ld: (.text+0x5cb4): undefined reference to `_kBrotliContextLookupTable'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(state.c.o): in function `BrotliDecoderStateInit':
+(.text+0x11f): undefined reference to `BrotliSharedDictionaryCreateInstance'
+/usr/bin/ld: (.text+0x15b): undefined reference to `BrotliDefaultAllocFunc'
+/usr/bin/ld: (.text+0x162): undefined reference to `BrotliDefaultFreeFunc'
+/usr/bin/ld: /workspace/scratch/2b90c4e9e7b5/project/lumen/out/10.292019r-net-deps/root/usr/lib/x86_64-linux-gnu/libbrotlidec.a(state.c.o): in function `BrotliDecoderStateCleanup':
+(.text+0x306): undefined reference to `BrotliSharedDictionaryDestroyInstance'
+collect2: error: ld returned 1 exit status
+{"stage": "TSan native C network build", "durationSeconds": 2.488954152999213, "exitCode": 1}

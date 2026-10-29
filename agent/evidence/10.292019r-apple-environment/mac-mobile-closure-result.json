@@ -1,0 +1,406 @@
+{
+  "startedUTC": "2026-10-29T13:45:15.616355+00:00",
+  "scope": "Read-only expected mobile dependency closures, historical device paths, and accessible signing counts",
+  "signing": {
+    "command": "security find-identity -v -p codesigning",
+    "exitCode": 0,
+    "accessibleValidIdentityCount": 0,
+    "durationSeconds": 0.024,
+    "scope": "Current user's accessible default keychain search list; no private keys read/exported",
+    "profileLocations": [
+      {
+        "path": "/Users/devin/Library/MobileDevice/Provisioning Profiles",
+        "exists": false,
+        "profileCount": 0,
+        "readableProfileCount": 0
+      },
+      {
+        "path": "/Users/devin/Library/Developer/Xcode/UserData/Provisioning Profiles",
+        "exists": false,
+        "profileCount": 0,
+        "readableProfileCount": 0
+      }
+    ]
+  },
+  "dependencies": [
+    {
+      "platform": "ios",
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/ios",
+      "exists": false,
+      "headersPresent": [],
+      "archivesPresent": [],
+      "archivesMissing": [
+        "libSDL3.a",
+        "libwgpu_native.a",
+        "libssl.a",
+        "libcrypto.a",
+        "libbrotlidec.a",
+        "libbrotlicommon.a",
+        "libzstd.a",
+        "libfreetype.a",
+        "libharfbuzz.a",
+        "libpng.a",
+        "libjpeg.a",
+        "libwebp.a",
+        "libwebpdemux.a",
+        "libsharpyuv.a",
+        "libgif.a",
+        "libavcodec.a",
+        "libavformat.a",
+        "libavutil.a",
+        "libswscale.a",
+        "libswresample.a",
+        "libdav1d.a"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "ios",
+      "prefix": "/Users/devin/ios-deps/ios",
+      "exists": false,
+      "headersPresent": [],
+      "archivesPresent": [],
+      "archivesMissing": [
+        "libSDL3.a",
+        "libwgpu_native.a",
+        "libssl.a",
+        "libcrypto.a",
+        "libbrotlidec.a",
+        "libbrotlicommon.a",
+        "libzstd.a",
+        "libfreetype.a",
+        "libharfbuzz.a",
+        "libpng.a",
+        "libjpeg.a",
+        "libwebp.a",
+        "libwebpdemux.a",
+        "libsharpyuv.a",
+        "libgif.a",
+        "libavcodec.a",
+        "libavformat.a",
+        "libavutil.a",
+        "libswscale.a",
+        "libswresample.a",
+        "libdav1d.a"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "ios",
+      "kind": "RTC",
+      "prefix": "/Users/devin/repos/lumen/build-deps/rtc/ios",
+      "filesPresent": [],
+      "filesMissing": [
+        "include/rtc/rtc.h",
+        "lib/libdatachannel.a",
+        "lib/libjuice.a",
+        "lib/libusrsctp.a",
+        "manifest.json"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "ios",
+      "kind": "WebTransport",
+      "prefix": "/Users/devin/repos/lumen/build-deps/webtransport/ios",
+      "filesPresent": [],
+      "filesMissing": [
+        "include/lumen_wt.h",
+        "lib/liblumen_webtransport_native.a",
+        "manifest.json"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "sim",
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/sim",
+      "exists": false,
+      "headersPresent": [],
+      "archivesPresent": [],
+      "archivesMissing": [
+        "libSDL3.a",
+        "libwgpu_native.a",
+        "libssl.a",
+        "libcrypto.a",
+        "libbrotlidec.a",
+        "libbrotlicommon.a",
+        "libzstd.a",
+        "libfreetype.a",
+        "libharfbuzz.a",
+        "libpng.a",
+        "libjpeg.a",
+        "libwebp.a",
+        "libwebpdemux.a",
+        "libsharpyuv.a",
+        "libgif.a",
+        "libavcodec.a",
+        "libavformat.a",
+        "libavutil.a",
+        "libswscale.a",
+        "libswresample.a",
+        "libdav1d.a"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "sim",
+      "prefix": "/Users/devin/ios-deps/sim",
+      "exists": false,
+      "headersPresent": [],
+      "archivesPresent": [],
+      "archivesMissing": [
+        "libSDL3.a",
+        "libwgpu_native.a",
+        "libssl.a",
+        "libcrypto.a",
+        "libbrotlidec.a",
+        "libbrotlicommon.a",
+        "libzstd.a",
+        "libfreetype.a",
+        "libharfbuzz.a",
+        "libpng.a",
+        "libjpeg.a",
+        "libwebp.a",
+        "libwebpdemux.a",
+        "libsharpyuv.a",
+        "libgif.a",
+        "libavcodec.a",
+        "libavformat.a",
+        "libavutil.a",
+        "libswscale.a",
+        "libswresample.a",
+        "libdav1d.a"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "sim",
+      "kind": "RTC",
+      "prefix": "/Users/devin/repos/lumen/build-deps/rtc/sim",
+      "filesPresent": [],
+      "filesMissing": [
+        "include/rtc/rtc.h",
+        "lib/libdatachannel.a",
+        "lib/libjuice.a",
+        "lib/libusrsctp.a",
+        "manifest.json"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "sim",
+      "kind": "WebTransport",
+      "prefix": "/Users/devin/repos/lumen/build-deps/webtransport/sim",
+      "filesPresent": [],
+      "filesMissing": [
+        "include/lumen_wt.h",
+        "lib/liblumen_webtransport_native.a",
+        "manifest.json"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "cat",
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/cat",
+      "exists": false,
+      "headersPresent": [],
+      "archivesPresent": [],
+      "archivesMissing": [
+        "libSDL3.a",
+        "libwgpu_native.a",
+        "libssl.a",
+        "libcrypto.a",
+        "libbrotlidec.a",
+        "libbrotlicommon.a",
+        "libzstd.a",
+        "libfreetype.a",
+        "libharfbuzz.a",
+        "libpng.a",
+        "libjpeg.a",
+        "libwebp.a",
+        "libwebpdemux.a",
+        "libsharpyuv.a",
+        "libgif.a",
+        "libavcodec.a",
+        "libavformat.a",
+        "libavutil.a",
+        "libswscale.a",
+        "libswresample.a",
+        "libdav1d.a"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "cat",
+      "prefix": "/Users/devin/ios-deps/cat",
+      "exists": false,
+      "headersPresent": [],
+      "archivesPresent": [],
+      "archivesMissing": [
+        "libSDL3.a",
+        "libwgpu_native.a",
+        "libssl.a",
+        "libcrypto.a",
+        "libbrotlidec.a",
+        "libbrotlicommon.a",
+        "libzstd.a",
+        "libfreetype.a",
+        "libharfbuzz.a",
+        "libpng.a",
+        "libjpeg.a",
+        "libwebp.a",
+        "libwebpdemux.a",
+        "libsharpyuv.a",
+        "libgif.a",
+        "libavcodec.a",
+        "libavformat.a",
+        "libavutil.a",
+        "libswscale.a",
+        "libswresample.a",
+        "libdav1d.a"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "cat",
+      "kind": "RTC",
+      "prefix": "/Users/devin/repos/lumen/build-deps/rtc/cat",
+      "filesPresent": [],
+      "filesMissing": [
+        "include/rtc/rtc.h",
+        "lib/libdatachannel.a",
+        "lib/libjuice.a",
+        "lib/libusrsctp.a",
+        "manifest.json"
+      ],
+      "platformABIValidated": false
+    },
+    {
+      "platform": "cat",
+      "kind": "WebTransport",
+      "prefix": "/Users/devin/repos/lumen/build-deps/webtransport/cat",
+      "filesPresent": [],
+      "filesMissing": [
+        "include/lumen_wt.h",
+        "lib/liblumen_webtransport_native.a",
+        "manifest.json"
+      ],
+      "platformABIValidated": false
+    }
+  ],
+  "v8": [
+    {
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/v8",
+      "target": "ios-device",
+      "publicHeadersExist": false,
+      "headerVersion": {},
+      "requiredVersion": "15.6.75.16",
+      "monolithExists": false,
+      "monolithBytes": null,
+      "monolithSHA256": null,
+      "ninjaClosureExists": false,
+      "buildArgsExist": false,
+      "buildArgsSHA256": null,
+      "platformABIValidated": false
+    },
+    {
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/v8",
+      "target": "ios-simulator",
+      "publicHeadersExist": false,
+      "headerVersion": {},
+      "requiredVersion": "15.6.75.16",
+      "monolithExists": false,
+      "monolithBytes": null,
+      "monolithSHA256": null,
+      "ninjaClosureExists": false,
+      "buildArgsExist": false,
+      "buildArgsSHA256": null,
+      "platformABIValidated": false
+    },
+    {
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/v8",
+      "target": "catalyst",
+      "publicHeadersExist": false,
+      "headerVersion": {},
+      "requiredVersion": "15.6.75.16",
+      "monolithExists": false,
+      "monolithBytes": null,
+      "monolithSHA256": null,
+      "ninjaClosureExists": false,
+      "buildArgsExist": false,
+      "buildArgsSHA256": null,
+      "platformABIValidated": false
+    },
+    {
+      "prefix": "/Users/devin/src/v8ios/v8",
+      "target": "ios-device",
+      "publicHeadersExist": false,
+      "headerVersion": {},
+      "requiredVersion": "15.6.75.16",
+      "monolithExists": false,
+      "monolithBytes": null,
+      "monolithSHA256": null,
+      "ninjaClosureExists": false,
+      "buildArgsExist": false,
+      "buildArgsSHA256": null,
+      "platformABIValidated": false
+    },
+    {
+      "prefix": "/Users/devin/src/v8ios/v8",
+      "target": "ios-simulator",
+      "publicHeadersExist": false,
+      "headerVersion": {},
+      "requiredVersion": "15.6.75.16",
+      "monolithExists": false,
+      "monolithBytes": null,
+      "monolithSHA256": null,
+      "ninjaClosureExists": false,
+      "buildArgsExist": false,
+      "buildArgsSHA256": null,
+      "platformABIValidated": false
+    },
+    {
+      "prefix": "/Users/devin/src/v8ios/v8",
+      "target": "catalyst",
+      "publicHeadersExist": false,
+      "headerVersion": {},
+      "requiredVersion": "15.6.75.16",
+      "monolithExists": false,
+      "monolithBytes": null,
+      "monolithSHA256": null,
+      "ninjaClosureExists": false,
+      "buildArgsExist": false,
+      "buildArgsSHA256": null,
+      "platformABIValidated": false
+    }
+  ],
+  "historicalDevices": [
+    {
+      "udid": "A77F68E4-972B-472B-80B8-F65E71D361E5",
+      "devicePlistExists": false,
+      "appBundleDirectoryExists": false,
+      "legacyApplicationsDirectoryExists": false
+    },
+    {
+      "udid": "3DD498EB-4464-4ED7-9CD3-7667889DD1F6",
+      "devicePlistExists": true,
+      "appBundleDirectoryExists": false,
+      "legacyApplicationsDirectoryExists": false
+    }
+  ],
+  "noDeviceOrIPAAcceptance": true,
+  "requiredBuildWork": [
+    "Restore compatible arm64 iOS and arm64 iOS Simulator V8 15.6.75.16 headers, archives and its Rust/Temporal link closure, preserving current jitless Wasm/DrumBrake support.",
+    "Restore each target's SDL3, wgpu, graphics/codecs, fonts, TLS/compression, RTC and WebTransport dependency closures with provenance; native macOS dylibs are not iOS archives.",
+    "Repair the observed zero-byte Xcode vendor resource through a genuine Xcode installation; direct SDK syntax checks alone do not qualify archive/export tooling.",
+    "Validate available Apple signing identity/profile matching before Xcode archive/export; Simulator runs are separate from one signed device IPA on iPhone/iPad/iOS App on Mac."
+  ],
+  "commandsAfterDependenciesAndToolchainRestored": [
+    "make -j3 PLAT=sim MODE=release RTC=1 WT=1 IOSDEPS=$PWD/build-apple-toolchain/sim V8DIR=$PWD/build-apple-toolchain/v8 V8OUT=$PWD/build-apple-toolchain/v8/out/ios-simulator app",
+    "make -j3 PLAT=ios MODE=release RTC=1 WT=1 IOSDEPS=$PWD/build-apple-toolchain/ios V8DIR=$PWD/build-apple-toolchain/v8 V8OUT=$PWD/build-apple-toolchain/v8/out/ios-device app",
+    "python3 ios/package-ipa.py --app build-ios/Lumen.app --output out/Lumen-10.292019r-device.ipa --identity <matching-identity> --profile <matching-profile> --check-only",
+    "python3 ios/package-ipa.py --app build-ios/Lumen.app --output out/Lumen-10.292019r-device.ipa --identity <matching-identity> --profile <matching-profile>"
+  ],
+  "finishedUTC": "2026-10-29T13:45:15.642618+00:00",
+  "durationSeconds": 0.026
+}

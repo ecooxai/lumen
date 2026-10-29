@@ -1,0 +1,339 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T13:56:09.983179+00:00",
+  "platform": "Linux x86_64 native Lumen C/V8; official prebuilt V8 15.7.112.12",
+  "productSourceCommit": "d5a3bc44216f65ce430163518ced2aa10411cfc4",
+  "scope": "Actual long-lived native process, real Worker isolates and held loopback HTTP; not upstream WPT, native Mac GUI, iOS Simulator/device, or IPA evidence",
+  "finalWrapper": {
+    "path": "tests/test_worker_lifetime_stress.cc",
+    "sha256": "e066464a0952675624cf29249f6398c8c877863b353f1dc12c18063d4dc1715d",
+    "frozenAsyncFixtureSHA256": "f2d2b205e23ae691251c2d63869f0f1137666d14ea1323aa85eab7ef5a63ae83"
+  },
+  "sanitizerConfiguration": {
+    "compile": "-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize=vptr",
+    "runtime": "ASAN_OPTIONS detect_leaks=1:halt_on_error=1:abort_on_error=1; UBSAN_OPTIONS halt_on_error=1:print_stacktrace=1",
+    "excludedCheck": "vptr only, after independent mixed-RTTI control reproduces and exclusion eliminates the false report",
+    "prebuiltV8Instrumented": false,
+    "sourceSnapshotManifest": "out/10292019r-worker-asan/source-manifest.json",
+    "fixtureOnlyChange": "out/10292019r-worker-asan/fixture-v3-change.json",
+    "nativeCoreInputsComparedToAcceptedD5": 136,
+    "finalBinarySHA256": "6efd8e65201ef4cef8e829b0981d6a9ede3bd615968063d06f041894adec2f6c",
+    "journalRecords": 2003,
+    "sanitizerReportFiles": [],
+    "primaryConfigurationReference": "https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html"
+  },
+  "resourceInterpretation": {
+    "cpuUnit": "Percent of one logical core from1Hz cumulative CPU-time deltas; active native worker stress may exceed30%, which is a separate GUI scroll requirement.",
+    "memoryUnit": "MiB; outer monitor sums process RSS, native checkpoints read the actual test process.",
+    "instrumentedRSS": "ASan allocator quarantine increases RSS; it is not a production memory comparison.",
+    "detachedThreadSettling": "worker_thread releases Worker ownership and signals running-count completion before returning from pthread. Bounded500ms settling preserves initial observations and still requires counts at/below warm values; observedextra thread settled in5ms."
+  },
+  "runs": [
+    {
+      "name": "20 cycles, original wrapper",
+      "classification": "native-functional-pass; duration-performance-gate-inapplicable",
+      "notes": "Native exit0, 2414/2414. Monitor had been given an unnecessary fixed-duration performance gate although the deterministic20-cycle test naturally finishes early; do not call it a full-duration performance pass.",
+      "monitor": "out/10292019r-linux-worker/stress-run.json",
+      "monitorSHA256": "e012efef093b9f44a5a8d322a8362b878c4cf76b13940a8fcb1b3875daaafe07",
+      "startedUTC": "2026-10-29T13:12:42.729912+00:00",
+      "finishedUTC": "2026-10-29T13:13:17.740227+00:00",
+      "durationSeconds": 35.01,
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "collectorError": null,
+      "lastCycleStarted": 20,
+      "completedCycleCheckpoints": 20,
+      "result": {
+        "status": "PASS",
+        "passed": 2414,
+        "total": 2414
+      },
+      "processTreeTelemetry": {
+        "steady_interval_cpu_median_percent": 63.861,
+        "steady_interval_cpu_p95_percent": 76.609,
+        "interval_cpu_peak_percent": 78.951,
+        "rss_peak_mb": 75.008,
+        "rss_final_mb": 71.543,
+        "max_sampling_gap_s": 1.006
+      },
+      "boundedResourceSettling": [],
+      "nativeResourceCheckpoints": {
+        "warmCycle": 4,
+        "warmRSSMiB": 68.42578125,
+        "finalRSSMiB": 71.54296875,
+        "warmToFinalRSSMiB": 3.1171875,
+        "maxRSSMiB": 71.54296875,
+        "threadCounts": [
+          13
+        ],
+        "fdCounts": [
+          5
+        ],
+        "nonzeroPendingCheckpoints": 0,
+        "nonzeroWorkerCheckpoints": 0
+      }
+    },
+    {
+      "name": "100 requested, original wrapper",
+      "classification": "incomplete-unexplained-exit",
+      "notes": "77 cycles completed; cycle78 log stops mid timeout case. Native exit1 at96s without final RESULTS or sanitizer/fatal diagnostic. No monitor kill. Cause remains unexplained; subsequent passes do not convert this receipt into success.",
+      "monitor": "out/10292019r-linux-worker/stress-100-run.json",
+      "monitorSHA256": "c5534015f2319eda11c80d8691034cb5bc22d6f4324d1d03848107725e52cc13",
+      "startedUTC": "2026-10-29T13:15:05.655640+00:00",
+      "finishedUTC": "2026-10-29T13:16:41.668593+00:00",
+      "durationSeconds": 96.013,
+      "naturalExitCode": 1,
+      "endedByMonitor": false,
+      "collectorError": null,
+      "lastCycleStarted": 78,
+      "completedCycleCheckpoints": 77,
+      "result": null,
+      "processTreeTelemetry": {
+        "steady_interval_cpu_median_percent": 65.044,
+        "steady_interval_cpu_p95_percent": 82.112,
+        "interval_cpu_peak_percent": 85.925,
+        "rss_peak_mb": 75.941,
+        "rss_final_mb": 55.426,
+        "max_sampling_gap_s": 1.02
+      },
+      "boundedResourceSettling": [],
+      "nativeResourceCheckpoints": {
+        "warmCycle": 4,
+        "warmRSSMiB": 68.3515625,
+        "finalRSSMiB": 71.7265625,
+        "warmToFinalRSSMiB": 3.375,
+        "maxRSSMiB": 72.7734375,
+        "threadCounts": [
+          13
+        ],
+        "fdCounts": [
+          5
+        ],
+        "nonzeroPendingCheckpoints": 0,
+        "nonzeroWorkerCheckpoints": 0
+      }
+    },
+    {
+      "name": "100 cycles with syscall tracing",
+      "classification": "functional-pass; trace-overhead-not-performance",
+      "notes": "The unchanged original native wrapper completes12094 checks and exits0 under owned-process syscall tracing. No invalid stdout/stderr close or write failure found. Trace overhead prevents production CPU claims.",
+      "monitor": "out/10292019r-linux-worker/stress-diagnostic-run.json",
+      "monitorSHA256": "e1638e12fa264fb4ef3842a76a0a3cf00eb655f53e2ea46df8251d9894d1d7cb",
+      "startedUTC": "2026-10-29T13:19:28.585185+00:00",
+      "finishedUTC": "2026-10-29T13:21:50.596708+00:00",
+      "durationSeconds": 142.01,
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "collectorError": null,
+      "lastCycleStarted": 100,
+      "completedCycleCheckpoints": 100,
+      "result": {
+        "status": "PASS",
+        "passed": 12094,
+        "total": 12094
+      },
+      "processTreeTelemetry": {
+        "steady_interval_cpu_median_percent": 73.99,
+        "steady_interval_cpu_p95_percent": 99.981,
+        "interval_cpu_peak_percent": 109.162,
+        "rss_peak_mb": 78.008,
+        "rss_final_mb": 57.086,
+        "max_sampling_gap_s": 1.008
+      },
+      "boundedResourceSettling": [],
+      "nativeResourceCheckpoints": {
+        "warmCycle": 4,
+        "warmRSSMiB": 68.5078125,
+        "finalRSSMiB": 54.8671875,
+        "warmToFinalRSSMiB": -13.640625,
+        "maxRSSMiB": 71.546875,
+        "threadCounts": [
+          13
+        ],
+        "fdCounts": [
+          5
+        ],
+        "nonzeroPendingCheckpoints": 0,
+        "nonzeroWorkerCheckpoints": 0
+      }
+    },
+    {
+      "name": "100 cycles, independent journal",
+      "classification": "native-functional-and-lifetime-pass",
+      "notes": "Untraced real Lumen source, full100 cycles and2003 independent journal records including return/atexit. One intentional journal FD. Production-scope headless worker ownership, not scrolling or Apple.",
+      "monitor": "out/10292019r-linux-worker/stress-journal-run.json",
+      "monitorSHA256": "a3a1ec55e4eef1957291c765440352abc5b3c82b078a8002fb88011eb2461fbe",
+      "startedUTC": "2026-10-29T13:26:08.723529+00:00",
+      "finishedUTC": "2026-10-29T13:28:15.736611+00:00",
+      "durationSeconds": 127.013,
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "collectorError": null,
+      "lastCycleStarted": 100,
+      "completedCycleCheckpoints": 100,
+      "result": {
+        "status": "PASS",
+        "passed": 12094,
+        "total": 12094
+      },
+      "processTreeTelemetry": {
+        "steady_interval_cpu_median_percent": 66.882,
+        "steady_interval_cpu_p95_percent": 80.211,
+        "interval_cpu_peak_percent": 100.911,
+        "rss_peak_mb": 75.203,
+        "rss_final_mb": 54.262,
+        "max_sampling_gap_s": 1.015
+      },
+      "boundedResourceSettling": [],
+      "nativeResourceCheckpoints": {
+        "warmCycle": 4,
+        "warmRSSMiB": 68.86328125,
+        "finalRSSMiB": 54.26171875,
+        "warmToFinalRSSMiB": -14.6015625,
+        "maxRSSMiB": 72.171875,
+        "threadCounts": [
+          13
+        ],
+        "fdCounts": [
+          6
+        ],
+        "nonzeroPendingCheckpoints": 0,
+        "nonzeroWorkerCheckpoints": 0
+      }
+    },
+    {
+      "name": "Initial ASan+UBSan including vptr",
+      "classification": "invalid-instrumentation-configuration",
+      "notes": "GCC vptr check conflicts with existing mixed RTTI/-fno-rtti translation units; an independent correct shared_ptr program reproduces the same report. Original diagnostic retained.",
+      "monitor": "out/10292019r-worker-asan/run-monitor.json",
+      "monitorSHA256": "04e817ea180ef38113665271086aa7c7cf01d3d693573148501f3b45d10d3ddb",
+      "startedUTC": "2026-10-29T13:35:06.244906+00:00",
+      "finishedUTC": "2026-10-29T13:35:07.259996+00:00",
+      "durationSeconds": 1.014,
+      "naturalExitCode": 1,
+      "endedByMonitor": false,
+      "collectorError": null,
+      "lastCycleStarted": 1,
+      "completedCycleCheckpoints": 0,
+      "result": null,
+      "processTreeTelemetry": {
+        "steady_interval_cpu_median_percent": null,
+        "steady_interval_cpu_p95_percent": null,
+        "interval_cpu_peak_percent": null,
+        "rss_peak_mb": 2.918,
+        "rss_final_mb": 2.918,
+        "max_sampling_gap_s": 1.0
+      },
+      "boundedResourceSettling": []
+    },
+    {
+      "name": "ASan+other-UBSan with immediate OS count",
+      "classification": "functional-fail; sanitizer-diagnostics-absent",
+      "notes": "All100 cycles execute, but12093/12094 because immediate cycle100 thread count14 versus warmed13; settled idle returns13. Not a full pass. Native completion is signaled before detached pthread return/TLS teardown.",
+      "monitor": "out/10292019r-worker-asan/run-novptr-monitor.json",
+      "monitorSHA256": "32e3766e4a3781cf03913eeb0a9f0053b7b2f2dc8cc782790840506675a0f937",
+      "startedUTC": "2026-10-29T13:42:14.625012+00:00",
+      "finishedUTC": "2026-10-29T13:44:48.639520+00:00",
+      "durationSeconds": 154.014,
+      "naturalExitCode": 1,
+      "endedByMonitor": false,
+      "collectorError": null,
+      "lastCycleStarted": 100,
+      "completedCycleCheckpoints": 100,
+      "result": {
+        "status": "FAIL",
+        "passed": 12093,
+        "total": 12094
+      },
+      "processTreeTelemetry": {
+        "steady_interval_cpu_median_percent": 75.932,
+        "steady_interval_cpu_p95_percent": 113.155,
+        "interval_cpu_peak_percent": 120.002,
+        "rss_peak_mb": 580.703,
+        "rss_final_mb": 558.879,
+        "max_sampling_gap_s": 1.037
+      },
+      "boundedResourceSettling": [],
+      "nativeResourceCheckpoints": {
+        "warmCycle": 4,
+        "warmRSSMiB": 497.54296875,
+        "finalRSSMiB": 549.69140625,
+        "warmToFinalRSSMiB": 52.1484375,
+        "maxRSSMiB": 567.75390625,
+        "threadCounts": [
+          13,
+          14
+        ],
+        "fdCounts": [
+          6
+        ],
+        "nonzeroPendingCheckpoints": 0,
+        "nonzeroWorkerCheckpoints": 0
+      }
+    },
+    {
+      "name": "ASan+other-UBSan with bounded OS teardown",
+      "classification": "qualified-sanitizer-and-lifetime-pass",
+      "notes": "100 cycles12094/12094, natural0. Strict counts remain13threads/6FDs. One initial14-thread snapshot returned13 after5ms within500ms; initial/final values retained. No ASan/leak/remaining UBSan diagnostic. Official prebuilt V8 is not instrumented.",
+      "monitor": "out/10292019r-worker-asan/run-settled-monitor.json",
+      "monitorSHA256": "69419f4d6c5935c634fd1886dca45628cdbe10124863e07d71bc58a674162659",
+      "startedUTC": "2026-10-29T13:48:17.678634+00:00",
+      "finishedUTC": "2026-10-29T13:50:53.691787+00:00",
+      "durationSeconds": 156.013,
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "collectorError": null,
+      "lastCycleStarted": 100,
+      "completedCycleCheckpoints": 100,
+      "result": {
+        "status": "PASS",
+        "passed": 12094,
+        "total": 12094
+      },
+      "processTreeTelemetry": {
+        "steady_interval_cpu_median_percent": 75.04,
+        "steady_interval_cpu_p95_percent": 111.74,
+        "interval_cpu_peak_percent": 120.653,
+        "rss_peak_mb": 582.828,
+        "rss_final_mb": 571.719,
+        "max_sampling_gap_s": 1.013
+      },
+      "boundedResourceSettling": [
+        {
+          "cycle": 45,
+          "initial_threads": 14,
+          "initial_fds": 6,
+          "final_threads": 13,
+          "final_fds": 6,
+          "elapsed_ms": 5,
+          "limit_ms": 500
+        }
+      ],
+      "nativeResourceCheckpoints": {
+        "warmCycle": 4,
+        "warmRSSMiB": 497.62109375,
+        "finalRSSMiB": 562.51953125,
+        "warmToFinalRSSMiB": 64.8984375,
+        "maxRSSMiB": 567.51171875,
+        "threadCounts": [
+          13
+        ],
+        "fdCounts": [
+          6
+        ],
+        "nonzeroPendingCheckpoints": 0,
+        "nonzeroWorkerCheckpoints": 0
+      }
+    }
+  ],
+  "finalQualifiedChecks": "12094/12094",
+  "knownUnresolvedAnomaly": "Original77-cycle exit1 remains unexplained and rejected. Later independent journal/traced/sanitized passes provide new evidence but do not establish its cause.",
+  "rawArchive": {
+    "path": "agent/evidence/10.292019r-worker-lifetime/raw-evidence.tar.gz",
+    "sha256": "71345117d0660a6f8d4484587f28e671efdf4240711f3bf2628a6043f6c28631",
+    "bytes": 761496,
+    "members": 74,
+    "manifest": "agent/evidence/10.292019r-worker-lifetime/raw-manifest.json"
+  },
+  "timing": "All individual builds/tests below5min; exact timestamps,durations and1Hz raw samples retained in archive."
+}

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T13:54:32.797241+00:00",
+  "platform": "Native macOS 26.6.2 arm64, canonical /Users/devin/repos/lumen",
+  "transport": "Parent-only devinmac3d relay of agent-authored read-only scripts",
+  "appleToolchain": {
+    "activeDeveloperDirectory": "/Library/Developer/CommandLineTools",
+    "macOSNativeCompilerAndSDK": "works; candidate actual builds/tests recorded separately",
+    "fullXcodePresent": "/Applications/Xcode-27.0-RC.app, version27.0 build27A266a",
+    "observedCorruption": "Zero-byte Built-in Syntax Types.xcsynspec and related plugin plist assertions stop xcrun iPhoneOS/Simulator SDK discovery; direct CLT target/SDK syntax checks succeed",
+    "repairNotAttempted": "No fabricated vendor plists, AMFI bypass, broad SDK replacement, or V8 source build"
+  },
+  "simulator": {
+    "actualBackingTool": "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin/simctl",
+    "backingToolEvidence": "Mach-O arm64e, codesign verify0; legitimate developer shell wrapper delegates to this tool",
+    "runtime": "iOS27.0 CoreSimulator and SpringBoard/launchd_sim processes observed",
+    "bootedUDID": "3DD498EB-4464-4ED7-9CD3-7667889DD1F6",
+    "historicalUDID": "A77F68E4-972B-472B-80B8-F65E71D361E5 absent in current device metadata",
+    "applicationInventory": "Actual listapps command timed out15s; known current device Containers/Bundle/Application and legacy Applications directories absent. This does not prove no installed app anywhere.",
+    "currentLumenSimulatorRunVerified": false
+  },
+  "mobileDependencyAndSigningGate": {
+    "validAccessibleSigningIdentityCount": 0,
+    "provisioningProfileCountInBothExpectedLocations": 0,
+    "V8MonolithCountInExpectedDeviceSimulatorCatalystClosures": 0,
+    "baseMobileStaticArchiveCountInExpectedPrefixes": 0,
+    "RTCAndWebTransportExpectedMobileFiles": "All missing for ios,sim,cat, including archives/headers/manifests",
+    "compatibleV8Required": "15.6.75.16 arm64 iOS/Simulator closure with matching headers and Rust/Temporal dependencies; preserve jitless Wasm/DrumBrake configuration",
+    "alternativePrebuiltResearch": "NativeScript v8-buildscripts currently pins14.9.207.39, not a verified compatible replacement; no incompatible binary installed",
+    "primaryAlternativeSource": "https://github.com/NativeScript/v8-buildscripts/blob/main/config.env"
+  },
+  "oldNativeMacApp": {
+    "path": "out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app",
+    "executableSHA256": "9392c988ad72070a5fce2d1f901a1268d74ec5e704858f7b085bb69f93107c4c",
+    "MachOPlatform": 1,
+    "platformMeaning": "macOS, not iOS device, Simulator or Catalyst",
+    "signatureVerification": true,
+    "scope": "Historical artifact only; not final candidate proof"
+  },
+  "sameSignedIPAVerified": false,
+  "remainingWork": "Restore genuine functional Xcode discovery/export tools, platform/version-compatible native dependency closures, and matching signing/provisioning; then build/validate Simulator separately and Xcode-sign/export device app for Mac iOS-App execution and iPhone/iPad install. Conditional exact project commands are in raw mobile closure receipt.",
+  "files": {
+    "agent/evidence/10.292019r-apple-environment/mac-direct-tools-result.json": {
+      "sha256": "53e23f3dfa4d08f2b0b5fb2424938d74800c3c4fe6bb5dfd56751de1be15c2de",
+      "bytes": 38626
+    },
+    "agent/evidence/10.292019r-apple-environment/mac-simctl-audit-result.json": {
+      "sha256": "71e6213841a1e2df05a435da39a7657cefcefa33ae4e2b416db2147d1120ba62",
+      "bytes": 26549
+    },
+    "agent/evidence/10.292019r-apple-environment/mac-mobile-inventory-result.json": {
+      "sha256": "8937f6d72b6e133ab7cb51e50d22d2416f71a97a001ce6258110411a166ad007",
+      "bytes": 8481
+    },
+    "agent/evidence/10.292019r-apple-environment/mac-simulator-bundles-result.json": {
+      "sha256": "0dc0d8fc6358dc9a428d3980b2fcaebfe8b9c69a1748bababdcc31f3a90d1cbc",
+      "bytes": 7381
+    },
+    "agent/evidence/10.292019r-apple-environment/mac-mobile-closure-result.json": {
+      "sha256": "5dad72d1020eff3580b2534efc0a1b7700951fb7b370875a8642d14b380483a6",
+      "bytes": 11968
+    },
+    "agent/evidence/10.292019r-apple-environment/mac-wpt-resource-audit-result.json": {
+      "sha256": "c1f9d4ba3b9c4ce8cf233acf5d39dd4f0632c2b84f5292d7b5c2b0701d963198",
+      "bytes": 25711
+    }
+  }
+}

@@ -1,0 +1,826 @@
+{
+  "updated_utc": "2026-10-29T13:33:16.546721+00:00",
+  "scope": "Recorded baseline WPT process-tree peaks and per-case cleanup; not GUI scroll/idle acceptance",
+  "groups": [
+    {
+      "group": "url",
+      "wrapper": {
+        "started_utc": "2026-10-29T13:20:25.120782+00:00",
+        "finished_utc": "2026-10-29T13:21:08.183413+00:00",
+        "duration_s": 43.061,
+        "samples": 43,
+        "interval_cpu_samples": 42,
+        "interval_cpu_mean_percent": 20.791,
+        "interval_cpu_peak_percent": 284.598,
+        "rss_peak_mb": 608.047,
+        "rss_final_mb": 91,
+        "rss_steady_growth_mb": 85.594,
+        "natural_exit_code": 0,
+        "stop_reason": "root_exited",
+        "collector_error": null,
+        "owned_group_cleanup": {
+          "sent_sigterm": false,
+          "sent_sigkill": false,
+          "error": null
+        },
+        "violations": []
+      },
+      "wrapper_sha256": "f0f58e603ae35bfccf499f255b9993a20ffc9875f946387a2d49cc0a0266aa14",
+      "wrapper_sample_count": 43,
+      "first_three_samples": [
+        {
+          "elapsed_s": "0.02",
+          "cpu_percent": "0.0",
+          "interval_cpu_percent": "",
+          "rss_kb": "5536",
+          "processes": "1"
+        },
+        {
+          "elapsed_s": "1.029",
+          "cpu_percent": "38.8",
+          "interval_cpu_percent": "41.633",
+          "rss_kb": "219424",
+          "processes": "2"
+        },
+        {
+          "elapsed_s": "2.028",
+          "cpu_percent": "1.8",
+          "interval_cpu_percent": "2.002",
+          "rss_kb": "55632",
+          "processes": "1"
+        }
+      ],
+      "last_five_samples": [
+        {
+          "elapsed_s": "38.029",
+          "cpu_percent": "1.8",
+          "interval_cpu_percent": "3.005",
+          "rss_kb": "44848",
+          "processes": "3"
+        },
+        {
+          "elapsed_s": "39.026",
+          "cpu_percent": "1.8",
+          "interval_cpu_percent": "3.011",
+          "rss_kb": "44896",
+          "processes": "3"
+        },
+        {
+          "elapsed_s": "40.023",
+          "cpu_percent": "13.9",
+          "interval_cpu_percent": "7.019",
+          "rss_kb": "64416",
+          "processes": "2"
+        },
+        {
+          "elapsed_s": "41.034",
+          "cpu_percent": "13.2",
+          "interval_cpu_percent": "6.927",
+          "rss_kb": "64656",
+          "processes": "2"
+        },
+        {
+          "elapsed_s": "42.029",
+          "cpu_percent": "11.2",
+          "interval_cpu_percent": "6.029",
+          "rss_kb": "93184",
+          "processes": "2"
+        }
+      ],
+      "peak_rss_sample": {
+        "elapsed_s": "9.072",
+        "cpu_percent": "274.9",
+        "interval_cpu_percent": "284.598",
+        "rss_kb": "622640",
+        "processes": "2"
+      },
+      "results_path": "out/10292019r-mac/wpt-baseline-001/cohort/url/results.jsonl",
+      "results_sha256": "ecd41387f42ecd0e4eb0885cf18b24b1c94b55322cb445567a778f6519d9ab8b",
+      "cases": 77,
+      "statuses": {
+        "OK": 77
+      },
+      "total_assertions": 12323,
+      "cleanup_verified_gone": 77,
+      "cleanup_errors": [],
+      "top_five_sampled_rss_cases": [
+        {
+          "test": "/url/failure.html",
+          "sequence": 13,
+          "status": "OK",
+          "assertions": 1175,
+          "duration_ms": 2023,
+          "pid": 1429,
+          "metrics": {
+            "samples": 2,
+            "interval_cpu_samples": 1,
+            "observed_span_s": 1.038,
+            "max_sampling_gap_s": 1.038,
+            "cpu_peak_percent": 258.6,
+            "interval_cpu_peak_percent": 226.448,
+            "rss_peak_mb": 423,
+            "rss_final_mb": 423,
+            "rss_steady_growth_mb": 422.359,
+            "errors": [],
+            "telemetry_status": "captured"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/url/a-element.html?include=file",
+          "sequence": 9,
+          "status": "OK",
+          "assertions": 138,
+          "duration_ms": 534,
+          "pid": 1361,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.019,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.844,
+            "rss_final_mb": 0.844,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/url/url-setters.any.worker.html?include=mailto",
+          "sequence": 46,
+          "status": "OK",
+          "assertions": 7,
+          "duration_ms": 530,
+          "pid": 2085,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.019,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.766,
+            "rss_final_mb": 0.766,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/url/url-statics-canparse.any.worker.html",
+          "sequence": 48,
+          "status": "OK",
+          "assertions": 8,
+          "duration_ms": 488,
+          "pid": 2127,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.018,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.766,
+            "rss_final_mb": 0.766,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/url/a-element.html?include=javascript",
+          "sequence": 10,
+          "status": "OK",
+          "assertions": 14,
+          "duration_ms": 492,
+          "pid": 1394,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.017,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.75,
+            "rss_final_mb": 0.75,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        }
+      ],
+      "top_five_assertion_counts": [
+        {
+          "test": "/url/IdnaTestV2.any.html",
+          "sequence": 1,
+          "status": "OK",
+          "assertions": 2676,
+          "duration_ms": 733,
+          "pid": 1150,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.015,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.625,
+            "rss_final_mb": 0.625,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/url/failure.html",
+          "sequence": 13,
+          "status": "OK",
+          "assertions": 1175,
+          "duration_ms": 2023,
+          "pid": 1429,
+          "metrics": {
+            "samples": 2,
+            "interval_cpu_samples": 1,
+            "observed_span_s": 1.038,
+            "max_sampling_gap_s": 1.038,
+            "cpu_peak_percent": 258.6,
+            "interval_cpu_peak_percent": 226.448,
+            "rss_peak_mb": 423,
+            "rss_final_mb": 423,
+            "rss_steady_growth_mb": 422.359,
+            "errors": [],
+            "telemetry_status": "captured"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/url/toascii.window.html",
+          "sequence": 20,
+          "status": "OK",
+          "assertions": 784,
+          "duration_ms": 538,
+          "pid": 1599,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.017,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.688,
+            "rss_final_mb": 0.688,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/url/url-constructor.any.html?exclude=(file|javascript|mailto)",
+          "sequence": 21,
+          "status": "OK",
+          "assertions": 740,
+          "duration_ms": 630,
+          "pid": 1609,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.021,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.719,
+            "rss_final_mb": 0.719,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/url/url-constructor.any.worker.html?exclude=(file|javascript|mailto)",
+          "sequence": 25,
+          "status": "OK",
+          "assertions": 740,
+          "duration_ms": 552,
+          "pid": 1696,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.021,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.703,
+            "rss_final_mb": 0.703,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        }
+      ],
+      "interval_coverage_cases": 1
+    },
+    {
+      "group": "encoding-core",
+      "wrapper": {
+        "started_utc": "2026-10-29T13:25:42.500305+00:00",
+        "finished_utc": "2026-10-29T13:26:31.542905+00:00",
+        "duration_s": 49.042,
+        "samples": 49,
+        "interval_cpu_samples": 48,
+        "interval_cpu_mean_percent": 43.663,
+        "interval_cpu_peak_percent": 342.229,
+        "rss_peak_mb": 859.109,
+        "rss_final_mb": 155.312,
+        "rss_steady_growth_mb": 149.875,
+        "natural_exit_code": 0,
+        "stop_reason": "root_exited",
+        "collector_error": null,
+        "owned_group_cleanup": {
+          "sent_sigterm": false,
+          "sent_sigkill": false,
+          "error": null
+        },
+        "violations": []
+      },
+      "wrapper_sha256": "72a505b42a68bf3056ec6fbe9d314f04ef329ef41a774f8aa7339175421ee5a3",
+      "wrapper_sample_count": 49,
+      "first_three_samples": [
+        {
+          "elapsed_s": "0.016",
+          "cpu_percent": "0.0",
+          "interval_cpu_percent": "",
+          "rss_kb": "5568",
+          "processes": "1"
+        },
+        {
+          "elapsed_s": "1.027",
+          "cpu_percent": "36.0",
+          "interval_cpu_percent": "38.582",
+          "rss_kb": "218384",
+          "processes": "3"
+        },
+        {
+          "elapsed_s": "2.025",
+          "cpu_percent": "35.3",
+          "interval_cpu_percent": "22.042",
+          "rss_kb": "213072",
+          "processes": "2"
+        }
+      ],
+      "last_five_samples": [
+        {
+          "elapsed_s": "44.025",
+          "cpu_percent": "32.0",
+          "interval_cpu_percent": "23.987",
+          "rss_kb": "209840",
+          "processes": "3"
+        },
+        {
+          "elapsed_s": "45.027",
+          "cpu_percent": "205.3",
+          "interval_cpu_percent": "149.673",
+          "rss_kb": "401680",
+          "processes": "2"
+        },
+        {
+          "elapsed_s": "46.03",
+          "cpu_percent": "318.8",
+          "interval_cpu_percent": "284.16",
+          "rss_kb": "606304",
+          "processes": "2"
+        },
+        {
+          "elapsed_s": "47.028",
+          "cpu_percent": "263.8",
+          "interval_cpu_percent": "275.68",
+          "rss_kb": "765104",
+          "processes": "2"
+        },
+        {
+          "elapsed_s": "48.031",
+          "cpu_percent": "14.2",
+          "interval_cpu_percent": "14.952",
+          "rss_kb": "159040",
+          "processes": "2"
+        }
+      ],
+      "peak_rss_sample": {
+        "elapsed_s": "17.067",
+        "cpu_percent": "347.2",
+        "interval_cpu_percent": "342.229",
+        "rss_kb": "879728",
+        "processes": "2"
+      },
+      "results_path": "out/10292019r-mac/wpt-baseline-001/cohort/encoding-core/results.jsonl",
+      "results_sha256": "49c0692eb12e2e5219f342693d35dc0e428524231f6d220e11aa0636fd508311",
+      "cases": 77,
+      "statuses": {
+        "OK": 77
+      },
+      "total_assertions": 23300,
+      "cleanup_verified_gone": 77,
+      "cleanup_errors": [],
+      "top_five_sampled_rss_cases": [
+        {
+          "test": "/encoding/single-byte-decoder-iframe.window.html",
+          "sequence": 26,
+          "status": "OK",
+          "assertions": 168,
+          "duration_ms": 3342,
+          "pid": 9087,
+          "metrics": {
+            "samples": 4,
+            "interval_cpu_samples": 3,
+            "observed_span_s": 3.018,
+            "max_sampling_gap_s": 1.013,
+            "cpu_peak_percent": 347,
+            "interval_cpu_peak_percent": 317.463,
+            "rss_peak_mb": 794.312,
+            "rss_final_mb": 794.312,
+            "rss_steady_growth_mb": 793.578,
+            "errors": [],
+            "telemetry_status": "captured"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/encoding/unsupported-labels.window.html",
+          "sequence": 74,
+          "status": "OK",
+          "assertions": 158,
+          "duration_ms": 2941,
+          "pid": 9960,
+          "metrics": {
+            "samples": 3,
+            "interval_cpu_samples": 2,
+            "observed_span_s": 2.006,
+            "max_sampling_gap_s": 1.036,
+            "cpu_peak_percent": 276.8,
+            "interval_cpu_peak_percent": 288.701,
+            "rss_peak_mb": 620.453,
+            "rss_final_mb": 620.453,
+            "rss_steady_growth_mb": 619.766,
+            "errors": [],
+            "telemetry_status": "captured"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/encoding/single-byte-decoder.any.html?TextDecoder",
+          "sequence": 27,
+          "status": "OK",
+          "assertions": 168,
+          "duration_ms": 1701,
+          "pid": 9161,
+          "metrics": {
+            "samples": 2,
+            "interval_cpu_samples": 1,
+            "observed_span_s": 1.007,
+            "max_sampling_gap_s": 1.007,
+            "cpu_peak_percent": 117.8,
+            "interval_cpu_peak_percent": 109.294,
+            "rss_peak_mb": 338.797,
+            "rss_final_mb": 338.797,
+            "rss_steady_growth_mb": 337.938,
+            "errors": [],
+            "telemetry_status": "captured"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/encoding/single-byte-decoder.any.html?XMLHttpRequest",
+          "sequence": 28,
+          "status": "OK",
+          "assertions": 168,
+          "duration_ms": 1789,
+          "pid": 9206,
+          "metrics": {
+            "samples": 2,
+            "interval_cpu_samples": 1,
+            "observed_span_s": 1,
+            "max_sampling_gap_s": 1,
+            "cpu_peak_percent": 115.7,
+            "interval_cpu_peak_percent": 116.967,
+            "rss_peak_mb": 308.047,
+            "rss_final_mb": 308.047,
+            "rss_steady_growth_mb": 307.312,
+            "errors": [],
+            "telemetry_status": "captured"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/encoding/api-invalid-label.any.html?2001-3000",
+          "sequence": 4,
+          "status": "OK",
+          "assertions": 1000,
+          "duration_ms": 581,
+          "pid": 8730,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.022,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 9.109,
+            "rss_final_mb": 9.109,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        }
+      ],
+      "top_five_assertion_counts": [
+        {
+          "test": "/encoding/api-invalid-label.any.html?1-1000",
+          "sequence": 2,
+          "status": "OK",
+          "assertions": 1000,
+          "duration_ms": 530,
+          "pid": 8703,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.015,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.672,
+            "rss_final_mb": 0.672,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/encoding/api-invalid-label.any.html?1001-2000",
+          "sequence": 3,
+          "status": "OK",
+          "assertions": 1000,
+          "duration_ms": 552,
+          "pid": 8719,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.015,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.625,
+            "rss_final_mb": 0.625,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/encoding/api-invalid-label.any.html?2001-3000",
+          "sequence": 4,
+          "status": "OK",
+          "assertions": 1000,
+          "duration_ms": 581,
+          "pid": 8730,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.022,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 9.109,
+            "rss_final_mb": 9.109,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/encoding/api-invalid-label.any.worker.html?1-1000",
+          "sequence": 6,
+          "status": "OK",
+          "assertions": 1000,
+          "duration_ms": 563,
+          "pid": 8765,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.015,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.609,
+            "rss_final_mb": 0.609,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        },
+        {
+          "test": "/encoding/api-invalid-label.any.worker.html?1001-2000",
+          "sequence": 7,
+          "status": "OK",
+          "assertions": 1000,
+          "duration_ms": 546,
+          "pid": 8784,
+          "metrics": {
+            "samples": 1,
+            "interval_cpu_samples": 0,
+            "observed_span_s": 0,
+            "max_sampling_gap_s": 0.016,
+            "cpu_peak_percent": 0,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.719,
+            "rss_final_mb": 0.719,
+            "rss_steady_growth_mb": 0,
+            "errors": [],
+            "telemetry_status": "partial"
+          },
+          "cleanup": {
+            "error": null,
+            "profile_error": null,
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0,
+            "sent_sigterm": true,
+            "sent_sigkill": false
+          }
+        }
+      ],
+      "interval_coverage_cases": 4
+    }
+  ],
+  "interpretation_limits": [
+    "Wrapper RSS sums the runner and its browser descendants; individual peaks may occur between one-second samples.",
+    "Fresh-process WPT cleanup verifies process release; it does not measure retained memory in one continuously open browser.",
+    "Whole-file testharness, test data and assertion results can consume memory; case/assertion counts identify scope but do not by themselves prove that every allocation is necessary.",
+    "The separate fixed native scroll/idle/navigation fixture must establish steady-use performance."
+  ]
+}

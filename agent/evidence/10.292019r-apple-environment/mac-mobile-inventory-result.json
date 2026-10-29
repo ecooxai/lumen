@@ -1,0 +1,116 @@
+{
+  "started_utc": "2026-10-29T13:24:22.284032+00:00",
+  "device": "3DD498EB-4464-4ED7-9CD3-7667889DD1F6",
+  "scope": "Artifact inventory only; no current-source execution or same-IPA proof",
+  "simctl_signature": {
+    "argv": [
+      "/usr/bin/codesign",
+      "--verify",
+      "--strict",
+      "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin/simctl"
+    ],
+    "return_code": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "installed_lumen": [],
+  "project_apps": [
+    {
+      "path": "/Users/devin/repos/lumen/out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app",
+      "info": {
+        "CFBundleIdentifier": "ai.ecoox.lumen.gpt6as.wasm",
+        "CFBundleExecutable": "lumen",
+        "CFBundleName": "Lumen",
+        "CFBundleVersion": "1",
+        "CFBundleShortVersionString": "0.1.0",
+        "MinimumOSVersion": null,
+        "LSMinimumSystemVersion": "26.0",
+        "CFBundleSupportedPlatforms": null,
+        "UIDeviceFamily": null
+      },
+      "executable": "/Users/devin/repos/lumen/out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app/Contents/MacOS/lumen",
+      "sha256": "9392c988ad72070a5fce2d1f901a1268d74ec5e704858f7b085bb69f93107c4c",
+      "file": {
+        "argv": [
+          "/usr/bin/file",
+          "/Users/devin/repos/lumen/out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app/Contents/MacOS/lumen"
+        ],
+        "return_code": 0,
+        "stdout": "/Users/devin/repos/lumen/out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app/Contents/MacOS/lumen: Mach-O 64-bit executable arm64\n",
+        "stderr": ""
+      },
+      "mach_o": {
+        "argv": [
+          "/usr/bin/otool",
+          "-l",
+          "/Users/devin/repos/lumen/out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app/Contents/MacOS/lumen"
+        ],
+        "return_code": 72,
+        "stderr": "2026-10-29 06:24:38.118 xcodebuild[7222:9389518] [MT] DVTSourceSpecificationLoading: Couldn't load '/Applications/Xcode-27.0-RC.app/Contents/SharedFrameworks/DVTFoundation.framework/Resources/Built-in Syntax Types.xcsynspec'. Reason: Error Domain=NSCocoaErrorDomain Code=3840 \"Cannot parse a NULL or zero-length data\" UserInfo={NSDebugDescription=Cannot parse a NULL or zero-length data}.\n2026-10-29 06:24:38.282 xcodebuild[7222:9389518] [MT] DVTAssertions: ASSERTION FAILURE in DVTFrameworks/DVTFoundation/PlugInArchitecture/PlugInManager/DVTPlugInManager.m:1360\nDetails:  Failed to load plug-in plist for <DVTPlugInScanRecord: 0x90f332700 '/Applications/Xcode-27.0-RC.app/Contents/Frameworks/AssetCatalogCocoaTouchFoundation.framework'>: Error Domain=NSCocoaErrorDomain Code=3840 \"Cannot parse a NULL or zero-length data\" UserInfo={NSDebugDescription=Cannot parse a NULL or zero-length data}\nObject:   <DVTPlugInManager: 0x90ec44e00>\nMethod:   -_instantiatePlugInsForScanRecords:\nThread:   <_NSMainThread: 0x102cc5a50>{number = 1, name = main}\nOpen FDs: 6/65536\nOpen Mach Ports: 49\nHints:   \n\n2026-10-29 06:24:38.305 xcodebuild[7222:9389518] [MT] DVTAssertions: \nBacktrace:\n  0   -[DVTAssertionHandler handleFailureInMethod:object:fileName:lineNumber:assertionSignature:messageFormat:arguments:] (in DVTFoundation)\n  1   _DVTAssertionHandler (in DVTFoundation)\n  2   _DVTAssertionFailureHandler (in DVTFoundation)\n  3   -[DVTPlugInManager _instantiatePlugInsForScanRecords:] (in DVTFoundation)\n  4   -[DVTPlugInManager _createPlugInObjectsFromScanRecords:] (in DVTFoundation)\n  5   -[DVTPlugInManager _scanForPlugIns:] (in DVTFoundation)\n  6   IDEInitialize (in IDEFoundation)\n  7   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)\n  8   XcodeBuildMain (in libxcodebuildLoader.dylib)\n  9   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)\n 10   -[XcodebuildPreIDEHandler handleVersionWithArguments:] (in xcodebuild)\n 11   -[Xcodebui",
+        "platform_commands": []
+      },
+      "dependencies": {
+        "argv": [
+          "/usr/bin/otool",
+          "-L",
+          "/Users/devin/repos/lumen/out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app/Contents/MacOS/lumen"
+        ],
+        "return_code": 72,
+        "stdout": "",
+        "stderr": "2026-10-29 06:24:38.784 xcodebuild[7240:9389567] [MT] DVTSourceSpecificationLoading: Couldn't load '/Applications/Xcode-27.0-RC.app/Contents/SharedFrameworks/DVTFoundation.framework/Resources/Built-in Syntax Types.xcsynspec'. Reason: Error Domain=NSCocoaErrorDomain Code=3840 \"Cannot parse a NULL or zero-length data\" UserInfo={NSDebugDescription=Cannot parse a NULL or zero-length data}.\n2026-10-29 06:24:38.909 xcodebuild[7240:9389567] [MT] DVTAssertions: ASSERTION FAILURE in DVTFrameworks/DVTFoundation/PlugInArchitecture/PlugInManager/DVTPlugInManager.m:1360\nDetails:  Failed to load plug-in plist for <DVTPlugInScanRecord: 0x91736e700 '/Applications/Xcode-27.0-RC.app/Contents/Frameworks/AssetCatalogCocoaTouchFoundation.framework'>: Error Domain=NSCocoaErrorDomain Code=3840 \"Cannot parse a NULL or zero-length data\" UserInfo={NSDebugDescription=Cannot parse a NULL or zero-length data}\nObject:   <DVTPlugInManager: 0x916c44e00>\nMethod:   -_instantiatePlugInsForScanRecords:\nThread:   <_NSMainThread: 0x10402da50>{number = 1, name = main}\nOpen FDs: 6/65536\nOpen Mach Ports: 49\nHints:   \n\n2026-10-29 06:24:38.926 xcodebuild[7240:9389567] [MT] DVTAssertions: \nBacktrace:\n  0   -[DVTAssertionHandler handleFailureInMethod:object:fileName:lineNumber:assertionSignature:messageFormat:arguments:] (in DVTFoundation)\n  1   _DVTAssertionHandler (in DVTFoundation)\n  2   _DVTAssertionFailureHandler (in DVTFoundation)\n  3   -[DVTPlugInManager _instantiatePlugInsForScanRecords:] (in DVTFoundation)\n  4   -[DVTPlugInManager _createPlugInObjectsFromScanRecords:] (in DVTFoundation)\n  5   -[DVTPlugInManager _scanForPlugIns:] (in DVTFoundation)\n  6   IDEInitialize (in IDEFoundation)\n  7   -[Xcode3CommandLineBuildTool run] (in Xcode3Core)\n  8   XcodeBuildMain (in libxcodebuildLoader.dylib)\n  9   -[XcodebuildPreIDEHandler loadXcode3ProjectSupportAndRunXcode3CommandLineBuildToolWithArguments:] (in xcodebuild)\n 10   -[XcodebuildPreIDEHandler handleVersionWithArguments:] (in xcodebuild)\n 11   -[Xcodebui"
+      },
+      "signature": {
+        "argv": [
+          "/usr/bin/codesign",
+          "--verify",
+          "--strict",
+          "/Users/devin/repos/lumen/out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app"
+        ],
+        "return_code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "entitlements": {
+        "argv": [
+          "/usr/bin/codesign",
+          "-d",
+          "--entitlements",
+          ":-",
+          "/Users/devin/repos/lumen/out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app"
+        ],
+        "return_code": 0,
+        "stdout": "",
+        "stderr": "Executable=/Users/devin/repos/lumen/out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app/Contents/MacOS/lumen\nwarning: Specifying ':' in the path is deprecated and will not work in a future release\n"
+      }
+    }
+  ],
+  "ipa_files": [],
+  "dependency_candidates": [],
+  "application_listing": {
+    "argv": [
+      "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin/simctl",
+      "listapps",
+      "3DD498EB-4464-4ED7-9CD3-7667889DD1F6"
+    ],
+    "error": "TimeoutExpired: Command '['/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin/simctl', 'listapps', '3DD498EB-4464-4ED7-9CD3-7667889DD1F6']' timed out after 15 seconds",
+    "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "parse_error": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)"
+  },
+  "search": {
+    "roots": [
+      "/Users/devin/repos/lumen/build",
+      "/Users/devin/repos/lumen/build-apple-dom-20261029",
+      "/Users/devin/repos/lumen/build-apple-gpu-asan-102900614",
+      "/Users/devin/repos/lumen/build-apple-load-20261029",
+      "/Users/devin/repos/lumen/build-apple-transports-20261029",
+      "/Users/devin/repos/lumen/build-deps",
+      "/Users/devin/repos/lumen/out",
+      "/Users/devin/repos/lumen/output"
+    ],
+    "entries_examined": 28771,
+    "maximum_depth": 6,
+    "truncated": false,
+    "scope": "Only selected project build/dependency roots"
+  },
+  "finished_utc": "2026-10-29T13:24:39.275031+00:00"
+}

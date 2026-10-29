@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T13:59:43.538228+00:00",
+  "scope": "Native C network subsystem under ThreadSanitizer on Linux x86_64; not V8, Apple, GUI performance or WPT evidence",
+  "accepted": true,
+  "checksPassed": 40,
+  "checksTotal": 40,
+  "concurrentRequests": 4000,
+  "binarySHA256": "cd7bdaacbde4ddfe16be05d53357a9e8d6b426f0571a8129cf2d79171cb4cfe7",
+  "linkedLibraries": [
+    "libtsan.so.2",
+    "libicuuc.so.74",
+    "libssl.so.3",
+    "libcrypto.so.3",
+    "libz.so.1",
+    "libm.so.6",
+    "libc.so.6"
+  ],
+  "sourceManifest": "out/10.292019r-net-candidate/source-manifest.json",
+  "sourceManifestSHA256": "faa6079df4210df0344f865bf607ac1d864ac1e210dbd4509c1498c3761609f2",
+  "nativeInputHashes": {
+    "src/net/http.c": "064b388ffb68dc74735deeed7a498083bc617edc5249b890f254aa69dd72cecf",
+    "src/net/net.h": "cba620048ded1d8a5a53879bdb3818f4fb3e1b055249ff64315e583dafd51755",
+    "tests/test_net_background.c": "53520309eedbfe4ba92965b28c04d4cd93a27f56cf39f6f3a244f1c1a0d397e6"
+  },
+  "compilerFlags": "-O1 -g -fno-omit-frame-pointer -fsanitize=thread -pthread",
+  "runtimeOptions": "halt_on_error=1; log_path=task-owned out directory",
+  "sanitizerReports": [],
+  "runtimeControl": "A correct pthread create/join program first compiled and exited0 with the same sanitizer.",
+  "claims": "No data race reported during actual opted-in pool completion, default/streaming affinity controls, held-socket cancellation/exact-once release and4000 concurrent producer/poller request-identity checks. This is bounded evidence, not proof of absence of all races.",
+  "measurementLimit": "Native test completes within1second:1Hz sampling records no valid CPU interval; no CPU or RSS performance conclusion is drawn.",
+  "setupFailureRetained": "Initial standalone link omitted Brotli common static archive. The linker error, original command and failed monitor remain; adding the required -lbrotlicommon completed the unchanged source build.",
+  "startedUTC": "2026-10-29T13:59:08.028983+00:00",
+  "finishedUTC": "2026-10-29T13:59:09.040575+00:00",
+  "durationSeconds": 1.011,
+  "files": {
+    "agent/evidence/10.292019r-network-tsan/build-monitor.log": {
+      "sha256": "85e817f01ee1d63da781c180d689b2cf776e974147033428f660c65ad427c987",
+      "bytes": 3534
+    },
+    "agent/evidence/10.292019r-network-tsan/control-monitor.json": {
+      "sha256": "efc37879a7ab07692d919ced6a8e3eca1133d2801281da5782c123f436536107",
+      "bytes": 2148
+    },
+    "agent/evidence/10.292019r-network-tsan/control-monitor.log": {
+      "sha256": "76e8212d66d4af70feb63b4a131561ee13eec747a7829e76eb6ff4e76463b3d6",
+      "bytes": 89
+    },
+    "agent/evidence/10.292019r-network-tsan/build-linkfix.py": {
+      "sha256": "c0f6dcda29bb34b8a0a997db684f7bc92c1360154665ac0d0a6ed9feb5c87377",
+      "bytes": 352
+    },
+    "agent/evidence/10.292019r-network-tsan/command-linkfix.json": {
+      "sha256": "deebe2a80f0dbeadf27584417a9d0daf3ae1a3c3b2d438bd0e434c86818305b7",
+      "bytes": 1801
+    },
+    "agent/evidence/10.292019r-network-tsan/build-monitor.csv": {
+      "sha256": "4676a24ce3108977d18ea6dfb7fbb75fe7e4c5f46580bd96d1552581a8e9191f",
+      "bytes": 134
+    },
+    "agent/evidence/10.292019r-network-tsan/build-linkfix-monitor.json": {
+      "sha256": "17fb2f6de82261a48a9176c8b444469d38aaafa8abab719c692852797f4bab33",
+      "bytes": 2174
+    },
+    "agent/evidence/10.292019r-network-tsan/build.py": {
+      "sha256": "4a2a076ff4bd21303a782093935e3c4d4f179434f2a856127d67d8def3163567",
+      "bytes": 344
+    },
+    "agent/evidence/10.292019r-network-tsan/control.c": {
+      "sha256": "63fdd5bf95ea5cd83742ebee4169d2f59f042abb7a14bb40ff46dae400b2387b",
+      "bytes": 188
+    },
+    "agent/evidence/10.292019r-network-tsan/build-linkfix-monitor.log": {
+      "sha256": "25273bd31696a20decd420b877db39a4c6c2bb7b27474ae297bb5ee0c393b054",
+      "bytes": 94
+    },
+    "agent/evidence/10.292019r-network-tsan/run-control.py": {
+      "sha256": "1d9d18497640d118d5bad18cc68a1ae1bcd14296319b74a5e255321cc86f8bcd",
+      "bytes": 655
+    },
+    "agent/evidence/10.292019r-network-tsan/run-monitor.log": {
+      "sha256": "fe98c3a481a2849f0a186b95a38741b86e96b39cc8ed1dc377e1a93627d4ff88",
+      "bytes": 348
+    },
+    "agent/evidence/10.292019r-network-tsan/run-monitor.json": {
+      "sha256": "b5af766a3fd3116dedb5bc64fc303eb8d119bdb2be317bfce075f11580f259e1",
+      "bytes": 2152
+    },
+    "agent/evidence/10.292019r-network-tsan/control-monitor.csv": {
+      "sha256": "4cd0a32bab1db8b4241fdc8c887f935b03858cad80e7eb69e22308354174fe25",
+      "bytes": 80
+    },
+    "agent/evidence/10.292019r-network-tsan/build-monitor.json": {
+      "sha256": "c7b3875a303f88700436cc6edd18f12d94c9bc87bc41cc99fd46b1532c3262f7",
+      "bytes": 2217
+    },
+    "agent/evidence/10.292019r-network-tsan/build-linkfix-monitor.csv": {
+      "sha256": "d55cca37862e9bc3e83fbbc3608a431f5f3a448188a8249bf4f11ae6db484879",
+      "bytes": 133
+    },
+    "agent/evidence/10.292019r-network-tsan/run-monitor.csv": {
+      "sha256": "b1742336d42fb9567ac1bd7b652de4229637d28fd19ffb3414810d367afcc6fe",
+      "bytes": 80
+    },
+    "agent/evidence/10.292019r-network-tsan/command.json": {
+      "sha256": "6c159b675fed71794c97c41e4a8687c5a9e295b09db9c610d5d0cd4170d83999",
+      "bytes": 1781
+    },
+    "agent/evidence/10.292019r-network-tsan/control-command.json": {
+      "sha256": "46fa61fcaddf3c4fd8a0b301d6b55640a8b8b9b3e0c71a62e494a508831181de",
+      "bytes": 277
+    }
+  }
+}

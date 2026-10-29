@@ -1,0 +1,11 @@
+[
+  "gcc",
+  "-O1",
+  "-g",
+  "-fsanitize=thread",
+  "-fno-omit-frame-pointer",
+  "-pthread",
+  "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-network-tsan/control.c",
+  "-o",
+  "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-network-tsan/control"
+]

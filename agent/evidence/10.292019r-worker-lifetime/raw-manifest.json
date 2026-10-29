@@ -1,0 +1,298 @@
+{
+  "out/10292019r-linux-worker/build-stress.py": {
+    "sha256": "208c8ab89e77f1db24ae639c12a175e0f7706077f2f4ce627eb1e0801206ccb3",
+    "bytes": 425
+  },
+  "out/10292019r-linux-worker/candidate-binaries.json": {
+    "sha256": "4933f63f75bf8cb2179911edb7ff7cb70c08461e65cc46cebd60e07e25811cbb",
+    "bytes": 988
+  },
+  "out/10292019r-linux-worker/candidate-source-manifest.json": {
+    "sha256": "d6e16dc47fa744245e28422043fc19d92be9f54cd45c88bc3e61621dfdeb099b",
+    "bytes": 13478
+  },
+  "out/10292019r-linux-worker/lifetime-stress.mk": {
+    "sha256": "dc737ad9ea2b15beb509380b5ae2028b87b6b9feed04c6cf716c17fabf238029",
+    "bytes": 395
+  },
+  "out/10292019r-linux-worker/runtime-env.json": {
+    "sha256": "89824f25d8e6c7211aae60b24af6a1c9cfc2a09a65bf1360e69ad121760acea9",
+    "bytes": 551
+  },
+  "out/10292019r-linux-worker/stress-100-run.csv": {
+    "sha256": "b79258ee0e53d7af884b53969f7480d6a099207d4b85de333ee29c82b1f0045a",
+    "bytes": 2686
+  },
+  "out/10292019r-linux-worker/stress-100-run.json": {
+    "sha256": "c5534015f2319eda11c80d8691034cb5bc22d6f4324d1d03848107725e52cc13",
+    "bytes": 2225
+  },
+  "out/10292019r-linux-worker/stress-100-run.log": {
+    "sha256": "d02b0bfe11257ae032717ea148ca8923947899d41711522e740f07424da31d6d",
+    "bytes": 539146
+  },
+  "out/10292019r-linux-worker/stress-build.csv": {
+    "sha256": "fa5241ac954e39fd9f6598b06b25aec324b182fc0190842b8f19920346daed3e",
+    "bytes": 255
+  },
+  "out/10292019r-linux-worker/stress-build.json": {
+    "sha256": "f5b551ca674ac3ddf4230b620eaece138e42286bff20940af97e033ebbda398c",
+    "bytes": 2177
+  },
+  "out/10292019r-linux-worker/stress-build.log": {
+    "sha256": "7bf036b6b8dceeb9662b8044d8bd7c0f31532337729874654180590354bf88e3",
+    "bytes": 61108
+  },
+  "out/10292019r-linux-worker/stress-command.json": {
+    "sha256": "ce3212301bbb6d26f28a501dfcadeea73db3bd867df5bb74a53a6fd59f22b60f",
+    "bytes": 4964
+  },
+  "out/10292019r-linux-worker/stress-diagnostic-run.csv": {
+    "sha256": "4efcc17daa7f97a5ce63682a392e98efd0789d5a01aa3480ba41d0149309fbc5",
+    "bytes": 4018
+  },
+  "out/10292019r-linux-worker/stress-diagnostic-run.json": {
+    "sha256": "e1638e12fa264fb4ef3842a76a0a3cf00eb655f53e2ea46df8251d9894d1d7cb",
+    "bytes": 2189
+  },
+  "out/10292019r-linux-worker/stress-diagnostic-run.log": {
+    "sha256": "acc5330d7c2759eb9d57a5d09bf5137ff8af54dc6ff8a848932e63ac794eeb90",
+    "bytes": 695229
+  },
+  "out/10292019r-linux-worker/stress-diagnostic-syscalls.log": {
+    "sha256": "d996031e71c414af139feb21737934788703b8d91b16986dd03ce26a6e8373df",
+    "bytes": 3729778
+  },
+  "out/10292019r-linux-worker/stress-journal-build.csv": {
+    "sha256": "2f219624c84185a59b95759c61ec102af607ca1e9f2c7cf157d31cb2114689ca",
+    "bytes": 225
+  },
+  "out/10292019r-linux-worker/stress-journal-build.json": {
+    "sha256": "8d5a9ad3dbc05f9e5262c4cccc83f078e15099e8b69f034f91ca5a1409e81d1a",
+    "bytes": 2189
+  },
+  "out/10292019r-linux-worker/stress-journal-build.log": {
+    "sha256": "b332bfda1c72efd207a46571460736c33e92dff6a350ee893c45641153a38af2",
+    "bytes": 61661
+  },
+  "out/10292019r-linux-worker/stress-journal-events.jsonl": {
+    "sha256": "d43413abeac081b5a873c5cbe882f3e79580c227a662cc3fea0b14caf6ce3495",
+    "bytes": 312857
+  },
+  "out/10292019r-linux-worker/stress-journal-run.csv": {
+    "sha256": "50691a440148a7f3bb2f026f7770bee2ffb1607854977f0fa8ca641be91120dc",
+    "bytes": 3577
+  },
+  "out/10292019r-linux-worker/stress-journal-run.json": {
+    "sha256": "a3a1ec55e4eef1957291c765440352abc5b3c82b078a8002fb88011eb2461fbe",
+    "bytes": 2191
+  },
+  "out/10292019r-linux-worker/stress-journal-run.log": {
+    "sha256": "32130c7a0de5bf57bcbf7894a8f81459482b1ac0bb5f11cddde7d171474c78f6",
+    "bytes": 695329
+  },
+  "out/10292019r-linux-worker/stress-run.csv": {
+    "sha256": "5de862167e0ec0464f927d36d23e6f27d836f08b90fe6d61a197e04ed63b8e29",
+    "bytes": 989
+  },
+  "out/10292019r-linux-worker/stress-run.json": {
+    "sha256": "e012efef093b9f44a5a8d322a8362b878c4cf76b13940a8fcb1b3875daaafe07",
+    "bytes": 2272
+  },
+  "out/10292019r-linux-worker/stress-run.log": {
+    "sha256": "790cc497e329fe136dbc3ce0c223fd4ba53bc0b2fb49854fdd865c6cd5065d05",
+    "bytes": 138884
+  },
+  "out/10292019r-linux-worker/stress-v1-binary.json": {
+    "sha256": "9ef1ce9083afab10acc4ce788265ad385ee938e82004d906292eac7b686239d3",
+    "bytes": 381
+  },
+  "out/10292019r-linux-worker/stress-v2-source.cc": {
+    "sha256": "23b997d269473719495349130d458204c61e365d6f8d9dfd0419ae647008d578",
+    "bytes": 5841
+  },
+  "out/10292019r-worker-asan/build-monitor.csv": {
+    "sha256": "6cf07729c341227d3a0e5ba8b515df374d7b9bc124adc4702ead06697a156483",
+    "bytes": 2899
+  },
+  "out/10292019r-worker-asan/build-monitor.json": {
+    "sha256": "2a91d15f39a2f7239adbffaf43bc5e5103962f84d8856aa87d935b82ba45e51d",
+    "bytes": 2200
+  },
+  "out/10292019r-worker-asan/build-monitor.log": {
+    "sha256": "bc51bdc77f7987f5a79934e6b2445ba67260c5cf1cb9748d3cee78f3df782be5",
+    "bytes": 519069
+  },
+  "out/10292019r-worker-asan/build-novptr-monitor.csv": {
+    "sha256": "6c77a771995f4f030c4f43df7ac187cc1da6b0c55cd88efa5bbb2719932445b0",
+    "bytes": 2875
+  },
+  "out/10292019r-worker-asan/build-novptr-monitor.json": {
+    "sha256": "bef580dc96a9dc94be01b202495fa8d8fcdcbd63bed93ee3728add195dd6fbc9",
+    "bytes": 2200
+  },
+  "out/10292019r-worker-asan/build-novptr-monitor.log": {
+    "sha256": "5ce5a9390cb8d1f5928fbbb4e26f36ca9ad4e29c45d0c8c1341629014c6ac0aa",
+    "bytes": 519082
+  },
+  "out/10292019r-worker-asan/build-novptr.py": {
+    "sha256": "8e9a370e654887ef505f670f9ae69be93279d0b63c069ace7a0d000af5cb7a83",
+    "bytes": 505
+  },
+  "out/10292019r-worker-asan/build-settled-monitor.csv": {
+    "sha256": "da88faced097e9ca9ea67ed1df8b218a5fdf6479c7d9ba5037aae778a3cf6723",
+    "bytes": 1002
+  },
+  "out/10292019r-worker-asan/build-settled-monitor.json": {
+    "sha256": "000d207c00575713a4b4fee2b91e7e7ca1e3b6ac64b77746246fcf190566ab7c",
+    "bytes": 2189
+  },
+  "out/10292019r-worker-asan/build-settled-monitor.log": {
+    "sha256": "f11dc77e052199e9c3e7ffd3acc9e0c192f78d2235b951183fcf1679ff5ced50",
+    "bytes": 61682
+  },
+  "out/10292019r-worker-asan/build.py": {
+    "sha256": "8d7c37e238d7e79d80aaf95ae50b0713e7c21022a0150709752c5359b997f128",
+    "bytes": 486
+  },
+  "out/10292019r-worker-asan/command-novptr.json": {
+    "sha256": "e546e406818d8df737c78172da0e3046066c10e7af25e97cf08473bc72d8377d",
+    "bytes": 5146
+  },
+  "out/10292019r-worker-asan/command.json": {
+    "sha256": "420412b393a0ffbddf2bca7e495899ea04fad61c9c250b04b952d00abbe4efc2",
+    "bytes": 5113
+  },
+  "out/10292019r-worker-asan/fixture-v3-change.json": {
+    "sha256": "cd7f17f86c9acad2cc48fe7ab493abc129af2bf4b688719dfc21762159797bf7",
+    "bytes": 392
+  },
+  "out/10292019r-worker-asan/journal-novptr.jsonl": {
+    "sha256": "483d782fcc2f64c247e4824d6bff825440f183773c91df740d8c43e5521fe18f",
+    "bytes": 312857
+  },
+  "out/10292019r-worker-asan/journal-settled.jsonl": {
+    "sha256": "4ee733300a39ac866b7fe119a30fae3990029fb1c7d3b330ff593a1e33f01872",
+    "bytes": 312857
+  },
+  "out/10292019r-worker-asan/journal.jsonl": {
+    "sha256": "a9e5a8d64a7d19dd057305be725809e64264c0c19774ad2ee9ab1caf6ea25ab5",
+    "bytes": 149
+  },
+  "out/10292019r-worker-asan/novptr-binary.json": {
+    "sha256": "9660a7dde641e27cb9314aa5aeb37de14e939e80690f93b0b62aebc771fe29ab",
+    "bytes": 406
+  },
+  "out/10292019r-worker-asan/novptr-v2-preservation.json": {
+    "sha256": "dba80ba5098c01008ce893419dce87b335d5845993d2a41103b671209db379ba",
+    "bytes": 384
+  },
+  "out/10292019r-worker-asan/rtti-repro/no-rtti.cc": {
+    "sha256": "f868e431c6690ee460cba0e9ae13adf8ddc8b837f587f9dc012cb0612e62dcb7",
+    "bytes": 68
+  },
+  "out/10292019r-worker-asan/rtti-repro/rtti.cc": {
+    "sha256": "f322911d6503300e0d48091ac73b78c6765ed1e56b3e8448c30868e245f3801e",
+    "bytes": 105
+  },
+  "out/10292019r-worker-asan/rtti-repro/run-novptr.py": {
+    "sha256": "9711973e9df1def7da15a2cf60407b0d76d20e4455598f21b618826de313605f",
+    "bytes": 883
+  },
+  "out/10292019r-worker-asan/rtti-repro/run.py": {
+    "sha256": "a32ad9abeefb467d3385370aef09cd971df55512b9b03d6556a959ca2ff69cf0",
+    "bytes": 827
+  },
+  "out/10292019r-worker-asan/rtti-repro-monitor.csv": {
+    "sha256": "0bb116b9dd5586c4af9f4151ebcff7d88feed39ae918a19c418daa981f138088",
+    "bytes": 80
+  },
+  "out/10292019r-worker-asan/rtti-repro-monitor.json": {
+    "sha256": "6f3a4f9c4b20dcac8a94cd42a37ccf926b69f091848008372f01bfe59023cd7e",
+    "bytes": 2193
+  },
+  "out/10292019r-worker-asan/rtti-repro-monitor.log": {
+    "sha256": "f250b03183020404ca2b230c1e8a810f1a6e866e06ddb944d227f9530a7ffa02",
+    "bytes": 1911
+  },
+  "out/10292019r-worker-asan/rtti-repro-novptr-monitor.csv": {
+    "sha256": "0ed78624a56ef75f75d4f7239cc5ea6770584bb827732486ba7a546ac4b0f6de",
+    "bytes": 80
+  },
+  "out/10292019r-worker-asan/rtti-repro-novptr-monitor.json": {
+    "sha256": "b01cc3c19980f6de732bdfa81b289308ec12ccbd97f87d90d085fc118d0db305",
+    "bytes": 2152
+  },
+  "out/10292019r-worker-asan/rtti-repro-novptr-monitor.log": {
+    "sha256": "48a9872fe0467e1829c4836688448a02f610f69098b3a5e8e83a2d54eca4f733",
+    "bytes": 71
+  },
+  "out/10292019r-worker-asan/run-monitor.csv": {
+    "sha256": "96e967edd23483eee4fd71faf28ba05057737dbdbaa4034dd6e6dcd61570a5cd",
+    "bytes": 80
+  },
+  "out/10292019r-worker-asan/run-monitor.json": {
+    "sha256": "04e817ea180ef38113665271086aa7c7cf01d3d693573148501f3b45d10d3ddb",
+    "bytes": 2194
+  },
+  "out/10292019r-worker-asan/run-monitor.log": {
+    "sha256": "27e9d635121145ff39fbd893fdd507e233d1f39966ffad689a5ebeb159de63ea",
+    "bytes": 2896
+  },
+  "out/10292019r-worker-asan/run-novptr-monitor.csv": {
+    "sha256": "5cb4f121af768ffc52be604913a0f96b3bde6a0f70514281b2118479569aa80f",
+    "bytes": 4541
+  },
+  "out/10292019r-worker-asan/run-novptr-monitor.json": {
+    "sha256": "32e3766e4a3781cf03913eeb0a9f0053b7b2f2dc8cc782790840506675a0f937",
+    "bytes": 2240
+  },
+  "out/10292019r-worker-asan/run-novptr-monitor.log": {
+    "sha256": "8182b857fa8fc5921dff49d4eea832510bad96de6a9339311c4b1e0ccd4335e5",
+    "bytes": 695430
+  },
+  "out/10292019r-worker-asan/run-novptr.py": {
+    "sha256": "41c83ae6d0df9b3d8e2fdad4b40281ef7a292d1a044c83137644a499630a081d",
+    "bytes": 622
+  },
+  "out/10292019r-worker-asan/run-settled-monitor.csv": {
+    "sha256": "f05c1f6b612b070151428263bf0f535f927a1124d369efd33c6b713c3cc466dd",
+    "bytes": 4589
+  },
+  "out/10292019r-worker-asan/run-settled-monitor.json": {
+    "sha256": "69419f4d6c5935c634fd1886dca45628cdbe10124863e07d71bc58a674162659",
+    "bytes": 2197
+  },
+  "out/10292019r-worker-asan/run-settled-monitor.log": {
+    "sha256": "4511541dcb03b8a6340f7291427a8c7461eaa46fa24d20c8b8b6d35844491692",
+    "bytes": 695559
+  },
+  "out/10292019r-worker-asan/run-settled.py": {
+    "sha256": "82d9241df27cc3808f49d7cd8a32525e201dd2bffcc33c8c611f0fdc0058261c",
+    "bytes": 625
+  },
+  "out/10292019r-worker-asan/source-manifest.json": {
+    "sha256": "ce876fc855128c8d2c4200ee92ba7391292fe4c6b8628ca3eabbea0034630439",
+    "bytes": 50145
+  },
+  "out/10292019r-worker-asan/stress-v2-source.cc": {
+    "sha256": "23b997d269473719495349130d458204c61e365d6f8d9dfd0419ae647008d578",
+    "bytes": 5841
+  },
+  "out/10292019r-worker-asan/stress-v3-source.cc": {
+    "sha256": "e066464a0952675624cf29249f6398c8c877863b353f1dc12c18063d4dc1715d",
+    "bytes": 7236
+  },
+  "out/10292019r-worker-asan/stress.mk": {
+    "sha256": "dc737ad9ea2b15beb509380b5ae2028b87b6b9feed04c6cf716c17fabf238029",
+    "bytes": 395
+  },
+  "tests/test_worker_async_lifecycle.cc": {
+    "sha256": "f2d2b205e23ae691251c2d63869f0f1137666d14ea1323aa85eab7ef5a63ae83",
+    "bytes": 23946
+  },
+  "tests/test_worker_lifetime_stress.cc": {
+    "sha256": "e066464a0952675624cf29249f6398c8c877863b353f1dc12c18063d4dc1715d",
+    "bytes": 7236
+  }
+}
