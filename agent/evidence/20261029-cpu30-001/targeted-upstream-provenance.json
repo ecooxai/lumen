@@ -1,0 +1,31 @@
+{
+  "revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "checkedUTC": "2026-10-29T04:05:18.066625+00:00",
+  "files": [
+    {
+      "source": "encoding/json-document-utf8.html",
+      "sha256": "2dcac139597cd9d5904db8474532ea4883946ee690d5cfc9e2fdfbb2a0626b07",
+      "pinnedGitObjectIdentical": true
+    },
+    {
+      "source": "encoding/resources/json-charset.py",
+      "sha256": "3fa517f2464187734314f9941fe00e1d91abf7031a62eb472884fd9fac4b1614",
+      "pinnedGitObjectIdentical": true
+    },
+    {
+      "source": "encoding/remove-only-one-bom.html",
+      "sha256": "ba23029b3cdb7e8a7bf8a1223a4c9b12769b1956be796f56417e3ff14528e412",
+      "pinnedGitObjectIdentical": true
+    },
+    {
+      "source": "encoding/textdecoder-mistakes.any.js",
+      "sha256": "a33ebeaf55b64ecb476be889aa50a28e3460ed5abdf0c2963e98508eb35440e5",
+      "pinnedGitObjectIdentical": true
+    },
+    {
+      "source": "encoding/sniffing.html",
+      "sha256": "0e61c409779bfca7555f18749fb0ef0ed676a46b4356f0712ded2c880100e7c2",
+      "pinnedGitObjectIdentical": true
+    }
+  ]
+}

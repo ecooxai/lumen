@@ -44,7 +44,7 @@ receipt={'taskId':TASK,'startedUTC':utc(),'pid':server.pid,'port':args.port,'sta
          'routeLog':str((STATE/'tunnel-route.log').relative_to(ROOT))}
 atomic(STATE/'server-receipt.json',receipt)
 cli=ROOT/'output/session-20261029/bin/opentunnel'
-route_env=dict(os.environ,XDG_DATA_HOME=str(STATE/'tunnel-data'),XDG_CONFIG_HOME=str(STATE/'tunnel-config'),XDG_CACHE_HOME=str(STATE/'tunnel-cache'))
+route_env=dict(os.environ,XDG_DATA_HOME=str(STATE/'tunnel-data'),XDG_CONFIG_HOME=str(STATE/'tunnel-config'),XDG_CACHE_HOME=str(STATE/'tunnel-cache'),XDG_STATE_HOME=str(STATE/'tunnel-state'))
 try:
     began=time.monotonic()
     result=subprocess.run([str(cli),'--profile','lume-progress-'+TASK,'route','add',str(args.port)],cwd=ROOT,

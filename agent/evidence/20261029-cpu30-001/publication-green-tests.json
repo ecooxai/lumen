@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "startedUTC": "2026-10-29T03:58:25.251070+00:00",
+  "finishedUTC": "2026-10-29T03:58:26.010826+00:00",
+  "wallSeconds": 0.76,
+  "passed": 5,
+  "total": 5,
+  "tests": [
+    {
+      "name": "current out directory is excluded",
+      "expectedAllowed": false,
+      "exitCode": 1,
+      "archiveCreated": false,
+      "passed": true,
+      "wallSeconds": 0.075,
+      "failureDetail": ""
+    },
+    {
+      "name": "removed out directory is excluded from portable history",
+      "expectedAllowed": false,
+      "exitCode": 1,
+      "archiveCreated": false,
+      "passed": true,
+      "wallSeconds": 0.083,
+      "failureDetail": ""
+    },
+    {
+      "name": "existing output exclusion still holds",
+      "expectedAllowed": false,
+      "exitCode": 1,
+      "archiveCreated": false,
+      "passed": true,
+      "wallSeconds": 0.071,
+      "failureDetail": ""
+    },
+    {
+      "name": "existing historical output exclusion still holds",
+      "expectedAllowed": false,
+      "exitCode": 1,
+      "archiveCreated": false,
+      "passed": true,
+      "wallSeconds": 0.08,
+      "failureDetail": ""
+    },
+    {
+      "name": "source directories and prefix lookalikes remain publishable",
+      "expectedAllowed": true,
+      "exitCode": 0,
+      "archiveCreated": true,
+      "passed": true,
+      "wallSeconds": 0.134,
+      "failureDetail": ""
+    }
+  ]
+}

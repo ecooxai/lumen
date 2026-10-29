@@ -152,6 +152,10 @@ try {
 
 
 def run(args):
+    scroll_ceiling = getattr(args, 'scroll_cpu_ceiling', POLICY['scroll_cpu_p95_ceiling_percent'])
+    if not math.isfinite(scroll_ceiling) or scroll_ceiling <= 0:
+        raise ValueError('Scrolling CPU ceiling must be finite and positive')
+    policy = dict(POLICY, scroll_cpu_p95_ceiling_percent=scroll_ceiling)
     binary, telemetry, output = map(owned_path, (args.binary, args.telemetry, args.output))
     if not binary.is_file() or sha(binary) != args.sha256:
         raise RuntimeError('Immutable native binary hash mismatch')
@@ -167,7 +171,7 @@ def run(args):
     app_started = None
     receipt = {'started_utc': utc(), 'scenario': args.scenario, 'binary': str(binary.relative_to(ROOT)),
                'binary_sha256': args.sha256, 'telemetry_sha256': args.telemetry_sha256,
-               'profile': 'New isolated task-owned profile', 'policy': POLICY,
+               'profile': 'New isolated task-owned profile', 'policy': policy,
                'scope': 'Native Mac process tree; synthetic SDL wheel input or actual top-level navigation. No physical typing, IPA, simulator or full-browser benchmark claim.',
                'fixture_sha256_by_step': {str(step): hashlib.sha256(page).hexdigest() for step, page in pages.items()}}
 
@@ -344,7 +348,7 @@ def run(args):
                     issues.append('Telemetry contains errors or sampling gaps')
                 issues.extend(phase_issues(summary, 'idle:after', 45, 3))
                 if args.scenario == 'scroll':
-                    issues.extend(phase_issues(summary, 'scrolling', 30, 10))
+                    issues.extend(phase_issues(summary, 'scrolling', 30, policy['scroll_cpu_p95_ceiling_percent']))
                 else:
                     issues.extend(phase_issues(summary, 'idle:before', 10, 3))
                     records = [json.loads(line) for line in samples.read_text().splitlines()]
@@ -401,6 +405,8 @@ if __name__ == '__main__':
     parser.add_argument('--binary', required=True)
     parser.add_argument('--sha256', required=True)
     parser.add_argument('--output', required=True)
+    parser.add_argument('--scroll-cpu-ceiling', type=float, default=10,
+                        help='Declared scrolling p95 CPU ceiling; defaults to the original 10%% policy')
     parser.add_argument('--telemetry', default=TELEMETRY)
     parser.add_argument('--telemetry-sha256', default=TELEMETRY_SHA)
     sys.exit(run(parser.parse_args()))

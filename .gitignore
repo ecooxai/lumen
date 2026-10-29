@@ -12,3 +12,6 @@ __pycache__/
 # Generated test/runtime output may contain local tunnel credentials.
 .DS_Store
 /output/
+
+# Task build artifacts, profiles, telemetry and private release logs
+/out/

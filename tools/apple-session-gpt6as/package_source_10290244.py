@@ -22,7 +22,7 @@ for row in tracked:
     if kind!=b'blob':continue
     filename=name.decode()
     parts=pathlib.PurePosixPath(filename).parts
-    if any(part in ['.git','.aws','.ssh','node_modules','__pycache__'] for part in parts) or filename.startswith('output/') or '.DS_Store' in parts:
+    if any(part in ['.git','.aws','.ssh','node_modules','__pycache__'] for part in parts) or filename.startswith(('output/', 'out/')) or '.DS_Store' in parts:
         raise RuntimeError('Unexpected non-source tracked path; review before publishing: '+filename)
     entries.append((filename,oid.decode(),mode.decode()))
 
@@ -33,7 +33,7 @@ objects=git('rev-list','--objects',head).decode().splitlines()
 names={line.split(' ',1)[0]:line.split(' ',1)[1] if ' ' in line else '(metadata)' for line in objects}
 for filename in names.values():
     parts=pathlib.PurePosixPath(filename).parts
-    if any(part in ['.git','.aws','.ssh','node_modules','__pycache__','message-access-key','verification-client.json'] for part in parts) or filename.startswith('output/'):
+    if any(part in ['.git','.aws','.ssh','node_modules','__pycache__','message-access-key','verification-client.json'] for part in parts) or filename.startswith(('output/', 'out/')):
         raise RuntimeError('Private/generated path in reachable history; publication withheld: '+filename)
 # Match the exact private message key in memory without displaying it.
 private_values=[]

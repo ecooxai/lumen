@@ -280,3 +280,16 @@ Intake preserved inherited candidate source in `f8d3e7380e3e3194c3f34b5cd066113c
 | Iteration | Start UTC | End UTC | Wall seconds | Test/build seconds | Score and basis | Result |
 |---|---|---|---:|---|---|---|
 |000 intake|2026-10-29T02:18:45+00:00|2026-10-29T03:29:52.862509+00:00|4267.863|None; transport waits only|45/100 inherited, current validation pending|Recovered native state, preserved unaccepted cache source, archived prior instructions and opened task branch|
+
+Current-task scope clarification: removed the inherited iPhone-device execution requirement. Apple25points now map to actual shared-device-IPA Mac execution15 and same-source iPad simulator execution10. The earned score remains45/100; inherited rubric and receipts are unchanged. See `agent/scorecard-rubric-20261029-cpu30.md`.
+
+
+## 20261029-cpu30-001 — fresh f52 acceptance and source publication guard
+
+Start `2026-10-29T03:33:28.987717+00:00` / `2026-10-29T11:33:28.987717+08:00`; end `2026-10-29T04:05:18.067295+00:00` / `2026-10-29T12:05:18.067295+08:00`; iteration wall `1909.08s`; total session `6393.067s`. Current score **50/100**, separate from selected WPT **96/103 (93.204%)**; original **1850/1850** separately retained. Expanded1515 suite and Apple execution remain unearned. Release5 withheld pending current task verification.
+
+Build/test timings: build2.103s; combined build+203checks5.550s; original+103WPT73.420s; native scroll116.075s and navigation166.298s, total282.666s; source guard3/5RED→5/5GREEN2.167s. One-second collectors valid; subsecond unit tests cannot establish steady CPU. No native build/test stage exceeded five minutes. Worker wall times overlap and are not summed; model compute time unavailable. Initial child MCP transport waits remain recorded in intake rather than mislabeled build latency.
+
+Controlled scroll p9511.085%, peak11.137%; idle p95~1%;20-navigation settled RSS−10.781MiB; raw startup30.35% retained outside scrolling phase. Root reviewed actual1000×700 native capture. All measurements bind exact f52; this is fresh validation of inherited source, not a new paired performance improvement claim. Same-pinned JSON/resource, BOM, TextDecoder and sniffing fixture Git objects verified. Preserve7 failing variants/35assertions and1412unrun.
+
+Evidence `agent/evidence/20261029-cpu30-001-native-acceptance.json`. Current full signed IPA/iPad execution and final98/100 goal not achieved; development continues.

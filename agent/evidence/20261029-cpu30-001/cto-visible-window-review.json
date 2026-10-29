@@ -1,0 +1,9 @@
+{
+  "reviewer": "Root CTO (visual review)",
+  "artifactSHA256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+  "screenshotSHA256": "7ba599faad25feea80419d824d6327a9dcd32c621bdcf164d073d82f37eabccd",
+  "width": 1000,
+  "height": 700,
+  "observed": "Native browser chrome/address bar and alternating rows53\u201372 are legible with expected viewport clipping; no blank or frozen frame apparent.",
+  "scope": "Controlled fixture/frame only; not broad layout correctness. Screenshot remains private in ignored task output."
+}

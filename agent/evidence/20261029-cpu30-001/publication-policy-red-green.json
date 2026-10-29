@@ -1,0 +1,39 @@
+{
+  "taskId": "20261029-cpu30",
+  "startedUTC": "2026-10-29T03:58:24.121452+00:00",
+  "beforeSHA256": "e784edf3a25643afb95f9d376b45983d529f45b3dd8cfbe85bfac50eecf5830f",
+  "testSHA256": "b2210debfbf459a4551bfd5e7ad5791edc517df59e5c1d6520dc5cd8fdc5ce61",
+  "stages": [
+    {
+      "name": "red",
+      "wallSeconds": 1.075,
+      "testWallSeconds": 0.918,
+      "passed": 3,
+      "total": 5,
+      "monitorExitCode": 1,
+      "resourceReceipt": "out/lume-20261029-cpu30/publication-policy-1/red-resources.json",
+      "testReceipt": "out/lume-20261029-cpu30/publication-policy-1/red.json"
+    },
+    {
+      "name": "green",
+      "wallSeconds": 1.092,
+      "testWallSeconds": 0.76,
+      "passed": 5,
+      "total": 5,
+      "monitorExitCode": 0,
+      "resourceReceipt": "out/lume-20261029-cpu30/publication-policy-1/green-resources.json",
+      "testReceipt": "out/lume-20261029-cpu30/publication-policy-1/green.json"
+    }
+  ],
+  "afterSHA256": "dd09cfeafbae9c72362028d58dff3d491bf898829c03f7d1b267c995b7a364f8",
+  "gitignoreBeforeSHA256": "7f042bdc2df35828045d10e8f0707bad2cf281d5c94cc9aeab67561085ff69b5",
+  "gitignoreAfterSHA256": "19a5c9cea3e456694f59686befec0666234a87b21c083a57eefd47f711d94a37",
+  "passed": true,
+  "finishedUTC": "2026-10-29T03:58:26.289054+00:00",
+  "wallSeconds": 2.167,
+  "changedPaths": [
+    ".gitignore",
+    "tools/apple-session-gpt6as/package_source_10290244.py",
+    "tests/test_source_package_policy.py"
+  ]
+}

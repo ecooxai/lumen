@@ -1,0 +1,287 @@
+{
+  "schemaVersion": 1,
+  "iteration": "20261029-cpu30-001",
+  "started_utc": "2026-10-29T03:33:28.987717+00:00",
+  "updated_utc": "2026-10-29T04:05:18.067295+00:00",
+  "started_Asia_Shanghai": "2026-10-29T11:33:28.987717+08:00",
+  "finished_Asia_Shanghai": "2026-10-29T12:05:18.067295+08:00",
+  "elapsed_seconds": 1909.08,
+  "total_session_seconds": 6393.067,
+  "score": 50,
+  "status": "Fresh exact-artifact native acceptance, scroll below30%, navigation soak and source publication guard; public task delivery pending",
+  "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+  "frozen_native_source_commit": "df4ae3bc8d52a06778e0d8a1f706138201dd043d",
+  "source_manifest": "agent/evidence/20261029-cpu30-001/compiled-source-sha256.json",
+  "compiledInputsVerified": 157,
+  "selectedWpt": {
+    "fullyPassing": 96,
+    "recorded": 103,
+    "scheduled": 1515,
+    "unrun": 1412,
+    "assertions": {
+      "PASS": 23623,
+      "FAIL": 35
+    },
+    "fullyPassingPercent": 93.20388349514563
+  },
+  "originalWpt": {
+    "filesPassing": 6,
+    "files": 6,
+    "assertionsPassing": 1850,
+    "assertions": 1850
+  },
+  "customRegressionChecks": 203,
+  "buildAndTestTimes": {
+    "combinedBuildAndCustomChecksSeconds": 5.55,
+    "selectedAndOriginalWptSeconds": 73.42,
+    "resourceGateSeconds": 282.666,
+    "publicationRedGreenSeconds": 2.167
+  },
+  "scoreIsWptPercentage": false,
+  "fullOfficialWptPassPercent": null,
+  "evidence": [
+    {
+      "source": "out/lume-20261029-cpu30/native-combined-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/20261029-cpu30-001/compiled-source-sha256.json",
+      "sha256": "6cc5d234073e0c2257709e95d1b63997bba3b7e488320583569f8290bfa97a81",
+      "bytes": 15370
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-combined-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-001/build-and-203-custom-checks.json",
+      "sha256": "37080ee83755a77638bc76b4f7fa99dd36a00145d16c1035fa8cb197f0da2b0f",
+      "bytes": 6448
+    },
+    {
+      "source": "out/lume-20261029-cpu30/v8-prebuilt-identity.json",
+      "committed": "agent/evidence/20261029-cpu30-001/prebuilt-v8-identity.json",
+      "sha256": "fd3cdbb701d65f4b30ee46cb27a39418a3f8b535519d07bc6e16db28f9d133cf",
+      "bytes": 2530
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-combined-1/build.json",
+      "committed": "agent/evidence/20261029-cpu30-001/build-build-monitor.json",
+      "sha256": "a1faa7a9e81f8cceaaad29a4f3759414084461a4491a013988da43e2c9cc50db",
+      "bytes": 2031
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-combined-1/build.log",
+      "committed": "agent/evidence/20261029-cpu30-001/build-build.log",
+      "sha256": "0620889e6ec9c94061164da9b8ab14acb5c3a830e24535873b71dd4d5325d94e",
+      "bytes": 4721
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-combined-1/test_render_overdraw.json",
+      "committed": "agent/evidence/20261029-cpu30-001/build-test_render_overdraw-monitor.json",
+      "sha256": "4ff7d4006aec08256f75ead5dc22ff80c7eb6db62323667f30da4c1939089a3f",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-combined-1/test_render_overdraw.log",
+      "committed": "agent/evidence/20261029-cpu30-001/build-test_render_overdraw.log",
+      "sha256": "04341450e0dfb63e562ba0fd8d7701b0d8db8daf079fde4b9542ec3fab28d369",
+      "bytes": 46
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-combined-1/test_gpu_present.json",
+      "committed": "agent/evidence/20261029-cpu30-001/build-test_gpu_present-monitor.json",
+      "sha256": "afc76e7c979e2af7b1587c89a838b3eb86f38569410716d540f950809271209b",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-combined-1/test_gpu_present.log",
+      "committed": "agent/evidence/20261029-cpu30-001/build-test_gpu_present.log",
+      "sha256": "a00302b05386e15ce22fabcdaffb8331c19f72fb11b2d838b8587d6dcec75433",
+      "bytes": 3236
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-combined-1/test_app_wheel.json",
+      "committed": "agent/evidence/20261029-cpu30-001/build-test_app_wheel-monitor.json",
+      "sha256": "7b3c5c9f1a51e9d1e1b757c82b2875637afdcd14624c2ff422ab44531ad96703",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-combined-1/test_app_wheel.log",
+      "committed": "agent/evidence/20261029-cpu30-001/build-test_app_wheel.log",
+      "sha256": "f2255b4799d8fd5ac9250a44c65daaec47dab6aef1a3cb92ca76dd70a841e7bd",
+      "bytes": 38
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-001/native-resource-summary.json",
+      "sha256": "099fe2cfbb8a171cd4ccb21bd046ef07d9fe69fca5a9a39b4ef64fda62eb1c73",
+      "bytes": 9208
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-1/scroll/receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-001/scroll-receipt.json",
+      "sha256": "e11a59eda8646fd927fee685d7503ba5b8db53ca41354010bb523d21f06c5f59",
+      "bytes": 13132
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-1/scroll/process-summary.json",
+      "committed": "agent/evidence/20261029-cpu30-001/scroll-process-summary.json",
+      "sha256": "a2625329b45a7a163488a2aabf2e7980d20cd3e7232e567e45c917718f5db221",
+      "bytes": 3407
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-1/scroll/process-samples.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-001/scroll-process-samples.jsonl",
+      "sha256": "0a491b3227f2dac2f53bfa2312d69b302d27fe85d3933d1f0892f4d5bbf7fa03",
+      "bytes": 72702
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-1/navigation/receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-001/navigation-receipt.json",
+      "sha256": "952bab0bc9badd1829d1dbbbda124ab572ee76dc06b0e2f623387f4640c6b343",
+      "bytes": 23821
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-1/navigation/process-summary.json",
+      "committed": "agent/evidence/20261029-cpu30-001/navigation-process-summary.json",
+      "sha256": "437c24a8c4c3879194130b160ec17661c07c0fe4b255bd03c6c1db61f063bb88",
+      "bytes": 4015
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-1/navigation/process-samples.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-001/navigation-process-samples.jsonl",
+      "sha256": "310e2b53b932fc5d9122573b56b1a77b63227663d03a0d94e3d8d1db536721c3",
+      "bytes": 103702
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-001/selected-wpt-run.json",
+      "sha256": "68023ad06fca2600736e31e27857b1f3ad018128a38aefe36ff9bf9be403e2ed",
+      "bytes": 15361
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/priority-summary.json",
+      "committed": "agent/evidence/20261029-cpu30-001/selected-wpt-outcomes.json",
+      "sha256": "28d079981674e534fccf05ccb1f8f78c16ff4f293c91ddac97dc46cf731aba5c",
+      "bytes": 12212
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/cohort.json",
+      "committed": "agent/evidence/20261029-cpu30-001/frozen-cohort.json",
+      "sha256": "a7746c5d23a3be42d351488a1f77d9bde4f6b194a15213e34f4c3aa6d0cf3e25",
+      "bytes": 1106603
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/original-six-receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-001/original-six-receipt.json",
+      "sha256": "1fc5d45404f36768e88804a4dc0e2bbf731fa2e6cb8891146ec3a63789ba3d9a",
+      "bytes": 1278
+    },
+    {
+      "source": "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task20261029-cpu30-compat-baseline-2-f52a08ca9a1bc6cd/wpt-report.json",
+      "committed": "agent/evidence/20261029-cpu30-001/original-six-raw-report.json",
+      "sha256": "e15844bbbea5df871f5711aee328642ccf276b484a7ec69f38b830a61f85deee",
+      "bytes": 299997
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/encoding-core/run.json",
+      "committed": "agent/evidence/20261029-cpu30-001/encoding-core-run.json",
+      "sha256": "887dcda0eac77e729f6a9ffa326456680e09d18dab3ef9f00d818c9dc7959715",
+      "bytes": 14968
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/encoding-core/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-001/encoding-core-schedule.json",
+      "sha256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+      "bytes": 44730
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/encoding-core/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-001/encoding-core-results.jsonl",
+      "sha256": "9fdf862e27a501cbea3a86aebfcdeca4788887c716e2d0103ae74935942e6138",
+      "bytes": 2455737
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/encoding-core/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-001/encoding-core-summary.json",
+      "sha256": "8ac2a2c5ddee5ffed739836379784bcc555cf4a4391cacb75cfba0a081f91a6f",
+      "bytes": 2026
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/encoding-streams/run.json",
+      "committed": "agent/evidence/20261029-cpu30-001/encoding-streams-run.json",
+      "sha256": "4dd5b3f8b13dac2851471662ab8338cce990becfde3e9d6f9d4ce292ea82b2f5",
+      "bytes": 11989
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/encoding-streams/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-001/encoding-streams-schedule.json",
+      "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "bytes": 10971
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/encoding-streams/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-001/encoding-streams-results.jsonl",
+      "sha256": "4321ed9160303b77298f3fc918b319bcd0c508e25b24fa82e8f611b508e9f591",
+      "bytes": 101654
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/cohort/encoding-streams/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-001/encoding-streams-summary.json",
+      "sha256": "2f22b13c5ac3f958442a6d1a65aeec269ef6e0c0290807376fcab1707b902ee4",
+      "bytes": 1862
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/prepare.json",
+      "committed": "agent/evidence/20261029-cpu30-001/wpt-prepare-monitor.json",
+      "sha256": "5007e9a3e6147c9623a68261c0009b80662ac2ae11bce1c982cfc4f90d84d696",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/original-six.json",
+      "committed": "agent/evidence/20261029-cpu30-001/wpt-original-six-monitor.json",
+      "sha256": "820f4c2fa2ba4486c1a6a8985b0f51587cff9dd0b872abd58386f8d086c9b6ed",
+      "bytes": 2036
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/encoding-core.json",
+      "committed": "agent/evidence/20261029-cpu30-001/wpt-encoding-core-monitor.json",
+      "sha256": "0df09889948ae18d85df2738addea1939ea06a3085c2376618e6ac51e4f2e340",
+      "bytes": 2043
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-baseline-2/encoding-streams.json",
+      "committed": "agent/evidence/20261029-cpu30-001/wpt-encoding-streams-monitor.json",
+      "sha256": "277ece5dc87da9dd225c165e824fcf67e553048dec2b58ebf0a339a4d20cd657",
+      "bytes": 2044
+    },
+    {
+      "source": "out/lume-20261029-cpu30/publication-policy-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-001/publication-policy-red-green.json",
+      "sha256": "64f454e3c43a3e94685ce1cb586bf16464e58ed360b618fdf2b8164dbf9d7923",
+      "bytes": 1449
+    },
+    {
+      "source": "out/lume-20261029-cpu30/publication-policy-1/red-resources.json",
+      "committed": "agent/evidence/20261029-cpu30-001/publication-red-monitor.json",
+      "sha256": "a3d27ce5390250cc00c4745eba098cf4455b37189f52dd4bf4001b5a21a20e99",
+      "bytes": 2046
+    },
+    {
+      "source": "out/lume-20261029-cpu30/publication-policy-1/red.json",
+      "committed": "agent/evidence/20261029-cpu30-001/publication-red-tests.json",
+      "sha256": "0b23d5ef70249b8546ef82723e182c21f87c9407c5cd773d96754d0891b2515f",
+      "bytes": 1443
+    },
+    {
+      "source": "out/lume-20261029-cpu30/publication-policy-1/green-resources.json",
+      "committed": "agent/evidence/20261029-cpu30-001/publication-green-monitor.json",
+      "sha256": "a14a5cf1e8126ae666839e62c96013e342422cc2ef47c2ca09ed301f333199de",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/publication-policy-1/green.json",
+      "committed": "agent/evidence/20261029-cpu30-001/publication-green-tests.json",
+      "sha256": "bb41f985c7970997de524b4d8c7bb7716798edf4efc16509f909ee3836f56f37",
+      "bytes": 1383
+    }
+  ],
+  "publicArchiveRefreshRequired": true,
+  "modelComputeDuration": null,
+  "timingNote": "Parallel worker durations are reported per stage and are not summed into session elapsed time. Initial transport waits remain in intake evidence. Fresh f52 reproduction is not claimed as a newly measured performance improvement over a paired reference."
+}

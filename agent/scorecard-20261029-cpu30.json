@@ -5,10 +5,10 @@
   "session_start_utc": "2026-10-29T02:18:45+00:00",
   "deadline_utc": "2026-10-29T05:18:45+00:00",
   "target_score": 98,
-  "score": 45,
-  "score_state": "inherited_evidence_current_source_validation_pending",
+  "score": 50,
+  "score_state": "current_native_artifact_accepted_partial_gates_pending",
   "unknown_means": "unverified, not measured failure",
-  "rubric": "agent/scorecard-rubric-10290244.md",
+  "rubric": "agent/scorecard-rubric-20261029-cpu30.md",
   "gates": [
     {
       "id": "wpt_original",
@@ -18,9 +18,9 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "agent/evidence/102900614-003/original-native-wpt.json"
+        "agent/evidence/20261029-cpu30-001/original-six-receipt.json"
       ],
-      "evidence_generation": "inherited_previous_task",
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -29,25 +29,34 @@
           "evidence": [
             "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-headers-codec-1.json"
           ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "passed",
+          "prior_earned": 10,
+          "evidence": [
+            "agent/evidence/102900614-003/original-native-wpt.json"
+          ],
+          "generation": "inherited_previous_task"
         }
       ],
       "evidence_format": "native_absolute_wpt",
       "passed": 1850,
       "denominator": 1850,
-      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
-      "note": "Six unchanged upstream files; absolute native assertions only. Chrome control quarantined."
+      "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+      "note": "Six unchanged pinned upstream files; absolute native results only, separate from selected103 and full WPT."
     },
     {
       "id": "wpt_expanded",
       "category": "wpt",
       "weight": 20,
       "name": "Expanded important suite",
-      "status": "incomplete_new_reference_qualified",
+      "status": "incomplete",
       "earned": 0,
       "evidence": [
-        "output/wpt-10290244/priority-eac62-v1/priority-comparison.json"
+        "agent/evidence/20261029-cpu30-001/selected-wpt-outcomes.json"
       ],
-      "evidence_generation": "inherited_previous_task",
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -56,9 +65,18 @@
           "evidence": [
             "output/wpt-10290244/priority-eac62-v1/priority-comparison.json"
           ]
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "incomplete_new_reference_qualified",
+          "prior_earned": 0,
+          "evidence": [
+            "output/wpt-10290244/priority-eac62-v1/priority-comparison.json"
+          ],
+          "generation": "inherited_previous_task"
         }
       ],
-      "note": "Fresh signed Chrome is qualified for new paired measurements with known standards failures retained. All1515 frozen variants still required; old quarantined comparator reports remain historical and no expanded acceptance points are awarded."
+      "note": "103 of1515 frozen variants executed on this artifact;96 fully pass and1412 remain unrun. Expanded acceptance and full WPT remain unproved."
     },
     {
       "id": "wpt_no_regression",
@@ -68,12 +86,12 @@
       "status": "passed",
       "earned": 10,
       "evidence": [
-        "agent/evidence/102900614-003/native-regression-summary.json",
-        "agent/evidence/102900614-003/compiled-source-sha256.json",
-        "agent/evidence/102900614-003/original-native-wpt.json",
-        "agent/evidence/102900614-003/upstream-receipt.json"
+        "agent/evidence/20261029-cpu30-001/build-and-203-custom-checks.json",
+        "agent/evidence/20261029-cpu30-001/selected-wpt-run.json",
+        "agent/evidence/20261029-cpu30-001/original-six-receipt.json",
+        "agent/evidence/20261029-cpu30-001/compiled-source-sha256.json"
       ],
-      "evidence_generation": "inherited_previous_task",
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -84,64 +102,74 @@
             "output/session-10290244/headers-codec-green-1/compiled-source-sha256.json",
             "output/session-10290244/headers-codec-green-1/summary.json"
           ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "passed",
+          "prior_earned": 10,
+          "evidence": [
+            "agent/evidence/102900614-003/native-regression-summary.json",
+            "agent/evidence/102900614-003/compiled-source-sha256.json",
+            "agent/evidence/102900614-003/original-native-wpt.json",
+            "agent/evidence/102900614-003/upstream-receipt.json"
+          ],
+          "generation": "inherited_previous_task"
         }
       ],
-      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
-      "note": "826 custom regression assertions plus unchanged original and targeted upstream assertions; source manifest matches this isolated commit."
+      "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+      "note": "Current scope is203 custom render/GPU/wheel checks, original1850 assertions, and unchanged103-variant Encoding cohort. Historical826 custom checks are not claimed as rerun; broader and same103 Chrome comparison remain separate."
     },
     {
       "id": "ipa_mac",
       "category": "apple",
-      "weight": 10,
-      "name": "Same IPA on Mac",
-      "status": "unverified",
+      "weight": 15,
+      "name": "Shared signed iOS device IPA executed on Mac",
+      "status": "blocked_environment",
       "earned": 0,
       "evidence": [],
-      "evidence_generation": "inherited_previous_task",
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
           "prior_status": "unverified",
           "prior_earned": 0,
           "evidence": []
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "unverified",
+          "prior_earned": 0,
+          "evidence": [],
+          "generation": "inherited_previous_task"
         }
-      ]
+      ],
+      "note": "No signing identity, device IPA or compatible iOS V8 archive available. Native Mac execution is not shared signed device IPA execution."
     },
     {
-      "id": "ipa_ipad",
+      "id": "ipad_simulator",
       "category": "apple",
       "weight": 10,
-      "name": "Same IPA on iPad",
-      "status": "unverified",
+      "name": "iPad simulator app executed from the same reviewed source",
+      "status": "blocked_environment",
       "earned": 0,
       "evidence": [],
-      "evidence_generation": "inherited_previous_task",
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
           "prior_status": "unverified",
           "prior_earned": 0,
           "evidence": []
-        }
-      ]
-    },
-    {
-      "id": "ipa_iphone",
-      "category": "apple",
-      "weight": 5,
-      "name": "Same IPA on iPhone",
-      "status": "unverified",
-      "earned": 0,
-      "evidence": [],
-      "evidence_generation": "inherited_previous_task",
-      "historical_evidence": [
+        },
         {
-          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "binary_sha256": null,
           "prior_status": "unverified",
           "prior_earned": 0,
-          "evidence": []
+          "evidence": [],
+          "generation": "inherited_previous_task"
         }
-      ]
+      ],
+      "note": "iPad simulator OS responds, but no Lume app execution is proved; incomplete Xcode resources and missing platform V8 build block package validation."
     },
     {
       "id": "perf_idle",
@@ -151,9 +179,9 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/102900614-003/resource-review.json"
+        "agent/evidence/20261029-cpu30-001/native-resource-summary.json"
       ],
-      "evidence_generation": "inherited_previous_task",
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85",
@@ -216,131 +244,33 @@
             "agent/evidence/10290244-010-current-native-resources.json",
             "output/session-10290244/final-native-resources-1/scroll/independent-review.json"
           ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/102900614-003/resource-review.json"
+          ],
+          "generation": "inherited_previous_task"
         }
       ],
-      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
-      "review": {
-        "scenario": "scroll",
-        "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
-        "source_receipt": "output/session-102900614/scroll-transfer-baseline/receipt.json",
-        "source_sha256": "2c77377097883a09dc4ab4568548d22edc9a14480e43d044caba144a45b5d1e1",
-        "started_utc": "2026-10-28T22:36:02.474714+00:00",
-        "finished_utc": "2026-10-28T22:37:58.714490+00:00",
-        "duration_seconds": 116.233,
-        "policy": {
-          "sampling_seconds": 1,
-          "max_sampling_gap_seconds": 1.5,
-          "initial_settle_seconds": 15,
-          "final_settle_seconds": 15,
-          "final_idle_seconds_minimum": 45,
-          "idle_cpu_p95_ceiling_percent": 3,
-          "scroll_cpu_p95_ceiling_percent": 10,
-          "settled_rss_growth_ceiling_mib": 32,
-          "settled_rss_growth_ceiling_fraction": 0.2,
-          "initial_rss_window": "Last 5 samples of initial idle phase",
-          "final_rss_window": "Last 15 samples of final idle phase",
-          "native_live_nodes_growth_allowance": 50,
-          "native_live_styles_growth_allowance": 50
-        },
-        "issues": [
-          "scrolling: CPU p95 23.054% exceeds 10%"
-        ],
-        "phases": {
-          "startup": {
-            "samples": 16,
-            "observed_samples": 16,
-            "duration_seconds": 14.993,
-            "cpu_mean_percent": 2.605,
-            "cpu_median_percent": 1.001,
-            "cpu_p95_percent": 26.064,
-            "cpu_peak_percent": 26.064,
-            "samples_above_threshold": null,
-            "cpu_threshold_percent": null,
-            "cpu_status": "measured_no_threshold",
-            "rss_start_mib": 0.031,
-            "rss_end_mib": 154.25,
-            "rss_peak_mib": 154.297,
-            "rss_change_mib": 154.219,
-            "phase_boundary_samples_excluded_from_cpu_summary": 1,
-            "first_seen_process_events": 1,
-            "cpu_intervals": 15
-          },
-          "scrolling": {
-            "samples": 34,
-            "observed_samples": 34,
-            "duration_seconds": 32.996,
-            "cpu_mean_percent": 18.093,
-            "cpu_median_percent": 18.897,
-            "cpu_p95_percent": 23.054,
-            "cpu_peak_percent": 24.001,
-            "samples_above_threshold": null,
-            "cpu_threshold_percent": null,
-            "cpu_status": "measured_no_threshold",
-            "rss_start_mib": 157.969,
-            "rss_end_mib": 151.375,
-            "rss_peak_mib": 161.797,
-            "rss_change_mib": -6.594,
-            "phase_boundary_samples_excluded_from_cpu_summary": 1,
-            "first_seen_process_events": 0,
-            "cpu_intervals": 33
-          },
-          "settle:after": {
-            "samples": 16,
-            "observed_samples": 16,
-            "duration_seconds": 15.002,
-            "cpu_mean_percent": 0.067,
-            "cpu_median_percent": 0.0,
-            "cpu_p95_percent": 1.006,
-            "cpu_peak_percent": 1.006,
-            "samples_above_threshold": null,
-            "cpu_threshold_percent": null,
-            "cpu_status": "measured_no_threshold",
-            "rss_start_mib": 151.375,
-            "rss_end_mib": 150.656,
-            "rss_peak_mib": 151.375,
-            "rss_change_mib": -0.719,
-            "phase_boundary_samples_excluded_from_cpu_summary": 1,
-            "first_seen_process_events": 0,
-            "cpu_intervals": 15
-          },
-          "idle:after": {
-            "samples": 50,
-            "observed_samples": 50,
-            "duration_seconds": 49.01,
-            "cpu_mean_percent": 0.061,
-            "cpu_median_percent": 0.0,
-            "cpu_p95_percent": 0.0,
-            "cpu_peak_percent": 2.01,
-            "samples_above_threshold": 0,
-            "cpu_threshold_percent": 3,
-            "cpu_status": "within_threshold",
-            "rss_start_mib": 150.656,
-            "rss_end_mib": 150.656,
-            "rss_peak_mib": 150.656,
-            "rss_change_mib": 0.0,
-            "phase_boundary_samples_excluded_from_cpu_summary": 1,
-            "first_seen_process_events": 0,
-            "cpu_intervals": 49
-          }
-        },
-        "idle_accepted": true,
-        "interaction_accepted": false,
-        "soak_accepted": false,
-        "scope": "Current native Mac process-tree controlled scroll/final idle only; no IPA, physical-input, memory-soak or universal resource claim"
-      },
-      "note": "Fixed final idle after15s settle,49.010s window; zero p95 reflects sampler granularity."
+      "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+      "note": "Current artifact settles near0\u20131%CPU over49s scroll-final and61s navigation-final idle windows. CPU is one logical core=100%; synthetic controlled fixture scope.",
+      "cpu_p95_percent": 1.0
     },
     {
       "id": "perf_interaction",
       "category": "performance",
       "weight": 5,
       "name": "Ordinary interaction",
-      "status": "failed",
-      "earned": 0,
+      "status": "passed",
+      "earned": 5,
       "evidence": [
-        "agent/evidence/102900614-003/resource-review.json"
+        "agent/evidence/20261029-cpu30-001/native-resource-summary.json",
+        "agent/evidence/20261029-cpu30-001/cto-visible-window-review.json"
       ],
-      "evidence_generation": "inherited_previous_task",
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
@@ -368,131 +298,34 @@
             "agent/evidence/10290244-010-current-native-resources.json",
             "output/session-10290244/final-native-resources-1/scroll/independent-review.json"
           ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "failed",
+          "prior_earned": 0,
+          "evidence": [
+            "agent/evidence/102900614-003/resource-review.json"
+          ],
+          "generation": "inherited_previous_task"
         }
       ],
-      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
-      "review": {
-        "scenario": "scroll",
-        "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
-        "source_receipt": "output/session-102900614/scroll-transfer-baseline/receipt.json",
-        "source_sha256": "2c77377097883a09dc4ab4568548d22edc9a14480e43d044caba144a45b5d1e1",
-        "started_utc": "2026-10-28T22:36:02.474714+00:00",
-        "finished_utc": "2026-10-28T22:37:58.714490+00:00",
-        "duration_seconds": 116.233,
-        "policy": {
-          "sampling_seconds": 1,
-          "max_sampling_gap_seconds": 1.5,
-          "initial_settle_seconds": 15,
-          "final_settle_seconds": 15,
-          "final_idle_seconds_minimum": 45,
-          "idle_cpu_p95_ceiling_percent": 3,
-          "scroll_cpu_p95_ceiling_percent": 10,
-          "settled_rss_growth_ceiling_mib": 32,
-          "settled_rss_growth_ceiling_fraction": 0.2,
-          "initial_rss_window": "Last 5 samples of initial idle phase",
-          "final_rss_window": "Last 15 samples of final idle phase",
-          "native_live_nodes_growth_allowance": 50,
-          "native_live_styles_growth_allowance": 50
-        },
-        "issues": [
-          "scrolling: CPU p95 23.054% exceeds 10%"
-        ],
-        "phases": {
-          "startup": {
-            "samples": 16,
-            "observed_samples": 16,
-            "duration_seconds": 14.993,
-            "cpu_mean_percent": 2.605,
-            "cpu_median_percent": 1.001,
-            "cpu_p95_percent": 26.064,
-            "cpu_peak_percent": 26.064,
-            "samples_above_threshold": null,
-            "cpu_threshold_percent": null,
-            "cpu_status": "measured_no_threshold",
-            "rss_start_mib": 0.031,
-            "rss_end_mib": 154.25,
-            "rss_peak_mib": 154.297,
-            "rss_change_mib": 154.219,
-            "phase_boundary_samples_excluded_from_cpu_summary": 1,
-            "first_seen_process_events": 1,
-            "cpu_intervals": 15
-          },
-          "scrolling": {
-            "samples": 34,
-            "observed_samples": 34,
-            "duration_seconds": 32.996,
-            "cpu_mean_percent": 18.093,
-            "cpu_median_percent": 18.897,
-            "cpu_p95_percent": 23.054,
-            "cpu_peak_percent": 24.001,
-            "samples_above_threshold": null,
-            "cpu_threshold_percent": null,
-            "cpu_status": "measured_no_threshold",
-            "rss_start_mib": 157.969,
-            "rss_end_mib": 151.375,
-            "rss_peak_mib": 161.797,
-            "rss_change_mib": -6.594,
-            "phase_boundary_samples_excluded_from_cpu_summary": 1,
-            "first_seen_process_events": 0,
-            "cpu_intervals": 33
-          },
-          "settle:after": {
-            "samples": 16,
-            "observed_samples": 16,
-            "duration_seconds": 15.002,
-            "cpu_mean_percent": 0.067,
-            "cpu_median_percent": 0.0,
-            "cpu_p95_percent": 1.006,
-            "cpu_peak_percent": 1.006,
-            "samples_above_threshold": null,
-            "cpu_threshold_percent": null,
-            "cpu_status": "measured_no_threshold",
-            "rss_start_mib": 151.375,
-            "rss_end_mib": 150.656,
-            "rss_peak_mib": 151.375,
-            "rss_change_mib": -0.719,
-            "phase_boundary_samples_excluded_from_cpu_summary": 1,
-            "first_seen_process_events": 0,
-            "cpu_intervals": 15
-          },
-          "idle:after": {
-            "samples": 50,
-            "observed_samples": 50,
-            "duration_seconds": 49.01,
-            "cpu_mean_percent": 0.061,
-            "cpu_median_percent": 0.0,
-            "cpu_p95_percent": 0.0,
-            "cpu_peak_percent": 2.01,
-            "samples_above_threshold": 0,
-            "cpu_threshold_percent": 3,
-            "cpu_status": "within_threshold",
-            "rss_start_mib": 150.656,
-            "rss_end_mib": 150.656,
-            "rss_peak_mib": 150.656,
-            "rss_change_mib": 0.0,
-            "phase_boundary_samples_excluded_from_cpu_summary": 1,
-            "first_seen_process_events": 0,
-            "cpu_intervals": 49
-          }
-        },
-        "idle_accepted": true,
-        "interaction_accepted": false,
-        "soak_accepted": false,
-        "scope": "Current native Mac process-tree controlled scroll/final idle only; no IPA, physical-input, memory-soak or universal resource claim"
-      },
-      "scroll_cpu_p95_percent": 23.054,
-      "ceiling_percent": 10,
-      "note": "Fixed controlled fractional-scroll workload; interaction target not met."
+      "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+      "scroll_cpu_p95_percent": 11.085,
+      "ceiling_percent": 30,
+      "note": "User revised scroll ceiling30%;34 samples over33.010s, p9511.085%, peak11.137%, all observed scroll intervals below30%. Synthetic SDL wheel input, not OS-input proof; typing remains separately unmeasured.",
+      "scroll_cpu_peak_percent": 11.137
     },
     {
       "id": "perf_soak",
       "category": "performance",
       "weight": 5,
       "name": "Controlled memory soak",
-      "status": "pending_current_artifact",
-      "earned": 0,
-      "evidence": [],
-      "evidence_generation": "inherited_previous_task",
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-001/native-resource-summary.json"
+      ],
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
@@ -556,10 +389,17 @@
             "agent/evidence/10290244-010-current-native-resources.json",
             "output/session-10290244/final-native-resources-1/navigation/independent-review.json"
           ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "pending_current_artifact",
+          "prior_earned": 0,
+          "evidence": [],
+          "generation": "inherited_previous_task"
         }
       ],
-      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
-      "note": "Previous executable soak remains historical; current executable needs fresh20-navigation evidence."
+      "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+      "note": "Controlled20-navigation workload: settled RSS157.34375\u2192146.5625MiB (-10.78125MiB), native counters stable and GPU clean; not universal memory stability."
     },
     {
       "id": "perf_budgets",
@@ -569,9 +409,12 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/102900614-003/native-regression-summary.json"
+        "agent/evidence/20261029-cpu30-001/build-and-203-custom-checks.json",
+        "agent/evidence/20261029-cpu30-001/selected-wpt-run.json",
+        "agent/evidence/20261029-cpu30-001/native-resource-summary.json",
+        "agent/evidence/20261029-cpu30-001/publication-policy-red-green.json"
       ],
-      "evidence_generation": "inherited_previous_task",
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -580,11 +423,20 @@
           "evidence": [
             "output/session-10290244/headers-codec-green-1/summary.json"
           ]
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/102900614-003/native-regression-summary.json"
+          ],
+          "generation": "inherited_previous_task"
         }
       ],
-      "build_seconds": 6.083,
+      "build_seconds": 2.103,
       "prebuilt_v8": true,
-      "note": "Existing matched V8 binary reused; eight individually timed1Hz monitored stages, none above5min."
+      "note": "Incremental build2.103s;203 checks plus build5.550s; WPT73.420s; GUI+soak282.666s; publication RED/GREEN2.167s. Existing prebuilt V8 reused.1Hz collectors valid; subsecond tests lack meaningful steady CPU samples."
     },
     {
       "id": "repro_tdd",
@@ -594,10 +446,9 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/102900614-003-message-transfer.json",
-        "agent/evidence/102900614-003/native-regression-summary.json"
+        "agent/evidence/20261029-cpu30-001/publication-policy-red-green.json"
       ],
-      "evidence_generation": "inherited_previous_task",
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -610,9 +461,19 @@
             "output/session-10290244/text-codec-red-1.json",
             "output/session-10290244/headers-codec-green-1/summary.json"
           ]
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/102900614-003-message-transfer.json",
+            "agent/evidence/102900614-003/native-regression-summary.json"
+          ],
+          "generation": "inherited_previous_task"
         }
       ],
-      "note": "Unchanged native fixture15/68 RED to68/68 GREEN, then unchanged upstream detached-buffer checks pass."
+      "note": "Unchanged five-case publication contract:3/5 RED to5/5 GREEN, proving current and historical out/ material are excluded from public source archives."
     },
     {
       "id": "repro_source",
@@ -622,10 +483,10 @@
       "status": "passed",
       "earned": 5,
       "evidence": [
-        "agent/evidence/102900614-003/compiled-source-sha256.json",
-        "agent/evidence/102900614-003/native-regression-summary.json"
+        "agent/evidence/20261029-cpu30-001/compiled-source-sha256.json",
+        "agent/evidence/20261029-cpu30-001/build-and-203-custom-checks.json"
       ],
-      "evidence_generation": "inherited_previous_task",
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -635,24 +496,30 @@
             "output/session-10290244/headers-codec-green-1/compiled-source-sha256.json",
             "output/session-10290244/headers-codec-green-1/summary.json"
           ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/102900614-003/compiled-source-sha256.json",
+            "agent/evidence/102900614-003/native-regression-summary.json"
+          ],
+          "generation": "inherited_previous_task"
         }
       ],
-      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
-      "note": "All compiled src/Makefile/ios inputs match isolated committed source; unrelated GPU working changes are excluded."
+      "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+      "note": "All compiled tracked src/Makefile/ios inputs match frozen committed source df4ae3 exactly. Current documentation HEAD is separate; unaccepted engine work remains unstaged."
     },
     {
       "id": "release_progress",
       "category": "reproducibility_release",
       "weight": 5,
       "name": "Reviewed progress/release delivery",
-      "status": "passed",
-      "earned": 5,
-      "evidence": [
-        "agent/evidence/102900614-005-progress-delivery.json",
-        "agent/evidence/102900614-005/public-probe.json",
-        "agent/evidence/102900614-005/public-reply.json"
-      ],
-      "evidence_generation": "inherited_previous_task",
+      "status": "pending_current_task_delivery",
+      "earned": 0,
+      "evidence": [],
+      "evidence_generation": "current_task_20261029_cpu30",
       "historical_evidence": [
         {
           "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
@@ -662,23 +529,27 @@
             "output/session-10290244/progress-public-probe.json",
             "output/session-10290244/progress-public-reply-check.json"
           ]
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/102900614-005-progress-delivery.json",
+            "agent/evidence/102900614-005/public-probe.json",
+            "agent/evidence/102900614-005/public-reply.json"
+          ],
+          "generation": "inherited_previous_task"
         }
       ],
-      "note": "Task-local identity and9/9 checks pass; public task route, websocket, archive and message-reply still require fresh verification.",
-      "review": {
-        "liveOrigin": "https://dd1cacbcfa84c17d.q4d3dgcpeeoq.opentunnel.xyz",
-        "verifiedSourceCommit": "d665c4920c0c2c0aaf9e22e9945342c772423f1f",
-        "verifiedArchiveSHA256": "313c1fc0874beddcd6e753aec77358a2aa56a1abf9f26b0d47c53ab925c1e09d",
-        "refreshCurrentSourceArchive": "Required immediately after this documentation checkpoint",
-        "scope": "Verified TLS,2s live system telemetry, measured websocket round trip, full reviewed source bytes, authenticated message and agent reply. No native performance or IPA credit."
-      }
+      "note": "Existing route is reachable, but new task public source/message/telemetry delivery requires fresh verification. Historical release points are withheld until that proof."
     }
   ],
-  "updated_utc": "2026-10-29T00:08:44.870723+00:00",
-  "current_baseline_binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "updated_utc": "2026-10-29T04:05:18.067295+00:00",
+  "current_baseline_binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
   "full_official_wpt_pass_percent": null,
-  "current_native_source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
-  "current_native_source_commit": "d665c4920c0c2c0aaf9e22e9945342c772423f1f",
+  "current_native_source_base_commit": "df4ae3bc8d52a06778e0d8a1f706138201dd043d",
+  "current_native_source_commit": "df4ae3bc8d52a06778e0d8a1f706138201dd043d",
   "accepted_artifact_status": "current_native_partial_acceptance",
   "source_branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-20261029-cpu30",
   "inherited_scorecard": "agent/scorecard-20261029-cpu30-inherited.json",
@@ -690,11 +561,11 @@
     "original_subset_files_pass": 6,
     "original_subset_files_total": 6,
     "priority_frozen_variants": 1515,
-    "priority_recorded_variants": 207,
-    "priority_fully_passed_variants": 158,
-    "priority_observed_variant_pass_rate_percent": 76.3285,
-    "priority_scheduled_fully_passed_percent": 10.429,
-    "reference_status": "quarantined_native_url_anchor_sanity_failures"
+    "priority_recorded_variants": 103,
+    "priority_fully_passed_variants": 96,
+    "priority_unrun_variants": 1412,
+    "priority_observed_variant_pass_rate_percent": 93.20388349514563,
+    "reference_status": "qualified reference; fresh exact103 comparison pending"
   },
   "inherited_history": [
     {
@@ -841,8 +712,18 @@
       "status": "Live progress reports verified separate native cohorts and raw qualified Chrome outcomes"
     }
   ],
-  "history": [],
-  "current_native_source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",
+  "history": [
+    {
+      "iteration": "20261029-cpu30-001",
+      "started_utc": "2026-10-29T03:33:28.987717+00:00",
+      "updated_utc": "2026-10-29T04:05:18.067295+00:00",
+      "elapsed_seconds": 1909.08,
+      "total_session_seconds": 6393.067,
+      "score": 50,
+      "status": "Fresh exact-artifact native acceptance, scroll below30%, navigation soak and source publication guard; public task delivery pending"
+    }
+  ],
+  "current_native_source_manifest": "agent/evidence/20261029-cpu30-001/compiled-source-sha256.json",
   "historical_baseline_score": 50,
   "candidate_artifacts": [
     {
@@ -948,7 +829,73 @@
   "max_critical_fix_deadline_utc": "2026-10-29T06:18:45+00:00",
   "baseline_source_commit": "1fcde424dcaa7ac842623478196d50abfa436760",
   "inherited_candidate_checkpoint": "f8d3e7380e3e3194c3f34b5cd066113c45dfa1a9",
-  "new_session_native_validation": false,
+  "new_session_native_validation": true,
   "scroll_cpu_acceptance_percent": 30,
-  "scroll_cpu_requirement": "Ordinary scrolling CPU below 30 percent; record peak and p95 and workload duration. User revised the earlier 10 percent ceiling."
+  "scroll_cpu_requirement": "Ordinary scrolling CPU below 30 percent; record peak and p95 and workload duration. User revised the earlier 10 percent ceiling.",
+  "current_task_apple_scope": {
+    "requested_platforms": [
+      "Mac",
+      "iPad simulator"
+    ],
+    "iphone_execution_required": false,
+    "device_ipa_and_simulator_build_are_distinct": true,
+    "changedUTC": "2026-10-29T03:45:28.024426+00:00",
+    "reason": "The current assignment requests Mac and iPad simulator development; inherited iPhone-device execution was outside this task scope.",
+    "prior_apple_gates_retained_as_history": [
+      {
+        "id": "ipa_mac",
+        "category": "apple",
+        "weight": 10,
+        "name": "Same IPA on Mac",
+        "status": "unverified",
+        "earned": 0,
+        "evidence": [],
+        "evidence_generation": "inherited_previous_task",
+        "historical_evidence": [
+          {
+            "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+            "prior_status": "unverified",
+            "prior_earned": 0,
+            "evidence": []
+          }
+        ]
+      },
+      {
+        "id": "ipa_ipad",
+        "category": "apple",
+        "weight": 10,
+        "name": "Same IPA on iPad",
+        "status": "unverified",
+        "earned": 0,
+        "evidence": [],
+        "evidence_generation": "inherited_previous_task",
+        "historical_evidence": [
+          {
+            "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+            "prior_status": "unverified",
+            "prior_earned": 0,
+            "evidence": []
+          }
+        ]
+      },
+      {
+        "id": "ipa_iphone",
+        "category": "apple",
+        "weight": 5,
+        "name": "Same IPA on iPhone",
+        "status": "unverified",
+        "earned": 0,
+        "evidence": [],
+        "evidence_generation": "inherited_previous_task",
+        "historical_evidence": [
+          {
+            "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+            "prior_status": "unverified",
+            "prior_earned": 0,
+            "evidence": []
+          }
+        ]
+      }
+    ]
+  }
 }
