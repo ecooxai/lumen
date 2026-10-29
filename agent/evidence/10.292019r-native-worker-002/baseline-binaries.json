@@ -1,0 +1,27 @@
+{
+  "stage": "native-linux-worker-baseline",
+  "sourceManifest": "baseline-source-manifest.json",
+  "buildCommand": "baseline-command.json",
+  "v8": "15.7.112.12",
+  "platform": "linux-x86_64",
+  "rtc": false,
+  "webtransport": false,
+  "files": {
+    "out/10292019r-linux-worker/build-baseline/jsrun": {
+      "bytes": 3135192,
+      "sha256": "33ab865d1613029156864317b7cf0a2d7898855b261e47cd416d6c68c21c9a94"
+    },
+    "out/10292019r-linux-worker/build-baseline/test_worker_lifecycle": {
+      "bytes": 3170360,
+      "sha256": "13c2343f4411367dbc507fcf3e51040a1e73cbd09d7c7a0e7c74a660635dc922"
+    },
+    "out/10292019r-linux-worker/build-baseline/test_worker_async_lifecycle": {
+      "bytes": 3181120,
+      "sha256": "d8e2bac7409910fe0dddbe8ec5e8ee5e9f9bb8f5caac0842ee9f22b69580c809"
+    },
+    "out/10292019r-linux-worker/build-baseline/icudtl.dat": {
+      "bytes": 10824432,
+      "sha256": "02a01b3188b6a41a756f7322fdb5e6b5ca6573b327b01dfc8ed662d571a6f769"
+    }
+  }
+}

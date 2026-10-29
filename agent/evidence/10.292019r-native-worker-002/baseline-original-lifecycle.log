@@ -1,0 +1,272 @@
+CASE worker-eventtarget receivers
+PASS worker receiver regression source is available
+PASS actual worker completes all 48 unique receiver cases before the deadline
+PASS worker receiver results remain an intact 48-row array
+PASS Bare worker-global add, dispatch and remove use the global target
+PASS Detached EventTarget operations with undefined receiver use the global
+PASS Explicit null receiver uses the worker global
+PASS Explicit global receiver remains valid
+PASS Borrowed operations preserve a constructed EventTarget receiver
+PASS Constructed EventTargets retain separate listener lists
+PASS EventTarget subclass instances implement the interface
+PASS A constructed EventTarget remains valid after its prototype changes
+PASS A null callback is allowed on valid global and local receivers
+PASS Global receiver normalization preserves once and cancellation behavior
+PASS Global removal does not remove the same callback from a local target
+PASS addEventListener rejects plain object
+PASS addEventListener rejects plain object even with a null callback
+PASS removeEventListener rejects plain object
+PASS dispatchEvent rejects plain object
+PASS addEventListener rejects EventTarget prototype
+PASS addEventListener rejects EventTarget prototype even with a null callback
+PASS removeEventListener rejects EventTarget prototype
+PASS dispatchEvent rejects EventTarget prototype
+PASS addEventListener rejects inherited EventTarget prototype
+PASS addEventListener rejects inherited EventTarget prototype even with a null callback
+PASS removeEventListener rejects inherited EventTarget prototype
+PASS dispatchEvent rejects inherited EventTarget prototype
+PASS addEventListener rejects worker-global prototype
+PASS addEventListener rejects worker-global prototype even with a null callback
+PASS removeEventListener rejects worker-global prototype
+PASS dispatchEvent rejects worker-global prototype
+PASS addEventListener rejects boolean primitive
+PASS addEventListener rejects boolean primitive even with a null callback
+PASS removeEventListener rejects boolean primitive
+PASS dispatchEvent rejects boolean primitive
+PASS addEventListener rejects number primitive
+PASS addEventListener rejects number primitive even with a null callback
+PASS removeEventListener rejects number primitive
+PASS dispatchEvent rejects number primitive
+PASS addEventListener rejects string primitive
+PASS addEventListener rejects string primitive even with a null callback
+PASS removeEventListener rejects string primitive
+PASS dispatchEvent rejects string primitive
+PASS addEventListener rejects symbol primitive
+PASS addEventListener rejects symbol primitive even with a null callback
+PASS removeEventListener rejects symbol primitive
+PASS dispatchEvent rejects symbol primitive
+PASS addEventListener rejects bigint primitive
+PASS addEventListener rejects bigint primitive even with a null callback
+PASS removeEventListener rejects bigint primitive
+PASS dispatchEvent rejects bigint primitive
+PASS An actual parent-to-worker message retains the global event receiver
+PASS worker receiver regression releases its thread and owner
+CASE worker-url native bindings
+PASS worker URL regression source is available
+PASS actual worker completes all 74 unique URL cases before the deadline
+PASS worker URL results remain an intact 74-row array
+PASS worker URL constructor requires its input argument
+PASS worker URL constructor does not use the worker location as an implicit base
+PASS an explicit undefined base retains no-base URL construction
+PASS worker URL construction exposes encoded username and password separately
+PASS worker URL construction resolves a supplied base with native dot normalization
+PASS worker URL construction uses native IPv4 canonicalization
+PASS worker URL construction uses native IPv6 canonicalization
+PASS worker URL construction resolves file drive paths
+PASS worker URL construction rejects a NUL byte inside a host
+PASS worker URL construction retains NUL as encoded path data
+PASS worker URL construction extracts the native blob origin
+PASS worker URL construction normalizes lone surrogates at the USVString boundary
+PASS worker URL constructor preserves input and base conversion order
+PASS worker URL getters reject prototype impostors and plain objects
+PASS worker URL stringifiers reject plain objects even with a forged href
+PASS worker URL canParse distinguishes invalid input and a valid explicit base
+PASS worker URL parse returns a real URL or null without an implicit base
+PASS worker URL static parsers require one argument
+PASS worker URL static parsers preserve user conversion exceptions
+PASS worker URL static parsers reject Symbol string arguments
+PASS worker URL parses a provided invalid base even for an absolute input
+PASS worker URL interface lengths and class tag reflect the public API
+PASS worker URL searchParams retains identity through non-query component changes
+PASS worker location fields use the same native URL record
+PASS worker invalid protocols leave both href and reflected protocol unchanged
+PASS worker protocol setters cannot cross special scheme boundaries
+PASS worker protocol mutation preserves an opaque path
+PASS worker protocol parsing normalizes case and ignores text after its first colon
+PASS worker changing protocol removes a port that becomes the new default
+PASS worker file protocol restrictions preserve credentials and empty file hosts
+PASS worker a password can exist without a username
+PASS worker clearing a username retains its password
+PASS worker clearing a password retains its username
+PASS worker credential setters encode controls and delimiters without stripping tabs
+PASS worker file opaque and empty-host URLs reject credentials
+PASS worker host and hostname setters preserve an unspecified existing port
+PASS worker host commits before an invalid later port without discarding the old port
+PASS worker host commits before an out-of-range later port
+PASS worker hostname with a port delimiter is rejected before changing host
+PASS worker rejected hosts cannot poison any reflected URL field
+PASS worker empty opaque hosts are accepted only without credentials or ports
+PASS worker file host mutation normalizes localhost and permits an empty host
+PASS worker host mutation uses the shared IPv4 and IPv6 parsers
+PASS worker host parsing stops at path query and fragment delimiters
+PASS worker a backslash remains a forbidden opaque-host byte
+PASS worker port setters use the leading decimal run
+PASS worker invalid or overflowing ports leave all old fields unchanged
+PASS worker empty and scheme-default port setters clear an explicit port
+PASS worker port strips ASCII tab and newline but a stripped empty input is not a clear
+PASS worker pathname setters cannot replace opaque paths
+PASS worker pathname uses special backslash and dot-segment rules
+PASS worker pathname question marks and hashes are data instead of new components
+PASS worker pathname preserves trailing controls and spaces by encoding them
+PASS worker non-special hosted URLs can have an empty path
+PASS worker hostless hierarchical URLs retain their initial path slash
+PASS worker file pathname setters normalize a drive and cannot shorten above it
+PASS worker hostless double-slash paths keep their serialization disambiguator
+PASS worker search encodes a hash instead of creating a fragment
+PASS worker search uses the special-scheme apostrophe encoding rule
+PASS worker search removes its marker before stripping tabs and retains an empty marker
+PASS worker fragment mutation preserves an opaque URL instead of adding an authority
+PASS worker empty fragment values distinguish removal from an empty present fragment
+PASS worker fragment setters encode controls and trailing spaces without trimming
+PASS worker component mutation does not double-encode existing percent escapes
+PASS worker setting search updates the same linked searchParams object
+PASS worker setting href updates the existing linked searchParams object
+PASS worker a rejected href leaves both URL and linked searchParams unchanged
+PASS worker linked searchParams changes still serialize back into the URL
+PASS worker component setters convert even ignored inputs exactly once
+PASS worker component setters preserve user conversion exceptions and old state
+PASS worker URL setters reject Symbol values at the Web IDL string boundary
+PASS worker component setters use the current URL after reentrant input conversion
+PASS worker clearing opaque URL query data preserves its parsed encoded trailing space
+PASS actual worker URL objects continue to work after parent message delivery
+PASS worker URL regression releases its thread and owner
+CASE worker-query-body native bindings
+PASS worker query/body regression source is available
+PASS actual worker completes all 73 unique query/body cases before the deadline
+PASS worker query/body results remain an intact 73-row array
+PASS optional constructor defaults differ from explicit null USVString
+PASS only one leading question mark is removed
+PASS function objects use enumerable record fields
+PASS record keys collapse after USVString conversion without changing insertion order
+PASS enumerable symbol keys throw before their value getter runs
+PASS record conversion observes current descriptors and skips a deleted later property
+PASS a non-enumerable symbol does not poison record conversion
+PASS an existing params object still uses its custom iterator
+PASS the outer iterator getter is evaluated once
+PASS a noncallable iterator is not silently treated as a record
+PASS primitive inner strings are not sequence objects
+PASS boxed inner strings use their actual iterator
+PASS short and long inner sequences both reject
+PASS sequence conversion completes before constructor pair-size validation
+PASS record getter exceptions retain their original identity
+PASS converted sequence inputs and output pairs are copied
+PASS mixed valid and malformed percent escapes decode independently
+PASS plus is decoded before percent bytes so encoded plus remains literal
+PASS UTF8 decoder reconsumes an invalid continuation
+PASS UTF8 decoder rejects overlong sequences surrogates and out-of-range scalars
+PASS UTF8 decoder emits one replacement for a truncated pending sequence
+PASS raw and percent-encoded byte-order marks remain query data
+PASS NULL and non-BMP characters survive query round trips
+PASS empty fields are skipped while duplicate names and first equals are preserved
+PASS form serialization uses its exact percent-encode set
+PASS mutating methods normalize lone surrogate names and values
+PASS get converts a name exactly once even for multiple entries
+PASS empty lookups still perform mandatory argument conversion
+PASS delete optional value conversion runs once and explicit undefined means omitted
+PASS has optional value distinguishes present empty values
+PASS set preserves first position while removing later duplicates
+PASS set reads current linked list after reentrant value conversion
+PASS delete reads current linked list after reentrant name conversion
+PASS required method arguments throw before mutation
+PASS all query methods reject Symbol string arguments
+PASS public methods reject forged receivers before argument side effects
+PASS sort is stable and compares UTF16 code units
+PASS iterators observe removal of the next pair
+PASS iterators advance their index after removal of the current pair
+PASS iterators read a replacement list after URL search mutation
+PASS iterators retain their index when an exhausted list later grows
+PASS forEach reads live state and passes value key and owner
+PASS forEach sees appends but does not revisit removed current entries
+PASS linked params preserve identity through href and query mutations
+PASS linked params update internal URL state without an overridable _set hook
+PASS clearing params removes a query while retaining opaque path bytes
+PASS interface methods have their required lengths and enumerable descriptors
+PASS query and iterator tags have the correct branded behavior
+PASS query state is not exposed as mutable own list fields
+PASS query codec captures byte-array intrinsics before page monkeypatching
+PASS Response formData uses forgiving UTF8 regardless of charset labels
+PASS Request formData uses the same byte parser for nonstandard HTTP methods
+PASS formData retains a leading byte-order mark in both names and values
+PASS formData decodes percent escapes after splitting bytes into fields
+PASS formData preserves duplicate field order and empty names
+PASS raw body bytes use the same replacement and BOM rules
+PASS URLSearchParams body extraction supplies the correct media type
+PASS formData consumes a non-null body exactly once
+PASS formData rejects an unrelated media type after consuming its body
+PASS worker FormData preserves ordered live pairs and USVString data
+PASS worker FormData wraps Blob values in real File entries
+PASS worker FormData requires Blob values when a filename is supplied
+PASS worker Request validates methods and body restrictions
+PASS worker Request reads each supplied dictionary getter once
+PASS worker Response status conversion rejects BigInt and observes each getter once
+PASS worker response body snapshots the selected view bytes
+PASS worker clone bodies are independently consumable
+PASS worker Request cloning does not consume the original body
+PASS worker replacing Request ownership disturbs only a transferred input body
+PASS worker null body can be consumed repeatedly without becoming used
+PASS worker body methods reject forged receivers through a rejected promise
+PASS worker multipart body extraction includes field and file bytes
+PASS worker message delivery can consume a query body asynchronously
+PASS worker query/body regression releases its thread and owner
+PASS worker is registered
+PASS close preserves messages from the current task
+PASS closed worker discards incoming messages
+PASS both current-task messages reach the owner
+PASS worker startup is tracked before isolate publication
+PASS a bounded drain reports an unfinished worker
+PASS a clone getter can terminate its worker safely
+PASS terminated registry entries drain through actual worker cleanup
+PASS completion includes isolate and allocator teardown
+PASS terminate discards racing outgoing messages
+CASE stalled-worker fetch
+PASS loopback cancellation server starts
+PASS worker is blocked on a response that has not been sent
+PASS worker retains its active request until cancellation completes
+PASS terminate returns promptly while the server holds its response
+PASS socket cancellation drains without waiting for an HTTP timeout
+PASS canceled worker releases request and isolate resources
+CASE stalled-worker importScripts
+PASS loopback cancellation server starts
+PASS worker is blocked on a response that has not been sent
+PASS worker retains its active request until cancellation completes
+PASS terminate returns promptly while the server holds its response
+PASS socket cancellation drains without waiting for an HTTP timeout
+PASS canceled worker releases request and isolate resources
+CASE stalled-worker module import
+PASS loopback cancellation server starts
+PASS worker is blocked on a response that has not been sent
+PASS worker retains its active request until cancellation completes
+PASS terminate returns promptly while the server holds its response
+PASS socket cancellation drains without waiting for an HTTP timeout
+PASS canceled worker releases request and isolate resources
+CASE worker-shared-buffer source closes before delivery
+PASS isolated owner creates a shared-buffer worker
+PASS message owns the worker-created two-MiB shared backing store
+PASS source completion matches the delivery order
+PASS source thread cleanup completes before delivery or discard
+PASS owner receives the intact shared buffer
+PASS shared backing store survives its source isolate
+PASS delivery releases native queue ownership
+PASS collection releases the default shared backing store after its source exits
+PASS owner teardown drains any remaining worker thread
+PASS owner teardown releases delivered and undelivered shared buffers
+CASE worker-shared-buffer source terminates after delivery
+PASS isolated owner creates a shared-buffer worker
+PASS message owns the worker-created two-MiB shared backing store
+PASS source completion matches the delivery order
+PASS owner receives the intact shared buffer
+PASS worker termination finishes while the owner retains its buffer
+PASS shared backing store survives its source isolate
+PASS delivery releases native queue ownership
+PASS collection releases the default shared backing store after its source exits
+PASS owner teardown drains any remaining worker thread
+PASS owner teardown releases delivered and undelivered shared buffers
+CASE worker-shared-buffer owner closes with an undelivered buffer
+PASS isolated owner creates a shared-buffer worker
+PASS message owns the worker-created two-MiB shared backing store
+PASS source completion matches the delivery order
+PASS source thread cleanup completes before delivery or discard
+PASS owner teardown drains any remaining worker thread
+PASS owner teardown releases delivered and undelivered shared buffers
+PASS explicit process shutdown completes before subsystem teardown
+RESULTS worker-lifecycle PASS (262/262 checks)

@@ -39,6 +39,10 @@ struct Side {
 struct Buf { uint8_t *p = nullptr; size_t n = 0; std::shared_ptr<Side> side; };
 enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
 struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
+struct WNetworkResult {
+    uint32_t id = 0;
+    std::unique_ptr<NetResponse, decltype(&net_response_free)> response{nullptr, net_response_free};
+};
 struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
     bool creator_secure = false; /* native owner setting, captured before thread creation */
@@ -46,6 +50,10 @@ struct Worker {
     std::string ocsp, odoc; bool has_ocsp = false;   /* creator document's CSP: worker-src check, inherited by blob:/data: workers */
     std::mutex mu; std::condition_variable cv;
     std::deque<Buf> in; std::deque<OutMsg> out;
+    // Network threads/main-loop callbacks own only native data. V8 handles stay
+    // in WEnv and are entered exclusively by this worker's event loop.
+    std::map<uint32_t, uint64_t> requests; // protected by mu
+    std::deque<WNetworkResult> network;   // protected by mu
     std::atomic<bool> term{false};
     std::atomic<bool> finished{false}; /* worker_main and its isolate/allocator cleanup have returned */
     bool accepting = true;  /* protected by mu; close() stops incoming tasks without aborting the current task */
@@ -60,6 +68,7 @@ struct WEnv {
     uint64_t bus_seen = 0; std::string bus_origin;
     std::string csp, cspdoc; bool has_csp = false;   /* the worker's own enforced CSP */
     std::map<std::string, v8::Global<v8::Module>> mods; std::multimap<int, std::string> murl;
+    std::map<uint32_t, v8::Global<v8::Function>> network_callbacks; uint32_t nseq = 0;
     std::map<uint32_t, WTimer> timers; uint32_t tseq = 0; bool closing = false, reporting = false; double t0 = 0;
 };
 std::map<uint32_t, std::shared_ptr<Worker>> g_workers;   /* main thread only */
@@ -204,6 +213,38 @@ void close_input_locked(Worker *w) {
     for (Buf &b : w->in) free(b.p);
     w->in.clear();
 }
+// Caller holds Worker::mu. net_cancel never enters a V8 isolate or invokes a
+// completion callback synchronously, so this lock order cannot re-enter us.
+void cancel_network_locked(Worker *w) {
+    for (const auto &request : w->requests) net_cancel(request.second);
+    w->requests.clear();
+    w->network.clear();
+}
+struct WNetworkOwner { std::shared_ptr<Worker> worker; uint32_t id; };
+void worker_network_done(NetRequest *, NetResponse *response, void *data) {
+    auto *owner = static_cast<WNetworkOwner *>(data);
+    auto &w = owner->worker;
+    std::lock_guard<std::mutex> lock(w->mu);
+    if (!w->requests.erase(owner->id) || w->term || !w->accepting) return;
+    WNetworkResult result; result.id = owner->id;
+    if (response) {
+        // The network pool frees its response shell after this callback. Transfer the
+        // owned payload instead of doubling a large response body in RAM.
+        auto *owned = static_cast<NetResponse *>(xmalloc(sizeof(NetResponse)));
+        *owned = *response; *response = {};
+        result.response.reset(owned);
+    }
+    w->network.push_back(std::move(result));
+    w->cv.notify_all();
+}
+void worker_network_release(void *data) {
+    auto *owner = static_cast<WNetworkOwner *>(data);
+    {
+        std::lock_guard<std::mutex> lock(owner->worker->mu);
+        owner->worker->requests.erase(owner->id);
+    }
+    delete owner;
+}
 void post_out(WEnv *E, OutMsg &&m) {
     {
         std::lock_guard<std::mutex> lk(E->w->mu);
@@ -290,6 +331,7 @@ WFN(close) {
     WENV; E->closing = true;
     std::lock_guard<std::mutex> lk(E->w->mu);
     close_input_locked(E->w.get());
+    cancel_network_locked(E->w.get());
 }
 WFN(now) { WENV; a.GetReturnValue().Set(now_ms() - E->t0); }
 WFN(log) { WENV; if (getenv("LUMEN_CONSOLE")) fprintf(stderr, "[worker %d] %.2000s\n", a[0]->Int32Value(ctx).FromMaybe(1), jcstr(iso, a[1]).c_str()); }
@@ -298,6 +340,7 @@ WFN(fileReaderPackage) { jsg_file_reader_package(a); }
 WFN(fileReaderCheckpoint) { jsg_file_reader_checkpoint(a); }
 WFN(textEncoding) { jsg_text_encoding(a); }
 WFN(textDecode) { jsg_text_decode(a); }
+WFN(responseTextDecode) { jsg_response_text_decode(a); }
 WFN(decode) {
     WENV; const char *p; size_t n;
     if (!bytes_of(a[0], p, n)) { a.GetReturnValue().Set(jstr(iso, "")); return; }
@@ -348,36 +391,96 @@ WFN(urlSet) {
     a.GetReturnValue().Set(result);
 }
 
-WFN(fetch) {
-    WENV; std::string u = jcstr(iso, a[0]), m = a[1]->IsString() ? jcstr(iso, a[1]) : "GET";
-    NetRequest *rq = net_request_ctx(m.c_str(), u.c_str(), E->w->top.empty() ? nullptr : E->w->top.c_str());
+// Common byte-oriented transport for worker fetch and XMLHttpRequest. The
+// asynchronous entry transfers request ownership to the existing network pool;
+// the synchronous entry is reserved for explicit synchronous worker XHR.
+NetRequest *worker_request(WEnv *E, const FCI &a) {
+    auto *iso = E->iso; auto ctx = iso->GetCurrentContext();
+    std::string method = jcstr(iso, a[0]), url = jcstr(iso, a[1]);
+    NetRequest *rq = net_request_ctx(method.c_str(), url.c_str(), E->w->top.empty() ? nullptr : E->w->top.c_str());
+    std::string credentials = jcstr(iso, a[4]);
+    rq->no_cookies = credentials == "omit";
+    if (!rq->no_cookies && credentials != "include") rq->credentials_origin = strdup(jcstr(iso, a[6]).c_str());
     if (E->has_csp) { rq->csp = strdup(E->csp.c_str()); rq->csp_doc = strdup(E->cspdoc.c_str()); rq->csp_dir = "connect-src"; }
-    if (a[2]->IsString()) { std::string b = jcstr(iso, a[2]); rq->body = (char *)malloc(b.size() + 1); memcpy(rq->body, b.c_str(), b.size() + 1); rq->body_len = b.size(); }
-    else if (a[2]->IsArrayBuffer() || a[2]->IsArrayBufferView()) {
-        std::shared_ptr<v8::BackingStore> bs; size_t off = 0, n = 0;
-        if (a[2]->IsArrayBuffer()) { bs = a[2].As<v8::ArrayBuffer>()->GetBackingStore(); n = bs->ByteLength(); }
-        else { v8::Local<v8::ArrayBufferView> v = a[2].As<v8::ArrayBufferView>(); bs = v->Buffer()->GetBackingStore(); off = v->ByteOffset(); n = v->ByteLength(); }
-        rq->body = (char *)malloc(n + 1); if (n) memcpy(rq->body, (char *)bs->Data() + off, n); rq->body[n] = 0; rq->body_len = n;
-    }
-    if (a[3]->IsArray()) {
-        v8::Local<v8::Array> h = a[3].As<v8::Array>();
-        for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
+    if (a[2]->IsArray()) {
+        auto headers = a[2].As<v8::Array>();
+        for (uint32_t i = 0; i + 1 < headers->Length(); i += 2) {
             v8::Local<v8::Value> k, v;
-            if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) { net_request_free(rq); return; }
+            if (!headers->Get(ctx, i).ToLocal(&k) || !headers->Get(ctx, i + 1).ToLocal(&v)) { net_request_free(rq); return nullptr; }
             std::string key, value;
-            if (!jheader_bytes(iso, k, true, key) || !jheader_bytes(iso, v, false, value)) { net_request_free(rq); return; }
+            if (!jheader_bytes(iso, k, true, key) || !jheader_bytes(iso, v, false, value)) { net_request_free(rq); return nullptr; }
             headers_add(&rq->headers, key.c_str(), value.c_str());
         }
     }
-    if (a[4]->IsTrue()) rq->no_cookies = true;
-    NetResponse *r = worker_fetch(E->w.get(), rq);
-    if (!r || r->status == 0 || E->w->term) { if (r) net_response_free(r); a.GetReturnValue().SetNull(); return; }
-    v8::Local<v8::Array> hs = v8::Array::New(iso);
-    for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jheader_string(iso, r->headers.v[i].value)); }
-    v8::Local<v8::Value> out[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->url ? r->url : u.c_str()), make_ab(iso, r->body, r->body_len), hs };
-    net_response_free(r);
-    a.GetReturnValue().Set(v8::Array::New(iso, out, 4));
+    if (char *referrer = net_referrer(E->w->url.c_str(), url.c_str(), nullptr)) {
+        headers_add(&rq->headers, "Referer", referrer); free(referrer);
+    }
+    const char *body; size_t size;
+    if (bytes_of(a[3], body, size) && size) {
+        rq->body = static_cast<char *>(xmalloc(size)); memcpy(rq->body, body, size); rq->body_len = size;
+    }
+    return rq;
 }
+void worker_response_args(v8::Isolate *iso, NetResponse *response, v8::Local<v8::Value> out[6]) {
+    auto ctx = iso->GetCurrentContext();
+    out[0] = v8::Integer::New(iso, response ? response->status : 0);
+    out[1] = jstr(iso, response && response->status_text ? response->status_text : "");
+    out[2] = jstr(iso, response && response->url ? response->url : "");
+    auto headers = v8::Array::New(iso, response ? response->headers.n * 2 : 0);
+    if (response) for (int i = 0; i < response->headers.n; ++i) {
+        (void)headers->Set(ctx, 2 * i, jstr(iso, response->headers.v[i].name));
+        (void)headers->Set(ctx, 2 * i + 1, jheader_string(iso, response->headers.v[i].value));
+    }
+    out[3] = headers;
+    out[4] = make_ab(iso, response && response->body ? response->body : "", response && response->body ? response->body_len : 0);
+    out[5] = v8::Boolean::New(iso, !response || response->status == 0);
+}
+WFN(send) {
+    WENV;
+    if (!a[5]->IsFunction() || E->closing || E->w->term) { a.GetReturnValue().Set(0); return; }
+    NetRequest *rq = worker_request(E, a); if (!rq) return;
+    uint32_t id;
+    do { id = ++E->nseq; } while (!id || E->network_callbacks.count(id));
+    E->network_callbacks.emplace(id, v8::Global<v8::Function>(iso, a[5].As<v8::Function>()));
+    rq->done = worker_network_done; rq->release = worker_network_release;
+    rq->background_done = true;
+    rq->ud = new WNetworkOwner{E->w, id};
+    {
+        std::lock_guard<std::mutex> lock(E->w->mu);
+        // Holding mu across enqueue and ID registration prevents a very fast
+        // completion from overtaking ownership registration.
+        if (E->w->term || !E->w->accepting) {
+            rq->release = nullptr; delete static_cast<WNetworkOwner *>(rq->ud);
+            net_request_free(rq); E->network_callbacks.erase(id);
+            a.GetReturnValue().Set(0); return;
+        }
+        E->w->requests[id] = net_fetch(rq);
+    }
+    a.GetReturnValue().Set(id);
+}
+WFN(sendSync) {
+    WENV;
+    NetRequest *rq = worker_request(E, a); if (!rq) return;
+    double timeout = a[5]->NumberValue(ctx).FromMaybe(0);
+    double deadline = timeout > 0 ? now_ms() + timeout : 0;
+    rq->deadline_ms = deadline;
+    NetResponse *response = worker_fetch(E->w.get(), rq);
+    if (E->w->term) { net_response_free(response); return; }
+    v8::Local<v8::Value> result[7]; worker_response_args(iso, response, result);
+    result[6] = v8::Boolean::New(iso, (!response || !response->status) && deadline > 0 && now_ms() >= deadline);
+    net_response_free(response);
+    a.GetReturnValue().Set(v8::Array::New(iso, result, 7));
+}
+WFN(abort) {
+    WENV; uint32_t id = a[0]->Uint32Value(ctx).FromMaybe(0);
+    E->network_callbacks.erase(id);
+    std::lock_guard<std::mutex> lock(E->w->mu);
+    auto request = E->w->requests.find(id);
+    if (request != E->w->requests.end()) { net_cancel(request->second); E->w->requests.erase(request); }
+    // A completion already queued before abort is suppressed when its missing
+    // callback is inspected by the owning event loop, then freed normally.
+}
+
 WFN(importScript) {
     WENV; std::string u = resolve(E, jcstr(iso, a[0]));
     if (u.empty()) { throw_dom(iso, ctx, "Failed to execute 'importScripts': The URL '" + jcstr(iso, a[0]) + "' is invalid.", "SyntaxError"); return; }
@@ -563,6 +666,7 @@ Object.setPrototypeOf(G, DedicatedWorkerGlobalScope.prototype);
 #include "text_codec.inc"
 #include "headers.inc"
 #include "web_streams.inc"
+#include "worker_xhr.inc"
 R"JS(
 const urlSearchParamsOps = createURLSearchParams(nativeIDL);
 const { URLSearchParams } = urlSearchParamsOps;
@@ -890,6 +994,15 @@ class Request {
         if (state.mode === 'no-cors' && !['GET', 'HEAD', 'POST'].includes(method)) throw new TypeError('Invalid no-cors method');
         const headers = headerOps.create(headerInit, state.mode === 'no-cors' ? 'request-no-cors' : 'request');
         state.headers = headers;
+        const suppliedSignalValue = init.signal;
+        const suppliedSignal = suppliedSignalValue === undefined ? source ? source.signal : null : suppliedSignalValue;
+        const controller = new AbortController();
+        if (suppliedSignal !== null) {
+            abortState(suppliedSignal); // validate the actual AbortSignal brand
+            if (suppliedSignal.aborted) controller.abort(suppliedSignal.reason);
+            else suppliedSignal.addEventListener('abort', () => controller.abort(suppliedSignal.reason), { once: true });
+        }
+        state.signal = controller.signal;
         const suppliedBody = init.body, supplied = suppliedBody !== undefined && suppliedBody !== null;
         if (!supplied && sourceBody && sourceBody.used) throw new TypeError('Source request body has been consumed');
         const bytes = supplied ? workerExtractBody(suppliedBody, headers) : sourceBody ? sourceBody.bytes : null;
@@ -954,7 +1067,7 @@ class Response {
     }
 }
 for (const [Constructor, map, names] of [
-    [Request, workerRequestSlots, ['url', 'method', 'headers', 'credentials', 'mode', 'cache', 'redirect', 'referrer', 'referrerPolicy', 'integrity', 'keepalive', 'priority']],
+    [Request, workerRequestSlots, ['url', 'method', 'headers', 'credentials', 'mode', 'cache', 'redirect', 'referrer', 'referrerPolicy', 'integrity', 'keepalive', 'priority', 'signal']],
     [Response, workerResponseSlots, ['status', 'statusText', 'headers', 'type', 'url', 'redirected']],
 ]) {
     for (const name of names) Object.defineProperty(Constructor.prototype, name, {
@@ -973,20 +1086,58 @@ for (const Constructor of [FormData, Request, Response]) {
 for (const name of ['error', 'redirect', 'json']) Object.defineProperty(Response, name, {
     ...Object.getOwnPropertyDescriptor(Response, name), enumerable: true,
 });
+const { XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, transport: workerNetwork } = createWorkerXMLHttpRequestInterfaces({
+    W, EventTarget, Event, ProgressEvent, DOMException, Headers, URL, Blob, URLSearchParams,
+    headerOps, bodyInit: workerExtractBody, blobFileOps, objectURLs: workerObjectURLs,
+    location, TextEncoder,
+    dispatch(target, event) { event.isTrusted = true; return fireOn(target, event, true); },
+});
 function fetch(input, init) {
     try {
         const request = new Request(input, init), state = workerRequestSlots.get(request), body = workerBodySlots.get(request);
-        const flat = headerOps.flat(state.headers);
         const bytes = body.bytes;
         if (bytes !== null) { body.used = true; body.bytes = null; }
-        const result = W.fetch(state.url, state.method, bytes === null ? undefined : bytes, flat, state.credentials === 'omit');
-        if (!result) throw new TypeError('Failed to fetch');
-        const headers = new Headers();
-        for (let index = 0; index + 1 < result[3].length; index += 2) headers.append(result[3][index], result[3][index + 1]);
-        const response = new Response([101, 103, 204, 205, 304].includes(result[0]) ? null : result[2], { status: result[0], headers });
-        Object.assign(workerResponseSlots.get(response), { url: result[1], type: 'basic', redirected: result[1] !== state.url });
-        headerOps.setGuard(workerResponseSlots.get(response).headers, 'immutable');
-        return Promise.resolve(response);
+        if (state.signal.aborted) return Promise.reject(state.signal.reason);
+        if (state.mode === 'same-origin' && new URL(state.url).origin !== location.origin)
+            return Promise.reject(new TypeError('Cross-origin request forbidden by same-origin mode'));
+        return new Promise((resolve, reject) => {
+            let requestId = 0, settled = false;
+            const finish = (failed, value) => {
+                if (settled) return; settled = true;
+                state.signal.removeEventListener('abort', abort);
+                if (failed) reject(value); else resolve(value);
+            };
+            const abort = () => { if (requestId) workerNetwork.cancel(requestId); finish(true, state.signal.reason); };
+            state.signal.addEventListener('abort', abort, { once: true });
+            const flat = workerNetwork.withOrigin(headerOps.flat(state.headers), state.url, state.method, state.mode);
+            const complete = (status, statusText, url, responseHeaders, responseBytes, error) => {
+                requestId = 0; if (settled) return;
+                try {
+                    if (error || !status) throw new TypeError('Failed to fetch');
+                    const cross = new URL(state.url).origin !== location.origin || new URL(url || state.url).origin !== location.origin;
+                    const local = /^(data|blob):/.test(url || state.url);
+                    if (state.mode !== 'no-cors' && !workerNetwork.allowed(state.url, url, responseHeaders, state.credentials === 'include'))
+                        throw new TypeError('CORS response was not allowed');
+                    if (state.redirect === 'error' && url !== state.url) throw new TypeError('Unexpected redirect');
+                    const headers = new Headers();
+                    const visibleHeaders = workerNetwork.responseHeaders(state.url, url, responseHeaders, state.credentials);
+                    for (let index = 0; index + 1 < visibleHeaders.length; index += 2) headers.append(visibleHeaders[index], visibleHeaders[index + 1]);
+                    let response;
+                    if (cross && !local && state.mode === 'no-cors') {
+                        response = Object.create(Response.prototype); workerResponse(response, null, { status: 0 }, true);
+                        Object.assign(workerResponseSlots.get(response), { type: 'opaque', url: '' });
+                    } else {
+                        response = new Response([101, 103, 204, 205, 304].includes(status) ? null : responseBytes, { status, statusText, headers });
+                        Object.assign(workerResponseSlots.get(response), { url, type: cross && !local ? 'cors' : 'basic', redirected: url !== state.url });
+                    }
+                    headerOps.setGuard(workerResponseSlots.get(response).headers, 'immutable');
+                    finish(false, response);
+                } catch (error) { finish(true, error); }
+            };
+            if (state.mode === 'no-cors') requestId = W.send(state.method, state.url, flat, bytes, state.credentials, complete, location.origin);
+            else workerNetwork.send(state.credentials, id => { requestId = id; }, state.method, state.url, flat, bytes, complete);
+            if (!requestId && !settled) finish(true, new TypeError('Worker is closing'));
+        });
     } catch (error) { return Promise.reject(error); }
 }
 
@@ -1096,6 +1247,7 @@ const api = {
     ReadableStream, ReadableStreamDefaultReader, WritableStream, WritableStreamDefaultWriter,
     TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, AbortController, AbortSignal,
     Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, FormData, Headers, Request, Response, fetch, performance, console,
+    XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload,
     Event, ProgressEvent, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });
@@ -1184,7 +1336,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         v8::Context::Scope cs(ctx);
         v8::Local<v8::Object> W = v8::Object::New(iso);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
-        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(textEncoding); WREG(textDecode); WREG(blobState); WREG(fileReaderPackage); WREG(fileReaderCheckpoint); WREG(resolve); WREG(urlParse); WREG(urlSet); WREG(idlGet); WREG(idlPut); WREG(idlRegister); WREG(idlFallback); WREG(initCloneIntrinsic); WREG(fetch); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
+        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(textEncoding); WREG(textDecode); WREG(responseTextDecode); WREG(blobState); WREG(fileReaderPackage); WREG(fileReaderCheckpoint); WREG(resolve); WREG(urlParse); WREG(urlSet); WREG(idlGet); WREG(idlPut); WREG(idlRegister); WREG(idlFallback); WREG(initCloneIntrinsic); WREG(send); WREG(sendSync); WREG(abort); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };
         setS("url", w->url); setS("ua", w->ua); setS("platform", w->platform); setS("name", w->name);
         (void)W->Set(ctx, jstr(iso, "coi"), v8::Boolean::New(iso, w->coi));
@@ -1248,6 +1400,7 @@ void worker_main(std::shared_ptr<Worker> w) {
             { v8::HeapStatistics hs; iso->GetHeapStatistics(&hs); w->heap = hs.total_heap_size(); w->ext = hs.external_memory(); }
             if (!idle_gc && now_ms() - last_act > 10000) { iso->LowMemoryNotification(); idle_gc = true; continue; }  /* idle worker: give memory back once */
             std::deque<Buf> msgs;
+            std::deque<WNetworkResult> network;
             bool bg = iso->HasPendingBackgroundTasks();   /* e.g. async WebAssembly compile: poll until it posts back */
             while (v8::platform::PumpMessageLoop(js_platform(), iso)) {}
             iso->PerformMicrotaskCheckpoint();
@@ -1255,15 +1408,16 @@ void worker_main(std::shared_ptr<Worker> w) {
                 std::unique_lock<std::mutex> lk(w->mu);
                 double next = bg ? now_ms() + 4 : 1e300;
                 for (auto &kv : E->timers) next = std::min(next, kv.second.due);
-                auto ready = [&] { return w->term.load() || !w->in.empty() || (!E->bus_origin.empty() && js_bus_seq() != E->bus_seen); };
+                auto ready = [&] { return w->term.load() || !w->in.empty() || !w->network.empty() || (!E->bus_origin.empty() && js_bus_seq() != E->bus_seen); };
                 if (!idle_gc) next = std::min(next, last_act + 10001);
                 if (!ready()) {
                     if (next >= 1e299) w->cv.wait(lk, ready);
                     else { double ms = next - now_ms(); if (ms > 0) w->cv.wait_for(lk, std::chrono::microseconds((int64_t)(ms * 1000) + 1), ready); }
                 }
                 msgs.swap(w->in);
+                network.swap(w->network);
             }
-            if (!msgs.empty()) { last_act = now_ms(); idle_gc = false; }
+            if (!msgs.empty() || !network.empty()) { last_act = now_ms(); idle_gc = false; }
             for (Buf &b : msgs) {
                 if (!w->term && !E->closing) {
                     v8::HandleScope hs2(iso);
@@ -1273,6 +1427,20 @@ void worker_main(std::shared_ptr<Worker> w) {
                     iso->PerformMicrotaskCheckpoint();
                 }
                 free(b.p);
+            }
+            for (auto &result : network) {
+                if (w->term || E->closing) break;
+                auto callback = E->network_callbacks.find(result.id);
+                if (callback == E->network_callbacks.end()) continue;
+                v8::HandleScope handles(iso); v8::TryCatch caught(iso);
+                auto fn = callback->second.Get(iso);
+                E->network_callbacks.erase(callback);
+                v8::Local<v8::Value> args[6]; worker_response_args(iso, result.response.get(), args);
+                // ArrayBuffer now owns the copied bytes; release the native
+                // body before user callbacks can allocate or fetch again.
+                result.response.reset();
+                (void)fn->Call(ctx, v8::Undefined(iso), 6, args);
+                wcheck(E, caught); iso->PerformMicrotaskCheckpoint();
             }
             if (!E->busfn.IsEmpty() && !w->term && !E->closing) {
                 std::vector<BusMsg> bm;
@@ -1292,6 +1460,8 @@ void worker_main(std::shared_ptr<Worker> w) {
             run_timers(E);
         }
         js_bus_listen(E, nullptr);
+        { std::lock_guard<std::mutex> lock(w->mu); cancel_network_locked(w.get()); }
+        E->network_callbacks.clear();
         E->timers.clear(); E->mods.clear(); E->murl.clear(); E->onmsg.Reset(); E->report.Reset(); E->busfn.Reset(); E->ctx.Reset();
     }
     {
@@ -1380,6 +1550,7 @@ void worker_terminate(Worker *w) {
     std::lock_guard<std::mutex> lk(w->mu);
     w->term = true;
     close_input_locked(w);
+    cancel_network_locked(w);
     if (w->request) net_request_cancel(w->request);
     if (w->iso) w->iso->TerminateExecution();
     for (OutMsg &m : w->out) free(m.data.p);
@@ -1516,3 +1687,4 @@ extern "C" void worker_mem_stats(size_t *heap, size_t *ext, int *n) {
     *heap = *ext = 0; *n = 0;
     for (auto &kv : g_workers) { *heap += kv.second->heap; *ext += kv.second->ext; ++*n; }
 }
+

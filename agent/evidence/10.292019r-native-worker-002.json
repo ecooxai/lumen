@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "task": "10.292019r",
+  "iteration": "native-worker-002",
+  "createdUtc": "2026-10-29T13:06:54.075469+00:00",
+  "score": 55,
+  "acceptance": "Native Linux worker lifecycle gates pass; WPT, matched header controls, Apple runtime, and IPA gates pending.",
+  "platform": "Linux x86_64 headless validation",
+  "baselineGitHead": "a24aac134ad14bf06db23fc3e6715bdd629627ec",
+  "candidateSourceManifest": "10.292019r-native-worker-002/candidate-source-manifest.json",
+  "runtime": {
+    "v8": "15.7.112.12",
+    "v8SourceBuilt": false,
+    "source": "Official Homebrew prebuilt bottle with verified metadata SHA256",
+    "rtc": false,
+    "webtransport": false,
+    "appleRuntimeEquivalent": false
+  },
+  "results": {
+    "workerAsyncLifecycle": {
+      "fixtureSha256": "f2d2b205e23ae691251c2d63869f0f1137666d14ea1323aa85eab7ef5a63ae83",
+      "baseline": {
+        "pass": 83,
+        "total": 118,
+        "exitCode": 1
+      },
+      "candidate": {
+        "pass": 118,
+        "total": 118,
+        "exitCode": 0
+      },
+      "sameFixture": true
+    },
+    "existingWorkerLifecycle": {
+      "baseline": {
+        "pass": 262,
+        "total": 262
+      },
+      "candidate": {
+        "pass": 266,
+        "total": 266
+      },
+      "change": "Retains original assertions, adapts active request observer to sync-or-async ownership, adds four network finalizer cleanup checks."
+    }
+  },
+  "resourceCaveats": [
+    "1 Hz sampling is retained for every build and test.",
+    "Test lifetimes under two seconds provide too few interval samples for a steady CPU gate.",
+    "Linux ps cumulative CPU is rounded to whole seconds in these receipts; precise /proc sampling is being added separately.",
+    "Compile CPU near three logical cores follows explicit -j3; it is not a scrolling CPU measurement."
+  ],
+  "environmentFixes": [
+    "Initial isolated link failed because V8 private ICU78 was shadowed by system ICU74. Explicit V8 ICU link and rpath-link resolved it without source changes.",
+    "Runtime private V8 ICU search comes before versioned system ICU74; adjacent verified icudtl.dat enables unchanged test harness environment scrubbing."
+  ],
+  "unproven": [
+    "Full WPT pass rate",
+    "Apple Mac native candidate",
+    "iPad simulator candidate",
+    "Same signed IPA across Mac/iOS/iPad",
+    "Scroll CPU target on updated Apple candidate"
+  ],
+  "artifacts": [
+    {
+      "file": "baseline-async.csv",
+      "bytes": 868,
+      "sha256": "d096054f4aa095ddf5abe7ce36a398eb84b2e857c6c0ddccc883f995824627f5",
+      "uncompressedSha256": "d096054f4aa095ddf5abe7ce36a398eb84b2e857c6c0ddccc883f995824627f5"
+    },
+    {
+      "file": "baseline-async.json",
+      "bytes": 2067,
+      "sha256": "5a49e5dd882895816a02673556053eae93f7d295cd6dff8b9274b57667066a68",
+      "uncompressedSha256": "5a49e5dd882895816a02673556053eae93f7d295cd6dff8b9274b57667066a68"
+    },
+    {
+      "file": "baseline-async.log",
+      "bytes": 7179,
+      "sha256": "94764715742667fcd1b4d575d5aa0cb8fc38b05c8316d0a0e19ec8c756131d14",
+      "uncompressedSha256": "94764715742667fcd1b4d575d5aa0cb8fc38b05c8316d0a0e19ec8c756131d14"
+    },
+    {
+      "file": "baseline-binaries.json",
+      "bytes": 981,
+      "sha256": "d875c94089c981e4b4154d31679fd963c568a67d196faf1fb08daa5bef66b06f",
+      "uncompressedSha256": "d875c94089c981e4b4154d31679fd963c568a67d196faf1fb08daa5bef66b06f"
+    },
+    {
+      "file": "baseline-build-2.csv",
+      "bytes": 80,
+      "sha256": "74ec08e3764246348028f129fe7041e64d6b7c22513d8a72d32a9c29d1fcb936",
+      "uncompressedSha256": "74ec08e3764246348028f129fe7041e64d6b7c22513d8a72d32a9c29d1fcb936"
+    },
+    {
+      "file": "baseline-build-2.json",
+      "bytes": 2006,
+      "sha256": "2a1ec879dbcdcf3cc8d532bd073b4d1ed570de9122f7f4147d4083537a20a808",
+      "uncompressedSha256": "2a1ec879dbcdcf3cc8d532bd073b4d1ed570de9122f7f4147d4083537a20a808"
+    },
+    {
+      "file": "baseline-build-2.log",
+      "bytes": 194,
+      "sha256": "60bcb878c3b9294fb816a386e11469f6cb1b943bc25e257a160cfb80e7bff695",
+      "uncompressedSha256": "60bcb878c3b9294fb816a386e11469f6cb1b943bc25e257a160cfb80e7bff695"
+    },
+    {
+      "file": "baseline-build.csv",
+      "bytes": 611,
+      "sha256": "f2329218ab88c177e25eb16f4d3bfcb0ae86a34007088f3a0e267e12d9bde8c5",
+      "uncompressedSha256": "f2329218ab88c177e25eb16f4d3bfcb0ae86a34007088f3a0e267e12d9bde8c5"
+    },
+    {
+      "file": "baseline-build.json",
+      "bytes": 2092,
+      "sha256": "2cb14a693e59168f5d198aae1086e6289a3d315db694d41a00b66bff2e296244",
+      "uncompressedSha256": "2cb14a693e59168f5d198aae1086e6289a3d315db694d41a00b66bff2e296244"
+    },
+    {
+      "file": "baseline-build.log.gz",
+      "bytes": 44767,
+      "sha256": "b8d50d30ab783c3f7490fa49c7a3b04037febd012cbf7635b8477b597517cab7",
+      "uncompressedSha256": "42cffb1adfbdb6ada51eb8b72a9839e166c061e49bee9f0f367b48d3857cc25f"
+    },
+    {
+      "file": "baseline-command.json",
+      "bytes": 5129,
+      "sha256": "e1c729721bb105901dcc7471d45e19ac0710097967267c71350c449305f19dc5",
+      "uncompressedSha256": "e1c729721bb105901dcc7471d45e19ac0710097967267c71350c449305f19dc5"
+    },
+    {
+      "file": "baseline-original-lifecycle.csv",
+      "bytes": 80,
+      "sha256": "8d483a298a89a1cf86ca5250b3e5aaa97f3574d96fbfcd42d094e080b3383a29",
+      "uncompressedSha256": "8d483a298a89a1cf86ca5250b3e5aaa97f3574d96fbfcd42d094e080b3383a29"
+    },
+    {
+      "file": "baseline-original-lifecycle.json",
+      "bytes": 2003,
+      "sha256": "d8c06b9a955e6e7755209497b03535b9cf889cd62d1c9cb1d84589c4c007b152",
+      "uncompressedSha256": "d8c06b9a955e6e7755209497b03535b9cf889cd62d1c9cb1d84589c4c007b152"
+    },
+    {
+      "file": "baseline-original-lifecycle.log",
+      "bytes": 17268,
+      "sha256": "434e5bbcde84fa521735aa3ec914aa4c8028588df0ad5998efd6284d13e92e36",
+      "uncompressedSha256": "434e5bbcde84fa521735aa3ec914aa4c8028588df0ad5998efd6284d13e92e36"
+    },
+    {
+      "file": "baseline-source-manifest.json",
+      "bytes": 54772,
+      "sha256": "58761aa01a256385e88ce49cce39b066fb7d788a7aec955e24ab64204d1dbf09",
+      "uncompressedSha256": "58761aa01a256385e88ce49cce39b066fb7d788a7aec955e24ab64204d1dbf09"
+    },
+    {
+      "file": "baseline-tests.mk",
+      "bytes": 606,
+      "sha256": "84f3f5ca644b45575f28eb05e828d5cf8478214b9522b7535b72d8315df5ae63",
+      "uncompressedSha256": "84f3f5ca644b45575f28eb05e828d5cf8478214b9522b7535b72d8315df5ae63"
+    },
+    {
+      "file": "build-baseline.py",
+      "bytes": 2092,
+      "sha256": "13ff281a68d874ec0798a8d52dc506dd1da43c957a6b06192e52192127104a51",
+      "uncompressedSha256": "13ff281a68d874ec0798a8d52dc506dd1da43c957a6b06192e52192127104a51"
+    },
+    {
+      "file": "build-candidate.py",
+      "bytes": 2086,
+      "sha256": "25b624974804baee2da463c8e91212503efd7bb270bcf1c2fc66e291e13a1634",
+      "uncompressedSha256": "25b624974804baee2da463c8e91212503efd7bb270bcf1c2fc66e291e13a1634"
+    },
+    {
+      "file": "candidate-async.csv",
+      "bytes": 103,
+      "sha256": "7a18dd42a2bd40c2a4546bc4a6b2c2cca9e054669d178510c532df915e518015",
+      "uncompressedSha256": "7a18dd42a2bd40c2a4546bc4a6b2c2cca9e054669d178510c532df915e518015"
+    },
+    {
+      "file": "candidate-async.json",
+      "bytes": 2015,
+      "sha256": "d5dfdf89e11b15de59443278edda099e9dda31dbaaa9b0f11f2e9866326b018a",
+      "uncompressedSha256": "d5dfdf89e11b15de59443278edda099e9dda31dbaaa9b0f11f2e9866326b018a"
+    },
+    {
+      "file": "candidate-async.log",
+      "bytes": 6775,
+      "sha256": "6eb01dd9ffb301497715153860f179aae8786c427806a195707c0a70c67c4473",
+      "uncompressedSha256": "6eb01dd9ffb301497715153860f179aae8786c427806a195707c0a70c67c4473"
+    },
+    {
+      "file": "candidate-binaries.json",
+      "bytes": 988,
+      "sha256": "4933f63f75bf8cb2179911edb7ff7cb70c08461e65cc46cebd60e07e25811cbb",
+      "uncompressedSha256": "4933f63f75bf8cb2179911edb7ff7cb70c08461e65cc46cebd60e07e25811cbb"
+    },
+    {
+      "file": "candidate-build.csv",
+      "bytes": 693,
+      "sha256": "6100c67afb797290d0690bf62acec56ad2abcf7cc68982e276b2c2cd325e3ef6",
+      "uncompressedSha256": "6100c67afb797290d0690bf62acec56ad2abcf7cc68982e276b2c2cd325e3ef6"
+    },
+    {
+      "file": "candidate-build.json",
+      "bytes": 2049,
+      "sha256": "65b5ae86c8a044126fa4e9b92a71516daf228f91ac747a0c8d305330456e2815",
+      "uncompressedSha256": "65b5ae86c8a044126fa4e9b92a71516daf228f91ac747a0c8d305330456e2815"
+    },
+    {
+      "file": "candidate-build.log.gz",
+      "bytes": 18331,
+      "sha256": "58c929be7dc9c5e586cd1bcae7b081cc328ea3534d5f7c01005c827bfcd61c32",
+      "uncompressedSha256": "3b99854c03a42a4e36c9fbd22a3b0d3e6d0091434acf74b597a4a82838f6240d"
+    },
+    {
+      "file": "candidate-command.json",
+      "bytes": 5029,
+      "sha256": "afb1f57efd5e7a22d51ddfb21b24edcce8f7ed088ec2e117769813643332d01f",
+      "uncompressedSha256": "afb1f57efd5e7a22d51ddfb21b24edcce8f7ed088ec2e117769813643332d01f"
+    },
+    {
+      "file": "candidate-original-lifecycle.csv",
+      "bytes": 79,
+      "sha256": "70cc5e3238060ef2934ee72155c0b74570c399d759c2e12920b79b0c5602b2cc",
+      "uncompressedSha256": "70cc5e3238060ef2934ee72155c0b74570c399d759c2e12920b79b0c5602b2cc"
+    },
+    {
+      "file": "candidate-original-lifecycle.json",
+      "bytes": 2005,
+      "sha256": "6fcee6fdf3091149d521b52bc69366466b2e7b1ce143b8c63777a6f910b293a3",
+      "uncompressedSha256": "6fcee6fdf3091149d521b52bc69366466b2e7b1ce143b8c63777a6f910b293a3"
+    },
+    {
+      "file": "candidate-original-lifecycle.log",
+      "bytes": 17516,
+      "sha256": "36b233d457ea6cb8ec608af8c75a7b13d9456c93c692630768923ac3738a92e0",
+      "uncompressedSha256": "36b233d457ea6cb8ec608af8c75a7b13d9456c93c692630768923ac3738a92e0"
+    },
+    {
+      "file": "candidate-source-manifest.json",
+      "bytes": 13478,
+      "sha256": "d6e16dc47fa744245e28422043fc19d92be9f54cd45c88bc3e61621dfdeb099b",
+      "uncompressedSha256": "d6e16dc47fa744245e28422043fc19d92be9f54cd45c88bc3e61621dfdeb099b"
+    }
+  ]
+}

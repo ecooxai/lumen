@@ -82,6 +82,18 @@ struct StalledResponse {
 };
 
 static std::shared_ptr<Worker> exit_worker;
+/* Async worker transports finalize on the thread pumping net_poll, after the
+ * worker isolate itself may already have exited. Drain both ownership layers. */
+static bool wait_network_requests(double timeout_ms) {
+    const double end = now_ms() + timeout_ms;
+    do {
+        net_poll();
+        if (!net_pending()) return true;
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    } while (now_ms() < end);
+    return false;
+}
+
 static void check_exit_worker() {
     bool complete = exit_worker && exit_worker->finished;
     fprintf(stderr, "%s exit callback observes completed worker cleanup\n", complete ? "PASS" : "FAIL");
@@ -571,16 +583,17 @@ int main(int argc, char **argv) {
             auto network_worker = g_workers.empty() ? nullptr : g_workers.rbegin()->second;
             CHECK("worker is blocked on a response that has not been sent", server.wait_entered());
             bool active = false;
-            if (network_worker) { std::lock_guard<std::mutex> lock(network_worker->mu); active = network_worker->request != nullptr; }
-            CHECK("worker retains its active request until cancellation completes", active);
+            if (network_worker) { std::lock_guard<std::mutex> lock(network_worker->mu); active = network_worker->request != nullptr || !network_worker->requests.empty(); }
+            CHECK("worker retains its active async or sync request until cancellation completes", active);
             double before = now_ms();
             js_eval(c, "networkWorker.terminate();", "test:cancel-stalled-worker");
             CHECK("terminate returns promptly while the server holds its response", now_ms() - before < 1000);
             bool drained = wait_worker_threads(1500);
             CHECK("socket cancellation drains without waiting for an HTTP timeout", drained);
             bool cleared = false;
-            if (network_worker) { std::lock_guard<std::mutex> lock(network_worker->mu); cleared = network_worker->finished && !network_worker->request; }
+            if (network_worker) { std::lock_guard<std::mutex> lock(network_worker->mu); cleared = network_worker->finished && !network_worker->request && network_worker->requests.empty(); }
             CHECK("canceled worker releases request and isolate resources", cleared);
+            CHECK("canceled worker network finalizers drain", wait_network_requests(1500));
             server.stop();
         }
     }
@@ -592,7 +605,9 @@ int main(int argc, char **argv) {
     for (int order = 0; order < 3; ++order) check_shared_buffer_lifetime(order);
     js_free(c); doc_free(d);
     CHECK("explicit process shutdown completes before subsystem teardown", js_workers_shutdown(5000));
+    CHECK("native transport finalizers complete before subsystem teardown", wait_network_requests(2000));
     net_shutdown();
     printf("RESULTS worker-lifecycle %s (%d/%d checks)\n", failures ? "FAIL" : "PASS", checks - failures, checks);
     return failures ? 1 : 0;
 }
+

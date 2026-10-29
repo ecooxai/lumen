@@ -1,0 +1,132 @@
+CASE async-worker concurrent fetch responsiveness
+PASS concurrency server starts
+PASS real worker isolate is registered
+FAIL both network requests reach the server before either response
+FAIL worker timers run while both responses remain held
+FAIL worker receives messages while both responses remain held
+PASS neither held response has spuriously completed
+PASS both independent fetches complete after real responses
+PASS concurrent bodies stay associated with their requests
+PASS worker disposal completes its actual isolate cleanup
+PASS worker disposal drains canceled network ownership
+PASS worker registry returns to its original size
+PASS network finalizers release the worker ownership
+CASE async-worker AbortSignal cancellation
+PASS fetch abort server starts
+PASS real worker isolate is registered
+PASS abort test observes an actual pending request
+FAIL AbortSignal rejects pending fetch promptly
+FAIL fetch rejects with AbortError
+FAIL AbortSignal cancels the held transport socket
+PASS aborted native request is finalized
+PASS fetch does not later fulfill after abort
+PASS worker disposal completes its actual isolate cleanup
+PASS worker disposal drains canceled network ownership
+PASS worker registry returns to its original size
+PASS network finalizers release the worker ownership
+CASE async-worker concurrent fast completion ownership
+PASS completion burst server starts
+PASS real worker isolate is registered
+PASS all concurrent fast completions return to their owning worker
+PASS completion burst preserves all 64 request and body identities
+PASS all 64 burst requests actually reached the HTTP server
+PASS burst completions release their native transport ownership
+PASS worker disposal completes its actual isolate cleanup
+PASS worker disposal drains canceled network ownership
+PASS worker registry returns to its original size
+PASS network finalizers release the worker ownership
+CASE async-worker fetch preserves falsy AbortSignal reasons
+PASS falsy abort reason server starts
+PASS real worker isolate is registered
+FAIL all four pending reason requests reach the held server
+FAIL all pending and pre-aborted fetches settle with their reasons
+FAIL null zero false and empty-string reasons remain exact rejection values
+PASS pre-aborted signals never start HTTP requests
+FAIL all pending falsy-reason requests cancel their sockets
+PASS worker disposal completes its actual isolate cleanup
+PASS worker disposal drains canceled network ownership
+PASS worker registry returns to its original size
+PASS network finalizers release the worker ownership
+CASE async-worker completion without pumping the parent event loop
+PASS independent completion server starts
+PASS real worker isolate is registered
+PASS worker dispatches HTTP while parent event loop is paused
+PASS worker completes its response before parent resumes net_poll
+PASS paused-parent completion contains the real HTTP response
+PASS worker disposal completes its actual isolate cleanup
+PASS worker disposal drains canceled network ownership
+PASS worker registry returns to its original size
+PASS network finalizers release the worker ownership
+CASE async-worker XMLHttpRequest abort and reopen
+PASS XHR reopen server starts
+PASS real worker isolate is registered
+[js error] Uncaught (in worker) Uncaught ReferenceError: XMLHttpRequest is not defined at blob:http://127.0.0.1:37495/00000001-lumen:3
+FAIL old XHR reaches the held server response
+FAIL worker handles abort/reopen during pending XHR
+FAIL abort resets readyState outside its event callbacks
+FAIL old XHR emits one abort with network-error status
+FAIL reopened XHR receives the new actual response
+FAIL new XHR state and payload belong to the new generation
+FAIL reopen cancels the old transport socket
+PASS old and new transport ownership both finalize
+FAIL stale old response cannot produce a second load
+PASS worker disposal completes its actual isolate cleanup
+PASS worker disposal drains canceled network ownership
+PASS worker registry returns to its original size
+PASS network finalizers release the worker ownership
+CASE async-worker XMLHttpRequest timeout and synchronous behavior
+PASS XHR timeout server starts
+PASS real worker isolate is registered
+[js error] Uncaught (in worker) Uncaught ReferenceError: XMLHttpRequest is not defined at blob:http://127.0.0.1:48345/00000001-lumen:3
+FAIL timeout request reaches the server before timeout
+FAIL XHR timeout occurs without receiving an HTTP response
+FAIL timeout reports DONE with cleared response and status
+FAIL timeout dispatches readyState, timeout, loadend once in order
+FAIL XHR timeout cancels the held transport socket
+FAIL synchronous worker XHR returns a completed response
+FAIL synchronous XHR preserves immediate status and decoded text
+PASS worker disposal completes its actual isolate cleanup
+PASS worker disposal drains canceled network ownership
+PASS worker registry returns to its original size
+PASS network finalizers release the worker ownership
+CASE async-worker XMLHttpRequest reentrant open during response events
+PASS XHR reentrant server starts
+PASS real worker isolate is registered
+[js error] Uncaught (in worker) Uncaught ReferenceError: XMLHttpRequest is not defined at blob:http://127.0.0.1:33669/00000001-lumen:3
+FAIL HEADERS_RECEIVED permits a new asynchronous open/send
+FAIL new generation completes after reentrant open
+FAIL old response does not overwrite the new generation body
+FAIL both reentrant HTTP requests actually reached the server
+PASS reentrant requests leave no native pending ownership
+PASS worker disposal completes its actual isolate cleanup
+PASS worker disposal drains canceled network ownership
+PASS worker registry returns to its original size
+PASS network finalizers release the worker ownership
+CASE async-worker terminate cancels all outstanding transports
+PASS worker exit server starts
+PASS real worker isolate is registered
+FAIL all three requests are outstanding before exit
+PASS exit request returns promptly
+PASS worker completes isolate teardown before HTTP timeout
+FAIL every held socket is canceled on worker exit
+PASS network completion finalizers drain after worker exit
+PASS worker disposal completes its actual isolate cleanup
+PASS worker disposal drains canceled network ownership
+PASS worker registry returns to its original size
+PASS network finalizers release the worker ownership
+CASE async-worker self-close cancels all outstanding transports
+PASS worker exit server starts
+PASS real worker isolate is registered
+FAIL all three requests are outstanding before exit
+PASS exit request returns promptly
+FAIL worker completes isolate teardown before HTTP timeout
+FAIL every held socket is canceled on worker exit
+PASS network completion finalizers drain after worker exit
+FAIL self-close preserves its current-task message
+PASS worker disposal completes its actual isolate cleanup
+PASS worker disposal drains canceled network ownership
+PASS worker registry returns to its original size
+PASS network finalizers release the worker ownership
+PASS all worker threads complete before process shutdown
+PASS all native network requests finalize before process shutdown
+RESULTS worker-async-lifecycle FAIL (83/118 checks)
