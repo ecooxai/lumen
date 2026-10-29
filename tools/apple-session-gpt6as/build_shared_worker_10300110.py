@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 root = Path.cwd().resolve()
@@ -54,10 +55,16 @@ def save():
 def measured(name, command, limit):
     prefix = out / name
     begun = time.monotonic()
-    process = subprocess.run([
-        sys.executable, 'tools/monitor_process.py', '--duration', str(limit),
-        '--settle', '0', '--output', str(prefix.relative_to(root)), '--', *command,
-    ], capture_output=True, text=True, timeout=limit + 35)
+    # Isolate test profiles and app-only overrides while preserving the host's
+    # network/authentication/proxy/certificate configuration unchanged.
+    environment = {key: value for key, value in os.environ.items() if not key.startswith('LUMEN_')}
+    environment['DEVELOPER_DIR'] = '/Library/Developer/CommandLineTools'
+    with tempfile.TemporaryDirectory(prefix='lumen-native-' + name + '-') as profile:
+        environment['LUMEN_PROFILE_DIR'] = profile
+        process = subprocess.run([
+            sys.executable, 'tools/monitor_process.py', '--duration', str(limit),
+            '--settle', '0', '--output', str(prefix.relative_to(root)), '--', *command,
+        ], capture_output=True, text=True, timeout=limit + 35, env=environment)
     (out / (name + '-collector.log')).write_text(process.stdout + process.stderr)
     report = json.loads(prefix.with_suffix('.json').read_text())
     log = prefix.with_suffix('.log').read_text(errors='replace')
