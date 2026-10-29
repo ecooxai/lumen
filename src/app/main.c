@@ -1622,7 +1622,14 @@ typedef struct { Document *d; } SvgDoc;
 static HMap g_svgdocs;
 static void svgdoc_done(NetRequest *rq, NetResponse *r, void *ud) {
     (void)rq; char *u = ud; Document *d = NULL;
-    if (r && r->status == 200 && r->body) { d = doc_new(u); html_parse(d, r->body, r->body_len); }
+    if (r && r->status == 200 && r->body) {
+        d = doc_new(u);
+        /* External SVG is a byte response, not an already decoded string. */
+        if (!html_parse_bytes(d, r->body, r->body_len, headers_get(&r->headers, "content-type"))) {
+            doc_free(d);
+            d = NULL;
+        }
+    }
     SvgDoc *s = hm_get(&g_svgdocs, u); if (s && !s->d) { s->d = d; d = NULL; }
     if (d) doc_free(d);
     g_img_epoch++;

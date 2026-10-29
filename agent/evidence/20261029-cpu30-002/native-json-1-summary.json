@@ -1,0 +1,215 @@
+{
+  "startedUTC": "2026-10-29T03:59:00.352923+00:00",
+  "sourceBaseCommit": "df4ae3bc8d52a06778e0d8a1f706138201dd043d",
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-json-1/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "d3f4290775d2547f30f7876d822a49b1d786f45fb92e7b41fed31f5a2c47144b",
+  "patchReceipt": "out/lume-20261029-cpu30/json-document-patch-1/receipt.json",
+  "patchReceiptSHA256": "1a4358321ef9dbcbb375c152c34a8798ee2203ec786b053de25476f156ccbe42",
+  "stages": [
+    {
+      "name": "build",
+      "command": [
+        "make",
+        "-j3",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/lumen",
+        "build-apple-load-20261029/jsrun",
+        "build-apple-load-20261029/test_document_encoding",
+        "build-apple-load-20261029/test_parser_input"
+      ],
+      "durationSeconds": 1.079,
+      "monitor": "out/lume-20261029-cpu30/native-json-1/build.json",
+      "monitorSHA256": "622f336ed6c2bfcc8d44c4f8016bb8efdf01dd7a73a2050b5811888472f1b0ae",
+      "logSHA256": "79d243583eafd75092e748e50153137310b4464dff1924b80673b0329b82909d",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 7.984,
+      "maximumSamplingGapSeconds": 1.01,
+      "passed": true
+    },
+    {
+      "name": "json-document",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_json_document_encoding.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-json-1/jsrun-b3ca963f7d07d4e9"
+      ],
+      "durationSeconds": 2.096,
+      "monitor": "out/lume-20261029-cpu30/native-json-1/json-document.json",
+      "monitorSHA256": "7ac0c89082df571aba79dd035ff3178d931a4b8b2cd4b8e28aedc26c5d9e91c6",
+      "logSHA256": "d88844e76b41efd39c4a35a4f52fc15618ee8963eabbf0f81bf2d11c75d94160",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 4.892,
+      "rssPeakMiB": 25.797,
+      "maximumSamplingGapSeconds": 1.022,
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "b3ca963f7d07d4e9b08c433c2ce18af92ce39d88ac272f8cba844e2be3217f0a",
+          "fixtureSHA256": "d2b226d0c8cb878853e60bc72bd0d9c54b1b443de38050f1e5e50cf30b435077",
+          "htmlSHA256": "6b637af532414d4d971f516d470c070d563cfb03b82e349568530cfa4ec7490e",
+          "caseSHA256": [
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "1e720055bd1467a56f9ef8d41c2116e370eaf68fe8e63be60a552e93772b43fe",
+            "7e3e222edf623ac7bbfea94ddbd432512a67970d7c288c51d3b6adba109ced93",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "299d90b763c263151b2972224336a4753ff56823ab740ae7f20da0ee99429a4f",
+            "ffc688b683abd899f74bd32c546463df3f1e7ba31cab0d4eccfe306df21ffc80",
+            "cd73d3a166274ff1bec53b5ea3beb7af2c9f3342aaae71eb478b5cfffab73e08",
+            "49994461d6b46390f014c8c5275a8591ef8764760afe2739cee23f6fbe285778",
+            "543ea154a3582af72abe8fb301deda383a733e9faac71338e734520174a90948"
+          ],
+          "total": 16,
+          "passed": 16,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "html-meta",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_html_meta_encoding.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-json-1/jsrun-b3ca963f7d07d4e9"
+      ],
+      "durationSeconds": 2.104,
+      "monitor": "out/lume-20261029-cpu30/native-json-1/html-meta.json",
+      "monitorSHA256": "4a3f514a81026df45b8fc0fed9fb20375b0f7e56b11413c4499f7ee9fa88ab1e",
+      "logSHA256": "cd0f414059893c6e4129d0cd4b401498bd8554514919a2337b64ae739bb82576",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 4.916,
+      "rssPeakMiB": 26.016,
+      "maximumSamplingGapSeconds": 1.017,
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "b3ca963f7d07d4e9b08c433c2ce18af92ce39d88ac272f8cba844e2be3217f0a",
+          "fixtureSHA256": "f466ea43bdb133c418df706162e4fab1f4d1b3717e9a2ab116d7745a89630468",
+          "htmlSHA256": "8a7d5f2355050e84bc1961c9418862ecf8c11437fc7774ee0f5bc23fb68fba35",
+          "caseSHA256": [
+            "b2ba26ffad0242bc3a88c8c6241effd27cf032ec8b5a521fba2d008a7de525e9",
+            "b489a1abb1022e6612eacece6c4bd2ad00e72bbfae3376f4ee41c5ef34caa47f",
+            "4699033b94a3dc5aa825909789b35f5ad4e466dc8436e07166eecb450bf48172",
+            "0c027f3f244c7543fbf8fba48a0f9ddc59759c0c22ec2743b6a3cb6391111bd0",
+            "9f967b37fc2b2184e50f2beab711f7d72a3702e158fcba78619309bef2b0fbc3",
+            "4e1a8d51ff31acaafc770cf0140ea886e10aacf26311e4d5b61f7286384ef626",
+            "200e2f7fc0923cc164202465e6d415daed216dbdb3f5fa5ca69f9063c9f1a168",
+            "ad4cb3a8a18c73b8cb70452e9d7829c5d88985e9fedb483ac36b112595681788",
+            "2c014dc456df2caa4dda1fb563cdb26a947d0760a795fb587c003e8bd53c5353",
+            "6eae0a0bff73bde7cbe385ba65cfac9a370556ac4803262277b3715cc6f5e77a",
+            "8d5548191d7db8182b40ae42f1969c056f4cd103c39d903c64bf599721e2d1c5",
+            "1f5ee4eb70b0a73484ffeb51bad6ad0ac52de3a585adf153f6ed6935119ddfa2",
+            "6b2c1487288607594083acbfec842a286662ede4817875585e607ff46a593845",
+            "58004cb7d52dffafdb556a28129250f4a0d0c0c6cdc9586fdca3303027e0f77f",
+            "04b102704fc1045a590a9348cfd2af3e96756f7a95579655e7a3d5dcceac97ed",
+            "fcc2d391110e1b29d50543096afb35436dcaa70e4a3d197229677474baf30169",
+            "d1ea49ef4bac4f39cce43aed4caa4d22dc55cb6c4cf252c65d3ea4cca4a9beb6",
+            "d2c4a39c23945ee149296ef2c928ab2dd0ce3c3426ab9ac1065accff1822bef9",
+            "c2fc22136dbaa86cd735e27cf5992461c23de229e03bdfbd48b83353efba2bb3",
+            "531d3d53cc1ca5288a58043b510f10fa1ee2ee38b1b97ff3bcae6ed754ef8fe7",
+            "465ce8d813ec5effe56107f5caf3208c82687ac0ae89dd3b02ca5c0c09332cb5",
+            "7d9b3d500cc8f05ceafc64041e2ebe829d5295c754e23e5e708ba920d6ba3055",
+            "3a946068b2ffa59957b66361890e32f4b9b86c315349c2be78a12992733ca662",
+            "b5155d0f298d7dd1b78a1e102ab13e0479d5abd7560aca074983144d63e97d73",
+            "b44c782e7b0a6cda05786602285131865ad8325a1b4e3640e1e9061c75777fe2",
+            "14871f6a7746734996394653c1914c470794c9d3342ab772f33d612dadfb1c7b",
+            "d3e9f9bbd54b6e77c098096f0747b1045a90d0ebf7145f9b2e619c3546e351ee",
+            "6779ecb808cc4d38b647354ff0cf537ac7487cc3d09f3065dda76260d76d82fe",
+            "85adafac37b5e2a03fb57a178e4a86ad87828329e9d45504430567e17a496181"
+          ],
+          "total": 29,
+          "passed": 29,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "document-encoding",
+      "command": [
+        "out/lume-20261029-cpu30/native-json-1/test_document_encoding-c6ec193753a0fa9c"
+      ],
+      "durationSeconds": 1.081,
+      "monitor": "out/lume-20261029-cpu30/native-json-1/document-encoding.json",
+      "monitorSHA256": "7b51f8fff30330c0c8c72553001026bcf11f47d08fd3e4ee8170dc1f17307d45",
+      "logSHA256": "951d1fad04152778fc17ce36777774b590d1b6c177ec1210452aacfad2c37db8",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.011,
+      "passed": true
+    },
+    {
+      "name": "parser-input",
+      "command": [
+        "out/lume-20261029-cpu30/native-json-1/test_parser_input-3107d06cea49b357"
+      ],
+      "durationSeconds": 1.077,
+      "monitor": "out/lume-20261029-cpu30/native-json-1/parser-input.json",
+      "monitorSHA256": "5c38536da9994619e4d9711b7b17b6a972bbf027a41075040da04b4757dcce1a",
+      "logSHA256": "223555e5612e9415a045db5b5dd6949ac34974a9b83f45dacfaa74f48edac2ae",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.012,
+      "passed": true
+    }
+  ],
+  "artifacts": {
+    "lumen": {
+      "path": "out/lume-20261029-cpu30/native-json-1/lumen-1e5db31d1e7e3f1a",
+      "sha256": "1e5db31d1e7e3f1a6b87e6e3cbab8cdff9132f17d9bb2d543618c1931b0c2b7c",
+      "bytes": 14055960
+    },
+    "jsrun": {
+      "path": "out/lume-20261029-cpu30/native-json-1/jsrun-b3ca963f7d07d4e9",
+      "sha256": "b3ca963f7d07d4e9b08c433c2ce18af92ce39d88ac272f8cba844e2be3217f0a",
+      "bytes": 13828136
+    },
+    "test_document_encoding": {
+      "path": "out/lume-20261029-cpu30/native-json-1/test_document_encoding-c6ec193753a0fa9c",
+      "sha256": "c6ec193753a0fa9cb3c4dd6ea5c961b526f3b432eef6e80db2a325138c3909ad",
+      "bytes": 13868424
+    },
+    "test_parser_input": {
+      "path": "out/lume-20261029-cpu30/native-json-1/test_parser_input-3107d06cea49b357",
+      "sha256": "3107d06cea49b35798561f16355181626acc3e01a6d74adf1561f0c806e11141",
+      "bytes": 815488
+    }
+  },
+  "passed": true,
+  "prebuiltV8Linked": true,
+  "finishedUTC": "2026-10-29T03:59:07.888207+00:00",
+  "durationSeconds": 7.553
+}

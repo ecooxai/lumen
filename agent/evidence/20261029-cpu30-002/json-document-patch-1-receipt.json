@@ -1,0 +1,14 @@
+{
+  "updatedUTC": "2026-10-29T03:57:26.454667+00:00",
+  "source": "src/html/html.c",
+  "beforeSHA256": "5deaa7cee34b71b928ee37aa2c7125c5b68273eb88c31ae47a6e21b64ac0e5aa",
+  "afterSHA256": "387822e8081e5c9dcfd938b31e4b98e2f6cc23e416b70449bc6d7ea156ac8739",
+  "redReceipt": "out/lume-20261029-cpu30/json-document-red-2/summary.json",
+  "redReceiptSHA256": "a062c651bca5b0bff1a3fc5124375ec8da0486c588601988b1291a72f6c682d0",
+  "fixtureSHA256": "d2b226d0c8cb878853e60bc72bd0d9c54b1b443de38050f1e5e50cf30b435077",
+  "scope": "JSON MIME documents use UTF8 fallback and literal plaintext rendering; explicit charset/BOM and unrelated HTML/plaintext behavior preserved.",
+  "sources": [
+    "https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-text",
+    "https://mimesniff.spec.whatwg.org/#json-mime-type"
+  ]
+}

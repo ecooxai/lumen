@@ -1,0 +1,51 @@
+✖ a new task preserves the same private browser message namespace and receipts (22.758375ms)
+✖ static delivery uses the same explicit message namespace as the live endpoint (35.483208ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 117.984209
+
+✖ failing tests:
+
+test at tools/lume-progress-10290244/tests/progress-session-continuity.test.mjs:15:1
+✖ a new task preserves the same private browser message namespace and receipts (22.758375ms)
+  AssertionError [ERR_ASSERTION]: Ordinary reload must keep the old client access and receipt namespace
+  + actual - expected
+  
+  + undefined
+  - 'old-task'
+  
+      at TestContext.<anonymous> (file:///Users/devin/repos/lumen/tools/lume-progress-10290244/tests/progress-session-continuity.test.mjs:28:10)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'old-task',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tools/lume-progress-10290244/tests/progress-session-continuity.test.mjs:41:1
+✖ static delivery uses the same explicit message namespace as the live endpoint (35.483208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - 'old-task'
+  
+      at TestContext.<anonymous> (file:///Users/devin/repos/lumen/tools/lume-progress-10290244/tests/progress-session-continuity.test.mjs:47:49)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'old-task',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,30 @@
+{
+  "task": "20261029-cpu30",
+  "startedUTC": "2026-10-29T04:08:51.443864+00:00",
+  "binarySHA256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+  "command": [
+    "/opt/homebrew/opt/python@3.15/bin/python3.15",
+    "tools/apple-session-gpt6as/probe_native_wpt.py",
+    "--binary",
+    "build/lumen-task20261029-cpu30-compat-parser-1-4b26d5b59edf9f68",
+    "--expected-sha256",
+    "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+    "--output",
+    "output/native-wpt-task20261029-cpu30-compat-parser-1-4b26d5b59edf9f68",
+    "--seconds-per-test",
+    "25"
+  ],
+  "scope": "Unmodified original six-file upstream gate,1850 assertions; distinct from frozen1515-variant priority cohort.",
+  "passed": true,
+  "exitCode": 0,
+  "report": "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task20261029-cpu30-compat-parser-1-4b26d5b59edf9f68/wpt-report.json",
+  "reportSHA256": "c25b7e8807ffc2b532c8900f6e7e694f652454fe2503eaff4dfa62d79d197283",
+  "files": 6,
+  "fullyPassing": 6,
+  "assertions": {
+    "PASS": 1850
+  },
+  "finishedUTC": "2026-10-29T04:09:00.693082+00:00",
+  "durationSeconds": 9.249,
+  "binarySHA256After": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54"
+}

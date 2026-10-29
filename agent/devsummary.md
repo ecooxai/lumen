@@ -293,3 +293,28 @@ Build/test timings: build2.103s; combined build+203checks5.550s; original+103WPT
 Controlled scroll p9511.085%, peak11.137%; idle p95~1%;20-navigation settled RSS−10.781MiB; raw startup30.35% retained outside scrolling phase. Root reviewed actual1000×700 native capture. All measurements bind exact f52; this is fresh validation of inherited source, not a new paired performance improvement claim. Same-pinned JSON/resource, BOM, TextDecoder and sniffing fixture Git objects verified. Preserve7 failing variants/35assertions and1412unrun.
 
 Evidence `agent/evidence/20261029-cpu30-001-native-acceptance.json`. Current full signed IPA/iPad execution and final98/100 goal not achieved; development continues.
+
+
+## 20261029-cpu30-002 — parser fixes and progress continuity
+
+{
+  "started_utc": "2026-10-29T03:55:56.397308+00:00",
+  "finished_utc": "2026-10-29T04:25:54.392568+00:00",
+  "started_Asia_Shanghai": "2026-10-29T11:55:56.397308+08:00",
+  "finished_Asia_Shanghai": "2026-10-29T12:25:54.392568+08:00",
+  "elapsed_seconds": 1797.995,
+  "total_session_seconds": 7629.393,
+  "timings": {
+    "validJsonRedSeconds": 1.095,
+    "jsonGreenBuildAndChecksSeconds": 7.553,
+    "bomRedSeconds": 1.087,
+    "combinedParserBuildAndChecksSeconds": 14.926,
+    "incrementalBuildSeconds": 2.099,
+    "originalAndSelectedWptSeconds": 72.389,
+    "deliveryGreenSeconds": 1.046
+  }
+}
+
+Score50/100 remains separate from the current functional candidate98/103 (95.146%). The accepted f52 artifact remains96/103 with its own validated scroll/soak; changed4b26 GUI is pending. Genuine JSON2/16→16/16 and BOM11/21→21/21; invalid carrier RED1 retained and rejected. Delivery two-case0/2→2/2, all8/8GREEN; deployment proof pending. Qualified Chrome89/103 is a scoped diagnostic under investigation, not an overall ranking. All1515 frozen variants remain counted,1412unrun; all29native and181Chrome failing assertions remain visible. Two integration checkpoint attempts stopped before any write: first rejected a display-only fixtureCounts field, then rejected the mutable priority summary during expanded coverage. Acceptance now verifies raw hash-bound logs and the recorded immutable pre-expansion103 snapshot. No browser test failure was hidden by these precondition repairs. No build/test in this checkpoint exceeded5minutes. Parallel durations are not summed as elapsed.
+
+Evidence: agent/evidence/20261029-cpu30-002-functional-checkpoint.json

@@ -40,7 +40,16 @@ int main(int argc, char **argv) {
     net_request_free(rq);
     if (!r || r->status == 0) { fprintf(stderr, "jsrun: fetch failed: %s\n", r && r->error ? r->error : "?"); return 1; }
     Document *d = doc_new(r->url ? r->url : url);
-    html_parse(d, r->body ? r->body : "", r->body ? r->body_len : 0);
+    /* Match the browser's response-byte boundary, including transport
+     * charset and exactly one BOM. html_parse() accepts Unicode strings. */
+    if (!html_parse_bytes(d, r->body ? r->body : "", r->body ? r->body_len : 0,
+                          headers_get(&r->headers, "content-type"))) {
+        fprintf(stderr, "jsrun: HTML decoding exceeded its byte contract\n");
+        net_response_free(r);
+        doc_free(d);
+        net_shutdown();
+        return 1;
+    }
     net_response_free(r);
     StyleEngine *se = style_engine_new(d); se->media.vw = 1280; se->media.vh = 800;
     for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {

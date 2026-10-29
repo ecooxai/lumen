@@ -1,0 +1,16 @@
+✔ a new task preserves the same private browser message namespace and receipts (94.98125ms)
+✔ static delivery uses the same explicit message namespace as the live endpoint (75.200042ms)
+✔ disk measurements retain every mount and never sum shared APFS volumes (0.831291ms)
+✔ CPU is an interval measurement with an unavailable first sample (0.099458ms)
+✔ message replies require the private receipt key and never execute message text (18.361292ms)
+✔ public routes are allowlisted; inbox and filesystem secrets cannot be read (78.493083ms)
+✔ live WebSocket returns a real nonce echo for client measured round-trip time (8.896333ms)
+✔ message HTTP submission enforces same origin, content type and receipt access (18.2685ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 263.67075

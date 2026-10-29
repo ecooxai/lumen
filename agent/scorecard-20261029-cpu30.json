@@ -545,7 +545,7 @@
       "note": "Existing route is reachable, but new task public source/message/telemetry delivery requires fresh verification. Historical release points are withheld until that proof."
     }
   ],
-  "updated_utc": "2026-10-29T04:05:18.067295+00:00",
+  "updated_utc": "2026-10-29T04:25:54.392568+00:00",
   "current_baseline_binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "df4ae3bc8d52a06778e0d8a1f706138201dd043d",
@@ -721,6 +721,15 @@
       "total_session_seconds": 6393.067,
       "score": 50,
       "status": "Fresh exact-artifact native acceptance, scroll below30%, navigation soak and source publication guard; public task delivery pending"
+    },
+    {
+      "iteration": "20261029-cpu30-002",
+      "started_utc": "2026-10-29T03:55:56.397308+00:00",
+      "finished_utc": "2026-10-29T04:25:54.392568+00:00",
+      "elapsed_seconds": 1797.995,
+      "total_session_seconds": 7629.393,
+      "score": 50,
+      "status": "JSON/BOM fixes and stable private message namespace functionally verified; changed native resource acceptance and public handoff pending"
     }
   ],
   "current_native_source_manifest": "agent/evidence/20261029-cpu30-001/compiled-source-sha256.json",
@@ -897,5 +906,36 @@
         ]
       }
     ]
-  }
+  },
+  "current_task_functional_candidates": [
+    {
+      "binary_sha256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+      "source_base_commit": "c7f6ad5651f66cd9fed9c2ce1ec53acb33f51713",
+      "source_manifest": "agent/evidence/20261029-cpu30-002/compiled-source-sha256.json",
+      "source_manifest_sha256": "9bca4d2fa19e09c1f9308cf6cd45f4fef103800736ae8452d1c79592c87c3349",
+      "status": "functional_verified_resource_acceptance_pending",
+      "accepted": false,
+      "fully_passing_variants": 98,
+      "recorded_variants": 103,
+      "frozen_variants": 1515,
+      "unrun_variants": 1412,
+      "assertions": {
+        "PASS": 23629,
+        "FAIL": 29
+      },
+      "original_assertions": {
+        "PASS": 1850
+      },
+      "json_regression": {
+        "red_passed": 2,
+        "green_passed": 16,
+        "total": 16
+      },
+      "bom_regression": {
+        "red_passed": 11,
+        "green_passed": 21,
+        "total": 21
+      }
+    }
+  ]
 }

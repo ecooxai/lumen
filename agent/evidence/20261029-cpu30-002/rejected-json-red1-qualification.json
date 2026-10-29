@@ -1,0 +1,7 @@
+{
+  "qualifiedUTC": "2026-10-29T03:55:56.348610+00:00",
+  "acceptedAsRED": false,
+  "reason": "All16 checks failed the parent charset precondition; no JSON response behavior was reached. Retained only as a fixture-harness failure.",
+  "rawSummarySHA256": "52174c212057b19fc5ef9685bb22fde9aa3286f09b5419b846ae8380af073deb",
+  "fixtureSHA256": "1adf007f355fe384093fbcd805919e189135d174b4b041be5f3c1fdc19832057"
+}

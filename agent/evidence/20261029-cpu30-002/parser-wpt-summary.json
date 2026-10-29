@@ -1,0 +1,380 @@
+{
+  "task": "20261029-cpu30",
+  "startedUTC": "2026-10-29T04:08:50.281807+00:00",
+  "binary": "out/lume-20261029-cpu30/native-bom-1/lumen-4b26d5b59edf9f68",
+  "binarySHA256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+  "scope": "Frozen selected upstream WPT, not full conformance. All1515 variants remain in the cohort ledger.",
+  "stages": [
+    {
+      "name": "prepare",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tools/apple-session-gpt6as/run_task_wpt_102900614.py",
+        "prepare",
+        "--binary",
+        "out/lume-20261029-cpu30/native-bom-1/lumen-4b26d5b59edf9f68",
+        "--sha256",
+        "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+        "--output",
+        "out/lume-20261029-cpu30/compat-parser-1/cohort"
+      ],
+      "startedUTC": "2026-10-29T04:08:50.282465+00:00",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:08:51.380556+00:00",
+      "durationSeconds": 1.098,
+      "monitorReceipt": "out/lume-20261029-cpu30/compat-parser-1/prepare.json",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 4.906,
+      "maximumSamplingGapSeconds": 1.024,
+      "passed": true
+    },
+    {
+      "name": "original-six",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tools/apple-session-gpt6as/run_frozen_original_wpt_cpu30.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-bom-1/lumen-4b26d5b59edf9f68",
+        "--sha256",
+        "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+        "--output",
+        "out/lume-20261029-cpu30/compat-parser-1/cohort/original-six-receipt.json",
+        "--label",
+        "compat-parser-1"
+      ],
+      "startedUTC": "2026-10-29T04:08:51.381180+00:00",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:09:01.467935+00:00",
+      "durationSeconds": 10.087,
+      "monitorReceipt": "out/lume-20261029-cpu30/compat-parser-1/original-six.json",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 9,
+      "intervalCpuPeakPercent": 33.978,
+      "rssPeakMiB": 369.781,
+      "maximumSamplingGapSeconds": 1.04,
+      "passed": true
+    },
+    {
+      "name": "encoding-core",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tools/apple-session-gpt6as/run_task_wpt_102900614.py",
+        "run",
+        "--plan",
+        "out/lume-20261029-cpu30/compat-parser-1/cohort/cohort.json",
+        "--group",
+        "encoding-core",
+        "--max-seconds",
+        "240"
+      ],
+      "startedUTC": "2026-10-29T04:09:01.468537+00:00",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:09:48.548660+00:00",
+      "durationSeconds": 47.08,
+      "monitorReceipt": "out/lume-20261029-cpu30/compat-parser-1/encoding-core.json",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 46,
+      "intervalCpuPeakPercent": 321.533,
+      "rssPeakMiB": 768.438,
+      "maximumSamplingGapSeconds": 1.016,
+      "passed": true
+    },
+    {
+      "name": "encoding-streams",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tools/apple-session-gpt6as/run_task_wpt_102900614.py",
+        "run",
+        "--plan",
+        "out/lume-20261029-cpu30/compat-parser-1/cohort/cohort.json",
+        "--group",
+        "encoding-streams",
+        "--max-seconds",
+        "240"
+      ],
+      "startedUTC": "2026-10-29T04:09:48.549521+00:00",
+      "exitCode": 0,
+      "finishedUTC": "2026-10-29T04:10:02.664256+00:00",
+      "durationSeconds": 14.115,
+      "monitorReceipt": "out/lume-20261029-cpu30/compat-parser-1/encoding-streams.json",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 13,
+      "intervalCpuPeakPercent": 36.453,
+      "rssPeakMiB": 246.766,
+      "maximumSamplingGapSeconds": 1.015,
+      "passed": true
+    }
+  ],
+  "complete": true,
+  "sameArtifact": true,
+  "cohortSummary": {
+    "scheduled": 1515,
+    "run": 103,
+    "fullyPassing": 98,
+    "unrun": 1412,
+    "passingPercentOfRun": 95.146,
+    "assertions": {
+      "PASS": 23629,
+      "FAIL": 29
+    },
+    "harnessStatuses": {
+      "OK": 103
+    },
+    "groups": {
+      "encoding-streams": {
+        "scheduled": 26,
+        "run": 26,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "dom": {
+        "scheduled": 14,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 14
+      },
+      "events": {
+        "scheduled": 16,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 16
+      },
+      "url": {
+        "scheduled": 77,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 77
+      },
+      "storage": {
+        "scheduled": 7,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 7
+      },
+      "microtasks": {
+        "scheduled": 10,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 10
+      },
+      "headers": {
+        "scheduled": 52,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 52
+      },
+      "encoding-core": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 72,
+        "unrun": 0
+      },
+      "encoding-rest": {
+        "scheduled": 1236,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 1236
+      }
+    }
+  },
+  "failures": [
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "status": "OK",
+      "message": null,
+      "evidenceError": null,
+      "assertions": [
+        {
+          "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "csiso2022kr - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "hz-gb-2312 - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-kr - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "replacement - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "replacement - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        }
+      ]
+    },
+    {
+      "test": "/encoding/sniffing.html",
+      "status": "OK",
+      "message": null,
+      "evidenceError": null,
+      "assertions": [
+        {
+          "name": "No (UTF-8) sniffing allowed",
+          "status": "FAIL",
+          "message": "assert_equals: expected \"\u00c2\u20ac\u00c2\u20ac Hello World! \u00c2\u20ac\u00c2\u20ac\" but got \"\u0080\u0080 Hello World! \u0080\u0080\""
+        }
+      ]
+    },
+    {
+      "test": "/encoding/textdecoder-mistakes.any.html",
+      "status": "OK",
+      "message": null,
+      "evidenceError": null,
+      "assertions": [
+        {
+          "name": "fatal stream: utf-8",
+          "status": "FAIL",
+          "message": "The encoded data is not valid for utf-8"
+        }
+      ]
+    },
+    {
+      "test": "/encoding/textdecoder-mistakes.any.worker.html",
+      "status": "OK",
+      "message": null,
+      "evidenceError": null,
+      "assertions": [
+        {
+          "name": "fatal stream: utf-8",
+          "status": "FAIL",
+          "message": "The encoded data is not valid for utf-8"
+        }
+      ]
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "status": "OK",
+      "message": null,
+      "evidenceError": null,
+      "assertions": [
+        {
+          "name": "UTF-7 should not be supported",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-7 should not be supported",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32 with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32 with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32 with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32 with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32LE with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32LE with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32le with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32le with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32be with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32be with BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32be with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32be with BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        }
+      ]
+    }
+  ],
+  "binarySHA256After": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+  "finishedUTC": "2026-10-29T04:10:02.671027+00:00",
+  "durationSeconds": 72.389
+}

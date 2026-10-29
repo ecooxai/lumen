@@ -1,0 +1,19 @@
+[js log] FRAME_ENCODING_CHECK {"i":0,"name":"Windows1252 parent fallback","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":1,"name":"unsupported transport label uses parent fallback","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":2,"name":"Big5 parent fallback","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":3,"name":"UTF16LE parent encoding is not inherited","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":4,"name":"supported transport label overrides parent","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":5,"name":"HTML metadata overrides parent","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":6,"name":"UTF8 BOM overrides parent","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":7,"name":"cross-origin child does not inherit","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":8,"name":"sandbox opaque-origin child does not inherit","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":9,"name":"CSP sandbox opaque-origin child does not inherit","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":10,"name":"UTF8 parent fallback stays UTF8","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":11,"name":"UTF16BE parent encoding is not inherited","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":12,"name":"UTF16 child transport remains authoritative","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":13,"name":"Big5 meta overrides a Windows1252 parent","ok":true}
+[js log] FRAME_ENCODING_CHECK {"i":14,"name":"unsupported meta label permits Big5 parent fallback","ok":true}
+[js log] FRAME_ENCODING_RESULTS {"total":15,"passed":15,"failed":0}
+jsrun: context 18.1ms, 1 scripts 7.3ms, dom_version 80
+FRAME_ENCODING_RECEIPT {"binarySHA256": "546ddff56f24b2bf34c56905f1899ebf28a07f56321e1a93892abe803d3ccf9b", "fixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40", "htmlSHA256": "73f65b3f6c46e9d0dc44b2fe32479840255f76da20b7d6f0aab709f0fb1d5d88", "total": 15, "passed": 15, "failed": 0}
+RESULTS frame-encoding-fallback PASS (15/15 checks)

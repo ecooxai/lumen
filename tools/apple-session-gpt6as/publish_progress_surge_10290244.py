@@ -22,7 +22,9 @@ if not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', TASK):
 BASE = ROOT / ('output/session-' + TASK)
 STATE = BASE / 'progress-state'
 DEPLOY = BASE / 'surge'
-HOST = 'lume-' + TASK + '-gpt6-astra-pro.surge.sh'
+HOST = os.environ.get('LUME_SURGE_HOST', 'lume-' + TASK + '-gpt6-astra-pro.surge.sh')
+if not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.surge\.sh', HOST):
+    raise RuntimeError('Expected a single valid Surge project hostname')
 PREFIX = BASE / 'surge-cli'
 PUBLIC = BASE / 'public'
 receipt = {'schema': 1, 'startedUTC': datetime.now(timezone.utc).isoformat(),

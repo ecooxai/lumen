@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "fixture": "tools/lume-progress-10290244/tests/progress-session-continuity.test.mjs",
+  "fixtureSHA256": "4cca9e65eb2e8863ec79a27c03c784c06a90f84a4a54826f5cc428f14061f0d2",
+  "sourceSHA256": {
+    "tools/lume-progress-10290244/server.mjs": "6a29ada55c89bf15af1f7508c5e296a2ef3aef4d856d62ce5389feced7b7dc88",
+    "tools/lume-progress-10290244/build.mjs": "ae75f906cab356a60ecc42cefb90c612a3b73dd0425e1fb5b35893bec550fc71",
+    "tools/lume-progress-10290244/public/app.js": "5ddc43a9a7888c5376cae642af384f8d08bf6483e5e0bcface87a0ad13156ff0"
+  },
+  "naturalExitCode": 0,
+  "durationSeconds": 1.046,
+  "intervalCPUCount": 0,
+  "maxSamplingGapSeconds": 1.002,
+  "testSummary": [
+    "\u2714 a new task preserves the same private browser message namespace and receipts (94.98125ms)",
+    "\u2714 static delivery uses the same explicit message namespace as the live endpoint (75.200042ms)",
+    "\u2714 disk measurements retain every mount and never sum shared APFS volumes (0.831291ms)",
+    "\u2714 CPU is an interval measurement with an unavailable first sample (0.099458ms)",
+    "\u2714 message replies require the private receipt key and never execute message text (18.361292ms)",
+    "\u2714 public routes are allowlisted; inbox and filesystem secrets cannot be read (78.493083ms)",
+    "\u2714 live WebSocket returns a real nonce echo for client measured round-trip time (8.896333ms)",
+    "\u2714 message HTTP submission enforces same origin, content type and receipt access (18.2685ms)",
+    "\u2139 tests 8",
+    "\u2139 suites 0",
+    "\u2139 pass 8",
+    "\u2139 fail 0",
+    "\u2139 cancelled 0",
+    "\u2139 skipped 0",
+    "\u2139 todo 0",
+    "\u2139 duration_ms 263.67075"
+  ],
+  "red": "out/lume-20261029-cpu30/progress-continuity/red.json",
+  "green": "out/lume-20261029-cpu30/progress-continuity/green-view2.json",
+  "scope": "Private message access namespace and current task evidence remain separate on both live and static delivery; existing protocol tests included. Not a browser WPT run."
+}

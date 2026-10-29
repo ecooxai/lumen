@@ -1,0 +1,380 @@
+{
+  "startedUTC": "2026-10-29T04:06:33.202781+00:00",
+  "sourceBaseCommit": "c7f6ad5651f66cd9fed9c2ce1ec53acb33f51713",
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-bom-1/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "9bca4d2fa19e09c1f9308cf6cd45f4fef103800736ae8452d1c79592c87c3349",
+  "patchReceipt": "out/lume-20261029-cpu30/html-bom-patch-1/receipt.json",
+  "patchReceiptSHA256": "72bddfd8fbe54d9f6f12966469a04a0ce5b7866a5877cc52ddbbefc2af746945",
+  "driverConsistencyEvidence": {
+    "fixture": "out/lume-20261029-cpu30/json-document-red-1/fixture-invalid-v1.py",
+    "reason": "Recheck exact observed top-level jsrun transport-charset defect; original RED1 remains invalid for JSON compatibility."
+  },
+  "stages": [
+    {
+      "name": "build",
+      "command": [
+        "make",
+        "-j3",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/lumen",
+        "build-apple-load-20261029/jsrun",
+        "build-apple-load-20261029/test_document_encoding",
+        "build-apple-load-20261029/test_parser_input"
+      ],
+      "durationSeconds": 2.099,
+      "monitor": "out/lume-20261029-cpu30/native-bom-1/build.json",
+      "monitorSHA256": "14b97cebbf06e029d94232b05f5904eb39d2d2d9c410fee2f68c378619fe93c1",
+      "logSHA256": "43c6525a788241b91e00b2e9b32b789abfec129f5e9daabfb1ba95a4b1b3ae1f",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 91.99,
+      "rssPeakMiB": 130.625,
+      "maximumSamplingGapSeconds": 1.012,
+      "passed": true
+    },
+    {
+      "name": "html-bom",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_html_bom_boundary.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-bom-1/jsrun-546ddff56f24b2bf"
+      ],
+      "durationSeconds": 2.103,
+      "monitor": "out/lume-20261029-cpu30/native-bom-1/html-bom.json",
+      "monitorSHA256": "7ad0e2aa4a71b86c19576736be0feac693e30632c458110ec60f11d322a986f5",
+      "logSHA256": "6c64851e4315d6d2df16c685409191365bf853a94338d1dcc61c8eb7c896294c",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 3.924,
+      "rssPeakMiB": 25.781,
+      "maximumSamplingGapSeconds": 1.02,
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "546ddff56f24b2bf34c56905f1899ebf28a07f56321e1a93892abe803d3ccf9b",
+          "fixtureSHA256": "9025da241a3add95d7af5e0e3dc4dc081622471f685f479e7e6250149b843c7c",
+          "htmlSHA256": "5e1211c79c776ba5c2478fa5ec8d3811a774cc2d1f29364782cd58654215236d",
+          "caseSHA256": [
+            "d2648564022ca4fd0d3915699cb040fc31bd2225e3efef12ec5c97d9151164a8",
+            "511219fdf9a9c45a7d0d83178fd462554a584cf4a642599bae2f5e80b892eff7",
+            "b17402259d6912b6eed93d6929ff870da434a39528422cb0ea2c095cb910263a",
+            "09524311bf50e33c13fde3832a2ffbe80cdc01186f3fba68114f77144ff1eb89",
+            "15c8bcc5a12452e421544cc711f751baf314daa9ccb7830fb11b08a20b5562f5",
+            "6c4956370bac04fe21e5cc85c49c57086af05ee2cf5ea457f0ede3b5da330e8f",
+            "35355717002f195daf7a26627874ff3b5a08a8cb381daff5a5999c027ff6d824",
+            "e736d3181b29b7dbf5c702525637d8b575855d28853b6359724d286f7aec7f71",
+            "06ca86c189cd91224bc5b07bfa787fa9f56e2744b76710f79587d497b0797330",
+            "648070876835f0d75cd15570fc6b1996c88fee3dd9eb0e12a97bcfc97b484ac2",
+            "d5f721c13f15bd48244d70207702fd80821594731aa52e9ec9b4051b57ba1211",
+            "961a11224b8e4f8779b7bac440771fe71436f2c50344e20b372f02cf99850661",
+            "4f9d81b2dff7fd7f64fecdfdc6d0292ed97f903d46a3fd2a51260eab4655eaa8"
+          ],
+          "total": 21,
+          "passed": 21,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "json-document",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_json_document_encoding.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-bom-1/jsrun-546ddff56f24b2bf"
+      ],
+      "durationSeconds": 1.092,
+      "monitor": "out/lume-20261029-cpu30/native-bom-1/json-document.json",
+      "monitorSHA256": "a32a9b43a25f1e3fcb23c1a384370bf6aecbc13e0d848a8998d479811b9ab31a",
+      "logSHA256": "47b4a807262c572596a0924216d9cebe5e072ceddb851f437e16b684be23fdcd",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 4.672,
+      "maximumSamplingGapSeconds": 1.02,
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "546ddff56f24b2bf34c56905f1899ebf28a07f56321e1a93892abe803d3ccf9b",
+          "fixtureSHA256": "d2b226d0c8cb878853e60bc72bd0d9c54b1b443de38050f1e5e50cf30b435077",
+          "htmlSHA256": "6b637af532414d4d971f516d470c070d563cfb03b82e349568530cfa4ec7490e",
+          "caseSHA256": [
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "1e720055bd1467a56f9ef8d41c2116e370eaf68fe8e63be60a552e93772b43fe",
+            "7e3e222edf623ac7bbfea94ddbd432512a67970d7c288c51d3b6adba109ced93",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "299d90b763c263151b2972224336a4753ff56823ab740ae7f20da0ee99429a4f",
+            "ffc688b683abd899f74bd32c546463df3f1e7ba31cab0d4eccfe306df21ffc80",
+            "cd73d3a166274ff1bec53b5ea3beb7af2c9f3342aaae71eb478b5cfffab73e08",
+            "49994461d6b46390f014c8c5275a8591ef8764760afe2739cee23f6fbe285778",
+            "543ea154a3582af72abe8fb301deda383a733e9faac71338e734520174a90948"
+          ],
+          "total": 16,
+          "passed": 16,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "driver-parent-charset",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "out/lume-20261029-cpu30/json-document-red-1/fixture-invalid-v1.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-bom-1/jsrun-546ddff56f24b2bf"
+      ],
+      "durationSeconds": 2.106,
+      "monitor": "out/lume-20261029-cpu30/native-bom-1/driver-parent-charset.json",
+      "monitorSHA256": "fe6f01ffab41997d839e552e44afee397e7817c6acc9ed49cd050eced0a99eb5",
+      "logSHA256": "4ed3465f48184b4406a8508df6ef9db29923af5a342ab50f60942156536a885b",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 5.883,
+      "rssPeakMiB": 25.766,
+      "maximumSamplingGapSeconds": 1.02,
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "546ddff56f24b2bf34c56905f1899ebf28a07f56321e1a93892abe803d3ccf9b",
+          "fixtureSHA256": "1adf007f355fe384093fbcd805919e189135d174b4b041be5f3c1fdc19832057",
+          "htmlSHA256": "0f99830d5c3674a587b07a9d084807251116ebb158c24c666d68c6c97ba7760e",
+          "caseSHA256": [
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "1e720055bd1467a56f9ef8d41c2116e370eaf68fe8e63be60a552e93772b43fe",
+            "7e3e222edf623ac7bbfea94ddbd432512a67970d7c288c51d3b6adba109ced93",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "299d90b763c263151b2972224336a4753ff56823ab740ae7f20da0ee99429a4f",
+            "ffc688b683abd899f74bd32c546463df3f1e7ba31cab0d4eccfe306df21ffc80",
+            "cd73d3a166274ff1bec53b5ea3beb7af2c9f3342aaae71eb478b5cfffab73e08",
+            "49994461d6b46390f014c8c5275a8591ef8764760afe2739cee23f6fbe285778",
+            "543ea154a3582af72abe8fb301deda383a733e9faac71338e734520174a90948"
+          ],
+          "total": 16,
+          "passed": 16,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "frame-encoding",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_frame_encoding_fallback.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-bom-1/jsrun-546ddff56f24b2bf"
+      ],
+      "durationSeconds": 2.101,
+      "monitor": "out/lume-20261029-cpu30/native-bom-1/frame-encoding.json",
+      "monitorSHA256": "5226895dfa182347b23e59e8f34a143c3c573ae346484d442c9def6c67d0ae7e",
+      "logSHA256": "c3a9e071cae816526e004f4a97a03a7ac0e20d5b8030b001a9cdb2ecd17c4b34",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 5.891,
+      "rssPeakMiB": 26.141,
+      "maximumSamplingGapSeconds": 1.018,
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "546ddff56f24b2bf34c56905f1899ebf28a07f56321e1a93892abe803d3ccf9b",
+          "fixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+          "htmlSHA256": "73f65b3f6c46e9d0dc44b2fe32479840255f76da20b7d6f0aab709f0fb1d5d88",
+          "total": 15,
+          "passed": 15,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "xhr-encoding",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_xhr_response_encoding.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-bom-1/jsrun-546ddff56f24b2bf"
+      ],
+      "durationSeconds": 1.094,
+      "monitor": "out/lume-20261029-cpu30/native-bom-1/xhr-encoding.json",
+      "monitorSHA256": "3a20d333973f2899218a8c128c849a69bf7b1bfa130ba9b4029a2386ece11164",
+      "logSHA256": "d6a9ca48d3d9ecbec66ba4bc122ee353d202c5493b76593d33678dd40d78518e",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 5.328,
+      "maximumSamplingGapSeconds": 1.022,
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "546ddff56f24b2bf34c56905f1899ebf28a07f56321e1a93892abe803d3ccf9b",
+          "fixtureSHA256": "0af8307a1ff9e24721eedc7298ee0ccdbc84372e67c5573dab17510b86793add",
+          "htmlSHA256": "7839d5d09da919a3e878cec0837655517b38c9e29f953f0c28b1fcfd2c3ccf0d",
+          "total": 42,
+          "passed": 42,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "html-meta",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_html_meta_encoding.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-bom-1/jsrun-546ddff56f24b2bf"
+      ],
+      "durationSeconds": 2.087,
+      "monitor": "out/lume-20261029-cpu30/native-bom-1/html-meta.json",
+      "monitorSHA256": "2f3cdf782e449b81fc7794d425e091ee467717ff994d3e06f6f083fe516116c8",
+      "logSHA256": "c63872da046333b325bc85cc45b2e4aa4b202f2bd97c36b14237fb9c3f82dbe6",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 4.94,
+      "rssPeakMiB": 26.047,
+      "maximumSamplingGapSeconds": 1.012,
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "546ddff56f24b2bf34c56905f1899ebf28a07f56321e1a93892abe803d3ccf9b",
+          "fixtureSHA256": "f466ea43bdb133c418df706162e4fab1f4d1b3717e9a2ab116d7745a89630468",
+          "htmlSHA256": "8a7d5f2355050e84bc1961c9418862ecf8c11437fc7774ee0f5bc23fb68fba35",
+          "caseSHA256": [
+            "b2ba26ffad0242bc3a88c8c6241effd27cf032ec8b5a521fba2d008a7de525e9",
+            "b489a1abb1022e6612eacece6c4bd2ad00e72bbfae3376f4ee41c5ef34caa47f",
+            "4699033b94a3dc5aa825909789b35f5ad4e466dc8436e07166eecb450bf48172",
+            "0c027f3f244c7543fbf8fba48a0f9ddc59759c0c22ec2743b6a3cb6391111bd0",
+            "9f967b37fc2b2184e50f2beab711f7d72a3702e158fcba78619309bef2b0fbc3",
+            "4e1a8d51ff31acaafc770cf0140ea886e10aacf26311e4d5b61f7286384ef626",
+            "200e2f7fc0923cc164202465e6d415daed216dbdb3f5fa5ca69f9063c9f1a168",
+            "ad4cb3a8a18c73b8cb70452e9d7829c5d88985e9fedb483ac36b112595681788",
+            "2c014dc456df2caa4dda1fb563cdb26a947d0760a795fb587c003e8bd53c5353",
+            "6eae0a0bff73bde7cbe385ba65cfac9a370556ac4803262277b3715cc6f5e77a",
+            "8d5548191d7db8182b40ae42f1969c056f4cd103c39d903c64bf599721e2d1c5",
+            "1f5ee4eb70b0a73484ffeb51bad6ad0ac52de3a585adf153f6ed6935119ddfa2",
+            "6b2c1487288607594083acbfec842a286662ede4817875585e607ff46a593845",
+            "58004cb7d52dffafdb556a28129250f4a0d0c0c6cdc9586fdca3303027e0f77f",
+            "04b102704fc1045a590a9348cfd2af3e96756f7a95579655e7a3d5dcceac97ed",
+            "fcc2d391110e1b29d50543096afb35436dcaa70e4a3d197229677474baf30169",
+            "d1ea49ef4bac4f39cce43aed4caa4d22dc55cb6c4cf252c65d3ea4cca4a9beb6",
+            "d2c4a39c23945ee149296ef2c928ab2dd0ce3c3426ab9ac1065accff1822bef9",
+            "c2fc22136dbaa86cd735e27cf5992461c23de229e03bdfbd48b83353efba2bb3",
+            "531d3d53cc1ca5288a58043b510f10fa1ee2ee38b1b97ff3bcae6ed754ef8fe7",
+            "465ce8d813ec5effe56107f5caf3208c82687ac0ae89dd3b02ca5c0c09332cb5",
+            "7d9b3d500cc8f05ceafc64041e2ebe829d5295c754e23e5e708ba920d6ba3055",
+            "3a946068b2ffa59957b66361890e32f4b9b86c315349c2be78a12992733ca662",
+            "b5155d0f298d7dd1b78a1e102ab13e0479d5abd7560aca074983144d63e97d73",
+            "b44c782e7b0a6cda05786602285131865ad8325a1b4e3640e1e9061c75777fe2",
+            "14871f6a7746734996394653c1914c470794c9d3342ab772f33d612dadfb1c7b",
+            "d3e9f9bbd54b6e77c098096f0747b1045a90d0ebf7145f9b2e619c3546e351ee",
+            "6779ecb808cc4d38b647354ff0cf537ac7487cc3d09f3065dda76260d76d82fe",
+            "85adafac37b5e2a03fb57a178e4a86ad87828329e9d45504430567e17a496181"
+          ],
+          "total": 29,
+          "passed": 29,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "document-encoding",
+      "command": [
+        "out/lume-20261029-cpu30/native-bom-1/test_document_encoding-40b8d52ecff51077"
+      ],
+      "durationSeconds": 1.081,
+      "monitor": "out/lume-20261029-cpu30/native-bom-1/document-encoding.json",
+      "monitorSHA256": "f18fc258d7dae2e99767c2aa9dc9b4f5a131f36c9ed8b0102cc0f8830fabb179",
+      "logSHA256": "951d1fad04152778fc17ce36777774b590d1b6c177ec1210452aacfad2c37db8",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.012,
+      "passed": true
+    },
+    {
+      "name": "parser-input",
+      "command": [
+        "out/lume-20261029-cpu30/native-bom-1/test_parser_input-b6bf62dbe8dc0de1"
+      ],
+      "durationSeconds": 1.082,
+      "monitor": "out/lume-20261029-cpu30/native-bom-1/parser-input.json",
+      "monitorSHA256": "5ba73d6e5b5ff590fe6e4161cf731fc18ada92d55320afb06df5c967e0241680",
+      "logSHA256": "223555e5612e9415a045db5b5dd6949ac34974a9b83f45dacfaa74f48edac2ae",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.014,
+      "passed": true
+    }
+  ],
+  "artifacts": {
+    "lumen": {
+      "path": "out/lume-20261029-cpu30/native-bom-1/lumen-4b26d5b59edf9f68",
+      "sha256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+      "bytes": 14055960
+    },
+    "jsrun": {
+      "path": "out/lume-20261029-cpu30/native-bom-1/jsrun-546ddff56f24b2bf",
+      "sha256": "546ddff56f24b2bf34c56905f1899ebf28a07f56321e1a93892abe803d3ccf9b",
+      "bytes": 13828152
+    },
+    "test_document_encoding": {
+      "path": "out/lume-20261029-cpu30/native-bom-1/test_document_encoding-40b8d52ecff51077",
+      "sha256": "40b8d52ecff510770aeb23ecdd49e880b487d81c536c108d37f6654a0febae7d",
+      "bytes": 13868424
+    },
+    "test_parser_input": {
+      "path": "out/lume-20261029-cpu30/native-bom-1/test_parser_input-b6bf62dbe8dc0de1",
+      "sha256": "b6bf62dbe8dc0de104aa5f03cbf307c49f8078c36e92416e70f077a05794927a",
+      "bytes": 815488
+    }
+  },
+  "passed": true,
+  "prebuiltV8Linked": true,
+  "finishedUTC": "2026-10-29T04:06:48.110924+00:00",
+  "durationSeconds": 14.926
+}

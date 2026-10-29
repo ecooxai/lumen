@@ -738,8 +738,9 @@ void html_parser_finish(HtmlParser *p) {
 
 void html_parse(Document *d, const char *src, size_t len) {
     HtmlParser *p = html_parser_new(d, NULL);
-    /* skip BOM */
-    if (len >= 3 && (unsigned char)src[0] == 0xEF && (unsigned char)src[1] == 0xBB && (unsigned char)src[2] == 0xBF) { src += 3; len -= 3; }
+    /* This entry point receives decoded Unicode as UTF-8, including srcdoc
+     * and DOMParser strings. Only the byte-response decoder consumes a BOM;
+     * a remaining leading U+FEFF is document text and must be preserved. */
     html_parser_feed(p, src, len);
     html_parser_finish(p);
     html_parser_free(p);
@@ -769,6 +770,30 @@ static bool response_is_plaintext(const char *content_type) {
     if (!end) end = start + strlen(start);
     while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\r' || end[-1] == '\n')) --end;
     return (size_t)(end - start) == 10 && str_ieqn(start, "text/plain", 10);
+}
+
+/* JSON documents are text documents, including structured +json types.
+ * Match a valid complete MIME essence rather than a suffix in a parameter.
+ * https://mimesniff.spec.whatwg.org/#json-mime-type */
+static bool response_is_json(const char *content_type) {
+    if (!content_type) return false;
+    const char *start = content_type;
+    while (*start == ' ' || *start == '\t' || *start == '\r' || *start == '\n') ++start;
+    const char *end = strchr(start, ';');
+    if (!end) end = start + strlen(start);
+    while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\r' || end[-1] == '\n')) --end;
+    const char *slash = memchr(start, '/', (size_t)(end - start));
+    if (!slash || slash == start || slash + 1 == end) return false;
+    for (const char *p = start; p < end; ++p) {
+        if (p == slash) continue;
+        const unsigned char c = (unsigned char)*p;
+        if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+              (c >= '0' && c <= '9') || strchr("!#$%&'*+-.^_`|~", c))) return false;
+    }
+    const size_t n = (size_t)(end - start);
+    return (n == 16 && str_ieqn(start, "application/json", 16)) ||
+           (n == 9 && str_ieqn(start, "text/json", 9)) ||
+           (end - slash > 5 && str_ieqn(end - 5, "+json", 5));
 }
 
 static void html_parse_plaintext(Document *document, const char *text, size_t length) {
@@ -977,7 +1002,13 @@ bool html_parse_bytes_with_fallback(Document *document, const char *bytes, size_
         encoding = WEB_ENC_UTF16BE;
     else if (content_type)
         encoding = web_encoding_mime_n(content_type, strlen(content_type));
-    const bool plaintext = response_is_plaintext(content_type);
+    const bool json = response_is_json(content_type);
+    const bool plaintext = json || response_is_plaintext(content_type);
+    /* JSON's default is UTF-8, independently of the embedding document.
+     * BOM and an explicit supported transport charset have already won.
+     * JSON data must never be inspected for HTML metadata or tokenized as
+     * markup: the text-document path preserves it literally in a pre node. */
+    if (encoding == WEB_ENC_UNKNOWN && json) encoding = WEB_ENC_UTF8;
     if (encoding == WEB_ENC_UNKNOWN && !plaintext)
         encoding = html_prescan_encoding(input, length);
     if (encoding == WEB_ENC_UNKNOWN) {

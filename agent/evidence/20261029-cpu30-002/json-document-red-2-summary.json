@@ -1,0 +1,148 @@
+{
+  "startedUTC": "2026-10-29T03:55:56.397308+00:00",
+  "artifact": {
+    "path": "out/lume-20261029-cpu30/json-document-red-1/jsrun-71ad79328c27d2c1",
+    "sha256": "71ad79328c27d2c170f5d78dfc248e95d1a0ad1626ff23c7fc7b36a7f4df6b5c"
+  },
+  "fixtureSHA256": "d2b226d0c8cb878853e60bc72bd0d9c54b1b443de38050f1e5e50cf30b435077",
+  "htmlSourceSHA256": "5deaa7cee34b71b928ee37aa2c7125c5b68273eb88c31ae47a6e21b64ac0e5aa",
+  "sourceManifest": "out/lume-20261029-cpu30/json-document-red-2/compiled-source-sha256.json",
+  "sourceManifestSHA256": "206a003f627daeeaa8201dfcf8186906352fe12b6f8721662190f2a61c9b3670",
+  "supersedesInvalidRun": "out/lume-20261029-cpu30/json-document-red-1/summary.json",
+  "invalidRunReason": "jsrun top-level document ignores transport charset, so v1 never reached child cases. v2 uses a genuine HTTP iframe with an explicit windows-1251 transport charset.",
+  "redConfirmed": true,
+  "monitor": {
+    "path": "out/lume-20261029-cpu30/json-document-red-2/json-document.json",
+    "sha256": "4571b9f53689b0bb55f596270b2b66b75ccd9b2a7b06475ddeb985d450043539",
+    "naturalExitCode": 1,
+    "collectorError": null,
+    "endedByMonitor": false,
+    "cpuSamples": 0,
+    "cpuPeakPercent": null,
+    "rssPeakMiB": 5.359
+  },
+  "checks": [
+    {
+      "i": 0,
+      "name": "application/json uses UTF8 under a legacy parent",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 1,
+      "name": "text/json uses UTF8 under a legacy parent",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 2,
+      "name": "case-insensitive JSON essence",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 3,
+      "name": "JSON essence trims HTTP whitespace",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 4,
+      "name": "structured JSON application suffix",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 5,
+      "name": "structured JSON text suffix",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 6,
+      "name": "case-insensitive structured JSON suffix",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 7,
+      "name": "explicit UTF8 charset",
+      "ok": false,
+      "error": "Error: expected 1, got 0"
+    },
+    {
+      "i": 8,
+      "name": "explicit Windows1251 charset is honored",
+      "ok": false,
+      "error": "Error: expected 1, got 0"
+    },
+    {
+      "i": 9,
+      "name": "UTF8 BOM precedes explicit transport charset",
+      "ok": false,
+      "error": "Error: expected 1, got 0"
+    },
+    {
+      "i": 10,
+      "name": "unknown charset does not inherit legacy parent",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 11,
+      "name": "HTML metadata and tags are literal JSON text",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 12,
+      "name": "script-looking JSON data does not execute",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 13,
+      "name": "leading newline is preserved in JSON text",
+      "ok": false,
+      "error": "Error: expected \"UTF-8\", got \"windows-1251\""
+    },
+    {
+      "i": 14,
+      "name": "plaintext fallback still inherits eligible parent",
+      "ok": true
+    },
+    {
+      "i": 15,
+      "name": "HTML still parses markup and metadata",
+      "ok": true
+    }
+  ],
+  "regression": {
+    "binarySHA256": "71ad79328c27d2c170f5d78dfc248e95d1a0ad1626ff23c7fc7b36a7f4df6b5c",
+    "fixtureSHA256": "d2b226d0c8cb878853e60bc72bd0d9c54b1b443de38050f1e5e50cf30b435077",
+    "htmlSHA256": "6b637af532414d4d971f516d470c070d563cfb03b82e349568530cfa4ec7490e",
+    "caseSHA256": [
+      "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+      "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+      "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+      "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+      "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+      "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+      "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+      "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+      "1e720055bd1467a56f9ef8d41c2116e370eaf68fe8e63be60a552e93772b43fe",
+      "7e3e222edf623ac7bbfea94ddbd432512a67970d7c288c51d3b6adba109ced93",
+      "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+      "299d90b763c263151b2972224336a4753ff56823ab740ae7f20da0ee99429a4f",
+      "ffc688b683abd899f74bd32c546463df3f1e7ba31cab0d4eccfe306df21ffc80",
+      "cd73d3a166274ff1bec53b5ea3beb7af2c9f3342aaae71eb478b5cfffab73e08",
+      "49994461d6b46390f014c8c5275a8591ef8764760afe2739cee23f6fbe285778",
+      "543ea154a3582af72abe8fb301deda383a733e9faac71338e734520174a90948"
+    ],
+    "total": 16,
+    "passed": 2,
+    "failed": 14
+  },
+  "finishedUTC": "2026-10-29T03:55:57.491961+00:00",
+  "durationSeconds": 1.095
+}

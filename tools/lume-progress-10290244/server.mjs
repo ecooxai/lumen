@@ -22,6 +22,8 @@ function equalSecret(actual,expected) {
 export function createProgressServer(options={}) {
   const taskId=String(options.taskId||'10290244');
   if(!/^[A-Za-z0-9_-]{1,64}$/.test(taskId))throw Error('Invalid task identifier');
+  const messageSessionId=String(options.messageSessionId||taskId);
+  if(!/^[A-Za-z0-9_-]{1,64}$/.test(messageSessionId))throw Error('Invalid message session identifier');
   const emptyStatus={...EMPTY_STATUS,taskId};
   const stateDir=options.stateDir||path.resolve(HERE,`../../output/session-${taskId}/progress-state`);
   const publicDir=options.publicDir||path.join(HERE,'public');
@@ -72,7 +74,7 @@ export function createProgressServer(options={}) {
     }
     if(req.method==='GET'&&url.pathname==='/api/health')return json(req,res,200,{ok:true,taskId,live:'/live',messages:'A private access link is required. Messages are data, never commands.'});
     if(req.method==='GET'&&url.pathname==='/api/progress')return json(req,res,200,await snapshot());
-    if(req.method==='GET'&&url.pathname==='/config.json')return json(req,res,200,{liveBase:'',taskId});
+    if(req.method==='GET'&&url.pathname==='/config.json')return json(req,res,200,{liveBase:'',taskId,...(messageSessionId===taskId?{}:{messageSessionId})});
     if(req.method==='GET'&&/^\/api\/message\/[a-f0-9-]{36}$/.test(url.pathname)) {
       const value=await store.read(url.pathname.split('/').at(-1),url.searchParams.get('key'));
       return json(req,res,value?200:404,value||{error:'Not found'});
@@ -152,7 +154,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   let messageToken;
   try{messageToken=(await fsp.readFile(keyFile,'utf8')).trim();}
   catch{messageToken=crypto.randomBytes(24).toString('hex');await fsp.writeFile(keyFile,messageToken+'\n',{mode:0o600,flag:'wx'});}
-  const server=createProgressServer({taskId,stateDir,messageToken,scorecard:process.env.LUME_SCORECARD?path.resolve(process.env.LUME_SCORECARD):path.resolve(HERE,`../../agent/scorecard-${taskId}.json`),sourceArchive:process.env.LUME_SOURCE_ARCHIVE?path.resolve(process.env.LUME_SOURCE_ARCHIVE):undefined,allowedOrigins:(process.env.LUME_ALLOWED_ORIGINS||'').split(',').filter(Boolean)});
+  const server=createProgressServer({taskId,messageSessionId:process.env.LUME_MESSAGE_SESSION_ID||taskId,stateDir,messageToken,scorecard:process.env.LUME_SCORECARD?path.resolve(process.env.LUME_SCORECARD):path.resolve(HERE,`../../agent/scorecard-${taskId}.json`),sourceArchive:process.env.LUME_SOURCE_ARCHIVE?path.resolve(process.env.LUME_SOURCE_ARCHIVE):undefined,allowedOrigins:(process.env.LUME_ALLOWED_ORIGINS||'').split(',').filter(Boolean)});
   const port=Number(process.env.PORT||18784);
   server.listen(port,'127.0.0.1',()=>process.stdout.write(`Lume progress listening on http://127.0.0.1:${port}; private message key stored outside published files.\n`));
   process.on('SIGTERM',()=>server.closeProgress());process.on('SIGINT',()=>server.closeProgress());

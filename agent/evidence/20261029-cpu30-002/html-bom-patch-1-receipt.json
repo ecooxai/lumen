@@ -1,0 +1,27 @@
+{
+  "updatedUTC": "2026-10-29T04:06:31.980553+00:00",
+  "sources": {
+    "src/html/html.c": {
+      "beforeSHA256": "387822e8081e5c9dcfd938b31e4b98e2f6cc23e416b70449bc6d7ea156ac8739",
+      "afterSHA256": "1847af1618b33a3c856fd372125388572bc0096d0c9bbd106f1c27fbe3ec72c1"
+    },
+    "src/app/main.c": {
+      "beforeSHA256": "d76a2f3bd2c22d52e66ca2a4b32a851332aacbbd92b2d684babe475a6d8852fd",
+      "afterSHA256": "d7ee6a378b1a31e82a2f601d8109502659f93d5e9bc8dd949bd9e59f3584328f"
+    },
+    "tests/jsrun.c": {
+      "beforeSHA256": "3d4ccec2cbad0aa4ff71e667259c9bbd6a854ad91f798071bb6df9e6faf13aae",
+      "afterSHA256": "5fb1a7590770f3cc24ab771554342c5859627cb0e7ebd341c69fe8ea244995ec"
+    }
+  },
+  "redReceipt": "out/lume-20261029-cpu30/html-bom-red-1/summary.json",
+  "redReceiptSHA256": "868e45a184e125b382b02868bd4ff90f257ee92b0c4a5058ef3503fa34e6547e",
+  "fixtureSHA256": "9025da241a3add95d7af5e0e3dc4dc081622471f685f479e7e6250149b843c7c",
+  "driverFailureQualification": "out/lume-20261029-cpu30/json-document-red-1/qualification.json",
+  "driverFailureQualificationSHA256": "d1e54cee1ad7debefbffd0a6cc75b3a3795ba7e6089995250cc7a5c95a49fc60",
+  "scope": "Consume exactly one BOM at byte decoding; preserve leading Unicode FEFF in HTML/DOMParser/srcdoc. Route external SVG and jsrun raw bytes through the same MIME-aware decoder.",
+  "sourcesReviewed": [
+    "https://html.spec.whatwg.org/multipage/parsing.html#the-input-byte-stream",
+    "https://encoding.spec.whatwg.org/#decode"
+  ]
+}

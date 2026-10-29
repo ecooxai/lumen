@@ -1,0 +1,381 @@
+{
+  "iteration": "20261029-cpu30-002",
+  "started_utc": "2026-10-29T03:55:56.397308+00:00",
+  "finished_utc": "2026-10-29T04:25:54.392568+00:00",
+  "started_Asia_Shanghai": "2026-10-29T11:55:56.397308+08:00",
+  "finished_Asia_Shanghai": "2026-10-29T12:25:54.392568+08:00",
+  "elapsed_seconds": 1797.995,
+  "total_session_seconds": 7629.393,
+  "score": 50,
+  "scoreIsWptPercentage": false,
+  "status": "JSON/BOM fixes and stable private message namespace functionally verified; changed native resource acceptance and public handoff pending",
+  "acceptedNativeSHA256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+  "functionalCandidate": {
+    "binary_sha256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+    "source_base_commit": "c7f6ad5651f66cd9fed9c2ce1ec53acb33f51713",
+    "source_manifest": "agent/evidence/20261029-cpu30-002/compiled-source-sha256.json",
+    "source_manifest_sha256": "9bca4d2fa19e09c1f9308cf6cd45f4fef103800736ae8452d1c79592c87c3349",
+    "status": "functional_verified_resource_acceptance_pending",
+    "accepted": false,
+    "fully_passing_variants": 98,
+    "recorded_variants": 103,
+    "frozen_variants": 1515,
+    "unrun_variants": 1412,
+    "assertions": {
+      "PASS": 23629,
+      "FAIL": 29
+    },
+    "original_assertions": {
+      "PASS": 1850
+    },
+    "json_regression": {
+      "red_passed": 2,
+      "green_passed": 16,
+      "total": 16
+    },
+    "bom_regression": {
+      "red_passed": 11,
+      "green_passed": 21,
+      "total": 21
+    }
+  },
+  "timings": {
+    "validJsonRedSeconds": 1.095,
+    "jsonGreenBuildAndChecksSeconds": 7.553,
+    "bomRedSeconds": 1.087,
+    "combinedParserBuildAndChecksSeconds": 14.926,
+    "incrementalBuildSeconds": 2.099,
+    "originalAndSelectedWptSeconds": 72.389,
+    "deliveryGreenSeconds": 1.046
+  },
+  "parallelTimingNote": "Wall elapsed is computed from timestamps; overlapping agent/job durations are not summed. Short tests with no interval CPU samples make no steady CPU claim.",
+  "evidence": [
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/20261029-cpu30-002/compiled-source-sha256.json",
+      "sha256": "9bca4d2fa19e09c1f9308cf6cd45f4fef103800736ae8452d1c79592c87c3349",
+      "bytes": 13357
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-build-regressions.json",
+      "sha256": "6ceb60115f903271d02cccd23c5b50799a05f291a178a799024cb09e17fbac8f",
+      "bytes": 17480
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/build.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-build-monitor.json",
+      "sha256": "14b97cebbf06e029d94232b05f5904eb39d2d2d9c410fee2f68c378619fe93c1",
+      "bytes": 2026
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/build.log",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-build.log",
+      "sha256": "43c6525a788241b91e00b2e9b32b789abfec129f5e9daabfb1ba95a4b1b3ae1f",
+      "bytes": 14178
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/html-bom.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-html-bom-monitor.json",
+      "sha256": "7ad0e2aa4a71b86c19576736be0feac693e30632c458110ec60f11d322a986f5",
+      "bytes": 2016
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/html-bom.log",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-html-bom.log",
+      "sha256": "6c64851e4315d6d2df16c685409191365bf853a94338d1dcc61c8eb7c896294c",
+      "bytes": 3353
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/json-document.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-json-document-monitor.json",
+      "sha256": "a32a9b43a25f1e3fcb23c1a384370bf6aecbc13e0d848a8998d479811b9ab31a",
+      "bytes": 2004
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/json-document.log",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-json-document.log",
+      "sha256": "47b4a807262c572596a0924216d9cebe5e072ceddb851f437e16b684be23fdcd",
+      "bytes": 2982
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/driver-parent-charset.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-driver-parent-charset-monitor.json",
+      "sha256": "fe6f01ffab41997d839e552e44afee397e7817c6acc9ed49cd050eced0a99eb5",
+      "bytes": 2019
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/driver-parent-charset.log",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-driver-parent-charset.log",
+      "sha256": "4ed3465f48184b4406a8508df6ef9db29923af5a342ab50f60942156536a885b",
+      "bytes": 2982
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/frame-encoding.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-frame-encoding-monitor.json",
+      "sha256": "5226895dfa182347b23e59e8f34a143c3c573ae346484d442c9def6c67d0ae7e",
+      "bytes": 2019
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/frame-encoding.log",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-frame-encoding.log",
+      "sha256": "c3a9e071cae816526e004f4a97a03a7ac0e20d5b8030b001a9cdb2ecd17c4b34",
+      "bytes": 1929
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/xhr-encoding.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-xhr-encoding-monitor.json",
+      "sha256": "3a20d333973f2899218a8c128c849a69bf7b1bfa130ba9b4029a2386ece11164",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/xhr-encoding.log",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-xhr-encoding.log",
+      "sha256": "d6a9ca48d3d9ecbec66ba4bc122ee353d202c5493b76593d33678dd40d78518e",
+      "bytes": 4590
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/html-meta.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-html-meta-monitor.json",
+      "sha256": "2f3cdf782e449b81fc7794d425e091ee467717ff994d3e06f6f083fe516116c8",
+      "bytes": 2015
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/html-meta.log",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-html-meta.log",
+      "sha256": "c63872da046333b325bc85cc45b2e4aa4b202f2bd97c36b14237fb9c3f82dbe6",
+      "bytes": 5036
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/document-encoding.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-document-encoding-monitor.json",
+      "sha256": "f18fc258d7dae2e99767c2aa9dc9b4f5a131f36c9ed8b0102cc0f8830fabb179",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/document-encoding.log",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-document-encoding.log",
+      "sha256": "951d1fad04152778fc17ce36777774b590d1b6c177ec1210452aacfad2c37db8",
+      "bytes": 5104
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/parser-input.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-parser-input-monitor.json",
+      "sha256": "5ba73d6e5b5ff590fe6e4161cf731fc18ada92d55320afb06df5c967e0241680",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-bom-1/parser-input.log",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-parser-input.log",
+      "sha256": "223555e5612e9415a045db5b5dd6949ac34974a9b83f45dacfaa74f48edac2ae",
+      "bytes": 2466
+    },
+    {
+      "source": "out/lume-20261029-cpu30/json-document-red-2/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-002/json-document-red-2-summary.json",
+      "sha256": "a062c651bca5b0bff1a3fc5124375ec8da0486c588601988b1291a72f6c682d0",
+      "bytes": 5367
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-json-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-002/native-json-1-summary.json",
+      "sha256": "4106af8499eda799bbd0fe0d5060b0e669f3df4a70440d0cff8ed60abc103161",
+      "bytes": 9967
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-bom-red-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-002/html-bom-red-1-summary.json",
+      "sha256": "868e45a184e125b382b02868bd4ff90f257ee92b0c4a5058ef3503fa34e6547e",
+      "bytes": 5151
+    },
+    {
+      "source": "out/lume-20261029-cpu30/json-document-red-2/json-document.json",
+      "committed": "agent/evidence/20261029-cpu30-002/json-red-monitor.json",
+      "sha256": "4571b9f53689b0bb55f596270b2b66b75ccd9b2a7b06475ddeb985d450043539",
+      "bytes": 2046
+    },
+    {
+      "source": "out/lume-20261029-cpu30/json-document-red-2/json-document.log",
+      "committed": "agent/evidence/20261029-cpu30-002/json-red.log",
+      "sha256": "61d0e982e0e54d6799347fbc512cbb81abb5d5f123c97b832cc26a89a18eab23",
+      "bytes": 3739
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-bom-red-1/html-bom.json",
+      "committed": "agent/evidence/20261029-cpu30-002/bom-red-monitor.json",
+      "sha256": "a37460a21a87293a5782a1fe2be501735eaefba97d2a6b2dc442f792a70e4656",
+      "bytes": 2046
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-bom-red-1/html-bom.log",
+      "committed": "agent/evidence/20261029-cpu30-002/bom-red.log",
+      "sha256": "ad43c39ab2161feac33db9156d60c768ef9d86ad6410fe8daa3704e330e3b4c2",
+      "bytes": 3867
+    },
+    {
+      "source": "out/lume-20261029-cpu30/json-document-patch-1/receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-002/json-document-patch-1-receipt.json",
+      "sha256": "1a4358321ef9dbcbb375c152c34a8798ee2203ec786b053de25476f156ccbe42",
+      "bytes": 821
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-bom-patch-1/receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-002/html-bom-patch-1-receipt.json",
+      "sha256": "72bddfd8fbe54d9f6f12966469a04a0ce5b7866a5877cc52ddbbefc2af746945",
+      "bytes": 1497
+    },
+    {
+      "source": "out/lume-20261029-cpu30/json-document-red-1/qualification.json",
+      "committed": "agent/evidence/20261029-cpu30-002/rejected-json-red1-qualification.json",
+      "sha256": "d1e54cee1ad7debefbffd0a6cc75b3a3795ba7e6089995250cc7a5c95a49fc60",
+      "bytes": 411
+    },
+    {
+      "source": "out/lume-20261029-cpu30/json-document-red-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-002/rejected-json-red1-summary.json",
+      "sha256": "52174c212057b19fc5ef9685bb22fde9aa3286f09b5419b846ae8380af073deb",
+      "bytes": 5933
+    },
+    {
+      "source": "out/lume-20261029-cpu30/json-document-red-1/fixture-invalid-v1.py",
+      "committed": "agent/evidence/20261029-cpu30-002/rejected-json-red1-fixture-invalid-v1.py",
+      "sha256": "1adf007f355fe384093fbcd805919e189135d174b4b041be5f3c1fdc19832057",
+      "bytes": 6475
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-wpt-summary.json",
+      "sha256": "0099cf9615aca8e3e37fb9a1430161c798564d18703ae27fda6bbaa5c1340f49",
+      "bytes": 13577
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-parser-1/cohort-before.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-wpt-priority-frozen103.json",
+      "sha256": "138bdc2917d2f47040c418519f6f527da092b4537218c2549be235438d31e695",
+      "bytes": 10461
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/cohort.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-frozen-cohort.json",
+      "sha256": "ce0a4ebfd170d1054929590bdb7bed39d6c4ab372a051ac437c3656abd42a5d9",
+      "bytes": 1106598
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/original-six-receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-original-six.json",
+      "sha256": "ef2bdd608be5564910ee2a31af17f2f48d37a3ef14109008383189e8083316c2",
+      "bytes": 1273
+    },
+    {
+      "source": "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task20261029-cpu30-compat-parser-1-4b26d5b59edf9f68/wpt-report.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-original-six-raw.json",
+      "sha256": "c25b7e8807ffc2b532c8900f6e7e694f652454fe2503eaff4dfa62d79d197283",
+      "bytes": 299997
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/encoding-core/run.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-encoding-core-run.json",
+      "sha256": "524621a6aa605fe983b4956dc1640a990ff21864da739db216683c9710eb73a0",
+      "bytes": 14963
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/encoding-core/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-encoding-core-schedule.json",
+      "sha256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+      "bytes": 44730
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/encoding-core/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-encoding-core-results.jsonl",
+      "sha256": "df7921107173f9d24f30ddab7f8726bd63b6a914334a24fc8d7cf92df2fea5e9",
+      "bytes": 2455248
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/encoding-core/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-encoding-core-summary.json",
+      "sha256": "fa2c9abfdd5206137ee7d35d11966d56a0d4a228f61b08cddd930b25de9eafa5",
+      "bytes": 2018
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/encoding-streams/run.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-encoding-streams-run.json",
+      "sha256": "f535922448b1166ec48d124c722efd240f656bb0b2fca6cab03e11c5fcfb73cd",
+      "bytes": 11984
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/encoding-streams/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-encoding-streams-schedule.json",
+      "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "bytes": 10971
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/encoding-streams/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-encoding-streams-results.jsonl",
+      "sha256": "e329741527a85e4785e5cb4769ef556a2c7ca20b629a13cd3f4780148f4f3f32",
+      "bytes": 101658
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/cohort/encoding-streams/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-002/parser-encoding-streams-summary.json",
+      "sha256": "2f22b13c5ac3f958442a6d1a65aeec269ef6e0c0290807376fcab1707b902ee4",
+      "bytes": 1862
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/prepare.json",
+      "committed": "agent/evidence/20261029-cpu30-002/wpt-prepare-monitor.json",
+      "sha256": "ec68d60340d1337d301aaba3ec5eb6b80d1f535802cd69892ac7f11922a87d02",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/original-six.json",
+      "committed": "agent/evidence/20261029-cpu30-002/wpt-original-six-monitor.json",
+      "sha256": "5913a99fa7904e8ce7ce0a9d7d22ee9700d35a76adb58a3692a6a8d167529fca",
+      "bytes": 2034
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/encoding-core.json",
+      "committed": "agent/evidence/20261029-cpu30-002/wpt-encoding-core-monitor.json",
+      "sha256": "8aa42d4e53ecd2cb8d70843f1c050f8d5512137487abfd60df81d89c95d111fe",
+      "bytes": 2041
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-parser-1/encoding-streams.json",
+      "committed": "agent/evidence/20261029-cpu30-002/wpt-encoding-streams-monitor.json",
+      "sha256": "cab759d95434801b15fe89e2b573c10f44f80379c0c1198fecf92393a896a90f",
+      "bytes": 2041
+    },
+    {
+      "source": "out/lume-20261029-cpu30/progress-continuity/summary-view2.json",
+      "committed": "agent/evidence/20261029-cpu30-002/delivery-summary-view2.json",
+      "sha256": "6eb2541ff88542b156aeac68c0a091e05add21953a6c56d21dac471c0009f492",
+      "bytes": 2032
+    },
+    {
+      "source": "out/lume-20261029-cpu30/progress-continuity/red.json",
+      "committed": "agent/evidence/20261029-cpu30-002/delivery-red.json",
+      "sha256": "1a38b40964b9ea47df440c17833f63fc5f315142a89a2e3705b5c66644efa55f",
+      "bytes": 2045
+    },
+    {
+      "source": "out/lume-20261029-cpu30/progress-continuity/red.log",
+      "committed": "agent/evidence/20261029-cpu30-002/delivery-red.log",
+      "sha256": "8db53146103d66bb2a0082a4c84046728bc64a84ac4224c0468574319ccaac6b",
+      "bytes": 1965
+    },
+    {
+      "source": "out/lume-20261029-cpu30/progress-continuity/green-view2.json",
+      "committed": "agent/evidence/20261029-cpu30-002/delivery-green-view2.json",
+      "sha256": "5f4c34ab9838bb1aa0ff2fded7f58a6eb91259021bd451e8ec28c1844353c625",
+      "bytes": 2004
+    },
+    {
+      "source": "out/lume-20261029-cpu30/progress-continuity/green-view2.log",
+      "committed": "agent/evidence/20261029-cpu30-002/delivery-green-view2.log",
+      "sha256": "457f48ada10524ff73ecb6de63989dfe8cfeb491673e2c8dc9a480cee2f2e577",
+      "bytes": 851
+    }
+  ],
+  "compiledInputsVerified": 138,
+  "fullOfficialWptPassPercent": null,
+  "publicDeliveryVerified": false
+}
