@@ -1,0 +1,21 @@
+{
+  "candidate": 181,
+  "local_commit": "6abe7a8ac8cc63da1b9bb178c5360b9cad632802",
+  "remote_commit": "a778b1d1ae944a1ad0f9be596b1547a9825891f9",
+  "files": {
+    "src/layout/block.c": {
+      "before": "22d45c32c6d9e96da4ba620e5998277736292d56d17d599528121cbbeb13de55",
+      "after": "a05e4931f5fc362a93ad4adc83f3f266d70aeb60cacb05493409a57bbca17a1d"
+    },
+    "src/layout/box.c": {
+      "before": "b9c022adc1c09ee7bc1b14f8a1f33d644bc0f640aa8a88138c7a76d03ee26f78",
+      "after": "f3701321a23217da38269b8b263d445387f550689941dd37db260aeda62fa628"
+    },
+    "src/layout/layout.h": {
+      "before": "00da4c3db32a0831bafe8cc201afe8139399a8ddb7c61971e75d01c7ee71efde",
+      "after": "145b95aa420dd00fda72e1808affdf4f70c2c510c969067c815867a079eecfa7"
+    }
+  },
+  "patch_sha256": "977a8181c6610593efcdf09670be6e4084ca03480bb79d9b085441ced823f9e9",
+  "utc": "2026-10-29T18:03:22.677118+00:00"
+}

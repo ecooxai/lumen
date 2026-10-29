@@ -1,15 +1,15 @@
 {
-  "title": "Lumen \u00b7 Linux non-URL conformance",
-  "phase": "Candidate176 focused151:151normal harness completions,96fully passing;2283PASS/331FAIL/1PRECONDITION, unchanged versus175. Exact56-page history reproduced the COEP missing-harness error in168and175; pre-existing lifetime sensitivity remains unfixed. Final native/sanitizer gates running; Grid/broad/performance pending.",
-  "iteration": 176,
+  "title": "Lumen Linux \u00b7 active Ruby engine development",
+  "phase": "RubyWebterm restored after server restart; reviewed source through candidate182 integrating and genuine remote build next. Local180/182 smoke10/10 each; broader acceptance remains open.",
+  "iteration": 182,
   "score": 19,
   "iteration_quality": 19,
-  "score_note": "19/100 is the inherited experimental whole-goal readiness estimate from session4. No fresh conformance improvement is claimed yet; this score is not a WPT pass percentage.",
-  "branch": "gpt-6-astra-engine-lead-linux-nonurl-conformance-20261029-1339",
+  "score_note": "Inherited19/100 whole-browser readiness estimate, not a WPT pass percentage. Focused native1531/1569 and938/1008 are separately labeled local checkpoint evidence. Goal98/100 remains unmet.",
+  "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
   "checkpoint": "b4d8147c7b7945f5eddc11cfc444a80dd5a9ff13",
-  "updated_utc": "2026-10-29T14:58:37.572491+00:00",
-  "session_started_utc": "2026-10-29T13:39:40Z",
-  "deadline_utc": "2026-10-29T16:39:40Z",
+  "updated_utc": "2026-10-29T18:03:50.071415+00:00",
+  "session_started_utc": "2026-10-29T17:25:47Z",
+  "deadline_utc": "2026-10-29T21:25:47Z",
   "current_evidence": [
     [
       "Fresh selected125 non-URL variants",
@@ -56,8 +56,8 @@
   "source_archive_scope": "Qualified experimental168 engine-only source snapshot, already anonymously public and byte verified. Private task/handoff/runtime/validation payloads and development history are excluded. Browser-sanitizer shutdown and batch-history sensitivity remain unresolved.",
   "cloud_snapshot_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-engine-experimental-source-20261029",
   "session_active": true,
-  "session_id": "20261029-1339",
-  "session_deadline_utc": "2026-10-29T16:39:40Z",
+  "session_id": "20261029-1725",
+  "session_deadline_utc": "2026-10-29T21:25:47Z",
   "previous_session_evidence": [
     [
       "Accepted combined source 150",
@@ -150,7 +150,7 @@
     "freshness_note": "Historical previous-session comparator, not a new session 4 replay."
   },
   "source_archive_available": true,
-  "session_response_availability": "The active operations agent checks new messages during this authorized work session. Posting requires the private current-session capability. Replies are not promised after the session closes.",
+  "session_response_availability": "Agents check messages during this active work session; no unattended replies are promised after it ends. The verified owner inbox link was supplied privately in chat.",
   "selected_wpt": {
     "selected_urls": 4200,
     "native162": {
@@ -348,7 +348,7 @@
     "fresh_all162_render100_replay": false,
     "summary_sha256": "0745aabf33a07a7c5a7609d5c52e0a1ba057631019df1ed627fb8c1138075ef5"
   },
-  "session_active_until": "2026-10-29T16:39:40Z",
+  "session_active_until": "2026-10-29T21:25:47Z",
   "retained_session3_evidence": {
     "label": "Historical experimental162; previous completed work session",
     "selected_wpt": {
@@ -397,7 +397,7 @@
       "source": "https://ecooxai.github.io/lumen/src.tar.gz"
     }
   },
-  "work_session_id": "20261029-1339",
+  "work_session_id": "20261029-1725",
   "work_session_number": 5,
   "historical_public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "candidate_focused_results": {
@@ -589,13 +589,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": {
-    "iteration": 175,
-    "state": "Focused tested;954/broad/performance pending",
-    "published": false,
-    "source_commit": "f07fb4c0c992ae0f99c9f191c197d0d420915de2",
-    "browser_sanitizer_shutdown_verified": false
-  },
+  "current_candidate": 182,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -743,7 +737,7 @@
     "public_source_replacement_approved": false,
     "final_release_decision": "rejected after the repeated207-pixel rendering regression"
   },
-  "original_deadline_utc": "2026-10-29T16:39:40Z",
+  "original_deadline_utc": "2026-10-29T20:25:47Z",
   "repair_extension_authorized": true,
   "repair_hard_deadline_utc": "2026-10-29T17:39:40Z",
   "repair_extension_reason": "User-authorized necessary repair extension after a reproducible rendering regression; original start and three-hour deadline remain recorded.",
@@ -1272,7 +1266,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-29T15:19:51.213496+00:00",
+  "updated_at": "2026-10-29T18:03:50.071427+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1334,5 +1328,43 @@
     },
     "duration_s": 383.5409175169998,
     "conclusion": "Exacthistory reproduces same missing-harness failure in baseline andcandidate;pre-existing lifecycle sensitivity remains unfixed; original954omission retained"
+  },
+  "telemetry_environment": "User Ruby Linux PC; remote host measurements, distinct from managed fallback VM evidence.",
+  "session6_recovery": {
+    "remote_reconnected": true,
+    "source_checkpoint": "fc3bd82a9c60f0ba829ce8c04157b6e0b9b2b3e1",
+    "local_source182": "21b32d77bc906a4afd06dc424251514e7c01e5ac",
+    "local_native_fields1569": {
+      "pass": 1531,
+      "fail": 38,
+      "baseline180_pass": 1493,
+      "losses": 0
+    },
+    "local_separate_fields1008": {
+      "pass": 938,
+      "fail": 70,
+      "baseline180_pass": 570,
+      "losses": 0
+    },
+    "local_browser_smoke": {
+      "baseline180": {
+        "pass": 10,
+        "total": 10
+      },
+      "candidate182": {
+        "pass": 10,
+        "total": 10
+      },
+      "renderer": "CPU"
+    },
+    "remote_browser182": "Not built or tested yet",
+    "url_conformance": "Deferred as requested",
+    "graphics_probe": {
+      "device": "NVIDIA GeForce MX110",
+      "driver": "580.173.02",
+      "vram_mib": 2048,
+      "vulkan_probe": "ERROR_INCOMPATIBLE_DRIVER; no working Vulkan adapter established"
+    },
+    "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   }
 }

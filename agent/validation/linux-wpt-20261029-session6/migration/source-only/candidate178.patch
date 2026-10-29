@@ -1,0 +1,22 @@
+diff --git a/src/layout/block.c b/src/layout/block.c
+index 8954660..65d6bd7 100644
+--- a/src/layout/block.c
++++ b/src/layout/block.c
+@@ -378,7 +378,16 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int
+     layout_box(L, a, 0, 0, mode == SZ_FORCED || wdef || a->fmt == FMT_REPLACED ? pw : avail, ph, NULL, mode, fw, fh);
+     float ow = a->w, oh = a->h;
+     if (!lA && !rA && mlA && mrA) { float m = (pw - l - r - ow) / 2; a->m[1] = a->m[3] = LMAX(0, m); }
+-    if (!tA && !bA && mtA && mbA) { float m = (ph - t - bt - oh) / 2; a->m[0] = a->m[2] = LMAX(0, m); }
++    if (!tA && !bA && mtA && mbA) {
++        float inset_height = ph - t - bt;
++        float m = (inset_height - oh) / 2;
++        if (!cb->st || !cb->st->writing_mode) {
++            /* Share remaining block-axis space after inset-area flooring.
++               Unlike inline-axis auto margins, this split may be negative. */
++            m = (LMAX(0, inset_height) - oh) / 2;
++        } else m = LMAX(0, m); /* preserve the existing vertical-writing path */
++        a->m[0] = a->m[2] = m;
++    }
+     float x, y;
+     float sx = a->sx, sy = a->sy;
+     if (!area) flex_static_position(a, lA && rA, tA && bA, &sx, &sy);

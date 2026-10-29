@@ -1,0 +1,128 @@
+diff --git a/src/layout/block.c b/src/layout/block.c
+index ec1fb24..3e0e399 100644
+--- a/src/layout/block.c
++++ b/src/layout/block.c
+@@ -321,23 +321,6 @@ static float clamph(const ComputedStyle *s, float h, float cbh, float bp);
+    memo keys include mode, cbw and fw, so the two inputs remain independent. */
+ enum { SZ_ABS_SHRINK = SZ_FORCED + 1 };
+ 
+-static bool abs_shrink_fixed_horizontal_padding(const ComputedStyle *s) {
+-    for (int i = 1; i <= 3; i += 2) {
+-        Length p = s->padding[i];
+-        if (p.kind != LK_LEN || p.pctu || p.pct || p.pct2 || p.mm || !isfinite(p.px)) return false;
+-    }
+-    /* The compact Length parser can approximate unresolved clamp/min/max
+-       forms. Preserve those paths even when its chosen arm has no percent.
+-       Stale shorthand strings may conservatively exclude an overridden form. */
+-    static const char *const props[] = { "padding", "padding-left", "padding-right",
+-        "padding-inline", "padding-inline-start", "padding-inline-end" };
+-    for (size_t i = 0; i < sizeof props / sizeof *props; i++) {
+-        const char *v = custom_get(s->gen_n, props[i]);
+-        if (v && strchr(v, '(')) return false;
+-    }
+-    return true;
+-}
+-
+ static float g_imcb[2];   /* the last abs_place's inset-modified containing block size */
+ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int src[4], const int kwm[4]) {
+     float px, py, pw, ph;
+@@ -395,16 +378,16 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int
+         if (s->anchor_sz[0] && anchor_size(a, 0, pw, &v)) { mode = SZ_FORCED; fw = bs ? v : v + a->b[1] + a->b[3] + a->p[1] + a->p[3]; }
+         if (s->anchor_sz[1] && anchor_size(a, 1, ph, &v)) fh = bs ? v : v + a->b[0] + a->b[2] + a->p[0] + a->p[2];
+     }
+-    /* Keep intrinsic border-box contributions unchanged: this bounded path
+-       requires fixed horizontal padding and preserves ratios, tables,
+-       replaced/orthogonal boxes and anchor/try sizing. */
++    /* Resolve own intrinsic edges against the percentage containing block.
++       Ratio, table, replaced/orthogonal and anchor/try sizing retain their
++       separate sizing paths. */
+     bool ordinary_try = src[0] == 0 && src[1] == 1 && src[2] == 2 && src[3] == 3;
+     if (mode == SZ_SHRINK && !wdef && s->width.kind == LK_AUTO &&
+         (!cb->st || !cb->st->writing_mode) && !s->writing_mode && s->aspect_ratio <= 0 &&
+         a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE && !area && ordinary_try &&
+         !s->pos_try && !s->pos_anchor && !s->pos_area &&
+         !s->anchor_ins[0] && !s->anchor_ins[1] && !s->anchor_ins[2] && !s->anchor_ins[3] &&
+-        !s->anchor_sz[0] && !s->anchor_sz[1] && abs_shrink_fixed_horizontal_padding(s)) {
++        !s->anchor_sz[0] && !s->anchor_sz[1]) {
+         mode = SZ_ABS_SHRINK;
+         fw = avail;
+     }
+@@ -624,11 +607,9 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float
+     else if (len_def(s->width, cbw) && !is_cell) { b->w = clampw(s, res(s->width, cbw) + (bs ? 0 : hb), cbw, hb); if (b->w < hb) b->w = hb; }
+     else if (mode == SZ_FILL && b->fmt != FMT_TABLE && s->width.kind != LK_FIT_CONTENT && s->width.kind != LK_MAX_CONTENT && s->width.kind != LK_MIN_CONTENT) b->w = clampw(s, cbw - b->m[1] - b->m[3], cbw, hb);
+     else {
+-        float mn, mx; intrinsic(L, b, &mn, &mx);
+-        /* Intrinsic measurement can leave this box's used edges resolved
+-           against zero. Restore only this private absolute path, using the
+-           original percentage basis, before margins and child origins. */
+-        if (mode == SZ_ABS_SHRINK) compute_mbp(b, cbw);
++        float mn, mx;
++        if (mode == SZ_ABS_SHRINK) intrinsic_with_basis(L, b, cbw, &mn, &mx);
++        else intrinsic(L, b, &mn, &mx);
+         float avail = (mode == SZ_ABS_SHRINK ? fw : cbw) - b->m[1] - b->m[3];
+         float w = s->width.kind == LK_MIN_CONTENT ? mn : s->width.kind == LK_MAX_CONTENT ? mx : LMIN(LMAX(mn, avail), mx);
+         b->w = clampw(s, w, cbw, hb);
+diff --git a/src/layout/box.c b/src/layout/box.c
+index 8edf937..b8f84ae 100644
+--- a/src/layout/box.c
++++ b/src/layout/box.c
+@@ -406,13 +406,13 @@ void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx) {
+     *mn += m; *mx += m;
+ }
+ 
+-void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
+-    if (b->intr_ok) { *omn = b->imin; *omx = b->imax; return; }
+-    compute_mbp(b, 0);
++static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, float *omn, float *omx) {
++    if (!resolve_own && b->intr_ok) { *omn = b->imin; *omx = b->imax; return; }
++    compute_mbp(b, resolve_own ? cbw : 0);
+     const ComputedStyle *st = b->st;
+     float bp = hbp(b), mn = 0, mx = 0;
+-    if (st->width.kind == LK_LEN && st->width.pct == 0 && b->fmt != FMT_TABLE) {
+-        mn = mx = st->width.px - (st->box_sizing == BOX_BORDER ? bp : 0);
++    if (st->width.kind == LK_LEN && (resolve_own ? len_def(st->width, cbw) : st->width.pct == 0) && b->fmt != FMT_TABLE) {
++        mn = mx = (resolve_own ? res(st->width, cbw) : st->width.px) - (st->box_sizing == BOX_BORDER ? bp : 0);
+     } else if (b->fmt == FMT_REPLACED) {
+         float w, h; replaced_size(L, b, -1, -1, -1, -1, &w, &h); mn = mx = w;
+         if (st->width.kind == LK_LEN && st->width.pct) mn = 0;
+@@ -457,11 +457,24 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
+             mn = LMAX(mn, a); mx = LMAX(mx, z);
+         }
+     }
+-    if (st->max_width.kind == LK_LEN && !st->max_width.pct) { float v = st->max_width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
+-    if (st->min_width.kind == LK_LEN && !st->min_width.pct) { float v = st->min_width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
++    if (st->max_width.kind == LK_LEN && (resolve_own ? len_def(st->max_width, cbw) : !st->max_width.pct)) { float v = (resolve_own ? res(st->max_width, cbw) : st->max_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
++    if (st->min_width.kind == LK_LEN && (resolve_own ? len_def(st->min_width, cbw) : !st->min_width.pct)) { float v = (resolve_own ? res(st->min_width, cbw) : st->min_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
++    if (resolve_own) { mn = LMAX(0, mn); mx = LMAX(0, mx); }
+     if (mn > mx) mx = mn;
+-    b->imin = mn + bp; b->imax = mx + bp; b->intr_ok = true;
+-    *omn = b->imin; *omx = b->imax;
++    *omn = mn + bp; *omx = mx + bp;
++    if (!resolve_own) { b->imin = *omn; b->imax = *omx; b->intr_ok = true; }
++}
++
++void intrinsic(Layout *L, Box *b, float *mn, float *mx) {
++    intrinsic_measure(L, b, 0, false, mn, mx);
++}
++
++/* A positioned box has a definite percentage containing block even when its
++   width is shrink-to-fit. Resolve its own edges and constraints there; child
++   percentages still participate in the ordinary cyclic intrinsic algorithm.
++   Keep this result out of the zero-basis intrinsic cache used by its parent. */
++void intrinsic_with_basis(Layout *L, Box *b, float cbw, float *mn, float *mx) {
++    intrinsic_measure(L, b, cbw, true, mn, mx);
+ }
+ 
+ /* CSS Sizing 4: transfer only definite constraints, then clamp each axis
+diff --git a/src/layout/layout.h b/src/layout/layout.h
+index 7289643..b829530 100644
+--- a/src/layout/layout.h
++++ b/src/layout/layout.h
+@@ -91,6 +91,7 @@ float grid_item_auto_min(Layout *L, Box *c, float maxlen);   /* contribution to
+ float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
+ void table_intrinsic(Layout *L, Box *b, float *mn, float *mx);
+ void intrinsic(Layout *L, Box *b, float *mn, float *mx);
++void intrinsic_with_basis(Layout *L, Box *b, float cbw, float *mn, float *mx);
+ void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx);
+ /* fw/fh are resolved border-box sizes from flex/grid, or -1 when unforced. */
+ void replaced_size(Layout *L, Box *b, float cbw, float cbh, float fw, float fh, float *w, float *h);

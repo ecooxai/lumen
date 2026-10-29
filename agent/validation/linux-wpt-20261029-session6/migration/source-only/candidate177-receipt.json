@@ -1,0 +1,13 @@
+{
+  "candidate": 177,
+  "local_commit": "2cb8532e27e4085632f304698aa120e0f51ee10f",
+  "remote_commit": "f275e493f98c255b0417480b6be209993c156e6e",
+  "files": {
+    "src/layout/block.c": {
+      "before": "831ba146918a3c3ddb37ac5ae92c0b0668b97627eda7a5af83f91d41b916cd36",
+      "after": "af82dee865f396f6c70eb0de195093dc5003bcdcaca4190d6ffc3a5ac8f8d9da"
+    }
+  },
+  "patch_sha256": "f2abfcaabf8de62ea4bdabaffe383c5e4dbbb78c0630885174cd7307d80abb08",
+  "utc": "2026-10-29T18:02:46.624007+00:00"
+}

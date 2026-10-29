@@ -1,0 +1,36 @@
+diff --git a/src/layout/block.c b/src/layout/block.c
+index 24e4b2c..8954660 100644
+--- a/src/layout/block.c
++++ b/src/layout/block.c
+@@ -315,6 +315,7 @@ static void flex_static_position(const Box *a, bool auto_x, bool auto_y, float *
+ 
+ /* places one absolutely positioned box, with a position-area and flips (1 block, 2 inline) from its style or a
+    position-try fallback; true when its margin box fits the containing block */
++static float clamph(const ComputedStyle *s, float h, float cbh, float bp);
+ static float g_imcb[2];   /* the last abs_place's inset-modified containing block size */
+ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int src[4], const int kwm[4]) {
+     float px, py, pw, ph;
+@@ -350,7 +351,22 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int
+     bool wdef = len_def(s->width, pw);
+     if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) { mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */ fw = pw - l - r - a->m[1] - a->m[3]; }
+     float avail = pw - (lA ? 0 : l) - (rA ? 0 : r);
+-    if (!len_def(s->height, ph) && !tA && !bA) fh = ph - t - bt - a->m[0] - a->m[2];
++    if (!len_def(s->height, ph) && !tA && !bA) {
++        fh = ph - t - bt - a->m[0] - a->m[2];
++        /* Preserve the old sizing path for non-stretch alignment and for
++           vertical containing blocks, whose physical axis mapping is separate. */
++        bool stretch_height = (!cb->st || !cb->st->writing_mode) &&
++            (s->align_self == AL_AUTO || s->align_self == AL_NORMAL ||
++             s->align_self == AL_STRETCH);
++        if (stretch_height && s->height.kind == LK_AUTO && s->aspect_ratio <= 0 &&
++            a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE) {
++            /* An inset-resolved auto height stays definite at its border-box
++               floor. Apply min/max before positioning and preserve the
++               existing intrinsic, ratio and table sizing paths. */
++            float bp = vbp(a);
++            fh = LMAX(bp, clamph(s, LMAX(bp, fh), ph, bp));
++        }
++    }
+     if (a->fmt == FMT_REPLACED) fh = -1;
+     if (s->anchor_sz[0] || s->anchor_sz[1]) {   /* anchor-size() widths and heights are border-box sizes here */
+         float v; bool bs = s->box_sizing == BOX_BORDER;

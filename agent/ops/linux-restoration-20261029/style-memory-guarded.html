@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Lumen fixed style-allocation workload</title>
+<style>html,body{margin:0;padding:0}#workload{width:240px;margin:0;padding:0;border:0}#workload>div{display:block;height:1px;padding:0;border:0;margin:0}</style>
+<div id="workload"></div>
+<script>
+(function(){
+  'use strict';
+  const count=10000, root=document.getElementById('workload');
+  const begin=performance.now(), fragment=document.createDocumentFragment();
+  for(let i=0;i<count;i++){
+    const box=document.createElement('div');
+    box.style.cssText='width:'+(100+i%101)+'px;color:#'+((Math.imul(i+1,2654435761)>>>0)&0xffffff).toString(16).padStart(6,'0');
+    fragment.appendChild(box);
+  }
+  root.appendChild(fragment);
+  const attached=performance.now();
+  const first=root.children[0].getBoundingClientRect();
+  const middle=root.children[5000].getBoundingClientRect();
+  const last=root.children[count-1].getBoundingClientRect();
+  const all=root.getBoundingClientRect();
+  const laidOut=performance.now();
+  const check={nodes:root.children.length,firstWidth:first.width,middleWidth:middle.width,lastWidth:last.width,lastHeight:last.height,rootHeight:all.height};
+  const correct=check.nodes===10000&&check.firstWidth===100&&check.middleWidth===151&&check.lastWidth===100&&check.lastHeight===1&&check.rootHeight===10000;
+  const measurement={status:correct?'PASS':'FAIL',check,construction_ms:attached-begin,forced_layout_ms:laidOut-attached,total_ms:laidOut-begin};
+  console.log('OPS_STYLE_MEMORY_READY '+JSON.stringify(measurement));
+  setTimeout(function(){console.log('RESULTS ops-style-memory:'+(correct?'PASS':'FAIL')+' '+JSON.stringify(measurement));},9000);
+})();
+</script>
