@@ -1,0 +1,26 @@
+{
+  "agent/evidence/10.292019r-chromium1515-independent-readback/independent-shadow-inspection.json": {
+    "bytes": 545,
+    "sha256": "97384c156216cd3d7e76a781cd4114913b9b9976f325957c3161d50836ab084b"
+  },
+  "agent/evidence/10.292019r-chromium1515-independent-readback/independent-readback-monitor.csv": {
+    "bytes": 134,
+    "sha256": "49079a1394c1076879c371a33b89e0eaff039f6ae444b440cf0d54c7da91ac32"
+  },
+  "agent/evidence/10.292019r-chromium1515-independent-readback/independent-readback-monitor.json": {
+    "bytes": 2175,
+    "sha256": "c6a778225dedd4140f823a973d42bef21aadfb6c9c8baec91c9d05d1f84547ad"
+  },
+  "agent/evidence/10.292019r-chromium1515-independent-readback/independent-readback.json": {
+    "bytes": 1112,
+    "sha256": "5cdf03f43f3bd6ec3d7086ec3cf2e7a50db6000f7579181f0ebb5c672c40bae7"
+  },
+  "agent/evidence/10.292019r-chromium1515-independent-readback/independent-readback-monitor.log": {
+    "bytes": 225,
+    "sha256": "413bb0fd71e9eec624310c0d32a45324b9991314a344b663437bf6be4627783f"
+  },
+  "tools/apple-session-gpt6as/audit_chrome1515_readback_10292019r.py": {
+    "bytes": 5915,
+    "sha256": "fb601cecaa5ab0bb0a3b1807d7573d630400923fd42786457767d4c083fe9fdc"
+  }
+}
