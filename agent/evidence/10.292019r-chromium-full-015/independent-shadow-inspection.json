@@ -1,0 +1,12 @@
+{
+  "compactMatchesAcceptance": true,
+  "manifestMatchesAcceptance": true,
+  "acceptedRawSHA256": "37be33af6d9c44d8d59efe92fcf9d89c778dc558cdc02f019111d1a69fae1ecb",
+  "temporaryExists": true,
+  "temporaryBytes": 20605541,
+  "temporarySHA256": "91930bf640da8f1a32b6b742fd892b093f08efd8791d7aa80c98a44b3badb325",
+  "temporaryIsExactPrefixOfAcceptedArchive": true,
+  "temporaryGzipComplete": false,
+  "temporaryGzipError": "EOFError",
+  "classification": "Preserved unaccepted temporary shadow; accepted complete archive verified independently"
+}

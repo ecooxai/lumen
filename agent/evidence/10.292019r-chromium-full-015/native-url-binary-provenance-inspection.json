@@ -1,0 +1,19 @@
+{
+  "path": "/tmp/astra10292021-runtime/chrome-linux64/chrome",
+  "bytes": 300842312,
+  "mode": "0o755",
+  "uid": 0,
+  "mtimeNS": 1793276998884562578,
+  "sha256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "magic": "7f454c4602010100000000000000000003003e0001000000e073110700000000",
+  "file": "/tmp/astra10292021-runtime/chrome-linux64/chrome: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]=42d557f85060e1c3c327c3c109e5cc3d298e8607, stripped",
+  "version": "Google Chrome for Testing 156.0.8078.47",
+  "metadataFiles": [
+    {
+      "name": "ABOUT",
+      "bytes": 248,
+      "sha256": "34d078ce3003087a8374e7c6156fda374769b8047d6ddaf419d66414aa48edfb",
+      "text": "Google Chrome\n\nCopyright 2026 Google LLC. All rights reserved.\n\nChrome is made possible by the Chromium open source project\n(https://www.chromium.org/) and other open source software\n(chrome://credits).\n\nSee the Terms of Service at chrome://terms.\n"
+    }
+  ]
+}

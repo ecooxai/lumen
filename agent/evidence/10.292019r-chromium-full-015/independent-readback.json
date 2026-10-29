@@ -1,0 +1,29 @@
+{
+  "accepted": true,
+  "reviewer": "lumen_wpt_engineering",
+  "reviewedUTC": "2026-10-29T15:36:41.544195+00:00",
+  "seconds": 2.0520769270005985,
+  "scope": "Independent readback of all1515 actual case bytes, exact frozen schedule, raw archive contents and compressed reference identity. No new browser execution or full officialWPT claim.",
+  "acceptanceSHA256": "ba317f9ac36befd39ba71dcea7350936b5451124c2bc9d04161c2edcac0bf39c",
+  "summary": {
+    "scheduled": 1515,
+    "recorded": 1515,
+    "fullyPassing": 1462,
+    "unrun": 0,
+    "passPercentOfRecorded": 96.5016501650165,
+    "harnessStatuses": {
+      "OK": 1515
+    },
+    "assertions": {
+      "PASS": 1166990,
+      "FAIL": 1023
+    },
+    "qualifiedPassingAssertions": 1166990,
+    "measurementErrorVariants": 0
+  },
+  "caseCount": 1515,
+  "archiveMemberCount": 3063,
+  "rawArchiveSHA256": "37be33af6d9c44d8d59efe92fcf9d89c778dc558cdc02f019111d1a69fae1ecb",
+  "referenceSHA256": "3480ef53ee582e96fa7ef0a2fc5eb662f136cfa7268fad635712653013bedbb6",
+  "referenceCompressedSHA256": "10b6e1c847479ffd12d676be17be2e13a254df08f069ad7d0cc2f6e712bf0ee0"
+}

@@ -1,0 +1,86 @@
+{
+  "results": [
+    {
+      "operation": "create_library_file",
+      "status": "succeeded",
+      "path": "/GPT6-Astra-Pro_builtin-agents_localvm_Chromium156_Lumen-10.292019r_full1515_reference.json.gz",
+      "file_id": "file_00000000a0448230bd4065a72ed5d345",
+      "library_file_id": "libfile_a07528d624dc8191bbb7ce7dcb8da783",
+      "file_name": "GPT6-Astra-Pro_builtin-agents_localvm_Chromium156_Lumen-10.292019r_full1515_reference.json.gz",
+      "current_version_number": 0,
+      "restored_from_version_number": null,
+      "xattrs": [
+        {
+          "name": "user.library-file-version",
+          "value": "0"
+        }
+      ],
+      "directory_id": "libdir_e0c9b3179838819185c4680512459aa3",
+      "mime_type": "application/json",
+      "library_artifact_type": "other",
+      "file_size_bytes": 10000097
+    },
+    {
+      "operation": "create_library_file",
+      "status": "succeeded",
+      "path": "/GPT6-Astra-Pro_builtin-agents_localvm_Chromium156_Lumen-10.292019r_full1515_raw.tar.gz",
+      "file_id": "file_000000006a6481f5b5832975f3ea7652",
+      "library_file_id": "libfile_90aabbf2ea08819198cf4d3144aaeee2",
+      "file_name": "GPT6-Astra-Pro_builtin-agents_localvm_Chromium156_Lumen-10.292019r_full1515_raw.tar.gz",
+      "current_version_number": 0,
+      "restored_from_version_number": null,
+      "xattrs": [
+        {
+          "name": "user.library-file-version",
+          "value": "0"
+        }
+      ],
+      "directory_id": "libdir_e0c9b3179838819185c4680512459aa3",
+      "mime_type": "application/x-tar",
+      "library_artifact_type": "other",
+      "file_size_bytes": 21773209
+    },
+    {
+      "operation": "create_library_file",
+      "status": "succeeded",
+      "path": "/compact-acceptance.json",
+      "file_id": "file_00000000071081f5bdb4eb7caeacc667",
+      "library_file_id": "libfile_1bc79df1651c819194ceafac19a20fe0",
+      "file_name": "compact-acceptance.json",
+      "current_version_number": 0,
+      "restored_from_version_number": null,
+      "xattrs": [
+        {
+          "name": "user.library-file-version",
+          "value": "0"
+        }
+      ],
+      "directory_id": "libdir_e0c9b3179838819185c4680512459aa3",
+      "mime_type": "application/json",
+      "library_artifact_type": "other",
+      "file_size_bytes": 17978
+    },
+    {
+      "operation": "create_library_file",
+      "status": "succeeded",
+      "path": "/raw-manifest.json",
+      "file_id": "file_000000008870823098efd800c77d0529",
+      "library_file_id": "libfile_7925a9544bb08191ae35df28972aaf16",
+      "file_name": "raw-manifest.json",
+      "current_version_number": 0,
+      "restored_from_version_number": null,
+      "xattrs": [
+        {
+          "name": "user.library-file-version",
+          "value": "0"
+        }
+      ],
+      "directory_id": "libdir_e0c9b3179838819185c4680512459aa3",
+      "mime_type": "application/json",
+      "library_artifact_type": "other",
+      "file_size_bytes": 667214
+    }
+  ],
+  "warnings": [],
+  "external_connectors_accessed": false
+}

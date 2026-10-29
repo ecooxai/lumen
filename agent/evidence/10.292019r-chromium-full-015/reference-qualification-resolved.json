@@ -1,0 +1,14 @@
+{
+  "createdUTC": "2026-10-29T15:50:20.125707+00:00",
+  "acceptedExactOfficialReference": true,
+  "scope": "Official Google Chrome for Testing156.0.8078.47, Linux x86-64, exact downloaded executable only. Not latest/genericChrome or full officialWPT parity.",
+  "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "archiveSHA256": "e6c94490f0b6b337225aeb2d2a5034858516b7017356980ba94f5176d8774a50",
+  "officialURL": "https://storage.googleapis.com/chrome-for-testing-public/156.0.8078.47/linux64/chrome-linux64.zip",
+  "officialRecoverySHA256": "471f4f34628966475aad8ad8a2ed033f6ffa5f41efb35f7192bd8c5f1f8fbd3f",
+  "directCLIProofSHA256": "285c0fc5ba347d25545a8ef6104582d8d11c60691282bbd1a11961a7f397441c",
+  "freshOfficialBytesEqual": true,
+  "directCLIWithoutCDPReproducesBoundedUnexpectedURLBehavior": true,
+  "priorPendingQualificationPreserved": true,
+  "scoreAssigned": null
+}

@@ -1,0 +1,9 @@
+{
+  "createdUTC": "2026-10-29T15:44:32.644990+00:00",
+  "rawEvidenceAccepted": true,
+  "genericChromeParityClaim": false,
+  "referenceAuthenticityStatus": "Independent official distribution byte verification pending; clean native URL behavior differs from expected standard behavior",
+  "scoreCreditAwarded": 0,
+  "currentBinarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "preservedScope": "Exact available executable measurement; full original raw archive/reference saved separately with immutable hashes and Library IDs. Do not delete or rewrite historical acceptance receipts."
+}

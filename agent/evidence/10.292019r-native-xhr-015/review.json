@@ -1,0 +1,47 @@
+{
+  "acceptedIndependentReceiptReview": true,
+  "scope": "Separate actualMac53 supplemental cohort; not merged into1515",
+  "sourceCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "summary": {
+    "scheduled": 53,
+    "recorded": 53,
+    "fullyPassing": 51,
+    "unrun": 0,
+    "passPercentOfRecorded": 96.22641509433963,
+    "harnessStatuses": {
+      "OK": 51,
+      "ERROR": 2
+    },
+    "assertions": {
+      "PASS": 609
+    },
+    "qualifiedPassingAssertions": 609,
+    "measurementErrorVariants": 0
+  },
+  "recorded": 53,
+  "unrun": 0,
+  "failed": [
+    {
+      "test": "/xhr/idlharness.any.sharedworker.html",
+      "status": "ERROR",
+      "message": "SharedWorker is not defined",
+      "assertions": []
+    },
+    {
+      "test": "/xhr/sync-no-timeout.any.sharedworker.html",
+      "status": "ERROR",
+      "message": "SharedWorker is not defined",
+      "assertions": []
+    }
+  ],
+  "fixtureCleanup": {
+    "sentSIGTERM": true,
+    "sentSIGKILL": false,
+    "groupGone": true,
+    "naturalExitCode": null
+  },
+  "receiptCopySHA256": "957d7e3778e38b34e4345e64a6d341cb74a12d0efe47a649144d8039d5efe965",
+  "rawFiles": 161,
+  "durationSeconds": 85.374,
+  "originalUncappedBytesPendingAddendum": true
+}

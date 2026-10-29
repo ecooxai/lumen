@@ -1,0 +1,390 @@
+{
+  "schema": 2,
+  "accepted": true,
+  "createdUTC": "2026-10-29T15:35:19.815556+00:00",
+  "scope": "Actual Chromium156 Linux complete frozen1515 priority reference. Same pinned test bodies and protocol; different platform from nativeMac. Not full officialWPT or general Chrome parity.",
+  "fullOfficialWptPassPercent": null,
+  "summary": {
+    "scheduled": 1515,
+    "recorded": 1515,
+    "fullyPassing": 1462,
+    "unrun": 0,
+    "passPercentOfRecorded": 96.5016501650165,
+    "harnessStatuses": {
+      "OK": 1515
+    },
+    "assertions": {
+      "PASS": 1166990,
+      "FAIL": 1023
+    },
+    "qualifiedPassingAssertions": 1166990,
+    "measurementErrorVariants": 0
+  },
+  "binary": {
+    "path": "/tmp/astra10292021-runtime/chrome-linux64/chrome",
+    "sha256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2"
+  },
+  "version": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.47",
+    "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.19"
+  },
+  "startedUTC": "2026-10-29T15:05:17.365858+00:00",
+  "finishedUTC": "2026-10-29T15:34:33.248470+00:00",
+  "durationSeconds": 1755.8826407310007,
+  "auditSeconds": 24.981479820999084,
+  "groups": {
+    "encoding-streams": {
+      "summary": {
+        "scheduled": 26,
+        "recorded": 26,
+        "fullyPassing": 23,
+        "unrun": 0,
+        "passPercentOfRecorded": 88.46153846153847,
+        "harnessStatuses": {
+          "OK": 26
+        },
+        "assertions": {
+          "PASS": 344,
+          "FAIL": 14
+        },
+        "qualifiedPassingAssertions": 344,
+        "measurementErrorVariants": 0
+      },
+      "persistence": {
+        "count": 26,
+        "perCaseFiles": 26,
+        "finalizedResultsSHA256": "b090d24fc815a61af66f79e2b78a9637509dce5bd469e831ecd0113064ae1932",
+        "resultsJSONLSHA256": "a3e1dec59878f5a3b9684aa15c4ff6f9953b3fdfcf8812b93873f75a60a9df95"
+      }
+    },
+    "encoding-core": {
+      "summary": {
+        "scheduled": 77,
+        "recorded": 77,
+        "fullyPassing": 66,
+        "unrun": 0,
+        "passPercentOfRecorded": 85.71428571428571,
+        "harnessStatuses": {
+          "OK": 77
+        },
+        "assertions": {
+          "PASS": 23133,
+          "FAIL": 167
+        },
+        "qualifiedPassingAssertions": 23133,
+        "measurementErrorVariants": 0
+      },
+      "persistence": {
+        "count": 77,
+        "perCaseFiles": 77,
+        "finalizedResultsSHA256": "2b7579cba4d5399a6156ac8a3f755c38368b1adb5510667e052a09afc70f8cd7",
+        "resultsJSONLSHA256": "7cc9c8a9d14f71eecd1327f67891e2fbb0ed4f91cdcc5eef9bc715c25069d01f"
+      }
+    },
+    "dom": {
+      "summary": {
+        "scheduled": 14,
+        "recorded": 14,
+        "fullyPassing": 13,
+        "unrun": 0,
+        "passPercentOfRecorded": 92.85714285714286,
+        "harnessStatuses": {
+          "OK": 14
+        },
+        "assertions": {
+          "PASS": 984,
+          "FAIL": 12
+        },
+        "qualifiedPassingAssertions": 984,
+        "measurementErrorVariants": 0
+      },
+      "persistence": {
+        "count": 14,
+        "perCaseFiles": 14,
+        "finalizedResultsSHA256": "cc60e32d23aaee3f9dd4d854ba0124adf1e1fae4f9c6561d2dfe494041ba0f23",
+        "resultsJSONLSHA256": "69ed70a95cb7f278d815e10aae5af25d752c3557c4f282cc0e1f8a52cb64039c"
+      }
+    },
+    "events": {
+      "summary": {
+        "scheduled": 16,
+        "recorded": 16,
+        "fullyPassing": 16,
+        "unrun": 0,
+        "passPercentOfRecorded": 100.0,
+        "harnessStatuses": {
+          "OK": 16
+        },
+        "assertions": {
+          "PASS": 78
+        },
+        "qualifiedPassingAssertions": 78,
+        "measurementErrorVariants": 0
+      },
+      "persistence": {
+        "count": 16,
+        "perCaseFiles": 16,
+        "finalizedResultsSHA256": "c74dcde9867e841f9a44996daab7639ba6b7f783b671e178c760e04fa24f4e0d",
+        "resultsJSONLSHA256": "06ed60d9df872b2e93fd1bda43ed7bc5264795af6378bb13b6b6d30182041fa7"
+      }
+    },
+    "url": {
+      "summary": {
+        "scheduled": 77,
+        "recorded": 77,
+        "fullyPassing": 47,
+        "unrun": 0,
+        "passPercentOfRecorded": 61.03896103896104,
+        "harnessStatuses": {
+          "OK": 77
+        },
+        "assertions": {
+          "PASS": 11621,
+          "FAIL": 702
+        },
+        "qualifiedPassingAssertions": 11621,
+        "measurementErrorVariants": 0
+      },
+      "persistence": {
+        "count": 77,
+        "perCaseFiles": 77,
+        "finalizedResultsSHA256": "43fbeb2448d9a6497f099dd7f0be18c8eb6e6cb67ee979d6c022758d55e30a0e",
+        "resultsJSONLSHA256": "8b3bf5fda245786543a2b9f0fb656fa2a6f3fe5847e1240bc30e14c03288071e"
+      }
+    },
+    "storage": {
+      "summary": {
+        "scheduled": 7,
+        "recorded": 7,
+        "fullyPassing": 7,
+        "unrun": 0,
+        "passPercentOfRecorded": 100.0,
+        "harnessStatuses": {
+          "OK": 7
+        },
+        "assertions": {
+          "PASS": 1152
+        },
+        "qualifiedPassingAssertions": 1152,
+        "measurementErrorVariants": 0
+      },
+      "persistence": {
+        "count": 7,
+        "perCaseFiles": 7,
+        "finalizedResultsSHA256": "137094871c99f24d0169cfa67ab04ef71c1df99ea41c44fe66d3f0f814cb0dbe",
+        "resultsJSONLSHA256": "85e88ff53cb23e512fae7cab7e86eaf8621169f8327802f7764484b93cb02f03"
+      }
+    },
+    "microtasks": {
+      "summary": {
+        "scheduled": 10,
+        "recorded": 10,
+        "fullyPassing": 10,
+        "unrun": 0,
+        "passPercentOfRecorded": 100.0,
+        "harnessStatuses": {
+          "OK": 10
+        },
+        "assertions": {
+          "PASS": 27
+        },
+        "qualifiedPassingAssertions": 27,
+        "measurementErrorVariants": 0
+      },
+      "persistence": {
+        "count": 10,
+        "perCaseFiles": 10,
+        "finalizedResultsSHA256": "95701445859f0198efac8836a674ad9a8d40a60bc4028a7cfc99436993c1c070",
+        "resultsJSONLSHA256": "2e3b140eb50bc94acce03268cc13fc8e4fccc5bedf18b4bdd0a83117e0b8c03e"
+      }
+    },
+    "headers": {
+      "summary": {
+        "scheduled": 52,
+        "recorded": 52,
+        "fullyPassing": 52,
+        "unrun": 0,
+        "passPercentOfRecorded": 100.0,
+        "harnessStatuses": {
+          "OK": 52
+        },
+        "assertions": {
+          "PASS": 1043
+        },
+        "qualifiedPassingAssertions": 1043,
+        "measurementErrorVariants": 0
+      },
+      "persistence": {
+        "count": 52,
+        "perCaseFiles": 52,
+        "finalizedResultsSHA256": "91868b951f6f68619272e3743e0406624ad8993c581d16204c67acac3b3d3823",
+        "resultsJSONLSHA256": "82aa6d4ac783fe44b7c8ee5b55e9a66fce7cd9cf80d80d1a09d569265c882550"
+      }
+    },
+    "encoding-rest": {
+      "summary": {
+        "scheduled": 1236,
+        "recorded": 1236,
+        "fullyPassing": 1228,
+        "unrun": 0,
+        "passPercentOfRecorded": 99.35275080906149,
+        "harnessStatuses": {
+          "OK": 1236
+        },
+        "assertions": {
+          "PASS": 1128608,
+          "FAIL": 128
+        },
+        "qualifiedPassingAssertions": 1128608,
+        "measurementErrorVariants": 0
+      },
+      "persistence": {
+        "count": 1236,
+        "perCaseFiles": 1236,
+        "finalizedResultsSHA256": "e044b685e3d8ac16c8cfe864818f018167b4b5e44082deb17ca43f32eaabd4d4",
+        "resultsJSONLSHA256": "4310c154e72f09802fbdcc0feb04b39eb6538a3906f6c632ff574b3cd48c0aee"
+      }
+    }
+  },
+  "protocol": {
+    "engine": "chromium",
+    "execution_adapter": "linux-headless-local-fixture-v2",
+    "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+    "manifest_sha256": "02f29f625260bae2f8d5dc6035d0b066b7c5316e6a8a8640bc0c9f606fe2ce76",
+    "inventory_sha256": "961438c49be8b61895135922aa544a6bf3833f7c21e93c42a91ec75628cae7a5",
+    "source_fixture": {
+      "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+      "manifest_sha256": "02f29f625260bae2f8d5dc6035d0b066b7c5316e6a8a8640bc0c9f606fe2ce76",
+      "tracked_upstream_sources_clean": true
+    },
+    "server_config_sha256": "53e9e0d2d4b83186ea82e02cb6db11c69cc929a0b43c4c704f4e3c5049de0efb",
+    "fixture_manifest_sha256": "2489cac432d896b7be067d0a31fd4778340090a15f321d575a3c1a4fedf632f0",
+    "binary_sha256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+    "runner_sha256": "9fc82521951350d54c0cfd52bb25314c35cf7182b19a4283748846fe4d38b0de",
+    "collector_sha256": "f279529ae78f58916a1d87170bc068ad34b15f175072a0a01f63695bc8e44a6b",
+    "reporter_sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "monitor_sha256": "46bda36325c6881ceed174ef6fc19fd4745b64894c833717949ea60e4a18d3e1",
+    "origin": "http://web-platform.test:18800",
+    "secure_origin": "https://web-platform.test:18443",
+    "h2_origin": "https://web-platform.test:18900",
+    "timeout_s": 15,
+    "long_timeout_s": 65,
+    "strict_infrastructure": false,
+    "native_fixture": {
+      "host_map": "not-web-platform.test=127.0.0.1,web-platform.test=127.0.0.1,www.not-web-platform.test=127.0.0.1,www.web-platform.test=127.0.0.1,www.www.not-web-platform.test=127.0.0.1,www.www.web-platform.test=127.0.0.1,www.www1.not-web-platform.test=127.0.0.1,www.www1.web-platform.test=127.0.0.1,www.www2.not-web-platform.test=127.0.0.1,www.www2.web-platform.test=127.0.0.1,www.xn--lve-6lad.not-web-platform.test=127.0.0.1,www.xn--lve-6lad.web-platform.test=127.0.0.1,www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,www1.not-web-platform.test=127.0.0.1,www1.web-platform.test=127.0.0.1,www1.www.not-web-platform.test=127.0.0.1,www1.www.web-platform.test=127.0.0.1,www1.www1.not-web-platform.test=127.0.0.1,www1.www1.web-platform.test=127.0.0.1,www1.www2.not-web-platform.test=127.0.0.1,www1.www2.web-platform.test=127.0.0.1,www1.xn--lve-6lad.not-web-platform.test=127.0.0.1,www1.xn--lve-6lad.web-platform.test=127.0.0.1,www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,www2.not-web-platform.test=127.0.0.1,www2.web-platform.test=127.0.0.1,www2.www.not-web-platform.test=127.0.0.1,www2.www.web-platform.test=127.0.0.1,www2.www1.not-web-platform.test=127.0.0.1,www2.www1.web-platform.test=127.0.0.1,www2.www2.not-web-platform.test=127.0.0.1,www2.www2.web-platform.test=127.0.0.1,www2.xn--lve-6lad.not-web-platform.test=127.0.0.1,www2.xn--lve-6lad.web-platform.test=127.0.0.1,www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--lve-6lad.web-platform.test=127.0.0.1,xn--lve-6lad.www.not-web-platform.test=127.0.0.1,xn--lve-6lad.www.web-platform.test=127.0.0.1,xn--lve-6lad.www1.not-web-platform.test=127.0.0.1,xn--lve-6lad.www1.web-platform.test=127.0.0.1,xn--lve-6lad.www2.not-web-platform.test=127.0.0.1,xn--lve-6lad.www2.web-platform.test=127.0.0.1,xn--lve-6lad.xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--lve-6lad.xn--lve-6lad.web-platform.test=127.0.0.1,xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1",
+      "host_map_mode": "exact",
+      "ssl_cert_sha256": "6760c932218bfe2703b10f2ea89a54b409f04d94dc5a1c9cf0f1fe7da8b30b52",
+      "runtime_support": {}
+    },
+    "source_manifest_sha256": null,
+    "runtime_manifest_sha256": null,
+    "chromium_headless": true,
+    "chromium_local_fixture_routing": {
+      "enabled": true,
+      "scope": "Exact loopback WPT fixture only; inherited external HTTP/HTTPS proxy endpoints retained",
+      "proxyConfigurationSHA256": "9b849fa10d70ed8064ea75aa921174a7319d7ecc31a2707385b9cd654e817543",
+      "inheritedBypassSHA256": "c151730dcb2884236ed16355b1272fc59ebb31389c63b549f352b1e7220632ce",
+      "localHosts": [
+        "not-web-platform.test",
+        "web-platform.test",
+        "www.not-web-platform.test",
+        "www.web-platform.test",
+        "www.www.not-web-platform.test",
+        "www.www.web-platform.test",
+        "www.www1.not-web-platform.test",
+        "www.www1.web-platform.test",
+        "www.www2.not-web-platform.test",
+        "www.www2.web-platform.test",
+        "www.xn--lve-6lad.not-web-platform.test",
+        "www.xn--lve-6lad.web-platform.test",
+        "www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+        "www.xn--n8j6ds53lwwkrqhv28a.web-platform.test",
+        "www1.not-web-platform.test",
+        "www1.web-platform.test",
+        "www1.www.not-web-platform.test",
+        "www1.www.web-platform.test",
+        "www1.www1.not-web-platform.test",
+        "www1.www1.web-platform.test",
+        "www1.www2.not-web-platform.test",
+        "www1.www2.web-platform.test",
+        "www1.xn--lve-6lad.not-web-platform.test",
+        "www1.xn--lve-6lad.web-platform.test",
+        "www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+        "www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test",
+        "www2.not-web-platform.test",
+        "www2.web-platform.test",
+        "www2.www.not-web-platform.test",
+        "www2.www.web-platform.test",
+        "www2.www1.not-web-platform.test",
+        "www2.www1.web-platform.test",
+        "www2.www2.not-web-platform.test",
+        "www2.www2.web-platform.test",
+        "www2.xn--lve-6lad.not-web-platform.test",
+        "www2.xn--lve-6lad.web-platform.test",
+        "www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+        "www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test",
+        "xn--lve-6lad.not-web-platform.test",
+        "xn--lve-6lad.web-platform.test",
+        "xn--lve-6lad.www.not-web-platform.test",
+        "xn--lve-6lad.www.web-platform.test",
+        "xn--lve-6lad.www1.not-web-platform.test",
+        "xn--lve-6lad.www1.web-platform.test",
+        "xn--lve-6lad.www2.not-web-platform.test",
+        "xn--lve-6lad.www2.web-platform.test",
+        "xn--lve-6lad.xn--lve-6lad.not-web-platform.test",
+        "xn--lve-6lad.xn--lve-6lad.web-platform.test",
+        "xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+        "xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.www.web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+        "xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test"
+      ],
+      "localPorts": [
+        18443,
+        18444,
+        18800,
+        18801,
+        18900
+      ],
+      "localExceptionCount": 310,
+      "argumentsSHA256": "3d6f5f872b8d7997693b46c1cd0fcbd8b236bff2d2ea02e792291acb4e5b7f37"
+    },
+    "chromium_routing_helper_sha256": "3dada00586edbb4067d749f7d6bb71f7776c11c9891b433d8eb63967c853b450",
+    "additional_pinned_dependency": {
+      "path": "/workspace/scratch/2b90c4e9e7b5/project/lumen/output/wpt-10290244/upstream/fetch/api/cors/resources/not-cors-safelisted.json",
+      "sha256": "ab9125bd514161d9621e02c4ebbca387274207b99171c6420fee8f396f498a3c"
+    },
+    "evidence_persistence": "unique-temp-fsync-rename; immutable per-case JSON; complete group/global aggregate and independently verified JSONL"
+  },
+  "completeAggregateSHA256": "ff33f0cad969981c44d2267cdf6cec4739acfa679ce814911f5b9007f9633580",
+  "sourceProofSHA256": "3f944c025975afbf00e152cefe388ff1e4973406bcb50104734494c58b2a56d7",
+  "sourceProofFiles": 457,
+  "reference": {
+    "path": "out/lumen-10292019r/chromium-1515-accepted/GPT6-Astra-Pro_builtin-agents_localvm_Chromium156_Lumen-10.292019r_full1515_reference.json",
+    "bytes": 85405701,
+    "sha256": "3480ef53ee582e96fa7ef0a2fc5eb662f136cfa7268fad635712653013bedbb6",
+    "compressedPath": "out/lumen-10292019r/chromium-1515-accepted/GPT6-Astra-Pro_builtin-agents_localvm_Chromium156_Lumen-10.292019r_full1515_reference.json.gz",
+    "compressedBytes": 10000097,
+    "compressedSHA256": "10b6e1c847479ffd12d676be17be2e13a254df08f069ad7d0cc2f6e712bf0ee0"
+  },
+  "excludedPriorControls": "All earlier incomplete, routing-invalid and sparse-missing-dependency controls remain excluded. No historical cases were reused.",
+  "rawArchiveScope": "All1515 immutable case result JSON and available console/1Hz telemetry; metadata preserves hashes of redundant final group/global JSONL/aggregates reconciled before archival. Browser profiles excluded.",
+  "rawArchive": {
+    "path": "out/lumen-10292019r/chromium-1515-accepted/GPT6-Astra-Pro_builtin-agents_localvm_Chromium156_Lumen-10.292019r_full1515_raw.tar.gz",
+    "bytes": 21773209,
+    "sha256": "37be33af6d9c44d8d59efe92fcf9d89c778dc558cdc02f019111d1a69fae1ecb"
+  },
+  "rawManifestFiles": 3063
+}

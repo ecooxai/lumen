@@ -1,0 +1,190 @@
+{
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.47",
+    "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.19"
+  },
+  "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "scope": "One about:blank native API sanity probe; no WPT scripts and no rate changes",
+  "result": {
+    "result": {
+      "type": "object",
+      "value": {
+        "urlConstructor": "function URL() { [native code] }",
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+        "secure": false,
+        "isolated": false,
+        "tests": [
+          {
+            "input": "http://example example.com",
+            "href": "http://example%20example.com/",
+            "origin": "http://example%20example.com",
+            "error": null
+          },
+          {
+            "input": "https://x x:12",
+            "href": "https://x%20x:12/",
+            "origin": "https://x%20x:12",
+            "error": null
+          },
+          {
+            "input": "file:c:/foo/bar.html",
+            "href": "file:///tmp/mock/c:/foo/bar.html",
+            "origin": "file://",
+            "error": null
+          },
+          {
+            "input": "blob:ftp://host/path",
+            "href": "blob:ftp://host/path",
+            "origin": "ftp://host",
+            "error": null
+          }
+        ]
+      }
+    }
+  },
+  "cleanup": {
+    "process": {
+      "sent_sigterm": false,
+      "sent_sigkill": false,
+      "error": null,
+      "post_signal_verification": {
+        "allowed_wait_s": 10,
+        "initial_live_members": {},
+        "duration_ms": 4
+      },
+      "process_group_gone": true,
+      "remaining_group_members": {},
+      "root_exit_code": 0,
+      "root_exit_before_signal_cleanup": 0,
+      "root_exit_observation_verified": true
+    },
+    "errors": [],
+    "graceful_close": {
+      "method": "Browser.close",
+      "attempted": true,
+      "acknowledged": true,
+      "allowed_drain_s": 20,
+      "exit_requirement": "All live owned-group members must disappear; an exiting process state is not ignored.",
+      "initial_process_state": {
+        "observed_unix_ms": 1793288476401,
+        "members": [
+          {
+            "pid": 526041,
+            "ppid": 526036,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Rsl",
+            "start_identity": "Thu Oct 29 08:41:14 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 526047,
+            "ppid": 526041,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "S",
+            "start_identity": "Thu Oct 29 08:41:15 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 526051,
+            "ppid": 526041,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "S",
+            "start_identity": "Thu Oct 29 08:41:15 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 526073,
+            "ppid": 526047,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 08:41:15 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 526074,
+            "ppid": 526041,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 08:41:15 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 526095,
+            "ppid": 526051,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 08:41:15 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 526135,
+            "ppid": 526051,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 08:41:15 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 526150,
+            "ppid": 526051,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "SNl",
+            "start_identity": "Thu Oct 29 08:41:15 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 526151,
+            "ppid": 526051,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "SNl",
+            "start_identity": "Thu Oct 29 08:41:15 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 526177,
+            "ppid": 526051,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 08:41:15 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 526178,
+            "ppid": 526051,
+            "pgid": 526041,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 08:41:15 2026",
+            "executable": "chrome"
+          }
+        ]
+      },
+      "process_group_gone": true,
+      "drain_duration_ms": 219
+    }
+  }
+}

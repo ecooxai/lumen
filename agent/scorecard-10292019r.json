@@ -2,280 +2,344 @@
   "schema_version": 2,
   "task_id": "10292019r",
   "human_task_id": "10.292019r",
-  "session_start_utc": "2026-10-29T12:20:07Z",
-  "deadline_utc": "2026-10-29T15:20:07Z",
-  "max_critical_fix_deadline_utc": "2026-10-29T16:20:07Z",
+  "scope": "Current native Apple browser task readiness under existing equal-category rubric; not a WPT percentage or production certification",
+  "updated_utc": "2026-10-29T16:00:11.487528+00:00",
   "target_score": 98,
-  "score": 55,
-  "score_state": "inherited_assessment_current_candidate_security_hold",
-  "score_is_wpt_percentage": false,
+  "score": 61.426948447154565,
+  "score_exact": "5298750/86261",
+  "score_state": "current_native_gates_verified_final_publication_pending",
+  "accepted_artifact_status": "current_native_development_artifact",
+  "source_commit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "binary_sha256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
   "full_official_wpt_pass_percent": null,
-  "updated_utc": "2026-10-29T15:07:10.455860+00:00",
+  "goal_reached": false,
   "rubric": "agent/scorecard-rubric-20261029-cpu30.md",
+  "proportional_rules": "agent/scorecard-rubric-10290244.md",
+  "rubric_quotes": [
+    "Weight the declared categories equally to prevent one very large file from dominating the score. Keep unsupported/incomplete categories visible and unearned.",
+    "The two WPT pass-rate gates can earn proportional points under their fixed denominator and category weights."
+  ],
+  "reference_scope": "Exact official Google Chrome for Testing156.0.8078.47/Linux, independently redownloaded byte-identical executable and direct CLI controls; not latest/generalChrome",
+  "category_evidence": {
+    "dom": {
+      "scheduled": 14,
+      "lumenRecorded": 14,
+      "lumenFullyPassing": 14,
+      "chromeRecorded": 14,
+      "chromeFullyPassing": 13,
+      "lumenSubtestOutcomes": {
+        "PASS": 996
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 984,
+        "FAIL": 12
+      },
+      "lumenHarnessStatuses": {
+        "OK": 14
+      },
+      "chromeHarnessStatuses": {
+        "OK": 14
+      },
+      "chromePassingAssertionsRetained": 984,
+      "chromePassingAssertionsTotal": 984,
+      "chromePassingAssertionsMissing": 0,
+      "unionAssertionIdentities": 996,
+      "candidateQualifiedPassInUnion": 996,
+      "proportionalPassRatio": 1.0,
+      "eligibleForExpandedScoreReview": true
+    },
+    "events": {
+      "scheduled": 16,
+      "lumenRecorded": 16,
+      "lumenFullyPassing": 16,
+      "chromeRecorded": 16,
+      "chromeFullyPassing": 16,
+      "lumenSubtestOutcomes": {
+        "PASS": 78
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 78
+      },
+      "lumenHarnessStatuses": {
+        "OK": 16
+      },
+      "chromeHarnessStatuses": {
+        "OK": 16
+      },
+      "chromePassingAssertionsRetained": 78,
+      "chromePassingAssertionsTotal": 78,
+      "chromePassingAssertionsMissing": 0,
+      "unionAssertionIdentities": 78,
+      "candidateQualifiedPassInUnion": 78,
+      "proportionalPassRatio": 1.0,
+      "eligibleForExpandedScoreReview": true
+    },
+    "url": {
+      "scheduled": 77,
+      "lumenRecorded": 77,
+      "lumenFullyPassing": 76,
+      "chromeRecorded": 77,
+      "chromeFullyPassing": 47,
+      "lumenSubtestOutcomes": {
+        "PASS": 12316,
+        "FAIL": 7
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 11621,
+        "FAIL": 702
+      },
+      "lumenHarnessStatuses": {
+        "OK": 77
+      },
+      "chromeHarnessStatuses": {
+        "OK": 77
+      },
+      "chromePassingAssertionsRetained": 11621,
+      "chromePassingAssertionsTotal": 11621,
+      "chromePassingAssertionsMissing": 0,
+      "unionAssertionIdentities": 12323,
+      "candidateQualifiedPassInUnion": 12316,
+      "proportionalPassRatio": 0.999431956504098,
+      "eligibleForExpandedScoreReview": true
+    },
+    "encoding": {
+      "scheduled": 1339,
+      "lumenRecorded": 1339,
+      "lumenFullyPassing": 1309,
+      "chromeRecorded": 1339,
+      "chromeFullyPassing": 1317,
+      "lumenSubtestOutcomes": {
+        "PASS": 1151762
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 1152085,
+        "FAIL": 309
+      },
+      "lumenHarnessStatuses": {
+        "OK": 1309,
+        "TIMEOUT": 15,
+        "ERROR": 15
+      },
+      "chromeHarnessStatuses": {
+        "OK": 1339
+      },
+      "chromePassingAssertionsRetained": 1151581,
+      "chromePassingAssertionsTotal": 1152085,
+      "chromePassingAssertionsMissing": 504,
+      "unionAssertionIdentities": 1152394,
+      "candidateQualifiedPassInUnion": 1151762,
+      "proportionalPassRatio": 0.9994515764573575,
+      "eligibleForExpandedScoreReview": false
+    },
+    "headers": {
+      "scheduled": 52,
+      "lumenRecorded": 52,
+      "lumenFullyPassing": 26,
+      "chromeRecorded": 52,
+      "chromeFullyPassing": 52,
+      "lumenSubtestOutcomes": {
+        "PASS": 539
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 1043
+      },
+      "lumenHarnessStatuses": {
+        "OK": 26,
+        "TIMEOUT": 13,
+        "ERROR": 13
+      },
+      "chromeHarnessStatuses": {
+        "OK": 52
+      },
+      "chromePassingAssertionsRetained": 539,
+      "chromePassingAssertionsTotal": 1043,
+      "chromePassingAssertionsMissing": 504,
+      "unionAssertionIdentities": 1043,
+      "candidateQualifiedPassInUnion": 539,
+      "proportionalPassRatio": 0.5167785234899329,
+      "eligibleForExpandedScoreReview": false
+    },
+    "microtasks": {
+      "scheduled": 10,
+      "lumenRecorded": 10,
+      "lumenFullyPassing": 6,
+      "chromeRecorded": 10,
+      "chromeFullyPassing": 10,
+      "lumenSubtestOutcomes": {
+        "PASS": 15
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 27
+      },
+      "lumenHarnessStatuses": {
+        "OK": 6,
+        "TIMEOUT": 2,
+        "ERROR": 2
+      },
+      "chromeHarnessStatuses": {
+        "OK": 10
+      },
+      "chromePassingAssertionsRetained": 15,
+      "chromePassingAssertionsTotal": 27,
+      "chromePassingAssertionsMissing": 12,
+      "unionAssertionIdentities": 27,
+      "candidateQualifiedPassInUnion": 15,
+      "proportionalPassRatio": 0.5555555555555556,
+      "eligibleForExpandedScoreReview": false
+    },
+    "storage": {
+      "scheduled": 7,
+      "lumenRecorded": 7,
+      "lumenFullyPassing": 7,
+      "chromeRecorded": 7,
+      "chromeFullyPassing": 7,
+      "lumenSubtestOutcomes": {
+        "PASS": 1152
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 1152
+      },
+      "lumenHarnessStatuses": {
+        "OK": 7
+      },
+      "chromeHarnessStatuses": {
+        "OK": 7
+      },
+      "chromePassingAssertionsRetained": 1152,
+      "chromePassingAssertionsTotal": 1152,
+      "chromePassingAssertionsMissing": 0,
+      "unionAssertionIdentities": 1152,
+      "candidateQualifiedPassInUnion": 1152,
+      "proportionalPassRatio": 1.0,
+      "eligibleForExpandedScoreReview": true
+    }
+  },
+  "expanded_points_exact": "985700/86261",
+  "expanded_points": 11.426948447154565,
+  "historical_score": {
+    "score": 55,
+    "scope": "Inherited pre-task artifact assessment; preserved separately and never added to current credit"
+  },
+  "publication_condition": {
+    "unearned_until_verified": 5,
+    "expected_score_after_acceptance": 66.42694844715457,
+    "expected_score_exact": "5730055/86261",
+    "required": [
+      "final reviewed committed source/history archive scanned",
+      "live full archive bytes andSHA verified",
+      "Surge full archive bytes andSHA verified",
+      "current public UI/metrics/message identity verified"
+    ],
+    "no_advance_credit": true
+  },
   "gates": [
     {
       "id": "wpt_original",
-      "category": "wpt",
+      "name": "Original unchanged six-file WPT subset",
       "weight": 10,
-      "name": "Original frozen important subset",
-      "status": "passed",
       "earned": 10,
-      "note": "Exact current artifact retains original six unchanged upstream files, separately from279 selected variants.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "status": "passed",
+      "note": "6/6files and1850/1850assertions, exact004; separately scoped"
     },
     {
       "id": "wpt_expanded",
-      "category": "wpt",
+      "name": "Equal-weight expanded WPT categories",
       "weight": 20,
-      "name": "Expanded important suite",
-      "status": "incomplete",
-      "earned": 0,
-      "note": "246/279 selected variants fully pass;15TIMEOUT/15ERROR and1236unrun remain. Full WPT unknown.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "earned": 11.426948447154565,
+      "status": "partially_earned",
+      "note": "DOM/events/storage20/7each; URL20/7\u00d712316/12323; encoding/headers/microtasks0 because unsupported contexts remain"
     },
     {
       "id": "wpt_no_regression",
-      "category": "wpt",
+      "name": "Source provenance and no regression",
       "weight": 10,
-      "name": "Provenance and no-regression confirmation",
-      "status": "passed",
       "earned": 10,
-      "note": "718 previous custom checks retained; full37 fixture preserves deferred-feature failures and explicit supported detached-stream targets. Original1850/fixed103/broad279 and whole supplemental6 reviewed, with no new harness failure. Unchanged legacy15 remains10PASS/5explicit policy differences.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "status": "passed",
+      "note": "All1515 measured/source-bound; zero lost prior passes; exact reference closure457files"
     },
     {
-      "id": "ipa_mac",
-      "category": "apple",
+      "id": "same_ipa_mac",
+      "name": "Shared signed device IPA on Mac",
       "weight": 15,
-      "name": "Shared signed iOS device IPA executed on Mac",
-      "status": "blocked_environment",
       "earned": 0,
-      "note": "No validated signed device IPA or matching signing/profile/export path; mobile V8/dependency closure absent. NativeMac run is not sharedIPA proof.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "status": "unverified",
+      "note": "No current signed deviceIPA execution; native .app is a different artifact"
     },
     {
       "id": "ipad_simulator",
-      "category": "apple",
+      "name": "Actual Lumen iPad simulator execution",
       "weight": 10,
-      "name": "iPad simulator app executed from the same reviewed source",
-      "status": "blocked_environment",
       "earned": 0,
-      "note": "iPad simulator OS is available. Matching existingCLT plus explicit SDK compile/link probes now pass, but mobile V8/dependencies and actual Lume simulator execution remain unverified.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "status": "unverified",
+      "note": "No current app launch; mobile SDK/dependency/signing closure incomplete"
     },
     {
-      "id": "perf_idle",
-      "category": "performance",
+      "id": "idle",
+      "name": "Current native idle performance",
       "weight": 5,
-      "name": "Idle",
-      "status": "passed",
       "earned": 5,
-      "note": "Fresh exact-artifact controlled idle; process-tree1 Hz samples, separate from host RAM/CPU.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "status": "passed",
+      "note": "49 intervals, p95 .996%, mean .102%, max gap1.048s"
     },
     {
-      "id": "perf_interaction",
-      "category": "performance",
+      "id": "interaction",
+      "name": "Current native controlled scrolling",
       "weight": 5,
-      "name": "Ordinary interaction",
-      "status": "passed",
       "earned": 5,
-      "note": "Fresh controlled native scroll gate and owned window visual review; no arbitrary-site or OS typing claim.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "status": "passed",
+      "note": "35 intervals,35.04s,p9517.021%,peak18.855%,ceiling30%ofonecore; typing not reattributed"
     },
     {
-      "id": "perf_soak",
-      "category": "performance",
+      "id": "memory",
+      "name": "Current navigation memory soak",
       "weight": 5,
-      "name": "Controlled memory soak",
-      "status": "passed",
       "earned": 5,
-      "note": "Fresh20-navigation settled RSS change -10.671875MiB;24+8 separate real realm teardown cycles restore native nodes exactly.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "status": "passed",
+      "note": "20navigations; settled159.125\u2192148.34375MiB; nodes/styles/workers stable"
     },
     {
-      "id": "perf_budgets",
-      "category": "performance",
+      "id": "build_budgets",
+      "name": "PrebuiltV8 and build/test budgets",
       "weight": 5,
-      "name": "Build/test budgets",
-      "status": "passed",
       "earned": 5,
-      "note": "Same prebuilt V8 bytes reused; all build/test durations retained. Long worker-context timeouts are classified, not removed.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "status": "passed",
+      "note": "Mac19gates44.191s; full1515 measured1579.339s explicitly scheduled;1Hz telemetry/cleanup"
     },
     {
-      "id": "repro_tdd",
-      "category": "reproducibility_release",
+      "id": "regression_first",
+      "name": "Independent regression-first engineering",
       "weight": 5,
-      "name": "Regression-first improvement",
-      "status": "passed",
       "earned": 5,
-      "note": "Original36 and versioned37 REDs remain immutable. Full-network candidate exposed a real upstream harness ERROR and was rejected; narrow detached-stream ledger and fresh no-regression gates are explicit.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "status": "passed",
+      "note": "Preserved meaningful9case7\u21929 and36case30\u219236, plus worker/cross-realm/data-policy controls"
     },
     {
-      "id": "repro_source",
-      "category": "reproducibility_release",
+      "id": "source_continuity",
+      "name": "Reviewed source and exact artifact continuity",
       "weight": 5,
-      "name": "Source/artifact continuity",
-      "status": "passed",
       "earned": 5,
-      "note": "All 142 compiled Git blobs match source 15ab329736c26a3bbb907b718af376206c115436; original build-base186 remains separately recorded.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "status": "passed",
+      "note": "dc7 product/143compiledinputs verified; complete task/instructions/commits and durable evidence"
     },
     {
-      "id": "release_progress",
-      "category": "reproducibility_release",
+      "id": "progress_delivery",
+      "name": "Reviewed final source/progress delivery",
       "weight": 5,
-      "name": "Reviewed progress/release delivery",
-      "status": "passed",
-      "earned": 5,
-      "note": "Both public routes delivered every source archive byte for963d4ddd; four responsive browser views and old namespace reloads passed. WSS/TLS2.012s telemetry, nonce RTT and private submit/reply verified. Latest documentation HEAD must be repackaged after this checkpoint.",
-      "evidence_generation": "accepted_baseline_20261029_cpu30",
-      "evidence": [
-        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
-      ]
+      "earned": 0,
+      "status": "pending",
+      "note": "Final corrected source publication must pass full-byte live andSurge checks before promotion"
     }
   ],
-  "current_baseline_binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
-  "current_native_source_commit": "15ab329736c26a3bbb907b718af376206c115436",
-  "source_branch": "gpt6-astra-pro_builtin-agents_lumen-10.292019r-worker-xhr",
-  "candidate_acceptance": "Mac003b8161515measurement is independently valid but release is held by real CSP handler oracle7/9 versusChrome9/9. Historical137 build/resource/package acceptance does not certify security safety. Corrected004dc7a native qualification is pending.",
-  "accepted_subsystem_checkpoint": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
-  "current_iteration_evidence": "agent/evidence/10.292019r-security-hold-013/independent-review.json",
-  "candidate_milestones": {
-    "mac_fixed279": {
-      "source": "d5a3bc44216f65ce430163518ced2aa10411cfc4",
-      "fully_passing": 248,
-      "recorded": 279,
-      "scheduled": 1515,
-      "unrun": 1236,
-      "assertion_pass": 38754,
-      "assertion_fail": 7,
-      "resource_acceptance": false
-    },
-    "linux_supplemental_xhr53": {
-      "source": "13742445c8b62a020ed8d3ed5c23a0b1008caafc",
-      "fully_passing": 51,
-      "recorded": 53,
-      "assertion_pass": 609,
-      "assertion_fail": 0,
-      "unsupported_sharedworker_variants": 2,
-      "chrome_passing_assertions_missing": 161
-    },
-    "expanded_mac_report": {
-      "independent_raw_audit_pending": false,
-      "fully_passing": 991,
-      "recorded": 1027,
-      "scheduled": 1515,
-      "unrun": 488,
-      "accepted": true,
-      "assertion_pass": 733324,
-      "assertion_fail": 7,
-      "assertion_timeout": 1,
-      "harness_statuses": {
-        "OK": 992,
-        "TIMEOUT": 18,
-        "ERROR": 17
-      },
-      "evidence": "out/10292019r-mac/independent-expanded-001/receipt.json"
-    },
-    "mac_native002_resources": {
-      "accepted": true,
-      "source": "13742445c8b62a020ed8d3ed5c23a0b1008caafc",
-      "binary_sha256": "f8ba8d525069937793fc4a903f329c89f41c72462aa7a186f01ece1c1dee9df1",
-      "scroll_p95_percent": 15.986,
-      "scroll_peak_percent": 16.085,
-      "idle_mean_percent": 0.041,
-      "navigation_initial_rss_mib": 158.9375,
-      "navigation_final_rss_mib": 148.375,
-      "worker_cycles": 100,
-      "worker_checks": 12094,
-      "evidence": "agent/evidence/10.292019r-native-mac-002.json"
-    },
-    "mac_native003": {
-      "source": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
-      "binary_sha256": "5c16cbd5db05ddf0b8f7b22e54fb86dce6797771db80402e171ac8581955a2f6",
-      "build_gates_passed": 14,
-      "full1515": "complete_measurement_security_hold",
-      "resource_acceptance": false,
-      "fully_passing": 1454,
-      "recorded": 1515,
-      "unrun": 0,
-      "assertion_pass": 1166858,
-      "assertion_fail": 7,
-      "harness_statuses": {
-        "OK": 1455,
-        "TIMEOUT": 30,
-        "ERROR": 30
-      },
-      "release_accepted": false,
-      "security_oracle": {
-        "native_passed": 7,
-        "chrome_passed": 9,
-        "total": 9
-      }
-    },
-    "chrome279_reference": {
-      "chrome_fully_passing": 234,
-      "native_d5_fully_passing": 248,
-      "recorded": 279,
-      "chrome_passing_assertions": 38382,
-      "native_retained_chrome_passing_assertions": 37866,
-      "missing_or_nonpassing_chrome_passing_assertions": 516,
-      "scope": "Qualified cross-platform selected279 only; no full-WPT orChromeparity"
-    },
-    "mac_native004": {
-      "source": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
-      "mac_acceptance": "pending",
-      "linux_unchanged_security_oracle": {
-        "passed": 9,
-        "total": 9
-      },
-      "linux_adjacent_handler_oracle": {
-        "passed": 36,
-        "total": 36,
-        "baseline_passed": 30,
-        "chrome_passed": 36
-      },
-      "linux_inherited_policy_oracle": {
-        "passed": 21,
-        "total": 21
-      }
-    }
-  },
-  "important_bug_extension_invoked": true
+  "evidence_bindings": {
+    "native_acceptance": "agent/evidence/10.292019r-native-mac-004.json",
+    "package_acceptance": "agent/evidence/10.292019r-native-mac-package-004.json",
+    "durable_checkpoint": "agent/evidence/10.292019r-mac004-durable-checkpoint.json",
+    "classification": "agent/evidence/10.292019r-chromium-full-015/classification.json",
+    "independent_score_review": "agent/evidence/10.292019r-final-score-review/independent-review.json",
+    "official_reference_provenance": "agent/evidence/10.292019r-official-chrome-provenance/acceptance.json",
+    "source_integrity": "agent/evidence/10.292019r-final-source-integrity.json",
+    "native_audit_sha256": "f9502ffcd3e2ba9abffef3cd46f9f5df985a06324acd28adf34666ef35a61306",
+    "full_comparison_sha256": "617e57189152927e5198501f3d408da4a5eb5ae4455e470a399d116e26e3aac1",
+    "additional_mac53": "agent/evidence/10.292019r-native-xhr-015/review.json"
+  }
 }

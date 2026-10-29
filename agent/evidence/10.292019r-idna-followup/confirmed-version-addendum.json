@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T16:06:00.742830+00:00",
+  "supersedesUnmeasuredVersionQualificationIn": "analysis.json",
+  "probeSHA256": "810704544f9057ea7ea442293d8d9de82480045bb785b1aee6a3b7549cdc183e",
+  "confirmedNativeICUVersion": "78.3.0.0",
+  "confirmedUnicodeDataVersion": "17.0.0.0",
+  "nativeVersionedImportsVerified": [
+    "                 (undefined) external _uidna_nameToASCII_UTF8_78 (from libicuuc.78)",
+    "                 (undefined) external _uidna_openUTS46_78 (from libicuuc.78)"
+  ],
+  "librarySHA256": "a78b3424a391c7afad52c0d69df9cdb7818b6c20f909a14d193ae0c66a5c1119",
+  "allSevenUIDNAInfoErrors": "0x80 = UIDNA_ERROR_DISALLOWED, as defined by the exact installed header",
+  "nativeSourceBehavior": "idna_to_ascii rejects any UIDNAInfo error outside its existing DNS-length/hyphen leniency mask;0x80 is not ignored. All7 constructor failures therefore retain conservative rejection.",
+  "boundedConclusion": "The exact dependency used by accepted native004 lacks the18.0.0-labeled Small Seal assignments used by these7 pinned expectations. Actual17 data and seven DISALLOWED results are now measured, confirming this specific data-compatibility mismatch.",
+  "remainingQualification": "The18.0 version page still carries a preliminary-draft banner. This does not establish release status, general IDNA conformance or the safety of a future dependency upgrade.",
+  "productOrDependencyChanges": false,
+  "noNewBroadSuite": true,
+  "nextStep": "Evaluate a compatible prebuilt ICU/dependency data update against the pinned Unicode expectations and full URL/security controls in a later authorized session. Never mask DISALLOWED or weaken host validation to gain these7 assertions."
+}

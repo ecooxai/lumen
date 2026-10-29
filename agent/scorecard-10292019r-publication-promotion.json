@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "template_only": true,
+  "scope": "Conditional runtime status promotion after exact final source delivery proof. This file awards no points by itself.",
+  "current_task_scorecard_sha256": "f233f335eb7bad8752ae00515c4cee8381c4b898620b2033500f354a1ef8d985",
+  "current_score": 61.426948447154565,
+  "final_score": 66.42694844715457,
+  "final_score_exact": "5730055/86261",
+  "gate_to_promote": "progress_delivery",
+  "earned_after_verified_delivery": 5,
+  "required_gate_state": "pending",
+  "source_commit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "binary_sha256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+  "must_preserve_historical55": true
+}

@@ -1,0 +1,86 @@
+{
+  "recordedUTC": "2026-10-29T16:04:50.977858+00:00",
+  "productSource": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "productSHA256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+  "library": "/opt/homebrew/Cellar/icu4c@78/78.3/lib/libicuuc.78.3.dylib",
+  "librarySHA256": "a78b3424a391c7afad52c0d69df9cdb7818b6c20f909a14d193ae0c66a5c1119",
+  "nativeUIDNAImports": [
+    "                 (undefined) external _uidna_nameToASCII_UTF8_78 (from libicuuc.78)",
+    "                 (undefined) external _uidna_openUTS46_78 (from libicuuc.78)"
+  ],
+  "ICUVersion": [
+    78,
+    3,
+    0,
+    0
+  ],
+  "UnicodeDataVersion": [
+    17,
+    0,
+    0,
+    0
+  ],
+  "sourceUTS46Options": 60,
+  "disallowedHeaderDefinition": [
+    "UIDNA_ERROR_DISALLOWED=0x80,"
+  ],
+  "cases": [
+    {
+      "name": "ToASCII(\"\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+      "UErrorCode": 0,
+      "UIDNAInfoErrors": 128,
+      "UIDNAInfoErrorsHex": "0x80",
+      "returnedBytes": 19,
+      "partialOutput": "\u2d0d\ufffd\ua868\u05ae.xn--mlj"
+    },
+    {
+      "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u10be\")",
+      "UErrorCode": 0,
+      "UIDNAInfoErrors": 128,
+      "UIDNAInfoErrorsHex": "0x80",
+      "returnedBytes": 19,
+      "partialOutput": "\u2d0d\ufffd\ua868\u05ae.xn--mlj"
+    },
+    {
+      "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+      "UErrorCode": 0,
+      "UIDNAInfoErrors": 128,
+      "UIDNAInfoErrorsHex": "0x80",
+      "returnedBytes": 19,
+      "partialOutput": "\u2d0d\ufffd\ua868\u05ae.xn--mlj"
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\ucbd95\")",
+      "UErrorCode": 0,
+      "UIDNAInfoErrors": 128,
+      "UIDNAInfoErrorsHex": "0x80",
+      "returnedBytes": 22,
+      "partialOutput": "\ufffd.xn--znb.xn--5-y88f"
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5\")",
+      "UErrorCode": 0,
+      "UIDNAInfoErrors": 128,
+      "UIDNAInfoErrorsHex": "0x80",
+      "returnedBytes": 22,
+      "partialOutput": "\ufffd.xn--znb.xn--5-y88f"
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac.\u0729.\ucbd95\")",
+      "UErrorCode": 0,
+      "UIDNAInfoErrors": 128,
+      "UIDNAInfoErrorsHex": "0x80",
+      "returnedBytes": 22,
+      "partialOutput": "\ufffd.xn--znb.xn--5-y88f"
+    },
+    {
+      "name": "ToASCII(\"\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5\")",
+      "UErrorCode": 0,
+      "UIDNAInfoErrors": 128,
+      "UIDNAInfoErrorsHex": "0x80",
+      "returnedBytes": 22,
+      "partialOutput": "\ufffd.xn--znb.xn--5-y88f"
+    }
+  ],
+  "scope": "Exact accepted library queried in a separate bounded diagnostic process; no product rebuild, library replacement or URL validation change."
+}
