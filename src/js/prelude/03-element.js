@@ -253,15 +253,15 @@ const MATH_UNITS = (() => {
     return m;
 })();
 const MATH_FNS = /^(calc|-webkit-calc|min|max|clamp|round|mod|rem|abs|sign|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp)$/;
-function mathType(src) {   /* src starts at a math function name; returns [type | null (invalid) | undefined (unknown), end] */
+function mathType(src, strictUnits = false) {   /* returns [type | null (invalid) | undefined (unknown), end] */
     let i = 0, unknown = false;
     const ws = () => { const s = i; while (/\s/.test(src[i] || '')) i++; return i > s; };
     const dec = t => { const m = {}; if (t) for (const e of t.split(',')) { const [d, n] = e.split('^'); m[d] = +n; } return m; };
     const enc = m => Object.keys(m).filter(d => m[d]).sort().map(d => d + '^' + m[d]).join(',');
-    const mul = (a, b, sg) => { if (a === '?' || b === '?') return '?'; const m = dec(a), n = dec(b); for (const d in n) m[d] = (m[d] || 0) + sg * n[d]; return enc(m); };
+    const mul = (a, b, sg) => { if (a === 'none' || b === 'none') return null; if (a === '?' || b === '?') return '?'; const m = dec(a), n = dec(b); for (const d in n) m[d] = (m[d] || 0) + sg * n[d]; return enc(m); };
     const pl = t => { const m = dec(t); if (m['%']) { m.length = (m.length || 0) + m['%']; delete m['%']; } return enc(m); };
     const add = (a, b) => {
-        if (a === null || b === null) return null;
+        if (a === null || b === null || a === 'none' || b === 'none') return null;
         if (a === '?' || b === '?') return '?';
         if (a === b) return a;
         return pl(a) === pl(b) && pl(a) === 'length^1' ? 'length^1' : null;
@@ -281,7 +281,7 @@ function mathType(src) {   /* src starts at a math function name; returns [type 
             const op = src[i];
             if (op !== '*' && op !== '/') { i = s; return t; }
             i++; ws(); const u = val(); if (u === null) return null;
-            t = mul(t, u, op === '*' ? 1 : -1);
+            t = mul(t, u, op === '*' ? 1 : -1); if (t === null) return null;
         }
     }
     function args() {   /* comma list of sums up to ')' */
@@ -302,13 +302,17 @@ function mathType(src) {   /* src starts at a math function name; returns [type 
         }
         let strat = false;
         if (name === 'round') { const m = /^\s*(nearest|up|down|to-zero)\s*,/i.exec(src.slice(i)); if (m) { i += m[0].length; strat = true; } }
-        const a = args(); if (a === null) return null;
+        const a = args(); if (a === null || name !== 'clamp' && a.includes('none')) return null;
         const same = () => a.reduce((x, y) => x === '?' || y === '?' ? '?' : x === null ? null : add(x, y));
         const num = t => t === '' || t === '?';
         switch (name) {
         case 'calc': case '-webkit-calc': case 'abs': return a.length === 1 ? a[0] : null;
         case 'min': case 'max': case 'hypot': return a.length ? same() : null;
-        case 'clamp': return a.length === 3 ? same() : null;
+        case 'clamp':
+            if (a.length !== 3 || a[1] === 'none') return null;
+            if (a[0] === 'none') a[0] = a[1];
+            if (a[2] === 'none') a[2] = a[1];
+            return same();
         case 'round': if (a.length === 1) return strat || num(a[0]) || a[0] === '?' ? (num(a[0]) ? a[0] : null) : null;
             return a.length === 2 ? same() : null;
         case 'mod': case 'rem': return a.length === 2 ? same() : null;
@@ -331,7 +335,7 @@ function mathType(src) {   /* src starts at a math function name; returns [type 
             if (!m[3]) return '';
             if (m[3] === '%') return '%^1';
             const u = MATH_UNITS.get(m[3].toLowerCase());
-            if (u === undefined) { unknown = true; return '?'; }
+            if (u === undefined) { if (strictUnits) return null; unknown = true; return '?'; }
             return u + '^1';
         }
         m = /^-?[a-z_][\w-]*/i.exec(src.slice(i));
@@ -339,10 +343,44 @@ function mathType(src) {   /* src starts at a math function name; returns [type 
         i += m[0].length;
         if (src[i] === '(') { i++; return fn(m[0]); }
         if (/^(-?infinity|pi|e|nan)$/i.test(m[0])) return '';
+        if (strictUnits) return /^none$/i.test(m[0]) ? 'none' : null;
         unknown = true; return '?';   /* e.g. a relative color's channel keyword */
     }
     const t = val();
-    return [unknown || t === '?' ? undefined : t, i];
+    return [strictUnits && t === null ? null : unknown || t === '?' ? undefined : t, i];
+}
+/* Angle-bearing transform arguments need their own expected type: a nested
+   min()/max() is not a whole-property expression. Other transform components
+   keep their existing validation, including deferred var()/env()/attr(). */
+function transformAnglesValid(value) {
+    // Escaped tokens retain the existing parser path until token-level decoding.
+    if (value.includes(String.fromCharCode(92))) return true;
+    const src = value.includes('/*') ? value.replace(/\/\*[\s\S]*?(?:\*\/|$)/g, ' ') : value;
+    const re = /(^|[\s)])(rotate(?:3d|[xyz])?|skew(?:[xy])?)\(/gi;
+    let m;
+    while ((m = re.exec(src))) {
+        const start = re.lastIndex; let i = start, depth = 1;
+        while (i < src.length && depth) { if (src[i] === '(') depth++; else if (src[i] === ')') depth--; i++; }
+        const body = src.slice(start, depth ? src.length : i - 1), args = [];
+        let part = 0, nested = 0;
+        for (let j = 0; j < body.length; j++) {
+            if (body[j] === '(') nested++;
+            else if (body[j] === ')') nested--;
+            else if (body[j] === ',' && !nested) { args.push(body.slice(part, j).trim()); part = j + 1; }
+        }
+        args.push(body.slice(part).trim());
+        const name = m[2].toLowerCase(), first = name === 'rotate3d' ? 3 : 0;
+        if (name === 'rotate3d' ? args.length !== 4 : name === 'skew' ? args.length < 1 || args.length > 2 : args.length !== 1) return false;
+        for (let j = first; j < args.length; j++) {
+            const arg = args[j];
+            // The legacy unitless-zero exception does not apply inside math.
+            if (/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(arg) && Number(arg) === 0) continue;
+            const [type, end] = mathType(arg, true);
+            if (arg.slice(end).trim() || type !== undefined && type !== 'angle^1') return false;
+        }
+        re.lastIndex = Math.max(start, i - 1);
+    }
+    return true;
 }
 const MATH_LEN_PROPS = /^((min-|max-)?(width|height|block-size|inline-size))$/;
 /* Canonical nonnegative px sizes below 1e9 with at most six fractional digits
@@ -454,6 +492,7 @@ function mathValid(p, v) {
         return /^\s*(inherit|initial|unset|revert|revert-layer|none|auto|base|base-select|textfield|menulist-button|button|checkbox|listbox|menulist|meter|progress-bar|radio|searchfield|textarea)\s*$/i.test(v);
     if (/-gradient\(/i.test(v) && !/var\(|env\(|attr\(/i.test(v) && !gradInterpValid(v)) return false;
     if (/var\(|env\(|attr\(|calc-size\(|anchor/i.test(v)) return true;
+    if (p === 'transform' && !transformAnglesValid(v)) return false;
     if (/^background-position(?:-[xy])?$/.test(p) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return cssPositionParse(v, cssPositionAxis(p)) !== null;
     const re = /(^|[\s,(/])((?:-webkit-)?[a-z][a-z0-9-]*)\(/gi;
     let m;

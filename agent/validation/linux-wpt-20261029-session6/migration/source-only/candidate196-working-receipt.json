@@ -1,0 +1,13 @@
+{
+  "prepared_utc": "2026-10-29T19:57:00.882600+00:00",
+  "base_commit": "169fa10ce64ce297753e7f8cd293744222c51e28",
+  "current195_sha256": "dc5181447863067883a2eabd995aaab54d500a88919d2803bc6b2a36628e62b4",
+  "isolated_angle_sha256": "b50b4a4cacf68922f2c2a36c4b8b6a16fda682a3d7bb9ad2fbf0f6ed3ea4bd81",
+  "merged_sha256": "44a0db223ce7e852795b8808a0c872b8aa746031ef5b8310a9132560513169c7",
+  "patch_sha256": "84dc005da7915e82227ca0fdd6b1525f37ef7fa285325159ac2d00e8c1fc206c",
+  "merge_exit": 0,
+  "candidate": 196,
+  "integrated_utc": "2026-10-29T20:04:08.142376+00:00",
+  "parent_commit": "d7165f6c0dd9df19715bfa997826551409c5791f",
+  "integrated_patch_sha256": "3b03775c7166beebcb52aabe54100324bb81c8422b69cfd6cbb792668c10dfed"
+}

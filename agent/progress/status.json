@@ -1,34 +1,34 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Building candidate 195: canonical pixel-size optimization",
-  "iteration": 195,
+  "phase": "Building candidate 196: typed transform-angle validation",
+  "iteration": 196,
   "score": null,
   "iteration_quality": null,
   "score_note": "19/100 is a historical estimate without a reproducible formula. Current overall assessment is pending; scoped checks are reported separately.",
   "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
-  "checkpoint": "8da17b585764c0a94363a00452d45cf1afa12cb3",
-  "updated_utc": "2026-10-29T19:55:14.318579+00:00",
+  "checkpoint": "d7165f6c0dd9df19715bfa997826551409c5791f",
+  "updated_utc": "2026-10-29T20:04:08.142376+00:00",
   "session_started_utc": "2026-10-29T17:25:47Z",
   "deadline_utc": "2026-10-29T21:25:47Z",
   "current_evidence": [
     [
-      "Accepted candidate 194",
-      "Cache modes and cached redirects improved 16 upstream assertions; ordinary 304 streaming headers are restored."
+      "Accepted candidate 195",
+      "All 3,268 CSSOM observations are unchanged, retaining 2,447 Chromium matches and 821 known differences."
     ],
     [
-      "Frozen network gate",
-      "302/317 assertions across 22 files; zero losses, all harnesses and joined cleanup complete."
+      "Setter-specific timing",
+      "Median 58.54 to 35.46 ms; all seven diagnostic pairs improved."
     ],
     [
-      "Native regression gate",
-      "140/140 non-URL entries; unchanged zstd sync, stream and sink controls pass 258/258."
+      "Performance limits",
+      "Full-workload timing is inconclusive; the later direct-attribute diagnostic stage slowed and remains reported."
     ],
     [
       "Next candidate",
-      "Candidate 195 will be assessed with 3,268 fixed CSSOM fields and the balanced performance protocol."
+      "Candidate 196 is being checked against five whole angle files and 832 fixed observations."
     ]
   ],
-  "coverage": "Candidate 194 passes 302/317 frozen network assertions, with 16 gains versus 192 and no lost identities. Fresh native validation passes 140/140, including 258/258 zstd controls. The primary broad comparison remains the immutable 176/187/Chromium cohort.",
+  "coverage": "All 3,268 CSSOM observations remain unchanged. Every fixed performance trial passes its correctness checks; only the isolated setter diagnostic establishes a speed improvement. The accepted cache and native gates remain separately recorded.",
   "findings": [
     "Whole-browser parity is not certified. The matched 640-document non-URL comparison and cleanup audit are complete: candidate 176 \u2192 187 gains 11 fully passing cases and 133 assertions, with zero losses. All owned processes are gone. The original 638/640 native exit-receipt result remains recorded as a historical harness teardown defect; its two inactive profiles were removed.",
     "Three focused upstream form assertions remain after candidate 190: two dynamic validity-selector checks and maxlength editing. Two Chromium validation-message nonpasses in the authored reference remain separately recorded.",
@@ -37,9 +37,9 @@
     "Chromium is faster in the measured CPU DOM, style/layout and grid phases. A separate diagnostic located CSSOM setter overhead; a narrow optimization is awaiting independent semantics and balanced performance checks.",
     "URL conformance remains deferred. Current whole-browser assessment is pending; focused scores are explicitly scoped."
   ],
-  "active_iteration": 195,
-  "accepted_binary_sha256": "fe1fb9248d40907ea1f6f5cbe4b04ebd2b646e13849b7f6adde3a134baf79a41",
-  "accepted_binary_scope": "Candidate 194: cache policy and unsolicited 304 header delivery, native and frozen network gates.",
+  "active_iteration": 196,
+  "accepted_binary_sha256": "63b16b96cca36dffb02831e99f6fb7b9812fe3d005bc76e70d300b50c1c4790a",
+  "accepted_binary_scope": "Candidate 195: canonical pixel-size setter optimization with unchanged semantics; broad timing remains inconclusive.",
   "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
   "candidate_binary_sha256": null,
@@ -406,21 +406,31 @@
   "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "session_iteration": null,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 194,
+  "accepted_iteration": 195,
   "accepted_focused_results": {
-    "network": {
-      "pass": 302,
-      "total": 317,
-      "gain_vs192": 16,
+    "cssom_reference": {
+      "pass": 2447,
+      "total": 3268,
+      "observations_unchanged": 3268,
       "lost": 0
     },
-    "native_non_url": {
-      "pass": 140,
-      "total": 140
+    "scanner": {
+      "pass": 196,
+      "total": 200
     },
-    "zstd_controls": {
-      "pass": 258,
-      "total": 258
+    "strings": {
+      "pass": 27,
+      "total": 27
+    },
+    "fixed_performance": {
+      "trials": 21,
+      "checks_per_trial": 9395
+    },
+    "setter_diagnostic": {
+      "trials": 14,
+      "checks_per_trial": 12289,
+      "median_before_ms": 58.54,
+      "median_after_ms": 35.46
     }
   },
   "rejected_session4_iterations": [
@@ -540,7 +550,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 195,
+  "current_candidate": 196,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1217,7 +1227,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-29T19:55:14.318579+00:00",
+  "updated_at": "2026-10-29T20:04:08.142376+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1326,12 +1336,12 @@
     },
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   },
-  "session6_current": "Candidate 194 is accepted after restoring unsolicited 304 delivery. Candidate 195 is a narrow CSSOM optimization awaiting independent semantics and balanced performance checks.",
-  "session6_current_summary": "Accepted candidate 194; performance candidate 195 is being built.",
+  "session6_current": "Candidate 195 is accepted for a measured setter-specific improvement with unchanged semantics. Full-workload speedup is inconclusive, and a later diagnostic stage slowed. Candidate 196 adds scoped angle-type validation.",
+  "session6_current_summary": "Accepted candidate 195; angle candidate 196 is being built.",
   "overall_assessment": "pending",
-  "accepted_scope_label": "Network assertions",
-  "accepted_scope_pass": 302,
-  "accepted_scope_total": 317,
+  "accepted_scope_label": "CSSOM reference matches",
+  "accepted_scope_pass": 2447,
+  "accepted_scope_total": 3268,
   "reviewed_source_checkpoint186": {
     "candidate": 186,
     "source_url": "https://2b6886734b41e997.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
