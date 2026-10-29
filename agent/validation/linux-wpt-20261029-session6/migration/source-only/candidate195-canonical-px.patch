@@ -1,0 +1,23 @@
+diff --git a/src/js/prelude/03-element.js b/src/js/prelude/03-element.js
+index 99da795..ebc4047 100644
+--- a/src/js/prelude/03-element.js
++++ b/src/js/prelude/03-element.js
+@@ -345,6 +345,9 @@ function mathType(src) {   /* src starts at a math function name; returns [type
+     return [unknown || t === '?' ? undefined : t, i];
+ }
+ const MATH_LEN_PROPS = /^((min-|max-)?(width|height|block-size|inline-size))$/;
++/* Canonical nonnegative px sizes below 1e9 with at most six fractional digits
++   already have Lumen's existing specified serialization. Other values keep the full path. */
++const CSS_CANONICAL_PX_SIZE = /^(?:0|[1-9]\d{0,8})(?:\.\d{0,5}[1-9])?px$/;
+ const MATH_NUM_PROPS = /^((fill-|stroke-|stop-|flood-)?opacity|flex-grow|flex-shrink)$/;
+ /* the <color-interpolation-method> of gradients: only "in <space> [<hue> hue]" at the start or end of the first argument */
+ const GRAD_SPACES = /^(srgb|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020|lab|oklab|xyz|xyz-d50|xyz-d65|hsl|hwb|lch|oklch)$/i;
+@@ -822,7 +825,7 @@ class CSSStyleDeclaration {
+             else if (priority && !/^important$/i.test(priority) || !cssGridSet(m, p, value, priority ? 'important' : '')) return;
+             this._el.setAttribute('style', serDecls(m)); return;
+         }
+-        if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
++        if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
+     removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+ }
+ const styleHandler = {

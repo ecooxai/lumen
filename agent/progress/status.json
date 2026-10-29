@@ -1,42 +1,34 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Building candidate 194: restore unsolicited 304 head delivery",
-  "iteration": 194,
+  "phase": "Building candidate 195: canonical pixel-size optimization",
+  "iteration": 195,
   "score": null,
   "iteration_quality": null,
   "score_note": "19/100 is a historical estimate without a reproducible formula. Current overall assessment is pending; scoped checks are reported separately.",
   "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
-  "checkpoint": "169fa10ce64ce297753e7f8cd293744222c51e28",
-  "updated_utc": "2026-10-29T19:51:08.495804+00:00",
+  "checkpoint": "8da17b585764c0a94363a00452d45cf1afa12cb3",
+  "updated_utc": "2026-10-29T19:55:14.318579+00:00",
   "session_started_utc": "2026-10-29T17:25:47Z",
   "deadline_utc": "2026-10-29T21:25:47Z",
   "current_evidence": [
     [
-      "Candidate 192 wire behavior",
-      "Last-Event-ID in windows and workers, plus XHR response-header bytes, preserve ByteString values."
+      "Accepted candidate 194",
+      "Cache modes and cached redirects improved 16 upstream assertions; ordinary 304 streaming headers are restored."
     ],
     [
-      "Frozen network cohort",
-      "286/317 assertions across 22 files. The 31 cumulative gains over candidate 190 comprise 28 clone checks and 3 wire-byte checks, with zero lost identities. All 22 harnesses and owned cleanup completed."
+      "Frozen network gate",
+      "302/317 assertions across 22 files; zero losses, all harnesses and joined cleanup complete."
     ],
     [
-      "Retained controls",
-      "120/120 header and UTF-8 body controls. Candidate 191 retains 114 stable clone fields and 5 separately normative error fields; the Chromium function-chunk stall remains documented separately."
+      "Native regression gate",
+      "140/140 non-URL entries; unchanged zstd sync, stream and sink controls pass 258/258."
     ],
     [
-      "Matched broad comparison",
-      "On the same 640 non-URL documents, candidate 176 \u2192 187 improves from 357 \u2192 368 fully passing cases and 8,073 \u2192 8,206/10,540 reported assertions. There are 133 gains and zero losses or identity/harness changes."
-    ],
-    [
-      "Chromium broad reference",
-      "Chromium passes 544/640 complete cases and 9,516/10,549 reported assertions. These reported totals retain reference failures and timeouts; this is a fixed selection, not all WPT."
-    ],
-    [
-      "Active candidate 193",
-      "The independent native cache test passes, but the native suite is 139/140 because http_zstd exposed an unsolicited-304 header-delivery regression. Candidate 193 is provisional and is not accepted."
+      "Next candidate",
+      "Candidate 195 will be assessed with 3,268 fixed CSSOM fields and the balanced performance protocol."
     ]
   ],
-  "coverage": "Accepted candidate 192: 286/317 frozen network assertions (90.22/100), with 31 gains over candidate 190 and zero losses; 120/120 header/body controls retained. The complete 640-case broad comparison uses immutable candidates 176 and 187. Whole-browser assessment remains pending.",
+  "coverage": "Candidate 194 passes 302/317 frozen network assertions, with 16 gains versus 192 and no lost identities. Fresh native validation passes 140/140, including 258/258 zstd controls. The primary broad comparison remains the immutable 176/187/Chromium cohort.",
   "findings": [
     "Whole-browser parity is not certified. The matched 640-document non-URL comparison and cleanup audit are complete: candidate 176 \u2192 187 gains 11 fully passing cases and 133 assertions, with zero losses. All owned processes are gone. The original 638/640 native exit-receipt result remains recorded as a historical harness teardown defect; its two inactive profiles were removed.",
     "Three focused upstream form assertions remain after candidate 190: two dynamic validity-selector checks and maxlength editing. Two Chromium validation-message nonpasses in the authored reference remain separately recorded.",
@@ -45,9 +37,9 @@
     "Chromium is faster in the measured CPU DOM, style/layout and grid phases. A separate diagnostic located CSSOM setter overhead; a narrow optimization is awaiting independent semantics and balanced performance checks.",
     "URL conformance remains deferred. Current whole-browser assessment is pending; focused scores are explicitly scoped."
   ],
-  "active_iteration": 194,
-  "accepted_binary_sha256": "4fd0023a0d2fe1b138de34cef743124a760d4ecbff3bb75d995984553e753714",
-  "accepted_binary_scope": "Ruby candidate 192: HTTP byte transport and the retained 22-file network cohort",
+  "active_iteration": 195,
+  "accepted_binary_sha256": "fe1fb9248d40907ea1f6f5cbe4b04ebd2b646e13849b7f6adde3a134baf79a41",
+  "accepted_binary_scope": "Candidate 194: cache policy and unsolicited 304 header delivery, native and frozen network gates.",
   "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
   "candidate_binary_sha256": null,
@@ -414,25 +406,21 @@
   "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "session_iteration": null,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 192,
+  "accepted_iteration": 194,
   "accepted_focused_results": {
-    "network_wholefiles": {
-      "pass": 286,
+    "network": {
+      "pass": 302,
       "total": 317,
-      "gains_vs190": 31,
-      "losses": 0,
-      "files": 22
+      "gain_vs192": 16,
+      "lost": 0
     },
-    "wire_byte_gains": 3,
-    "header_controls": {
-      "pass": 120,
-      "total": 120
+    "native_non_url": {
+      "pass": 140,
+      "total": 140
     },
-    "clone_controls": {
-      "pass": 114,
-      "total": 114,
-      "normative_pass": 5,
-      "normative_total": 5
+    "zstd_controls": {
+      "pass": 258,
+      "total": 258
     }
   },
   "rejected_session4_iterations": [
@@ -552,7 +540,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 194,
+  "current_candidate": 195,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1229,7 +1217,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-29T19:51:08.495804+00:00",
+  "updated_at": "2026-10-29T19:55:14.318579+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1338,11 +1326,11 @@
     },
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   },
-  "session6_current": "Candidate 193 cache changes remain provisional after one native regression. Candidate 194 scopes 304 suppression to actual cached revalidation; independent native and browser gates will repeat.",
-  "session6_current_summary": "Accepted candidate 192; candidate 194 repair is being built.",
+  "session6_current": "Candidate 194 is accepted after restoring unsolicited 304 delivery. Candidate 195 is a narrow CSSOM optimization awaiting independent semantics and balanced performance checks.",
+  "session6_current_summary": "Accepted candidate 194; performance candidate 195 is being built.",
   "overall_assessment": "pending",
-  "accepted_scope_label": "Network assertions across 22 files",
-  "accepted_scope_pass": 286,
+  "accepted_scope_label": "Network assertions",
+  "accepted_scope_pass": 302,
   "accepted_scope_total": 317,
   "reviewed_source_checkpoint186": {
     "candidate": 186,

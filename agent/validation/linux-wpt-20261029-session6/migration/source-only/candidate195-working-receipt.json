@@ -1,0 +1,10 @@
+{
+  "candidate": 195,
+  "base": "8da17b585764c0a94363a00452d45cf1afa12cb3",
+  "integrated_utc": "2026-10-29T19:55:14.318579+00:00",
+  "before_sha256": "b1e2cbad0a4b8d830b54d8886bfcc32d914ac5e9be4b41169b6601fdadc792fd",
+  "after_sha256": "dc5181447863067883a2eabd995aaab54d500a88919d2803bc6b2a36628e62b4",
+  "patch_sha256": "5cc714ed98ad4def7b722f875f01ad0cfc26cb6f6a49ec9473d9ff9279777c6b",
+  "scope": "Primitive canonical nonnegative px size values bypass redundant validation and existing serialization; all other setters use the original path.",
+  "baseline_qualification": "Frozen 3268-field fixture has 2447 prior passes and 821 retained reference differences; require zero lost identities."
+}
