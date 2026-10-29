@@ -1,127 +1,453 @@
 {
-  "schema_version": 1,
-  "prepared_utc": "2026-10-28T23:12:54.919843+00:00",
-  "verification_scope": "Observed publication of immutable source/status payload2184bc245c83d26588783d3976c2d58d9565fde4. The subsequent commit carrying this receipt clarifies build/session labels; it does not change the engine source or media bytes.",
-  "payload_commit": "2184bc245c83d26588783d3976c2d58d9565fde4",
-  "payload_parent": "126b2c35d93cfc513c7133d239235023ad063309",
-  "source_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
-  "source_iteration": 163,
-  "session_iteration": 1,
-  "media_iteration": 162,
-  "git_push": {
-    "completed_utc": "2026-10-28T23:10:21.363617+00:00",
-    "returncode": 0,
-    "remote_commit_verified": "2184bc245c83d26588783d3976c2d58d9565fde4",
-    "force": false,
-    "development_history_exported": false
+  "schema_version": 2,
+  "kind": "Observed publication receipt for a qualified experimental source and media snapshot",
+  "observed_as_of_utc": "2026-10-29T02:26:08.439212+00:00",
+  "publication_verified": true,
+  "whole_goal_readiness_estimate": 19,
+  "requested_goal_score": 98,
+  "goal_achieved": false,
+  "score_qualification": "Conservative engineering readiness estimate, not a conformance percentage.",
+  "checkpoint_classification": "EXPERIMENTAL",
+  "regression_free_or_production_release_claim": false,
+  "original_engine_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
+  "measured_binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+  "source_snapshot": {
+    "repository": "https://github.com/ecooxai/lumen",
+    "branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-engine-experimental-source-20261029",
+    "commit": "2e04f123b584b8b6acce08a1e6416f1bf2793845",
+    "url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-engine-experimental-source-20261029",
+    "push_completed_utc": "2026-10-29T02:16:30.732877+00:00",
+    "remote_sha_verified": "2e04f123b584b8b6acce08a1e6416f1bf2793845",
+    "commit_count": 1,
+    "development_ancestry_included": false,
+    "regular_files": 699,
+    "archive_sha256": "bddd9f93afca4d8fbbf036229c1bcbe2f8e20aaec53caf48c73d6f0457458277",
+    "anonymous_SOURCE_SNAPSHOT_http": 200,
+    "anonymous_SOURCE_SNAPSHOT_sha256": "33866605975735eeb9df446092bec01a34dca6fd5afb4b04d4f187708787b4f9"
   },
-  "pages_build": {
-    "status": "built",
-    "commit": "2184bc245c83d26588783d3976c2d58d9565fde4",
-    "created_at": "2026-10-28T23:10:21Z",
-    "updated_at": "2026-10-28T23:10:45Z",
-    "duration": 24552,
-    "error": {
-      "message": null
-    }
-  },
-  "anonymous_raw_verification": {
-    "completed_utc": "2026-10-28T23:10:47.072165+00:00",
-    "assets_checked": 10,
-    "exact_matches": 10
-  },
-  "pages_verification": {
-    "completed_utc": "2026-10-28T23:11:04.675555+00:00",
-    "assets_checked": 10,
-    "exact_matches": 10,
-    "checks": [
+  "pages": {
+    "url": "https://ecooxai.github.io/lumen/",
+    "branch": "gpt-6-astra-builtin-agents-rubywebterm-showcase-20261028",
+    "payload_commit": "b8a0137382fe9cac3b08a267b7bf6435052eb261",
+    "payload_manifest_sha256": "63739b9247c32fe780e7bf149a75bb4c41379bc61d02a06c2917cc72aeacc43a",
+    "push_completed_utc": "2026-10-29T02:23:00.197995+00:00",
+    "build": {
+      "commit": "b8a0137382fe9cac3b08a267b7bf6435052eb261",
+      "created_at": "2026-10-29T02:23:00Z",
+      "error": {
+        "message": null
+      },
+      "status": "built",
+      "updated_at": "2026-10-29T02:24:00Z"
+    },
+    "verification_started_utc": "2026-10-29T02:24:04.514267+00:00",
+    "verification_completed_utc": "2026-10-29T02:24:09.010003+00:00",
+    "all12_plain_URL_assets_exact": true,
+    "assets": [
       {
-        "file": "src.tar.gz",
-        "http": 200,
-        "bytes": 4438760,
-        "sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0",
-        "exact": true
+        "name": "index.html",
+        "url": "https://ecooxai.github.io/lumen/index.html",
+        "expected_sha256": "69bf5135ec9f4e756a481f3b590020a81d70ef35e208b1d0da3041616ae1d8f7",
+        "expected_bytes": 21177,
+        "http_status": 200,
+        "bytes": 21177,
+        "sha256": "69bf5135ec9f4e756a481f3b590020a81d70ef35e208b1d0da3041616ae1d8f7",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-52b9\"",
+        "exact_match": true,
+        "elapsed_ms": 615.1
       },
       {
-        "file": "source-inclusion-manifest.json",
-        "http": 200,
-        "bytes": 158967,
-        "sha256": "bf8694f867a854fab58fb49f647a654a36365632b263a67626047c2d6e5005b3",
-        "exact": true
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
+        "url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
+        "expected_sha256": "67d27d1beeb027cf6abc908464ee7066c5b3fbd5b07bffc6e84f60e77aa77b19",
+        "expected_bytes": 39919,
+        "http_status": 200,
+        "bytes": 39919,
+        "sha256": "67d27d1beeb027cf6abc908464ee7066c5b3fbd5b07bffc6e84f60e77aa77b19",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-9bef\"",
+        "exact_match": true,
+        "elapsed_ms": 615.7
       },
       {
-        "file": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
-        "http": 200,
-        "bytes": 232212,
-        "sha256": "2367c099b72af97c2eb06c290ad7efe33fa195569c183a00a8be4023b7dc1c1c",
-        "exact": true
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-clean.mp4",
+        "url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-clean.mp4",
+        "expected_sha256": "e926bafdbcfe7db4bb2dd82eb605bb5aecc7674180a4878e7aac66269087a92a",
+        "expected_bytes": 291557,
+        "http_status": 200,
+        "bytes": 291557,
+        "sha256": "e926bafdbcfe7db4bb2dd82eb605bb5aecc7674180a4878e7aac66269087a92a",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-472e5\"",
+        "exact_match": true,
+        "elapsed_ms": 664.8
       },
       {
-        "file": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
-        "http": 200,
-        "bytes": 258733,
-        "sha256": "b0cdbd0a1f8cb9616a0537c40ec1e20d4cc71b9ff0d6ab757e788702160c25ee",
-        "exact": true
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-media-info.json",
+        "url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-media-info.json",
+        "expected_sha256": "b4bba1cc7cb52949300f211b7f28640ac398e27c0ca09465697e24c6a2e332c5",
+        "expected_bytes": 7846,
+        "http_status": 200,
+        "bytes": 7846,
+        "sha256": "b4bba1cc7cb52949300f211b7f28640ac398e27c0ca09465697e24c6a2e332c5",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-1ea6\"",
+        "exact_match": true,
+        "elapsed_ms": 619.4
       },
       {
-        "file": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json",
-        "http": 200,
-        "bytes": 2496,
-        "sha256": "8836f09545df8bcc069b93e27a860f6e541fd0e891d3427ffa4f247bc9fc3235",
-        "exact": true
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-native.png",
+        "url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-native.png",
+        "expected_sha256": "f8769a122dcacb8360fcdad5709c4acb2048a69df4138775c1fb9fabc6b879e4",
+        "expected_bytes": 62143,
+        "http_status": 200,
+        "bytes": 62143,
+        "sha256": "f8769a122dcacb8360fcdad5709c4acb2048a69df4138775c1fb9fabc6b879e4",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-f2bf\"",
+        "exact_match": true,
+        "elapsed_ms": 626.0
       },
       {
-        "file": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-native-frame.png",
-        "http": 200,
-        "bytes": 287204,
-        "sha256": "1589be9963e37fa026cd17967cf73f6158e4979a87c112775d2216c08207b289",
-        "exact": true
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-showcase.mp4",
+        "url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-showcase.mp4",
+        "expected_sha256": "12c2b7138078c5f06eb1927e11b9d8f48de7011dfb692bb4b63677e42cb55f32",
+        "expected_bytes": 281473,
+        "http_status": 200,
+        "bytes": 281473,
+        "sha256": "12c2b7138078c5f06eb1927e11b9d8f48de7011dfb692bb4b63677e42cb55f32",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-44b81\"",
+        "exact_match": true,
+        "elapsed_ms": 635.4
       },
       {
-        "file": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
-        "http": 200,
-        "bytes": 7154,
-        "sha256": "290f53fa08f2a2a1682dd825f04e79ad959fe83591c507d52f71fca36a8c7f07",
-        "exact": true
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-showcase.png",
+        "url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-showcase.png",
+        "expected_sha256": "9036be97f69eeb01141d4e5c4bfe0af80af49772efb7696cfdd6a83c11c62ad6",
+        "expected_bytes": 88647,
+        "http_status": 200,
+        "bytes": 88647,
+        "sha256": "9036be97f69eeb01141d4e5c4bfe0af80af49772efb7696cfdd6a83c11c62ad6",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-15a47\"",
+        "exact_match": true,
+        "elapsed_ms": 607.8
       },
       {
-        "file": "index.html",
-        "http": 200,
-        "bytes": 5821,
-        "sha256": "99b84246fb7285b1807538da32cec4f9485b2e30f04047e87c14e636f600f5ea",
-        "exact": true
+        "name": "public-media-verification.json",
+        "url": "https://ecooxai.github.io/lumen/public-media-verification.json",
+        "expected_sha256": "4c7aefcf672389024bd94e5fd75565ecd0a86fd69b2a8ae1352c4588587dcb35",
+        "expected_bytes": 1508,
+        "http_status": 200,
+        "bytes": 1508,
+        "sha256": "4c7aefcf672389024bd94e5fd75565ecd0a86fd69b2a8ae1352c4588587dcb35",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-5e4\"",
+        "exact_match": true,
+        "elapsed_ms": 607.2
       },
       {
-        "file": ".nojekyll",
-        "http": 200,
-        "bytes": 0,
-        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "exact": true
+        "name": "public-wpt-selection4200.json",
+        "url": "https://ecooxai.github.io/lumen/public-wpt-selection4200.json",
+        "expected_sha256": "8004c3c23e4d4231254b1d6e718660b5c1c635773e3ca5bda9bed7a088c4a5af",
+        "expected_bytes": 326783,
+        "http_status": 200,
+        "bytes": 326783,
+        "sha256": "8004c3c23e4d4231254b1d6e718660b5c1c635773e3ca5bda9bed7a088c4a5af",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-4fc7f\"",
+        "exact_match": true,
+        "elapsed_ms": 616.2
       },
       {
-        "file": "publication-manifest.json",
-        "http": 200,
-        "bytes": 2201,
-        "sha256": "392e38363e567e85ef70c73c2dd8b8989d900c89cab05aad5b36887bb08cd5d7",
-        "exact": true
+        "name": "source-build-verification.json",
+        "url": "https://ecooxai.github.io/lumen/source-build-verification.json",
+        "expected_sha256": "17786b39956e05e892a12ed6fc3e3fc9d5b0fb63940a5298f928c360bec47e31",
+        "expected_bytes": 2215,
+        "http_status": 200,
+        "bytes": 2215,
+        "sha256": "17786b39956e05e892a12ed6fc3e3fc9d5b0fb63940a5298f928c360bec47e31",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-8a7\"",
+        "exact_match": true,
+        "elapsed_ms": 606.2
+      },
+      {
+        "name": "source-inclusion-manifest.json",
+        "url": "https://ecooxai.github.io/lumen/source-inclusion-manifest.json",
+        "expected_sha256": "974621a3e114dd2170b9594067b60729a1090cc0b410903702b7e58bef7ba8cc",
+        "expected_bytes": 160424,
+        "http_status": 200,
+        "bytes": 160424,
+        "sha256": "974621a3e114dd2170b9594067b60729a1090cc0b410903702b7e58bef7ba8cc",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-272a8\"",
+        "exact_match": true,
+        "elapsed_ms": 862.4
+      },
+      {
+        "name": "src.tar.gz",
+        "url": "https://ecooxai.github.io/lumen/src.tar.gz",
+        "expected_sha256": "bddd9f93afca4d8fbbf036229c1bcbe2f8e20aaec53caf48c73d6f0457458277",
+        "expected_bytes": 4451575,
+        "http_status": 200,
+        "bytes": 4451575,
+        "sha256": "bddd9f93afca4d8fbbf036229c1bcbe2f8e20aaec53caf48c73d6f0457458277",
+        "cache_control": "max-age=600",
+        "etag": "\"6ae2ae3f-43ecf7\"",
+        "exact_match": true,
+        "elapsed_ms": 2269.1
       }
     ]
   },
-  "live_source_verification": {
-    "verified_utc": "2026-10-28T23:11:27.600115+00:00",
-    "live_http": 200,
-    "live_source_bytes": 4438760,
-    "live_source_sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0",
-    "source_iteration": 163,
-    "media_iteration": 162
+  "independent_review_sha256": {
+    "source_scope": "44f2578ffb6226ae69050fcc10976b5ae09147372e315484253326cb1c8aec3c",
+    "source_orphan": "3c268a33bfedfa60f8371b94f8ede037eb883ef9333d8d697eb6d9c01b2648a1",
+    "source_build": "78127ac050b8d87548ea31812db56776dc227c648b93b24fd76eae15277f8bcd",
+    "core_report": "9b43ad8942343ad9533f155f9217036e89d4832da912c2d73540f512e9aaaca7",
+    "final_payload": "4d077dd6e6af4fb63100c37cbba55f0efcc974f0db45f4256192455441d5df73",
+    "observed_public_assets": "3e03987f3532b0b98e771a0d46802c8c25ccc49bcba8bb8229f6dbff6628e63f"
   },
-  "source_archive": {
-    "bytes": 4438760,
-    "sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0"
+  "earlier_propagation_observation": {
+    "started_utc": "2026-10-29T02:23:19.000713+00:00",
+    "completed_utc": "2026-10-29T02:23:22.278887+00:00",
+    "all12exact": false,
+    "retained_assets": [
+      {
+        "name": "index.html",
+        "http_status": 200,
+        "bytes": 5916,
+        "sha256": "0dda7e7d790c7323912f7a24f5339692704caaaddaf91e671f2bdb9490b27aa5",
+        "exact_match": false
+      },
+      {
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
+        "http_status": 200,
+        "bytes": 7365,
+        "sha256": "39ee702da1b81951569cae147185cf1a910c0c3e1d6c246e07b5d6691cd9aea3",
+        "exact_match": false
+      },
+      {
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-clean.mp4",
+        "http_status": 404,
+        "bytes": null,
+        "sha256": null,
+        "exact_match": false
+      },
+      {
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-media-info.json",
+        "http_status": 404,
+        "bytes": null,
+        "sha256": null,
+        "exact_match": false
+      },
+      {
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-native.png",
+        "http_status": 404,
+        "bytes": null,
+        "sha256": null,
+        "exact_match": false
+      },
+      {
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-showcase.mp4",
+        "http_status": 404,
+        "bytes": null,
+        "sha256": null,
+        "exact_match": false
+      },
+      {
+        "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-showcase.png",
+        "http_status": 404,
+        "bytes": null,
+        "sha256": null,
+        "exact_match": false
+      },
+      {
+        "name": "public-media-verification.json",
+        "http_status": 404,
+        "bytes": null,
+        "sha256": null,
+        "exact_match": false
+      },
+      {
+        "name": "public-wpt-selection4200.json",
+        "http_status": 404,
+        "bytes": null,
+        "sha256": null,
+        "exact_match": false
+      },
+      {
+        "name": "source-build-verification.json",
+        "http_status": 404,
+        "bytes": null,
+        "sha256": null,
+        "exact_match": false
+      },
+      {
+        "name": "source-inclusion-manifest.json",
+        "http_status": 200,
+        "bytes": 158967,
+        "sha256": "bf8694f867a854fab58fb49f647a654a36365632b263a67626047c2d6e5005b3",
+        "exact_match": false
+      },
+      {
+        "name": "src.tar.gz",
+        "http_status": 200,
+        "bytes": 4438760,
+        "sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0",
+        "exact_match": false
+      }
+    ],
+    "qualification": "The first post-push observation still saw previous163 assets or unavailable new paths while Pages was building. The later exact-byte observation above supersedes its current-state status but preserves it as history."
   },
-  "other_destinations": {
-    "FileHarbor": "Current-session read-only health and documentation requests returned403. No upload was attempted.",
-    "Surge": "Retained preflight requires ordinary account authentication. No Surge publication is claimed."
+  "live_health": {
+    "started_utc": "2026-10-29T02:25:23.742Z",
+    "completed_utc": "2026-10-29T02:25:32.554Z",
+    "http": {
+      "checked_start_utc": "2026-10-29T02:25:23.743Z",
+      "status": 200,
+      "service": "lumen-wpt-progress"
+    },
+    "live_source": {
+      "url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
+      "status": 200,
+      "bytes": 4451575,
+      "sha256": "bddd9f93afca4d8fbbf036229c1bcbe2f8e20aaec53caf48c73d6f0457458277",
+      "exact_match": true
+    },
+    "websocket_started_utc": "2026-10-29T02:25:29.503Z",
+    "websocket_observed": true,
+    "sample_interval_ms": 2002,
+    "round_trip_ms": 549.3,
+    "round_trip_scope": "This test client through the public HTTPS route, not the user browser",
+    "samples": [
+      {
+        "sample_utc": "2026-10-29T02:25:30.259Z",
+        "cpu_percent": 16.102756892230573,
+        "ram": {
+          "used_gb": 12.138553344,
+          "total_gb": 41.953886208,
+          "swap_used_gb": 12.606681088,
+          "swap_total_gb": 32.212246528
+        },
+        "disk_count": 6,
+        "disks_gb": [
+          {
+            "index": 1,
+            "used_gb": 136.759836672,
+            "total_gb": 146.50824704,
+            "available_gb": 2.23164416
+          },
+          {
+            "index": 2,
+            "used_gb": 0.000339968,
+            "total_gb": 1.071628288,
+            "available_gb": 1.07128832
+          },
+          {
+            "index": 3,
+            "used_gb": 461.983690752,
+            "total_gb": 1010.87444992,
+            "available_gb": 544.561287168
+          },
+          {
+            "index": 4,
+            "used_gb": 52.587347968,
+            "total_gb": 161.062322176,
+            "available_gb": 108.474974208
+          },
+          {
+            "index": 5,
+            "used_gb": 3.20905216,
+            "total_gb": 16.696266752,
+            "available_gb": 13.487214592
+          },
+          {
+            "index": 6,
+            "used_gb": 95.379595264,
+            "total_gb": 570.937233408,
+            "available_gb": 446.480371712
+          }
+        ],
+        "build": 168,
+        "session_iteration": 6,
+        "source_iteration": 168
+      },
+      {
+        "sample_utc": "2026-10-29T02:25:32.261Z",
+        "cpu_percent": 14.733542319749215,
+        "ram": {
+          "used_gb": 12.199337984,
+          "total_gb": 41.953886208,
+          "swap_used_gb": 12.606492672,
+          "swap_total_gb": 32.212246528
+        },
+        "disk_count": 6,
+        "disks_gb": [
+          {
+            "index": 1,
+            "used_gb": 136.759840768,
+            "total_gb": 146.50824704,
+            "available_gb": 2.231640064
+          },
+          {
+            "index": 2,
+            "used_gb": 0.000339968,
+            "total_gb": 1.071628288,
+            "available_gb": 1.07128832
+          },
+          {
+            "index": 3,
+            "used_gb": 461.983690752,
+            "total_gb": 1010.87444992,
+            "available_gb": 544.561287168
+          },
+          {
+            "index": 4,
+            "used_gb": 52.587347968,
+            "total_gb": 161.062322176,
+            "available_gb": 108.474974208
+          },
+          {
+            "index": 5,
+            "used_gb": 3.20905216,
+            "total_gb": 16.696266752,
+            "available_gb": 13.487214592
+          },
+          {
+            "index": 6,
+            "used_gb": 95.379595264,
+            "total_gb": 570.937233408,
+            "available_gb": 446.480371712
+          }
+        ],
+        "build": 168,
+        "session_iteration": 6,
+        "source_iteration": 168
+      }
+    ],
+    "auth_values_printed": false
   },
-  "later_metadata_update": "Build/session labels and this receipt are prepared after the observations above; verification of the later commit is recorded separately."
+  "feedback": {
+    "checked_utc": "2026-10-29T02:26:08.438976+00:00",
+    "new_messages_count": 0,
+    "unattended_response_promise": false
+  },
+  "other_requested_destinations": {
+    "fileharbor": {
+      "last_retained_read_only_status": 403,
+      "write_attempted_after_access_denial": false,
+      "final_recheck_claim": false,
+      "qualification": "Prior authorized endpoint health/docs access was denied; repeated uploads or credential probes were not attempted. Aggregate progress was saved to the existing durable checkpoint."
+    },
+    "surge": {
+      "deployment_status": "blocked by authentication requirement",
+      "credentials_or_account_created": false,
+      "qualification": "The existing authorized GitHub Pages deployment was used; no Surge deployment success is claimed."
+    }
+  },
+  "receipt_scope": "This separate receipt records completed payload publication observations. Its own subsequent receipt-only Git commit and final verification are recorded separately, avoiding a circular self-commit claim. The immutable source archive and preparation metadata are unchanged.",
+  "session_closure_claim": false
 }
