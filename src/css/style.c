@@ -154,9 +154,26 @@ bool css_parse_color(const char *in, Color *out, Color current) {
 }
 
 /* ---------------- lengths ---------------- */
+/* Temporary calculation types: values keep their compact affine storage.
+   Tracking exponents also preserves unit cancellation in products/quotients. */
+enum { MATH_NUMBER = -1, MATH_LENGTH, MATH_ANGLE, MATH_TIME, MATH_FLEX };
+typedef struct { int8_t power[4]; } MathType;
+static MathType math_type_unit(int unit) {
+    MathType type = {{0}}; if (unit >= 0) type.power[unit] = 1; return type;
+}
+static bool math_type_equal(MathType a, MathType b) { return !memcmp(&a, &b, sizeof a); }
+static bool math_type_product(MathType a, MathType b, int sign, MathType *out) {
+    for (int i = 0; i < 4; i++) {
+        int power = a.power[i] + sign * b.power[i];
+        if (power < INT8_MIN || power > INT8_MAX) return false;
+        out->power[i] = (int8_t)power;
+    }
+    return true;
+}
 typedef struct {
     float em, rem; const MediaCtx *mc;
     const ComputedStyle *font_basis; bool actual_font; bool *used_font_units;
+    MathType math_type;
 } LCtx;
 static float ch_advance(LCtx *c) {
     if (c->used_font_units) *c->used_font_units = true;
@@ -186,6 +203,7 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
     if (*p != '(') {
         if (!strcmp(id, "pi")) l.px = (float)M_PI; else if (!strcmp(id, "e")) l.px = (float)M_E; else if (!strcmp(id, "infinity")) l.px = INFINITY;
         else if (!strcmp(id, "nan")) l.px = NAN; else return false;
+        c->math_type = math_type_unit(MATH_NUMBER);
         *out = l; *pp = p; return true;
     }
     static const char *const fns[] = { "round", "mod", "rem", "abs", "sign", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp" };
@@ -198,11 +216,11 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
         const char *q = p; while (is_ws((unsigned char)*q)) q++;
         for (int i = 0; i < 4; i++) { size_t n = strlen(st[i]); if (!strncasecmp(q, st[i], n) && (is_ws((unsigned char)q[n]) || q[n] == ',')) { q += n; while (is_ws((unsigned char)*q)) q++; if (*q == ',') { strat = i; p = q + 1; } break; } }
     }
-    Length v[4]; bool ang[4] = { 0 }; int n = 0;
+    Length v[4]; MathType types[4]; bool ang[4] = { 0 }; int n = 0;
     while (n < 4) {
-        const char *s = p;
         if (!calc_expr(&p, &v[n], c)) return false;
-        for (const char *q = s; q < p; q++) if ((!strncasecmp(q, "deg", 3) || !strncasecmp(q, "rad", 3) || !strncasecmp(q, "turn", 4)) && q > s && (isdigit((unsigned char)q[-1]) || q[-1] == '.' || q[-1] == 'g')) ang[n] = true;
+        types[n] = c->math_type;
+        ang[n] = math_type_equal(types[n], math_type_unit(MATH_ANGLE));
         if (v[n].pct || v[n].mm) return false;
         n++; while (is_ws((unsigned char)*p)) p++;
         if (*p == ',') { p++; continue; }
@@ -210,6 +228,21 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
     }
     if (*p != ')') return false;
     p++;
+    MathType result_type = types[0], number_type = math_type_unit(MATH_NUMBER);
+    if (f == 0 || f == 1 || f == 2 || f == 11 || f == 14) {
+        for (int i = 1; i < n; i++) if (!math_type_equal(types[0], types[i])) return false;
+        if (f == 11) result_type = math_type_unit(MATH_ANGLE);
+    } else if (f == 4) result_type = number_type;
+    else if (f >= 5 && f <= 7) {
+        if (!ang[0] && !math_type_equal(types[0], number_type)) return false;
+        result_type = number_type;
+    } else if (f >= 8 && f <= 10) {
+        if (!math_type_equal(types[0], number_type)) return false;
+        result_type = math_type_unit(MATH_ANGLE);
+    } else if (f != 3) {
+        for (int i = 0; i < n; i++) if (!math_type_equal(types[i], number_type)) return false;
+        result_type = number_type;
+    }
     double a = v[0].px, b = n > 1 ? v[1].px : 1, r, rad = M_PI / 180;
     switch (f) {
     case 0:
@@ -236,6 +269,7 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
     case 15: r = n > 1 ? log(a) / log(b) : log(a); break;
     default: r = exp(a); break;
     }
+    c->math_type = result_type;
     l.px = (float)r; *out = l; *pp = p; return true;
 }
 static bool parse_dim(const char **pp, Length *out, LCtx *c) {
@@ -244,9 +278,11 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     if (str_istarts(p, "calc(") || str_istarts(p, "-webkit-calc(")) { p = strchr(p, '(') + 1; if (!calc_expr(&p, out, c)) return false; while (is_ws((unsigned char)*p)) p++; if (*p == ')') p++; *pp = p; return true; }
     if (str_istarts(p, "min(") || str_istarts(p, "max(") || str_istarts(p, "clamp(")) {
         int kind = lc(p[1]) == 'i' ? 0 : lc(p[1]) == 'a' ? 1 : 2;
-        p = strchr(p, '(') + 1; Length v[3]; int n = 0;
+        p = strchr(p, '(') + 1; Length v[3]; MathType common_type; int n = 0;
         while (n < 3) {
             if (!calc_expr(&p, &v[n], c)) return false;
+            if (n && !math_type_equal(common_type, c->math_type)) return false;
+            common_type = c->math_type;
             n++; while (is_ws((unsigned char)*p)) p++;
             if (*p == ',') { if (kind == 2 && n == 3) return false; p++; continue; }
             break;
@@ -284,8 +320,9 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     p = e;
     Length l = { 0, 0, LK_LEN };
     char u[8] = {0}; int k = 0; while (isalpha((unsigned char)*p) && k < 7) u[k++] = (char)lc(*p++);
+    int unit = MATH_LENGTH;
     if (*p == '%') { l.pct = v; l.pctu = true; p++; }
-    else if (!k || !strcmp(u, "px")) l.px = v;
+    else if (!k || !strcmp(u, "px")) { l.px = v; if (!k) unit = MATH_NUMBER; }
     else if (!strcmp(u, "em")) l.px = v * c->em;
     else if (!strcmp(u, "rem")) l.px = v * c->rem;
     else if (!strcmp(u, "ex")) l.px = v * c->em * 0.5f;
@@ -305,12 +342,15 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     else if (!strcmp(u, "cqmax")) l.px = v * LMAX(cq_dim(c, 0), cq_dim(c, 1)) / 100;
     else if (!strcmp(u, "vmin")) { l.px = v * LMIN(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
     else if (!strcmp(u, "vmax")) { l.px = v * LMAX(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
-    else if (!strcmp(u, "fr")) { l.px = v; }
-    else if (!strcmp(u, "deg") || !strcmp(u, "s") || !strcmp(u, "ms")) l.px = v;
-    else if (!strcmp(u, "rad")) l.px = v * 180 / (float)M_PI;
-    else if (!strcmp(u, "grad")) l.px = v * 0.9f;
-    else if (!strcmp(u, "turn")) l.px = v * 360;
+    else if (!strcmp(u, "fr")) { l.px = v; unit = MATH_FLEX; }
+    else if (!strcmp(u, "deg")) { l.px = v; unit = MATH_ANGLE; }
+    else if (!strcmp(u, "s")) { l.px = v; unit = MATH_TIME; }
+    else if (!strcmp(u, "ms")) { l.px = v / 1000.f; unit = MATH_TIME; }
+    else if (!strcmp(u, "rad")) { l.px = v * 180 / (float)M_PI; unit = MATH_ANGLE; }
+    else if (!strcmp(u, "grad")) { l.px = v * 0.9f; unit = MATH_ANGLE; }
+    else if (!strcmp(u, "turn")) { l.px = v * 360; unit = MATH_ANGLE; }
     else return false;
+    c->math_type = math_type_unit(unit);
     *out = l; *pp = p; return true;
 }
 static void calc_scale(Length *value, float scale) {
@@ -330,7 +370,9 @@ static bool calc_term(const char **pp, Length *out, LCtx *c) {
     for (;;) {
         const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
         if (*p == '*' || *p == '/') {
-            char op = *p++; Length r; if (!parse_dim(&p, &r, c)) return false;
+            char op = *p++; MathType left_type = c->math_type;
+            Length r; if (!parse_dim(&p, &r, c)) return false;
+            if (!math_type_product(left_type, c->math_type, op == '*' ? 1 : -1, &c->math_type)) return false;
             if (op == '*' && (out->mm || r.mm)) {
                 if (r.mm && !out->mm && !out->pct) { float k = out->px; *out = r; r = L_px(k); }
                 if (!r.mm && !r.pct) { calc_scale(out, r.px); *pp = p; continue; }
@@ -348,7 +390,9 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
     for (;;) {
         const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
         if ((*p == '+' || *p == '-') && (p[1] == ' ' || p[1] == '\t' || p[1] == '\n')) {
-            char op = *p++; Length r; if (!calc_term(&p, &r, c)) return false;
+            char op = *p++; MathType left_type = c->math_type;
+            Length r; if (!calc_term(&p, &r, c)) return false;
+            if (!math_type_equal(left_type, c->math_type)) return false;
             if (op == '-') calc_scale(&r, -1);
             if (r.mm && !out->mm) { float bx = out->px, bp = out->pct; bool pu = out->pctu; *out = r; calc_add_linear(out, bx, bp, pu); }
             else { if (r.mm) out->mm = 0; calc_add_linear(out, r.px, r.pct, r.pctu); }
@@ -369,6 +413,10 @@ static bool css_parse_length_context(const char *s, Length *out, float em, float
     LCtx c = { em, rem, mc, basis, actual, used };
     const char *p = s; Length parsed;
     if (!parse_dim(&p, &parsed, &c)) return false;
+    /* Length consumers must not accept another dimension merely because its
+       numeric representation uses the same px slot. Preserve unitless callers. */
+    if (!math_type_equal(c.math_type, math_type_unit(MATH_LENGTH)) &&
+        !math_type_equal(c.math_type, math_type_unit(MATH_NUMBER))) return false;
     if (str_istarts(s, "clamp(")) {
         while (is_ws((unsigned char)*p)) p++;
         if (*p) return false;
@@ -766,6 +814,8 @@ static bool bg_length(ACtx *c, const char *text, Length *out) {
                && !str_istarts(text, "clamp(") && !str_istarts(text, "round(") && !str_istarts(text, "mod(")
                && !str_istarts(text, "rem(") && !str_istarts(text, "abs(") && !str_istarts(text, "hypot(")) return false;
     if (!parse_dim(&p, out, &lc) || out->kind != LK_LEN) return false;
+    if (!math_type_equal(lc.math_type, math_type_unit(MATH_LENGTH)) &&
+        !math_type_equal(lc.math_type, math_type_unit(MATH_NUMBER))) return false;
     while (is_ws((unsigned char)*p)) p++;
     return !*p;
 }

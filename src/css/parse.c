@@ -486,14 +486,20 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         }
         size_t ne = i; while (ne > ns && is_ws((unsigned char)s[ne - 1])) ne--;
         i++;
-        size_t vs = i; int depth = 0; char q = 0;
+        size_t vs = i; int depth = 0; char q = 0; bool bad_close = false;
         while (i < n) {
             char c = s[i];
             if (q) { if (c == '\\') i++; else if (c == q) q = 0; }
             else if (c == '\\') i++;
+            else if (c == '/' && i + 1 < n && s[i + 1] == '*') {
+                i += 2;
+                while (i + 1 < n && !(s[i] == '*' && s[i + 1] == '/')) i++;
+                if (i + 1 >= n) { i = n; break; }
+                i++; /* the loop advances past the closing slash */
+            }
             else if (c == '"' || c == '\'') q = c;
             else if (c == '(' || c == '[' || c == '{') depth++;
-            else if (c == ')' || c == ']' || c == '}') { if (!depth) break; depth--; }
+            else if (c == ')' || c == ']' || c == '}') { if (!depth) bad_close = true; else depth--; }
             else if (c == ';' && !depth) break;
             i++;
         }
@@ -509,7 +515,9 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         }
         bool custom = ne - ns > 2 && s[ns] == '-' && s[ns + 1] == '-';
         Decl dc; dc.prop = custom ? atomn(s + ns, ne - ns) : atom_lower(s + ns, ne - ns); dc.value = xstrdup(v); dc.important = imp;
-        if (custom || v[0]) vec_push(*d, dc); else free(dc.value);
+        /* A stray closing token invalidates the declaration, not just its
+           suffix. Continue to the next semicolon so later declarations survive. */
+        if (!bad_close && (custom || v[0])) vec_push(*d, dc); else free(dc.value);
         free(val);
     }
     return d;

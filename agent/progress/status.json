@@ -1,46 +1,46 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "RubyWebterm restored after server restart; reviewed source through candidate182 integrating and genuine remote build next. Local180/182 smoke10/10 each; broader acceptance remains open.",
-  "iteration": 182,
+  "phase": "Ruby candidate 184 CSS grammar and dimension repair committed for build; independent clamp, comment, string and non-URL native gates pending. Form validity implementation continues in an isolated Ruby worktree.",
+  "iteration": 184,
   "score": 19,
   "iteration_quality": 19,
-  "score_note": "Inherited19/100 whole-browser readiness estimate, not a WPT pass percentage. Focused native1531/1569 and938/1008 are separately labeled local checkpoint evidence. Goal98/100 remains unmet.",
+  "score_note": "Overall Chromium parity remains unverified; focused scores are separately labeled. URL conformance is deferred.",
   "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
-  "checkpoint": "b4d8147c7b7945f5eddc11cfc444a80dd5a9ff13",
-  "updated_utc": "2026-10-29T18:03:50.071415+00:00",
+  "checkpoint": "e6b585f01ef5f46e2d4af2cefc180bfc06d1383f",
+  "updated_utc": "2026-10-29T18:24:40.591859+00:00",
   "session_started_utc": "2026-10-29T17:25:47Z",
   "deadline_utc": "2026-10-29T21:25:47Z",
   "current_evidence": [
     [
-      "Fresh selected125 non-URL variants",
-      "Candidate169:67/125 full variants and921/1415 PASS subtests. Fresh baseline168:65/125 full and847/1415 PASS. Exact identities:74 PASS gains,0 losses,0 added/missing registrations."
+      "Current Ruby executable",
+      "Candidate 182, source e6b585f, build and startup 1/1 passed; all 618 recorded source inputs identical before/after. Binary SHA256 081144cbf34fd0205fbd193c4259ae56e97380247d80e7118a8b835703521abb."
     ],
     [
-      "Fresh matched Chromium comparison",
-      "Chromium150:120/125 full variants;1394/1413 reported PASS subtests.124 harnessOK and1 CRASH in revert-rule-cycle.tentative.html. Engine subtest totals differ; do not compare percentages as identical denominators."
+      "Local native checkpoint evidence",
+      "Fixed 1,569 fields: 1,493\u21921,531 PASS, 38 remaining failures. Separate 1,008 fields: 570\u2192938 PASS, 70 failures. No prior-PASS losses in either corpus; these are not WPT totals."
     ],
     [
-      "Scope and status",
-      "Fixed selected CSS flex/CSSOM/cascade cohort, not all WPT. Candidate169 source and nativegate review continue. Whole-goal readiness remains19/100."
+      "Local full-browser restoration",
+      "Candidate 180 and 182 each passed the same 10/10 DOM/event smoke fixture with CPU rendering. Local evidence is distinct from the newly built Ruby binary."
     ],
     [
-      "Preserved historical broad baseline",
-      "Session4 build168:1,629/4,200 full variants vs retained Chromium3,534/4,200; these broad results have not been rerun this session."
+      "Guarded Ruby validation",
+      "Published capture-refusal pin/environment recovered through documented public instructions. Fresh browser fixture launch and cleanup gates are being checked; no full-browser PASS is inferred from the build."
     ],
     [
-      "Current resource monitoring",
-      "Per-test CPU/RSS samples every1second and sharedslice CPUcounter samples retained. Compilation remains under shared480% quota."
+      "Resource scope",
+      "Ruby build/startup retained 25 one-second samples: CPU median 33%, maximum 148%; peak summed RSS 349.815 MB, sampled PSS 234.727 MB. These are compile/startup measurements, not browsing performance."
     ]
   ],
-  "coverage": "Fresh session5 selected125 non-URL variants: candidate169 full67,baseline168 full65,Chromium full120. Candidate169 exact identities gain74PASS and lose0. Different browser subtest registration totals retained. Historical4,200 and rendering100 counts remain separate.",
+  "coverage": "Current Ruby candidate 182: genuine build and startup 1/1 passed; guarded browser controls pending. Local 180/182 DOM/event smoke passed 10/10 each. Broader conformance and balanced performance remain separate gates.",
   "findings": [
-    "Scoped candidate169 gain:74 existing PASS identities,0 losses or registrationchanges in125 selectedvariants.",
-    "Chromium still fullypasses120/125 versus candidate67/125.",
-    "Independent localgates continue; no whole-browser parity or broadregression-free claim.",
-    "URL conformance deferred.",
-    "Whole-goal estimate19/100 remains unchanged."
+    "Active work returned to Ruby after the user restarted MCP.",
+    "Exact reviewed source changes are integrated through MCP with before/after hashes; existing remote work was checkpointed.",
+    "Fresh browser conformance, ordinary cleanup and balanced memory/performance gates remain open.",
+    "URL conformance remains deferred.",
+    "Whole-browser goal score 98/100 is not established."
   ],
-  "active_iteration": 175,
+  "active_iteration": 184,
   "accepted_binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
   "accepted_binary_scope": "Immutable build168, qualified experimental acceptance at2026-10-29T02:03:24Z; full-browser sanitizer shutdown remains unproven.",
   "agent_session": "active",
@@ -449,8 +449,8 @@
     "public_source_replacement_approved": false
   },
   "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
-  "session_iteration": 0,
-  "iteration_identifier_note": "Global build164 is session4 candidate2. Build163 is the first accepted candidate; build164 is not yet built or accepted.",
+  "session_iteration": 2,
+  "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
   "accepted_iteration": 168,
   "accepted_focused_results": {
     "iteration": 168,
@@ -589,7 +589,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 182,
+  "current_candidate": 184,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1266,7 +1266,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-29T18:03:50.071427+00:00",
+  "updated_at": "2026-10-29T18:24:40.591859+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1357,7 +1357,15 @@
       },
       "renderer": "CPU"
     },
-    "remote_browser182": "Not built or tested yet",
+    "remote_browser182": {
+      "binary": "build/codex-native/lumen-astra-i182",
+      "sha256": "081144cbf34fd0205fbd193c4259ae56e97380247d80e7118a8b835703521abb",
+      "source_head": "e6b585f01ef5f46e2d4af2cefc180bfc06d1383f",
+      "build_exit": 0,
+      "startup_pass": 1,
+      "startup_total": 1,
+      "source_inputs": 618
+    },
     "url_conformance": "Deferred as requested",
     "graphics_probe": {
       "device": "NVIDIA GeForce MX110",
@@ -1366,5 +1374,21 @@
       "vulkan_probe": "ERROR_INCOMPATIBLE_DRIVER; no working Vulkan adapter established"
     },
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
+  },
+  "session6_current": {
+    "candidate": 184,
+    "state": "source frozen for build",
+    "source_hashes": {
+      "src/css/style.c": "359016494e28d7bcbf9c5fcf0e60b994211027873e2f1016b913604707cdf588",
+      "src/css/parse.c": "70722392614be52bdb793552856eb41fcef188ef5a0d99b0ea70b4862c5978fc"
+    },
+    "prior_accepted_memory": "182\u2192183 settled RSS +2.404MB (+1.279%); all 7 guarded runs passed; no speedup claim",
+    "pending": [
+      "184 full build/startup",
+      "111 clamp/dimension checks",
+      "30 comment checks",
+      "27 direct string controls",
+      "140 non-URL native tests"
+    ]
   }
 }

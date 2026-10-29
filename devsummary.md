@@ -1017,3 +1017,35 @@ was timing-sensitive harness completion, not a semantic gain. Compared with the
 fresh Chrome reference, baseline180 retained5123 of6658 Chrome-passing assertions
 and179 fully passing cases versusChrome250. These bounded results do not imply
 Chromium-wide parity. URL conformance remains deferred.
+
+
+### Remote candidate184 repair — source checkpoint, validation in progress
+
+The authenticated return to Ruby began17:56:41UTC. Remote176 dirty work was
+checkpointed asfc3bd82, and a new model/agent branch preserves the original
+history. Reviewed177–184 engine patches were applied with exact per-file base
+and result hashes; private bulk QA evidence remains in the preserved local
+checkpoint. The source checkpoint below is an ongoing iteration, not an
+accepted-browser result. URL conformance remains deferred.
+
+Candidate184 now rejects unmatched closing declaration tokens and incompatible
+CSS math dimensions while retaining unit cancellation, valid trigonometry, and
+following declarations. The value scanner excludes comment contents before
+interpreting delimiters. Dimension tags are temporary parse state and add no
+ComputedStyle storage. Frozen remote reference gates: clamp/dimension111
+Chrome111 versus18383; comment30 Chrome30 versus18322. Separate27 direct string
+controls are being calibrated. Candidate184 outcomes and fresh140 non-URL
+native tests remain pending; overall Chromium-parity score is unverified
+(last estimate19/100).
+
+The guarded182/183 paired10,000-style memory gate completed18:17:29UTC. All7
+launches, correctness checks, exits and profile removals passed. Six balanced
+measured trials: median settledRSS187.970→190.374MB (+2.404MB,+1.279%);
+PSS162.889→165.482MB (+2.593MB, sampled5s); idleCPU1% both. DOM/layout timing
+237.095→232.106ms has overlapping ranges, so no speedup is claimed. The
++272bytes/ComputedStyle storage tradeoff is accepted for the corrected affine
+clamp behavior. Evidence:agent/validation/linux-wpt-20261029-session6/style-memory-paired182-183.
+
+Agents:engine_lead implementation/integration;conformance_qa independent
+reference/testing;release_ops build/runtime and isolated forms implementation;
+root project management. Current source checkpoint UTC:2026-10-29T18:24:40.591859+00:00

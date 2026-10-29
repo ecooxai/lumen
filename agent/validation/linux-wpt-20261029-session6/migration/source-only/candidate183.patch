@@ -1,0 +1,200 @@
+diff --git a/src/css/css.h b/src/css/css.h
+index fe6a410..04e3ce5 100644
+--- a/src/css/css.h
++++ b/src/css/css.h
+@@ -4,13 +4,26 @@
+ 
+ /* ---------------- values ---------------- */
+ enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT, LK_CONTENT };
+-typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm; float px2, pct2; } Length;  /* pctu: written with % (so 0% != 0px); mm 1/2: min/max(px+pct, px2+pct2), px/pct alone is a best guess */
++typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm, math_pct_mask; float px2, pct2, px3, pct3; } Length;
++/* pctu: written with % (so 0% != 0px). mm1/2 are two-arm min/max.
++   mm3 is max(arm2,min(arm1,arm3)); mm4 is its min/max dual after
++   negative scaling. math_pct_mask retains each arm's written percentage
++   type for serialization without using additional structure padding. */
+ /* Length value = px + pct/100 * reference */  /* value = px + pct/100 * reference */
+ static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
+ static inline Length L_auto(void) { Length l = { 0, 0, LK_AUTO }; return l; }
+-static inline float len_resolve(Length l, float ref) { return l.px + l.pct * ref / 100.f; }
++static inline float len_resolve(Length l, float ref) {
++    float a = l.px + l.pct * ref / 100.f;
++    if (!l.mm) return a;
++    float b = l.px2 + l.pct2 * ref / 100.f;
++    if (l.mm == 1) return LMIN(a, b);
++    if (l.mm == 2) return LMAX(a, b);
++    float c = l.px3 + l.pct3 * ref / 100.f;
++    return l.mm == 3 ? LMAX(b, LMIN(a, c)) : LMIN(b, LMAX(a, c));
++}
++static inline uint8_t len_math_flip(uint8_t mm) { return mm ? (uint8_t)((mm <= 2 ? 3 : 7) - mm) : 0; }
+ static inline bool len_is_auto(Length l) { return l.kind == LK_AUTO; }
+-static inline bool len_has_pct(Length l) { return l.kind == LK_LEN && l.pct != 0; }
++static inline bool len_has_pct(Length l) { return l.kind == LK_LEN && (l.pct != 0 || (l.mm && l.pct2 != 0) || (l.mm >= 3 && l.pct3 != 0)); }
+ 
+ typedef uint32_t Color; /* 0xAARRGGBB */
+ #define COLOR_A(c) (((c) >> 24) & 0xff)
+diff --git a/src/css/style.c b/src/css/style.c
+index feb7421..c76f5b8 100644
+--- a/src/css/style.c
++++ b/src/css/style.c
+@@ -248,12 +248,25 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
+         while (n < 3) { if (!calc_expr(&p, &v[n], c)) return false; n++; while (is_ws((unsigned char)*p)) p++; if (*p == ',') { p++; continue; } break; }
+         if (*p == ')') p++;
+         *pp = p;
+-        /* when percentages are involved we can't resolve; pick a reasonable operand */
++        if (kind == 2 && n == 3 && !v[0].mm && !v[1].mm && !v[2].mm) {
++            Length r = v[1];
++            r.mm = 3; r.px2 = v[0].px; r.pct2 = v[0].pct;
++            r.px3 = v[2].px; r.pct3 = v[2].pct;
++            r.math_pct_mask = (v[1].pctu ? 1 : 0) | (v[0].pctu ? 2 : 0) | (v[2].pctu ? 4 : 0);
++            r.pctu |= v[0].pctu || v[2].pctu;
++            /* A constant clamp can be folded now; otherwise both bounds
++               must remain available after a containing-block resize. */
++            if (!len_has_pct(r) && !r.pctu) r = L_px(len_resolve(r, 0));
++            *out = r; return true;
++        }
++        /* More deeply nested comparison expressions retain the legacy
++           approximation. Three affine clamp arms are represented exactly;
++           this compact Length is not a general CSS expression tree. */
+         if (kind == 2 && n == 3) { Length r = v[1]; if (!r.pct && !v[0].pct && r.px < v[0].px) r = v[0]; if (!r.pct && !v[2].pct && r.px > v[2].px) r = v[2]; *out = r; return true; }
+         Length best = v[0]; int bi = 0;
+         for (int i = 1; i < n; i++) { if (v[i].pct || best.pct) { if (kind == 0 && v[i].pct && !best.pct) {} else if (!v[i].pct && kind != 0) { best = v[i]; bi = i; } continue; } if (kind == 0 ? v[i].px < best.px : v[i].px > best.px) { best = v[i]; bi = i; } }
+         *out = best;
+-        if (n == 2 && (v[0].pct || v[1].pct) && !v[0].mm && !v[1].mm) { const Length *o = &v[1 - bi]; out->mm = (uint8_t)(kind + 1); out->px2 = o->px; out->pct2 = o->pct; }
++        if (n == 2 && (v[0].pct || v[1].pct) && !v[0].mm && !v[1].mm) { const Length *o = &v[1 - bi]; out->mm = (uint8_t)(kind + 1); out->px2 = o->px; out->pct2 = o->pct; out->math_pct_mask = (out->pctu ? 1 : 0) | (o->pctu ? 2 : 0); out->pctu |= o->pctu; }
+         return true;
+     }
+     if (str_istarts(p, "var(")) return false;
+@@ -292,6 +305,18 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
+     else return false;
+     *out = l; *pp = p; return true;
+ }
++static void calc_scale(Length *value, float scale) {
++    value->px *= scale; value->pct *= scale;
++    if (value->mm) { value->px2 *= scale; value->pct2 *= scale; }
++    if (value->mm >= 3) { value->px3 *= scale; value->pct3 *= scale; }
++    if (scale < 0) value->mm = len_math_flip(value->mm);
++}
++static void calc_add_linear(Length *value, float px, float pct, bool pctu) {
++    value->px += px; value->pct += pct;
++    if (value->mm) { value->px2 += px; value->pct2 += pct; }
++    if (value->mm >= 3) { value->px3 += px; value->pct3 += pct; }
++    if (pctu) { value->pctu = true; if (value->mm) value->math_pct_mask |= value->mm >= 3 ? 7 : 3; }
++}
+ static bool calc_term(const char **pp, Length *out, LCtx *c) {
+     if (!parse_dim(pp, out, c)) return false;
+     for (;;) {
+@@ -299,12 +324,12 @@ static bool calc_term(const char **pp, Length *out, LCtx *c) {
+         if (*p == '*' || *p == '/') {
+             char op = *p++; Length r; if (!parse_dim(&p, &r, c)) return false;
+             if (op == '*' && (out->mm || r.mm)) {
+-                if (r.mm && !out->mm && !out->pct) { float k = out->px; *out = r; r.px = k; r.mm = 0; r.pct = 0; }
+-                if (!r.mm && !r.pct) { out->px *= r.px; out->pct *= r.px; out->px2 *= r.px; out->pct2 *= r.px; if (r.px < 0) out->mm = (uint8_t)(3 - out->mm); *pp = p; continue; }
++                if (r.mm && !out->mm && !out->pct) { float k = out->px; *out = r; r = L_px(k); }
++                if (!r.mm && !r.pct) { calc_scale(out, r.px); *pp = p; continue; }
+                 out->mm = 0;
+             }
+             if (op == '*') { float f = r.pct ? 1 : r.px; if (r.pct == 0 && out->pct == 0 && false) {} if (out->pct == 0 && out->px != 0 && r.pct) { float k = out->px; *out = r; out->px *= k; out->pct *= k; } else { out->px *= f; out->pct *= f; } }
+-            else { if (r.px) { out->px /= r.px; out->pct /= r.px; out->px2 /= r.px; out->pct2 /= r.px; if (r.px < 0 && out->mm) out->mm = (uint8_t)(3 - out->mm); } }
++            else { if (r.px) calc_scale(out, 1.f / r.px); }
+             *pp = p;
+         } else break;
+     }
+@@ -316,9 +341,9 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
+         const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
+         if ((*p == '+' || *p == '-') && (p[1] == ' ' || p[1] == '\t' || p[1] == '\n')) {
+             char op = *p++; Length r; if (!calc_term(&p, &r, c)) return false;
+-            if (op == '-') { r.px = -r.px; r.pct = -r.pct; r.px2 = -r.px2; r.pct2 = -r.pct2; if (r.mm) r.mm = (uint8_t)(3 - r.mm); }
+-            if (r.mm && !out->mm) { float bx = out->px, bp = out->pct; bool pu = out->pctu; *out = r; out->pctu |= pu; out->px += bx; out->pct += bp; out->px2 += bx; out->pct2 += bp; }
+-            else { if (r.mm) out->mm = 0; out->px += r.px; out->pct += r.pct; if (out->mm) { out->px2 += r.px; out->pct2 += r.pct; } }
++            if (op == '-') calc_scale(&r, -1);
++            if (r.mm && !out->mm) { float bx = out->px, bp = out->pct; bool pu = out->pctu; *out = r; calc_add_linear(out, bx, bp, pu); }
++            else { if (r.mm) out->mm = 0; calc_add_linear(out, r.px, r.pct, r.pctu); }
+             out->pctu |= r.pctu;
+             *pp = p;
+         } else break;
+@@ -329,10 +354,10 @@ static bool css_parse_length_context(const char *s, Length *out, float em, float
+                                      const ComputedStyle *basis, bool actual, bool *used) {
+     while (is_ws((unsigned char)*s)) s++;
+     if (str_istarts(s, "auto")) { *out = L_auto(); return true; }
+-    if (str_istarts(s, "none")) { out->kind = LK_NONE; out->px = out->pct = 0; return true; }
+-    if (str_istarts(s, "min-content")) { out->kind = LK_MIN_CONTENT; out->px = out->pct = 0; return true; }
+-    if (str_istarts(s, "max-content")) { out->kind = LK_MAX_CONTENT; out->px = out->pct = 0; return true; }
+-    if (str_istarts(s, "fit-content") || str_istarts(s, "-webkit-fit-content") || str_istarts(s, "-moz-fit-content")) { out->kind = LK_FIT_CONTENT; out->px = out->pct = 0; return true; }
++    if (str_istarts(s, "none")) { *out = (Length){0, 0, LK_NONE}; return true; }
++    if (str_istarts(s, "min-content")) { *out = (Length){0, 0, LK_MIN_CONTENT}; return true; }
++    if (str_istarts(s, "max-content")) { *out = (Length){0, 0, LK_MAX_CONTENT}; return true; }
++    if (str_istarts(s, "fit-content") || str_istarts(s, "-webkit-fit-content") || str_istarts(s, "-moz-fit-content")) { *out = (Length){0, 0, LK_FIT_CONTENT}; return true; }
+     LCtx c = { em, rem, mc, basis, actual, used };
+     const char *p = s;
+     if (!parse_dim(&p, out, &c)) return false;
+@@ -746,8 +771,7 @@ static int bg_keyword(const ACtx *c, const char *text, int axis, bool logical) {
+ }
+ static Length bg_offset(Length value, int edge) {
+     if (edge != 2) return value;
+-    value.px = -value.px; value.pct = 100 - value.pct; value.pctu = true;
+-    if (value.mm) { value.px2 = -value.px2; value.pct2 = 100 - value.pct2; value.mm = (uint8_t)(3 - value.mm); }
++    calc_scale(&value, -1); calc_add_linear(&value, 0, 100, true);
+     return value;
+ }
+ static bool bg_component(ACtx *c, const char *text, int axis, bool logical, Length *out) {
+@@ -785,7 +809,25 @@ static bool bg_position_item(ACtx *c, const char *text, int axis, Length out[2])
+     free_toks(t, n); return ok;
+ }
+ static void bg_length_str(SB *b, Length value) {
++    if (value.mm >= 3) {
++        Length preferred = value, lower = value, upper = value;
++        preferred.mm = lower.mm = upper.mm = 0;
++        preferred.pctu = !!(value.math_pct_mask & 1);
++        lower.pctu = !!(value.math_pct_mask & 2);
++        upper.pctu = !!(value.math_pct_mask & 4);
++        lower.px = value.px2; lower.pct = value.pct2;
++        upper.px = value.px3; upper.pct = value.pct3;
++        if (value.mm == 3) {
++            sb_puts(b, "clamp("); bg_length_str(b, lower); sb_puts(b, ", ");
++            bg_length_str(b, preferred); sb_puts(b, ", "); bg_length_str(b, upper); sb_putc(b, ')');
++        } else {
++            sb_puts(b, "min("); bg_length_str(b, lower); sb_puts(b, ", max(");
++            bg_length_str(b, preferred); sb_puts(b, ", "); bg_length_str(b, upper); sb_puts(b, "))");
++        }
++        return;
++    }
+     if (value.mm) { Length a = value, z = value; a.mm = z.mm = 0; z.px = value.px2; z.pct = value.pct2;
++        if (value.math_pct_mask) { a.pctu = !!(value.math_pct_mask & 1); z.pctu = !!(value.math_pct_mask & 2); }
+         sb_puts(b, value.mm == 1 ? "min(" : "max("); bg_length_str(b, a); sb_puts(b, ", "); bg_length_str(b, z); sb_putc(b, ')'); return; }
+     /* A zero percentage still carries a percentage basis, including when a
+        length is present. Do not collapse calc(0% + 10px) to a length. */
+diff --git a/src/layout/layout.h b/src/layout/layout.h
+index b829530..d7edfa3 100644
+--- a/src/layout/layout.h
++++ b/src/layout/layout.h
+@@ -109,12 +109,9 @@ float fc_bottom(FloatCtx *fc);
+ static inline float collapse2(float a, float b) { if (a >= 0 && b >= 0) return LMAX(a, b); if (a < 0 && b < 0) return LMIN(a, b); return a + b; }
+ static inline float res(Length l, float ref) {
+     if (l.kind != LK_LEN) return 0;
+-    float a = l.px + (ref > 0 ? l.pct * ref / 100.f : 0);
+-    if (!l.mm) return a;
+-    float b = l.px2 + (ref > 0 ? l.pct2 * ref / 100.f : 0);
+-    return l.mm == 1 ? (a < b ? a : b) : (a > b ? a : b);
++    return len_resolve(l, ref > 0 ? ref : 0);
+ }
+-static inline bool len_def(Length l, float ref) { return l.kind == LK_LEN && ((l.pct == 0 && (!l.mm || l.pct2 == 0)) || ref >= 0); }
++static inline bool len_def(Length l, float ref) { return l.kind == LK_LEN && (!len_has_pct(l) || ref >= 0); }
+ static inline float hbp(const Box *b) { return b->b[1] + b->b[3] + b->p[1] + b->p[3]; }
+ static inline float vbp(const Box *b) { return b->b[0] + b->b[2] + b->p[0] + b->p[2]; }
+ static inline bool in_flow(const Box *b) { return !b->abs && !b->floated; }
+diff --git a/src/paint/display.c b/src/paint/display.c
+index af193e0..263c86f 100644
+--- a/src/paint/display.c
++++ b/src/paint/display.c
+@@ -76,10 +76,7 @@ static BgArea background_area(const Box *b, float x, float y, float w, float h,
+  * may be negative. Layout's indefinite-size resolver must not be used here. */
+ static float background_length(Length l, float reference) {
+     if (l.kind != LK_LEN) return 0;
+-    float a = l.px + l.pct * reference / 100.f;
+-    if (!l.mm) return a;
+-    float b = l.px2 + l.pct2 * reference / 100.f;
+-    return l.mm == 1 ? LMIN(a, b) : LMAX(a, b);
++    return len_resolve(l, reference);
+ }
+ static void paint_background_source(PB *p, const ComputedStyle *s, const BgArea *area,
+                                     const BgArea *clip_area, Image *im, Gradient *grad) {

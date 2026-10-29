@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8"><title>Quoted delimiter and nested function declaration controls</title>
+<div id="host"></div><pre id="results"></pre>
+<script>
+const strings=[
+ ['quoted-paren','"a)b"'],
+ ['quoted-square',"'a]b'"],
+ ['quoted-curly','"a}b"'],
+ ['quoted-semicolon','"a;b"'],
+ ['quoted-comment-literal','"a/*)*/b"'],
+ ['quoted-escaped-quote','"a\\\" ) b"'],
+ ['nested-string-function','fn(inner("a)b"), 2)']
+];
+const checks=[];let passed=0;
+function check(name,field,actual,expected){const ok=typeof expected==='number'?Number.isFinite(actual)&&Math.abs(actual-expected)<=.05:actual===expected;checks.push({name,field,actual,expected,passed:ok});if(ok)passed++;}
+for(const [name,value]of strings){
+ const el=document.createElement('div');el.style.cssText='width:30px;height:10px;--marker:'+value+';padding-left:5px;margin-left:11px;';document.getElementById('host').appendChild(el);
+ check(name,'retainedCustomValue',el.style.getPropertyValue('--marker').trim(),value);
+ const s=getComputedStyle(el);check(name,'followingPadding',parseFloat(s.paddingLeft),5);check(name,'followingMargin',parseFloat(s.marginLeft),11);el.remove();
+}
+for(const [name,value]of [['nested-trig-comment','calc(sin(30deg)/*) ] } ;*/ * 10px)'],['nested-calc-comment','calc((2px + 3px)/*) ] } ;*/ * 1)']]){
+ const el=document.createElement('div');el.style.cssText='width:30px;height:10px;padding-left:7px;padding-left:'+value+';margin-left:11px;';document.getElementById('host').appendChild(el);
+ const s=getComputedStyle(el);check(name,'paddingLeft',parseFloat(s.paddingLeft),5);check(name,'followingMargin',parseFloat(s.marginLeft),11);check(name,'borderBoxWidth',el.getBoundingClientRect().width,35);el.remove();
+}
+const result={passed,failed:checks.length-passed,total:checks.length,checks},serialized=JSON.stringify(result);document.getElementById('results').textContent=serialized;
+for(let i=0;i<Math.ceil(serialized.length/256);i++)console.log('LUMEN_AUTHORED_CHUNK '+i+' '+JSON.stringify(serialized.slice(i*256,(i+1)*256)));
+console.log('LUMEN_AUTHORED_DONE '+Math.ceil(serialized.length/256));console.log('RESULTS DECLARATION_STRINGS:'+(result.failed?'FAIL':'PASS')+' '+passed+'/'+checks.length);
+</script>
+

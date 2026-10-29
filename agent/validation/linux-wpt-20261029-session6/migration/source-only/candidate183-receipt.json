@@ -1,0 +1,25 @@
+{
+  "candidate": 183,
+  "local_commit": "f0826094d622fb5d27f298dfb0fd1789dac2e264",
+  "remote_commit": "5f9019f187865037108e1d1e1ceab11a226e0dd3",
+  "files": {
+    "src/css/css.h": {
+      "before": "b48f4deff1454d9fbaa660b9f9da993ab944e7659e028e7505a83b3b51a7299a",
+      "after": "3619748fe0f5fa3ece0d4b1a69ab4f4f5f4439e13525376c44c77076e0d5fc9e"
+    },
+    "src/css/style.c": {
+      "before": "03a7f0b3d42adab562a1845ceb64161e370fd523d4f52920b7114fcfe81bfc2c",
+      "after": "5c433dfa98771bd827eb7861edfe93ca8d345b9ff4f601b3064ae7f618a40f92"
+    },
+    "src/layout/layout.h": {
+      "before": "145b95aa420dd00fda72e1808affdf4f70c2c510c969067c815867a079eecfa7",
+      "after": "bf55aa0294f8386e6cd8f887660a1c4dffff75b3c8eeeba6947a99f73b79dc6d"
+    },
+    "src/paint/display.c": {
+      "before": "076037ddc77fa65b3906a32e940620ea656c675545df6fb3c606a3a577730944",
+      "after": "9384089608f7cab478392b4d88bad27cf602607ccf60f3df6ae2b3a1d20024ed"
+    }
+  },
+  "patch_sha256": "eafe291724b48024c982fe5873ad86d0adb7cd9c6058833c38157f47041ed084",
+  "utc": "2026-10-29T18:09:13.413635+00:00"
+}

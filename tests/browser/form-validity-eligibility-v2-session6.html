@@ -1,0 +1,54 @@
+<!doctype html><meta charset="utf-8"><title>Form validity and eligibility independent controls</title><pre id="results"></pre><script>
+const cases=[{"name": "text-required-empty", "attrs": {"required": ""}, "value": "", "flags": ["valueMissing"], "mutable_required": true, "tag": "input", "type": "text"}, {"name": "text-required-filled", "attrs": {"required": ""}, "value": "ok", "flags": [], "tag": "input", "type": "text"}, {"name": "pattern-mismatch", "attrs": {"pattern": "[a-z]+"}, "value": "123", "flags": ["patternMismatch"], "tag": "input", "type": "text"}, {"name": "invalid-pattern-ignored", "attrs": {"pattern": "["}, "value": "123", "flags": [], "tag": "input", "type": "text"}, {"name": "empty-pattern", "attrs": {"pattern": ""}, "value": "x", "flags": ["patternMismatch"], "tag": "input", "type": "text"}, {"name": "email-mismatch", "type": "email", "value": "invalid", "flags": ["typeMismatch"], "tag": "input", "attrs": {}}, {"name": "email-multiple-pattern", "type": "email", "attrs": {"multiple": "", "pattern": ".+@example[.]com"}, "value": "a@example.com,b@other.com", "flags": ["patternMismatch"], "tag": "input"}, {"name": "number-underflow", "type": "number", "attrs": {"min": "5", "step": "1"}, "value": "3", "flags": ["rangeUnderflow"], "tag": "input"}, {"name": "number-overflow", "type": "number", "attrs": {"max": "5", "step": "1"}, "value": "7", "flags": ["rangeOverflow"], "tag": "input"}, {"name": "number-step", "type": "number", "attrs": {"min": "0", "step": "2"}, "value": "3", "flags": ["stepMismatch"], "tag": "input"}, {"name": "number-invalid-programmatic", "type": "number", "attrs": {"required": ""}, "value": "not-a-number", "flags": ["valueMissing"], "mutable_required": true, "expected_value": "", "tag": "input"}, {"name": "number-step-any", "type": "number", "attrs": {"step": "any"}, "value": "3.1415", "flags": [], "tag": "input"}, {"name": "date-underflow", "type": "date", "attrs": {"min": "2020-01-03"}, "value": "2020-01-01", "flags": ["rangeUnderflow"], "tag": "input"}, {"name": "date-step", "type": "date", "attrs": {"min": "2020-01-01", "step": "2"}, "value": "2020-01-02", "flags": ["stepMismatch"], "tag": "input"}, {"name": "month-overflow", "type": "month", "attrs": {"max": "2020-04"}, "value": "2020-05", "flags": ["rangeOverflow"], "tag": "input"}, {"name": "week-underflow", "type": "week", "attrs": {"min": "2020-W05"}, "value": "2020-W04", "flags": ["rangeUnderflow"], "tag": "input"}, {"name": "time-reversed-gap", "type": "time", "attrs": {"min": "22:00", "max": "02:00"}, "value": "12:00", "flags": ["rangeUnderflow", "rangeOverflow"], "tag": "input"}, {"name": "time-reversed-allowed", "type": "time", "attrs": {"min": "22:00", "max": "02:00"}, "value": "23:00", "flags": [], "tag": "input"}, {"name": "programmatic-input-too-long", "attrs": {"maxlength": "2"}, "value": "abcdef", "flags": [], "tag": "input", "type": "text"}, {"name": "programmatic-input-too-short", "attrs": {"minlength": "5"}, "value": "a", "flags": [], "tag": "input", "type": "text"}, {"name": "textarea-required-empty", "tag": "textarea", "attrs": {"required": ""}, "value": "", "flags": ["valueMissing"], "mutable_required": true, "type": "text"}, {"name": "programmatic-textarea-too-long", "tag": "textarea", "attrs": {"maxlength": "2"}, "value": "abcdef", "flags": [], "type": "text"}, {"name": "programmatic-textarea-too-short", "tag": "textarea", "attrs": {"minlength": "5"}, "value": "a", "flags": [], "type": "text"}, {"name": "checkbox-required", "type": "checkbox", "attrs": {"required": ""}, "flags": ["valueMissing"], "tag": "input"}, {"name": "checkbox-checked", "type": "checkbox", "attrs": {"required": ""}, "checked": true, "flags": [], "tag": "input"}, {"name": "radio-required-named", "type": "radio", "attrs": {"required": "", "name": "independent-required"}, "flags": ["valueMissing"], "tag": "input"}, {"name": "radio-required-unnamed", "type": "radio", "attrs": {"required": ""}, "flags": [], "tag": "input"}, {"name": "file-required-empty", "type": "file", "attrs": {"required": ""}, "flags": ["valueMissing"], "tag": "input"}, {"name": "select-placeholder", "tag": "select", "attrs": {"required": ""}, "options": [["", "Choose"], ["ok", "OK"]], "value": "", "flags": ["valueMissing"], "type": "text"}, {"name": "select-filled", "tag": "select", "attrs": {"required": ""}, "options": [["", "Choose"], ["ok", "OK"]], "value": "ok", "flags": [], "type": "text"}, {"name": "custom-text", "value": "ok", "custom": "independent error", "flags": ["customError"], "tag": "input", "type": "text", "attrs": {}}, {"name": "custom-checkbox", "type": "checkbox", "custom": "independent error", "flags": ["customError"], "tag": "input", "attrs": {}}, {"name": "custom-hidden", "type": "hidden", "custom": "independent error", "flags": ["customError"], "always_barred": true, "tag": "input", "attrs": {}}, {"name": "custom-reset", "type": "reset", "custom": "independent error", "flags": ["customError"], "always_barred": true, "tag": "input", "attrs": {}}, {"name": "custom-button-submit", "tag": "button", "type": "submit", "custom": "independent error", "flags": ["customError"], "attrs": {}}, {"name": "custom-button-reset", "tag": "button", "type": "reset", "custom": "independent error", "flags": ["customError"], "always_barred": true, "attrs": {}}, {"name": "custom-output", "tag": "output", "custom": "independent error", "flags": ["customError"], "always_barred": true, "type": "text", "attrs": {}}, {"name": "custom-fieldset", "tag": "fieldset", "custom": "independent error", "flags": ["customError"], "always_barred": true, "type": "text", "attrs": {}}, {"name": "custom-object", "tag": "object", "custom": "independent error", "flags": ["customError"], "always_barred": true, "type": "text", "attrs": {}}],modes=["normal", "disabled", "readonly", "both", "fieldset-disabled", "first-legend", "second-legend", "datalist"],flagNames=['valueMissing','typeMismatch','patternMismatch','tooLong','tooShort','rangeUnderflow','rangeOverflow','stepMismatch','badInput','customError'];
+const readOnlyTypes=/^(text|search|url|tel|email|password|date|month|week|time|datetime-local|number)$/;
+const rows=[];let passed=0,total=0;
+function check(row,field,actual,expected){const ok=actual===expected;total++;if(ok)passed++;row.checks.push({field,actual,expected,passed:ok});}
+for(const c of cases)for(const mode of modes){
+ const row={name:c.name,mode,checks:[]},form=document.createElement('form'),el=document.createElement(c.tag);document.body.appendChild(form);
+ try{
+  if(c.tag==='input'||c.tag==='button')el.type=c.type;
+  for(const [key,value]of Object.entries(c.attrs))el.setAttribute(key,value);
+  if(c.options)for(const option of c.options){const o=document.createElement('option');o.value=option[0];o.textContent=option[1];el.appendChild(o);}
+  if('value'in c)el.value=c.value;if(c.checked)el.checked=true;
+  let parent=form;
+  if(mode==='fieldset-disabled'||mode==='first-legend'||mode==='second-legend'){
+   const fs=document.createElement('fieldset');fs.disabled=true;form.appendChild(fs);const first=document.createElement('legend');fs.appendChild(first);parent=fs;
+   if(mode==='first-legend')parent=first;
+   if(mode==='second-legend'){const second=document.createElement('legend');fs.appendChild(second);parent=second;}
+  }
+  if(mode==='datalist'){parent=document.createElement('datalist');form.appendChild(parent);}
+  parent.appendChild(el);
+  if(mode==='disabled'||mode==='both')el.setAttribute('disabled','');
+  if(mode==='readonly'||mode==='both')el.setAttribute('readonly','');
+  el.setCustomValidity(c.custom||'');
+  const supportsDisabled=['input','button','select','textarea','fieldset'].includes(c.tag);
+  const disabled=supportsDisabled&&['disabled','both','fieldset-disabled','second-legend'].includes(mode);
+  const readonly=(c.tag==='textarea'||c.tag==='input'&&readOnlyTypes.test(c.type))&&['readonly','both'].includes(mode);
+  const readonlyCandidate=(c.tag==='input'||c.tag==='textarea')&&['readonly','both'].includes(mode);
+  const eligible=!c.always_barred&&!disabled&&!readonlyCandidate&&mode!=='datalist';
+  const flags=Object.fromEntries(flagNames.map(k=>[k,c.flags.includes(k)]));
+  if(c.mutable_required&&(disabled||readonly))flags.valueMissing=false;
+  const valid=flagNames.every(k=>!flags[k]),state=el.validity;
+  for(const key of flagNames)check(row,key,state[key],flags[key]);
+  check(row,'valid',state.valid,valid);check(row,'willValidate',el.willValidate,eligible);
+  check(row,'sameValidityObject',el.validity===state,true);
+  row.observedValidationMessage=el.validationMessage;check(row,'validationMessageEmpty',row.observedValidationMessage==='',!eligible||valid);
+  if(c.custom&&eligible)check(row,'customMessage',el.validationMessage,c.custom);
+  if('expected_value'in c)check(row,'sanitizedValue',el.value,c.expected_value);
+  let events=[];el.addEventListener('invalid',e=>{events.push({cancelable:e.cancelable,bubbles:e.bubbles});e.preventDefault();});
+  const expectResult=!eligible||valid,expectEvents=expectResult?0:1;
+  for(const method of ['checkValidity','reportValidity']){
+   events=[];check(row,method,el[method](),expectResult);check(row,method+'Events',events.length,expectEvents);
+   check(row,method+'Cancelable',events.length?events.every(e=>e.cancelable):null,expectEvents?true:null);check(row,method+'Bubbles',events.length?events.some(e=>e.bubbles):null,expectEvents?false:null);
+  }
+  // The same live object must expose custom errors even on barred elements.
+  el.setCustomValidity('temporary independent error');check(row,'liveCustomError',state.customError,true);check(row,'liveCustomValid',state.valid,false);
+  el.setCustomValidity(c.custom||'');check(row,'liveRestoredCustomError',state.customError,!!c.custom);check(row,'liveRestoredValid',state.valid,valid);
+ }catch(error){check(row,'unexpectedException',String(error),null);}
+ finally{form.remove();rows.push(row);}
+}
+const result={passed,failed:total-passed,total,caseRows:rows.length,rows},serialized=JSON.stringify(result);
+document.getElementById('results').textContent='LUMEN_FORMS_ELIGIBILITY_RESULT:'+serialized;
+for(let i=0;i<Math.ceil(serialized.length/256);i++)console.log('LUMEN_AUTHORED_CHUNK '+i+' '+JSON.stringify(serialized.slice(i*256,(i+1)*256)));
+console.log('LUMEN_AUTHORED_DONE '+Math.ceil(serialized.length/256));console.log('RESULTS FORMS_ELIGIBILITY:'+(result.failed?'FAIL':'PASS')+' '+passed+'/'+total);
+</script>

@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>Declaration comment and bracket controls</title>
+<div id="host"></div><pre id="results"></pre>
+<script>
+const cases=[
+ ['comment-paren','padding-left:5px/*)*/;',5],
+ ['comment-square','padding-left:5px/*]*/;',5],
+ ['comment-curly','padding-left:5px/*}*/;',5],
+ ['comment-after-clamp','padding-left:clamp(1px,5px,10px)/*)]}*/;',5],
+ ['comment-inside-clamp','padding-left:clamp(1px,/*) ] } ;*/5px,10px);',5],
+ ['comment-semicolons','padding-left:5px/* ; padding-left:99px; ) ] } */;',5],
+ ['comment-inside-calc','padding-left:calc(2px /* ) ] } */ + 3px);',5],
+ ['quoted-comment-tokens','--marker:"/*)*/";padding-left:5px;',5],
+ ['escaped-closing-token','--marker:\\);padding-left:5px;',5],
+ ['real-unmatched-close','padding-left:5px);',7]
+];
+const checks=[];let passed=0;
+function check(name,field,actual,expected){const ok=Number.isFinite(actual)&&Math.abs(actual-expected)<=.05;checks.push({name,field,actual,expected,passed:ok});if(ok)passed++;}
+for(const [name,value,padding]of cases){
+ const el=document.createElement('div');el.style.cssText='width:30px;height:10px;padding-left:7px;margin-left:4px;'+value+'margin-left:11px;';document.getElementById('host').appendChild(el);
+ const s=getComputedStyle(el);check(name,'paddingLeft',parseFloat(s.paddingLeft),padding);check(name,'followingDeclaration',parseFloat(s.marginLeft),11);check(name,'borderBoxWidth',el.getBoundingClientRect().width,30+padding);el.remove();
+}
+const result={passed,failed:checks.length-passed,total:checks.length,checks},serialized=JSON.stringify(result);document.getElementById('results').textContent=serialized;
+for(let i=0;i<Math.ceil(serialized.length/256);i++)console.log('LUMEN_AUTHORED_CHUNK '+i+' '+JSON.stringify(serialized.slice(i*256,(i+1)*256)));
+console.log('LUMEN_AUTHORED_DONE '+Math.ceil(serialized.length/256));console.log('RESULTS DECLARATION_COMMENTS:'+(result.failed?'FAIL':'PASS')+' '+passed+'/'+checks.length);
+</script>
+
