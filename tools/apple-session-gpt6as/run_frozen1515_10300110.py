@@ -17,6 +17,8 @@ def main():
     parser.add_argument('--sha256', required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--max-seconds', type=float, default=2100)
+    parser.add_argument('--require-url-all-pass', action='store_true',
+        help='Run the unchanged77 URL variants first and stop before other groups if any fails')
     args = parser.parse_args()
     root = Path.cwd().resolve()
     binary, out = args.binary.resolve(), args.output.resolve()
@@ -31,7 +33,16 @@ def main():
     receipt = {'schema': 1, 'task': '10.30-0110', 'startedUTC': utc(),
         'scope': 'Complete unchanged frozen1515 priority WPT inventory; not the entire official WPT suite',
         'binary': str(binary), 'binarySHA256': args.sha256, 'maxSeconds': args.max_seconds,
-        'orchestratorSHA256': sha(__file__), 'stages': [], 'complete': False}
+        'orchestratorSHA256': sha(__file__), 'stages': [], 'complete': False,
+        'latestSummary': {'scheduled': 1515, 'run': 0, 'fullyPassing': 0, 'unrun': 1515},
+        'urlAcceptanceGate': {'required': args.require_url_all_pass, 'expectedFullyPassing': 77,
+            'evaluated': False, 'passed': None}}
+    groups = ['dom', 'events', 'storage', 'url', 'encoding-streams', 'encoding-core',
+        'microtasks', 'headers', 'encoding-rest']
+    if args.require_url_all_pass:
+        groups.remove('url')
+        groups.insert(0, 'url')
+    receipt['executionOrder'] = groups
 
     def save():
         temporary = out / 'summary.json.tmp'
@@ -84,8 +95,6 @@ def main():
     try:
         measured('prepare', [sys.executable, runner, 'prepare', '--binary', str(binary),
             '--sha256', args.sha256, '--output', str(plan.parent)], 60)
-        groups = ['dom', 'events', 'storage', 'url', 'encoding-streams', 'encoding-core',
-            'microtasks', 'headers', 'encoding-rest']
         for group in groups:
             attempt, prior_count = 0, -1
             while True:
@@ -105,6 +114,13 @@ def main():
                 save()
                 current = results['groups'][group]
                 if current['unrun'] == 0:
+                    if group == 'url' and args.require_url_all_pass:
+                        accepted = current['scheduled'] == current['run'] == current['fullyPassing'] == 77
+                        receipt['urlAcceptanceGate'].update(evaluated=True, passed=accepted,
+                            observed=dict(current), evaluatedUTC=utc())
+                        save()
+                        if not accepted:
+                            raise RuntimeError('Frozen77 URL acceptance failed; preserve all failures and remaining unrun variants')
                     break
                 if current['run'] <= prior_count:
                     raise RuntimeError('No new immutable case records in ' + group)

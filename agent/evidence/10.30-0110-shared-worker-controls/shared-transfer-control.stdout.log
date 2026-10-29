@@ -1,0 +1,11 @@
+SHARED_TRANSFER_CHECK {"i":0,"name":"duplicate connection-port transfer fails without detaching the sender","ok":true}
+SHARED_TRANSFER_CHECK {"i":1,"name":"uncloneable payload fails without detaching the connection port","ok":true}
+SHARED_TRANSFER_CHECK {"i":2,"name":"transferred connection preserves its shared-global and connection identity","ok":true}
+SHARED_TRANSFER_CHECK {"i":3,"name":"detached sender cannot receive send or transfer the connection again","ok":true}
+SHARED_TRANSFER_CHECK {"i":4,"name":"messages queued before transfer arrive in original FIFO order","ok":true}
+SHARED_TRANSFER_CHECK {"i":5,"name":"terminating the recipient preserves another shared-worker client","ok":true}
+SHARED_TRANSFER_CHECK {"i":6,"name":"closing the transferred endpoint preserves another shared-worker client","ok":true}
+SHARED_TRANSFER_CHECK {"i":7,"name":"a connection endpoint can return and transfer to another worker","ok":true}
+SHARED_TRANSFER_CHECK {"i":8,"name":"an independent channel survives connection transfer and recipient termination","ok":true}
+SHARED_TRANSFER_RESULTS {"total":9,"passed":9,"failed":0}
+CHROMIUM_CONTROL_CLEANUP {"gracefulRequested": true, "gracefulAcknowledged": true, "sent_sigterm": false, "sent_sigkill": false, "error": null, "processGroupGone": true, "rootExitCode": 0}

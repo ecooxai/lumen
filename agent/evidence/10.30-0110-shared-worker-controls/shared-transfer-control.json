@@ -1,0 +1,76 @@
+{
+  "kind": "shared-worker-connection-transfer-lifecycle",
+  "officialWPT": false,
+  "nativeLumenExecuted": false,
+  "chromiumControlExecuted": true,
+  "binary": "/workspace/scratch/4aa97518bdcd/project/lumen/out/10300110-chromium/chrome-linux64/chrome",
+  "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "browserVersion": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.47",
+    "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.19"
+  },
+  "fixtureSHA256": "2c66901eb9a5a12bf8947c3ce5f217d88da45f2a7795295a5a6e88a58f020dae",
+  "pageTemplateSHA256": "b95f72a7adef6c79f5f332727c8d8e7f5b0b892e520a13f21c83ca38ac569a60",
+  "workerSHA256": "5e9e3c1aefd08abe6fe2130693bc7073568067b2094b853bfc5a1276a0f3f687",
+  "caseManifestSHA256": "243b59ed90ca288b5752b5af44da23e9231d9d9d065e93b4e770f3e7bb2b4de2",
+  "started": "2026-10-29T17:55:31.719411+00:00",
+  "ended": "2026-10-29T17:55:33.567116+00:00",
+  "durationSeconds": 1.84771,
+  "total": 9,
+  "passed": 9,
+  "failed": 0,
+  "rows": [
+    {
+      "i": 0,
+      "name": "duplicate connection-port transfer fails without detaching the sender",
+      "ok": true
+    },
+    {
+      "i": 1,
+      "name": "uncloneable payload fails without detaching the connection port",
+      "ok": true
+    },
+    {
+      "i": 2,
+      "name": "transferred connection preserves its shared-global and connection identity",
+      "ok": true
+    },
+    {
+      "i": 3,
+      "name": "detached sender cannot receive send or transfer the connection again",
+      "ok": true
+    },
+    {
+      "i": 4,
+      "name": "messages queued before transfer arrive in original FIFO order",
+      "ok": true
+    },
+    {
+      "i": 5,
+      "name": "terminating the recipient preserves another shared-worker client",
+      "ok": true
+    },
+    {
+      "i": 6,
+      "name": "closing the transferred endpoint preserves another shared-worker client",
+      "ok": true
+    },
+    {
+      "i": 7,
+      "name": "a connection endpoint can return and transfer to another worker",
+      "ok": true
+    },
+    {
+      "i": 8,
+      "name": "an independent channel survives connection transfer and recipient termination",
+      "ok": true
+    }
+  ],
+  "infrastructureErrors": [],
+  "monitor": "External one-second monitor required",
+  "stdoutSHA256": "a562ba657b1770d54d73756539077e49861a8b43e0fc1d834126781ea75e817a",
+  "stderrSHA256": "9c253dca8240d677ef5c96f19666b939ef143dacaf10ecdb89ff901567fbc140"
+}

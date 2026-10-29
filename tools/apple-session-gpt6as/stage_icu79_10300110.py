@@ -86,9 +86,9 @@ def main():
         environment = os.environ.copy()
         environment.update(HOMEBREW_NO_AUTO_UPDATE='1', HOMEBREW_NO_INSTALL_CLEANUP='1',
             HOMEBREW_NO_ENV_HINTS='1', HOMEBREW_CACHE=str(out / 'brew-cache'))
-        run('fetch-official-bottle', ['/opt/homebrew/bin/brew', 'fetch', '--force-bottle',
+        run('fetch-official-bottle', ['/opt/homebrew/bin/brew', 'fetch',
             '--bottle-tag=' + tag, 'icu4c@79'], limit=150, env=environment)
-        candidates = [path for path in (out / 'brew-cache').rglob('*.tar.gz') if path.is_file()]
+        candidates = sorted({path.resolve() for path in (out / 'brew-cache').rglob('*.tar.gz') if path.is_file()})
         matches = [path for path in candidates if sha(path) == BOTTLES[tag]]
         if len(matches) != 1:
             raise RuntimeError('Fetched bottle does not match the independently pinned official formula hash')

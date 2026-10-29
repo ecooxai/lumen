@@ -1,0 +1,17 @@
+{
+  "recordedUTC": "2026-10-29T17:56:26.490093+00:00",
+  "fixture": "tests/test_shared_worker_transfer_lifecycle.py",
+  "fixtureSHA256": "2c66901eb9a5a12bf8947c3ce5f217d88da45f2a7795295a5a6e88a58f020dae",
+  "qualifiedChromeSHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "functional": "9/9 exact named assertions; no fixture/infrastructure error",
+  "cleanup": "Browser.close acknowledged; entire owned process group gone; no termination signals",
+  "performanceQualification": "1.848-second control captured only2 one-second monitor samples, one interval; fast Chromium helpers can be born and exit between samples. These data do not establish Chrome steady CPU or browser RSS.",
+  "bytes": {
+    "shared-transfer-control.json": "a7f9b3af524cc35f8478a52b40d6039ecb1ac15c5bf6dd26088784057bfdb762",
+    "shared-transfer-control.stdout.log": "a562ba657b1770d54d73756539077e49861a8b43e0fc1d834126781ea75e817a",
+    "shared-transfer-control.stderr.log": "9c253dca8240d677ef5c96f19666b939ef143dacaf10ecdb89ff901567fbc140",
+    "shared-transfer-control-monitor.json": "099f1c531825f939bd0994476f66d78108d62478b74e7ef1fbd810f6c64cfa1e",
+    "shared-transfer-control-monitor.csv": "4a9375773b9bb148b8a179c22da47064cfc626ffbb9658566a7488947c2fa94b"
+  },
+  "original22And13": "Unchanged frozen fixtures;9 is a separate custom lifecycle regression cohort, not upstream WPT."
+}
