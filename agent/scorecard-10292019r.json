@@ -7,10 +7,10 @@
   "max_critical_fix_deadline_utc": "2026-10-29T16:20:07Z",
   "target_score": 98,
   "score": 55,
-  "score_state": "accepted_historical_baseline_current_candidate_unaccepted",
+  "score_state": "historical_assessment_current_final_candidate_pending",
   "score_is_wpt_percentage": false,
   "full_official_wpt_pass_percent": null,
-  "updated_utc": "2026-10-29T14:02:42.763955+00:00",
+  "updated_utc": "2026-10-29T14:38:34.263857+00:00",
   "rubric": "agent/scorecard-rubric-20261029-cpu30.md",
   "gates": [
     {
@@ -173,9 +173,9 @@
   "current_baseline_binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
   "current_native_source_commit": "15ab329736c26a3bbb907b718af376206c115436",
   "source_branch": "gpt6-astra-pro_builtin-agents_lumen-10.292019r-worker-xhr",
-  "candidate_acceptance": "Mac d5 fixed279 independent no-regression accepted; Linux v6 native133 + supplemental53 + realm32 accepted. Final v6 Mac resources and actual shared IPA/iPad remain unearned.",
-  "accepted_subsystem_checkpoint": "13742445c8b62a020ed8d3ed5c23a0b1008caafc",
-  "current_iteration_evidence": "agent/evidence/10.292019r-xhr-wpt-005/acceptance.json",
+  "candidate_acceptance": "Mac002137/f8 WPT133 +GUI/resources/stress/package independently accepted; Mac003b816 build14/14 accepted and full1515 running. SharedsignedIPA/iPadremain unearned.",
+  "accepted_subsystem_checkpoint": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
+  "current_iteration_evidence": "agent/evidence/10.292019r-form-data-navigation.json",
   "candidate_milestones": {
     "mac_fixed279": {
       "source": "d5a3bc44216f65ce430163518ced2aa10411cfc4",
@@ -212,6 +212,35 @@
         "ERROR": 17
       },
       "evidence": "out/10292019r-mac/independent-expanded-001/receipt.json"
+    },
+    "mac_native002_resources": {
+      "accepted": true,
+      "source": "13742445c8b62a020ed8d3ed5c23a0b1008caafc",
+      "binary_sha256": "f8ba8d525069937793fc4a903f329c89f41c72462aa7a186f01ece1c1dee9df1",
+      "scroll_p95_percent": 15.986,
+      "scroll_peak_percent": 16.085,
+      "idle_mean_percent": 0.041,
+      "navigation_initial_rss_mib": 158.9375,
+      "navigation_final_rss_mib": 148.375,
+      "worker_cycles": 100,
+      "worker_checks": 12094,
+      "evidence": "agent/evidence/10.292019r-native-mac-002.json"
+    },
+    "mac_native003": {
+      "source": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
+      "binary_sha256": "5c16cbd5db05ddf0b8f7b22e54fb86dce6797771db80402e171ac8581955a2f6",
+      "build_gates_passed": 14,
+      "full1515": "running",
+      "resource_acceptance": false
+    },
+    "chrome279_reference": {
+      "chrome_fully_passing": 234,
+      "native_d5_fully_passing": 248,
+      "recorded": 279,
+      "chrome_passing_assertions": 38382,
+      "native_retained_chrome_passing_assertions": 37866,
+      "missing_or_nonpassing_chrome_passing_assertions": 516,
+      "scope": "Qualified cross-platform selected279 only; no full-WPT orChromeparity"
     }
   }
 }
