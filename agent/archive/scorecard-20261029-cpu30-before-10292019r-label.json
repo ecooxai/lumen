@@ -1,0 +1,1129 @@
+{
+  "schema_version": 1,
+  "task_id": "20261029-cpu30",
+  "scope": "Whole Apple task acceptance score, separate from WPT percentages. Existing evidence remains attached to its exact historical binary until revalidated.",
+  "session_start_utc": "2026-10-29T02:18:45+00:00",
+  "deadline_utc": "2026-10-29T05:18:45+00:00",
+  "target_score": 98,
+  "score": 55,
+  "score_state": "current_native_artifact_accepted_partial_gates_pending",
+  "unknown_means": "unverified, not measured failure",
+  "rubric": "agent/scorecard-rubric-20261029-cpu30.md",
+  "gates": [
+    {
+      "id": "wpt_original",
+      "category": "wpt",
+      "weight": 10,
+      "name": "Original frozen important subset",
+      "status": "passed",
+      "earned": 10,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ],
+      "evidence_generation": "detached_writer_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 10,
+          "evidence": [
+            "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-headers-codec-1.json"
+          ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "passed",
+          "prior_earned": 10,
+          "evidence": [
+            "agent/evidence/102900614-003/original-native-wpt.json"
+          ],
+          "generation": "inherited_previous_task"
+        },
+        {
+          "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-001/original-six-receipt.json"
+          ],
+          "note": "Six unchanged pinned upstream files; absolute native results only, separate from selected103 and full WPT."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Final artifact passes the original six unchanged upstream files, separately from279 priority variants."
+        }
+      ],
+      "evidence_format": "native_absolute_wpt",
+      "passed": 1850,
+      "denominator": 1850,
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "note": "Exact current artifact retains original six unchanged upstream files, separately from279 selected variants."
+    },
+    {
+      "id": "wpt_expanded",
+      "category": "wpt",
+      "weight": 20,
+      "name": "Expanded important suite",
+      "status": "incomplete",
+      "earned": 0,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ],
+      "evidence_generation": "current_task_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "incomplete_reference_quarantined",
+          "prior_earned": 0,
+          "evidence": [
+            "output/wpt-10290244/priority-eac62-v1/priority-comparison.json"
+          ]
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "incomplete_new_reference_qualified",
+          "prior_earned": 0,
+          "evidence": [
+            "output/wpt-10290244/priority-eac62-v1/priority-comparison.json"
+          ],
+          "generation": "inherited_previous_task"
+        }
+      ],
+      "note": "246/279 selected variants fully pass;15TIMEOUT/15ERROR and1236unrun remain. Full WPT unknown.",
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849"
+    },
+    {
+      "id": "wpt_no_regression",
+      "category": "wpt",
+      "weight": 10,
+      "name": "Provenance and no-regression confirmation",
+      "status": "passed",
+      "earned": 10,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ],
+      "evidence_generation": "detached_writer_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 10,
+          "evidence": [
+            "output/session-20261029/native-qa-kit-v1/source/output/wpt-comparison-session10290244-headers-codec-1.json",
+            "output/session-10290244/headers-codec-green-1/compiled-source-sha256.json",
+            "output/session-10290244/headers-codec-green-1/summary.json"
+          ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "passed",
+          "prior_earned": 10,
+          "evidence": [
+            "agent/evidence/102900614-003/native-regression-summary.json",
+            "agent/evidence/102900614-003/compiled-source-sha256.json",
+            "agent/evidence/102900614-003/original-native-wpt.json",
+            "agent/evidence/102900614-003/upstream-receipt.json"
+          ],
+          "generation": "inherited_previous_task"
+        },
+        {
+          "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-001/build-and-203-custom-checks.json",
+            "agent/evidence/20261029-cpu30-001/selected-wpt-run.json",
+            "agent/evidence/20261029-cpu30-001/original-six-receipt.json",
+            "agent/evidence/20261029-cpu30-001/compiled-source-sha256.json"
+          ],
+          "note": "Current scope is203 custom render/GPU/wheel checks, original1850 assertions, and unchanged103-variant Encoding cohort. Historical826 custom checks are not claimed as rerun; broader and same103 Chrome comparison remain separate."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "718 current-policy custom checks, unchanged original1850 and fixed103 plus279 priority variants verified on3ad. The unchanged old15-case frame fixture intentionally has10pass/5explicit default-policy differences, all retained; not claimed as15/15."
+        }
+      ],
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "note": "718 previous custom checks retained; full37 fixture preserves deferred-feature failures and explicit supported detached-stream targets. Original1850/fixed103/broad279 and whole supplemental6 reviewed, with no new harness failure. Unchanged legacy15 remains10PASS/5explicit policy differences."
+    },
+    {
+      "id": "ipa_mac",
+      "category": "apple",
+      "weight": 15,
+      "name": "Shared signed iOS device IPA executed on Mac",
+      "status": "blocked_environment",
+      "earned": 0,
+      "evidence": [],
+      "evidence_generation": "current_task_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "unverified",
+          "prior_earned": 0,
+          "evidence": []
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "unverified",
+          "prior_earned": 0,
+          "evidence": [],
+          "generation": "inherited_previous_task"
+        }
+      ],
+      "note": "No validated signed device IPA or matching signing/profile/export path; mobile V8/dependency closure absent. NativeMac run is not sharedIPA proof."
+    },
+    {
+      "id": "ipad_simulator",
+      "category": "apple",
+      "weight": 10,
+      "name": "iPad simulator app executed from the same reviewed source",
+      "status": "blocked_environment",
+      "earned": 0,
+      "evidence": [],
+      "evidence_generation": "current_task_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "unverified",
+          "prior_earned": 0,
+          "evidence": []
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "unverified",
+          "prior_earned": 0,
+          "evidence": [],
+          "generation": "inherited_previous_task"
+        }
+      ],
+      "note": "iPad simulator OS is available. Matching existingCLT plus explicit SDK compile/link probes now pass, but mobile V8/dependencies and actual Lume simulator execution remain unverified."
+    },
+    {
+      "id": "perf_idle",
+      "category": "performance",
+      "weight": 5,
+      "name": "Idle",
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ],
+      "evidence_generation": "detached_writer_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "7a4bfec10412f3e2c0eee92a01bf8c9bec496eb122114ab4844e8e4a4c783b85",
+          "evidence": [
+            "output/session-10290244/apple-wasm-idle-baseline/fixed-settle-review.json"
+          ],
+          "prior_earned": 5
+        },
+        {
+          "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
+          "evidence": [
+            "output/session-10290244/native-scroll-render-overdraw/receipt.json",
+            "output/session-10290244/native-scroll-render-overdraw/process-summary.json",
+            "output/session-10290244/native-scroll-render-overdraw/process-samples.jsonl"
+          ],
+          "prior_earned": 5,
+          "prior_status": "passed",
+          "review": {
+            "samples": 50,
+            "validIntervalSamples": 49,
+            "durationSeconds": 48.976,
+            "settleSeconds": 66.132,
+            "cpuP95Percent": 1.0,
+            "cpuMeanPercent": 0.08204081632653061,
+            "cpuPeakPercent": 1.012,
+            "rssStartMiB": 151.859375,
+            "rssEndMiB": 151.859375,
+            "verdict": "passed",
+            "scope": "Fixed post-scroll idle subgate only; does not make the scrolling or soak gate pass."
+          }
+        },
+        {
+          "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
+          "evidence": [
+            "output/session-10290244/native-scroll-wheel-fast-path/receipt.json",
+            "output/session-10290244/native-scroll-wheel-fast-path/process-summary.json",
+            "output/session-10290244/native-scroll-wheel-fast-path/process-samples.jsonl"
+          ],
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "review": {
+            "samples": 50,
+            "validIntervalSamples": 49,
+            "durationSeconds": 49.012,
+            "settleSeconds": 66.093,
+            "cpuP95Percent": 0.0,
+            "cpuMeanPercent": 0.04079591836734694,
+            "cpuPeakPercent": 1.0,
+            "rssStartMiB": 151.90625,
+            "rssEndMiB": 151.90625,
+            "verdict": "passed",
+            "scope": "Fixed final idle phase; raw peaks remain visible and zero p95 reflects sampler granularity, not literally zero CPU work."
+          }
+        },
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/10290244-010-current-native-resources.json",
+            "output/session-10290244/final-native-resources-1/scroll/independent-review.json"
+          ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/102900614-003/resource-review.json"
+          ],
+          "generation": "inherited_previous_task"
+        },
+        {
+          "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-001/native-resource-summary.json"
+          ],
+          "note": "Current artifact settles near0\u20131%CPU over49s scroll-final and61s navigation-final idle windows. CPU is one logical core=100%; synthetic controlled fixture scope."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Fresh exact-artifact controlled final idle windows, with1Hz process-tree samples; not whole-host or arbitrary-site performance."
+        }
+      ],
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "note": "Fresh exact-artifact controlled idle; process-tree1 Hz samples, separate from host RAM/CPU.",
+      "cpu_p95_percent": 0.0
+    },
+    {
+      "id": "perf_interaction",
+      "category": "performance",
+      "weight": 5,
+      "name": "Ordinary interaction",
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ],
+      "evidence_generation": "detached_writer_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "f941cfcdedd9a59b60f41b1cb2be560dce136fc4e6d44cacfce0e5ab25cbbe46",
+          "evidence": [
+            "output/session-10290244/native-scroll-render-overdraw/receipt.json"
+          ],
+          "prior_earned": 0,
+          "prior_status": "failed",
+          "review": null
+        },
+        {
+          "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
+          "evidence": [
+            "output/session-10290244/native-scroll-wheel-fast-path/receipt.json"
+          ],
+          "prior_status": "failed",
+          "prior_earned": 0,
+          "review": null
+        },
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "failed",
+          "prior_earned": 0,
+          "evidence": [
+            "agent/evidence/10290244-010-current-native-resources.json",
+            "output/session-10290244/final-native-resources-1/scroll/independent-review.json"
+          ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "failed",
+          "prior_earned": 0,
+          "evidence": [
+            "agent/evidence/102900614-003/resource-review.json"
+          ],
+          "generation": "inherited_previous_task"
+        },
+        {
+          "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-001/native-resource-summary.json",
+            "agent/evidence/20261029-cpu30-001/cto-visible-window-review.json"
+          ],
+          "note": "User revised scroll ceiling30%;34 samples over33.010s, p9511.085%, peak11.137%, all observed scroll intervals below30%. Synthetic SDL wheel input, not OS-input proof; typing remains separately unmeasured."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Fresh controlled SDL scrolling; all observed intervals below30%, actual owned window captured and CTO-reviewed. OS-level typing remains unmeasured."
+        }
+      ],
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "scroll_cpu_p95_percent": 12.997,
+      "ceiling_percent": 30,
+      "note": "Fresh controlled native scroll gate and owned window visual review; no arbitrary-site or OS typing claim.",
+      "scroll_cpu_peak_percent": 13.051
+    },
+    {
+      "id": "perf_soak",
+      "category": "performance",
+      "weight": 5,
+      "name": "Controlled memory soak",
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ],
+      "evidence_generation": "detached_writer_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "7f0cafc374cf2cf1c51f83f44eec8da7220b996ac836bef4fd6caf3687623026",
+          "evidence": [
+            "output/session-10290244/native-navigation-wheel-fast-path/receipt.json",
+            "output/session-10290244/native-navigation-wheel-fast-path/process-summary.json",
+            "output/session-10290244/native-navigation-wheel-fast-path/process-samples.jsonl"
+          ],
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "review": {
+            "durationSeconds": 166.162,
+            "actualNavigations": 20,
+            "pages": 21,
+            "cloneAttrImportChecks": 1680,
+            "initialMedianRSSMiB": 155.75,
+            "finalMedianRSSMiB": 147.65625,
+            "growthMiB": -8.09375,
+            "nativeCounters": {
+              "initial": {
+                "malloc_in_use": 0.6,
+                "nodes": 1218.0,
+                "styles": 11.0,
+                "css_parsed": 0.0,
+                "workers": 0.0,
+                "heap": 0.0,
+                "ext": 0.0
+              },
+              "final": {
+                "malloc_in_use": 0.6,
+                "nodes": 1218.0,
+                "styles": 11.0,
+                "css_parsed": 0.1,
+                "workers": 0.0,
+                "heap": 0.0,
+                "ext": 0.0
+              }
+            },
+            "finalIdle": {
+              "samples": 62,
+              "validIntervalSamples": 61,
+              "durationSeconds": 60.998,
+              "settleSeconds": 104.079,
+              "cpuP95Percent": 0.997,
+              "cpuMeanPercent": 0.0821967213114754,
+              "cpuPeakPercent": 1.011,
+              "rssStartMiB": 159.8125,
+              "rssEndMiB": 147.65625,
+              "verdict": "passed",
+              "scope": "Fixed final idle phase; raw peaks remain visible and zero p95 reflects sampler granularity, not literally zero CPU work."
+            },
+            "verdict": "passed",
+            "scope": "Controlled20-navigation context-teardown workload with identical16-document work per page. Initial/final URL step differs; no tab-close, forced-GC, IPA or universal memory claim."
+          }
+        },
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/10290244-010-current-native-resources.json",
+            "output/session-10290244/final-native-resources-1/navigation/independent-review.json"
+          ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "pending_current_artifact",
+          "prior_earned": 0,
+          "evidence": [],
+          "generation": "inherited_previous_task"
+        },
+        {
+          "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-001/native-resource-summary.json"
+          ],
+          "note": "Controlled20-navigation workload: settled RSS157.34375\u2192146.5625MiB (-10.78125MiB), native counters stable and GPU clean; not universal memory stability."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Fresh20-navigation exact-artifact soak, settled RSS change -10.609375MiB; stable native counters and clean GPU. Not universal leak proof."
+        }
+      ],
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "note": "Fresh20-navigation settled RSS change -10.671875MiB;24+8 separate real realm teardown cycles restore native nodes exactly."
+    },
+    {
+      "id": "perf_budgets",
+      "category": "performance",
+      "weight": 5,
+      "name": "Build/test budgets",
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ],
+      "evidence_generation": "detached_writer_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "output/session-10290244/headers-codec-green-1/summary.json"
+          ]
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/102900614-003/native-regression-summary.json"
+          ],
+          "generation": "inherited_previous_task"
+        },
+        {
+          "binary_sha256": null,
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-001/build-and-203-custom-checks.json",
+            "agent/evidence/20261029-cpu30-001/selected-wpt-run.json",
+            "agent/evidence/20261029-cpu30-001/native-resource-summary.json",
+            "agent/evidence/20261029-cpu30-001/publication-policy-red-green.json"
+          ],
+          "note": "Incremental build2.103s;203 checks plus build5.550s; WPT73.420s; GUI+soak282.666s; publication RED/GREEN2.167s. Existing prebuilt V8 reused.1Hz collectors valid; subsecond tests lack meaningful steady CPU samples."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Existing pinnedV8 reused. Build/custom/WPT/resource durations and1Hz monitors retained. Broader >5min run is explained by genuine service-worker timeouts."
+        }
+      ],
+      "build_seconds": 2.094,
+      "prebuilt_v8": true,
+      "note": "Same prebuilt V8 bytes reused; all build/test durations retained. Long worker-context timeouts are classified, not removed.",
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849"
+    },
+    {
+      "id": "repro_tdd",
+      "category": "reproducibility_release",
+      "weight": 5,
+      "name": "Regression-first improvement",
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ],
+      "evidence_generation": "detached_writer_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "output/session-10290244/headers-red-1.log",
+            "output/session-10290244/headers-red-1.json",
+            "output/session-10290244/text-codec-red-1.log",
+            "output/session-10290244/text-codec-red-1.json",
+            "output/session-10290244/headers-codec-green-1/summary.json"
+          ]
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/102900614-003-message-transfer.json",
+            "agent/evidence/102900614-003/native-regression-summary.json"
+          ],
+          "generation": "inherited_previous_task"
+        },
+        {
+          "binary_sha256": null,
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-001/publication-policy-red-green.json"
+          ],
+          "note": "Unchanged five-case publication contract:3/5 RED to5/5 GREEN, proving current and historical out/ material are excluded from public source archives."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Unchanged JSON/BOM/fatalUTF8 and default-policy RED/GREEN fixtures retained; rejected JSON carrier and five old-policy deltas are explicit."
+        }
+      ],
+      "note": "Original36 and versioned37 REDs remain immutable. Full-network candidate exposed a real upstream harness ERROR and was rejected; narrow detached-stream ledger and fresh no-regression gates are explicit.",
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849"
+    },
+    {
+      "id": "repro_source",
+      "category": "reproducibility_release",
+      "weight": 5,
+      "name": "Source/artifact continuity",
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ],
+      "evidence_generation": "detached_writer_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "output/session-10290244/headers-codec-green-1/compiled-source-sha256.json",
+            "output/session-10290244/headers-codec-green-1/summary.json"
+          ]
+        },
+        {
+          "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/102900614-003/compiled-source-sha256.json",
+            "agent/evidence/102900614-003/native-regression-summary.json"
+          ],
+          "generation": "inherited_previous_task"
+        },
+        {
+          "binary_sha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-001/compiled-source-sha256.json",
+            "agent/evidence/20261029-cpu30-001/build-and-203-custom-checks.json"
+          ],
+          "note": "All compiled tracked src/Makefile/ios inputs match frozen committed source df4ae3 exactly. Current documentation HEAD is separate; unaccepted engine work remains unstaged."
+        },
+        {
+          "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+          "status": "passed",
+          "evidence": [
+            "agent/evidence/20261029-cpu30-004-native-acceptance.json"
+          ],
+          "note": "Every compiled manifest entry matches Git objects at94feccb482c508a2461bb6b8a1a52c011829c883; build-base7d is separately recorded. PrebuiltV8 dependency bytes remain pinned."
+        }
+      ],
+      "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "note": "All 142 compiled Git blobs match source 15ab329736c26a3bbb907b718af376206c115436; original build-base186 remains separately recorded."
+    },
+    {
+      "id": "release_progress",
+      "category": "reproducibility_release",
+      "weight": 5,
+      "name": "Reviewed progress/release delivery",
+      "status": "passed",
+      "earned": 5,
+      "evidence": [
+        "agent/evidence/20261029-cpu30-003/public-source-ui-proof.json",
+        "agent/evidence/20261029-cpu30-003/live-message-telemetry-handoff.json"
+      ],
+      "evidence_generation": "current_task_20261029_cpu30",
+      "historical_evidence": [
+        {
+          "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "output/session-10290244/progress-public-probe.json",
+            "output/session-10290244/progress-public-reply-check.json"
+          ]
+        },
+        {
+          "binary_sha256": null,
+          "prior_status": "passed",
+          "prior_earned": 5,
+          "evidence": [
+            "agent/evidence/102900614-005-progress-delivery.json",
+            "agent/evidence/102900614-005/public-probe.json",
+            "agent/evidence/102900614-005/public-reply.json"
+          ],
+          "generation": "inherited_previous_task"
+        }
+      ],
+      "note": "Both public routes delivered every source archive byte for963d4ddd; four responsive browser views and old namespace reloads passed. WSS/TLS2.012s telemetry, nonce RTT and private submit/reply verified. Latest documentation HEAD must be repackaged after this checkpoint.",
+      "source_commit": "963d4ddd72620b4978e950cc75298319615911a2",
+      "archive_sha256": "0b15ce45ed0e3108ada901d86bbc99f5d6ebc61c46532d93b5e542c92b6ef167"
+    }
+  ],
+  "updated_utc": "2026-10-29T06:04:22.598879+00:00",
+  "current_baseline_binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+  "full_official_wpt_pass_percent": null,
+  "current_native_source_base_commit": "186666fe7ad94ef08d6cc80486e8cc808b99144e",
+  "current_native_source_commit": "15ab329736c26a3bbb907b718af376206c115436",
+  "accepted_artifact_status": "current_native_partial_acceptance",
+  "source_branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-20261029-cpu30",
+  "inherited_scorecard": "agent/scorecard-20261029-cpu30-inherited.json",
+  "inherited_task_id": "102900614",
+  "baseline_wpt_snapshot": {
+    "full_suite_pass_rate": null,
+    "original_subset_assertions_pass": 1850,
+    "original_subset_assertions_total": 1850,
+    "original_subset_files_pass": 6,
+    "original_subset_files_total": 6,
+    "priority_frozen_variants": 1515,
+    "priority_recorded_variants": 279,
+    "priority_fully_passed_variants": 246,
+    "priority_unrun_variants": 1236,
+    "priority_observed_variant_pass_rate_percent": 88.17204301075269,
+    "fixed_encoding_comparison": {
+      "baseline_passed": 96,
+      "current_passed": 101,
+      "total": 103
+    },
+    "reference_status": "Qualified exact279 controls retained; missing contexts count. Additional six DSD files remain separate."
+  },
+  "inherited_history": [
+    {
+      "iteration": "102900614-001",
+      "updated_utc": "2026-10-28T22:21:43.088519+00:00",
+      "score": 50,
+      "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+      "status": "Inherited accepted artifact; no new build accepted this task"
+    },
+    {
+      "iteration": "102900614-002",
+      "started_utc": "2026-10-28T22:21:43.088519+00:00",
+      "updated_utc": "2026-10-28T22:39:39.725760+00:00",
+      "elapsed_seconds": 1076.637,
+      "total_session_seconds": 1498.267,
+      "score": 50,
+      "status": "Progress task isolation and truthful coverage display verified; native baseline remains inherited"
+    },
+    {
+      "iteration": "102900614-003",
+      "started_utc": "2026-10-28T22:39:39.725760+00:00",
+      "updated_utc": "2026-10-28T23:02:31.987958+00:00",
+      "elapsed_seconds": 1372.262,
+      "total_session_seconds": 2870.529,
+      "score": 40,
+      "status": "ArrayBuffer transfer accepted on733; fresh soak and task delivery remain pending",
+      "binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848"
+    },
+    {
+      "iteration": "102900614-004",
+      "started_utc": "2026-10-28T23:02:31.987958+00:00",
+      "updated_utc": "2026-10-28T23:11:31.564421+00:00",
+      "elapsed_seconds": 539.576,
+      "total_session_seconds": 3410.105,
+      "score": 40,
+      "status": "GPU upload candidate reduces CPU with exact CPU-frame pixels;10% interaction gate remains failed"
+    },
+    {
+      "iteration": "102900614-005",
+      "started_utc": "2026-10-28T23:11:31.564421+00:00",
+      "updated_utc": "2026-10-28T23:14:40.626860+00:00",
+      "elapsed_seconds": 189.062,
+      "total_session_seconds": 3599.168,
+      "score": 45,
+      "status": "Task public HTTPS,2s metrics, full source archive and authenticated message/reply verified"
+    },
+    {
+      "iteration": "102900614-006",
+      "started_utc": "2026-10-28T23:14:40.626860+00:00",
+      "updated_utc": "2026-10-28T23:17:54.579818+00:00",
+      "elapsed_seconds": 193.953,
+      "total_session_seconds": 3793.121,
+      "score": 45,
+      "status": "Fresh signed Chrome qualified for new paired measurements; all native standards failures retained"
+    },
+    {
+      "iteration": "102900614-007",
+      "started_utc": "2026-10-28T23:17:54.579818+00:00",
+      "updated_utc": "2026-10-28T23:26:56.745213+00:00",
+      "elapsed_seconds": 542.165,
+      "total_session_seconds": 4335.286,
+      "score": 45,
+      "status": "Shared stream candidate validated; original WPT retained;23/26 fresh upstream stream variants pass"
+    },
+    {
+      "iteration": "102900614-008",
+      "started_utc": "2026-10-28T23:26:56.745213+00:00",
+      "updated_utc": "2026-10-28T23:37:49.194609+00:00",
+      "elapsed_seconds": 652.449,
+      "total_session_seconds": 4987.736,
+      "score": 45,
+      "status": "Bounded span and glyph reuse improve fixed scrolling CPU;12.060% still exceeds10% gate"
+    },
+    {
+      "iteration": "102900614-009",
+      "started_utc": "2026-10-28T23:37:49.194609+00:00",
+      "updated_utc": "2026-10-28T23:47:18.582930+00:00",
+      "elapsed_seconds": 569.388,
+      "total_session_seconds": 5557.124,
+      "score": 45,
+      "status": "Legacy incremental codecs candidate:178/178 and459119 sanitizer cases;90/103 fresh diagnostic variants pass"
+    },
+    {
+      "iteration": "102900614-010",
+      "started_utc": "2026-10-28T23:47:18.582930+00:00",
+      "updated_utc": "2026-10-28T23:51:42.000312+00:00",
+      "elapsed_seconds": 263.417,
+      "total_session_seconds": 5820.541,
+      "score": 45,
+      "status": "Queued child completion candidate:7/7 regression checks and26/26 fresh upstream stream variants"
+    },
+    {
+      "iteration": "102900614-011",
+      "started_utc": "2026-10-28T23:51:42.000312+00:00",
+      "updated_utc": "2026-10-28T23:56:23.528969+00:00",
+      "elapsed_seconds": 281.529,
+      "total_session_seconds": 6102.07,
+      "score": 45,
+      "status": "Bounded HTML encoding metadata candidate"
+    },
+    {
+      "iteration": "102900614-012",
+      "started_utc": "2026-10-28T23:56:23.528969+00:00",
+      "updated_utc": "2026-10-28T23:57:08.141365+00:00",
+      "elapsed_seconds": 44.612,
+      "total_session_seconds": 6146.682,
+      "score": 45,
+      "status": "Body and frameset Window handler aliases"
+    },
+    {
+      "iteration": "102900614-013",
+      "started_utc": "2026-10-28T23:57:08.141365+00:00",
+      "updated_utc": "2026-10-28T23:57:53.253967+00:00",
+      "elapsed_seconds": 45.113,
+      "total_session_seconds": 6191.795,
+      "score": 45,
+      "status": "XHR response encoding and data URL bytes"
+    },
+    {
+      "iteration": "102900614-014",
+      "started_utc": "2026-10-28T23:57:53.253967+00:00",
+      "updated_utc": "2026-10-29T00:01:47.736677+00:00",
+      "elapsed_seconds": 234.483,
+      "total_session_seconds": 6426.278,
+      "score": 45,
+      "status": "Correct tokenizer EOF underflow and preserve comment bytes"
+    },
+    {
+      "iteration": "102900614-015",
+      "started_utc": "2026-10-29T00:01:47.736677+00:00",
+      "updated_utc": "2026-10-29T00:02:06.771954+00:00",
+      "elapsed_seconds": 19.035,
+      "total_session_seconds": 6445.313,
+      "score": 45,
+      "status": "Apply eligible same-origin parent encoding fallback"
+    },
+    {
+      "iteration": "102900614-016",
+      "started_utc": "2026-10-29T00:02:06.771954+00:00",
+      "updated_utc": "2026-10-29T00:08:44.870723+00:00",
+      "elapsed_seconds": 398.099,
+      "total_session_seconds": 6843.412,
+      "score": 45,
+      "status": "Live progress reports verified separate native cohorts and raw qualified Chrome outcomes"
+    }
+  ],
+  "history": [
+    {
+      "iteration": "20261029-cpu30-001",
+      "started_utc": "2026-10-29T03:33:28.987717+00:00",
+      "updated_utc": "2026-10-29T04:05:18.067295+00:00",
+      "elapsed_seconds": 1909.08,
+      "total_session_seconds": 6393.067,
+      "score": 50,
+      "status": "Fresh exact-artifact native acceptance, scroll below30%, navigation soak and source publication guard; public task delivery pending"
+    },
+    {
+      "iteration": "20261029-cpu30-002",
+      "started_utc": "2026-10-29T03:55:56.397308+00:00",
+      "finished_utc": "2026-10-29T04:25:54.392568+00:00",
+      "elapsed_seconds": 1797.995,
+      "total_session_seconds": 7629.393,
+      "score": 50,
+      "status": "JSON/BOM fixes and stable private message namespace functionally verified; changed native resource acceptance and public handoff pending"
+    },
+    {
+      "iteration": "20261029-cpu30-003",
+      "started_utc": "2026-10-29T04:22:09.528169+00:00",
+      "finished_utc": "2026-10-29T04:45:43.833967+00:00",
+      "elapsed_seconds": 1414.306,
+      "total_session_seconds": 8818.834,
+      "score": 55,
+      "status": "Current public source/message/telemetry delivery verified; broader native priority and qualified Chrome controls preserved"
+    },
+    {
+      "iteration": "20261029-cpu30-004",
+      "started_utc": "2026-10-29T04:49:12.692619+00:00",
+      "finished_utc": "2026-10-29T05:09:23.967673+00:00",
+      "elapsed_seconds": 1211.275,
+      "total_session_seconds": 10238.968,
+      "score": 55,
+      "status": "Final exact-artifact native source/WPT/resource acceptance; Apple execution and full frozen coverage remain incomplete"
+    },
+    {
+      "iteration": "20261029-cpu30-005",
+      "started_utc": "2026-10-29T05:17:11+00:00",
+      "finished_utc": "2026-10-29T06:04:22.598879+00:00",
+      "elapsed_seconds": 2831.599,
+      "total_session_seconds": 13537.599,
+      "score": 55,
+      "status": "Important-bug extension: detached document streams accepted; eager initial network DSD remains deferred. Apple execution and full frozen coverage remain incomplete."
+    }
+  ],
+  "current_native_source_manifest": "agent/evidence/20261029-cpu30-005/compiled-source-sha256.json",
+  "historical_baseline_score": 50,
+  "candidate_artifacts": [
+    {
+      "iteration": "102900614-004",
+      "binary_sha256": "2dacdbcc36c5be7edeaf8027533be38d85fbefe06c717e172ee324c499f2ec03",
+      "source_manifest": "agent/evidence/102900614-004/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-004-gpu-upload.json",
+      "accepted": false,
+      "note": "Measured GPU-only improvement; combined standards/fresh soak gates pending; fixed scrollingCPU gate stillfails."
+    },
+    {
+      "iteration": "102900614-007",
+      "binary_sha256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+      "source_manifest": "agent/evidence/102900614-007/02-text-streams-green-1-compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-007-shared-streams.json",
+      "accepted": false,
+      "note": "Verified functional shared-stream candidate with original6/6 and fresh23/26 upstream variants; combined resource/soak acceptance pending."
+    },
+    {
+      "iteration": "102900614-008",
+      "binary_sha256": "4773b85d28d3b1a7c17a1beee5225abc5141bb4cec4b713d409464ebe42582e9",
+      "source_manifest": "agent/evidence/102900614-008/tracked-compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-008-raster-glyph.json",
+      "accepted": false,
+      "note": "Paired span/glyph resource improvement with exact pixels and native capture;12.060% still exceeds fixed10% gate."
+    },
+    {
+      "iteration": "102900614-009",
+      "binary_sha256": "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
+      "source_manifest": "agent/evidence/102900614-009/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-009-legacy-codecs.json",
+      "accepted": false,
+      "note": "Native legacy streaming validated;90/103 diagnostic variants pass,1412unrun; fresh combined performance/soak pending."
+    },
+    {
+      "iteration": "102900614-010",
+      "binary_sha256": "4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5",
+      "source_manifest": "agent/evidence/102900614-010/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-010-frame-completion.json",
+      "accepted": false,
+      "note": "Queued child completion validated;26/26 upstream stream variants pass; fresh combined performance/soak pending."
+    },
+    {
+      "iteration": "102900614-011",
+      "binary_sha256": "9e5d9bd983bc7525cfad92c07e14049ef941c2a56796148906e31c4c63c2c7dd",
+      "source_manifest": "agent/evidence/102900614-011/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-011-html-meta.json",
+      "accepted": false,
+      "note": "Bounded HTML encoding metadata candidate; unresolved inherited tokenizer sanitizer failure, fresh combined gates pending."
+    },
+    {
+      "iteration": "102900614-012",
+      "binary_sha256": "c2a47e90b142feb848e9dce21296075fa8cbec5ae01b8d973e80608794338a2e",
+      "source_manifest": "agent/evidence/102900614-012/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-012-body-window-handlers.json",
+      "accepted": false,
+      "note": "Body and frameset Window handler aliases; unresolved inherited tokenizer sanitizer failure, fresh combined gates pending."
+    },
+    {
+      "iteration": "102900614-013",
+      "binary_sha256": "50eb65330c1dc48e13afb42e7543d38294c2841ebcf154898cb536deaf582fe9",
+      "source_manifest": "agent/evidence/102900614-013/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-013-xhr-encoding.json",
+      "accepted": false,
+      "note": "XHR response encoding and data URL bytes; unresolved inherited tokenizer sanitizer failure, fresh combined gates pending."
+    },
+    {
+      "iteration": "102900614-014",
+      "binary_sha256": "0d84262c11de64f17f4e0ed2c72a475ce5ef024dac121152c1de11bc85cbbd38",
+      "source_manifest": "agent/evidence/102900614-014/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-014-html-eof.json",
+      "accepted": false,
+      "note": "Correct tokenizer EOF underflow and preserve comment bytes; fresh combined acceptance remains pending."
+    },
+    {
+      "iteration": "102900614-015",
+      "binary_sha256": "07cca318e49e830d25280b9a8b5e345fe9ea7bf57b6515e80d12946f767068e8",
+      "source_manifest": "agent/evidence/102900614-015/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-015-frame-encoding.json",
+      "accepted": false,
+      "note": "Apply eligible same-origin parent encoding fallback; fresh combined acceptance remains pending."
+    }
+  ],
+  "reference_qualification": {
+    "evidence": "agent/evidence/102900614-006-chrome-reference.json",
+    "sha256": "1e34a36c89d61da6314e975fb8fe8296e0bd2e07ac73cc3836861785fcac5452",
+    "binary_sha256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+    "status": "qualified_known_standard_failures",
+    "qualified_for_paired_measurement": true,
+    "standards_failures_retained": true
+  },
+  "latest_functional_candidate": {
+    "binary_sha256": "4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5",
+    "evidence": "agent/evidence/102900614-010-frame-completion.json",
+    "evidence_sha256": "7863befe49c1a3cb3ba2b0a518b139c346ccb5a91f4a53b50ff7e57794fded63",
+    "stream_wpt": "agent/evidence/102900614-010/stream-wpt-review.json",
+    "stream_wpt_sha256": "e8bbe9744c3141dd1ff2df6c10003a904c93a3a195b469f8455105e8a9efc90f"
+  },
+  "candidate_catalog_evidence": {
+    "path": "agent/evidence/102900614-016-progress-catalog.json",
+    "sha256": "c371681b12f1a7106a1375459910d674fab4365d2d94705aad67d8a1b59d20e8"
+  },
+  "max_critical_fix_deadline_utc": "2026-10-29T06:18:45+00:00",
+  "baseline_source_commit": "1fcde424dcaa7ac842623478196d50abfa436760",
+  "inherited_candidate_checkpoint": "f8d3e7380e3e3194c3f34b5cd066113c45dfa1a9",
+  "new_session_native_validation": true,
+  "scroll_cpu_acceptance_percent": 30,
+  "scroll_cpu_requirement": "Ordinary scrolling CPU below 30 percent; record peak and p95 and workload duration. User revised the earlier 10 percent ceiling.",
+  "current_task_apple_scope": {
+    "requested_platforms": [
+      "Mac",
+      "iPad simulator"
+    ],
+    "iphone_execution_required": false,
+    "device_ipa_and_simulator_build_are_distinct": true,
+    "changedUTC": "2026-10-29T03:45:28.024426+00:00",
+    "reason": "The current assignment requests Mac and iPad simulator development; inherited iPhone-device execution was outside this task scope.",
+    "prior_apple_gates_retained_as_history": [
+      {
+        "id": "ipa_mac",
+        "category": "apple",
+        "weight": 10,
+        "name": "Same IPA on Mac",
+        "status": "unverified",
+        "earned": 0,
+        "evidence": [],
+        "evidence_generation": "inherited_previous_task",
+        "historical_evidence": [
+          {
+            "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+            "prior_status": "unverified",
+            "prior_earned": 0,
+            "evidence": []
+          }
+        ]
+      },
+      {
+        "id": "ipa_ipad",
+        "category": "apple",
+        "weight": 10,
+        "name": "Same IPA on iPad",
+        "status": "unverified",
+        "earned": 0,
+        "evidence": [],
+        "evidence_generation": "inherited_previous_task",
+        "historical_evidence": [
+          {
+            "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+            "prior_status": "unverified",
+            "prior_earned": 0,
+            "evidence": []
+          }
+        ]
+      },
+      {
+        "id": "ipa_iphone",
+        "category": "apple",
+        "weight": 5,
+        "name": "Same IPA on iPhone",
+        "status": "unverified",
+        "earned": 0,
+        "evidence": [],
+        "evidence_generation": "inherited_previous_task",
+        "historical_evidence": [
+          {
+            "binary_sha256": "1b9d43ed19cd616b0029e34fde97050b86c9acbdbda16a0dca5892922df704e9",
+            "prior_status": "unverified",
+            "prior_earned": 0,
+            "evidence": []
+          }
+        ]
+      }
+    ]
+  },
+  "current_task_functional_candidates": [
+    {
+      "binary_sha256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+      "source_base_commit": "c7f6ad5651f66cd9fed9c2ce1ec53acb33f51713",
+      "source_manifest": "agent/evidence/20261029-cpu30-002/compiled-source-sha256.json",
+      "source_manifest_sha256": "9bca4d2fa19e09c1f9308cf6cd45f4fef103800736ae8452d1c79592c87c3349",
+      "status": "functional_verified_resource_acceptance_pending",
+      "accepted": false,
+      "fully_passing_variants": 98,
+      "recorded_variants": 103,
+      "frozen_variants": 1515,
+      "unrun_variants": 1412,
+      "assertions": {
+        "PASS": 23629,
+        "FAIL": 29
+      },
+      "original_assertions": {
+        "PASS": 1850
+      },
+      "json_regression": {
+        "red_passed": 2,
+        "green_passed": 16,
+        "total": 16
+      },
+      "bom_regression": {
+        "red_passed": 11,
+        "green_passed": 21,
+        "total": 21
+      }
+    }
+  ],
+  "current_task_broad_functional_snapshot": {
+    "binary_sha256": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+    "fully_passing": 242,
+    "recorded": 279,
+    "scheduled": 1515,
+    "unrun": 1236,
+    "assertions": {
+      "PASS": 38724,
+      "FAIL": 37
+    },
+    "harness_statuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "evidence": "agent/evidence/20261029-cpu30-003/broad-priority-summary.json",
+    "resource_acceptance": "pending"
+  },
+  "current_native_source_manifest_sha256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+  "current_native_acceptance_receipt": "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+}

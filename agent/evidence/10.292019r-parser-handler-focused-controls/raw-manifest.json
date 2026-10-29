@@ -1,0 +1,82 @@
+{
+  "tests/test_parser_handler_csp.py": {
+    "bytes": 12675,
+    "sha256": "351f5affe091d6d9508f8000746568f34a6e17e7692619bcdcdf5df497c6465f"
+  },
+  "out/10292019r-parser-handler-csp/fixture.html": {
+    "bytes": 12150,
+    "sha256": "04add444995ba076852f2f1ad48fd612932e515e90fbdeda9a5f280905953f7e"
+  },
+  "out/10292019r-linux-worker/candidate-12-source-manifest.json": {
+    "bytes": 13874,
+    "sha256": "9ba9e77edef14ac31195c312ce592c5df045a0d0bd666d945be4a3d4762d029b"
+  },
+  "out/10292019r-linux-worker/candidate-12-binaries.json": {
+    "bytes": 1735,
+    "sha256": "b20f090dd04e1b5070409ca8d45c6b0c86be340ba0a3a328f16f79717f14d831"
+  },
+  "out/10292019r-linux-worker/candidate-12-gates.json": {
+    "bytes": 1030,
+    "sha256": "3180c0c87592f340d92c1e188c00591af820fde55fac8519806a6f0c38aebbda"
+  },
+  "out/10292019r-parser-handler-csp/baseline-b816/receipt.json": {
+    "bytes": 13796,
+    "sha256": "a093d1663040b8933cf08949292bdf8aea5c9e1772e8adf4e8cc1f82e90962a8"
+  },
+  "out/10292019r-parser-handler-csp/baseline-b816/receipt.stdout.log": {
+    "bytes": 7989,
+    "sha256": "64d64aa1e58f689ba65da36720ff7fcc66554de5e5fb239904705754de8d4ad3"
+  },
+  "out/10292019r-parser-handler-csp/baseline-b816/receipt.metrics.jsonl": {
+    "bytes": 211,
+    "sha256": "8e7223f98ddb6eaf742b4f6950faa6adfd7137cb85318b141a10adfb700949e5"
+  },
+  "out/10292019r-parser-handler-csp/candidate-12/receipt.json": {
+    "bytes": 13559,
+    "sha256": "ef21d03b6842b7d1191177cf07000cf386bcb87b6003c9f116f569759aafd083"
+  },
+  "out/10292019r-parser-handler-csp/candidate-12/receipt.stdout.log": {
+    "bytes": 8468,
+    "sha256": "a2e0b7aa52379b58df128c4720211f922312962f555dc3682137e074fd41e4ac"
+  },
+  "out/10292019r-parser-handler-csp/candidate-12/receipt.metrics.jsonl": {
+    "bytes": 211,
+    "sha256": "4e6c087d1f3b7075c507dfa04a2795380dc17501626c9b1f8f8e4b7b661de35f"
+  },
+  "out/10292019r-parser-handler-csp/chrome-001/receipt.json": {
+    "bytes": 17550,
+    "sha256": "da6b535c5e1e4d4098aba7866e31138d387036db5226d0f316ffd81835db720a"
+  },
+  "out/10292019r-parser-handler-csp/chrome-001/receipt.stdout.log": {
+    "bytes": 7409,
+    "sha256": "91b2c17ca309ea179aea04ac69f3f85e530b280020cfba8281c4cf889f8f140a"
+  },
+  "out/10292019r-parser-handler-csp/chrome-001/receipt-browser/chromium.metrics.jsonl": {
+    "bytes": 215,
+    "sha256": "d71ad56252b88164378ce013de167ffeab2a70c056b5b7e44ec20d9e39d54757"
+  },
+  "out/10292019r-parser-handler-csp/chrome-001/receipt-browser/chromium.cleanup.json": {
+    "bytes": 3600,
+    "sha256": "5106118cb3f6cd8cf0e69be8195c2cc3602751c464e77e96cb0a7af9263e8327"
+  },
+  "out/10292019r-parser-handler-csp/chrome-001/receipt-browser/chromium.metrics-summary.json": {
+    "bytes": 2052,
+    "sha256": "0d0aab378f3328cc54df1cfb3a4ef369fd9511dd4a0e8d815f8e0e616b2d7fb0"
+  },
+  "out/10292019r-parser-handler-csp/chrome-001/receipt-browser/chromium-process.log": {
+    "bytes": 9218,
+    "sha256": "feac4b84739a0fb5996fd93a29fa9ed50d000777111dcbd37e450e3ed4811dbf"
+  },
+  "agent/evidence/10.292019r-parser-handler-focused-controls/js.cc.candidate12": {
+    "bytes": 60114,
+    "sha256": "7b8ecd93a9bcb21e75041c9855455b481d735902bab6959574c113ba3900ebbd"
+  },
+  "agent/evidence/10.292019r-parser-handler-focused-controls/frames.cc.candidate12": {
+    "bytes": 31715,
+    "sha256": "e6a2c848320e72944e9c833ba2c88c76496935322362c989c9808e4a227a94ee"
+  },
+  "agent/evidence/10.292019r-parser-handler-focused-controls/08-window.js.candidate12": {
+    "bytes": 85899,
+    "sha256": "e063227b4f3997ecdf2b054ced20eb5ce11b06eb239c8ac45635bd8fe0219124"
+  }
+}

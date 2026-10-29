@@ -7,10 +7,10 @@
   "max_critical_fix_deadline_utc": "2026-10-29T16:20:07Z",
   "target_score": 98,
   "score": 55,
-  "score_state": "historical_assessment_current_final_candidate_pending",
+  "score_state": "inherited_assessment_current_candidate_security_hold",
   "score_is_wpt_percentage": false,
   "full_official_wpt_pass_percent": null,
-  "updated_utc": "2026-10-29T14:38:34.263857+00:00",
+  "updated_utc": "2026-10-29T15:07:10.455860+00:00",
   "rubric": "agent/scorecard-rubric-20261029-cpu30.md",
   "gates": [
     {
@@ -173,9 +173,9 @@
   "current_baseline_binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
   "current_native_source_commit": "15ab329736c26a3bbb907b718af376206c115436",
   "source_branch": "gpt6-astra-pro_builtin-agents_lumen-10.292019r-worker-xhr",
-  "candidate_acceptance": "Mac002137/f8 WPT133 +GUI/resources/stress/package independently accepted; Mac003b816 build14/14 accepted and full1515 running. SharedsignedIPA/iPadremain unearned.",
+  "candidate_acceptance": "Mac003b8161515measurement is independently valid but release is held by real CSP handler oracle7/9 versusChrome9/9. Historical137 build/resource/package acceptance does not certify security safety. Corrected004dc7a native qualification is pending.",
   "accepted_subsystem_checkpoint": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
-  "current_iteration_evidence": "agent/evidence/10.292019r-form-data-navigation.json",
+  "current_iteration_evidence": "agent/evidence/10.292019r-security-hold-013/independent-review.json",
   "candidate_milestones": {
     "mac_fixed279": {
       "source": "d5a3bc44216f65ce430163518ced2aa10411cfc4",
@@ -230,8 +230,24 @@
       "source": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
       "binary_sha256": "5c16cbd5db05ddf0b8f7b22e54fb86dce6797771db80402e171ac8581955a2f6",
       "build_gates_passed": 14,
-      "full1515": "running",
-      "resource_acceptance": false
+      "full1515": "complete_measurement_security_hold",
+      "resource_acceptance": false,
+      "fully_passing": 1454,
+      "recorded": 1515,
+      "unrun": 0,
+      "assertion_pass": 1166858,
+      "assertion_fail": 7,
+      "harness_statuses": {
+        "OK": 1455,
+        "TIMEOUT": 30,
+        "ERROR": 30
+      },
+      "release_accepted": false,
+      "security_oracle": {
+        "native_passed": 7,
+        "chrome_passed": 9,
+        "total": 9
+      }
     },
     "chrome279_reference": {
       "chrome_fully_passing": 234,
@@ -241,6 +257,25 @@
       "native_retained_chrome_passing_assertions": 37866,
       "missing_or_nonpassing_chrome_passing_assertions": 516,
       "scope": "Qualified cross-platform selected279 only; no full-WPT orChromeparity"
+    },
+    "mac_native004": {
+      "source": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+      "mac_acceptance": "pending",
+      "linux_unchanged_security_oracle": {
+        "passed": 9,
+        "total": 9
+      },
+      "linux_adjacent_handler_oracle": {
+        "passed": 36,
+        "total": 36,
+        "baseline_passed": 30,
+        "chrome_passed": 36
+      },
+      "linux_inherited_policy_oracle": {
+        "passed": 21,
+        "total": 21
+      }
     }
-  }
+  },
+  "important_bug_extension_invoked": true
 }

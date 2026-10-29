@@ -15,7 +15,7 @@ backup=base/'status-before-final003-wpt.private.json'
 if not backup.exists():backup.write_bytes(path.read_bytes());backup.chmod(0o600)
 prior=status.get('priorityObserved',status.get('currentWpt'));history=status.setdefault('acceptedWptHistory',[])
 if prior and not any(row.get('binarySha256')==prior.get('binarySha256')for row in history):history.append(prior)
-status['humanTaskId']='10.292019r';status['activeTaskId']='10292019r';status['iteration']=12;status['updatedUTC']=datetime.now(timezone.utc).isoformat();status['fullOfficialWptPassPercent']=None
+status['humanTaskId']='10.292019r';status['activeTaskId']='10292019r';status['iteration']=13;status['updatedUTC']=datetime.now(timezone.utc).isoformat();status['fullOfficialWptPassPercent']=None
 current={**summary,'binarySha256':final['binary']['sha256'],'sourceCommit':final['sourceCommit'],'observedVariantPassPercent':summary['passPercentOfRecorded'],'scope':'Latest independently audited source-bound native Mac frozen priority inventory; full official WPT unknown'}
 status['priorityObserved']=current;status['currentWpt']=current
 status['fixedComparisonWpt']={**fixed,'binarySha256':final['binary']['sha256'],'sourceCommit':final['sourceCommit'],'baselineFullyPassing':246,'baselineRecorded':279,'intermediateD5FullyPassing':248,'scope':'Same fixed279 selection; overlaps full priority inventory'}

@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "updatedUTC": "2026-10-29T15:06:16.191043+00:00",
+  "acceptedForMacValidation": true,
+  "scope": "Independent real Linux Lumen and Chromium direct-data-frame handler-policy and listener-order controls; not a final Mac/IPA release or official WPT passrate.",
+  "fixture": {
+    "path": "tests/test_parser_handler_csp.py",
+    "sha256": "351f5affe091d6d9508f8000746568f34a6e17e7692619bcdcdf5df497c6465f",
+    "pageSHA256": "04add444995ba076852f2f1ad48fd612932e515e90fbdeda9a5f280905953f7e",
+    "cases": 12,
+    "checks": 36,
+    "unchangedAcrossThreeRuns": true
+  },
+  "baseline": {
+    "sourceCommit": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
+    "binarySHA256": "ff3601542440df092406d646e9f5051646af861b3ccd268e8e2de18766ed725a",
+    "passed": 30,
+    "failed": 6,
+    "unrun": 0
+  },
+  "candidate": {
+    "stage": "candidate12",
+    "binarySHA256": "1a25fcdce95ce5c51c92f91c3cf3fdc225b1ec7bb5f778c5ee34dfa0a0158623",
+    "compiledSourcesIndependentlyVerified": 143,
+    "passed": 36,
+    "failed": 0,
+    "unrun": 0
+  },
+  "chromium": {
+    "version": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/156.0.8078.47",
+      "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "jsVersion": "15.6.75.19"
+    },
+    "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+    "passed": 36,
+    "failed": 0,
+    "unrun": 0
+  },
+  "securityReview": {
+    "cause": "Whole-document body/frameset attribute hydration during js_new_ex settle preceded the eager-frame head-meta/script parser walk.",
+    "fix": "Defer only eager-frame parsed handler hydration; activate at each body/frameset parser position after prior head meta/scripts.",
+    "retained": "Native element-owner realm and CSP compilation, sandbox policy, blocked-update preservation, cached earlier handlers and listener positions. No dispatch-time blanket CSP recheck.",
+    "primarySource": "https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-content-attributes",
+    "primarySourceRetrievedUTC": "2026-10-29",
+    "observedControls": [
+      "body/frameset restrictive-meta denial and unsafe-inline acceptance",
+      "nonce attribute alone cannot authorize a body handler",
+      "exact unsafe-hashes accepts; missing keyword and mismatched hash deny",
+      "earlier IDL survives blocked parsed attribute and body with no attribute",
+      "handler getter before later restrictive meta preserves earlier callback",
+      "later blocked dynamic attribute preserves earlier IDL callback",
+      "earlier head addEventListener precedes parser-installed body handler"
+    ]
+  },
+  "failedBaselineChecks": [
+    {
+      "index": 5,
+      "name": "body nonce does not authorize attribute / exact callback policy and registration order",
+      "ok": false,
+      "observed": [
+        "ready",
+        "nonce-script",
+        "handler"
+      ],
+      "expected": [
+        "ready",
+        "nonce-script"
+      ]
+    },
+    {
+      "index": 11,
+      "name": "body hash without unsafe-hashes denied / exact callback policy and registration order",
+      "ok": false,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 14,
+      "name": "body unsafe-hashes mismatching hash denied / exact callback policy and registration order",
+      "ok": false,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready"
+      ]
+    },
+    {
+      "index": 17,
+      "name": "earlier IDL survives blocked parsed attribute / exact callback policy and registration order",
+      "ok": false,
+      "observed": [
+        "ready",
+        "prior-idl",
+        "head-listener"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "prior-idl"
+      ]
+    },
+    {
+      "index": 26,
+      "name": "head listener precedes parsed body handler / exact callback policy and registration order",
+      "ok": false,
+      "observed": [
+        "ready",
+        "handler",
+        "head-listener"
+      ],
+      "expected": [
+        "ready",
+        "head-listener",
+        "handler"
+      ]
+    },
+    {
+      "index": 32,
+      "name": "frameset restrictive meta denied / exact callback policy and registration order",
+      "ok": false,
+      "observed": [
+        "ready",
+        "handler"
+      ],
+      "expected": [
+        "ready"
+      ]
+    }
+  ],
+  "runSeconds": {
+    "baseline-b816": 1.549,
+    "candidate-12": 1.548,
+    "chrome-001": 2.272
+  },
+  "resourceQualification": "Every runtime used1Hz process-tree sampling with clean owned cleanup; these1.5\u20132.3second functional fixtures do not establish steady CPU/RSS.",
+  "rawArchive": {
+    "path": "agent/evidence/10.292019r-parser-handler-focused-controls/raw-evidence.tar.gz",
+    "bytes": 73147,
+    "sha256": "88d3b785f1688971a92b6ef7da964b4d20589149785e83d0a5a9c98694e48fe4",
+    "files": 20
+  },
+  "originalNineCaseOracleUnchanged": {
+    "fixtureSHA256": "c20ae4a5082eb6afb1053e986f03d081f04eefd087b266ccab46493b288e84e0",
+    "handledSeparately": true
+  }
+}

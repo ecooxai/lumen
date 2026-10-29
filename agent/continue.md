@@ -1,6 +1,16 @@
-# Lumen10.292019r — active continuation at 2026-10-29T14:38:34.263857+00:00
+# Lumen10.292019r — active continuation at 2026-10-29T15:02:49.526669+00:00
 
 Read AGENTS.md and exact agent/task.md first. Start12:20:07Z, normal cutoff15:20:07Z, important-bug extension maximum16:20:07Z. Historical task assessment55/100 is not a WPT percentage; final artifact and mobile gates remain unearned. Work is active, not finished.
+
+## Immediate security hold — iteration13
+
+The full native003 frozen priority run finished with **1,454/1,515 fully passing variants (95.974%), zero unrun**, 1,166,858 PASS / 7 FAIL assertions, 1,455 OK / 30 TIMEOUT / 30 ERROR harness results. All sixty unsupported-context outcomes remain in the denominator. Independent raw audit6326 validates source/binary, zero lost prior passing assertions and zero measurement errors. Fixed279 remains248/279. The ISO2022 stateful form case now genuinely passes. Chrome comparator6327 remains248 vs234 variants with37,866/38,382 Chrome-passing assertions retained,516 missing; this is selected cross-platform evidence, not full parity. WPT duration1,580.953s is the scheduled full-inventory execution, not an abnormal build.
+
+**Do not release or promote source b816d32 / native0035c16 as accepted.** A new frozen nine-case parser/meta-order oracle found a real CSP bypass: Chrome9/9, Linux b8167/9 and actual Mac b8167/9. Both body onload attributes execute after restrictive head meta CSP. This is outside the selected WPT inventory; passing that inventory cannot override the security failure. Exact fixtureSHAc20ae4a5082eb6afb1053e986f03d081f04eefd087b266ccab46493b288e84e0 and raw evidence are preserved in `agent/evidence/10.292019r-security-hold-013/`. Source137 / Mac002 records4/9 but cannot navigate the data-form child; those negative absence checks do not establish handler safety. Earlier137 is a measured performance/build checkpoint, not a security-certified fallback.
+
+Root has invoked the user-authorized important-bug extension if needed. Hard stop remains16:20:07UTC. Engineer owns the narrow parser-position handler activation fix; performance owns independent before/after registration, dynamic handlers and unsafe-hash controls; delivery owns independent fixture/source review and publication. Candidate12Linux binary1a25fcdce95ce5c51c92f91c3cf3fdc225b1ec7bb5f778c5ee34dfa0a0158623 now passes unchanged9 and independently rerun21/21 policy controls, but adjacent safety controls and actual corrected Mac004 gates are still required. No broad pass rate is transferred to a changed binary without qualification.
+
+Dashboard must show the actual1,454/1,515 measurement **with explicit SECURITY HOLD and releaseAccepted=false**. Keep published source4573 and earlier performance identities separate. The original `publish_final003_wpt.py` release-like updater must not run; use the explicit hold publisher. Corrected final release will be004 after same-fixture security closure, WPT/no-regression, exact-artifact resources and packaging. Historical rubric55/100 remains an inherited assessment, not current security acceptance and not WPT95.974%.
 
 ## Environment, ownership and hard constraints
 

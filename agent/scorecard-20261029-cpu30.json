@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "task_id": "20261029-cpu30",
-  "scope": "Whole Apple task acceptance score, separate from WPT percentages. Existing evidence remains attached to its exact historical binary until revalidated.",
+  "scope": "Inherited55-point task assessment, not a current candidate release certification or WPT percentage. Exact old binary/source and historical gate records remain unchanged; active task acceptance and security hold are explicitly recorded in current status.",
   "session_start_utc": "2026-10-29T02:18:45+00:00",
   "deadline_utc": "2026-10-29T05:18:45+00:00",
   "target_score": 98,
   "score": 55,
-  "score_state": "current_native_artifact_accepted_partial_gates_pending",
+  "score_state": "inherited_assessment_current_task_requires_separate_gates",
   "unknown_means": "unverified, not measured failure",
   "rubric": "agent/scorecard-rubric-20261029-cpu30.md",
   "gates": [
@@ -686,7 +686,7 @@
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "186666fe7ad94ef08d6cc80486e8cc808b99144e",
   "current_native_source_commit": "15ab329736c26a3bbb907b718af376206c115436",
-  "accepted_artifact_status": "current_native_partial_acceptance",
+  "accepted_artifact_status": "inherited_baseline",
   "source_branch": "gpt6-astra-pro_builtin-agents_lume-apple-wpt-20261029-cpu30",
   "inherited_scorecard": "agent/scorecard-20261029-cpu30-inherited.json",
   "inherited_task_id": "102900614",
@@ -1125,5 +1125,11 @@
     "resource_acceptance": "pending"
   },
   "current_native_source_manifest_sha256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
-  "current_native_acceptance_receipt": "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+  "current_native_acceptance_receipt": "agent/evidence/20261029-cpu30-005-native-acceptance.json",
+  "active_task_id": "10292019r",
+  "human_task_id": "10.292019r",
+  "inherited_label_source_receipt": {
+    "path": "agent/archive/scorecard-20261029-cpu30-before-10292019r-label.json",
+    "sha256": "f0237aee5c9566ce060599bee5220877c89443a647123d175079c000dc2337e1"
+  }
 }
