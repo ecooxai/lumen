@@ -482,6 +482,15 @@ function cloneValue(v, seen) {
     if (seen.has(v)) return seen.get(v);
     const moduleCopy = N.cloneWasm(v);
     if (moduleCopy !== undefined) { seen.set(v, moduleCopy); return moduleCopy; }
+    // Recognize genuine DOMExceptions before inspecting an author-controlled
+    // @@toStringTag, and serialize their Web IDL data rather than public getters.
+    const domState = N.domExceptionState(v);
+    if (domState !== undefined) {
+        const e = new DOMException(domState[0], domState[1]); seen.set(v, e);
+        const stack = N.domExceptionStack(v); N.domExceptionStack(e, stack);
+        if (typeof stack === 'string') def(e, 'stack', stack); else delete e.stack;
+        return e;
+    }
     const tag = Object.prototype.toString.call(v).slice(8, -1);
     if (tag === 'Boolean') return Object(Boolean.prototype.valueOf.call(v)); if (tag === 'Number') return Object(Number.prototype.valueOf.call(v));
     if (tag === 'String') return Object(String.prototype.valueOf.call(v)); if (tag === 'BigInt') return Object(BigInt.prototype.valueOf.call(v));
@@ -489,8 +498,11 @@ function cloneValue(v, seen) {
         const n = v.name, C = ['EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError'].includes(n) ? globalThis[n] : Error, e = new C();
         const md = Object.getOwnPropertyDescriptor(v, 'message'); if (md && 'value' in md) def(e, 'message', String(md.value));
         if (typeof v.stack === 'string') def(e, 'stack', v.stack);
+        // Record the shell before descending into cause: causes may contain
+        // the same Error, mutually recursive errors, or shared graph nodes.
+        seen.set(v, e);
         const cd = Object.getOwnPropertyDescriptor(v, 'cause'); if (cd && 'value' in cd) def(e, 'cause', cloneValue(cd.value, seen));
-        seen.set(v, e); return e;
+        return e;
     }
     if (tag === 'Date') return new Date(Date.prototype.getTime.call(v)); if (tag === 'RegExp') return new RegExp(v.source, v.flags);
     if (tag === 'ArrayBuffer') { const b = new ArrayBuffer(v.byteLength); new Uint8Array(b).set(new Uint8Array(v)); seen.set(v, b); return b; }
@@ -505,8 +517,7 @@ function cloneValue(v, seen) {
     if (v instanceof Blob || tag === 'Blob' || tag === 'File') { const b = v instanceof File ? new File([v], v.name, { type: v.type, lastModified: v.lastModified }) : new Blob([v], { type: v.type }); seen.set(v, b); return b; } if (N.isNode(v) || v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
     if (tag === 'Map') { const m = new OMap(), set = SMap.prototype.set; seen.set(v, m); for (const [k, x] of SMap.prototype.entries.call(v)) set.call(m, cloneValue(k, seen), cloneValue(x, seen)); return m; }
     if (tag === 'Set') { const s = new OSet(), add = SSet.prototype.add; seen.set(v, s); for (const x of SSet.prototype.values.call(v)) add.call(s, cloneValue(x, seen)); return s; }
-    if (tag === 'DOMException') { const e = new DOMException(v.message, v.name); seen.set(v, e); return e; }
-    for (let p = Object.getPrototypeOf(v); p; p = Object.getPrototypeOf(p)) if (PLATFORM_PROTOS.has(p)) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
+    for (let p = Object.getPrototypeOf(v); p; p = Object.getPrototypeOf(p)) if (p !== DOMException.prototype && PLATFORM_PROTOS.has(p)) throw new DOMException(`${tag} object could not be cloned.`, 'DataCloneError');
     const o = Array.isArray(v) ? [] : {}; seen.set(v, o); for (const k of Object.keys(v)) o[k] = cloneValue(v[k], seen); return o;
 }
 const xferPorts = (o, t) => { const tr = o && typeof o === 'object' ? o.transfer : t; return (tr && typeof tr[Symbol.iterator] === 'function' ? [...tr] : []).filter(p => p && typeof p.postMessage === 'function' && typeof p.start === 'function'); };

@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8"><title>DOMException data and clone graph regressions</title>
+<script src="/resources/testharness.js"></script><script src="/resources/testharnessreport.js"></script>
+<body><script>
+function exception(){return new DOMException('original message','InvalidStateError');}
+function checkException(e){assert_true(e instanceof DOMException);assert_equals(e.name,'InvalidStateError');assert_equals(e.message,'original message');assert_equals(e.code,11);}
+test(()=>{let e=exception();checkException(e);assert_false(Object.hasOwn(e,'name'));assert_false(Object.hasOwn(e,'message'));},'DOMException data is exposed through inherited IDL attributes');
+test(()=>{let e=new DOMException('message','toString');assert_equals(e.code,0);},'Unknown names do not inherit legacy code values from Object.prototype');
+test(()=>{let e=exception();Object.defineProperty(e,'name',{value:'SyntaxError'});assert_equals(e.code,11);},'Legacy code uses associated name instead of a shadowing property');
+for(const property of ['name','message','code'])test(()=>{const get=Object.getOwnPropertyDescriptor(DOMException.prototype,property).get;for(const value of [{},null,DOMException.prototype,Object.create(DOMException.prototype)])assert_throws_js(TypeError,()=>get.call(value));},'IDL '+property+' getter rejects unbranded receivers');
+test(()=>assert_throws_js(TypeError,()=>new DOMException(Symbol('m'))),'Message DOMString rejects symbols');
+test(()=>assert_throws_js(TypeError,()=>new DOMException('m',Symbol('n'))),'Name DOMString rejects symbols');
+test(()=>{let seen=[];let e=new DOMException({toString(){seen.push('message');return'm';}},{toString(){seen.push('name');return'n';}});assert_array_equals(seen,['message','name']);assert_equals(e.message,'m');assert_equals(e.name,'n');},'DOMString conversions run once in declaration order');
+test(()=>{let e=exception();checkException(structuredClone(e));},'Clone retains DOMException associated data');
+for(const property of ['name','message'])test(()=>{let e=exception(),reads=0;Object.defineProperty(e,property,{get(){reads++;throw new Error('public getter read');}});checkException(structuredClone(e));assert_equals(reads,0);},'Clone ignores shadowing '+property+' getter');
+test(()=>{let e=exception(),reads=0;Object.defineProperty(e,Symbol.toStringTag,{get(){reads++;throw new Error('tag read');}});checkException(structuredClone(e));assert_equals(reads,0);},'Clone identifies DOMException without reading Symbol.toStringTag');
+test(()=>{let e=exception();Object.setPrototypeOf(e,null);checkException(structuredClone(e));},'Changed prototype does not erase DOMException internal brand');
+test(()=>{let e=exception();let r=structuredClone({a:e,b:e,nested:[e]});checkException(r.a);assert_equals(r.a,r.b);assert_equals(r.a,r.nested[0]);assert_not_equals(r.a,e);},'Repeated DOMException references remain shared');
+test(()=>{let e=exception();e.extra={uncloneable:()=>{}};let r=structuredClone(e);checkException(r);assert_false(Object.hasOwn(r,'extra'));},'DOMException cloning excludes arbitrary enumerable author properties');
+test(()=>{let fake={name:'Fake',message:'ordinary',value:42,[Symbol.toStringTag]:'DOMException'};let r=structuredClone(fake);assert_false(r instanceof DOMException);assert_equals(r.value,42);assert_equals(r.name,'Fake');assert_equals(Object.getPrototypeOf(r),Object.prototype);},'Forged DOMException tag remains an ordinary object');
+test(()=>{let fake=Object.create(DOMException.prototype);fake.value=42;let r=structuredClone(fake);assert_false(r instanceof DOMException);assert_equals(r.value,42);assert_equals(Object.getPrototypeOf(r),Object.prototype);},'Forged DOMException prototype remains an ordinary object');
+test(()=>{let e=new Error('cyclic');e.cause=e;let r=structuredClone(e);assert_true(r instanceof Error);assert_equals(r.cause,r);assert_equals(r.message,'cyclic');},'Error cause may refer to the error itself');
+test(()=>{let a=new TypeError('a'),b=new RangeError('b');a.cause=b;b.cause=a;let r=structuredClone([a,b,a]);assert_true(r[0] instanceof TypeError);assert_true(r[1] instanceof RangeError);assert_equals(r[0].cause,r[1]);assert_equals(r[1].cause,r[0]);assert_equals(r[0],r[2]);},'Mutually recursive Error causes preserve identity');
+test(()=>{let e=new Error('own'),calls=0;Object.defineProperty(e,'cause',{get(){calls++;return e;}});let r=structuredClone(e);assert_false(Object.hasOwn(r,'cause'));assert_equals(calls,0);},'Accessor error causes are not invoked or cloned');
+promise_test(async t=>{let iframe=document.createElement('iframe');t.add_cleanup(()=>iframe.remove());let loaded=new Promise(resolve=>iframe.onload=resolve);iframe.srcdoc='<script>window.saved=new DOMException("original message","InvalidStateError");<\/script>';document.body.append(iframe);await loaded;let other=iframe.contentWindow.saved;let get=Object.getOwnPropertyDescriptor(DOMException.prototype,'name').get;assert_equals(get.call(other),'InvalidStateError');checkException(structuredClone(other));},'DOMException associated data and getters work across same-origin realms');
+</script>
