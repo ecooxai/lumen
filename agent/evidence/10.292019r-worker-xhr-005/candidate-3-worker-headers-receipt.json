@@ -1,0 +1,205 @@
+{
+  "kind": "dedicated-worker-public-api-http-regression",
+  "officialWPT": false,
+  "nativeLumenExecuted": true,
+  "chromiumControlExecuted": false,
+  "browserVersion": null,
+  "binary": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-linux-worker/build-candidate-3/jsrun",
+  "binarySHA256": "a7fe21ec430f55ef0e5a4441e637e6d804861fd197895beb72c7f897d9767a55",
+  "fixtureSHA256": "9b2c3193da9ec4d5b53ab551c3c23b5f856f1cac5ec500cc519520358874c8a0",
+  "htmlSHA256": "134b85e6bc373e2a22572be05052b7f2adadd0fd77e8c11f5ba89c10e84925fd",
+  "workerTemplateSHA256": "72a6323fc656c5cbe33b1953c90868e8e32563db2acd593cc825f63fe1b0634a",
+  "caseManifestSHA256": "b11ca57547bd3a2af341c9c3ee45769988952ede5e4b8bbda306fc458287d14e",
+  "started": "2026-10-29T13:40:45.582582+00:00",
+  "ended": "2026-10-29T13:40:46.751106+00:00",
+  "durationSeconds": 1.1567414549972455,
+  "total": 36,
+  "passed": 36,
+  "failed": 0,
+  "rows": [
+    {
+      "i": 0,
+      "name": "fetch: same-origin Set-Cookie is hidden",
+      "ok": true
+    },
+    {
+      "i": 1,
+      "name": "fetch: same-origin Set-Cookie2 is hidden",
+      "ok": true
+    },
+    {
+      "i": 2,
+      "name": "fetch: same-origin custom header is visible",
+      "ok": true
+    },
+    {
+      "i": 3,
+      "name": "fetch: cross-origin private header is hidden",
+      "ok": true
+    },
+    {
+      "i": 4,
+      "name": "fetch: cross-origin safelisted Content-Type is visible",
+      "ok": true
+    },
+    {
+      "i": 5,
+      "name": "fetch: cross-origin CORS control header is hidden",
+      "ok": true
+    },
+    {
+      "i": 6,
+      "name": "fetch: explicitly exposed custom header is visible",
+      "ok": true
+    },
+    {
+      "i": 7,
+      "name": "fetch: explicit exposure keeps other custom header hidden",
+      "ok": true
+    },
+    {
+      "i": 8,
+      "name": "fetch: explicit exposure cannot reveal Set-Cookie",
+      "ok": true
+    },
+    {
+      "i": 9,
+      "name": "fetch: explicit exposure cannot reveal Set-Cookie2",
+      "ok": true
+    },
+    {
+      "i": 10,
+      "name": "fetch: credentialed wildcard keeps private header hidden",
+      "ok": true
+    },
+    {
+      "i": 11,
+      "name": "fetch: credentialed wildcard retains safelisted header",
+      "ok": true
+    },
+    {
+      "i": 12,
+      "name": "fetch: uncredentialed wildcard exposes custom header",
+      "ok": true
+    },
+    {
+      "i": 13,
+      "name": "fetch: uncredentialed wildcard never exposes cookie",
+      "ok": true
+    },
+    {
+      "i": 14,
+      "name": "fetch: credentialed explicit exposure remains effective",
+      "ok": true
+    },
+    {
+      "i": 15,
+      "name": "fetch: credentialed wildcard plus explicit name exposes only explicit name",
+      "ok": true
+    },
+    {
+      "i": 16,
+      "name": "fetch: cross-origin redirect does not reveal private headers",
+      "ok": true
+    },
+    {
+      "i": 17,
+      "name": "fetch: missing CORS permission rejects response",
+      "ok": true
+    },
+    {
+      "i": 18,
+      "name": "xhr: same-origin Set-Cookie is hidden",
+      "ok": true
+    },
+    {
+      "i": 19,
+      "name": "xhr: same-origin Set-Cookie2 is hidden",
+      "ok": true
+    },
+    {
+      "i": 20,
+      "name": "xhr: same-origin custom header is visible",
+      "ok": true
+    },
+    {
+      "i": 21,
+      "name": "xhr: cross-origin private header is hidden",
+      "ok": true
+    },
+    {
+      "i": 22,
+      "name": "xhr: cross-origin safelisted Content-Type is visible",
+      "ok": true
+    },
+    {
+      "i": 23,
+      "name": "xhr: cross-origin CORS control header is hidden",
+      "ok": true
+    },
+    {
+      "i": 24,
+      "name": "xhr: explicitly exposed custom header is visible",
+      "ok": true
+    },
+    {
+      "i": 25,
+      "name": "xhr: explicit exposure keeps other custom header hidden",
+      "ok": true
+    },
+    {
+      "i": 26,
+      "name": "xhr: explicit exposure cannot reveal Set-Cookie",
+      "ok": true
+    },
+    {
+      "i": 27,
+      "name": "xhr: explicit exposure cannot reveal Set-Cookie2",
+      "ok": true
+    },
+    {
+      "i": 28,
+      "name": "xhr: credentialed wildcard keeps private header hidden",
+      "ok": true
+    },
+    {
+      "i": 29,
+      "name": "xhr: credentialed wildcard retains safelisted header",
+      "ok": true
+    },
+    {
+      "i": 30,
+      "name": "xhr: uncredentialed wildcard exposes custom header",
+      "ok": true
+    },
+    {
+      "i": 31,
+      "name": "xhr: uncredentialed wildcard never exposes cookie",
+      "ok": true
+    },
+    {
+      "i": 32,
+      "name": "xhr: credentialed explicit exposure remains effective",
+      "ok": true
+    },
+    {
+      "i": 33,
+      "name": "xhr: credentialed wildcard plus explicit name exposes only explicit name",
+      "ok": true
+    },
+    {
+      "i": 34,
+      "name": "xhr: cross-origin redirect does not reveal private headers",
+      "ok": true
+    },
+    {
+      "i": 35,
+      "name": "xhr: missing CORS permission rejects response",
+      "ok": true
+    }
+  ],
+  "infrastructureErrors": [],
+  "monitor": "Run with the external 1Hz monitor; no embedded resource claim",
+  "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSHA256": "f856a3746923e3bb52a8a3b28fafae0aece43abaebbe2a8267f3839993e4d40b"
+}

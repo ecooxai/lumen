@@ -7,12 +7,13 @@ const { W, EventTarget, Event, ProgressEvent, DOMException, Headers, URL, Blob,
 const def = (object, name, value) => Object.defineProperty(object, name, { value, writable: true, configurable: true });
 const illegal = () => { throw new TypeError('Illegal constructor'); };
 const toU32 = value => Number(value) >>> 0;
-const xhrBrands = new WeakSet(), handlers = new WeakMap();
+const xhrBrands = new WeakSet(), targetBrands = new WeakSet(), handlers = new WeakMap();
 function installHandlers(prototype, unused, names) {
-    for (const name of names) Object.defineProperty(prototype, 'on' + name, {
+    for (const name of names) { Object.defineProperty(prototype, 'on' + name, {
         enumerable: true, configurable: true,
-        get() { return handlers.get(this)?.get(name)?.value || null; },
+        get() { if (!targetBrands.has(this)) throw new TypeError('Illegal invocation'); return handlers.get(this)?.get(name)?.value || null; },
         set(value) {
+            if (!targetBrands.has(this)) throw new TypeError('Illegal invocation');
             let map = handlers.get(this); if (!map) { map = new Map(); handlers.set(this, map); }
             let state = map.get(name);
             value = typeof value === 'function' ? value : null;
@@ -26,6 +27,10 @@ function installHandlers(prototype, unused, names) {
             }
         },
     });
+    const descriptor = Object.getOwnPropertyDescriptor(prototype, 'on' + name);
+    Object.defineProperty(descriptor.get, 'name', { value: 'get on' + name });
+    Object.defineProperty(descriptor.set, 'name', { value: 'set on' + name });
+    }
 }
 const N = {
     fetch(method, url, headers, body, callback, unusedHead, unusedChunk, credentials) {
@@ -42,21 +47,16 @@ const localBody = url => {
     const blob = objectURLs.get(url.replace(/#.*$/, ''));
     return blobFileOps.isBlob(blob) ? [blobFileOps.copyBuffer(blob), blobFileOps.type(blob)] : null;
 };
-function blobResponse(url, body, range) {
-    let bytes = new Uint8Array(body[0]), status = 200, text = 'OK';
-    const headers = ['content-type', body[1] || '', 'content-length', String(bytes.length)];
-    if (range && /^bytes=/.test(range)) {
-        const match = /^bytes=(\d*)-(\d*)$/.exec(range);
-        if (match && (match[1] || match[2])) {
-            const size = bytes.length;
-            let start = match[1] ? +match[1] : Math.max(0, size - +match[2]);
-            let end = match[1] && match[2] ? Math.min(size - 1, +match[2]) : size - 1;
-            if (start >= size || end < start) return null;
-            bytes = bytes.slice(start, end + 1); status = 206; text = 'Partial Content';
-            headers[3] = String(bytes.length); headers.push('content-range', 'bytes ' + start + '-' + end + '/' + size);
-        }
-    }
-    return [status, text, headers, bytes];
+function blobResponse(url, lb, range) {
+    const buf = lb[0], n = buf.byteLength, h = ['Content-Type', lb[1], 'Content-Length', String(n)];
+    if (range == null || !url.startsWith('blob:')) return [200, 'OK', h, buf];
+    const m = /^[\t ]*bytes[\t ]*=[\t ]*(\d*)[\t ]*-[\t ]*(\d*)[\t ]*$/.exec(String(range));
+    if (!m || (m[1] === '' && m[2] === '')) return null;
+    let a, b;
+    if (m[1] === '') { a = Math.max(0, n - +m[2]); b = n - 1; }
+    else { a = +m[1]; b = m[2] === '' ? n - 1 : Math.min(+m[2], n - 1); if (m[2] !== '' && +m[2] < a) return null; }
+    if (a >= n || (m[1] === '' && +m[2] === 0)) return null;
+    return [206, 'Partial Content', ['Content-Type', lb[1], 'Content-Length', String(b - a + 1), 'Content-Range', `bytes ${a}-${b}/${n}`], buf.slice(a, b + 1)];
 }
 // Fetch "append a request Origin header": CORS requests and non-GET/HEAD requests carry the document origin.
 function withOrigin(flat, url, method, mode) {
@@ -170,7 +170,7 @@ const xhrTargetToken = {};
 class XMLHttpRequestEventTarget extends EventTarget {
     constructor(...args) {
         if (args[0] !== xhrTargetToken) illegal();
-        super();
+        super(); targetBrands.add(this);
     }
 }
 installHandlers(XMLHttpRequestEventTarget.prototype, false, ['abort', 'error', 'load', 'loadend', 'loadstart', 'progress', 'timeout']);
@@ -201,7 +201,8 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
     _fire(t, tgt = this, n = 0, tot = 0, lc = false) { dispatch(tgt, new ProgressEvent(t, { lengthComputable: lc, loaded: n, total: tot })); }
     _terminate() { this._gen++; if (this._id) { N.abort(this._id); this._id = 0; } if (this._timer) { clearTimeout(this._timer); this._timer = 0; } }
     _reset() { this._st = 0; this._stt = ''; this._url = ''; this._hdrs = []; this._body = null; this._resp = undefined; }
-    open(method, url, async, user, pass) {
+    open(method, url, ...optional) {
+        let [async, user, pass] = optional;
         if (arguments.length < 2) throw new TypeError(`Failed to execute 'open' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`);
         method = String(method); url = String(url);
         if (arguments.length > 2) { async = !!async; if (user != null) user = String(user); if (pass != null) pass = String(pass); } else async = true;
@@ -228,6 +229,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
     }
     _hdrList() { const a = []; for (let i = 0; i + 1 < this._hdrs.length; i += 2) a.push([this._hdrs[i].toLowerCase(), this._hdrs[i + 1]]); return a; }
     getResponseHeader(k) {
+        if (!arguments.length) throw new TypeError('getResponseHeader requires a header name');
         if (this._rs < 2 || !this._hdrs.length) return null;
         k = String(k).toLowerCase(); if (k === 'set-cookie' || k === 'set-cookie2') return null;
         const v = this._hdrList().filter(h => h[0] === k).map(h => h[1]);
@@ -239,7 +241,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         for (const [k, v] of this._hdrList()) { if (k === 'set-cookie' || k === 'set-cookie2') continue; m.set(k, m.has(k) ? m.get(k) + ', ' + v : v); }
         return [...m.keys()].sort((a, b) => a < b ? -1 : a > b ? 1 : 0).map(k => k + ': ' + m.get(k) + '\r\n').join('');
     }
-    overrideMimeType(m) { if (this._rs >= 3) throw new DOMException("MimeType cannot be overridden when the state is LOADING or DONE.", 'InvalidStateError'); this._mime = String(m); }
+    overrideMimeType(m) { if (!arguments.length) throw new TypeError('overrideMimeType requires a MIME type'); if (this._rs >= 3) throw new DOMException("MimeType cannot be overridden when the state is LOADING or DONE.", 'InvalidStateError'); this._mime = String(m); }
     _errorSteps(ev) {
         const gen = this._gen;
         this._rs = 4; this._send = false; this._reset();
@@ -268,7 +270,7 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         this._send = false; this._state(4); if (gen !== this._gen) return;
         this._fire('load', this, n, tot, lc); if (gen !== this._gen) return; this._fire('loadend', this, n, tot, lc);
     }
-    send(body) {
+    send(body = null) {
         if (this._rs !== 1 || this._send) throw new DOMException("The object's state must be OPENED.", 'InvalidStateError');
         if (this._m !== 'GET' && this._m !== 'HEAD' && body != null) {
             const isDoc = false; // Document is not exposed in a worker.

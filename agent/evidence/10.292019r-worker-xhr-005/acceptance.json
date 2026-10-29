@@ -1,0 +1,37 @@
+{
+  "scope": "Source-bound native Linux v3 build and real worker lifecycle/header/conversion regressions; separate supplemental WPT evidence",
+  "platform": "Linux x86_64",
+  "v8": "15.7.112.12 prebuilt",
+  "nativeSourceManifestSHA256": "e866c6a84a5094eb173443db4e987e90ad438939b933a6dc2313f329aaa8b034",
+  "binarySHA256": "a7fe21ec430f55ef0e5a4441e637e6d804861fd197895beb72c7f897d9767a55",
+  "results": {
+    "workerLifecycle": {
+      "pass": 266,
+      "total": 266
+    },
+    "asyncWorkerLifecycle": {
+      "pass": 118,
+      "total": 118
+    },
+    "workerHeaders": {
+      "pass": 36,
+      "total": 36
+    },
+    "progressEventConversion": {
+      "baselineV2Pass": 12,
+      "candidateV3Pass": 16,
+      "total": 16
+    }
+  },
+  "buildAnomalyPreserved": {
+    "candidate": 2,
+    "makeExitCode": 0,
+    "lifecycleBinaryBytes": 0,
+    "lifecycleExecution": "PermissionError; not accepted",
+    "jsrunAndAsyncBinary": "Valid independent artifacts; actual results retained"
+  },
+  "performanceAcceptance": false,
+  "fullWPTRate": null,
+  "projectScore": 55,
+  "scoreBasis": "Original project score retained; subset results are not product score."
+}

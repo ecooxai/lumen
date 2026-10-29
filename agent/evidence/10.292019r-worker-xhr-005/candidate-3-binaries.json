@@ -1,0 +1,30 @@
+{
+  "stage": "native-linux-worker-candidate-3",
+  "sourceManifest": "candidate-3-source-manifest.json",
+  "buildCommand": "candidate-3-command.json",
+  "v8": "15.7.112.12",
+  "platform": "linux-x86_64",
+  "rtc": false,
+  "webtransport": false,
+  "files": {
+    "out/10292019r-linux-worker/build-candidate-3/jsrun": {
+      "bytes": 3178104,
+      "sha256": "a7fe21ec430f55ef0e5a4441e637e6d804861fd197895beb72c7f897d9767a55",
+      "executable": true
+    },
+    "out/10292019r-linux-worker/build-candidate-3/test_worker_lifecycle": {
+      "bytes": 3213552,
+      "sha256": "3c10eb2f30e05c41596744a32153c0965bc7139c81309370e83c11ab90e26576",
+      "executable": true
+    },
+    "out/10292019r-linux-worker/build-candidate-3/test_worker_async_lifecycle": {
+      "bytes": 3228128,
+      "sha256": "e05399c2aba72f0c0ba4f787013ca1e6325ccbc69e852448946b5e1ee1f41cc1",
+      "executable": true
+    },
+    "out/10292019r-linux-worker/build-candidate-3/icudtl.dat": {
+      "bytes": 10824432,
+      "sha256": "02a01b3188b6a41a756f7322fdb5e6b5ca6573b327b01dfc8ed662d571a6f769"
+    }
+  }
+}

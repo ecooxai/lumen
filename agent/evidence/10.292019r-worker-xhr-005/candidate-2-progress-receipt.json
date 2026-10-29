@@ -1,0 +1,81 @@
+{
+  "kind": "native dedicated-worker ProgressEvent conversion regression",
+  "officialWPT": false,
+  "binary": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-linux-worker/build-candidate-2/jsrun",
+  "binarySHA256": "61212b0338a55213ad0fe90948195c7aebb6b833a68bad5f42924a2e04447274",
+  "fixtureSHA256": "2b5d2e1478d27798c33ec81c91b9c4597737929d6719cd6f331a1863271bf9e2",
+  "driverSHA256": "a59712bf12b6cfa8341d88a968b08e28d53c26e60b2a7898b046a9f83fabc879",
+  "finishedUTC": "2026-10-29T13:42:43.259184+00:00",
+  "durationSeconds": 2.130096513999888,
+  "returnCode": 0,
+  "scheduled": 16,
+  "recorded": 16,
+  "passed": 12,
+  "rows": [
+    {
+      "name": "negative zero loaded",
+      "passed": true
+    },
+    {
+      "name": "negative zero total",
+      "passed": true
+    },
+    {
+      "name": "negative modulus loaded",
+      "passed": false
+    },
+    {
+      "name": "negative modulus total",
+      "passed": false
+    },
+    {
+      "name": "negative double modulus loaded",
+      "passed": false
+    },
+    {
+      "name": "negative double modulus total",
+      "passed": false
+    },
+    {
+      "name": "NaN loaded",
+      "passed": true
+    },
+    {
+      "name": "NaN total",
+      "passed": true
+    },
+    {
+      "name": "infinity loaded",
+      "passed": true
+    },
+    {
+      "name": "infinity total",
+      "passed": true
+    },
+    {
+      "name": "positive fraction loaded",
+      "passed": true
+    },
+    {
+      "name": "positive fraction total",
+      "passed": true
+    },
+    {
+      "name": "above modulus loaded",
+      "passed": true
+    },
+    {
+      "name": "above modulus total",
+      "passed": true
+    },
+    {
+      "name": "bigint rejects",
+      "passed": true
+    },
+    {
+      "name": "symbol rejects",
+      "passed": true
+    }
+  ],
+  "infrastructureError": null
+}

@@ -1,0 +1,27 @@
+{
+  "stage": "native-linux-worker-candidate-2",
+  "sourceManifest": "candidate-2-source-manifest.json",
+  "buildCommand": "candidate-2-command.json",
+  "v8": "15.7.112.12",
+  "platform": "linux-x86_64",
+  "rtc": false,
+  "webtransport": false,
+  "files": {
+    "out/10292019r-linux-worker/build-candidate-2/jsrun": {
+      "bytes": 3178104,
+      "sha256": "61212b0338a55213ad0fe90948195c7aebb6b833a68bad5f42924a2e04447274"
+    },
+    "out/10292019r-linux-worker/build-candidate-2/test_worker_lifecycle": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "out/10292019r-linux-worker/build-candidate-2/test_worker_async_lifecycle": {
+      "bytes": 3228128,
+      "sha256": "a8a757c960a8e7dfd182632b80a91781645b490788a5f64110505131a5e2498b"
+    },
+    "out/10292019r-linux-worker/build-candidate-2/icudtl.dat": {
+      "bytes": 10824432,
+      "sha256": "02a01b3188b6a41a756f7322fdb5e6b5ca6573b327b01dfc8ed662d571a6f769"
+    }
+  }
+}

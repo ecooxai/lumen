@@ -251,7 +251,7 @@ function localBody(url) {
 function blobResponse(url, lb, range) {
     const buf = lb[0], n = buf.byteLength, h = ['Content-Type', lb[1], 'Content-Length', String(n)];
     if (range == null || !url.startsWith('blob:')) return [200, 'OK', h, buf];
-    const m = /^bytes=(\d*)-(\d*)$/.exec(String(range).replace(/\s+/g, ''));
+    const m = /^[\t ]*bytes[\t ]*=[\t ]*(\d*)[\t ]*-[\t ]*(\d*)[\t ]*$/.exec(String(range));
     if (!m || (m[1] === '' && m[2] === '')) return null;
     let a, b;
     if (m[1] === '') { a = Math.max(0, n - +m[2]); b = n - 1; }

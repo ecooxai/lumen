@@ -774,9 +774,37 @@ const blobFileOps = createBlobFileInterfaces(nativeIDL, {
     stream: bytes => new ReadableStream({ start(controller) { controller.enqueue(bytes); controller.close(); } }),
 });
 const {Blob, File} = blobFileOps;
-class ProgressEvent extends Event {
-    constructor(type, init) { super(type, init); init = init || {}; this.lengthComputable = !!init.lengthComputable; this.loaded = init.loaded || 0; this.total = init.total || 0; }
+const progressEventSlots = new WeakMap();
+const progressEventState = event => {
+    const state = progressEventSlots.get(event);
+    if (!state) throw new TypeError('Illegal invocation');
+    return state;
+};
+function progressUnsignedLongLong(value) {
+    value = +value;
+    if (!Number.isFinite(value) || value === 0) return 0;
+    const remainder = Math.trunc(value) % 18446744073709551616;
+    if (remainder === 0) return 0;
+    return remainder < 0 ? remainder + 18446744073709551616 : remainder;
 }
+class ProgressEvent extends Event {
+    constructor(type, init = {}) {
+        if (!arguments.length) throw new TypeError('ProgressEvent requires a type');
+        if (init !== null && typeof init !== 'object' && typeof init !== 'function')
+            throw new TypeError('ProgressEvent options must be a dictionary');
+        super(type, init); init = init || {};
+        progressEventSlots.set(this, { lengthComputable: !!init.lengthComputable,
+            loaded: progressUnsignedLongLong(init.loaded), total: progressUnsignedLongLong(init.total) });
+    }
+    get lengthComputable() { return progressEventState(this).lengthComputable; }
+    get loaded() { return progressEventState(this).loaded; }
+    get total() { return progressEventState(this).total; }
+}
+for (const name of ['lengthComputable', 'loaded', 'total']) {
+    const descriptor = Object.getOwnPropertyDescriptor(ProgressEvent.prototype, name);
+    descriptor.enumerable = true; Object.defineProperty(ProgressEvent.prototype, name, descriptor);
+}
+Object.defineProperty(ProgressEvent.prototype, Symbol.toStringTag, { value: 'ProgressEvent', configurable: true });
 const { FileReader, FileReaderSync } = createFileReaderInterfaces(nativeIDL, {
     schedule: callback => W.timer(callback, 0, false, []),
     cancel: W.clear,
