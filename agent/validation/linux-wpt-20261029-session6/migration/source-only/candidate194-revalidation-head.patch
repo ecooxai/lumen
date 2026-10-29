@@ -1,0 +1,36 @@
+diff --git a/src/net/http.c b/src/net/http.c
+index 1f5b253..94e2df5 100644
+--- a/src/net/http.c
++++ b/src/net/http.c
+@@ -587,7 +587,7 @@ static void sink_out(Dec *d, SB *raw) {
+ static bool stream_cancelled(void) { return t_sink_stop || (t_stream && __atomic_load_n(&t_stream->cancelled, __ATOMIC_RELAXED)); }
+ 
+ /* ---------- single HTTP exchange ---------- */
+-static NetResponse *http_once(const char *method, const URL *u, const Headers *hdrs, const char *body, size_t body_len, bool cookies, bool *retryable) {
++static NetResponse *http_once(const char *method, const URL *u, const Headers *hdrs, const char *body, size_t body_len, bool cookies, bool revalidating, bool *retryable) {
+     const char *ua = user_agent_for_host(u->host);
+     NetResponse *r = xcalloc(1, sizeof *r);
+     r->t_start = now_ms();
+@@ -663,8 +663,9 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
+ #endif
+     r->status = status;
+     bool redirect = status >= 300 && status < 400 && status != 304 && headers_get(&r->headers, "location");
+-    /* A304 is merged with a stored response before it becomes observable. */
+-    bool streaming = t_stream && !redirect && status != 304;
++    /* Only a cache validation 304 is hidden until its stored response is
++       merged. An unsolicited 304 still delivers the ordinary head event. */
++    bool streaming = t_stream && !redirect && !(revalidating && status == 304);
+     Dec dec = {0};
+     NetRequest *sinkreq = t_sink;
+     bool sinking = false;
+@@ -1022,8 +1023,8 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
+         SB copy; sb_init(&copy);
+         if (t_stream && cacheable) { t_copy = &copy; t_copy_over = false; }
+         t_url = url; t_sink = req->on_head && req->sink ? req : NULL; t_sink_stop = false;
+-        r = http_once(method, &u, hdrs, body, blen, !req->no_cookies, &retry);
+-        if (r->error && retry) { net_response_free(r); r = http_once(method, &u, hdrs, body, blen, !req->no_cookies, &retry); }
++        r = http_once(method, &u, hdrs, body, blen, !req->no_cookies, cached != NULL, &retry);
++        if (r->error && retry) { net_response_free(r); r = http_once(method, &u, hdrs, body, blen, !req->no_cookies, cached != NULL, &retry); }
+         t_sink = NULL; t_copy = NULL; sb_free(&copy);
+         if (cached && r->status == 304) { NetResponse *m = http_cache_revalidated(url, &req->headers, cached, r); net_response_free(r); r = m; *cache_state = 'R'; }
+         else {

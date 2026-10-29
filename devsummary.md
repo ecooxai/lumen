@@ -1301,3 +1301,14 @@ Current overall assessment remains pending;19/100 is historical only.
 
 ### Iteration14 / candidate193 — cache policy source checkpoint
 - Prototype began approximately19:27UTC; integrated2026-10-29T19:37:57.057772+00:00. Seven production files andindependent tests/test_http_cache.c; alloldCHECKlines preserved. Adds cache-only hit/miss/stale behavior through privatepolicy, existing cache-mode paths, cachedredirectstatus/reason/body preservation andlegacy1read compatibility. Newlyextended nativehit-counter and frozen22upstream gates pending. Scoped scorepending; overallpending. Agents: engine_lead implementation/integration,conformance_qa independenttests/review.
+
+
+### Iteration 14 / candidate 193 — preserved regression checkpoint
+
+Candidate 193 completed its first validation at 2026-10-29T19:51:08.495804+00:00. The source commit is ddff028a8879bdf8378f888568b2d8756a31b725 and immutable browser SHA256 is 6ef88674ff1583d348c33c1a7119d6cc90b7c3c9487b7094a077abadd6e241c2. Build and startup passed in 66.08 seconds, from 19:39:06.625245 to 19:40:12.704253 UTC. All 632 recorded source-set entries remained unchanged, digest f13a4123bb69d67a477acf13775974d5441b7795050f05ea727a4c4b5d50d53b. The 66 one-second samples show build-tree CPU median 131.003%, maximum 192.997%, peak summed RSS 733.053 MB and PSS 528.678 MB. Owned build and monitor processes exited. These are compilation measurements.
+
+Independent fresh native validation passed 139/140 entries (99.29/100 scoped), including the extended cache hit-counter controls, but failed the existing http_zstd unsolicited-304 streaming-head control. Candidate 193 remains unaccepted. The failure is a real regression: hiding every 304 suppressed a required ordinary head callback. Original failed output, JUnit, source seals and telemetry remain under session6/qa-native193. The whole 22-file browser network comparison is retained separately pending its final review. Iteration duration since the approximately 19:27 prototype start is 24.142 minutes; cumulative task wall time is 145.358 minutes. Agents: engine_lead implementation, conformance_qa independent tests, release_ops runtime/status, root project management. Overall assessment remains pending.
+
+### Iteration 15 / candidate 194 — scoped 304 delivery repair
+
+Started 2026-10-29T19:50:41.756132+00:00; source checkpoint 2026-10-29T19:51:08.495804+00:00. A private http_once flag now distinguishes an actual stored-response revalidation from an unsolicited 304. Only the former delays its head until the stored response is merged. Ordinary streaming and download-sink behavior remains on its existing path. No test expectations changed. Native http_zstd, http_cache, the full 140 non-URL entries and frozen 22 browser network files are the acceptance gates. Focused score and overall assessment are pending. Agents: engine_lead and conformance_qa.

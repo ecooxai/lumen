@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>Form execCommand insertion controls</title><body><script>
+(()=>{
+const cases=[];const payloads=[["ascii","ABC"],["astral","\ud83d\ude00"],["family","\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67\u200d\ud83d\udc66"],["combining","e\u0301"]];
+for(const max of [null,"0","1","2","10","bogus"])for(const [label,text]of payloads)cases.push({name:"empty/"+String(max)+"/"+label,tag:"input",type:"text",max,value:"",start:0,end:0,text});
+cases.push(
+{name:"replace-middle",tag:"input",type:"text",max:"4",value:"ABCD",start:1,end:3,text:"XY"},
+{name:"replace-all-astral",tag:"input",type:"text",max:"2",value:"ABCD",start:0,end:4,text:"\ud83d\ude00X"},
+{name:"already-overlong-caret",tag:"input",type:"text",max:"2",value:"ABCD",start:2,end:2,text:"X"},
+{name:"already-overlong-selection",tag:"input",type:"text",max:"2",value:"ABCD",start:1,end:3,text:"X"},
+{name:"zero-replacement",tag:"input",type:"text",max:"0",value:"AB",start:0,end:2,text:"X"},
+{name:"textarea-lines",tag:"textarea",max:null,value:"ab",start:1,end:1,text:"X\r\nY\nZ"},
+{name:"input-lines",tag:"input",type:"text",max:null,value:"ab",start:1,end:1,text:"X\r\nY\nZ"},
+{name:"textarea-family-limit",tag:"textarea",max:"10",value:"",start:0,end:0,text:payloads[2][1]},
+{name:"input-inert-markup",tag:"input",type:"text",max:null,value:"",start:0,end:0,text:"<b>A</b>&amp;<br>B"},
+{name:"textarea-inert-markup",tag:"textarea",max:null,value:"",start:0,end:0,text:"<b>A</b>&amp;<br>B"},
+{name:"input-hidden-and-blocks",tag:"input",type:"text",max:null,value:"",start:0,end:0,text:"<style>.x{color:red}</style><template>T</template><script>window.__qaExecSideEffect=1<"+"/script><b>A</b><div>B</div><p>C</p><br>D"},
+{name:"textarea-hidden-and-blocks",tag:"textarea",max:null,value:"",start:0,end:0,text:"<style>.x{color:red}</style><template>T</template><script>window.__qaExecSideEffect=1<"+"/script><b>A</b><div>B</div><p>C</p><br>D"},
+{name:"input-inert-script",tag:"input",type:"text",max:null,value:"",start:0,end:0,text:"<script>window.__qaExecSideEffect=1<"+"/script>X"}
+);
+for(const mode of ["readonly","disabled"])for(const tag of ["input","textarea"])cases.push({name:tag+"/"+mode,tag,type:"text",max:"10",value:"AB",start:1,end:1,text:"X",mode});
+for(const type of ["password","search","email","number","checkbox","button"])cases.push({name:"input-type/"+type,tag:"input",type,max:"3",value:"AB",start:1,end:1,text:"X"});
+const rows=[];const defined=x=>x===undefined?"<undefined>":x;
+for(const c of cases)for(const command of ["InsertText","InsertHTML"]){
+const e=document.createElement(c.tag);if(c.type)e.type=c.type;if(c.max!==null)e.setAttribute("maxlength",c.max);e.value=c.value;if(c.mode==="readonly")e.readOnly=true;if(c.mode==="disabled")e.disabled=true;document.body.appendChild(e);
+const events=[];for(const name of ["beforeinput","input"])e.addEventListener(name,event=>events.push({type:event.type,data:event.data===undefined?null:event.data,inputType:event.inputType||"",bubbles:event.bubbles,cancelable:event.cancelable,isComposing:!!event.isComposing}));
+e.focus();let selectionError="";try{e.setSelectionRange(c.start,c.end,"forward")}catch(x){selectionError=x.name}
+const before=e.value,focused=document.activeElement===e;window.__qaExecSideEffect=0;let returned=null,exception="";try{returned=document.execCommand(command,false,c.text)}catch(x){exception=x.name}
+rows.push({name:c.name+"/"+command,values:{valueBefore:before,value:e.value,selectionStart:defined(e.selectionStart),selectionEnd:defined(e.selectionEnd),selectionDirection:defined(e.selectionDirection),selectionSetupError:selectionError,focused,returned:defined(returned),exception,events,sideEffect:window.__qaExecSideEffect}});
+e.blur();e.remove();
+}
+const total=rows.reduce((n,r)=>n+Object.keys(r.values).length,0);const raw=JSON.stringify({documentMode:document.compatMode,cases:cases.length,rows,total});const count=Math.ceil(raw.length/256);for(let i=0;i<count;i++)console.log("LUMEN_AUTHORED_CHUNK "+i+" "+JSON.stringify(raw.slice(i*256,(i+1)*256)));console.log("LUMEN_AUTHORED_DONE "+count);console.log("RESULTS FORM_EDIT_OBSERVATIONS:PASS");
+})()
+</script></body>

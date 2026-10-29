@@ -1,0 +1,9 @@
+{
+  "candidate": 194,
+  "base": "ddff028a8879bdf8378f888568b2d8756a31b725",
+  "started_utc": "2026-10-29T19:50:41.756132+00:00",
+  "before_sha256": "9761b9d9cfd40180c0a65aa5b744bfc7e3ed9b7bab09e6a9a5fc2f795a31068b",
+  "after_sha256": "b6788668f0a26af74b429246acbc8d97be1002f127ec84a60a4856af818f5ceb",
+  "patch_sha256": "e89b58d023691f0cbd4e1c17c81f3971b790d70e2fddf64d8def434e7db82e9b",
+  "scope": "Hide only a cached revalidation 304; preserve unsolicited 304 head delivery."
+}

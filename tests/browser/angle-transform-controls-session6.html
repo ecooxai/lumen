@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><title>Angle transform validation controls</title><body><script>
+(()=>{
+const tests=[
+["zero","rotate(0)"],["degrees","rotate(30deg)"],["turns","rotate(0.25turn)"],["radians","rotate(1.57079632679rad)"],["gradians","rotate(100grad)"],
+["min-angle","rotate(min(30deg, 1turn))"],["max-angle","rotate(max(30deg, 0.25turn))"],["clamp-angle","rotate(clamp(10deg, 30deg, 60deg))"],["reversed-clamp","rotate(clamp(100deg, 30deg, 60deg))"],
+["linear-calc","rotate(calc(15deg + 15deg))"],["number-product","rotate(calc(2 * 15deg))"],["angle-division","rotate(calc(1turn / 4))"],["trig-product","rotate(calc(sin(30deg) * 60deg))"],
+["skew","skew(30deg, 10deg)"],["skew-min","skewX(min(30deg, 60deg))"],["rotate3d","rotate3d(0, 0, 1, 30deg)"],
+["neighbor-functions","translate(7px, 9px) rotate(30deg)"],["neighbor-math","translateX(calc(5px + 5px)) rotate(clamp(10deg, 30deg, 60deg))"],
+["variable-angle","rotate(var(--angle))"],["variable-fallback","rotate(var(--missing, 15deg))"],["variable-calc","rotate(calc(var(--angle) + 15deg))"],["invalid-at-computed-value","rotate(var(--bad))"],
+["unitless-nonzero","rotate(5)"],["length","rotate(1px)"],["time","rotate(1s)"],["mixed-calc","rotate(calc(1px + 1deg))"],["mixed-min","rotate(min(1deg, 1px))"],["empty-min","rotate(min())"],["leading-comma","rotate(min(, 1deg))"],["trailing-comma","rotate(max(1deg,))"],["two-clamp","rotate(clamp(1deg, 2deg))"],["four-clamp","rotate(clamp(1deg, 2deg, 3deg, 4deg))"],["time-clamp","rotate(clamp(1s, 2s, 3s))"],["skew-length","skew(1px)"],["rotate3d-length","rotate3d(0, 0, 1, 1px)"],
+["zero-calc","rotate(calc(0 * 1deg))"],["unitless-math-zero","rotate(calc(0))"],["unitless-min-zero","rotate(min(0))"],["mixed-angle-calc","rotate(calc(1rad + 90deg))"],["nested-compare","rotate(min(20deg, max(10deg, 30deg)))"],["valid-comment","rotate(calc(15deg/**/ + 15deg))"],["percent","rotate(20%)"],["none-lower","rotate(clamp(none, 30deg, 60deg))"],["none-upper","rotate(clamp(10deg, 30deg, none))"],["none-both","rotate(clamp(none, 30deg, none))"],["none-preferred-invalid","rotate(clamp(10deg, none, 60deg))"],["escaped-unit","rotate(30d\\65 g)"],["escaped-function","r\\6ftate(30deg)"],["direct-comment","rotate(/* angle */30deg)"],["split-unit-comment-invalid","rotate(30/**/deg)"],["negative-zero","rotate(-0)"],["exponent-zero","rotate(0e2)"]
+];
+const rows=[];const base="position:absolute;left:100px;top:100px;width:10px;height:20px;transform-origin:0 0;transform:translateX(7px);color:rgb(1,2,3);--angle:30deg;--bad:7px";
+for(const[name,value]of tests)for(const api of["property","cssText"]){
+const e=document.createElement("div");e.style.cssText=base;document.body.appendChild(e);if(api==="property"){e.style.transform=value;e.style.borderLeftWidth="2px"}else e.style.cssText=base+";transform:"+value+";border-left-width:2px";
+const r=e.getBoundingClientRect();const round=x=>Math.round(x*1e6)/1e6;const v={specified:e.style.transform,supports:CSS.supports("transform",value),sibling:e.style.borderLeftWidth,x:round(r.x),y:round(r.y),width:round(r.width),height:round(r.height),color:e.style.color};
+rows.push({name:name+"/"+api,values:v});e.remove();
+}
+const total=rows.reduce((n,r)=>n+Object.keys(r.values).length,0);const raw=JSON.stringify({documentMode:document.compatMode,geometryTolerance:0.00001,rows,total});const count=Math.ceil(raw.length/256);for(let i=0;i<count;i++)console.log("LUMEN_AUTHORED_CHUNK "+i+" "+JSON.stringify(raw.slice(i*256,(i+1)*256)));console.log("LUMEN_AUTHORED_DONE "+count);console.log("RESULTS ANGLE_TRANSFORM_OBSERVATIONS:PASS");
+})()
+</script></body>
