@@ -95,6 +95,48 @@ def process_tree(raw, root):
             for p in process_snapshot(raw, root).values()]
 
 
+def precise_linux_cpu_times(processes):
+    """Use kernel clock ticks rather than Linux ps's whole-second CPU time.
+
+    Keep ps start identities for process-group cleanup. The independent kernel
+    start tick also detects PID reuse within the same ps lstart second. A
+    process that exits between ps and /proc is an unavailable CPU observation,
+    never an invented zero. BSD/macOS ps already supplies fractional seconds.
+    """
+    if not sys.platform.startswith('linux'):
+        return processes
+    frequency = os.sysconf('SC_CLK_TCK')
+    if not isinstance(frequency, int) or frequency <= 0:
+        raise ValueError('invalid Linux kernel clock frequency')
+    result = {}
+    for pid, observed in processes.items():
+        process = dict(observed)
+        process['cpu_time_s'] = None
+        process['cpu_start_identity'] = None
+        try:
+            raw = Path('/proc', str(pid), 'stat').read_text()
+        except FileNotFoundError:
+            result[pid] = process
+            continue
+        # comm may itself contain whitespace or parentheses. Fields after its
+        # final ')' start with state (field 3 in proc_pid_stat).
+        split = raw.rfind(') ')
+        fields = raw[split + 2:].split() if split >= 0 else []
+        try:
+            actual_pid = int(raw.split('(', 1)[0].strip())
+            parent = int(fields[1])
+            user, system, started = int(fields[11]), int(fields[12]), int(fields[19])
+        except (ValueError, IndexError) as error:
+            raise ValueError('invalid Linux process stat for PID ' + str(pid)) from error
+        if actual_pid != pid or min(user, system, started) < 0:
+            raise ValueError('invalid Linux process identity or CPU time for PID ' + str(pid))
+        if parent == observed['parent'] and not fields[0].startswith('Z'):
+            process['cpu_time_s'] = (user + system) / frequency
+            process['cpu_start_identity'] = started
+        result[pid] = process
+    return result
+
+
 def interval_cpu_percent(previous, current, elapsed):
     """Measure one interval; return None if a complete baseline is unavailable.
 
@@ -111,8 +153,8 @@ def interval_cpu_percent(previous, current, elapsed):
         before = prior.get('cpu_time_s')
         if now is None or (pid in previous and before is None):
             return None
-        identity = process.get('start_identity')
-        old_identity = prior.get('start_identity')
+        identity = process.get('cpu_start_identity', process.get('start_identity'))
+        old_identity = prior.get('cpu_start_identity', prior.get('start_identity'))
         if identity is not None and old_identity is not None and identity != old_identity:
             before = None
         elif pid in previous and (identity is None) != (old_identity is None):
@@ -304,6 +346,7 @@ def main():
     collector_error = None
     stop_reason = 'duration_complete'
     root_identity = None
+    root_cpu_identity = None
     observed_identities = {}
     cleanup = None
     natural_exit_code = None
@@ -331,7 +374,12 @@ def main():
                     collector_error = type(error).__name__ + ': ' + str(error)
                     stop_reason = 'collector_error'
                     break
-                members = process_snapshot(raw, root)
+                try:
+                    members = precise_linux_cpu_times(process_snapshot(raw, root))
+                except (OSError, ValueError) as error:
+                    collector_error = type(error).__name__ + ': ' + str(error)
+                    stop_reason = 'collector_error'
+                    break
                 if not members:
                     stop_reason = 'root_exited'
                     break
@@ -344,6 +392,13 @@ def main():
                     collector_error = 'observed root PID was reused; stopped before sampling the replacement'
                     stop_reason = 'root_identity_changed'
                     break
+                cpu_identity = members[root].get('cpu_start_identity')
+                if root_cpu_identity is not None and cpu_identity is not None and cpu_identity != root_cpu_identity:
+                    collector_error = 'observed root PID was reused within the ps start-time resolution'
+                    stop_reason = 'root_identity_changed'
+                    break
+                if cpu_identity is not None:
+                    root_cpu_identity = cpu_identity
                 root_identity = identity
                 observed_identities.update({pid: p['start_identity'] for pid, p in members.items()
                                             if p['start_identity'] is not None})
@@ -366,7 +421,11 @@ def main():
         monitoring_duration = time.monotonic() - start
         if process is not None:
             natural_exit_code = process.poll()
-            cleanup = cleanup_owned_group(process, observed_identities)
+            if stop_reason == 'root_identity_changed':
+                cleanup = {'sent_sigterm': False, 'sent_sigkill': False,
+                           'error': 'root PID identity changed; refusing process-group cleanup'}
+            else:
+                cleanup = cleanup_owned_group(process, observed_identities)
             ended_by_monitor = natural_exit_code is None and cleanup['sent_sigterm']
         if log is not None:
             log.close()
@@ -384,9 +443,12 @@ def main():
                   completed_full_duration=stop_reason == 'duration_complete' and collector_error is None,
                   measurement_status='failed' if collector_error else 'complete' if stop_reason == 'duration_complete' else 'partial',
                   root_start_identity=root_identity,
+                  root_cpu_start_identity=root_cpu_identity,
                   identity_metric='ps lstart (one-second resolution); first observed identity is the baseline',
                   owned_group_cleanup=cleanup,
                   cpu_metric='cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas',
+                  cpu_time_source='Linux /proc/<pid>/stat user and system clock ticks' if sys.platform.startswith('linux') else 'ps time (fractional seconds on macOS)',
+                  cpu_time_resolution_s=1 / os.sysconf('SC_CLK_TCK') if sys.platform.startswith('linux') else None,
                   cpu_unit='percent of one logical CPU; may exceed 100',
                   percentile_method='nearest-rank',
                   memory_unit='MiB (legacy output field names retain mb)',

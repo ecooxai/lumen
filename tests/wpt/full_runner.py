@@ -427,7 +427,11 @@ class Sampler:
         self.totals = SampleTotals()
         self.stopped = threading.Event()
         self.mod = monitor_module()
+        namespace_error = self.mod.pid_namespace_error()
+        if namespace_error:
+            raise RuntimeError(namespace_error)
         self.root_identity = None
+        self.root_cpu_identity = None
         self.observed_identities = {}
         self.previous_snapshot, self.previous_at = None, None
         self.stop_reason = None
@@ -437,7 +441,7 @@ class Sampler:
         self.thread.start()
 
     def _record_snapshot(self, raw, elapsed):
-        current = self.mod.process_snapshot(raw, self.pid)
+        current = self.mod.precise_linux_cpu_times(self.mod.process_snapshot(raw, self.pid))
         if not current:
             self.stop_reason = 'process_exited'
             return None
@@ -450,6 +454,13 @@ class Sampler:
             self.errors.append('root PID was reused; replacement process was not sampled')
             self.stop_reason = 'root_identity_changed'
             return None
+        cpu_identity = current[self.pid].get('cpu_start_identity')
+        if self.root_cpu_identity is not None and cpu_identity is not None and cpu_identity != self.root_cpu_identity:
+            self.errors.append('root PID was reused within the ps start-time resolution; replacement process was not sampled')
+            self.stop_reason = 'root_identity_changed'
+            return None
+        if cpu_identity is not None:
+            self.root_cpu_identity = cpu_identity
         self.root_identity = identity
         row = {'elapsed_s': round(elapsed, 3),
                'cpu_percent': round(sum(p['cpu_percent'] for p in current.values()), 3),
@@ -503,7 +514,10 @@ class Sampler:
                      interval_cpu_coverage='available' if intervals else 'unavailable',
                      observed_span_s=round(self.totals.last['elapsed_s'] - self.totals.first['elapsed_s'], 3) if self.totals.count > 1 else 0,
                      root_start_identity=self.root_identity,
+                     root_cpu_start_identity=getattr(self, 'root_cpu_identity', None),
                      cpu_metric='cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas',
+                     cpu_time_source='Linux /proc/<pid>/stat user and system clock ticks' if sys.platform.startswith('linux') else 'ps time (fractional seconds on macOS)',
+                     cpu_time_resolution_s=1 / os.sysconf('SC_CLK_TCK') if sys.platform.startswith('linux') else None,
                      cpu_unit='100%=one logical CPU; multithreaded work may exceed100%',
                      memory_unit='MiB (legacy field names retain mb)',
                      memory_metric='maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once',
@@ -533,6 +547,10 @@ def process_group_diagnostics(group):
 
 def terminate_owned(process, sampler=None, verification_wait_s=1):
     """Return cleanup evidence; cleanup failure must not replace test outcomes."""
+    if sampler is not None and getattr(sampler, 'stop_reason', None) == 'root_identity_changed':
+        return {'sent_sigterm': False, 'sent_sigkill': False,
+                'error': 'root PID identity changed; refusing process-group cleanup',
+                'process_group_gone': None}
     result = None
     try:
         module = sampler.mod if sampler is not None else monitor_module()

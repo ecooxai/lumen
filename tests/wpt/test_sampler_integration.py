@@ -17,9 +17,15 @@ class SamplerIntegrationTests(unittest.TestCase):
         value.rows, value.errors = [], []
         value.totals = runner.SampleTotals()
         value.root_identity = None
+        value.root_cpu_identity = None
         value.observed_identities = {}
         value.previous_snapshot, value.previous_at = None, None
         value.stop_reason = None
+        # Existing parser tests provide BSD-style ps fixtures. Precision-specific
+        # integration below installs controlled Linux kernel observations.
+        patch = mock.patch.object(value.mod, 'precise_linux_cpu_times', side_effect=lambda p: p)
+        patch.start()
+        self.addCleanup(patch.stop)
         return value
 
     def test_actual_shared_monitor_produces_interval_fields_in_runner_rows(self):
@@ -57,6 +63,41 @@ class SamplerIntegrationTests(unittest.TestCase):
         cleanup.assert_called_once_with(process, {10: 'same-start'})
         self.assertIn('PermissionError', result['error'])
         self.assertFalse(result['sent_sigkill'])
+
+    def test_runner_uses_precise_counter_when_linux_ps_only_has_whole_seconds(self):
+        sampler = self.sampler()
+        raw = '10 1 0.0 1024 S 00:01 Thu Oct 22 09:00:00 2026\n'
+        before = sampler.mod.process_snapshot(raw, 10)
+        before[10].update(cpu_time_s=1.12, cpu_start_identity=99)
+        after = {10: dict(before[10], cpu_time_s=1.21)}
+        sampler.mod.precise_linux_cpu_times.side_effect = [before, after]
+        sampler._record_snapshot(raw, 0)
+        second = sampler._record_snapshot(raw, 1)
+        self.assertEqual(second['interval_cpu_percent'], 9)
+        self.assertEqual(sampler.root_cpu_identity, 99)
+
+    def test_runner_detects_same_second_pid_reuse_and_refuses_cleanup(self):
+        sampler = self.sampler()
+        raw = '10 1 0.0 1024 S 00:01 Thu Oct 22 09:00:00 2026\n'
+        before = sampler.mod.process_snapshot(raw, 10)
+        before[10].update(cpu_time_s=1.12, cpu_start_identity=99)
+        after = {10: dict(before[10], cpu_time_s=0.01, cpu_start_identity=100)}
+        sampler.mod.precise_linux_cpu_times.side_effect = [before, after]
+        sampler._record_snapshot(raw, 0)
+        self.assertIsNone(sampler._record_snapshot(raw, 1))
+        self.assertEqual(len(sampler.rows), 1)
+        self.assertEqual(sampler.stop_reason, 'root_identity_changed')
+        with mock.patch.object(sampler.mod, 'cleanup_owned_group') as cleanup:
+            result = runner.terminate_owned(object(), sampler)
+        cleanup.assert_not_called()
+        self.assertIn('refusing', result['error'])
+
+    def test_precision_errors_propagate_to_collector_failure_handler(self):
+        sampler = self.sampler()
+        sampler.mod.precise_linux_cpu_times.side_effect = PermissionError('proc unavailable')
+        with self.assertRaises(PermissionError):
+            sampler._record_snapshot('10 1 0.0 1024 S 00:01 Thu Oct 22 09:00:00 2026\n', 0)
+        self.assertFalse(sampler.rows)
 
 
 if __name__ == '__main__':

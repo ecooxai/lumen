@@ -19,6 +19,9 @@ class MonitorTests(unittest.TestCase):
         self.namespace = mock.patch.object(monitor, 'pid_namespace_error', return_value=None)
         self.namespace.start()
         self.addCleanup(self.namespace.stop)
+        self.precision = mock.patch.object(monitor, 'precise_linux_cpu_times', side_effect=lambda p: p)
+        self.precision.start()
+        self.addCleanup(self.precision.stop)
     def test_descendants_are_included_without_unrelated_processes(self):
         raw = '10 1 1.0 100 S\n11 10 2.0 200 S\n12 11 3.0 300 R\n20 1 99.0 900 S\n'
         tree = monitor.process_tree(raw, 10)
@@ -197,6 +200,70 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(result['measurement_status'], 'failed')
         self.assertEqual(result['stop_reason'], 'collector_error')
         self.assertIn('ps unavailable', result['collector_error'])
+
+
+class LinuxPrecisionTests(unittest.TestCase):
+    @staticmethod
+    def stat(pid=10, parent=1, user=123, system=45, started=9876, name='fixture (with) spaces'):
+        fields = ['S', str(parent)] + ['0'] * 18
+        fields[11], fields[12], fields[19] = str(user), str(system), str(started)
+        return str(pid) + ' (' + name + ') ' + ' '.join(fields) + '\n'
+
+    def test_kernel_ticks_recover_fractional_cpu_with_complex_command_name(self):
+        before = monitor.process_snapshot('10 1 0.0 1024 S 00:01 Thu Oct 22 09:00:00 2026\n', 10)
+        with mock.patch.object(monitor.sys, 'platform', 'linux'), mock.patch.object(monitor.os, 'sysconf', return_value=100), mock.patch.object(monitor.Path, 'read_text', return_value=self.stat()):
+            precise = monitor.precise_linux_cpu_times(before)
+        self.assertEqual(precise[10]['cpu_time_s'], 1.68)
+        self.assertEqual(precise[10]['cpu_start_identity'], 9876)
+        self.assertEqual(before[10]['cpu_time_s'], 1)
+        self.assertEqual(precise[10]['start_identity'], before[10]['start_identity'])
+        after = {10: dict(precise[10], cpu_time_s=1.71)}
+        self.assertEqual(monitor.interval_cpu_percent(precise, after, 1), 3)
+
+    def test_disappeared_process_is_missing_not_zero_cpu(self):
+        original = monitor.process_snapshot('10 1 0.0 1024 S 00:01\n', 10)
+        with mock.patch.object(monitor.sys, 'platform', 'linux'), mock.patch.object(monitor.Path, 'read_text', side_effect=FileNotFoundError):
+            precise = monitor.precise_linux_cpu_times(original)
+        self.assertIsNone(precise[10]['cpu_time_s'])
+        self.assertIsNone(monitor.interval_cpu_percent(original, precise, 1))
+
+    def test_changed_parent_must_not_contribute_unrelated_cpu(self):
+        original = monitor.process_snapshot('10 1 0.0 1024 S 00:01\n', 10)
+        with mock.patch.object(monitor.sys, 'platform', 'linux'), mock.patch.object(monitor.Path, 'read_text', return_value=self.stat(parent=9)):
+            precise = monitor.precise_linux_cpu_times(original)
+        self.assertIsNone(precise[10]['cpu_time_s'])
+
+    def test_corrupt_or_inaccessible_counter_is_not_silent_ps_fallback(self):
+        original = monitor.process_snapshot('10 1 0.0 1024 S 00:01\n', 10)
+        for data in ('invalid', self.stat(pid=99), self.stat(user=-1)):
+            with mock.patch.object(monitor.sys, 'platform', 'linux'), mock.patch.object(monitor.Path, 'read_text', return_value=data), self.assertRaises(ValueError):
+                monitor.precise_linux_cpu_times(original)
+        with mock.patch.object(monitor.sys, 'platform', 'linux'), mock.patch.object(monitor.Path, 'read_text', side_effect=PermissionError), self.assertRaises(PermissionError):
+            monitor.precise_linux_cpu_times(original)
+
+    def test_root_reuse_within_same_ps_second_stops_and_never_cleans_replacement(self):
+        raw = '10 1 0.0 1024 S 00:01 Thu Oct 22 09:00:00 2026\n'
+        before = monitor.process_snapshot(raw, 10)
+        before[10]['cpu_start_identity'] = 123
+        after = {10: dict(before[10], cpu_start_identity=124, cpu_time_s=0.01)}
+        process = mock.Mock(pid=10, returncode=0)
+        process.poll.side_effect = [None, 0]
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / 'sample'
+            with mock.patch.object(monitor, 'pid_namespace_error', return_value=None), mock.patch.object(monitor.sys, 'argv', ['monitor_process.py', '--output', str(prefix), '--', 'fixture']), mock.patch.object(monitor.subprocess, 'Popen', return_value=process), mock.patch.object(monitor.subprocess, 'check_output', return_value=raw), mock.patch.object(monitor, 'precise_linux_cpu_times', side_effect=[before, after]), mock.patch.object(monitor.time, 'sleep'), mock.patch.object(monitor, 'cleanup_owned_group') as cleanup, contextlib.redirect_stdout(io.StringIO()):
+                code = monitor.main()
+            result = json.loads(prefix.with_suffix('.json').read_text())
+        self.assertEqual(code, 1)
+        self.assertEqual(result['samples'], 1)
+        self.assertEqual(result['stop_reason'], 'root_identity_changed')
+        self.assertIn('within the ps start-time resolution', result['collector_error'])
+        cleanup.assert_not_called()
+
+    def test_macos_fractional_ps_values_remain_unchanged(self):
+        original = monitor.process_snapshot('10 1 0.0 1024 S 00:01.68\n', 10)
+        with mock.patch.object(monitor.sys, 'platform', 'darwin'), mock.patch.object(monitor.Path, 'read_text') as read:
+            self.assertIs(monitor.precise_linux_cpu_times(original), original)
+        read.assert_not_called()
 
 
 class NamespaceTests(unittest.TestCase):
