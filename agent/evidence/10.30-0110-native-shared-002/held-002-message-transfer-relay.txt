@@ -1,0 +1,76 @@
+[js log] MESSAGE_TRANSFER_CHECK {"i":0,"scope":"window","name":"legacy transfer detaches sender and its views before return","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":1,"scope":"window","name":"dictionary transfer overload","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":2,"scope":"window","name":"iterable transfer overload","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":3,"scope":"window","name":"listed buffer absent from payload is detached","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":4,"scope":"window","name":"transferred graph preserves cycles aliases map and set","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":5,"scope":"window","name":"overlapping views retain offsets and recipient storage","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":6,"scope":"window","name":"resizable ArrayBuffer preserves maximum length","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":7,"scope":"window","name":"no transfer copies and leaves sender usable","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":8,"scope":"window","name":"duplicate transfer rejects before getter without detachment","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":9,"scope":"window","name":"nontransferable object rejects before getter","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":10,"scope":"window","name":"SharedArrayBuffer is not transferable","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":11,"scope":"window","name":"typed arrays are not transferable","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":12,"scope":"window","name":"transfer sequence rejects primitive number","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":13,"scope":"window","name":"transfer sequence rejects primitive null","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":14,"scope":"window","name":"transfer sequence rejects primitive undefined","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":15,"scope":"window","name":"transfer sequence rejects primitive string","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":16,"scope":"window","name":"options transfer must be iterable","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":17,"scope":"window","name":"serialization function failure leaves transfer intact","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":18,"scope":"window","name":"getter exception precedes all detachment","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":19,"scope":"window","name":"detached transfer is checked after payload serialization","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":20,"scope":"window","name":"later detached item preserves earlier transfer side effect","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":21,"scope":"window","name":"getter-detached listed buffer rejects after getter","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":22,"scope":"window","name":"closed channel still performs serialization transfer","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":23,"scope":"window","name":"MessagePort postMessage requires its payload","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":24,"scope":"window","name":"structuredClone transfers and retains graph identity","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":25,"scope":"window","name":"structuredClone supports iterable dictionary transfer","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":26,"scope":"window","name":"structuredClone duplicate rejects without detaching","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":27,"scope":"window","name":"structuredClone invalid transfer sequence rejects","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":28,"scope":"window","name":"structuredClone requires one argument","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":29,"scope":"window","name":"structuredClone null options are empty","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":30,"scope":"window","name":"transfer options getter is evaluated once","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":31,"scope":"worker","name":"legacy transfer detaches sender and its views before return","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":32,"scope":"worker","name":"dictionary transfer overload","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":33,"scope":"worker","name":"iterable transfer overload","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":34,"scope":"worker","name":"listed buffer absent from payload is detached","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":35,"scope":"worker","name":"transferred graph preserves cycles aliases map and set","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":36,"scope":"worker","name":"overlapping views retain offsets and recipient storage","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":37,"scope":"worker","name":"resizable ArrayBuffer preserves maximum length","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":38,"scope":"worker","name":"no transfer copies and leaves sender usable","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":39,"scope":"worker","name":"duplicate transfer rejects before getter without detachment","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":40,"scope":"worker","name":"nontransferable object rejects before getter","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":41,"scope":"worker","name":"SharedArrayBuffer is not transferable","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":42,"scope":"worker","name":"typed arrays are not transferable","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":43,"scope":"worker","name":"transfer sequence rejects primitive number","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":44,"scope":"worker","name":"transfer sequence rejects primitive null","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":45,"scope":"worker","name":"transfer sequence rejects primitive undefined","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":46,"scope":"worker","name":"transfer sequence rejects primitive string","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":47,"scope":"worker","name":"options transfer must be iterable","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":48,"scope":"worker","name":"serialization function failure leaves transfer intact","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":49,"scope":"worker","name":"getter exception precedes all detachment","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":50,"scope":"worker","name":"detached transfer is checked after payload serialization","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":51,"scope":"worker","name":"later detached item preserves earlier transfer side effect","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":52,"scope":"worker","name":"getter-detached listed buffer rejects after getter","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":53,"scope":"worker","name":"closed channel still performs serialization transfer","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":54,"scope":"worker","name":"MessagePort postMessage requires its payload","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":55,"scope":"worker","name":"structuredClone transfers and retains graph identity","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":56,"scope":"worker","name":"structuredClone supports iterable dictionary transfer","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":57,"scope":"worker","name":"structuredClone duplicate rejects without detaching","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":58,"scope":"worker","name":"structuredClone invalid transfer sequence rejects","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":59,"scope":"worker","name":"structuredClone requires one argument","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":60,"scope":"worker","name":"structuredClone null options are empty","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":61,"scope":"worker","name":"transfer options getter is evaluated once","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":62,"scope":"cross-worker","name":"parent detaches before worker postMessage returns","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":63,"scope":"cross-worker","name":"worker receives aliases and bytes","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":64,"scope":"cross-worker","name":"returned transfer remains intact in main realm","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":65,"scope":"cross-worker","name":"worker detaches before returning from reply","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_CHECK {"i":66,"scope":"cross-worker","name":"buffer alongside a transferred port detaches","ok":true,"error":null}
+[js log] MESSAGE_TRANSFER_RESULTS {"total":67,"passed":67,"failed":0,"issue":"worker timeout"}
+jsrun: context 18.2ms, 1 scripts 0.7ms, dom_version 20
+MESSAGE_TRANSFER_INFRA {"exit": 0, "checks": 67, "expected": 68, "summaries": [{"total": 67, "passed": 67, "failed": 0, "issue": "worker timeout"}]}
+exit_code: 0
+running: false
+terminal_id: 6452
+workspace_id: /Users/devin/repos/lumen
+chars: 9439
+snapshot: b9d45c96fc0610be

@@ -625,3 +625,15 @@ Actual Mac supplemental53 retry6378 ran15:59:29.774924–16:00:55.150250UTC,85.3
 - Focused unchanged upstream SharedWorker selection on candidate001 is30/30 fully passing with574 passing assertions,45.968seconds; this does not replace the complete1515 sweep. Native basic lifetime stress is100cycles/200isolates/1691checks, RSS growth1.140625MiB, threads13→13, FD5→5, final idle CPU p950.991% of one core.
 - Isolated official prebuilt ICU79.1 staging passed14/14 compatibility/security probes with Unicode18 and the host ICU78 alias unchanged in2.777seconds. The first1.419second attempt failed due mutually-exclusive Homebrew fetch flags; fixed tooling and a fresh output preserved the original failure. Product URL validation flags are unchanged; final URL77 acceptance remains pending.
 - Overall task score remains inherited66.426948447154565/100. New candidate WPT, resource, portable delivery and mobile acceptance are not credited prematurely. Broader cross-client SharedWorker remote-endpoint transfer remains outside this fix and is not represented as full MessagePort conformance.
+
+### Iteration 2 end — candidate002 held
+
+Start `2026-10-29T17:48:48.128895+00:00`; end `2026-10-29T18:10:11.592587+00:00`; elapsed1283.463692s. Native build+gates25.745s; build6.086s. Existing message-transfer returned67/68 then timed out because the new peer-close notification cleared the receiver's queued reply. No timeout or oracle was relaxed. Candidate002 bytes and failure receipt remain immutable. Independent native001 transfer controls were2/9 versus exactChrome9/9, with zero native infrastructure errors in that independent suite. Overall accepted score66.426948447154565/100.
+
+### Iteration 3 — peer-close ordering repaired and verified
+
+Start `2026-10-29T18:10:11.592587+00:00`; end `2026-10-29T18:13:25.595994+00:00`; elapsed194.003407s. Source46a6e6a distinguishes peer disentanglement from explicit receiver.close in both realms. Native002b passed13/13 gate stages in27.513s: original68/68 transfer, SharedWorker22/22, boundary13/13, transfer9/9, returned-owner2/2, native dedicated lifecycle/security and existing parser/header/CSP gates. Full native per-stage timestamps/durations are in `agent/evidence/10.30-0110-native-shared-002/iteration-ledger.json`. Total session wall time through this verification3745.595994s; parallel agent work was not independently metered and is not fabricated. Overall accepted score66.426948447154565/100; complete fresh1515, final resource and delivery acceptance remain pending.
+
+### Iteration 4 — real Unicode18 data through pinned ICU79 (in progress)
+
+Product build override/cache invalidation committedb28a181; no URL validation changes, no host upgrade, no V8 rebuild. Final native acceptance will bind the staged official bottle hashes, cached URLobject UIDNA79 imports, final executable linkage, then the unchanged77 URL variants and complete1515 inventory.

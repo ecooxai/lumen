@@ -19,6 +19,47 @@ def sha(path):
         return hashlib.file_digest(source, 'sha256').hexdigest()
 
 
+def candidate_make_variables(product, root):
+    """Keep the fixture's link settings identical to the measured product."""
+    build = product['buildCache']
+    if (not isinstance(build, str) or not re.fullmatch(r'[A-Za-z0-9_./-]+', build)
+            or '..' in Path(build).parts):
+        raise ValueError('Invalid candidate build-cache path')
+    (root / build).resolve().relative_to(root)
+    required = {'BUILD': build, 'MODE': 'release', 'RTC': '1', 'WT': '1'}
+    variables = product.get('buildMakeVariables', required)
+    if (not isinstance(variables, dict) or set(variables) - set(required) - {'ICU_PREFIX'}
+            or any(variables.get(key) != value for key, value in required.items())):
+        raise ValueError('Candidate make variables differ from the reviewed native build')
+    if variables.get('ICU_PREFIX') != product.get('icuPrefix'):
+        raise ValueError('Candidate ICU prefix metadata disagrees')
+    dependencies = {}
+    if variables.get('ICU_PREFIX'):
+        value = variables['ICU_PREFIX']
+        if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_./@+-]+', value):
+            raise ValueError('Unsafe candidate ICU prefix')
+        prefix = Path(value).resolve()
+        prefix.relative_to(root / 'out')
+        attestation = product.get('icuAttestation') or {}
+        receipt = (root / attestation['stagingReceipt']).resolve()
+        receipt.relative_to(root / 'out')
+        if sha(receipt) != attestation['stagingReceiptSHA256']:
+            raise ValueError('Candidate ICU staging receipt differs')
+        staged = json.loads(receipt.read_text())
+        if (not staged.get('passed') or (root / staged['prefix']).resolve() != prefix
+                or staged.get('libraries') != attestation.get('libraries')
+                or not attestation.get('libraries')):
+            raise ValueError('Candidate ICU dependency provenance differs')
+        dependencies[str(receipt.relative_to(root))] = attestation['stagingReceiptSHA256']
+        for library in attestation['libraries']:
+            path = (prefix / library['library']).resolve()
+            path.relative_to(prefix)
+            if sha(path) != library['relocatedSHA256']:
+                raise ValueError('A candidate ICU dependency changed: ' + library['library'])
+            dependencies[str(path.relative_to(root))] = library['relocatedSHA256']
+    return dict(variables), dependencies
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build-summary', required=True, type=Path)
@@ -41,6 +82,7 @@ def main():
     for name, digest in sources.items():
         if sha(root / name) != digest:
             parser.error('The currently compiled source differs: ' + name)
+    make_variables, dependency_hashes = candidate_make_variables(product, root)
     out = args.output.resolve()
     out.relative_to(root / 'out')
     out.mkdir(parents=True, exist_ok=False)
@@ -58,6 +100,8 @@ def main():
               'carrierSHA256': sha(Path(__file__)),
               'buildSummary': str(product_path.relative_to(root)), 'buildSummarySHA256': sha(product_path),
               'sourceManifestSHA256': sha(manifest), 'stages': [], 'cyclesRequired': 100,
+              'buildMakeVariables': make_variables, 'icuPrefix': product.get('icuPrefix'),
+              'candidateDependencyHashes': dependency_hashes,
               'limits': {'threadDescriptorSettlingMilliseconds': 500, 'warmRSSGrowthMiB': 64,
                          'postWorkIdleP95OneCoreCPUPercent': 3}, 'productArtifacts': product['artifacts']}
 
@@ -90,16 +134,14 @@ def main():
         report['fixtureSHA256'] = sha(fixture)
         report['importedDedicatedFixtureSHA256'] = sha(root / 'tests/test_worker_async_lifecycle.cc')
         build = product['buildCache']
-        if not re.fullmatch(r'[A-Za-z0-9_./-]+', build):
-            raise ValueError('Invalid candidate build-cache path')
         fragment = out / 'shared-stress.mk'
         fragment.write_text(
             f'$(BUILD)/tests/{target}.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG -I$(BUILD)/src/js\n'
             f'$(BUILD)/tests/{target}.cc.o: $(BUILD)/tests/test_worker_async_lifecycle.cc.o\n'
             f'$(BUILD)/{target}: $(call OBJ,tests/{target}.cc $(CORE_SRC) $(filter-out src/js/worker.cc,$(JS_SRC))) $(V8LINK_RSP)\n'
             '\t$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS) -lproc\n')
-        measured('build', ['make', '-j1', '-f', 'Makefile', '-f', str(fragment), 'BUILD='+build,
-                          'MODE=release', 'RTC=1', 'WT=1', build+'/'+target], 180)
+        measured('build', ['make', '-j1', '-f', 'Makefile', '-f', str(fragment),
+                          *[key+'='+value for key, value in make_variables.items()], build+'/'+target], 180)
         source = root / build / target
         digest = sha(source)
         binary = out / ('shared-worker-stress-'+digest[:16])
@@ -139,6 +181,9 @@ def main():
         for name, expected in sources.items():
             if sha(root / name) != expected:
                 raise RuntimeError('Source changed while the native stress oracle ran')
+        for name, expected in dependency_hashes.items():
+            if sha(root / name) != expected:
+                raise RuntimeError('A candidate ICU dependency changed during the native stress oracle')
         for artifact in product['artifacts'].values():
             if sha(root / artifact['path']) != artifact['sha256']:
                 raise RuntimeError('A frozen candidate artifact changed')

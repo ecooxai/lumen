@@ -1,0 +1,662 @@
+{
+  "transport": "Structured copy of authorized Mac tool read; original remote byte SHA is not asserted by this wrapper",
+  "sourceRelaySHA256": "148f836440e5abefabd384675db745e270c57d2d72c0691e3d3470dbe089314c",
+  "record": {
+    "schema": 1,
+    "scope": "All30 SharedWorker variants from frozen1515; not full-WPT or a new1515 pass rate",
+    "officialWPT": true,
+    "wptRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+    "frozen1515ScheduleSHA256": "adcbf9719f722368b1e53ac1bd61cf38e566d3bd7495d9d6127cad38dd6aeabe",
+    "fullFrozenVariantCount": 1515,
+    "selectedVariantCount": 30,
+    "unexecutedFrozenVariants": 1485,
+    "schedule": [
+      {
+        "test": "/encoding/encodeInto.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/encodeInto.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/idlharness.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/idlharness.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "/resources/WebIDLParser.js"
+            ],
+            [
+              "script",
+              "/resources/idlharness.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/backpressure.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/backpressure.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-attributes.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-attributes.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-bad-chunks.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-bad-chunks.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-ignore-bom.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-ignore-bom.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-incomplete-input.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-incomplete-input.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-non-utf8.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-non-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-split-character.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-split-character.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/decode-utf8.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/decode-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/encode-bad-chunks.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/encode-bad-chunks.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/encode-utf8.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/encode-utf8.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/readable-stream-from-array.js"
+            ],
+            [
+              "script",
+              "resources/readable-stream-to-array.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/streams/readable-writable-properties.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/streams/readable-writable-properties.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-copy.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-copy.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/encoding/textdecoder-streaming.any.sharedworker.html",
+        "type": "testharness",
+        "source": "encoding/textdecoder-streaming.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Encoding API: Streaming decode"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "script",
+              "resources/encodings.js"
+            ],
+            [
+              "script",
+              "/common/sab.js"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-setcookie.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers set-cookie special cases"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values-last-event-id.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Fetch: non-ASCII Last-Event-ID header value"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values-normalize.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Header value normalizing test"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/header-values.any.js",
+        "timeout": "long",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Header value test"
+            ],
+            [
+              "global",
+              "window,worker"
+            ],
+            [
+              "timeout",
+              "long"
+            ]
+          ],
+          "timeout": "long"
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-basic.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers structure"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-casing.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers case management"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-combine.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers have combined (and sorted) values"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-errors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers errors"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-forbidden-override.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-no-cors.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-normalize.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers normalize values"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-record.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+        "type": "testharness",
+        "source": "fetch/api/headers/headers-structure.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "title",
+              "Headers basic"
+            ],
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+        "type": "testharness",
+        "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+        "timeout": "normal",
+        "metadata": {
+          "script_metadata": [
+            [
+              "global",
+              "window,worker"
+            ]
+          ]
+        },
+        "references": []
+      }
+    ],
+    "selectedScheduleSHA256": "828b31834c63fee5309dfd4f65adc8b8706db61ce04852d065ef96690ab44381",
+    "binary": "/Users/devin/repos/lumen/out/10300110-mac/native-shared-001/lumen-4328d848b5342789",
+    "binarySHA256": "4328d848b53427899811425385d3121c48e7ccb5d285c18b56f6813dd3145e8a",
+    "inputs": {
+      "frozen_selection": {
+        "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/priority-selection-v1.json",
+        "sha256": "46c7dc21e6bea1fff3505c9390663f160c4fcf34aa3d4f897cc1732efd2ed7d9"
+      },
+      "inventory": {
+        "path": "/Users/devin/repos/lumen/output/wpt-10290244/inventory.json",
+        "sha256": "5ceae6d5879ba27038f530511428432d652d5e2d079c4b33a4d017c3fee94d1b"
+      },
+      "fixture_readiness": {
+        "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/fixture-readiness.json",
+        "sha256": "3f0ea2bafc7cac953cc5a141ef2e3717d2613428e5de70ddc09914cd31f25240"
+      },
+      "server_config": {
+        "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/server.config.json",
+        "sha256": "d3d4f26a540e3564d1d9f6137be4c465d99283ce5ad87531b67cd5719c79c9d0"
+      },
+      "browser_environment": {
+        "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/browser-fixture-environment.json",
+        "sha256": "76eb4cd3a5008bf7c770c32ee7702d03af64e4ec0e96472f1f23e740cee90731"
+      },
+      "runner": {
+        "path": "/Users/devin/repos/lumen/tests/wpt/full_runner.py",
+        "sha256": "f279529ae78f58916a1d87170bc068ad34b15f175072a0a01f63695bc8e44a6b"
+      },
+      "reporter": {
+        "path": "/Users/devin/repos/lumen/tests/wpt/testharnessreport.js",
+        "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328"
+      },
+      "monitor": {
+        "path": "/Users/devin/repos/lumen/tools/monitor_process.py",
+        "sha256": "46bda36325c6881ceed174ef6fc19fd4745b64894c833717949ea60e4a18d3e1"
+      },
+      "orchestrator": {
+        "path": "/Users/devin/repos/lumen/tools/apple-session-gpt6as/run_priority_wpt_10290244.py",
+        "sha256": "b2395c8e7b00e4081924025d765cdb5386de19cd6eddb0f4178c4a8c6d6e2987"
+      }
+    },
+    "origins": {
+      "http": "http://web-platform.test:18800",
+      "https": "https://web-platform.test:18443",
+      "h2": "https://web-platform.test:18900"
+    },
+    "timeoutSeconds": 15,
+    "longTimeoutSeconds": 65,
+    "startedUTC": "2026-10-29T17:54:14.153915+00:00",
+    "orchestratorSHA256": "f45c5e923deed742444301db40a5586ce4834c31e64854bc34664c97175c4bee",
+    "complete": true,
+    "resultsSHA256": "bd8b9c9fdf1245615412e3cfbbeb08b0586da583bd8b1a001937b0ade4f0d883",
+    "runMetadataSHA256": "4d5d05995d6bf6e4a6a0daa190ba85af66d3428589dae7026d0e4c0fb4b48f40",
+    "finishedUTC": "2026-10-29T17:55:00.121802+00:00",
+    "durationSeconds": 45.968255,
+    "executed": 30,
+    "fullyPassing": 30,
+    "unrun": 0,
+    "harnessStatuses": {
+      "OK": 30
+    },
+    "assertions": {
+      "PASS": 574
+    },
+    "failures": [],
+    "binarySHA256After": "4328d848b53427899811425385d3121c48e7ccb5d285c18b56f6813dd3145e8a"
+  }
+}

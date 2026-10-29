@@ -1,0 +1,639 @@
+{
+  "transport": "Structured copy of authorized Mac tool read",
+  "sourceRelaySHA256": "9d822bb766737d872d194aaa25973768cb6d4572a6cb730cb02b524ce8f707e7",
+  "record": {
+    "kind": "isolated-prebuilt-icu79-idna-diagnostic",
+    "officialWPT": false,
+    "startedUTC": "2026-10-29T18:01:40.649454+00:00",
+    "stages": [
+      {
+        "name": "macos-version",
+        "command": [
+          "sw_vers",
+          "-productVersion"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.007456,
+        "logSHA256": "3db9dd54f6160f2744d2428cda5edfb5b4bf1247b140a1673d82a65f456314ee"
+      },
+      {
+        "name": "fetch-official-bottle",
+        "command": [
+          "/opt/homebrew/bin/brew",
+          "fetch",
+          "--bottle-tag=arm64_tahoe",
+          "icu4c@79"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 1.671102,
+        "logSHA256": "ea6622d04358256503bbcad7f2aa12e5465bd70aac76c4b7eed3e28abb4dd0c1"
+      },
+      {
+        "name": "dependencies-0",
+        "command": [
+          "otool",
+          "-L",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicudata.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.040346,
+        "logSHA256": "445256c9be1a2137d6e877a6f17f4ad2a076ad518c2028552a1ae22c138947ba"
+      },
+      {
+        "name": "relocate-0",
+        "command": [
+          "install_name_tool",
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib",
+          "-id",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicudata.79.1.dylib",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicudata.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.075375,
+        "logSHA256": "e5b999dbeff593e25e53f0f8c9cd8e325b6b13532976f95dd3853171ec2304ec"
+      },
+      {
+        "name": "codesign-0",
+        "command": [
+          "codesign",
+          "--force",
+          "--sign",
+          "-",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicudata.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.066783,
+        "logSHA256": "25578ab7562f3493d905e01bc5e033705582205af5153c647b6c814f0287be40"
+      },
+      {
+        "name": "verify-signature-0",
+        "command": [
+          "codesign",
+          "--verify",
+          "--strict",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicudata.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.021649,
+        "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "dependencies-1",
+        "command": [
+          "otool",
+          "-L",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicui18n.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.010965,
+        "logSHA256": "7a1f9953574e0902b6cd8270c456d2c64b8bb0848be770694e4cda25c99e8b0b"
+      },
+      {
+        "name": "relocate-1",
+        "command": [
+          "install_name_tool",
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicui18n.79.dylib",
+          "@loader_path/libicui18n.79.dylib",
+          "-change",
+          "@loader_path/libicuuc.79.dylib",
+          "@loader_path/libicuuc.79.dylib",
+          "-change",
+          "@loader_path/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib",
+          "-id",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicui18n.79.1.dylib",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicui18n.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.010529,
+        "logSHA256": "13e43237f0666b8e6475d42febfc8b53757570a8d248c23df651a16817219108"
+      },
+      {
+        "name": "codesign-1",
+        "command": [
+          "codesign",
+          "--force",
+          "--sign",
+          "-",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicui18n.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.016365,
+        "logSHA256": "f1795cce3fcd5be1af88d0357f4e0c668304d248242e97a490c51842ab113cac"
+      },
+      {
+        "name": "verify-signature-1",
+        "command": [
+          "codesign",
+          "--verify",
+          "--strict",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicui18n.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.006982,
+        "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "dependencies-2",
+        "command": [
+          "otool",
+          "-L",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicuio.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.011282,
+        "logSHA256": "f14a4214d07b4815d6244fccc1f1ab91dbf84acc4257bd76fef5e51ecdc1db58"
+      },
+      {
+        "name": "relocate-2",
+        "command": [
+          "install_name_tool",
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicuio.79.dylib",
+          "@loader_path/libicuio.79.dylib",
+          "-change",
+          "@loader_path/libicuuc.79.dylib",
+          "@loader_path/libicuuc.79.dylib",
+          "-change",
+          "@loader_path/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib",
+          "-change",
+          "@loader_path/libicui18n.79.dylib",
+          "@loader_path/libicui18n.79.dylib",
+          "-id",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicuio.79.1.dylib",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicuio.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.00877,
+        "logSHA256": "7a825cf5f584662bf03a966acdf3170af4f3643dd13da47759390b0677be16bf"
+      },
+      {
+        "name": "codesign-2",
+        "command": [
+          "codesign",
+          "--force",
+          "--sign",
+          "-",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicuio.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.010655,
+        "logSHA256": "ce1d333af5e9c325f21ff0d278aef6e0bcd150694e89b1edcdf4c7e11510d645"
+      },
+      {
+        "name": "verify-signature-2",
+        "command": [
+          "codesign",
+          "--verify",
+          "--strict",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicuio.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.00538,
+        "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "dependencies-3",
+        "command": [
+          "otool",
+          "-L",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicutest.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.009906,
+        "logSHA256": "6d0732509e0e8fb7231ee11ffdd60183f1f0035f281dd8580e49e542e9e4dc4d"
+      },
+      {
+        "name": "relocate-3",
+        "command": [
+          "install_name_tool",
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicutest.79.dylib",
+          "@loader_path/libicutest.79.dylib",
+          "-change",
+          "@loader_path/libicutu.79.dylib",
+          "@loader_path/libicutu.79.dylib",
+          "-change",
+          "@loader_path/libicui18n.79.dylib",
+          "@loader_path/libicui18n.79.dylib",
+          "-change",
+          "@loader_path/libicuuc.79.dylib",
+          "@loader_path/libicuuc.79.dylib",
+          "-change",
+          "@loader_path/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib",
+          "-id",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicutest.79.1.dylib",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicutest.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.012488,
+        "logSHA256": "f8255f5117ceb89ea568f1567d063065f81b592a0f7b423b8c8432578e54c6f3"
+      },
+      {
+        "name": "codesign-3",
+        "command": [
+          "codesign",
+          "--force",
+          "--sign",
+          "-",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicutest.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.010404,
+        "logSHA256": "a723e51e15ded8b4aa9ce5ab2dbca2b34f4bc4d6773f395a5144f5a17b2f6ab8"
+      },
+      {
+        "name": "verify-signature-3",
+        "command": [
+          "codesign",
+          "--verify",
+          "--strict",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicutest.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.00601,
+        "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "dependencies-4",
+        "command": [
+          "otool",
+          "-L",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicutu.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.010613,
+        "logSHA256": "2db89130b223b79646d491cae873777a12ef7f93e4932ee4a6ba1fbec948ae8f"
+      },
+      {
+        "name": "relocate-4",
+        "command": [
+          "install_name_tool",
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicutu.79.dylib",
+          "@loader_path/libicutu.79.dylib",
+          "-change",
+          "@loader_path/libicui18n.79.dylib",
+          "@loader_path/libicui18n.79.dylib",
+          "-change",
+          "@loader_path/libicuuc.79.dylib",
+          "@loader_path/libicuuc.79.dylib",
+          "-change",
+          "@loader_path/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib",
+          "-id",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicutu.79.1.dylib",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicutu.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.00851,
+        "logSHA256": "8e674f747802b55156903da3ec5523fb2351f1c8a5eb829bdc9e7d6283d9c034"
+      },
+      {
+        "name": "codesign-4",
+        "command": [
+          "codesign",
+          "--force",
+          "--sign",
+          "-",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicutu.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.011443,
+        "logSHA256": "fbc85d8813ddb90628d9d551bc315afb50262edeba251d7e23191a32de840c96"
+      },
+      {
+        "name": "verify-signature-4",
+        "command": [
+          "codesign",
+          "--verify",
+          "--strict",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicutu.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.005549,
+        "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "dependencies-5",
+        "command": [
+          "otool",
+          "-L",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicuuc.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.012775,
+        "logSHA256": "f92abf0000b4db74714b3b82e7030135dee19389905dbd5ee8f21a357eb80496"
+      },
+      {
+        "name": "relocate-5",
+        "command": [
+          "install_name_tool",
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicuuc.79.dylib",
+          "@loader_path/libicuuc.79.dylib",
+          "-change",
+          "@loader_path/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib",
+          "-id",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicuuc.79.1.dylib",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicuuc.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.012209,
+        "logSHA256": "863398400d44a943ba472c9241bca1de82d6cb6c75c031126a52a44129b3d54e"
+      },
+      {
+        "name": "codesign-5",
+        "command": [
+          "codesign",
+          "--force",
+          "--sign",
+          "-",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicuuc.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.018748,
+        "logSHA256": "4e4a302928900e7ac0dbd64cc6a397fcaad60f17c490ab42dcb42bd6ec23c0c6"
+      },
+      {
+        "name": "verify-signature-5",
+        "command": [
+          "codesign",
+          "--verify",
+          "--strict",
+          "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1/lib/libicuuc.79.1.dylib"
+        ],
+        "exitCode": 0,
+        "durationSeconds": 0.006337,
+        "logSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "passed": true,
+    "scriptSHA256": "889f2f7b3899961e7f80026a5f2ea24240e1410aa751ea1904f70baf2ab89afb",
+    "homebrewFormulaCommit": "8701235251a995187352bd621a2f182a1127fa8c",
+    "officialFormula": "https://github.com/Homebrew/homebrew-core/blob/8701235251a995187352bd621a2f182a1127fa8c/Formula/i/icu4c%4079.rb",
+    "officialRelease": "https://github.com/unicode-org/icu/releases/tag/release-79.1",
+    "scope": "Only project-local files created; no keg installation, host symlink change, V8 rebuild, or browser WPT run.",
+    "macosVersion": "26.6.2",
+    "bottleTag": "arm64_tahoe",
+    "expectedBottleSHA256": "4424c58d257d07b28086814a575baa9e462560460fdea5455581d99062896cec",
+    "originalHostICUPrefix": "/opt/homebrew/Cellar/icu4c@78/78.3",
+    "bottleRelativePath": "out/10300110-mac/icu79-stage-v2/brew-cache/downloads/159bcac5fa74b7245482b1a6c31d56438a63e843fa1759553ac34cea5eda6d4d--icu4c@79--79.1.arm64_tahoe.bottle.tar.gz",
+    "prefix": "out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1",
+    "libraries": [
+      {
+        "library": "lib/libicudata.79.1.dylib",
+        "changes": [
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib"
+        ],
+        "originalSHA256": "8f66c0859d820d76cdff39c241e78de804e321603262b0c3e5f234954627918d",
+        "relocatedSHA256": "586c060425ee97d41148e92a6de6f59e071fc117ffb196ca48b38a996d095004"
+      },
+      {
+        "library": "lib/libicui18n.79.1.dylib",
+        "changes": [
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicui18n.79.dylib",
+          "@loader_path/libicui18n.79.dylib",
+          "-change",
+          "@loader_path/libicuuc.79.dylib",
+          "@loader_path/libicuuc.79.dylib",
+          "-change",
+          "@loader_path/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib"
+        ],
+        "originalSHA256": "20382650cd365ef0441aae84ef51e5f3dbd9df981039bf4aac8aa0e01b4d01fa",
+        "relocatedSHA256": "e35408e684746d327b626091d3fc4b93da063f8ba34318d574e0ca3bc5c4e818"
+      },
+      {
+        "library": "lib/libicuio.79.1.dylib",
+        "changes": [
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicuio.79.dylib",
+          "@loader_path/libicuio.79.dylib",
+          "-change",
+          "@loader_path/libicuuc.79.dylib",
+          "@loader_path/libicuuc.79.dylib",
+          "-change",
+          "@loader_path/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib",
+          "-change",
+          "@loader_path/libicui18n.79.dylib",
+          "@loader_path/libicui18n.79.dylib"
+        ],
+        "originalSHA256": "08b094cdb83d731b869354aa347b2badf138a343b05bc6519a4f532942bef866",
+        "relocatedSHA256": "0db038ee21baf67f687c6ad3bcb335357c7989f0309fef032d283fce352b069c"
+      },
+      {
+        "library": "lib/libicutest.79.1.dylib",
+        "changes": [
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicutest.79.dylib",
+          "@loader_path/libicutest.79.dylib",
+          "-change",
+          "@loader_path/libicutu.79.dylib",
+          "@loader_path/libicutu.79.dylib",
+          "-change",
+          "@loader_path/libicui18n.79.dylib",
+          "@loader_path/libicui18n.79.dylib",
+          "-change",
+          "@loader_path/libicuuc.79.dylib",
+          "@loader_path/libicuuc.79.dylib",
+          "-change",
+          "@loader_path/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib"
+        ],
+        "originalSHA256": "666c5aa684efc28b30dfe558059847cb5a92d5ff8eec7e9f7d85c76945201ce0",
+        "relocatedSHA256": "d5d0157402201f587faf90a14153677861ae3494ac12d0c98e62434e423baef5"
+      },
+      {
+        "library": "lib/libicutu.79.1.dylib",
+        "changes": [
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicutu.79.dylib",
+          "@loader_path/libicutu.79.dylib",
+          "-change",
+          "@loader_path/libicui18n.79.dylib",
+          "@loader_path/libicui18n.79.dylib",
+          "-change",
+          "@loader_path/libicuuc.79.dylib",
+          "@loader_path/libicuuc.79.dylib",
+          "-change",
+          "@loader_path/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib"
+        ],
+        "originalSHA256": "b543ef9d43ebd2cffc358e71d3cdcf06ab7c2d11a2afc7f80ac215a970bacbf4",
+        "relocatedSHA256": "a21093c50e1a07cbcd3a1e6fba05f1a9e2c46091b5ae64831ab9fbcdd3d7ca51"
+      },
+      {
+        "library": "lib/libicuuc.79.1.dylib",
+        "changes": [
+          "-change",
+          "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicuuc.79.dylib",
+          "@loader_path/libicuuc.79.dylib",
+          "-change",
+          "@loader_path/libicudata.79.dylib",
+          "@loader_path/libicudata.79.dylib"
+        ],
+        "originalSHA256": "a27a12a9844609f1e635ff2bc1f788e7021cdf3dd0d5d5a32cd9bf6e98652159",
+        "relocatedSHA256": "eb3330a8002c5c5a532ebd736bce9fbbe7f25d30632589410ae904e1a6d48421"
+      }
+    ],
+    "ICUVersion": [
+      79,
+      1,
+      0,
+      0
+    ],
+    "UnicodeDataVersion": [
+      18,
+      0,
+      0,
+      0
+    ],
+    "baselineFailureReceiptSHA256": "dd7064a7aaadae3b4b1d5fde5857899b9e92c364dbbea3e0bdbeac86198fa1b7",
+    "sourceUTS46Options": 60,
+    "probes": [
+      {
+        "name": "ToASCII(\"\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 0,
+        "output": "xn--5cb172r175fug38a.xn--mlj",
+        "expectedOutput": null,
+        "requiredErrorBit": 0,
+        "passed": true
+      },
+      {
+        "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u10be\")",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 0,
+        "output": "xn--5cb172r175fug38a.xn--mlj",
+        "expectedOutput": null,
+        "requiredErrorBit": 0,
+        "passed": true
+      },
+      {
+        "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 0,
+        "output": "xn--5cb172r175fug38a.xn--mlj",
+        "expectedOutput": null,
+        "requiredErrorBit": 0,
+        "passed": true
+      },
+      {
+        "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\ucbd95\")",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 0,
+        "output": "xn--t92s.xn--znb.xn--5-y88f",
+        "expectedOutput": null,
+        "requiredErrorBit": 0,
+        "passed": true
+      },
+      {
+        "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5\")",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 0,
+        "output": "xn--t92s.xn--znb.xn--5-y88f",
+        "expectedOutput": null,
+        "requiredErrorBit": 0,
+        "passed": true
+      },
+      {
+        "name": "ToASCII(\"\ud8ba\udcac.\u0729.\ucbd95\")",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 0,
+        "output": "xn--t92s.xn--znb.xn--5-y88f",
+        "expectedOutput": null,
+        "requiredErrorBit": 0,
+        "passed": true
+      },
+      {
+        "name": "ToASCII(\"\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5\")",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 0,
+        "output": "xn--t92s.xn--znb.xn--5-y88f",
+        "expectedOutput": null,
+        "requiredErrorBit": 0,
+        "passed": true
+      },
+      {
+        "name": "stable non-ASCII mapping",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 0,
+        "output": "xn--bcher-kva.example",
+        "expectedOutput": "xn--bcher-kva.example",
+        "requiredErrorBit": 0,
+        "passed": true
+      },
+      {
+        "name": "nontransitional sharp-s",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 0,
+        "output": "xn--fa-hia.de",
+        "expectedOutput": "xn--fa-hia.de",
+        "requiredErrorBit": 0,
+        "passed": true
+      },
+      {
+        "name": "replacement character stays disallowed",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 128,
+        "output": "\ufffd.example",
+        "expectedOutput": null,
+        "requiredErrorBit": 128,
+        "passed": true
+      },
+      {
+        "name": "noncharacter stays disallowed",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 128,
+        "output": "\ufffd.example",
+        "expectedOutput": null,
+        "requiredErrorBit": 128,
+        "passed": true
+      },
+      {
+        "name": "leading combining mark stays rejected",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 64,
+        "output": "\ufffda.example",
+        "expectedOutput": null,
+        "requiredErrorBit": 64,
+        "passed": true
+      },
+      {
+        "name": "invalid joiner context stays rejected",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 4096,
+        "output": "xn--ab-m1t.example",
+        "expectedOutput": null,
+        "requiredErrorBit": 4096,
+        "passed": true
+      },
+      {
+        "name": "invalid bidirectional label stays rejected",
+        "UErrorCode": 0,
+        "UIDNAInfoErrors": 2048,
+        "output": "xn--a-zhc.example",
+        "expectedOutput": null,
+        "requiredErrorBit": 2048,
+        "passed": true
+      }
+    ],
+    "probesPassed": 14,
+    "probesTotal": 14,
+    "urlSourceSHA256": "55b2563cc28d7413e68684a807babcfddd108bea23a15f8221f3e82f3233c5cb",
+    "hostICUAliasUnchanged": true,
+    "finishedUTC": "2026-10-29T18:01:43.426123+00:00",
+    "durationSeconds": 2.776731
+  }
+}

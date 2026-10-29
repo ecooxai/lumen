@@ -1,0 +1,95 @@
+{
+  "transport": "Structured copy of authorized Mac tool read; original remote byte SHA is not asserted by this wrapper",
+  "sourceRelaySHA256": "630ab94a413cb3e1218531f5eab085574b40c6f4c426c9f372c16d8c0768e1a5",
+  "record": {
+    "kind": "shared-worker-policy-port-boundaries",
+    "officialWPT": false,
+    "nativeLumenExecuted": true,
+    "chromiumControlExecuted": false,
+    "binary": "/Users/devin/repos/lumen/out/10300110-mac/native-shared-001/jsrun-a3db34326e59f012",
+    "binarySHA256": "a3db34326e59f012d84303bfeebbf6a559bac66fdc7114462f8d1eb1b2fd294e",
+    "browserVersion": null,
+    "fixtureSHA256": "ae9398fdb1c16007efce49415b503058b89bc0ffff101ba921c5f81ef98e11cf",
+    "pageTemplateSHA256": "8e8f82678d310efc9dc06ad021451817bdcb6206dbb8765e7b36e04948248367",
+    "workerSHA256": "e232bbfbb6653a637383275737130591614b7affca8e19198512ecb926b2f796",
+    "caseManifestSHA256": "e5479ca94f34a9d95cef5c1709a76be4124c11bf878481a1ed41a8ac7d3a779d",
+    "started": "2026-10-29T17:48:48.128895+00:00",
+    "ended": "2026-10-29T17:48:50.653158+00:00",
+    "durationSeconds": 2.524184,
+    "total": 13,
+    "passed": 12,
+    "failed": 1,
+    "rows": [
+      {
+        "i": 0,
+        "name": "worker-src self permits a second document to join the same worker",
+        "ok": true
+      },
+      {
+        "i": 1,
+        "name": "worker-src none rejects a fresh worker in a restricted document",
+        "ok": true
+      },
+      {
+        "i": 2,
+        "name": "worker-src none rejects joining an already-running worker",
+        "ok": true
+      },
+      {
+        "i": 3,
+        "name": "child-src none fallback rejects joining an already-running worker",
+        "ok": true
+      },
+      {
+        "i": 4,
+        "name": "explicit worker-src self overrides child-src none for a worker join",
+        "ok": true
+      },
+      {
+        "i": 5,
+        "name": "native cross-origin script rejection raises SecurityError",
+        "ok": true
+      },
+      {
+        "i": 6,
+        "name": "malformed SharedWorker script URL raises SyntaxError",
+        "ok": true
+      },
+      {
+        "i": 7,
+        "name": "setting MessagePort onmessage to null enables its message queue",
+        "ok": true
+      },
+      {
+        "i": 8,
+        "name": "shared global does not expose DedicatedWorkerGlobalScope",
+        "ok": true
+      },
+      {
+        "i": 9,
+        "name": "owner transfers a MessageChannel endpoint into SharedWorker",
+        "ok": true
+      },
+      {
+        "i": 10,
+        "name": "SharedWorker transfers a MessageChannel endpoint to its owner",
+        "ok": true
+      },
+      {
+        "i": 11,
+        "name": "a SharedWorker connection port can transfer into a dedicated worker",
+        "ok": false,
+        "error": "Error: timeout: transferred connection reply"
+      },
+      {
+        "i": 12,
+        "name": "data SharedWorker reports an opaque origin",
+        "ok": true
+      }
+    ],
+    "infrastructureErrors": [],
+    "monitor": "External one-second monitor required",
+    "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSHA256": "4d927cbc6cd926418ce8515910252581b70e41fff687490f9b512d3cfa15fdaa"
+  }
+}
