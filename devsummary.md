@@ -1193,3 +1193,47 @@ custom-property value slices and existing validation/priority handling remain.
 Fresh200 observations and retained27 string checks are frozen;188 outcomes
 remain pending. Boundary-comment serialization remains a named holdout.
 Current overall assessment is pending;19/100 is historical only.
+
+
+### Provenance correction — recorded source-set entry counts
+
+Earlier narrative descriptions repeated618 after new tracked fixtures entered
+the source manifest. The exact recorded counts are:176617;182618;183618;
+184622;185624;186624;187627;188627. These are recorded source-set entries,
+including tracked fixtures, not a claim that each is a compiler dependency.
+Original raw receipts/hashes are preserved. Every reported before/after source
+seal remains equal; only the stale narrative count is corrected.
+
+### Iteration9 / Ruby candidate188 — accepted CSSOM scanner
+
+Start18:50:05UTC; acceptance/source checkpoint2026-10-29T18:57:44.004164+00:00;7.65minutes.
+Independent scanner164→196/200 (+32;98/100 focused), zero losses. Retained
+strings26→27/27 (+1;100/100). Four preexisting leading/trailing comment
+serialization fields remain before/after neighboring declaration mutation.
+Retained clamp109/111,comments30/30,table960/960 are unchanged by identity
+with no losses/missing/added fields. Source2cefb700457b2d9282175c7caf400821c1ff9ec1;
+immutableSHA256f97245454cc208829c2a5c667248dd859bd46c6da07437733fb4977e67a9a74a.
+Recorded627-entry source set unchanged,de449260faa62ed318b669744b7adff063398d79353aaf1e251cb9070c225d93.
+Build/startup59.07s;59samples,hostCPUmedian84.244%/max97.368%, build-treeCPU
+median60.4995%/max112.999%,peak summedRSS500.793MB. The concurrent broad
+640-file paired run creates build contention; this is not a browser timing
+comparison. Owned build/monitor drained. Agents:release_ops implementation,
+engine_lead integration,conformance_qa independent gates;root PM. Total task
+wall time91.95minutes; parallel work is not summed.
+
+The accepted186 public source export has been independently audited:692files,
+10,466,786bytes exactly match3731a114 Git blob IDs/SHA256/modes; all624
+recorded source-set entries included. It has an independent Git directory
+rooted in already-public73fdea3e ancestry. Private working history,task,agent
+outputs/guard/auth/profile/inbox state are excluded. Export rebuild has not
+been performed; source checkpoint/archive/public-branch publication is handled
+by release_ops separately. Audit:agent/ops/linux-restoration-20261029/export186-engine-review.json.
+
+### Iteration10 / candidate189 — radio-group source checkpoint
+
+Prototype start2026-10-29T18:52:01.380528+00:00; integration2026-10-29T18:57:44.004164+00:00. Search the shared tree,
+include the element if it is the root, then filter identical form owner/name.
+This repairs detached checked radios and external form-associated group
+membership. Frozen72radio observations and unchanged516numeric observations
+are the next gate. Numerical changes remain a separate190 candidate.
+Current overall assessment is pending;19/100 is historical only.

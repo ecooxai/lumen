@@ -1,51 +1,51 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Ruby187 Node conversion accepted:32/32 +22/22 controls and28/28 upstream. Candidate188 CSSOM escape/comment scanner is frozen for independent200-field and27-string gates.",
-  "iteration": 188,
+  "phase": "Ruby188 CSSOM scanner accepted:196/200 fields and27/27 strings, zero losses. Candidate189 radio-group root/owner repair is frozen for72radio and516numeric retention checks; broad640 remains on accepted187.",
+  "iteration": 189,
   "score": null,
   "iteration_quality": null,
-  "score_note": "Current whole-browser readiness is not certified. The requested target is 98/100; numeric results below describe only their named test scopes. A fresh broad non-URL assessment is pending.",
+  "score_note": "19/100 is a historical estimate without a reproducible formula. Current overall assessment is pending; scoped checks are reported separately.",
   "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
-  "checkpoint": "3731a114676dc87ffe7bce27bff78235431bd6f5",
-  "updated_utc": "2026-10-29T18:50:05.574819+00:00",
+  "checkpoint": "2cefb700457b2d9282175c7caf400821c1ff9ec1",
+  "updated_utc": "2026-10-29T18:57:44.004164+00:00",
   "session_started_utc": "2026-10-29T17:25:47Z",
   "deadline_utc": "2026-10-29T21:25:47Z",
   "current_evidence": [
     [
-      "Accepted candidate 186 \u00b7 form validity",
-      "8,127/8,127 authored checks (100% of this fixture), +1,099 passes and zero losses. The independently calibrated Chromium reference passed 8,125/8,127; its two reversed-time message nonpasses remain separately recorded."
+      "Accepted188 \u00b7 CSSOM scanner",
+      "196/200 fixed observations (+32),27/27 retained strings (+1),zero prior-pass losses. Four leading/trailing comment serialization holdouts remain."
     ],
     [
-      "Pinned upstream forms \u00b7 candidate 186",
-      "644/649 assertions and 19/24 complete files, compared with baseline 183 at 522/649 and 9/24. Gain: 122 assertions, no prior-PASS losses. Chromium passed 649/649 and 24/24. Five Lumen failures remain. These are a focused selection, not the full WPT suite."
+      "Accepted187 \u00b7 Node conversion",
+      "32/32 removal/mutation controls,22/22 genuine/forged/cross-realm controls and28/28 upstream removal assertions. All fresh profiles and owned processes cleaned up."
     ],
     [
-      "Retained accepted CSS/table gates",
-      "Candidate 184: 109/111 clamp, 30/30 comment and 26/27 string controls. Candidate 185: 960/960 table-spacing fields (+456). The last fresh selected native suite passed 140/140 non-URL entries. These scopes are separate and are not additive coverage totals."
+      "Accepted186 \u00b7 form validity",
+      "8127/8127 authored checks (+1099),644/649 pinned upstream assertions (+122),19/24 full files,zero losses. Two Chromium reversed-time reference nonpasses retained separately."
     ],
     [
-      "Fixed CPU comparison \u00b7 21/21 trials",
-      "Seven trials each for immutable 176, accepted 186 and Chromium, with all 9,395 workload checks passing every trial. Median DOM/style-layout/grid milliseconds: 176 45.22/420.91/165.68; 186 50.66/416.55/171.87; Chromium 11.90/65.30/53.00. Native ranges overlap; no overall speedup claim."
+      "Retained layout/parser gates",
+      "Table960/960,clamp109/111,comments30/30. Last fresh selected native suite:185140/140 non-URL entries. Scopes are separate and not additive WPT coverage."
     ],
     [
-      "Measured memory and lifecycle",
-      "Median-of-trial sampled browser-tree RSS/PSS: 186 162.298/136.609 MB; Chromium 936.526/418.823 MB. Samples include startup, work and cleanup; RSS can count shared mappings more than once. All 14 native children exited 0; all profiles were removed and no owned processes remained."
+      "Fixed CPU workload \u00b7 21/21 trials",
+      "All9395 checks passed in every balanced176/186/Chromium trial.186 DOM/style-layout/grid medians50.66/416.55/171.87ms;Chromium11.90/65.30/53.00ms. Native ranges overlap; no general speedup claim."
     ],
     [
-      "Active work \u00b7 candidate 187",
-      "The 187 DOM build has sealed; independent removal/Attr controls are pending. The separate 188 CSSOM scanner patch is reviewed but unaccepted. Intel UHD 620 Vulkan enumeration succeeded, but actual Lumen hardware rendering remains unverified; the comparison used explicit CPU modes."
+      "Active189 and broad187 comparison",
+      "Radio-group repair pending72radio+516numeric checks. Same640 non-URL files run on immutable187 and current Chromium. Overall assessment remains pending; source download remains independently pinned until its artifact is replaced."
     ]
   ],
-  "coverage": "Accepted Ruby candidate 186: 8,127/8,127 authored form checks and 644/649 pinned upstream form assertions (19/24 complete files), with zero prior-PASS losses. Candidate 187 is active and awaiting independent acceptance. Fresh broader non-URL WPT coverage remains pending.",
+  "coverage": "Accepted188:196/200 scanner fields (+32),27/27 strings (+1),zero losses; clamp109/111,comments30/30,table960/960 retained. Broad640 non-URL WPT comparison is running on immutable187, separately labeled.",
   "findings": [
     "Whole-browser parity is not certified; broad non-URL WPT validation and a reproducible assessment are pending.",
     "Five focused upstream form assertions remain. The authored/reference disagreement is retained as two separate Chromium message nonpasses.",
     "Hardware rendering and ordinary desktop-close behavior remain separate unverified gates.",
     "The downloadable archive below is the historical 168 export until the audited 186 source replacement is published."
   ],
-  "active_iteration": 188,
-  "accepted_binary_sha256": "124ebb8663e0293d4820de406c0e9d5f976477c2f4d52032526ea0b652232744",
-  "accepted_binary_scope": "Immutable Ruby candidate 186, accepted for the named authored/upstream forms gates and fixed CPU workload; whole-browser parity is not certified.",
+  "active_iteration": 189,
+  "accepted_binary_sha256": "f97245454cc208829c2a5c667248dd859bd46c6da07437733fb4977e67a9a74a",
+  "accepted_binary_scope": "Immutable Ruby188, accepted for scanner196/200 and retained named browser gates; whole-browser assessment pending.",
   "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
   "candidate_binary_sha256": null,
@@ -412,29 +412,33 @@
   "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "session_iteration": null,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 187,
+  "accepted_iteration": 188,
   "accepted_focused_results": {
-    "iteration": 186,
-    "source_commit": "3731a114676dc87ffe7bce27bff78235431bd6f5",
-    "authored_forms": {
-      "pass": 8127,
-      "total": 8127,
-      "gained": 1099,
+    "iteration": 188,
+    "source_commit": "2cefb700457b2d9282175c7caf400821c1ff9ec1",
+    "scanner": {
+      "pass": 196,
+      "total": 200,
+      "gained": 32,
       "lost": 0
     },
-    "upstream_forms": {
-      "pass": 644,
-      "total": 649,
-      "full_files": 19,
-      "files": 24,
-      "gained": 122,
+    "strings": {
+      "pass": 27,
+      "total": 27,
+      "gained": 1,
       "lost": 0
     },
-    "chromium_authored_nonpasses": 2,
-    "fixed_cpu_trials": {
-      "pass": 21,
-      "total": 21,
-      "checks_each": 9395
+    "retained_clamp": {
+      "pass": 109,
+      "total": 111
+    },
+    "retained_comments": {
+      "pass": 30,
+      "total": 30
+    },
+    "retained_table": {
+      "pass": 960,
+      "total": 960
     },
     "whole_browser_assessment": "pending"
   },
@@ -555,7 +559,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 188,
+  "current_candidate": 189,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1232,7 +1236,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-29T18:50:05.574819+00:00",
+  "updated_at": "2026-10-29T18:57:44.004164+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1342,33 +1346,16 @@
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   },
   "session6_current": {
-    "candidate": 188,
+    "candidate": 189,
     "state": "source frozen for build",
-    "accepted187": {
-      "removal": {
-        "pass": 32,
-        "total": 32,
-        "gain": 8
-      },
-      "branding": {
-        "pass": 22,
-        "total": 22,
-        "gain": 8
-      },
-      "upstream": {
-        "pass": 28,
-        "total": 28,
-        "gain": 1
-      },
-      "lost": 0
-    },
+    "source_scope": "radio grouping only; numeric behavior unchanged",
     "pending": [
-      "188 build/startup",
-      "200 scanner observations",
-      "27 retained string controls",
-      "broad non-URL WPT comparison"
+      "189build/startup",
+      "72radio checks",
+      "516numeric retention checks",
+      "640 non-URL WPT comparison on187"
     ],
-    "overall_assessment": "pending;19/100 historical only"
+    "overall_assessment": "pending"
   },
   "session6_current_summary": {
     "accepted_candidate": 184,
@@ -1392,5 +1379,8 @@
     },
     "updated_utc": "2026-10-29T18:32:11.478100+00:00"
   },
-  "overall_assessment": "Assessment pending"
+  "overall_assessment": "pending",
+  "accepted_scope_label": "CSSOM scanner",
+  "accepted_scope_pass": 196,
+  "accepted_scope_total": 200
 }

@@ -1,0 +1,19 @@
+diff --git a/src/js/prelude/04f-forms.js b/src/js/prelude/04f-forms.js
+index 6978d55..4016df0 100644
+--- a/src/js/prelude/04f-forms.js
++++ b/src/js/prelude/04f-forms.js
+@@ -434,9 +434,11 @@ const EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{
+ const radioGroup = el => {
+     const name = N.attr(el, 'name'); if (!name) return [el];
+     const owner = formOwner(el), root = el.getRootNode();
+-    const scope = owner || root;
+-    return N.query(scope.nodeType === 9 || scope.nodeType === 11 || scope.nodeType === 1 ? scope : root, 'input', true)
+-        .filter(r => r === el || (N.ns(r) === 0 && inType(r) === 'radio' && N.attr(r, 'name') === name && formOwner(r) === owner && r.getRootNode() === root));
++    /* A form can own controls outside its descendants. Search the shared tree,
++       then filter by owner/name; a detached root input is itself a candidate. */
++    const candidates = N.query(root, 'input', true);
++    if (root === el) candidates.unshift(el);
++    return candidates.filter(r => r === el || (N.ns(r) === 0 && inType(r) === 'radio' && N.attr(r, 'name') === name && formOwner(r) === owner && r.getRootNode() === root));
+ };
+ /* Validity describes the control's state even when it is barred from validation.
+    Eligibility gates the validation APIs; mutability only gates specific constraints. */

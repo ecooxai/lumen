@@ -1,0 +1,11 @@
+{
+  "candidate": 189,
+  "prototype_started_utc": "2026-10-29T18:52:01.380528+00:00",
+  "integration_utc": "2026-10-29T18:57:44.004164+00:00",
+  "base_head": "2cefb700457b2d9282175c7caf400821c1ff9ec1",
+  "file": "src/js/prelude/04f-forms.js",
+  "before": "d1b7c8e6ea48e38b26a71ce8c105ecb1dd17f61c3d5ed279598b0242e136cff8",
+  "after": "987f8e3f3c1020f83f177f81fed213224fd89cea3d7a265633441d5e2ef29f8a",
+  "patch_sha256": "80dd087d144698010d892ee25dcccac37c6b43437fc2c9e9923fb71c74640a04",
+  "scope": "Radio groups include their detached root and all same-tree controls sharing name/form owner, including external form-associated controls; no numerical changes."
+}
