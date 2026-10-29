@@ -1,180 +1,1063 @@
 {
   "schema_version": 1,
-  "title": "Lumen Linux checkpoint163 \u2014 focused correctness and source snapshot",
-  "prepared_utc": "2026-10-28T23:07:28.737444+00:00",
-  "release_scope": "Accepted focused correctness checkpoint. Broad163 comparison is pending; current full-selection counts describe retained162.",
-  "whole_goal_readiness": 19,
-  "readiness_note": "Subjective whole-browser assessment; separate from every test pass percentage. Full-WPT and Chromium parity are not achieved.",
-  "source": {
-    "accepted_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
+  "title": "Lumen Linux: measured Chromium comparison and qualified experimental source snapshot",
+  "publication_state": "Reviewed publication payload prepared; actual deployment observations are recorded separately in publication-receipt.json.",
+  "model": "GPT-6 Astra Pro",
+  "agents": "Built-in agents",
+  "development_tool": "Rubywebterm",
+  "session": {
+    "number": 4,
+    "start_utc": "2026-10-28T22:46:53Z",
+    "deadline_utc": "2026-10-29T01:46:53Z",
+    "whole_goal_score": 19,
+    "goal_score": 98,
+    "score_qualification": "A conservative whole-goal engineering readiness estimate, not a measured conformance percentage or a percentage derived from native unit tests.",
+    "goal_achieved": false,
+    "goal_qualification": "The requested 98/100 whole-engine target has not been achieved.",
+    "repair_hard_deadline_utc": "2026-10-29T02:46:53Z",
+    "repair_extension_authorized": true,
+    "repair_extension_reason": "The reproducible 167 rendering regression required the user-authorized repair extension. Original start and normal deadline remain unchanged.",
+    "elapsed_time_definition": "Actual final closure UTC minus 2026-10-28T22:46:53Z; overlapping agent and iteration durations are not summed.",
+    "final_closed_utc": null,
+    "total_wall_clock_minutes": null,
+    "qualified_checkpoint_accepted_utc": "2026-10-29T02:03:24Z",
+    "closure_qualification": "This is an as-of-publication checkpoint. Actual later session closure and documentation cutoff are recorded in the private final handoff and durable checkpoint."
+  },
+  "accepted_source": {
+    "iteration": 168,
+    "session_iteration": 6,
+    "classification": "EXPERIMENTAL",
+    "engine_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
+    "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+    "recorded_input_digest": "caddfbad3c0df624b82cd3a846ce42475d49a6544ec5f53cb136e58753a4bdc7",
+    "accepted_git_map_sha256": "71e6a591718075225e702e54374c6257224b19f4cf70c57d734e4dc04e31945b",
+    "new_ordinary_source_members": [
+      "tests/test_font_units.c",
+      "tests/test_break_spaces.c"
+    ],
+    "new_whitespace_test_sha256": "7ccad383118205096d3138f70415bd58a02083cecba01eab480c38fa02be719a",
+    "normal_gate_seal_sha256": "573d778addde7fac88ea02bd7ccd47abc4d77cbfef45902ff0b82b1f3de92828",
+    "normal_native_ctest": [
+      140,
+      140
+    ],
+    "whitespace_controls": 22,
+    "actual_font_controls": 74,
+    "browser_sanitizer_shutdown_verified": false,
+    "native_font_sanitizer_proof": {
+      "source_iteration": 167,
+      "controls": 74,
+      "actual_exit_code": 0,
+      "observed_diagnostics": false,
+      "scope": "The clean instrumented build 167 font proof covers unchanged font code, not new build 168 inline code or whole-browser sanitizer shutdown."
+    },
+    "recorded_inputs": 605,
+    "production_release_claim": false,
+    "regression_free_claim": false,
+    "qualified_acceptance_utc": "2026-10-29T02:03:24Z",
+    "recommendation_sha256": "269cc512e7d9753e307799d4dd596aaa7759535591522ff86bd2566a93a9800b",
+    "source_archive": {
+      "sha256": "bddd9f93afca4d8fbbf036229c1bcbe2f8e20aaec53caf48c73d6f0457458277",
+      "bytes": 4451575,
+      "regular_files": 699,
+      "repository_files": 698,
+      "generated_metadata_files": 1,
+      "inclusion_manifest_sha256": "974621a3e114dd2170b9594067b60729a1090cc0b410903702b7e58bef7ba8cc",
+      "recorded_inputs_included_and_exact": 605,
+      "literal_cmake_references_checked": 126,
+      "literal_cmake_references_missing": [],
+      "prepared_utc": "2026-10-29T02:08:28.962281Z"
+    },
+    "fresh_extracted_build": {
+      "performed": true,
+      "state": "independently verified",
+      "receipt_asset": "source-build-verification.json",
+      "independent_review_sha256": "78127ac050b8d87548ea31812db56776dc227c648b93b24fd76eae15277f8bcd",
+      "started_utc": "2026-10-29T02:12:22.849193+00:00",
+      "completed_utc": "2026-10-29T02:13:19.936005+00:00",
+      "elapsed_seconds": 57.087,
+      "archive_built_binary_sha256": "b498a8dae4cd0bc4896304b5aace8c4176bc6476f899cf9667b63152797910df",
+      "measured_binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+      "qualification": "The exact reviewed source archive built successfully in this Linux environment using declared external dependencies. The new build ran 22 whitespace and 74 actual-font controls with no skips. Its binary differs from measured immutable build 168; the 4,200-variant, rendering and performance results belong to that measured binary. This is not a hermetic or bit-identical build, Android verification, a complete compiler dependency audit, or a rerun of all 140 native tests."
+    },
+    "independent_source_review_sha256": "44f2578ffb6226ae69050fcc10976b5ae09147372e315484253326cb1c8aec3c"
+  },
+  "comparison": {
+    "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+    "selection": {
+      "variants": 4200,
+      "qualification": "Fixed selection; not the entire Web Platform Tests repository.",
+      "public_asset": "public-wpt-selection4200.json",
+      "bytes": 326783,
+      "sha256": "8004c3c23e4d4231254b1d6e718660b5c1c635773e3ca5bda9bed7a088c4a5af",
+      "canonical_selection_sha256": "b3cba703157eab0c1918702af4db5a855d5ff28b389117940e5b3bf3378b5ef7",
+      "native_private_harness_included": false,
+      "fully_self_contained_reproduction_claim": false
+    },
+    "fresh_baseline162": {
+      "completed_utc": "2026-10-28T23:47:45Z",
+      "full_pass": 1628,
+      "variants": 4200,
+      "pass_subtests": 199263,
+      "reported_subtests": 215657,
+      "guard_lifecycles": 55,
+      "guard_exit0": 54,
+      "hard_deadline_associated_minus9": 1,
+      "owned_processes_and_profiles_absent": true
+    },
+    "historical_baseline162": {
+      "full_pass": 1627,
+      "variants": 4200,
+      "pass_subtests": 199248,
+      "reported_subtests": 215641,
+      "qualification": "Historical replay; differences from fresh162 are variability, not code gains."
+    },
+    "chromium": {
+      "version": "150.0.7871.114",
+      "binary_sha256": "d176751de81c10df1a96052f897155b2b055a8426cddd102f5a1ad102832d5d9",
+      "broad_completed_utc": "2026-10-28T17:36:29Z",
+      "full_pass": 3534,
+      "variants": 4200,
+      "pass_subtests": 209574,
+      "reported_subtests": 217350,
+      "broad_replayed_this_session": false
+    },
+    "final_candidate_broad": {
+      "state": "complete",
+      "started_utc": "2026-10-29T01:08:56.667Z",
+      "variants": 4200,
+      "qualification": "Completed fixed 4,200 selection with immutable source, protocol and registrations. Root accepted only a qualified experimental checkpoint; original measured losses remain.",
+      "final_acceptance": "Qualified experimental checkpoint only; not regression-free or production-ready.",
+      "no_prior_pass_loss_claim_allowed": false,
+      "observed_native_exit_minus9": {
+        "case": "/IndexedDB/event-dispatch-active-flag.any.html",
+        "hard_deadline_ms": 40000,
+        "observed_elapsed_ms": 40607,
+        "same_case_and_deadline_as_fresh162": true,
+        "pid_absent": true,
+        "profile_absent": true,
+        "classification": "Precisely correlated with the fixed hard deadline; retained as actual exit−9, not successful exit.",
+        "oom_inferred": false,
+        "count": 1
+      },
+      "acceptance_state": "qualified experimental accepted after fixed diagnostics",
+      "iteration": 168,
+      "completed_utc": "2026-10-29T01:52:59.457061Z",
+      "full_pass": 1629,
+      "pass_subtests": 199362,
+      "reported_subtests": 215657,
+      "baseline162": {
+        "full_pass": 1628,
+        "pass_subtests": 199263,
+        "reported_subtests": 215657
+      },
+      "common_pass_gains": 102,
+      "common_prior_pass_losses": 3,
+      "other_status_changes": 29,
+      "added_registrations": 0,
+      "missing_registrations": 0,
+      "full_variant_gains": 2,
+      "full_variant_losses": 1,
+      "summary_sha256": "8db953cb4461183e90e67f5d9b44fca914e936f38d27b61a5311a06cb60528eb",
+      "identity_comparison_sha256": "248aab290f6bad70d5e2a43319a1f5918335de6b35424d290f4bdc08344b4877",
+      "native_lifecycles": 54,
+      "native_actual_exit0": 53,
+      "native_actual_exit_minus9": 1,
+      "all_owned_pids_and_profiles_absent": true,
+      "source_protocol_invariance_verified": true,
+      "outer_wrappers_exit0": true,
+      "comparison_qualification": "The original fixed 4,200 run has 102 common PASS gains and 3 prior-PASS losses, 29 other status changes, and no added or missing registrations. Two variants became fully passing and one previously fully passing variant failed. A completed FAIL changed to TIMEOUT in a hidden-frame media playback / permission-policy case. Sixteen fixed alternating observations did not reproduce an isolated final-only difference, but original outcomes remain and batch-history/load sensitivity is unresolved. The proposed 961-variant prefix follow-up was not executed. A one-subtest gain inside a persistently timed-out Trusted Types case is not attributed to a feature repair. Of the 102 observed gains, 89 occur in OK-to-OK harnesses, 12 in TIMEOUT-to-OK harnesses, and one within a persistent TIMEOUT; these counts are not 102 independently proven feature repairs.",
+      "no_regression_free_claim": true,
+      "qualified_acceptance_utc": "2026-10-29T02:03:24Z",
+      "original_loss_families": [
+        {
+          "family": "Referrer Policy same-https/no-redirect",
+          "change": "PASS to FAIL",
+          "harness": "completed",
+          "observation": "Response TypeError"
+        },
+        {
+          "family": "Scroll to Text Fragment",
+          "change": "PASS to NOTRUN",
+          "harness": "new TIMEOUT"
+        },
+        {
+          "family": "Promise rejection events",
+          "change": "Prior PASS became non-PASS",
+          "harness": "persistent native TIMEOUT"
+        }
+      ],
+      "other_retained_failure_mode": {
+        "family": "Hidden-frame media playback / permission policy",
+        "change": "Completed FAIL to TIMEOUT"
+      },
+      "fixed_isolated_diagnostics": {
+        "observations": 16,
+        "sequence_per_variant": [
+          162,
+          168,
+          162,
+          168
+        ],
+        "variants": 4,
+        "all_observations_retained": true,
+        "completed_utc": "2026-10-29T02:01:10.765638Z",
+        "actual_native_exit0": 65,
+        "all_owned_processes_and_profiles_absent": true,
+        "results": [
+          {
+            "family": "Referrer Policy",
+            "every_observation": {
+              "pass": 4,
+              "total": 4,
+              "harness": "OK"
+            }
+          },
+          {
+            "family": "Promise rejection events",
+            "every_observation": {
+              "pass": 39,
+              "timeout": 4,
+              "total": 43,
+              "target": "PASS",
+              "harness": "TIMEOUT"
+            }
+          },
+          {
+            "family": "Hidden-frame media playback / permission policy",
+            "every_observation": {
+              "fail": 1,
+              "total": 1,
+              "harness": "OK"
+            }
+          },
+          {
+            "family": "Scroll to Text Fragment",
+            "every_observation": {
+              "pass": 1,
+              "timeout": 1,
+              "notrun": 2,
+              "total": 4,
+              "target": "NOTRUN",
+              "harness": "TIMEOUT"
+            }
+          }
+        ],
+        "final_only_difference_reproduced": false,
+        "original_broad_losses_replaced": false,
+        "batch_history_and_load_sensitivity_resolved": false,
+        "prefix961": {
+          "executed": false,
+          "qualification": "Two public-help usage failures did not establish the documented globally bounded cleanup route; this does not prove that the runner lacks cancellation."
+        },
+        "recommendation_sha256": "269cc512e7d9753e307799d4dd596aaa7759535591522ff86bd2566a93a9800b"
+      },
+      "common_pass_gains_by_harness_status": {
+        "OK_to_OK": 89,
+        "TIMEOUT_to_OK": 12,
+        "persistent_TIMEOUT": 1
+      },
+      "gain_attribution_qualification": "These are observed status gains, not 102 individually proven feature repairs. The persistent-TIMEOUT gain is not attributed to a feature repair."
+    },
+    "matched_performance": {
+      "iteration": 168,
+      "comparison_engines": [
+        162,
+        168,
+        "Chromium150.0.7871.114"
+      ],
+      "summary_sha256": "eb6111e25a250fd1e4564fda775ca2d08c67102e5ae8a5ec1168a3829d5a2fa6",
+      "actual_protocol_sha256": "6b064fce68a034e4bbe56338a4722c3c43945d701dc52aabe675de50bb1338f2",
+      "actual_workload_sha256": "730267e57bea73cd13dc95bf7e3dcc636a5bdffa9c5092a037e1bd2ea259282b",
+      "valid_trials": 21,
+      "trials_per_engine": 7,
+      "checks_per_trial": 9395,
+      "grid_checks_per_trial": 5120,
+      "all_trials_retained": true,
+      "raw_label_mapping": {
+        "baseline128": "actual162",
+        "final": "actual168"
+      },
+      "timing_median_ms": {
+        "baseline162": {
+          "dom": 40.622,
+          "style_layout": 339.506,
+          "grid": 134.53
+        },
+        "candidate168": {
+          "dom": 38.418,
+          "style_layout": 332.838,
+          "grid": 137.891
+        },
+        "chromium": {
+          "dom": 10,
+          "style_layout": 55.9,
+          "grid": 47.2
+        }
+      },
+      "timing_ranges_ms": {
+        "baseline162": {
+          "dom": [
+            35.608,
+            47.225
+          ],
+          "style_layout": [
+            318.778,
+            362.07
+          ],
+          "grid": [
+            127.836,
+            147.095
+          ]
+        },
+        "candidate168": {
+          "dom": [
+            36.597,
+            41.72
+          ],
+          "style_layout": [
+            323.891,
+            376.114
+          ],
+          "grid": [
+            128.159,
+            227.386
+          ]
+        },
+        "chromium": {
+          "dom": [
+            9.7,
+            12.2
+          ],
+          "style_layout": [
+            52.9,
+            67.6
+          ],
+          "grid": [
+            45.1,
+            56.9
+          ]
+        }
+      },
+      "candidate_vs_baseline_percent": {
+        "dom": -5.43,
+        "style_layout": -1.96,
+        "grid": 2.5
+      },
+      "candidate_over_chromium_ratio": {
+        "dom": 3.84,
+        "style_layout": 5.95,
+        "grid": 2.92
+      },
+      "resource_units": "decimal MB; median of seven per-trial medians of one-second browser-tree samples",
+      "memory_medians": {
+        "baseline162": {
+          "rss_mb": 150.747,
+          "pss_mb": 126.4885
+        },
+        "candidate168": {
+          "rss_mb": 150.286,
+          "pss_mb": 126.006
+        },
+        "chromium": {
+          "rss_mb": 814.842,
+          "pss_mb": 348.422
+        }
+      },
+      "maximum_observed_memory": {
+        "candidate168": {
+          "rss_mb": 167.199,
+          "pss_mb": 142.009
+        },
+        "chromium": {
+          "rss_mb": 855.007,
+          "pss_mb": 382.42
+        }
+      },
+      "median_cpu_percent": {
+        "baseline162": 19.001,
+        "candidate168": 20.001,
+        "chromium": 21.5005
+      },
+      "sampling": {
+        "interval_seconds": 1,
+        "browser_process_tree": true,
+        "driver_excluded": true,
+        "baseline162_memory_samples": 28,
+        "candidate168_memory_samples": 28,
+        "chromium_memory_samples": 21,
+        "baseline162_cpu_intervals": 21,
+        "candidate168_cpu_intervals": 21,
+        "chromium_cpu_intervals": 14,
+        "true_instantaneous_peak_claim": false,
+        "phase_specific_memory_claim": false,
+        "aggregation": "For each engine, median of seven per-trial sample medians; not a pooled sample median.",
+        "pooled_sample_median_claim": false
+      },
+      "execution": {
+        "css_viewport": [
+          748,
+          596
+        ],
+        "dpr": 1,
+        "native": "SDL offscreen, LUMEN_NO_GPU=1",
+        "chromium": "headless, disable-gpu",
+        "hardware_gpu_claim": false,
+        "native_actual_exit0": 14,
+        "all21_owned_browser_controller_profile_lifecycles_clean": true,
+        "all_21_ready_records_verified": true,
+        "actual_css_viewport": [
+          748,
+          596
+        ],
+        "actual_dpr": 1,
+        "native_browser_window": [
+          800,
+          640
+        ],
+        "native_backend": "SDL offscreen",
+        "native_no_gpu": true,
+        "native_no_session": true,
+        "native_javascript_timeout_ms": 30000,
+        "chromium_headless_mode": "new",
+        "chromium_disable_gpu": true,
+        "chromium_requested_window": [
+          800,
+          640
+        ]
+      },
+      "qualifications": [
+        "All baseline/native timing ranges overlap; the observed medians do not establish a broad speedup or stable regression.",
+        "The slowest retained build 168 Grid trial was 227.386 ms; no outlier-removal rule was applied.",
+        "This actual v2 workload includes Grid and is separate from the historical167 4,275-check DOM/style-only workload.",
+        "Sampled browser-tree memory is neither a true instantaneous peak nor phase-specific memory."
+      ],
+      "provenance": "Independently reviewed current v2 performance aggregate; exact SHA256 recorded below. The private native runner is excluded."
+    },
+    "rendering168": {
+      "cohort": 100,
+      "status_counts": {
+        "PASS": 38,
+        "FAIL": 60,
+        "UNSUPPORTED": 1,
+        "TIMEOUT": 1
+      },
+      "dated162_status_counts": {
+        "PASS": 38,
+        "FAIL": 60,
+        "UNSUPPORTED": 1,
+        "TIMEOUT": 1
+      },
+      "exact_dated162_status_match": true,
+      "fresh_all162_render100_replay": false,
+      "owned_process_cleanup_verified": true,
+      "summary_sha256": "0745aabf33a07a7c5a7609d5c52e0a1ba057631019df1ed627fb8c1138075ef5",
+      "qualification": "A fresh fixed 162/167/162/167 sequence reproduced the 207-pixel build167 regression. Build168 then passed the focused repair case and the final100 cohort, whose exact statuses match the dated162 cohort. This does not claim a separate equal-count162/168 pair or a fresh complete162 rendering rerun.",
+      "actual_native_exit0": 198,
+      "successful_capture_readiness_records": 197,
+      "capture_dimensions": [
+        800,
+        600
+      ],
+      "dpr": 1,
+      "fresh_fixed_162_167_pair_reproduced_regression": true,
+      "168_focused_and_final100_verified_repair": true,
+      "separate_equal_count_162_168_pair_claim": false
+    },
+    "strict_full_variant_definition": "Harness status OK, at least one registered subtest, and every registered subtest PASS."
+  },
+  "accepted_focused163": {
+    "native_ctest": [
+      138,
+      138
+    ],
+    "authored_logical": {
+      "baseline162": [
+        210,
+        224
+      ],
+      "candidate163": [
+        224,
+        224
+      ],
+      "chromium": [
+        184,
+        224
+      ],
+      "exact_new_native_passes_also_chromium_pass": 14,
+      "qualification": "Forty inherited aspect-ratio resolved-style expectation differences explain the Chromium total; authored checks are not upstream WPT."
+    },
+    "upstream_stylesheet_metadata": {
+      "baseline162": [
+        8,
+        20
+      ],
+      "candidate163": [
+        20,
+        20
+      ],
+      "chromium": [
+        20,
+        20
+      ],
+      "gains": 12,
+      "losses": 0
+    },
+    "retained_sizing_wpt": [
+      213,
+      326
+    ],
+    "retained_animation_wpt": [
+      1380,
+      1504
+    ],
+    "authored_iframe_metadata": {
+      "baseline162": [
+        12,
+        60
+      ],
+      "candidate163": [
+        42,
+        60
+      ],
+      "chromium": [
+        60,
+        60
+      ],
+      "remaining_candidate_failures": 18
+    }
+  },
+  "rejected_candidates": [
+    {
+      "iteration": 164,
+      "session_iteration": 2,
+      "reason": "Unchanged upstream inline-size control regressed from expected294px to300px.",
+      "qualification": "Observed authored41/41 lifecycle and58/60 metadata results did not override the upstream regression."
+    },
+    {
+      "iteration": 165,
+      "session_iteration": 3,
+      "reason": "Native physical/logical border precedence and initial-value control failed;138/139 native entries.",
+      "actual_font_checks_passed": 74,
+      "browser_tests_started": false,
+      "sanitizer_started": false
+    },
+    {
+      "iteration": 166,
+      "session_iteration": 4,
+      "decision": "rejected",
+      "binary_sha256": "a945c00c5a97ef2f128d88de2680f0c5f05c165eca3e54dcae0f7b7f9e99e6d3",
+      "normal_native_ctest_observed": [
+        139,
+        139
+      ],
+      "actual_font_controls_passed": 74,
+      "logical_border_controls_passed": 186,
+      "sanitizer": {
+        "finding": "Production memory-face ownership leak",
+        "bytes": 1056,
+        "font_pass_marker_present": false,
+        "review_sha256": "9fcc255be6453b256e4b97dcc7282622977416d359c64d13fbdd07ced5fca655"
+      },
+      "instrumented_browser_observations": {
+        "lifecycle_marker": [
+          41,
+          41
+        ],
+        "removed_link_marker": [
+          12,
+          12
+        ],
+        "wrapper_exit_codes": [
+          0,
+          0
+        ],
+        "actual_child_exit_codes": [
+          -9,
+          -9
+        ],
+        "owned_processes_and_profiles_drained": true,
+        "qualification": "Pass markers and wrapper exit0 are not proof of clean sanitizer shutdown; both actual instrumented children ended-9."
+      },
+      "qualification": "Normal focused gains remain intermediate evidence and do not override the sanitizer rejection."
+    },
+    {
+      "iteration": 167,
+      "session_iteration": 5,
+      "decision": "Rejected for final release after a reproducible rendering regression; original experimental checkpoint and measurements retained.",
+      "engine_commit": "0ab04bf2199659f443936b17372311f9fb5dc500",
+      "binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
+      "case": "overflow-wrap-anywhere-002.html",
+      "fresh_pair_sequence": [
+        {
+          "iteration": 162,
+          "status": "PASS",
+          "differing_pixels": 0
+        },
+        {
+          "iteration": 167,
+          "status": "FAIL",
+          "differing_pixels": 207
+        },
+        {
+          "iteration": 162,
+          "status": "PASS",
+          "differing_pixels": 0
+        },
+        {
+          "iteration": 167,
+          "status": "FAIL",
+          "differing_pixels": 207
+        }
+      ],
+      "original_render100": {
+        "pass": 37,
+        "fail": 61,
+        "unsupported": 1,
+        "timeout": 1
+      },
+      "qualification": "The 207 count is differing image pixels, not CSS width. Native font ownership repair passed its bounded sanitizer check, but whole-browser sanitizer shutdown remains unproven."
+    }
+  ],
+  "media_preparation": {
+    "kind": "Native-capture walkthrough, not continuous recording",
+    "target_duration_seconds_below": 60,
+    "target_canvas": [
+      960,
+      720
+    ],
+    "native_frame": [
+      800,
+      640
+    ],
+    "preserve_complete_native_pixels": true,
+    "crop": false,
+    "clean_and_credited_copies": true,
+    "final_accepted_capture_pending": false,
+    "probe163": {
+      "valid_png": true,
+      "wrapper_exit": 1,
+      "fixture_marker": "FAIL: no completion marker",
+      "native_child_exit_code": null,
+      "cleanup_verified": true,
+      "qualification": "A genuine capture artifact; not a passed fixture test."
+    },
+    "required_build": 168,
+    "historical167_frames_relabelled": false,
+    "capture_window": "After final broad review and actual drain only",
+    "actual_build": 168,
+    "capture_started_utc": "2026-10-29T02:04:06.850409Z",
+    "capture_ended_utc": "2026-10-29T02:04:47.359604Z",
+    "actual_frames": 5,
+    "wrapper_exit_codes": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "fixture_marker_status": "FAIL: capture-only missing marker",
+    "native_child_exit_codes": [
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "linked_cleanup_verified": true,
+    "fixture_test_pass_claim": false,
+    "visual_review": {
+      "progress_agent_reviewed_all_five": true,
+      "root_reviewed": [
+        "vertical-75",
+        "stylesheet-metadata"
+      ],
+      "separate_review_receipt_sha256": "de6ec502f05ab3ca473440fcb2f01c863ec076ef192b66a59b0f9a04ddf9c7d6"
+    },
+    "actual_metadata_result": {
+      "passed": 58,
+      "failed": 2,
+      "total": 60,
+      "elapsed_ms": 15077
+    },
+    "metadata_caption": "Load means observed load-event callback completion. Both parser rows have actual observed stylesheet request metadata but missing load callbacks; not loaded does not mean no HTTP request occurred.",
+    "encoding_complete": true,
+    "marker_qualification": "All five unchanged capture-only wrappers requested capture-only-no-pass-marker and actually emitted FAIL browser exited or fixture timed out. The metadata page separately emitted its diagnostic JSON58/60 but no RESULTS completion line. Genuine PNG artifacts and verified cleanup are not fixture-test passes.",
+    "media_asset": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-media-info.json",
+    "media_verification_asset": "public-media-verification.json",
+    "actual_encoding_drain_utc": "2026-10-29T02:15:17.552463Z",
+    "duration_seconds": 34,
+    "frames_per_video": 510,
+    "root_credited_still_review": true
+  },
+  "source_scope": {
+    "included": "Explicitly reviewed ordinary Linux engine, build inputs, public tests and necessary assets from the exact accepted commit; generated source inclusion metadata.",
+    "excluded": [
+      "Development ancestry",
+      "agent/ and agents/",
+      "private validation/comparator/runtime material",
+      "task.md",
+      "AGENTS.md",
+      "devsummary.md",
+      "credentials and browser profiles"
+    ],
+    "source_branch_commit": "2e04f123b584b8b6acce08a1e6416f1bf2793845",
+    "native_private_harness_included": false,
+    "fully_self_contained_reproduction_claim": false,
+    "external_font_test_requirements": [
+      "LUMEN_TEST_AHEM_FONT",
+      "LUMEN_TEST_ZERO_FONT"
+    ],
+    "missing_font_fixture_behavior": "Missing font configuration produces explicit skip 77, not executed font coverage or a pass.",
+    "external_font_fixtures": {
+      "fixtures": [
+        {
+          "name": "Ahem.ttf",
+          "bytes": 21768,
+          "sha256": "b719ecb31c5b21fc573c03f6421c74ac63c271a5a3ff841e34f9705fb94b8448",
+          "configuration_variable": "LUMEN_TEST_AHEM_FONT"
+        },
+        {
+          "name": "ChTestZeroWidthZero.woff",
+          "bytes": 1056,
+          "sha256": "45280eaf99497623d086bb218e8faf059e3034b675985d04139077393a99f22f",
+          "configuration_variable": "LUMEN_TEST_ZERO_FONT"
+        }
+      ],
+      "loaded_in_normal168_74_controls": true,
+      "loaded_in_instrumented167_74_controls": true,
+      "source_archive_included": false,
+      "missing_configuration_exit": 77,
+      "missing_configuration_meaning": "Explicit skip; no executed font coverage.",
+      "instrumentation_scope": "The clean instrumented build 167 font proof covers unchanged font code, not new build 168 inline code or whole-browser sanitizer shutdown."
+    },
+    "previous_showcase_commit": "d8a7a4c76f4213f5e2e9d6b9fbb3da29f49441fa",
+    "showcase_commit": null,
+    "source_branch_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-engine-experimental-source-20261029",
+    "source_branch_pushed_at_report_preparation": true,
+    "source_snapshot_commit_count": 1,
+    "development_ancestry_included": false,
+    "source_branch_push_completed_utc": "2026-10-29T02:16:30.732877Z",
+    "source_branch_remote_sha_verified": "2e04f123b584b8b6acce08a1e6416f1bf2793845",
+    "source_orphan_review_sha256": "3c268a33bfedfa60f8371b94f8ede037eb883ef9333d8d697eb6d9c01b2648a1"
+  },
+  "receipt_requirements": [
+    "Keep immutable build/media preparation facts separate from later publication observations.",
+    "Record original engine commit, independent source snapshot commit and showcase commit separately.",
+    "Verify public size and SHA256 after publication; keep failed upload/HTTP observations with their actual timestamps.",
+    "Do not label unpublished or rejected candidates as accepted source."
+  ],
+  "references": [
+    "https://drafts.csswg.org/css-logical/",
+    "https://www.w3.org/TR/fetch-metadata/",
+    "https://html.spec.whatwg.org/multipage/links.html#link-type-stylesheet"
+  ],
+  "current_candidate": {
+    "iteration": 168,
+    "session_iteration": 6,
+    "classification": "Qualified experimental checkpoint only",
+    "engine_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
+    "publication_observations": "See the separate publication receipt for current public bytes and commit IDs."
+  },
+  "provisional_font_isolation": {
+    "created_utc": "2026-10-29T00:22:12.036091+00:00",
+    "cohort": "font-metrics-upstream4",
+    "scope": "Separate font-isolation diagnostic comparing rejected immutable164 to166 and current Chromium; accepted163 remains the regression oracle for original focus cohorts.",
+    "normal_review_sha256": "b7ddb0ff8171d0e2eae3ce0507b310caa16ca9348c16399aeaab747602eab97d",
+    "totals": {
+      "diagnostic164": {
+        "passed": 1,
+        "registered": 20
+      },
+      "candidate166": {
+        "passed": 6,
+        "registered": 20
+      },
+      "chromium150_0_7871_114": {
+        "passed": 14,
+        "registered": 20
+      },
+      "common_pass_gains": 5,
+      "common_pass_losses": 0,
+      "all_five_gains_matching_chromium_PASS": true
+    },
+    "cohorts": [
+      {
+        "url": "/css/css-values/ch-recalc-on-font-load.html",
+        "results": {
+          "164": {
+            "passed": 0,
+            "registered": 3,
+            "harness": "OK"
+          },
+          "166": {
+            "passed": 3,
+            "registered": 3,
+            "harness": "OK"
+          },
+          "chromium": {
+            "passed": 3,
+            "registered": 3,
+            "harness": "OK"
+          }
+        }
+      },
+      {
+        "url": "/css/css-values/ch-pseudo-recalc-on-font-load.html",
+        "results": {
+          "164": {
+            "passed": 0,
+            "registered": 5,
+            "harness": "OK"
+          },
+          "166": {
+            "passed": 2,
+            "registered": 5,
+            "harness": "OK"
+          },
+          "chromium": {
+            "passed": 5,
+            "registered": 5,
+            "harness": "OK"
+          }
+        }
+      },
+      {
+        "url": "/css/css-values/ch-empty-pseudo-recalc-on-font-load.html",
+        "results": {
+          "164": {
+            "passed": 0,
+            "registered": 3,
+            "harness": "OK"
+          },
+          "166": {
+            "passed": 0,
+            "registered": 3,
+            "harness": "OK"
+          },
+          "chromium": {
+            "passed": 0,
+            "registered": 3,
+            "harness": "OK"
+          }
+        }
+      },
+      {
+        "url": "/css/css-values/using-font-relative-units-in-font-properties.html",
+        "results": {
+          "164": {
+            "passed": 1,
+            "registered": 9,
+            "harness": "OK"
+          },
+          "166": {
+            "passed": 1,
+            "registered": 9,
+            "harness": "OK"
+          },
+          "chromium": {
+            "passed": 6,
+            "registered": 9,
+            "harness": "OK"
+          }
+        }
+      }
+    ],
+    "remaining_failure_families": [
+      {
+        "family": "Non-generated/typographic pseudo font-load invalidation",
+        "cases": 3,
+        "symptom": "first-letter,first-line,marker retain25 where the unchanged test requires less than24",
+        "chromium_passes": 3
+      },
+      {
+        "family": "Empty pseudo computed font metric observation",
+        "cases": 3,
+        "symptom": "before,after,backdrop produceNaN in the unchanged observer",
+        "chromium_passes": 0,
+        "chromium_fails": 3,
+        "limit": "Shared observed failure, not proof that either engine implements the expected behavior."
+      },
+      {
+        "family": "Font-property math and computed-value serialization",
+        "cases": 8,
+        "symptom": "Unresolved calc/ident in feature/palette/size-adjust/variant/variation values, oblique serializeditalic, weight400 instead of10, unsupported computedfont-width",
+        "chromium_passes": 5,
+        "chromium_fails": 3
+      }
+    ],
+    "inline_axis_source_evidence": {
+      "horizontal_or_rotated_zero": "hb_font_get_glyph_h_advance /64",
+      "vertical_upright_zero": "absolute hb_font_get_glyph_v_advance /64 selected for supported verticalwriting-mode plus text-orientation:upright",
+      "cache": "separate horizontal/vertical advances, explicitvalid flag, fontgeneration",
+      "native_measured_controls": [
+        "Ahem actual horizontalzero10px",
+        "Ahem actual verticalzero10px",
+        "vertical-rl/upright4ch resolves40px",
+        "actual horizontalzero-advance font0px remains valid throughcache"
+      ],
+      "dpr_limit": "CSS/logical-pixel API reviewed; no additional high-DPI browser coverage claim."
+    },
+    "limits": [
+      "Native74 checks and browser20subtests are separate coverage, not additive.",
+      "Sideways modes, context-free grammar paths and broader fontfallback/Unicode-range limits remain.",
+      "No isolated negative-margin browser gain: original162/164/Chromium already13/13.",
+      "No fixtures, expected values, selections or deadlines were changed for this summary."
+    ],
+    "result_sha256": {
+      "164": "d2e77b17bd3692cd812af16644f47c467d4fdb67337e4313d88bf71c854df2c3",
+      "166": "f25bef3582f01a4e8e5184df133df22a316b10cd60fd6eeb0dc9e6d514826cee",
+      "chromium": "4306100a00444f3e0815d1c81416727fe6770fb9bfbccf8aaa318d8af217ee9f"
+    }
+  },
+  "updated_utc": "2026-10-29T02:17:47.580117Z",
+  "remaining_selected_families": [
+    {
+      "family": "CSS Grid",
+      "fully_passing": 45,
+      "selected_variants": 152,
+      "completed_variants_with_failed_subtests": 107,
+      "timeout": 0,
+      "error": 0
+    },
+    {
+      "family": "Sizing",
+      "fully_passing": 18,
+      "selected_variants": 68,
+      "completed_variants_with_failed_subtests": 50,
+      "timeout": 0,
+      "error": 0
+    },
+    {
+      "family": "Flexbox",
+      "fully_passing": 51,
+      "selected_variants": 92,
+      "completed_variants_with_failed_subtests": 41,
+      "timeout": 0,
+      "error": 0
+    },
+    {
+      "family": "SVG",
+      "fully_passing": 12,
+      "selected_variants": 77,
+      "completed_variants_with_failed_subtests": 53,
+      "timeout": 10,
+      "error": 2
+    },
+    {
+      "family": "Editing",
+      "fully_passing": 21,
+      "selected_variants": 79,
+      "completed_variants_with_failed_subtests": 55,
+      "timeout": 3,
+      "error": 0
+    },
+    {
+      "family": "Fetch",
+      "fully_passing": 46,
+      "selected_variants": 99,
+      "completed_variants_with_failed_subtests": 43,
+      "timeout": 10,
+      "error": 0
+    },
+    {
+      "family": "Referrer Policy",
+      "fully_passing": 86,
+      "selected_variants": 139,
+      "completed_variants_with_failed_subtests": 46,
+      "timeout": 7,
+      "error": 0
+    },
+    {
+      "family": "Speculation",
+      "fully_passing": 0,
+      "selected_variants": 47,
+      "completed_variants_with_failed_subtests": 0,
+      "timeout": 1,
+      "error": 46,
+      "qualification": "The 46 ERROR variants produced no subtests; this is a setup/harness observation, not proof of entire API absence."
+    },
+    {
+      "family": "WebNN",
+      "fully_passing": 0,
+      "selected_variants": 66,
+      "completed_variants_with_failed_subtests": 60,
+      "timeout": 0,
+      "error": 6,
+      "qualification": "These selected outcomes do not establish that the entire API is absent."
+    }
+  ],
+  "remaining_family_qualifications": {
+    "scope": "Representative families inside the same fixed4,200 selection, not full API suites.",
+    "completed_failure_definition": "A completed variant with one or more failed subtests; these counts are variants, not individual subtest counts.",
+    "chromium_matched_family_counts_supplied": false,
+    "claim_chromium_passes_these_families": false,
+    "entire_api_absence_inferred": false,
+    "first_follow_up_risks": [
+      "Observed batch-sensitive losses and their fixed diagnostic interpretation",
+      "Incomplete whole-browser sanitizer shutdown"
+    ]
+  },
+  "publication_ready": true,
+  "previous_public_source": {
+    "iteration": 163,
+    "session_iteration": 1,
+    "engine_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
     "binary_sha256": "db0027c34c774bcfaea7269a208b26ae3d1ef66ec77213be218f87c173ceaef5",
     "recorded_inputs": 603,
     "recorded_input_digest": "f45a6045789179c94eb2c405e8ee66853abacc5fb24275c9ca14072e96cc3712",
-    "recorded_inputs_match_git_and_archive": true,
-    "repository_files": 696,
-    "generated_metadata_files": 1,
-    "archive_regular_files": 697,
-    "archive_bytes": 4438760,
-    "archive_sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0",
-    "source_inclusion_manifest_sha256": "bf8694f867a854fab58fb49f647a654a36365632b263a67626047c2d6e5005b3",
-    "literal_cmake_references_checked": 124,
-    "literal_cmake_references_missing": [],
-    "fresh_extracted163_build_performed": false,
-    "hermetic_build_claimed": false,
-    "recorded_manifest_is_compiler_dependency_closure": false,
-    "omitted_scope": [
-      "Local agent task and handoff documents",
-      "Private validation helpers, raw result reports and runtime",
-      "Browser profiles, credentials and feedback capabilities",
-      "Full Git history and private development branches"
+    "source_archive": {
+      "sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0",
+      "bytes": 4438760,
+      "regular_files": 697,
+      "repository_files": 696,
+      "generated_metadata_files": 1
+    },
+    "fresh_extracted_build": {
+      "performed": false,
+      "qualification": "No extracted163 build was claimed; source/input membership checks are distinct from compiler dependency closure."
+    }
+  },
+  "pending_final_source": null,
+  "focused_results": [
+    [
+      "Final native suite",
+      "Build 168: 140 / 140 CTest entries; 22 whitespace and 74 actual-font controls",
+      "Native controls are separate from upstream WPT and are not added to WPT totals."
     ],
-    "external_requirements": [
-      "Native compiler and platform development libraries",
-      "Matching external V8 and wgpu dependencies for the native browser",
-      "Systemd user quota support for the retained build wrapper"
+    [
+      "Logical size / writing mode",
+      "Build 163 authored 224 / 224 versus fresh 162 at 210 / 224; all 14 gains also PASS in Chromium",
+      "Historical focused acceptance evidence. Forty inherited authored aspect-ratio expectation differences explain Chromium 184 / 224; no superiority claim."
+    ],
+    [
+      "Stylesheet request metadata",
+      "Upstream focus: build 163 20 / 20 versus 162 8 / 20, matching Chromium",
+      "Historical exact 12 upstream gains. Fresh build 168 capture observes 58 / 60 authored integration checks; two parser load callbacks remain missing."
+    ],
+    [
+      "Frame stylesheet lifecycle",
+      "Build 166 normal authored lifecycle 41 / 41 and removed-link 12 / 12",
+      "Inherited focused evidence is labeled 166. Instrumented browser children ended -9, so these markers do not prove clean sanitizer shutdown."
+    ],
+    [
+      "Font metric units",
+      "Diagnostic rejected build 164 at 1 / 20; build 166 and fresh build 168 at 6 / 20; Chromium 14 / 20",
+      "The five isolated gains match Chromium. This diagnostic baseline is build 164, not fresh 162; broader font and pseudo-element limitations remain."
+    ],
+    [
+      "Rendering repair",
+      "Build 168 restores overflow-wrap-anywhere-002.html to PASS with 0 differing pixels",
+      "Build 167 had a reproducible 207-pixel failure. Final 100-case rendering statuses match the dated build 162 set: 38 PASS, 60 FAIL, 1 UNSUPPORTED, 1 TIMEOUT."
+    ],
+    [
+      "Sanitizer qualification",
+      "Build 167 native font controls: 74, actual exit 0, no observed diagnostics",
+      "Covers unchanged font ownership code only; new build 168 inline code and whole-browser sanitizer shutdown are not established by that proof."
     ]
-  },
-  "focused_results": {
-    "native_ctest": {
-      "pass": 138,
-      "total": 138
-    },
-    "authored_logical_sizing": {
-      "baseline162": {
-        "pass": 210,
-        "total": 224
-      },
-      "checkpoint163": {
-        "pass": 224,
-        "total": 224
-      },
-      "chromium": {
-        "pass": 184,
-        "total": 224
-      },
-      "common_pass_gains": 14,
-      "common_pass_losses": 0,
-      "new_or_missing_identities": 0,
-      "all_14_new_passes_match_chromium": true,
-      "qualification": "The 40 Chromium differences are inherited noninitial aspect-ratio resolved-style expectation differences, excluded from the new gains. This authored result does not establish superiority to Chromium."
-    },
-    "upstream_stylesheet_metadata": {
-      "path": "fetch/metadata/style.https.sub.html",
-      "baseline162": {
-        "pass": 8,
-        "total": 20
-      },
-      "checkpoint163": {
-        "pass": 20,
-        "total": 20
-      },
-      "chromium": {
-        "pass": 20,
-        "total": 20
-      },
-      "common_pass_gains": 12,
-      "common_pass_losses": 0
-    },
-    "unchanged_sizing_holdout": {
-      "urls": 38,
-      "pass": 213,
-      "total": 326,
-      "common_pass_losses": 0,
-      "identities_stable": true
-    },
-    "unchanged_animation_holdout": {
-      "urls": 6,
-      "pass": 1380,
-      "total": 1504,
-      "common_pass_losses": 0,
-      "identities_stable": true
-    },
-    "authored_stylesheet_iframe_integration": {
-      "checks": 60,
-      "baseline162_pass": 12,
-      "checkpoint163_pass": 42,
-      "chromium_pass": 60,
-      "checkpoint163_remaining_failures": {
-        "parser_header_checks": 6,
-        "load_callbacks": 12
-      },
-      "collector": "v2 output-only: short per-check records replace a truncated long native console JSON line; identical original totals, expectations, event order and 15-second completion cap retained",
-      "new_or_missing_identities": 0
-    }
-  },
-  "verification": {
-    "independent_acceptance_seal_sha256": "55aada557539c7b9196f0bd20150345c1f3ba00fd802c85a7c495200a4c1cc09",
-    "focused_guard_exits_and_owned_profile_cleanup_verified": true,
-    "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
-    "chromium_reference": {
-      "version": "150.0.7871.114",
-      "binary_sha256": "d176751de81c10df1a96052f897155b2b055a8426cddd102f5a1ad102832d5d9",
-      "scope": "Installed reference version, not a claim about the latest Chromium release",
-      "focused_reference_freshness": "Fresh current-session focused and integration comparisons; exact accepted gate and collector scopes remain separate",
-      "broad_reference_freshness": "Previous completed session, retained Chromium4200 reference completed2026-10-28T17:36:29Z; no new broad Chromium measurement is claimed here"
-    }
-  },
-  "broad_reference": {
-    "status": "Previous completed session; fresh162 replay and finalcandidate comparison pending",
-    "selected_variants": 4200,
-    "pinned_testharness_inventory": 39394,
-    "selection_percent": 10.66,
-    "full_wpt": false,
-    "lumen162": {
-      "fully_passing_variants": 1627,
-      "pass_subtests": 199248,
-      "reported_subtests": 215641
-    },
-    "chromium_previous_session": {
-      "fully_passing_variants": 3534,
-      "pass_subtests": 209574,
-      "reported_subtests": 217350
-    },
-    "retained162_versus150": {
-      "common_pass_gains": 121,
-      "common_pass_losses": 13,
-      "missing_identities": 16
-    },
-    "checkpoint163_broad_result": null,
-    "fresh162_replay_started_utc": "2026-10-28T23:03:43Z"
-  },
-  "performance": "No fresh matched163 performance measurement is claimed. Historical161 timings do not measure163.",
-  "media": {
-    "iteration": 162,
-    "description": "Retained actual 36-second native Linux recording from the prior session; not a video of checkpoint163 fixes.",
-    "duration_seconds": 36,
-    "width": 960,
-    "height": 720,
-    "new_capture_or_encoding_performed": false
-  },
-  "links": {
-    "live_progress": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
-    "public_site": "https://ecooxai.github.io/lumen/",
-    "source": "src.tar.gz",
-    "source_manifest": "source-inclusion-manifest.json"
-  },
-  "measurement_notes": [
-    "WPT totals count reported testharness subtests, not individual assert calls.",
-    "A fully passing variant requires harness OK, at least one registered subtest, and all reported subtests PASS.",
-    "Authored checks, native CTest entries and upstream WPT subtests are separate categories.",
-    "Focused selections may overlap and are not added to the fixed 4,200 denominator.",
-    "The progress website is not an online replacement for the native Linux browser."
   ],
-  "standards_references": [
-    {
-      "url": "https://drafts.csswg.org/css-logical-1/#logical-to-physical",
-      "scope": "Logical-to-physical mapping depends on writing mode."
-    },
-    {
-      "url": "https://w3c.github.io/webappsec-fetch-metadata/",
-      "scope": "Request metadata fields and site classification."
-    },
-    {
-      "url": "https://html.spec.whatwg.org/multipage/semantics.html#fetching-and-processing-a-resource-from-a-link-element",
-      "scope": "Fetching and processing external stylesheet links."
-    }
-  ],
-  "global_build_id": 163,
-  "session_iteration": 1,
-  "iteration_note": "Build163 is the first accepted candidate in session4. Global build IDs do not count iterations completed during this three-hour window."
+  "core_claim_review_sha256": "9b43ad8942343ad9533f155f9217036e89d4832da912c2d73540f512e9aaaca7",
+  "core_claim_reviewed_report_sha256": "13f45c91002d46d89b66ee6b4a63007adfcf6e9fd737338dc7154a54e7d47033",
+  "as_of_publication_checkpoint_utc": "2026-10-29T02:18:06.679389Z",
+  "elapsed_minutes_at_publication_checkpoint": 211.228
 }

@@ -1,14 +1,17 @@
 {
-  "archive_bytes": 4438760,
+  "archive_bytes": 4451575,
   "archive_filename": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-engine-source.tar.gz",
-  "archive_regular_files": 697,
-  "archive_sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0",
-  "binary_sha256": "db0027c34c774bcfaea7269a208b26ae3d1ef66ec77213be218f87c173ceaef5",
-  "build_claim": "Exact recorded inputs match the accepted binary source and this snapshot. No fresh extracted163 rebuild has been run; this is not a hermetic toolchain.",
+  "archive_regular_files": 699,
+  "archive_sha256": "bddd9f93afca4d8fbbf036229c1bcbe2f8e20aaec53caf48c73d6f0457458277",
+  "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+  "browser_sanitizer_shutdown_verified": false,
+  "build_claim": "Exact recorded inputs match qualified experimental build 168 and this snapshot. No fresh extracted-source rebuild was run at preparation time; later verification is recorded separately. This is not a hermetic toolchain.",
+  "checkpoint_classification": "EXPERIMENTAL",
   "external_requirements": [
     "Native compiler and platform development libraries",
     "Matching external V8 and wgpu dependencies for the native browser",
-    "Systemd user quota support for the retained build wrapper"
+    "Systemd user quota support for the retained build wrapper",
+    "Actual font unit controls require separately supplied Ahem.ttf (SHA256 b719ecb31c5b21fc573c03f6421c74ac63c271a5a3ff841e34f9705fb94b8448) and ChTestZeroWidthZero.woff (SHA256 45280eaf99497623d086bb218e8faf059e3034b675985d04139077393a99f22f) via LUMEN_TEST_AHEM_FONT and LUMEN_TEST_ZERO_FONT; absent configuration produces explicit skip77. These external fixtures are not bundled."
   ],
   "files": [
     {
@@ -18,10 +21,10 @@
       "sha256": "1f51a80dd1482d34c0b6a106bf20826dc8c85cc5a464e321c91c8d8ee914af0c"
     },
     {
-      "bytes": 47518,
-      "git_blob": "9232b0d28c1391b0daa710525fc62fd2405d5926",
+      "bytes": 48909,
+      "git_blob": "3cbb9ed90957a07617789bd2260dac0181653ada",
       "path": "CMakeLists.txt",
-      "sha256": "a087e89ecc154db52e784ba5fb0e1405a9a6a74cadf20b88e3e4a86d52272473"
+      "sha256": "a2cb73c3f3ebd6533d9d7c4333e155f1136db9b3e2901c94d4433ec821f00cd5"
     },
     {
       "bytes": 1061,
@@ -708,10 +711,10 @@
       "sha256": "d92ab69fd2798a34590a4086bddfa9303a6cb0d2e8b138d45041999345236f55"
     },
     {
-      "bytes": 442135,
-      "git_blob": "3b53a5d1ccd52689e850ba0da19ebd6005566ef7",
+      "bytes": 444527,
+      "git_blob": "60f4783e6bddd3cbbc34a870c41c4aeb166b4501",
       "path": "src/app/main.c",
-      "sha256": "2b9e23cc0a557411d70ee868b552e816c119227f3e441bcd519b5e4a838025f9"
+      "sha256": "575ffef32359ce252659137b4d43800883775b5161fe3351acdcc185deda794d"
     },
     {
       "bytes": 1280,
@@ -846,10 +849,10 @@
       "sha256": "3a2d6b7badf6f29f66a6475d849f123bfe3f6f9e007fb410709869d5c284f1c6"
     },
     {
-      "bytes": 25937,
-      "git_blob": "abff032f6cc2af0506702e7210d3205c0c0f5c96",
+      "bytes": 26136,
+      "git_blob": "9bd61b94c0f6f58af85f65853bb1f91e91efe530",
       "path": "src/css/css.h",
-      "sha256": "3958b63a9f927eb42ecd0aee6759fcf47e6a977720c5699804e1887b633c270a"
+      "sha256": "cd601f450c102f2b89f40d93506ba938f4bdbbdf37ca546e50e4f97981b02f5d"
     },
     {
       "bytes": 10114,
@@ -876,10 +879,10 @@
       "sha256": "b3113f4c05fcfffea6a48d98e349ee3db013abbb709f50abac3bd3a9e2869e85"
     },
     {
-      "bytes": 366177,
-      "git_blob": "97c18b7bdab8738c071e226b5facbddd1118c72a",
+      "bytes": 379140,
+      "git_blob": "37a0dd302da67fce72f437ddd09bc0c5e9b75550",
       "path": "src/css/style.c",
-      "sha256": "ed8dbccc6ba8cd6011c605503ee4c7c954acadfe5fa73450b54e8030980bdebc"
+      "sha256": "3206ca4aafee6bfda3ede9cd22dce09a96fe13a7ff8bedf7af850941beca20a0"
     },
     {
       "bytes": 4895,
@@ -1074,10 +1077,10 @@
       "sha256": "adff03116c450fb53d6600ae9ad0383d74db0b430ce1c6aa4daf2a7b6bc1bb8d"
     },
     {
-      "bytes": 104387,
-      "git_blob": "cc40af2f4d802a3d0a911f35fadc0e1d26320cd7",
+      "bytes": 105035,
+      "git_blob": "9086b60ad643e10090f8a4cd14775e8a99f1644b",
       "path": "src/js/prelude/03-element.js",
-      "sha256": "df5bc6f3768b0893e12812fdacbd9e4a805a1188d28353318c60745ae57a591c"
+      "sha256": "2eef1d356acc1cf0572344f15cafa74c78200585a181a41dc369f9402cd939b2"
     },
     {
       "bytes": 39041,
@@ -1488,10 +1491,10 @@
       "sha256": "51f26a8e4e636c8887f062f75cca312ebf555f442b2bd91b5a09d7e4f3282997"
     },
     {
-      "bytes": 13267,
-      "git_blob": "a49a5dcb47769886eea1ccad05fe4a0706dd8d12",
+      "bytes": 13488,
+      "git_blob": "99fa924e0f381ad7bae941a721513f022435ac37",
       "path": "src/layout/inline.c",
-      "sha256": "46d47b2df2421fa6fcfaacf01e10d05617fa38384e9f214bd3234aa230c9bffc"
+      "sha256": "44c04ef4115b85593bbe497cac9f43e1907cd37e2f170c58ca1eb1d1a46f1947"
     },
     {
       "bytes": 6628,
@@ -1692,16 +1695,16 @@
       "sha256": "92c90dc8b20d132fbc6575264de3dd4df818ad0c914bec2ea822e7661d8e5d9c"
     },
     {
-      "bytes": 44343,
-      "git_blob": "c88c15cd5906937a9dc0acc52f763cb03600dc08",
+      "bytes": 46206,
+      "git_blob": "da5ae0133278e52aade84848fbbfdabf343589c2",
       "path": "src/text/font.c",
-      "sha256": "416aa88e65c152e5828822363d1f0695802060943575cd5fa652ed64211ad11f"
+      "sha256": "30e440f0fe2dbd2849a6e216dbe32ec3eb788ab9a46b3cce2d029f1c1025e27e"
     },
     {
-      "bytes": 1946,
-      "git_blob": "02bce336cf4886b45a33588345401415ee8e52dc",
+      "bytes": 2218,
+      "git_blob": "f0370ac46cb714c7aa16bf0ed97cb751eddf52fc",
       "path": "src/text/font.h",
-      "sha256": "bdd9d63dba96b3102fc1110192b5fc5dfa76bcd607bc67de12c77fcc87641382"
+      "sha256": "d0bd3b1e061df7c648758798a4d556a7722776cf3e6cb6d176c17832fec65b66"
     },
     {
       "bytes": 4638,
@@ -3552,6 +3555,12 @@
       "sha256": "541459dec14371562ffeef79a8c78e6ed3ebf98f6673e43125280c4e891dc323"
     },
     {
+      "bytes": 3056,
+      "git_blob": "ea110b55893e7600c737526b73f35bc9010b27b4",
+      "path": "tests/test_break_spaces.c",
+      "sha256": "7ccad383118205096d3138f70415bd58a02083cecba01eab480c38fa02be719a"
+    },
+    {
       "bytes": 4365,
       "git_blob": "25ed25e03e1ed726c73b5a7670abc523b8a38189",
       "path": "tests/test_broadcast_site.cc",
@@ -3648,10 +3657,10 @@
       "sha256": "06e3191772555ebaa58ceecfa2d03bee61b3f3c03ba94258c5a142c3c9bced9a"
     },
     {
-      "bytes": 7220,
-      "git_blob": "c571df32f43cbaeed6067476374bd5c07c634b76",
+      "bytes": 7623,
+      "git_blob": "ebd258b0e1f6484dc70ad634852f5ed00dc51506",
       "path": "tests/test_fetch_metadata.c",
-      "sha256": "561194a5783508474665f6542ce021508bf266878285414e036c5e5cb2786d77"
+      "sha256": "8e881a1fe441e7e684b7fd7f230a20bbbb5b36bfdab0b6133d23583a4729eb57"
     },
     {
       "bytes": 2885,
@@ -3670,6 +3679,12 @@
       "git_blob": "2d12621caa5d28c6d29beb4bb661a2d4a48af0bd",
       "path": "tests/test_font_fallback.c",
       "sha256": "08a060f576feaedba30f333bb82da3f51f06490f14eb8f37af889419004046d5"
+    },
+    {
+      "bytes": 9645,
+      "git_blob": "dd76f9990777ad02a83cce4bf25614363991c00f",
+      "path": "tests/test_font_units.c",
+      "sha256": "c227da1cd4d47b9f9da01dae6ec6a8b1ff79370fa8dd1372ceec0defb950fc2b"
     },
     {
       "bytes": 1344,
@@ -3846,10 +3861,10 @@
       "sha256": "3d211e537dddb459486b9bd095ae5e9f4095405e2700cca56b0c2441a465c494"
     },
     {
-      "bytes": 6481,
-      "git_blob": "18e34d6a2c06dfc7f1574083baf247b438f6fbef",
+      "bytes": 26010,
+      "git_blob": "30916b8c554bb403861bd5326c3456506b57f994",
       "path": "tests/test_logical_size.c",
-      "sha256": "a729b9313d9e4d658800115ea4cea0ed7fc3b726f159a837623cb21103ca1976"
+      "sha256": "2e26edc7761c3400f340326cc7f0ce580741555ea1ae99b635ec5ae7cf87d20f"
     },
     {
       "bytes": 1424,
@@ -4189,7 +4204,9 @@
     }
   ],
   "generated_metadata_files": 1,
-  "literal_cmake_references_checked": 124,
+  "goal_achieved": false,
+  "goal_score": 98,
+  "literal_cmake_references_checked": 126,
   "literal_cmake_references_missing": [],
   "omitted_scope": [
     "Local agent task and handoff documents",
@@ -4197,13 +4214,17 @@
     "Browser profiles, credentials and feedback capabilities",
     "Full Git history and private development branches"
   ],
-  "prepared_utc": "2026-10-28T23:05:51.591811+00:00",
-  "recorded_input_count": 603,
-  "recorded_input_digest": "f45a6045789179c94eb2c405e8ee66853abacc5fb24275c9ca14072e96cc3712",
-  "recorded_inputs_included_and_exact": 603,
+  "prepared_utc": "2026-10-29T02:08:28.944563+00:00",
+  "production_release_claim": false,
+  "qualification": "Qualified experimental checkpoint only. The fixed 4200 comparison retained 102 common PASS gains and 3 prior-PASS losses; isolated diagnostics did not reproduce a final-only difference, but batch-history/load sensitivity remains unresolved. Whole-browser sanitizer shutdown is unproven.",
+  "recorded_input_count": 605,
+  "recorded_input_digest": "caddfbad3c0df624b82cd3a846ce42475d49a6544ec5f53cb136e58753a4bdc7",
+  "recorded_inputs_included_and_exact": 605,
   "recorded_manifest_is_compiler_dependency_closure": false,
-  "repository_files": 696,
+  "regression_free_claim": false,
+  "repository_files": 698,
   "scope": "Reviewed-membership engine, resources, ordinary tests and build-input snapshot. Private validation setup and full development history are excluded.",
-  "source_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
-  "tested_iteration": 163
+  "source_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
+  "tested_iteration": 168,
+  "whole_goal_readiness_estimate": 19
 }

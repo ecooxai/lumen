@@ -1,0 +1,43 @@
+{
+  "status": "FRESH_REVIEWED_SOURCE_BUILD_AND_TARGETED_NATIVE_CONTROLS_VERIFIED",
+  "source_archive_sha256": "bddd9f93afca4d8fbbf036229c1bcbe2f8e20aaec53caf48c73d6f0457458277",
+  "source_engine_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
+  "source_input_count": 605,
+  "source_file_count": 699,
+  "all_extracted_repository_file_hashes_stable": true,
+  "configure_build_and_two_native_test_exit_codes": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "fresh_build_targets": [
+    "lumen",
+    "test_break_spaces",
+    "test_font_units"
+  ],
+  "preserved_space_controls": 22,
+  "actual_font_controls": 74,
+  "font_skip": false,
+  "compile_command_units": 146,
+  "all_translation_units_in_extraction_or_generated_build": true,
+  "no_live_engine_src_or_tests_paths_in_compile_commands": true,
+  "archive_built_binary_sha256": "b498a8dae4cd0bc4896304b5aace8c4176bc6476f899cf9667b63152797910df",
+  "measured_immutable168_binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+  "browser_executed_from_archive_build": false,
+  "bit_identical_claim": false,
+  "hermetic_claim": false,
+  "actual_started_utc": "2026-10-29T02:12:22.849193+00:00",
+  "actual_finished_utc": "2026-10-29T02:13:19.936005+00:00",
+  "elapsed_seconds": 57.087,
+  "one_second_resource_samples": 57,
+  "actual_owner_root_monitor_absent": true,
+  "remaining_owned_processes": [],
+  "external_requirements": [
+    "Existing Clang/system development libraries",
+    "Explicit external V8 headers/libraries and wgpu headers/library",
+    "Separately supplied pinned Ahem and zero-advance fonts; both actual74controls executed"
+  ],
+  "independent_review_sha256": "78127ac050b8d87548ea31812db56776dc227c648b93b24fd76eae15277f8bcd",
+  "qualification": "The exact reviewed source archive built successfully in this Linux environment using declared external dependencies. The new build ran 22 whitespace and 74 actual-font controls with no skips. Its binary differs from measured immutable build 168; the 4,200-variant, rendering and performance results belong to that measured binary. This is not a hermetic or bit-identical build, Android verification, a complete compiler dependency audit, or a rerun of all 140 native tests."
+}

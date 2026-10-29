@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "preparation_started_utc": "2026-10-29T02:15:12.409463Z",
+  "preparation_completed_utc": "2026-10-29T02:15:17.552994Z",
+  "publication_state_at_preparation": "not yet published; a later publication receipt is authoritative",
+  "checkpoint_classification": "EXPERIMENTAL",
+  "release_claim": false,
+  "browser_sanitizer_shutdown_verified": false,
+  "kind": "native-capture walkthrough; not continuous recording",
+  "iteration": 168,
+  "session_iteration": 6,
+  "engine_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
+  "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+  "whole_goal_score": 19,
+  "whole_goal_score_qualification": "Conservative engineering readiness estimate; not a measured conformance percentage or a percentage derived from native unit tests.",
+  "canvas": [
+    960,
+    720
+  ],
+  "native_frame": [
+    800,
+    640
+  ],
+  "native_offset": [
+    80,
+    0
+  ],
+  "crop": false,
+  "rescale": false,
+  "duration_seconds": 34.0,
+  "frames": [
+    {
+      "state": "vertical-25",
+      "source_png_sha256": "6eae16116d8aa6a92c3d0e9d1b5fe2f504a4c466741574840b9bdbc8e4b47a73",
+      "source_png_dimensions": [
+        800,
+        640
+      ],
+      "duration_seconds": 6,
+      "wrapper_exit_code": 1,
+      "fixture_marker_status": "FAIL: capture-only missing marker",
+      "native_child_exit_code": null,
+      "guard_cleanup_verified": true,
+      "visual_reviewed_by": "Progress agent",
+      "actual_geometry": {
+        "writing_mode": "vertical-rl",
+        "time_ms": 250,
+        "min_inline_size": "0px",
+        "min_width": "0px",
+        "min_height": "0px",
+        "width": 80,
+        "height": 80,
+        "expected_width": 80,
+        "expected_height": 80,
+        "pass": true
+      },
+      "actual_metadata_result": null
+    },
+    {
+      "state": "vertical-75",
+      "source_png_sha256": "f8769a122dcacb8360fcdad5709c4acb2048a69df4138775c1fb9fabc6b879e4",
+      "source_png_dimensions": [
+        800,
+        640
+      ],
+      "duration_seconds": 6,
+      "wrapper_exit_code": 1,
+      "fixture_marker_status": "FAIL: capture-only missing marker",
+      "native_child_exit_code": null,
+      "guard_cleanup_verified": true,
+      "visual_reviewed_by": "Progress agent; root independently reviewed this frame",
+      "actual_geometry": {
+        "writing_mode": "vertical-rl",
+        "time_ms": 750,
+        "min_inline_size": "160px",
+        "min_width": "0px",
+        "min_height": "160px",
+        "width": 80,
+        "height": 160,
+        "expected_width": 80,
+        "expected_height": 160,
+        "pass": true
+      },
+      "actual_metadata_result": null
+    },
+    {
+      "state": "horizontal-25",
+      "source_png_sha256": "93f218510c5996e527d19140be17b2dc897200117044607ae26163e1c2d792b3",
+      "source_png_dimensions": [
+        800,
+        640
+      ],
+      "duration_seconds": 6,
+      "wrapper_exit_code": 1,
+      "fixture_marker_status": "FAIL: capture-only missing marker",
+      "native_child_exit_code": null,
+      "guard_cleanup_verified": true,
+      "visual_reviewed_by": "Progress agent",
+      "actual_geometry": {
+        "writing_mode": "horizontal-tb",
+        "time_ms": 250,
+        "min_inline_size": "0px",
+        "min_width": "0px",
+        "min_height": "0px",
+        "width": 80,
+        "height": 80,
+        "expected_width": 80,
+        "expected_height": 80,
+        "pass": true
+      },
+      "actual_metadata_result": null
+    },
+    {
+      "state": "horizontal-75",
+      "source_png_sha256": "3a5e2b97cf17d3e45475c1806b16822d4d147a5e817866e3377e73fb3ff33833",
+      "source_png_dimensions": [
+        800,
+        640
+      ],
+      "duration_seconds": 6,
+      "wrapper_exit_code": 1,
+      "fixture_marker_status": "FAIL: capture-only missing marker",
+      "native_child_exit_code": null,
+      "guard_cleanup_verified": true,
+      "visual_reviewed_by": "Progress agent",
+      "actual_geometry": {
+        "writing_mode": "horizontal-tb",
+        "time_ms": 750,
+        "min_inline_size": "160px",
+        "min_width": "160px",
+        "min_height": "0px",
+        "width": 160,
+        "height": 80,
+        "expected_width": 160,
+        "expected_height": 80,
+        "pass": true
+      },
+      "actual_metadata_result": null
+    },
+    {
+      "state": "stylesheet-metadata",
+      "source_png_sha256": "3c811462ab454c10adef701ecc61f90db369f5a1ba7eddd715610bc58816f780",
+      "source_png_dimensions": [
+        800,
+        640
+      ],
+      "duration_seconds": 10,
+      "wrapper_exit_code": 1,
+      "fixture_marker_status": "FAIL: capture-only missing marker",
+      "native_child_exit_code": null,
+      "guard_cleanup_verified": true,
+      "visual_reviewed_by": "Progress agent; root independently reviewed this frame",
+      "actual_geometry": null,
+      "actual_metadata_result": {
+        "fixture": "authored-stylesheet-metadata-integration-v2-output-only",
+        "passed": 58,
+        "failed": 2,
+        "total": 60,
+        "elapsed_ms": 15077
+      }
+    }
+  ],
+  "metadata_load_column_definition": "Load records observed load-event callback completion. The two parser rows show observed stylesheet request metadata but missing load callbacks; not loaded does not mean that an HTTP stylesheet request never occurred.",
+  "capture_qualification": "All source PNGs are genuine full native frames captured through the unchanged guarded fixture route. Their capture-only missing-marker failures and wrapper exit1 remain failures, not test passes. Actual native child exits were not independently observed through the approved aggregate interface. Approved cleanup fields showed no remaining owned processes or threads.",
+  "sanitizer_qualification": "Whole-browser sanitizer shutdown remains unproven. The clean instrumented build167 font proof covers unchanged font code only, not the new168 inline code or full-browser shutdown.",
+  "native_font_sanitizer_proof": {
+    "iteration": 167,
+    "controls": 74,
+    "actual_exit_code": 0,
+    "observed_diagnostics": false,
+    "covers_new168_inline_code": false
+  },
+  "credits": "GPT-6 Astra Pro | Built-in agents | Rubywebterm | FFmpeg",
+  "credit_font": "Previously installed DejaVu Sans system font",
+  "encoder_threads": 2,
+  "resource_sample_interval_seconds": 1,
+  "artifacts": [
+    {
+      "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-clean.mp4",
+      "kind": "clean video",
+      "bytes": 291557,
+      "sha256": "e926bafdbcfe7db4bb2dd82eb605bb5aecc7674180a4878e7aac66269087a92a",
+      "dimensions": [
+        960,
+        720
+      ],
+      "duration_seconds": 34.0,
+      "codec": "h264",
+      "frame_rate": "15/1"
+    },
+    {
+      "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-showcase.mp4",
+      "kind": "showcase video",
+      "bytes": 281473,
+      "sha256": "12c2b7138078c5f06eb1927e11b9d8f48de7011dfb692bb4b63677e42cb55f32",
+      "dimensions": [
+        960,
+        720
+      ],
+      "duration_seconds": 34.0,
+      "codec": "h264",
+      "frame_rate": "15/1"
+    },
+    {
+      "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-native.png",
+      "kind": "unaltered original native frame",
+      "bytes": 62143,
+      "sha256": "f8769a122dcacb8360fcdad5709c4acb2048a69df4138775c1fb9fabc6b879e4",
+      "dimensions": [
+        800,
+        640
+      ],
+      "state": "vertical-75"
+    },
+    {
+      "name": "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-showcase.png",
+      "kind": "separate credited still; full native frame preserved",
+      "bytes": 88647,
+      "sha256": "9036be97f69eeb01141d4e5c4bfe0af80af49772efb7696cfdd6a83c11c62ad6",
+      "dimensions": [
+        960,
+        720
+      ]
+    }
+  ]
+}

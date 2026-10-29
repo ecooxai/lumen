@@ -1,0 +1,42 @@
+{
+  "iteration": 168,
+  "engine_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
+  "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+  "actual_encoding_drain_utc": "2026-10-29T02:15:17.552463Z",
+  "video_count": 2,
+  "each_video_duration_seconds": 34.0,
+  "each_video_frames": 510,
+  "frame_rate": "15/1",
+  "dimensions": [
+    960,
+    720
+  ],
+  "codec": "h264",
+  "native_dimensions": [
+    800,
+    640
+  ],
+  "native_offset": [
+    80,
+    0
+  ],
+  "crop": false,
+  "rescale": false,
+  "all_original_png_hashes_unchanged": true,
+  "credited_still_native_rectangle_pixel_identical": true,
+  "progress_agent_reviewed_all_five_native_frames": true,
+  "root_reviewed_native_frames": [
+    "vertical-75",
+    "stylesheet-metadata"
+  ],
+  "root_reviewed_credited_still_sha256": "9036be97f69eeb01141d4e5c4bfe0af80af49772efb7696cfdd6a83c11c62ad6",
+  "first_encode_attempt": {
+    "actual_duration_seconds": 29.933333,
+    "expected_duration_seconds": 34.0,
+    "duration_gate_passed": false,
+    "retained_privately": true,
+    "original_capture_inputs_unchanged": true
+  },
+  "capture_marker_qualification": "All five unchanged capture-only wrappers requested capture-only-no-pass-marker and actually emitted FAIL browser exited or fixture timed out. The metadata page separately emitted its diagnostic JSON58/60 but no RESULTS completion line. Genuine PNG artifacts and verified cleanup are not fixture-test passes.",
+  "later_publication_receipt_authoritative": true
+}
