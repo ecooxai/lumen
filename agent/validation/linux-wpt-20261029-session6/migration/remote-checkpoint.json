@@ -1,0 +1,20 @@
+{
+  "utc": "2026-10-29T17:58:30.079463+00:00",
+  "original_head": "b4d8147c7b7945f5eddc11cfc444a80dd5a9ff13",
+  "checkpoint": "fc3bd82a9c60f0ba829ce8c04157b6e0b9b2b3e1",
+  "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
+  "preserved_tracked": {
+    "agent/progress/status.json": "59fc299cc5518b67f6bac05c4416167e1c49134781acf32137de6fef927813d4",
+    "devsummary.md": "debcb115872ff1a208e85237bc50b28a903da2c687c193756e5166209e8b4f07"
+  },
+  "untracked_unchanged": {
+    "agent/validation/fixtures/astra-edit-replacement-v2.html": "cb87142a0dfc1db057f006c471b1f7a7a3aacc136065f46558e38df43bdcf083",
+    "agent/validation/fixtures/astra-edit-replacement.html": "91234e404ef3256f2a903618bce4cbdf139de5dc1db5a84ece6b5751c28a66da",
+    "agent/validation/fixtures/astra-edit-selection-regression-v3.html": "70fa4429da5a2bf2c5debbf8170df68c128afb38da894e64a1eae4ebbc76c955",
+    "agent/validation/fixtures/astra-image-lifecycle-v2.html": "f708a6a9dc440b0a05f135d1c7820ef4e06e12b1bb0423c09626f53c710939e6",
+    "agent/validation/fixtures/astra-image-lifecycle-v3.html": "1a95920408d820189a0b090075e591d97862b04929dfdd6f472ae4bd1488f7dc",
+    "agent/validation/fixtures/astra-image-lifecycle.html": "19f3a98dff7b860798f4997ccf1548ce5dec85243f2b1b1ac45f0aeed2ad8dc1",
+    "agent/validation/fixtures/astra-react-edit-replacement.html": "b3456953b2776fca49459e3e638a34b79df5b8e9830c7bb5cea403b19bd39780"
+  },
+  "existing_processes": "Progress server22209, cgroup monitor22210, WPT-server monitor39577 retained; no source/build job observed."
+}
