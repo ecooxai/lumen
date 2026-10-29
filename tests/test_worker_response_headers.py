@@ -116,7 +116,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def chrome_control(binary, url, profile):
+def chrome_control(binary, url, profile, completion_marker='WORKER_HEADERS_RESULTS ',
+                   infrastructure_marker='WORKER_HEADERS_INFRA '):
     """Drive an actual isolated Chrome page; never substitute it for Lumen."""
     import websockets
     log = tempfile.TemporaryFile(mode='w+t')
@@ -146,11 +147,11 @@ def chrome_control(binary, url, profile):
                     if message.get('method') == 'Runtime.consoleAPICalled':
                         text = ' '.join(str(arg.get('value', arg.get('description', ''))) for arg in message['params']['args'])
                         lines.append(text)
-                        if 'WORKER_HEADERS_RESULTS ' in text:
+                        if completion_marker in text:
                             finished = True
                     if message.get('method') == 'Runtime.exceptionThrown':
                         detail = message['params'].get('exceptionDetails', {})
-                        lines.append('WORKER_HEADERS_INFRA ' + json.dumps({'error': detail.get('text', 'uncaught page exception')}))
+                        lines.append(infrastructure_marker + json.dumps({'error': detail.get('text', 'uncaught page exception')}))
 
                 async def call(method, params=None, session=None):
                     nonlocal sequence
