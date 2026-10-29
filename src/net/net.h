@@ -41,6 +41,11 @@ struct NetRequest {
     bool force_cross_site;    /* retained redirect-chain SameSite taint */
     double deadline_ms;      /* optional absolute now_ms deadline; DNS remains non-cancellable */
     bool cancelled;
+    /* Opt-in for nonstreaming native owners: done/release execute on the
+       network-pool thread, without net_poll. These callbacks must be thread
+       safe and must not enter a JavaScript isolate. Other requests keep the
+       default poll-thread callback contract. */
+    bool background_done;
     int priority;          /* lower = sooner */
     NetDoneFn done;
     NetDoneFn head;        /* streaming: response head (no body) before the body arrives */
@@ -70,7 +75,8 @@ void net_request_cancel(NetRequest *req);
 /* registrable-domain ("site") comparison of two hosts; approximate eTLD+1 without the full public suffix list */
 bool net_same_site(const char *host_a, const char *host_b);
 bool net_url_same_site(const char *url_a, const char *url_b);
-/* Asynchronous: callbacks fire on the thread calling net_poll(). Ownership of req moves to net. */
+/* Asynchronous: callbacks fire on the thread calling net_poll(), except for
+   explicit background_done native owners. Ownership of req moves to net. */
 uint64_t net_fetch(NetRequest *req);
 void net_cancel(uint64_t id);
 /* Synchronous fetch (blocking). Caller retains req; frees both request and response. */
@@ -131,3 +137,4 @@ enum { UA_CHROME, UA_FIREFOX, UA_LUMEN, UA_COUNT };
 void net_set_user_agent(int which);   /* UA_CHROME (default), UA_FIREFOX or UA_LUMEN */
 const char *net_user_agent_name(int which);
 #endif
+

@@ -1,0 +1,329 @@
+{
+  "iteration": "10.292019r-native-network-001",
+  "accepted_scope": "Linux native C networking subsystem only",
+  "accepted": true,
+  "project_score": 55,
+  "score_is_wpt_percentage": false,
+  "full_official_wpt_percentage": null,
+  "mac_runtime_verified_this_iteration": false,
+  "ipad_runtime_verified_this_iteration": false,
+  "shared_signed_ipa_verified": false,
+  "v8_worker_runtime_verified": false,
+  "source_base": "52af04e81e8256119b30d686e2e506a1fb3ebb45",
+  "candidate_source_sha256": {
+    "src/net/http.c": "064b388ffb68dc74735deeed7a498083bc617edc5249b890f254aa69dd72cecf",
+    "src/net/net.h": "cba620048ded1d8a5a53879bdb3818f4fb3e1b055249ff64315e583dafd51755"
+  },
+  "fixture_hashes": {
+    "test_net_cancel.c": {
+      "baseline_sha256": "c221a4d1bb02f8067d504ae1a52aa7e3212afe599707712095cd3b21cfc9f1d4",
+      "candidate_sha256": "c221a4d1bb02f8067d504ae1a52aa7e3212afe599707712095cd3b21cfc9f1d4"
+    },
+    "test_net_background.c": {
+      "baseline_sha256": "53520309eedbfe4ba92965b28c04d4cd93a27f56cf39f6f3a244f1c1a0d397e6",
+      "candidate_sha256": "53520309eedbfe4ba92965b28c04d4cd93a27f56cf39f6f3a244f1c1a0d397e6"
+    }
+  },
+  "tests": {
+    "existing_controls": {
+      "baseline": "32/32",
+      "candidate": "32/32"
+    },
+    "background_dispatch": {
+      "baseline": "33/40",
+      "candidate": "40/40",
+      "baseline_mode": "NET_BACKGROUND_BASELINE only omits the new opt-in request field; actual original transport/pool still runs",
+      "stress_requests": 4000
+    }
+  },
+  "verification": [
+    "Actual held loopback HTTP requests complete on opted-in pool callbacks without main net_poll",
+    "Canceled held sockets suppress done and invoke native owner release once without main net_poll",
+    "Default and streaming callbacks retain main-thread dispatch",
+    "4000 concurrent producer/poller requests retain exact returned IDs, bodies, done and release counts",
+    "Existing HTTP/body/TLS cancellation and keep-alive owner isolation controls stay unchanged"
+  ],
+  "sanitizers": [
+    "address",
+    "undefined"
+  ],
+  "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "dependency_manifest": "out/10.292019r-net-deps/manifest.json",
+  "started_utc": "2026-10-29T12:48:19.651063+00:00",
+  "finished_utc": "2026-10-29T12:51:42.626720+00:00",
+  "elapsed_seconds": 202.975657,
+  "timing_note": "Stage duration includes one-second sampler scheduling. Concurrent agents are not added to elapsed time. Tests shorter than1s provide no interval CPU estimate. Linux ps cumulative CPU is coarse and fast compiler children can begin/exit between samples; no browser performance claim is made.",
+  "stages": [
+    {
+      "role": "baseline",
+      "stage": "build-cancel",
+      "started_utc": "2026-10-29T12:48:19.651063+00:00",
+      "finished_utc": "2026-10-29T12:48:24.660728+00:00",
+      "wall_seconds_including_monitor": 5.009,
+      "exit_code": 0,
+      "collector_error": null,
+      "cleanup_error": null,
+      "max_sampling_gap_s": 1.001,
+      "interval_cpu_samples": 4,
+      "checks": null,
+      "sanitizer_findings": false,
+      "evidence_prefix": "agent/evidence/10.292019r-native-network-001/baseline-build-cancel"
+    },
+    {
+      "role": "baseline",
+      "stage": "cancel",
+      "started_utc": "2026-10-29T12:48:45.911099+00:00",
+      "finished_utc": "2026-10-29T12:48:46.920684+00:00",
+      "wall_seconds_including_monitor": 1.009,
+      "exit_code": 0,
+      "collector_error": null,
+      "cleanup_error": null,
+      "max_sampling_gap_s": 1.001,
+      "interval_cpu_samples": 0,
+      "checks": {
+        "passed": 32,
+        "total": 32
+      },
+      "sanitizer_findings": false,
+      "evidence_prefix": "agent/evidence/10.292019r-native-network-001/baseline-cancel"
+    },
+    {
+      "role": "baseline",
+      "stage": "build-background",
+      "started_utc": "2026-10-29T12:48:54.781974+00:00",
+      "finished_utc": "2026-10-29T12:49:00.791031+00:00",
+      "wall_seconds_including_monitor": 6.008,
+      "exit_code": 0,
+      "collector_error": null,
+      "cleanup_error": null,
+      "max_sampling_gap_s": 1.001,
+      "interval_cpu_samples": 5,
+      "checks": null,
+      "sanitizer_findings": false,
+      "evidence_prefix": "agent/evidence/10.292019r-native-network-001/baseline-build-background"
+    },
+    {
+      "role": "baseline",
+      "stage": "background",
+      "started_utc": "2026-10-29T12:49:20.204221+00:00",
+      "finished_utc": "2026-10-29T12:49:24.213784+00:00",
+      "wall_seconds_including_monitor": 4.009,
+      "exit_code": 1,
+      "collector_error": null,
+      "cleanup_error": null,
+      "max_sampling_gap_s": 1.001,
+      "interval_cpu_samples": 3,
+      "checks": {
+        "passed": 33,
+        "total": 40
+      },
+      "sanitizer_findings": false,
+      "evidence_prefix": "agent/evidence/10.292019r-native-network-001/baseline-background"
+    },
+    {
+      "role": "candidate",
+      "stage": "build-cancel",
+      "started_utc": "2026-10-29T12:50:28.620815+00:00",
+      "finished_utc": "2026-10-29T12:50:33.631359+00:00",
+      "wall_seconds_including_monitor": 5.01,
+      "exit_code": 0,
+      "collector_error": null,
+      "cleanup_error": null,
+      "max_sampling_gap_s": 1.002,
+      "interval_cpu_samples": 4,
+      "checks": null,
+      "sanitizer_findings": false,
+      "evidence_prefix": "agent/evidence/10.292019r-native-network-001/candidate-build-cancel"
+    },
+    {
+      "role": "candidate",
+      "stage": "cancel",
+      "started_utc": "2026-10-29T12:51:41.611045+00:00",
+      "finished_utc": "2026-10-29T12:51:42.626720+00:00",
+      "wall_seconds_including_monitor": 1.015,
+      "exit_code": 0,
+      "collector_error": null,
+      "cleanup_error": null,
+      "max_sampling_gap_s": 1.005,
+      "interval_cpu_samples": 0,
+      "checks": {
+        "passed": 32,
+        "total": 32
+      },
+      "sanitizer_findings": false,
+      "evidence_prefix": "agent/evidence/10.292019r-native-network-001/candidate-cancel"
+    },
+    {
+      "role": "candidate",
+      "stage": "build-background",
+      "started_utc": "2026-10-29T12:49:48.847361+00:00",
+      "finished_utc": "2026-10-29T12:49:53.857622+00:00",
+      "wall_seconds_including_monitor": 5.01,
+      "exit_code": 0,
+      "collector_error": null,
+      "cleanup_error": null,
+      "max_sampling_gap_s": 1.001,
+      "interval_cpu_samples": 4,
+      "checks": null,
+      "sanitizer_findings": false,
+      "evidence_prefix": "agent/evidence/10.292019r-native-network-001/candidate-build-background"
+    },
+    {
+      "role": "candidate",
+      "stage": "background",
+      "started_utc": "2026-10-29T12:50:15.027590+00:00",
+      "finished_utc": "2026-10-29T12:50:16.038382+00:00",
+      "wall_seconds_including_monitor": 1.01,
+      "exit_code": 0,
+      "collector_error": null,
+      "cleanup_error": null,
+      "max_sampling_gap_s": 1.0,
+      "interval_cpu_samples": 0,
+      "checks": {
+        "passed": 40,
+        "total": 40
+      },
+      "sanitizer_findings": false,
+      "evidence_prefix": "agent/evidence/10.292019r-native-network-001/candidate-background"
+    }
+  ],
+  "artifacts": [
+    {
+      "role": "baseline",
+      "file": "out/10.292019r-net-baseline/test_net_cancel",
+      "sha256": "1ffc1c4236e7efffb8e1573b17cfe4f480a2e82288c88a93bb4ad80f3c5735d3",
+      "bytes": 2518728
+    },
+    {
+      "role": "baseline",
+      "file": "out/10.292019r-net-baseline/test_net_background",
+      "sha256": "80f8983617656b6530235b8d98e7dd1040fe48eb69fba031cfe9979e73b34c5a",
+      "bytes": 2626096
+    },
+    {
+      "role": "candidate",
+      "file": "out/10.292019r-net-candidate/test_net_cancel",
+      "sha256": "fe45fbb6d05d02fc301f60cc7d369d5b92ca756edea56fe19481919dca2c18e4",
+      "bytes": 2527056
+    },
+    {
+      "role": "candidate",
+      "file": "out/10.292019r-net-candidate/test_net_background",
+      "sha256": "604b1dfd762cdb6e3f93cfad1d31816931dcbf0e0f416123bdd16a0c9a5a9f24",
+      "bytes": 2634696
+    }
+  ],
+  "limitations": [
+    "Exact prebuilt V8 worker runtime is not available locally; worker integration remains a separate unaccepted candidate",
+    "No fresh Mac, iPad simulator, or IPA launch occurred",
+    "No new WPT result is implied",
+    "Original sandbox monitor receipt at out/lumen-10.292019r/apple-static-baseline.json is invalid due PID namespace mismatch; these native runs used supported escalated execution with verified process identity"
+  ],
+  "evidence": {
+    "agent/evidence/10.292019r-native-network-001/candidate-background.csv": {
+      "sha256": "587cefda31c118dba4287845632bf822bdb18e9d3cfcff762056b3e55cc69f0e",
+      "bytes": 80
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-cancel.json": {
+      "sha256": "a2afef481a8aa560ff0d76135fb4d5c1c6beca38332951a58de1cdd7e6bab9e5",
+      "bytes": 2001
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-build-background.csv": {
+      "sha256": "6a4fec873cbc541cce72f038891a59e566324052b714632a21235bc345c36731",
+      "bytes": 200
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-build-cancel.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-build-background.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-build-background.csv": {
+      "sha256": "97bc4b8259781a5607b240b51952ae9af051a224b08bfd75075366c1bf1d180e",
+      "bytes": 176
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-build-background.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-cancel.csv": {
+      "sha256": "67b01fee7cb5d569d467e086cd85e25cfdebd2903fbdf9245c1c673ee5ae1987",
+      "bytes": 80
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-source-manifest.json": {
+      "sha256": "4d21a29978a66b2a15a95951298e78cc73730e0b29c6ed9bc7d6528004ef06ed",
+      "bytes": 3631
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-build-cancel.json": {
+      "sha256": "fb58ea09d2908d2881dd8c2445ace86fd0efbe735e6727706cf0f3030703c38d",
+      "bytes": 2012
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-build-background.json": {
+      "sha256": "267b42dfce169e9d5c4e9bb0209631fe63e5bbdaa7fd9f152a63fe95dbb6d73c",
+      "bytes": 2015
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-cancel.log": {
+      "sha256": "4c20ade3464f211ae8d71409c8790366965217bf14cba9c2e1cdf998e8754b1b",
+      "bytes": 265
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-build-background.json": {
+      "sha256": "1c81a298bb50314895db08484bfd75bb7c1043c372a75906b9baa0742259baa1",
+      "bytes": 2014
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-build-cancel.json": {
+      "sha256": "cf27c4017cfd58f6f4450f118627ea622918df04da404572d4d914e5887cddb7",
+      "bytes": 2017
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-cancel.json": {
+      "sha256": "864213f6e930800c0440d98c230f8c49c85631c5d6a2ff583403ff3d1b140bc8",
+      "bytes": 2005
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-cancel.log": {
+      "sha256": "9dcd7dcfbc499209e5bacd1291b917a0f01c69b6252ad1176203304892430b3f",
+      "bytes": 265
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-background.log": {
+      "sha256": "f114dad3213d6202f9881271f740e5fc0317a633f4fe6a8cfd2811f408dd2a25",
+      "bytes": 1274
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-cancel.csv": {
+      "sha256": "f1e66ec85542abec0b1cccd3d5dd11b4a547e6035338eed9ec916b8159f35939",
+      "bytes": 80
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-build-cancel.csv": {
+      "sha256": "c713c33ff5aa7c18506725a5e32f36b654942d3fcd8dc20b3c562a481969f5e8",
+      "bytes": 175
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-background.csv": {
+      "sha256": "92fcfdd1559e7527d58b5ef2ae44b57aa6fbab2a3f5ce807ddf26f4ebb66008c",
+      "bytes": 149
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-build-cancel.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-background.json": {
+      "sha256": "ba250377134fe9c90e5e45e510342a78ca04d8f7bf35f002843cfaa4a67b1848",
+      "bytes": 2002
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-source-manifest.json": {
+      "sha256": "faa6079df4210df0344f865bf607ac1d864ac1e210dbd4509c1498c3761609f2",
+      "bytes": 3708
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-build-cancel.csv": {
+      "sha256": "cb40df0e60c4cf264b09e77fef1ed7eca8be454ec40fc4ee0e6899ef496653bb",
+      "bytes": 176
+    },
+    "agent/evidence/10.292019r-native-network-001/baseline-background.json": {
+      "sha256": "cfb3cc48ab2866ce8e5fde30333757eb5618c69ece2d7ee8f8154de3f68d6e99",
+      "bytes": 2050
+    },
+    "agent/evidence/10.292019r-native-network-001/candidate-background.log": {
+      "sha256": "fe98c3a481a2849f0a186b95a38741b86e96b39cc8ed1dc377e1a93627d4ff88",
+      "bytes": 348
+    }
+  }
+}

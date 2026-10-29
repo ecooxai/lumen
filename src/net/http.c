@@ -710,7 +710,17 @@ static void *worker(void *arg) {
         pthread_mutex_lock(&g_mu);
         for (Job **pp = &g_running; *pp; pp = &(*pp)->rnext) if (*pp == j) { *pp = j->rnext; break; }
         pthread_mutex_unlock(&g_mu);
-        ev_push(0, j->req, j->resp, NULL, 0);
+        if (j->req->background_done && !j->req->head && !j->req->chunk) {
+            // Dedicated worker owners enqueue native payloads to their own
+            // event loop. No main-thread callbacks or V8 handles are invoked
+            // here, and no pool lock is held while owner code runs.
+            if (!request_cancelled(j->req) && j->req->done)
+                j->req->done(j->req, j->resp, j->req->ud);
+            net_response_free(j->resp);
+            net_request_free(j->req);
+            pthread_mutex_lock(&g_mu); g_pending--; pthread_mutex_unlock(&g_mu);
+            if (net_wakeup) net_wakeup();
+        } else ev_push(0, j->req, j->resp, NULL, 0);
         free(j);
     }
 }
@@ -733,11 +743,14 @@ void net_shutdown(void) { pthread_mutex_lock(&g_mu); g_quit = true; pthread_cond
 uint64_t net_fetch(NetRequest *req) {
     Job *j = xcalloc(1, sizeof *j); j->req = req;
     pthread_mutex_lock(&g_mu);
-    req->id = g_next_id++;
+    const uint64_t id = g_next_id++;
+    req->id = id;
     j->next = g_queue; g_queue = j; g_pending++;
     pthread_cond_signal(&g_cv);
     pthread_mutex_unlock(&g_mu);
-    return req->id;
+    // Ownership was transferred above. A polling thread may already have
+    // completed and freed req, so return the captured ID without reading it.
+    return id;
 }
 void net_cancel(uint64_t id) {
     pthread_mutex_lock(&g_mu);
@@ -946,3 +959,4 @@ void net_ws_release(NetWs *w) {
     net_ws_close(w, 1001, "");
     ws_unref(w);
 }
+

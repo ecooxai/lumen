@@ -1,0 +1,13 @@
+CASE background native completion without main net_poll
+FAIL background response and finalizer finish without net_poll (out/10.292019r-net-baseline/source/tests/test_net_background.c:83)
+FAIL background request leaves no pending ownership without net_poll (out/10.292019r-net-baseline/source/tests/test_net_background.c:84)
+FAIL background completion runs away from main thread (out/10.292019r-net-baseline/source/tests/test_net_background.c:90)
+FAIL background owner finalizer runs away from main thread (out/10.292019r-net-baseline/source/tests/test_net_background.c:91)
+FAIL background completion can query network state without lock inversion (out/10.292019r-net-baseline/source/tests/test_net_background.c:92)
+CASE default transport preserves main-thread dispatch
+CASE streaming opt-in transport preserves main-thread dispatch
+CASE background canceled socket retains exact-once finalization
+FAIL canceled background request finalizes without main net_poll (out/10.292019r-net-baseline/source/tests/test_net_background.c:124)
+FAIL canceled background ownership drains without main net_poll (out/10.292019r-net-baseline/source/tests/test_net_background.c:125)
+CASE concurrent producer/poller fast-completion request identity
+net background completion tests: 33/40 passed

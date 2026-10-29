@@ -610,3 +610,7 @@ $(BUILD)/src/js/web_streams.inc: src/js/prelude/06t-streams.js
 	@mkdir -p $(dir $@)
 	{ printf 'R"JS('; cat $<; printf ')JS"'; } > $@
 $(BUILD)/src/js/worker.cc.o $(BUILD)/tests/test_worker_lifecycle.cc.o $(BUILD)/tests/test_url_idl.cc.o: $(BUILD)/src/js/web_streams.inc
+
+# Native owners may receive nonstreaming completions on a network-pool thread.
+$(BUILD)/test_net_background: $(call OBJ,tests/test_net_background.c $(BASE_SRC) $(NET_SRC))
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS) -lpthread

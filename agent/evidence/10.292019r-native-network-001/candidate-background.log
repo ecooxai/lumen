@@ -1,0 +1,6 @@
+CASE background native completion without main net_poll
+CASE default transport preserves main-thread dispatch
+CASE streaming opt-in transport preserves main-thread dispatch
+CASE background canceled socket retains exact-once finalization
+CASE concurrent producer/poller fast-completion request identity
+net background completion tests: 40/40 passed

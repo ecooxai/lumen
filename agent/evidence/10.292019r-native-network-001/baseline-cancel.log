@@ -1,0 +1,6 @@
+CANCEL response-head prompt=1 elapsed_ms=0.1
+CANCEL fixed-body prompt=1 elapsed_ms=0.0
+CANCEL chunked-body prompt=1 elapsed_ms=0.1
+CANCEL close-delimited-body prompt=1 elapsed_ms=0.0
+CANCEL TLS-handshake prompt=1 elapsed_ms=0.1
+net cancellation tests: 32/32 passed
