@@ -245,7 +245,15 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     if (str_istarts(p, "min(") || str_istarts(p, "max(") || str_istarts(p, "clamp(")) {
         int kind = lc(p[1]) == 'i' ? 0 : lc(p[1]) == 'a' ? 1 : 2;
         p = strchr(p, '(') + 1; Length v[3]; int n = 0;
-        while (n < 3) { if (!calc_expr(&p, &v[n], c)) return false; n++; while (is_ws((unsigned char)*p)) p++; if (*p == ',') { p++; continue; } break; }
+        while (n < 3) {
+            if (!calc_expr(&p, &v[n], c)) return false;
+            n++; while (is_ws((unsigned char)*p)) p++;
+            if (*p == ',') { if (kind == 2 && n == 3) return false; p++; continue; }
+            break;
+        }
+        /* Unlike min/max, clamp has exactly three arguments. Never turn a
+           malformed two-arm value into a different comparison operation. */
+        if (kind == 2 && (n != 3 || *p != ')')) return false;
         if (*p == ')') p++;
         *pp = p;
         if (kind == 2 && n == 3 && !v[0].mm && !v[1].mm && !v[2].mm) {
@@ -359,8 +367,13 @@ static bool css_parse_length_context(const char *s, Length *out, float em, float
     if (str_istarts(s, "max-content")) { *out = (Length){0, 0, LK_MAX_CONTENT}; return true; }
     if (str_istarts(s, "fit-content") || str_istarts(s, "-webkit-fit-content") || str_istarts(s, "-moz-fit-content")) { *out = (Length){0, 0, LK_FIT_CONTENT}; return true; }
     LCtx c = { em, rem, mc, basis, actual, used };
-    const char *p = s;
-    if (!parse_dim(&p, out, &c)) return false;
+    const char *p = s; Length parsed;
+    if (!parse_dim(&p, &parsed, &c)) return false;
+    if (str_istarts(s, "clamp(")) {
+        while (is_ws((unsigned char)*p)) p++;
+        if (*p) return false;
+    }
+    *out = parsed;
     return true;
 }
 
