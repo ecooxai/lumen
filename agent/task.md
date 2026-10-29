@@ -1,5 +1,5 @@
-mprove lumen browser for linux [$rubywebterm]\(app\://asdk_app_6aca114c3b5481918899bbaa3ec1235a) \\\
-commit and switch to a new branch then improve this new browser engin, pass all web plateform test like chromium,compare with chromium \\\
+improve lumen browser for linux [$rubywebterm]\(app\://asdk_app_6aca114c3b5481918899bbaa3ec1235a) \\\
+commit and switch to a new branch then improve this new browser engin, pass all web plateform test like chromium,compare with chromium ,do not URL test pass now put URL  delay pass other important test first\\\
 $project_dir=\\\
 /mnt/p3/project/browser/lumen-android/lumen-android\\\
 \\\
@@ -8,7 +8,7 @@ $dev_tools=         use       mcp      or       localvm, prefer mcp if you are c
 &#x20;          for 3d task,prefer web dev tech ,chrome (make sure gpu works and use headless if no display) then blender ( headless) \\\
 \\\
 \\\
-$iteration_times=    1000        and stop when goal done or working time >3hyou can continue work 1h if something wrong and need fix \\\
+$iteration_times=    1000        and stop when goal done or working time >3h\\\ add 1h if need fix important bugs
 $reffiles=\\\
 only use pasted image ignore file link , if no upload then use the file  link\\\
 $goal_score= 98/100\\\
@@ -82,6 +82,7 @@ curl -fsSL [https\://opentunnel.xyz/install]\(https\://opentunnel.xyz/install) |
 opentunnel route add 8080  or other port  \\\
 npm install --global surge\\\
 cd webappdir && surge \\\
+\\\
 \\\
 \\\
 \\\
