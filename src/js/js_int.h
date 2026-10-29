@@ -196,6 +196,10 @@ v8::Local<v8::String> jstr(v8::Isolate *iso, const char *s, int n = -1);
 /* script source; big ones become external strings shared by every isolate (tabs, frames, workers) */
 v8::Local<v8::String> jsrc(v8::Isolate *iso, const char *s, size_t n);
 std::string jcstr(v8::Isolate *iso, v8::Local<v8::Value> v);
+/* HTTP fields are WebIDL ByteStrings, not UTF-8 text. Outgoing values have
+   already passed the Fetch/XHR ByteString and header grammar conversions. */
+v8::Local<v8::String> jbytes(v8::Isolate *iso, const char *s, int n = -1);
+std::string jcbytes(v8::Isolate *iso, v8::Local<v8::Value> v);
 void js_url_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> target); /* urljs.cc: urlParse, urlSet */
 void js_c2d_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> W); /* jsnative.cc: c2dFill, c2dClip, c2dMeasure */
 void js_crypto_install(v8::Local<v8::Context> ctx, v8::Local<v8::Object> target); /* cryptojs.cc: the WebCrypto primitives */

@@ -159,14 +159,14 @@ WFN(fetch) {
         v8::Local<v8::Array> h = a[3].As<v8::Array>();
         for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
             v8::Local<v8::Value> k, v;
-            if (h->Get(ctx, i).ToLocal(&k) && h->Get(ctx, i + 1).ToLocal(&v)) headers_add(&rq->headers, jcstr(iso, k).c_str(), jcstr(iso, v).c_str());
+            if (h->Get(ctx, i).ToLocal(&k) && h->Get(ctx, i + 1).ToLocal(&v)) headers_add(&rq->headers, jcbytes(iso, k).c_str(), jcbytes(iso, v).c_str());
         }
     }
     if (a[4]->IsTrue()) rq->no_cookies = true;
     NetResponse *r = net_fetch_sync(rq);
     if (!r || r->status == 0 || r->error) { if (r) net_response_free(r); a.GetReturnValue().SetNull(); return; }
     v8::Local<v8::Array> hs = v8::Array::New(iso);
-    for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value)); }
+    for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jbytes(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jbytes(iso, r->headers.v[i].value)); }
     v8::Local<v8::Value> out[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->url ? r->url : u.c_str()), make_ab(iso, r->body, r->body_len), hs };
     net_response_free(r);
     a.GetReturnValue().Set(v8::Array::New(iso, out, 4));
@@ -198,7 +198,7 @@ WFN(fetchAsync) {
         for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
             v8::Local<v8::Value> k, v;
             if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) continue;
-            std::string ks = jcstr(iso, k), vs = jcstr(iso, v);
+            std::string ks = jcbytes(iso, k), vs = jcbytes(iso, v);
             if (!net_request_control(rq, ks.c_str(), vs.c_str()) && !(str_ieq(ks.c_str(), "referer") && vs.empty())) headers_add(&rq->headers, ks.c_str(), vs.c_str());
         }
     }
@@ -220,7 +220,7 @@ WFN(fetchAbort) {
 }
 v8::Local<v8::Array> resp_headers(v8::Isolate *iso, v8::Local<v8::Context> ctx, const NetResponse *r) {
     v8::Local<v8::Array> hs = v8::Array::New(iso);
-    for (size_t i = 0; r && i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value)); }
+    for (size_t i = 0; r && i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jbytes(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jbytes(iso, r->headers.v[i].value)); }
     return hs;
 }
 void run_fetched(WEnv *E, std::deque<WFetchEv> &evs) {
@@ -231,7 +231,7 @@ void run_fetched(WEnv *E, std::deque<WFetchEv> &evs) {
         if (it != E->fetches.end() && !E->w->term && !E->closing) {
             v8::TryCatch tc(iso);
             if (f.kind == 1) {
-                v8::Local<v8::Value> argv[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->status_text ? r->status_text : ""), jstr(iso, r->url ? r->url : ""), resp_headers(iso, ctx, r) };
+                v8::Local<v8::Value> argv[4] = { v8::Integer::New(iso, r->status), jbytes(iso, r->status_text ? r->status_text : ""), jstr(iso, r->url ? r->url : ""), resp_headers(iso, ctx, r) };
                 (void)it->second.head.Get(iso)->Call(ctx, v8::Undefined(iso), 4, argv);
             } else if (f.kind == 2) {
                 v8::Local<v8::Value> argv[1] = { make_ab(iso, f.data.data(), f.data.size()) };
@@ -239,7 +239,7 @@ void run_fetched(WEnv *E, std::deque<WFetchEv> &evs) {
             } else {
                 v8::Local<v8::Function> cb = it->second.done.Get(iso); E->fetches.erase(it);
                 bool err = !r || r->status == 0 || r->error;
-                v8::Local<v8::Value> argv[6] = { v8::Integer::New(iso, r ? r->status : 0), jstr(iso, r && r->status_text ? r->status_text : ""), jstr(iso, r && r->url ? r->url : ""), resp_headers(iso, ctx, r),
+                v8::Local<v8::Value> argv[6] = { v8::Integer::New(iso, r ? r->status : 0), jbytes(iso, r && r->status_text ? r->status_text : ""), jstr(iso, r && r->url ? r->url : ""), resp_headers(iso, ctx, r),
                     make_ab(iso, r && r->body ? r->body : "", r && r->body ? r->body_len : 0), err ? v8::Local<v8::Value>(jstr(iso, r && r->error ? r->error : "network error")) : v8::Local<v8::Value>(v8::False(iso)) };
                 (void)cb->Call(ctx, v8::Undefined(iso), 6, argv);
             }

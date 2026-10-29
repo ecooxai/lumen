@@ -753,7 +753,7 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
         for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
             v8::Local<v8::Value> k, v;
             if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) continue;
-            std::string ks = jcstr(iso, k), vs = jcstr(iso, v);
+            std::string ks = jcbytes(iso, k), vs = jcbytes(iso, v);
             if (net_request_control(rq, ks.c_str(), vs.c_str())) continue;
             if (str_ieq(ks.c_str(), "referer")) { referer = true; if (vs.empty()) continue; }   /* an empty Referer: none sent */
             headers_add(&rq->headers, ks.c_str(), vs.c_str());
@@ -767,13 +767,13 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
 static void resp_args(v8::Isolate *iso, NetResponse *r, v8::Local<v8::Value> out[6]) {
     bool err = !r || r->status == 0 || r->error;
     out[0] = v8::Integer::New(iso, r ? r->status : 0);
-    out[1] = jstr(iso, r && r->status_text ? r->status_text : "");
+    out[1] = jbytes(iso, r && r->status_text ? r->status_text : "");
     out[2] = jstr(iso, r && r->url ? r->url : "");
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     v8::Local<v8::Array> h = v8::Array::New(iso, r ? (int)r->headers.n * 2 : 0);
     if (r) for (size_t i = 0; i < r->headers.n; i++) {
-        (void)h->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name));
-        (void)h->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value));
+        (void)h->Set(ctx, (uint32_t)(2 * i), jbytes(iso, r->headers.v[i].name));
+        (void)h->Set(ctx, (uint32_t)(2 * i + 1), jbytes(iso, r->headers.v[i].value));
     }
     out[3] = h;
     out[4] = mkab(iso, r && r->body ? r->body : "", r && r->body ? r->body_len : 0);

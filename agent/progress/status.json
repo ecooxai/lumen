@@ -1,43 +1,45 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Building191 internal Fetch body clone repair",
-  "iteration": 191,
+  "phase": "Building192 HTTP ByteString transport repair",
+  "iteration": 192,
   "score": null,
   "iteration_quality": null,
   "score_note": "19/100 is a historical estimate without a reproducible formula. Current overall assessment is pending; scoped checks are reported separately.",
   "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
-  "checkpoint": "4575b0076eff7b57f287f172770f0eb65c45a5e6",
-  "updated_utc": "2026-10-29T19:24:19.539099+00:00",
+  "checkpoint": "c21d05e74ba371e168e63fbb6530613e12d0e6d4",
+  "updated_utc": "2026-10-29T19:31:58.500825+00:00",
   "session_started_utc": "2026-10-29T17:25:47Z",
   "deadline_utc": "2026-10-29T21:25:47Z",
   "current_evidence": [
     [
-      "Candidate190 scoped correctness",
-      "572/588 +19 and96/96 +30, zero losses;8127/8127 forms retained."
+      "Candidate191 whole-file scope",
+      "68/68 assertions across3 window/worker clone+publictee files, +28 andzero losses."
     ],
     [
-      "Upstream forms",
-      "646/649 assertions,21/24 full files; three preexisting selector/editing failures remain."
+      "Retained behavior",
+      "Public default tee26/26 still shares object identity; typed Fetch clone branches are independent."
     ],
     [
-      "Resource control",
-      "4000 bounded reads21.3\u201324.0ms;156.1\u2013156.5MB short startup-inclusive peakRSS."
+      "Authored clone controls",
+      "Separate Chromium API/cancellation fixture deadline remains under diagnosis; raw attempts retained."
     ],
     [
       "Broad comparison",
-      "Immutable187:368/640 full cases vsChromium544/640;7632/9516 matching Chrome-passing assertions retained."
+      "Immutable187:368/640 full cases vsChromium544/640;7632/9516 matching Chrome-pass identities retained."
     ]
   ],
-  "coverage": "Candidate190:572/588 numeric/radio,96/96 tolerance,8127/8127 forms,646/649 upstream forms assertions; remaining scoped failures retained. Broad640 remains immutable187.",
+  "coverage": "Candidate191 whole window/worker clone+tee68/68 (+28,0loss),3harnesses andjoinedcleanup complete. Authored clone reference cancellation diagnostic pending. Broad640 remains immutable187.",
   "findings": [
-    "Whole-browser parity is not certified; broad non-URL WPT validation and a reproducible assessment are pending.",
-    "Five focused upstream form assertions remain. The authored/reference disagreement is retained as two separate Chromium message nonpasses.",
-    "Hardware rendering and ordinary desktop-close behavior remain separate unverified gates.",
-    "The downloadable archive below is the historical 168 export until the audited 186 source replacement is published."
+    "Whole-browser parity is not certified. The fixed 640-document non-URL cohort completed on immutable candidate 187 and Chromium; its profile-cleanup audit and the candidate 176 before/after baseline remain separate pending gates.",
+    "Three focused upstream form assertions remain after candidate 190: two dynamic validity-selector checks and maxlength editing. Two Chromium validation-message nonpasses in the authored reference remain separately recorded.",
+    "Actual Lumen hardware rendering and ordinary desktop-close behavior remain unverified. The fixed CPU performance trials had clean owned-process teardown; that evidence does not certify every shutdown path.",
+    "The legacy source download remains historical candidate 168. The independently reviewed candidate 186 source checkpoint is now saved and available through the private source page and its separate reviewed-source HTTPS route.",
+    "Chromium is faster in the measured CPU DOM, style/layout and grid phases. A separate diagnostic located CSSOM setter overhead; a narrow optimization is awaiting independent semantics and balanced performance checks.",
+    "URL conformance remains deferred. Current whole-browser assessment is pending; focused scores are explicitly scoped."
   ],
-  "active_iteration": 191,
-  "accepted_binary_sha256": "f1276c0657f9bdf7164990714e142dba079139d47bd70230247a9625199e30c9",
-  "accepted_binary_scope": "Ruby190 bounded decimal step correction; independent authored and upstream forms gates",
+  "active_iteration": 192,
+  "accepted_binary_sha256": "504ff22288148d70e17ab3f4070dc2866ef0d99a721100065850fcefe24dcc53",
+  "accepted_binary_scope": "Ruby191 unchanged window/worker Response.clone and public default tee whole files",
   "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
   "candidate_binary_sha256": null,
@@ -48,7 +50,7 @@
   "source_archive_bytes": 4451575,
   "measurement_units": "WPT numbers count reported testharness subtests, not individual assert_* calls. Native CTest entries and custom correctness checks are separate.",
   "clean_demo_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-clean.mp4",
-  "source_archive_scope": "Qualified experimental168 engine-only source snapshot, already anonymously public and byte verified. Private task/handoff/runtime/validation payloads and development history are excluded. Browser-sanitizer shutdown and batch-history sensitivity remain unresolved.",
+  "source_archive_scope": "Qualified historical candidate 168 engine-only source snapshot, already public and byte verified. Private task, handoff, runtime, validation payloads and development history are excluded. Its original sanitizer and history-sensitivity qualifications remain unchanged.",
   "cloud_snapshot_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-engine-experimental-source-20261029",
   "session_active": true,
   "session_id": "20261029-1725",
@@ -136,7 +138,7 @@
   },
   "source_archive_iteration": 168,
   "source_archive_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
-  "source_archive_note": "Historical download: candidate 168, not the active 186/187 source. Its original 605-input qualification and archive hash remain unchanged. A reviewed source-only candidate 186 export is being prepared; no newer binary or WPT claim is inferred from this older download.",
+  "source_archive_note": "Historical candidate 168 download: this legacy route and its original SHA256 are unchanged. The independently reviewed candidate 186 checkpoint is complete and available separately. Neither download contains the later candidate 190 repairs.",
   "fresh_chromium4200": {
     "completed_utc": "2026-10-28T17:36:29Z",
     "fully_passing_variants": 3534,
@@ -404,29 +406,30 @@
   "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "session_iteration": null,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 190,
+  "accepted_iteration": 191,
   "accepted_focused_results": {
+    "upstream_clone_tee": {
+      "pass": 68,
+      "total": 68,
+      "gains": 28,
+      "losses": 0,
+      "files": 3
+    },
+    "public_tee_retained": {
+      "pass": 26,
+      "total": 26
+    },
     "numeric_radio": {
       "pass": 572,
-      "total": 588,
-      "gains": 19,
-      "losses": 0
+      "total": 588
     },
     "step_tolerance": {
       "pass": 96,
-      "total": 96,
-      "gains": 30,
-      "losses": 0
-    },
-    "forms": {
-      "pass": 8127,
-      "total": 8127
+      "total": 96
     },
     "forms_upstream": {
       "pass": 646,
-      "total": 649,
-      "full_cases": 21,
-      "cases": 24
+      "total": 649
     }
   },
   "rejected_session4_iterations": [
@@ -546,7 +549,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 191,
+  "current_candidate": 192,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1332,7 +1335,7 @@
     },
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   },
-  "session6_current": "Reviewed source9418984; frozen clone/header controls; runtime acceptance pending.",
+  "session6_current": "Source integration complete; independent120 header controls andwholewirefiles pending.",
   "session6_current_summary": {
     "accepted_candidate": 184,
     "pending_candidate": 185,
@@ -1356,7 +1359,14 @@
     "updated_utc": "2026-10-29T18:32:11.478100+00:00"
   },
   "overall_assessment": "pending",
-  "accepted_scope_label": "Numeric/radio fixture",
-  "accepted_scope_pass": 572,
-  "accepted_scope_total": 588
+  "accepted_scope_label": "Upstream clone/tee",
+  "accepted_scope_pass": 68,
+  "accepted_scope_total": 68,
+  "reviewed_source_checkpoint186": {
+    "candidate": 186,
+    "source_url": "https://2b6886734b41e997.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
+    "sha256": "83eaef35f6913e08aed16c7df7756d2b1c6c1f3cf4f4109d08cd1d5de752bcc7",
+    "private_site": "https://lumen-linux-gpt6astra-agents-rubywebterm.my-team-8435.chatgpt.site",
+    "scope": "692 exact source files plus five metadata files; clean public-history bundle is separately downloadable; no private working history."
+  }
 }

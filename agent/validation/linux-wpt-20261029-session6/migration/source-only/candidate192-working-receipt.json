@@ -1,0 +1,26 @@
+{
+  "candidate": 192,
+  "prototype_started_utc": "2026-10-29T19:20:00+00:00",
+  "integration_utc": "2026-10-29T19:31:58.500825+00:00",
+  "base_head": "c21d05e74ba371e168e63fbb6530613e12d0e6d4",
+  "before": {
+    "src/js/js_int.h": "ef6889fadf47b7ca08f78de3e6ad0a72b4d4da3500ff941af258300bf76cc72c",
+    "src/js/js.cc": "7a364a717f65051f7d7b430f9691e18d1875a335b3abb07656a6bcb31c3981b9",
+    "src/js/jsnative.cc": "f4fcace5d435b791c47b0878c0b0980a7b51fb98d9b59f1d83023672bc0cc10d",
+    "src/js/worker.cc": "1b53393c68f813422ad098f52f7ed3768ef9effdf02ecf41c8ed58e2ed4d7aff"
+  },
+  "after": {
+    "src/js/js_int.h": "89d105c20c76a10ab4f51fcf8d7e089d6f723b70c56063a157e9b4dc78924af9",
+    "src/js/js.cc": "dc22c0154b13744141f10e93c4f4c9146981a3a67557d5c5faa697cf566d0346",
+    "src/js/jsnative.cc": "3104185ecf1936a57e40fbf06b4a7cfb612ce49a5b0cd1fc82980cb0c7cbb8d6",
+    "src/js/worker.cc": "6172f2a3e3aaec2e2f2206fb69cd58ac289a43f2fbf3d1784916a2713f7e5772"
+  },
+  "prototype_after": {
+    "src/js/js_int.h": "89d105c20c76a10ab4f51fcf8d7e089d6f723b70c56063a157e9b4dc78924af9",
+    "src/js/js.cc": "dc22c0154b13744141f10e93c4f4c9146981a3a67557d5c5faa697cf566d0346",
+    "src/js/jsnative.cc": "3104185ecf1936a57e40fbf06b4a7cfb612ce49a5b0cd1fc82980cb0c7cbb8d6",
+    "src/js/worker.cc": "06d226bba35e8aac4e7de0491cb198627a1bb4ebf8e89bb139e9b6d291f3f00f"
+  },
+  "patch_sha256": "fc90a2f5d49897ea071305b99e5b6a63b007f49d99a6f4d9645509d0bb5ba5a3",
+  "scope": "HTTP ByteString conversion only for header name/value and statusText; URL/method/error/body text conversions unchanged. Worker patch composes with191 lexical clone binding."
+}

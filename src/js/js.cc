@@ -79,6 +79,22 @@ std::string jcstr(v8::Isolate *iso, v8::Local<v8::Value> v) {
     return *u ? std::string(*u, (size_t)u.length()) : std::string();
 }
 
+v8::Local<v8::String> jbytes(v8::Isolate *iso, const char *s, int n) {
+    v8::Local<v8::String> out;
+    if (!v8::String::NewFromOneByte(iso, reinterpret_cast<const uint8_t *>(s ? s : ""),
+            v8::NewStringType::kNormal, s ? n : 0).ToLocal(&out)) return v8::String::Empty(iso);
+    return out;
+}
+
+std::string jcbytes(v8::Isolate *iso, v8::Local<v8::Value> v) {
+    if (v.IsEmpty()) return {};
+    v8::String::Value chars(iso, v);
+    if (!*chars) return {};
+    std::string out((size_t)chars.length(), '\0');
+    for (int i = 0; i < chars.length(); ++i) out[(size_t)i] = static_cast<char>((*chars)[i]);
+    return out;
+}
+
 static v8::Local<v8::Object> proto_for(JsCtx *c, Node *n) {
     v8::Isolate *iso = c->iso;
     if (c->protoFor.IsEmpty()) return {};
