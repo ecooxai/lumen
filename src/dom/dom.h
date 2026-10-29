@@ -133,6 +133,9 @@ bool node_is_inclusive_ancestor(const Node *a, const Node *b);
 void html_parse(Document *d, const char *src, size_t len);
 /* Byte-response path: BOM/transport replacement decode, then Unicode tokenization. */
 bool html_parse_bytes(Document *d, const char *bytes, size_t len, const char *content_type);
+/* Frames supply a same-origin, non-UTF16 fallback after sandbox validation. */
+bool html_parse_bytes_with_fallback(Document *d, const char *bytes, size_t len,
+                                   const char *content_type, WebEncoding fallback);
 /* Fragment parsing for innerHTML; children appended to 'context' replacement fragment */
 Node *html_parse_fragment(Document *d, Node *context, const char *src, size_t len);
 /* Incremental parser for document.write & streaming */

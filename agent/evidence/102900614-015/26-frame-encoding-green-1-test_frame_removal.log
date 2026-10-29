@@ -1,0 +1,25 @@
+PASS the real parent document and V8 realm initialize
+PASS connected srcdoc frame exposes a real child realm
+PASS remove immediately clears the iframe contentWindow
+PASS remove immediately clears the iframe contentDocument
+PASS a removed child Window reports closed
+PASS retained child document and element remain usable after removal
+PASS reinsertion creates a fresh child Window and Document
+PASS same-turn removal and reinsertion cannot revive the previous realm
+PASS removing a reinserted frame clears its new association
+PASS an ancestor contains two independent live child frames
+PASS ancestor removal clears both descendant iframe associations synchronously
+PASS ancestor reinsertion creates fresh descendant browsing contexts
+PASS textContent replacement invokes descendant frame removing steps
+PASS a connected shadow subtree can own a live iframe
+PASS shadow-host removal synchronously retires its child iframe
+PASS shadow-host reinsertion starts a fresh child realm
+PASS moving a connected iframe within one document replaces its child realm
+PASS cross-document insertion retires the old document association
+PASS retiring a parent browsing context also retires its nested child
+PASS a never-connected iframe does not acquire a browsing context
+PASS repeated removal preserves closed associations without creating replacements
+PASS all native child contexts are inactive before any later host tick
+PASS frame removal leaves no native network requests pending
+PASS frame removal leaves native worker ownership drained
+RESULTS frame-removal PASS (24/24 checks)

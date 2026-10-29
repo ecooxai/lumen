@@ -183,6 +183,13 @@ uint32_t csp_sandbox(const char *csp) {
     }
     return flags;
 }
+uint32_t document_sandbox_flags(const JsCtx *parent, Node *frame,
+                                const Document *document, const Window *window) {
+    size_t length = 0;
+    const char *value = frame ? node_attr_n(frame, "sandbox", &length) : nullptr;
+    return (window ? window->forced_sandbox : 0) | (parent ? parent->sandbox_flags : 0) |
+           sandbox_list(value, length) | csp_sandbox(document ? document->csp : nullptr);
+}
 void release_form_accounting(const FormNavigation &request) {
     form_pending_bytes -= request.bytes;
     if (Window *source = find_window(request.source))
@@ -356,10 +363,7 @@ void js_windows_attach(JsCtx *c) {
         c->host.window_id = w->id;
     }
     if (!w->epoch) js_window_commit(w->id, c->doc, JS_COOP_UNSAFE_NONE);
-    size_t sandbox_length = 0;
-    const char *sandbox_value = c->frame_el ? node_attr_n(c->frame_el, "sandbox", &sandbox_length) : nullptr;
-    uint32_t flags = w->forced_sandbox | (c->parent ? c->parent->sandbox_flags : 0) |
-                     sandbox_list(sandbox_value, sandbox_length) | csp_sandbox(c->doc->csp);
+    uint32_t flags = document_sandbox_flags(c->parent, c->frame_el, c->doc, w);
     if (c->parent) {
         w->parent = c->parent->window_id;
         if (Window *parent = find_window(w->parent)) {
@@ -400,6 +404,29 @@ bool js_windows_has_activation(const JsCtx *c) {
 bool js_windows_same_origin(const JsCtx *a, const JsCtx *b) {
     return a && b && (a == b || context_principal(a) == context_principal(b));
 }
+WebEncoding js_windows_frame_encoding_fallback(const JsCtx *parent, Node *frame,
+                                               const Document *incoming) {
+    if (!parent || !current_context(parent) || !parent->doc || !frame ||
+        frame->doc != parent->doc || !incoming || !incoming->url || parent->opaque_origin)
+        return WEB_ENC_UTF8;
+    const WebEncoding encoding = parent->doc->encoding;
+    if (encoding < WEB_ENC_UTF8 || encoding >= WEB_ENC_COUNT ||
+        encoding == WEB_ENC_UTF16LE || encoding == WEB_ENC_UTF16BE)
+        return WEB_ENC_UTF8;
+    const JsCtx *previous = js_frame_ctx(frame);
+    const Window *window = previous ? find_window(previous->window_id) : nullptr;
+    if (document_sandbox_flags(parent, frame, incoming, window) & SB_ORIGIN)
+        return WEB_ENC_UTF8;
+    /* Compare only canonical tuple origins. Opaque "null" serializations do
+     * not establish shared identity, and no synthetic principal is allocated. */
+    URL url{};
+    if (!url_parse(incoming->url, &url)) return WEB_ENC_UTF8;
+    char *origin = url_origin(&url);
+    const bool same = origin && strcmp(origin, "null") && parent->origin == origin;
+    free(origin); url_free(&url);
+    return same ? encoding : WEB_ENC_UTF8;
+}
+
 v8::Local<v8::Value> js_window_value(JsCtx *viewer, JsWindowId id) {
     v8::Isolate *iso = viewer->iso;
     if (!id) return v8::Null(iso);

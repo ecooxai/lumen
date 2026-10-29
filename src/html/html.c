@@ -958,12 +958,13 @@ static WebEncoding html_prescan_encoding(const unsigned char *s, size_t length) 
 /* Decode response bytes once before tokenization. BOM and supported transport
  * charset take precedence over the bounded HTML metadata/XML prescan. Plain
  * text does not inspect HTML syntax. Parser restarts beyond the first 1024
- * bytes and inherited parent encodings remain separate work.
+ * bytes remain separate work. A caller-proven same-origin parent encoding
+ * follows these declarations when no encoding is otherwise selected.
  * Unicode inputs (srcdoc, document.write, DOMParser and generated pages)
  * continue to call html_parse directly and are not decoded a second time.
  */
-bool html_parse_bytes(Document *document, const char *bytes, size_t length,
-                      const char *content_type) {
+bool html_parse_bytes_with_fallback(Document *document, const char *bytes, size_t length,
+                                    const char *content_type, WebEncoding fallback) {
     if (!document || (!bytes && length) || length > SIZE_MAX / 3) return false;
     if (!bytes) bytes = "";
     const unsigned char *input = (const unsigned char *)bytes;
@@ -979,7 +980,10 @@ bool html_parse_bytes(Document *document, const char *bytes, size_t length,
     const bool plaintext = response_is_plaintext(content_type);
     if (encoding == WEB_ENC_UNKNOWN && !plaintext)
         encoding = html_prescan_encoding(input, length);
-    if (encoding == WEB_ENC_UNKNOWN) encoding = WEB_ENC_UTF8;
+    if (encoding == WEB_ENC_UNKNOWN) {
+        encoding = fallback >= WEB_ENC_UTF8 && fallback < WEB_ENC_COUNT &&
+            fallback != WEB_ENC_UTF16LE && fallback != WEB_ENC_UTF16BE ? fallback : WEB_ENC_UTF8;
+    }
 
     /* Three output bytes per input byte bounds even an all-error input. The
      * builder grows to the actual decoded length, not this maximum. */
@@ -995,4 +999,11 @@ bool html_parse_bytes(Document *document, const char *bytes, size_t length,
     }
     sb_free(&decoded);
     return ok;
+}
+
+/* Ordinary top-level callers retain the existing UTF-8 default. A frame may
+ * supply a different fallback only after its origin/sandbox policy permits it. */
+bool html_parse_bytes(Document *document, const char *bytes, size_t length,
+                      const char *content_type) {
+    return html_parse_bytes_with_fallback(document, bytes, length, content_type, WEB_ENC_UTF8);
 }

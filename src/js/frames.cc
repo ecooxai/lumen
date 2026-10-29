@@ -183,7 +183,8 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     const std::string xml_type = xml_content_type(content_type);
     if (!xml_type.empty()) d->node.ns = NS_NONE;
     else if (content_type) {
-        if (!html_parse_bytes(d, html ? html : "", html ? n : 0, content_type)) {
+        const WebEncoding fallback = js_windows_frame_encoding_fallback(p, f, d);
+        if (!html_parse_bytes_with_fallback(d, html ? html : "", html ? n : 0, content_type, fallback)) {
             fprintf(stderr, "lumen: frame HTML decoding exceeded its byte contract\n");
             html_parse(d, "", 0);
         }

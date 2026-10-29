@@ -187,6 +187,8 @@ void js_windows_detach(JsCtx *c, bool close_frame = false);
 void js_windows_deliver(JsCtx *c);
 double js_windows_deadline(JsCtx *c);
 bool js_windows_same_origin(const JsCtx *a, const JsCtx *b);
+WebEncoding js_windows_frame_encoding_fallback(const JsCtx *parent, Node *frame,
+                                               const Document *incoming);
 JsCtx *js_window_caller(v8::Isolate *iso);
 std::string js_windows_base_url(JsCtx *c, bool include_element);
 std::string js_document_base_url(Document *document, bool include_element);

@@ -1,0 +1,31 @@
+{
+  "startedUTC": "2026-10-28T23:55:36.170588+00:00",
+  "sourceBaseCommit": "3021c23a40ee4ffdd929a1bb50de51a0bf96a03d",
+  "applied": true,
+  "before": {
+    "src/html/html.c": "1863a73e2815a5da5c4e346366a08a3846458538d93e3709aa631d2376e9cf09",
+    "src/dom/dom.h": "6e5d23c6996c84f160a3309090042582536d254a022e91211e4b9fb06b22ae1f",
+    "src/js/frames.cc": "df4b61bd2e89dfaf068222a5cbe94f087cc2a2fcc4a81e37dc6a83bae6845571",
+    "src/js/js_int.h": "ea16102d402b70439a7c5d621d9f223cdd33e464100285b275901bc6f4510528",
+    "src/js/windows.cc": "0b0143b9be97e7dac6876160591f7bdbab74c2388214da7e0f5dcd94051eee03"
+  },
+  "after": {
+    "src/html/html.c": "5deaa7cee34b71b928ee37aa2c7125c5b68273eb88c31ae47a6e21b64ac0e5aa",
+    "src/dom/dom.h": "485176ebeb62c46a2875c6ab2ec567ccc40b178cdd5d3b13e7b2de4d495be612",
+    "src/js/frames.cc": "8f608a0f8af0362af69cd57e9544067ddc4213fa7b053d3be7fa5f63bb6164f9",
+    "src/js/js_int.h": "30fa346fa3a1b523f4b7973ae7e4b3d26e0719e9ac264d3d336e9332efcf2f9a",
+    "src/js/windows.cc": "b2982c11fbb5603c59bd139d51f4888400ac10da87e6199feb7f95cd11c4cbef"
+  },
+  "fixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+  "redMonitorSHA256": "6a3122f54da81578998073341e0521715528d7f8ad488e639cca1cd5a4fed6b2",
+  "redLogSHA256": "5a890f86d7639d11d1d3821696533dc2786e789b4e057f103f540fa6ed4d3964",
+  "red": {
+    "binarySHA256": "7ba1ea30e120cf8fee7d854a37757d3ebbd322e6e74a0222c7507b203e8550df",
+    "fixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+    "htmlSHA256": "73f65b3f6c46e9d0dc44b2fe32479840255f76da20b7d6f0aab709f0fb1d5d88",
+    "total": 15,
+    "passed": 11,
+    "failed": 4
+  },
+  "scope": "Same-origin non-UTF16 parent encoding fallback with shared sandbox policy; no parser restart claim."
+}

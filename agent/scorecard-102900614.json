@@ -674,7 +674,7 @@
       }
     }
   ],
-  "updated_utc": "2026-10-29T00:01:47.736677+00:00",
+  "updated_utc": "2026-10-29T00:02:06.771954+00:00",
   "current_baseline_binary_sha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
   "full_official_wpt_pass_percent": null,
   "current_native_source_base_commit": "22359337f8036da7170fa0e06e4b486dfc5cd440",
@@ -910,6 +910,15 @@
       "total_session_seconds": 6426.278,
       "score": 45,
       "status": "Correct tokenizer EOF underflow and preserve comment bytes"
+    },
+    {
+      "iteration": "102900614-015",
+      "started_utc": "2026-10-29T00:01:47.736677+00:00",
+      "updated_utc": "2026-10-29T00:02:06.771954+00:00",
+      "elapsed_seconds": 19.035,
+      "total_session_seconds": 6445.313,
+      "score": 45,
+      "status": "Apply eligible same-origin parent encoding fallback"
     }
   ],
   "current_native_source_manifest": "agent/evidence/102900614-003/compiled-source-sha256.json",
@@ -986,6 +995,14 @@
       "evidence": "agent/evidence/102900614-014-html-eof.json",
       "accepted": false,
       "note": "Correct tokenizer EOF underflow and preserve comment bytes; fresh combined acceptance remains pending."
+    },
+    {
+      "iteration": "102900614-015",
+      "binary_sha256": "07cca318e49e830d25280b9a8b5e345fe9ea7bf57b6515e80d12946f767068e8",
+      "source_manifest": "agent/evidence/102900614-015/compiled-source-sha256.json",
+      "evidence": "agent/evidence/102900614-015-frame-encoding.json",
+      "accepted": false,
+      "note": "Apply eligible same-origin parent encoding fallback; fresh combined acceptance remains pending."
     }
   ],
   "reference_qualification": {

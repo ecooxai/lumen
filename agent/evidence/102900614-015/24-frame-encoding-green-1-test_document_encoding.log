@@ -1,0 +1,79 @@
+PASS document encoding regression source is present and bounded
+PASS the real loopback encoding server initializes
+PASS the real parent document and V8 realm initialize
+PASS the fixture receives only the actual loopback origin
+PASS the real asynchronous encoding driver starts
+PASS the real HTTP and foreign-realm cases finish before the deadline
+PASS the asynchronous driver has no unhandled setup failure
+PASS all document encoding cases produce a complete result array
+PASS /utf8 exposes the actual transport or BOM encoding
+PASS /utf8 replacement-decodes real response bytes before parsing
+PASS /utf8 encodes href query separately from UTF8 fragment
+PASS /windows1252 exposes the actual transport or BOM encoding
+PASS /windows1252 replacement-decodes real response bytes before parsing
+PASS /windows1252 encodes href query separately from UTF8 fragment
+PASS /big5 exposes the actual transport or BOM encoding
+PASS /big5 replacement-decodes real response bytes before parsing
+PASS /big5 encodes href query separately from UTF8 fragment
+PASS /euckr exposes the actual transport or BOM encoding
+PASS /euckr replacement-decodes real response bytes before parsing
+PASS /euckr encodes href query separately from UTF8 fragment
+PASS /iso2022jp exposes the actual transport or BOM encoding
+PASS /iso2022jp replacement-decodes real response bytes before parsing
+PASS /iso2022jp encodes href query separately from UTF8 fragment
+PASS /gb18030 exposes the actual transport or BOM encoding
+PASS /gb18030 replacement-decodes real response bytes before parsing
+PASS /gb18030 encodes href query separately from UTF8 fragment
+PASS /shiftjis exposes the actual transport or BOM encoding
+PASS /shiftjis replacement-decodes real response bytes before parsing
+PASS /shiftjis encodes href query separately from UTF8 fragment
+PASS /iso88592 exposes the actual transport or BOM encoding
+PASS /iso88592 replacement-decodes real response bytes before parsing
+PASS /iso88592 encodes href query separately from UTF8 fragment
+PASS /bom8 exposes the actual transport or BOM encoding
+PASS /bom8 replacement-decodes real response bytes before parsing
+PASS /bom8 encodes href query separately from UTF8 fragment
+PASS /bom16le exposes the actual transport or BOM encoding
+PASS /bom16le replacement-decodes real response bytes before parsing
+PASS /bom16le encodes href query separately from UTF8 fragment
+PASS /header16be exposes the actual transport or BOM encoding
+PASS /header16be replacement-decodes real response bytes before parsing
+PASS /header16be encodes href query separately from UTF8 fragment
+PASS /unknown exposes the actual transport or BOM encoding
+PASS /unknown replacement-decodes real response bytes before parsing
+PASS /unknown encodes href query separately from UTF8 fragment
+PASS a borrowed document encoding getter uses its genuine foreign receiver
+PASS the charset alias uses the same foreign document metadata
+PASS the inputEncoding alias uses the same foreign document metadata
+PASS a borrowed anchor getter uses the node document encoding
+PASS hyperlink search assignment keeps the UTF8 basic-parser default
+PASS a borrowed hyperlink setter also uses UTF8 assignment semantics
+PASS changing another URL component preserves the existing encoded query
+PASS absolute raw href assignment still uses the legacy document encoding
+PASS modern URL construction stays UTF8 inside a legacy document realm
+PASS an area element shares genuine document-aware href resolution
+PASS base href resolution uses the document encoding
+PASS a borrowed baseURI getter uses the actual foreign document
+PASS adopting an anchor changes its parser document without rewriting its raw href
+PASS a reentrant component conversion reads the updated href
+PASS USVString conversion replaces a lone surrogate before legacy query encoding
+PASS an invalid receiver rejects before author string conversion
+PASS a Symbol href throws without changing the existing raw attribute
+PASS prototype imitation does not acquire an anchor receiver identity
+PASS a Proxy wrapper does not acquire a genuine DOM receiver identity
+PASS document metadata rejects a prototype-only fake
+PASS hyperlink mixin accessors require their own host interface
+PASS hyperlink accessors are genuine named nonconstructible builtins
+PASS hyperlink stringifiers have separate concise method identity
+PASS href resolution is independent of the mutable public URL constructor
+PASS component mutation uses the captured element setter
+PASS script-created documents retain their own UTF8 default
+PASS removing the child deactivates its public frame association
+PASS a retained inactive document keeps its own immutable encoding metadata
+PASS a retained inactive anchor still resolves using its owner document
+PASS a retained inactive anchor can use the stateless native URL mutator
+PASS document encoding rows have unique names and explicit outcomes
+PASS all twelve HTTP byte fixtures were actually requested once
+PASS all encoding HTTP requests finish before network teardown
+PASS native worker ownership remains drained before teardown
+RESULTS document-encoding PASS (78/78 checks)
