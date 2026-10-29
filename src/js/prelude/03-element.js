@@ -11,10 +11,105 @@ function parseDecls(s) {
     let depth = 0, q = 0, start = 0; const parts = [];
     for (let i = 0; i < s.length; i++) { const c = s[i]; if (q) { if (c === q) q = 0; } else if (c === '"' || c === "'") q = c; else if (c === '(') depth++; else if (c === ')') depth--; else if (c === ';' && !depth) { parts.push(s.slice(start, i)); start = i + 1; } }
     parts.push(s.slice(start));
-    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
-const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !important' : '') + ';').join(' ');
+/* Flex declarations are stored as their longhands, so enumeration, removal,
+   priority and later longhand assignments all operate on the same values.
+   Pending substitution retains its shorthand token stream until resolution. */
+const CSS_FLEX_PARTS = ['flex-grow', 'flex-shrink', 'flex-basis'];
+const cssFlexRelevant = p => p === 'flex' || CSS_FLEX_PARTS.includes(p);
+const cssFlexWide = v => /^(inherit|initial|unset|revert|revert-layer)$/i.test(v);
+function cssFlexNumber(v) {
+    if (/^[+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:e[+-]?\d+)?$/i.test(v))
+        return Number.isFinite(+v) && +v >= 0 ? String(+v) : null;
+    const [type, end] = mathType(v);
+    if (type !== '' || end !== v.length || !/^[a-z-]+\(/i.test(v)) return null;
+    const folded = mathEval(v);
+    return folded && !folded.u ? mathSer(folded) : specNormalize('flex-grow', v);
+}
+function cssFlexBasis(v) {
+    if (/^(auto|content|min-content|max-content|fit-content|stretch)$/i.test(v)) return v.toLowerCase();
+    const [type, end] = mathType(v), literal = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:e[+-]?\d+)?(?:%|[a-z]+)?$/i.test(v);
+    if ((!literal && !/^[a-z-]+\(/i.test(v)) || end !== v.length || !(type === 'length^1' || type === '%^1' || type === '' && literal && +v === 0)) return null;
+    if (literal && parseFloat(v) < 0) return null;
+    if (type === '') return '0px';
+    const folded = /^[a-z-]+\(/i.test(v) && mathEval(v);
+    return folded ? mathSer(folded) : specNormalize('flex-basis', v);
+}
+function cssFlexParse(p, value) {
+    const raw = String(value).replace(/\/\*[\s\S]*?\*\//g, ' ').trim();
+    if (!raw) return null;
+    if (cssFlexWide(raw)) { const v = raw.toLowerCase(); return p === 'flex' ? { values: [v, v, v] } : { value: v }; }
+    if (/\b(?:var|env|attr)\(/i.test(raw)) return { value: raw };
+    if (p !== 'flex') { const v = p === 'flex-basis' ? cssFlexBasis(raw) : cssFlexNumber(raw); return v === null ? null : { value: v }; }
+    if (/^none$/i.test(raw)) return { values: ['0', '0', 'auto'] };
+    const tokens = specSplit(raw);
+    if (!tokens.length || tokens.length > 3) return null;
+    let grow = null, shrink = null, basis = null, numberEnd = -1;
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i], n = cssFlexNumber(token);
+        if (n !== null && grow === null) { grow = n; numberEnd = i; continue; }
+        if (n !== null && shrink === null && i === numberEnd + 1) { shrink = n; numberEnd = i; continue; }
+        const b = cssFlexBasis(token);
+        if (basis !== null || b === null) return null;
+        basis = b;
+    }
+    return { values: [grow ?? '1', shrink ?? '1', basis ?? '0%'] };
+}
+function cssFlexValue(m, p, priority = false) {
+    const direct = m.get(p);
+    if (p !== 'flex') return direct ? direct[priority ? 1 : 0] : priority ? m.get('flex')?.[1] || '' : '';
+    if (direct) return CSS_FLEX_PARTS.some(name => m.has(name)) ? '' : direct[priority ? 1 : 0];
+    const entries = CSS_FLEX_PARTS.map(name => m.get(name));
+    if (entries.some(e => !e) || entries.some(e => e[1] !== entries[0][1])) return '';
+    if (priority) return entries[0][1];
+    const values = entries.map(e => e[0]);
+    if (values.some(cssFlexWide)) return values.every(v => v === values[0]) ? values[0] : '';
+    return values.some(v => /\b(?:var|env|attr)\(/i.test(v)) ? '' : values.join(' ');
+}
+function cssFlexSet(m, p, value, priority, cascading = false) {
+    const parsed = cssFlexParse(p, value);
+    if (!parsed) return false;
+    if (p === 'flex') {
+        if (cascading && m.get(p)?.[1] && !priority) return true;
+        m.delete(p);
+        if (!parsed.values) for (const name of CSS_FLEX_PARTS) {
+            if (!cascading || !m.get(name)?.[1] || priority) m.delete(name);
+        }
+    }
+    const names = parsed.values ? CSS_FLEX_PARTS : [p], values = parsed.values || [parsed.value];
+    for (let i = 0; i < names.length; i++) {
+        const old = m.get(names[i]);
+        if (cascading && old?.[1] && !priority) continue;
+        m.set(names[i], [values[i], priority]);
+    }
+    return true;
+}
+function cssFlexRemove(m, p) {
+    const old = cssFlexValue(m, p);
+    m.delete(p);
+    if (p === 'flex') for (const name of CSS_FLEX_PARTS) m.delete(name);
+    return old;
+}
+function serDecls(m) {
+    /* Coalescing longhands must not move a declaration across all: it is
+       itself cascaded at its original position and can reset flex components. */
+    let flexSeen = false, allAfterFlex = false, mergeFlex = true;
+    for (const name of m.keys()) {
+        if (CSS_FLEX_PARTS.includes(name)) { if (allAfterFlex) mergeFlex = false; flexSeen = true; }
+        else if (name === 'all' && flexSeen) allAfterFlex = true;
+    }
+    const out = [], flex = mergeFlex ? cssFlexValue(m, 'flex') : '';
+    let flexWritten = false;
+    for (const [k, [v, i]] of m) {
+        if (CSS_FLEX_PARTS.includes(k) && flex && !m.has('flex')) {
+            if (!flexWritten) out.push('flex: ' + flex + (i ? ' !important' : '') + ';');
+            flexWritten = true;
+        } else out.push(k + ': ' + v + (i ? ' !important' : '') + ';');
+    }
+    return out.join(' ');
+}
 /* a longhand only set through a shorthand in this declaration block: its share of the shorthand's value */
 const SHORTHAND_OF = { 'align-items': 'place-items', 'justify-items': 'place-items', 'align-self': 'place-self', 'justify-self': 'place-self', 'align-content': 'place-content', 'justify-content': 'place-content',
     'row-gap': 'gap', 'column-gap': 'gap', 'overflow-x': 'overflow', 'overflow-y': 'overflow', 'top': 'inset', 'right': 'inset', 'bottom': 'inset', 'left': 'inset',
@@ -305,6 +400,7 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
     return null;
 }
 function mathValid(p, v) {
+    if (cssFlexRelevant(p)) return cssFlexParse(p, v) !== null;
     if (cssGridRelevant(p)) return cssGridParse(p, v) !== null;
     /* Only a leading minus, whitespace or non-ASCII prefix can become a
        negative literal after trim(). Ordinary positive sizes need no scan. */
@@ -678,9 +774,15 @@ class CSSStyleDeclaration {
     get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
-    getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); if (cssGridRelevant(p)) return cssGridValue(m, p); return e ? e[0] : shorthandPart(m, p); }
-    getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssGridRelevant(p)) return cssGridValue(m, p, true); const e = m.get(p); return e ? e[1] : ''; }
+    getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); return e ? e[0] : shorthandPart(m, p); }
+    getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p); return e ? e[1] : ''; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
+        if (cssFlexRelevant(p)) {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri), m = new SMap(this._m());
+            if (value === '') cssFlexRemove(m, p);
+            else if (priority && !/^important$/i.test(priority) || !cssFlexSet(m, p, value, priority ? 'important' : '')) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
         if (cssGridRelevant(p)) {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri), m = new SMap(this._m());
             if (value === '') cssGridRemove(m, p);
@@ -688,7 +790,7 @@ class CSSStyleDeclaration {
             this._el.setAttribute('style', serDecls(m)); return;
         }
         if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },

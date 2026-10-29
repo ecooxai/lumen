@@ -1,0 +1,99 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Flex declaration mutation, grammar and cascade regression</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<body>
+<script>
+'use strict';
+const failures = [], observations = [];
+let checks = 0;
+function eq(actual, expected, label) {
+  checks++;
+  if (typeof test === 'function') test(() => assert_equals(actual, expected), label);
+  observations.push({label, actual, expected});
+  if (actual !== expected) failures.push({label, actual, expected});
+}
+function fresh() { return document.createElement('div').style; }
+function triplet(s) { return [s.flexGrow,s.flexShrink,s.flexBasis].join('|'); }
+const valid = [
+ ['none','0|0|auto'], ['auto','1|1|auto'], ['2','2|1|0%'],
+ ['2 3','2|3|0%'], ['20px 2 3','2|3|20px'], ['2 20px','2|1|20px'],
+ ['20%','1|1|20%'], ['content','1|1|content'], ['0','0|1|0%'],
+ ['1 2 0','1|2|0px'], ['1 2 -0px','1|2|0px'],
+ ['calc(1) calc(2 + 1) calc(3px)','calc(1)|calc(3)|calc(3px)']
+];
+for (const [value, expected] of valid) {
+ const s = fresh(); s.flex = value;
+ eq(triplet(s), expected, value + ' longhands');
+ eq(s.length, 3, value + ' three declarations');
+ eq(s.flex, expected.split('|').join(' '), value + ' shorthand');
+}
+for (const value of ['none 1','2 3 4','5px 7%','9 none','1 2 calc(0)','1 2 calc(3 - 3)','-1','1 -2','1 2 -3px','1 20px 2','1 2 3px 4','bogus']) {
+ const s = fresh(); s.flex = '2 3 4px'; s.flex = value;
+ eq(s.flex,'2 3 4px',value + ' leaves prior value');
+ eq(CSS.supports('flex',value),false,value + ' unsupported');
+}
+{
+ const s = fresh(); s.flex = '2 3 40px';
+ s.flexGrow = '5'; eq(s.flex,'5 3 40px','longhand overrides shorthand');
+ eq(s.removeProperty('flex-shrink'),'3','remove longhand old value');
+ eq(s.flex,'','incomplete shorthand empty'); eq(s.length,2,'remove exactly one');
+ s.flexShrink = '7'; eq(s.flex,'5 7 40px','reconstruct shorthand');
+ eq(s.removeProperty('flex'),'5 7 40px','remove shorthand value');
+ eq(s.length,0,'remove shorthand all children');
+}
+{
+ const s = fresh(); s.setProperty('flex','2 3 4px','important');
+ for (const key of ['flex','flex-grow','flex-shrink','flex-basis']) eq(s.getPropertyPriority(key),'important',key+' important');
+ s.setProperty('flex-grow','8','');
+ eq(s.flex,'','mixed priority shorthand empty');
+ eq(s.flexGrow,'8','setProperty overrides old important value');
+ s.setProperty('flex','9','invalid-priority');
+ eq(s.flexGrow,'8','invalid priority mutation is ignored');
+ s.removeProperty('flex'); eq(s.length,0,'mixed priority shorthand removal');
+}
+{
+ const s = fresh(); s.cssText = 'flex-grow: 7!important; flex:2 3 4px';
+ eq(triplet(s),'7|3|4px','declaration block priority');
+ eq(s.getPropertyPriority('flex-grow'),'important','old important survives parsing');
+ s.cssText = 'flex:2 3 4px!important; flex-grow:8';
+ eq(triplet(s),'2|3|4px','shorthand important blocks normal longhand');
+ s.cssText = 'flex:2 3 4px;flex:garbage';
+ eq(s.flex,'2 3 4px','invalid source shorthand ignored');
+}
+for (const keyword of ['initial','inherit','unset','revert','revert-layer']) {
+ const s = fresh(); s.flex = keyword;
+ eq(triplet(s),[keyword,keyword,keyword].join('|'),keyword+' expands');
+ eq(s.flex,keyword,keyword+' serializes');
+}
+{
+ const host = document.createElement('div');
+ host.style.cssText = 'display:flex;width:300px';
+ const a = document.createElement('div'), b = document.createElement('div');
+ a.style.flex = '1 0 0px'; b.style.flex = '2 0 0px';
+ host.append(a,b); document.body.append(host);
+ eq(Math.round(a.getBoundingClientRect().width),100,'rendered first flex fraction');
+ eq(Math.round(b.getBoundingClientRect().width),200,'rendered second flex fraction');
+ a.style.flexGrow = '2';
+ eq(Math.round(a.getBoundingClientRect().width),150,'mutated growth reaches layout');
+ eq(Math.round(b.getBoundingClientRect().width),150,'sibling recalculated');
+ host.remove();
+}
+for (const important of ['', ' !important']) {
+ const p=document.createElement('div'); document.body.append(p);
+ p.style.cssText='flex-grow: 2'+important+'; all: initial'+important+'; flex-shrink: 3'+important+'; flex-basis: 4px'+important;
+ const before=[getComputedStyle(p).flexGrow,getComputedStyle(p).flexShrink,getComputedStyle(p).flexBasis].join('|');
+ p.style.color='red';
+ const after=[getComputedStyle(p).flexGrow,getComputedStyle(p).flexShrink,getComputedStyle(p).flexBasis].join('|');
+ const text=p.style.cssText;
+ eq(text.indexOf('flex-grow:') < text.indexOf('all:') && text.indexOf('all:') < text.indexOf('flex-shrink:'),true,'all barrier order'+important);
+ eq(after,before,'unrelated mutation preserves cascade'+important);
+ p.remove();
+}
+for(const value of ['1.','1.px','1 2 3.px']) {
+ const s=fresh();s.flex='2 3 4px';s.flex=value;
+ eq(s.flex,'2 3 4px','malformed decimal ignored '+value);
+}
+const result = document.createElement('pre'); result.id='results'; result.textContent='RESULTS LUMEN_FLEX_DECL_RESULT:'+(failures.length ? 'FAIL ' : 'PASS ')+(checks-failures.length)+'/'+checks+' '+JSON.stringify(failures); document.body.append(result); console.log(result.textContent); console.log('LUMEN_FLEX_DECL_OBSERVATIONS '+JSON.stringify(observations));
+</script>

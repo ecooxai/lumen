@@ -4,6 +4,23 @@
 typedef struct { Box *b; int ord; float base, hypo, mn, mx, main, cross, mm0, mm1; bool frozen, amA0, amA1; } FItem;
 static int ord_cmp(const void *a, const void *b) { const FItem *x = a, *y = b; int d = x->b->st->order - y->b->st->order; return d ? d : (x->ord - y->ord); }
 
+/* A content flex basis ignores the preferred main size. Measure with a
+ * read-only style copy, then restore the ordinary intrinsic cache: content
+ * measurements must not poison later auto-basis or non-flex sizing. */
+static void flex_content_width(Layout *L, Box *b, float *mn, float *mx) {
+    ComputedStyle measured = *b->st, *original = b->st;
+    measured.width = L_auto(); measured.min_width = L_auto();
+    measured.max_width = (Length){ .kind = LK_NONE };
+    bool cached = b->intr_ok; float old_min = b->imin, old_max = b->imax;
+    float margin[4], border[4], padding[4];
+    memcpy(margin, b->m, sizeof margin); memcpy(border, b->b, sizeof border);
+    memcpy(padding, b->p, sizeof padding);
+    b->st = &measured; b->intr_ok = false;
+    intrinsic(L, b, mn, mx);
+    b->st = original; b->intr_ok = cached; b->imin = old_min; b->imax = old_max;
+    memcpy(b->m, margin, sizeof margin); memcpy(b->b, border, sizeof border);
+    memcpy(b->p, padding, sizeof padding);
+}
 float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
     bool row = s->flex_direction <= FD_ROW_REVERSE, rev = s->flex_direction == FD_ROW_REVERSE || s->flex_direction == FD_COLUMN_REVERSE;
@@ -24,14 +41,23 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         f->mm0 = row ? c->m[3] : c->m[0]; f->mm1 = row ? c->m[1] : c->m[2];
         float bp = row ? hbp(c) : vbp(c); bool bs = cs->box_sizing == BOX_BORDER;
         Length fb = cs->flex_basis, sz = row ? cs->width : cs->height;
-        float mn, mx; intrinsic(L, c, &mn, &mx);
+        float mn, mx;
+        if (row && fb.kind == LK_CONTENT) flex_content_width(L, c, &mn, &mx);
+        else intrinsic(L, c, &mn, &mx);
         float content_h = -1;
         if (len_def(fb, mainsz) && !(fb.pctu && mainsz < 0)) f->base = res(fb, mainsz) + (bs ? 0 : bp);
-        else if (len_def(sz, mainsz) && sz.kind == LK_LEN) f->base = res(sz, mainsz) + (bs ? 0 : bp);
+        else if (fb.kind != LK_CONTENT && len_def(sz, mainsz) && sz.kind == LK_LEN) f->base = res(sz, mainsz) + (bs ? 0 : bp);
         else if (row) f->base = mx;
         else {
             float w = (cs->width.kind == LK_LEN) ? 0 : cw - c->m[1] - c->m[3];
+            ComputedStyle measured;
+            if (fb.kind == LK_CONTENT) {
+                measured = *cs; measured.height = L_auto(); measured.min_height = L_auto();
+                measured.max_height = (Length){ .kind = LK_NONE }; c->st = &measured; c->memo = false;
+            }
             layout_box(L, c, cx + c->m[3], cy, cw, -1, NULL, cs->width.kind == LK_LEN ? SZ_FILL : SZ_FORCED, w, -1);
+            c->st = (ComputedStyle *)cs;
+            if (fb.kind == LK_CONTENT) c->memo = false;
             f->base = content_h = c->h;
         }
         Length mnl = row ? cs->min_width : cs->min_height, mxl = row ? cs->max_width : cs->max_height;

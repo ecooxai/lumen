@@ -6,7 +6,7 @@
  * https://drafts.csswg.org/css-values-4/#calc-type-checking */
 enum { CN_LENGTH, CN_ANGLE, CN_TIME, CN_FREQUENCY, CN_RESOLUTION, CN_FLEX, CN_PERCENT, CN_DIMS };
 typedef struct { double value; int power[CN_DIMS]; } CssNumber;
-typedef struct { const char *p; float em, rem; const MediaCtx *media; unsigned depth, terms; } CssNumberParser;
+typedef struct { const char *p; float em, rem; const MediaCtx *media; unsigned depth, terms; bool length_percent_hint; } CssNumberParser;
 static bool css_number_sum(CssNumberParser *p, CssNumber *out);
 static void css_number_ws(CssNumberParser *p) { while (is_ws((unsigned char)*p->p)) p->p++; }
 static bool css_number_scalar(const CssNumber *n) { for (int i = 0; i < CN_DIMS; i++) if (n->power[i]) return false; return true; }
@@ -68,7 +68,7 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
         const char *unit = q; while (isalpha((unsigned char)*q)) q++;
         char u[16]; size_t un = (size_t)(q - unit); if (un >= sizeof u) return false;
         for (size_t i = 0; i < un; i++) u[i] = (char)lc(unit[i]); u[un] = 0;
-        if (*q == '%') { if (un) return false; out->power[CN_PERCENT] = 1; q++; }
+        if (*q == '%') { if (un) return false; out->power[p->length_percent_hint ? CN_LENGTH : CN_PERCENT] = 1; q++; }
         else if (un) {
             if (!strcmp(u, "deg") || !strcmp(u, "rad") || !strcmp(u, "grad") || !strcmp(u, "turn")) { out->power[CN_ANGLE] = 1; out->value *= !strcmp(u, "rad") ? 180 / M_PI : !strcmp(u, "grad") ? .9 : !strcmp(u, "turn") ? 360 : 1; }
             else if (!strcmp(u, "s") || !strcmp(u, "ms")) { out->power[CN_TIME] = 1; if (u[0] == 'm') out->value /= 1000; }
@@ -140,9 +140,14 @@ static bool css_number_sum(CssNumberParser *p, CssNumber *out) {
         out->value = op == '+' ? out->value + r.value : out->value - r.value;
     }
 }
-static bool css_number_parse(const char *text, float em, float rem, const MediaCtx *media, CssNumber *out) {
-    CssNumberParser p = { .p = text, .em = em, .rem = rem, .media = media };
+static bool css_number_parse_hint(const char *text, float em, float rem, const MediaCtx *media,
+                                  bool length_percent_hint, CssNumber *out) {
+    CssNumberParser p = { .p = text, .em = em, .rem = rem, .media = media,
+                          .length_percent_hint = length_percent_hint };
     if (!css_number_value(&p, out)) return false;
     css_number_ws(&p); return !*p.p;
+}
+static bool css_number_parse(const char *text, float em, float rem, const MediaCtx *media, CssNumber *out) {
+    return css_number_parse_hint(text, em, rem, media, false, out);
 }
 #endif

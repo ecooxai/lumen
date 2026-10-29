@@ -1,0 +1,65 @@
+<!doctype html><meta charset="utf-8">
+<title>Flex native cascade, inheritance and content sizing</title>
+<script src="/resources/testharness.js"></script><script src="/resources/testharnessreport.js"></script>
+<style>.lower { flex:7 8 9px }</style><body><pre id="results">Running</pre>
+<script>
+'use strict';
+let count=0; const failures=[];
+function eq(actual,expected,label) {
+ count++; if(typeof test==='function')test(()=>assert_equals(actual,expected),label);
+ if(actual!==expected)failures.push({label,actual,expected});
+}
+function target(raw, parent='flex:2 3 41px') {
+ const p=document.createElement('div'),c=document.createElement('div');
+ p.style.cssText=parent;c.className='lower';c.setAttribute('style',raw);p.append(c);document.body.append(p);
+ return {p,c};
+}
+function triple(c) { const s=getComputedStyle(c);return [s.flexGrow,s.flexShrink,s.flexBasis].join('|'); }
+for(const value of ['initial','unset','revert','revert-layer']) {
+ const {p,c}=target('flex:'+value);
+ eq(triple(c),'0|1|auto',value+' replaces lower declaration');
+ p.remove();
+}
+{
+ const {p,c}=target('flex:inherit');eq(triple(c),'2|3|41px','shorthand inherits all fields');
+ p.style.flex='5 6 51px';eq(triple(c),'5|6|51px','inherited shorthand invalidates on parent change');p.remove();
+}
+for(const [prop,expected] of [['flex-grow','2|8|9px'],['flex-shrink','7|3|9px'],['flex-basis','7|8|41px']]) {
+ const {p,c}=target(prop+':inherit');eq(triple(c),expected,prop+' inherits independently');p.remove();
+}
+for(const value of ['none 1','2 3 4','5px 7%','9 none','1 2 calc(0)','1 2 calc(3 - 3)','-1','1 -2','1 2 -3px','1 20px 2','1 2 3px 4','1 2 3deg']) {
+ const {p,c}=target('flex:'+value);eq(triple(c),'7|8|9px',value+' invalid source ignored');p.remove();
+}
+for(const [raw,expected,label] of [
+ ['flex:var(--missing)','0|1|auto','missing shorthand variable resets'],
+ ['--bad:2 3 4;flex:var(--bad)','0|1|auto','invalid shorthand variable resets'],
+ ['flex-grow:var(--missing)','0|8|9px','missing grow variable resets one component'],
+ ['--bad:-2;flex-shrink:var(--bad)','7|1|9px','invalid shrink variable resets one component'],
+ ['--basis:-20px;flex-basis:var(--basis)','7|8|auto','invalid basis variable resets one component'],
+ ['flex:calc(-1) calc(-2) calc(-3px)','0|0|0px','negative math clamps'],
+ ['flex:calc(8px / 2px) 3 5px','4|3|5px','typed length cancellation yields growth factor'],
+ ['flex:calc(20% / 10%) 3 5px','2|3|5px','typed percentage cancellation yields growth factor'],
+ ['flex:2 3 calc(10px + 25%)','2|3|calc(25% + 10px)','mixed length percentage basis retains type'],
+ ['flex:content','1|1|content','content retains computed keyword'],
+ ['flex:3 4 min-content','3|4|min-content','intrinsic minimum keyword'],
+ ['flex:3 4 max-content','3|4|max-content','intrinsic maximum keyword']
+]) { const {p,c}=target(raw);eq(triple(c),expected,label);p.remove(); }
+for(const direction of ['row','column']) {
+ const host=document.createElement('div'),child=document.createElement('div'),ref=document.createElement('span');
+ host.style.cssText='display:flex;flex-direction:'+direction+';width:300px;height:300px;align-items:flex-start';
+ child.style.cssText='flex:0 0 content;width:100px;height:100px;font:20px monospace;line-height:20px;white-space:nowrap';
+ child.textContent='xx';ref.style.cssText='font:20px monospace;line-height:20px;white-space:nowrap';ref.textContent='xx';
+ host.append(child);document.body.append(host,ref);
+ const actual=direction==='row'?child.getBoundingClientRect().width:child.getBoundingClientRect().height;
+ const expected=direction==='row'?ref.getBoundingClientRect().width:20;
+ eq(Math.round(actual*100)/100,Math.round(expected*100)/100,direction+' content basis ignores specified main size');
+ child.style[direction==='row'?'width':'height']='200px';
+ const updated=direction==='row'?child.getBoundingClientRect().width:child.getBoundingClientRect().height;
+ eq(Math.round(updated*100)/100,Math.round(expected*100)/100,direction+' content cache ignores changed preferred size');
+ child.style.flexBasis='auto';
+ eq(Math.round(direction==='row'?child.getBoundingClientRect().width:child.getBoundingClientRect().height),200,direction+' auto basis restores preferred size');
+ host.remove();ref.remove();
+}
+document.getElementById('results').textContent='RESULTS LUMEN_FLEX_NATIVE:'+(failures.length?'FAIL ':'PASS ')+(count-failures.length)+'/'+count+' '+JSON.stringify(failures);
+console.log(document.getElementById('results').textContent);
+</script>

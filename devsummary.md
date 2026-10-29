@@ -804,3 +804,56 @@ Five actual168captures drained02:04:47.359604; two34s4:3 videos drained02:15:17.
 Evidence under agent/validation/linux-wpt-20261029-session4: final-native4200/independent-summary.json and identity-comparison.json; final168-validation-recommendation.json; render100-final168/independent-review.json; performance-v2-final168/independent-summary.json; archive168-closure-independent-review.json (SHA78127ac050b8d87548ea31812db56776dc227c648b93b24fd76eae15277f8bcd); publication168-delivery-independent-review.json (SHA499e74447d1c1a61732b7a191fc49179a13d8638bb62333089446252ea367caf).
 
 AGENTS standing prefix preserved; old session3 section archived verbatim. Task and7original untracked fixtures unchanged. Feedback ended02:33:19.619605; lastpoll02:33:20.969460 zero messages; dashboard statusclosed. Later local docs commit/preservation receipt: agent/validation/linux-wpt-20261029-session4/final-docs-commit-receipt.json. No new tests/engine changes during docs.
+
+## Linux engine session 5 — 2026-10-29, non-URL priority
+
+Task start **2026-10-29 13:39:40 UTC / 06:39:40 America/Los_Angeles**.
+Normal deadline **16:39:40 UTC**; only important bug repair can use the authorized extra hour.
+Starting runtime168 / HEAD8611727 was preserved with current request in agent/task.md at
+**59933c672463092c89fce424a2722d953dc0a01c**, then branch
+**gpt-6-astra-engine-lead-linux-nonurl-conformance-20261029-1339** was created.
+Seven pre-existing untracked fixtures remain untouched. Dedicated URL conformance is deferred;
+native gates exclude url, url_host_nul and data_url. Engine-only source edits may proceed during
+immutable binary comparisons after proving compiled/embedded source inputs; runner/helper,
+selected fixtures/resources, environment, binary, dynamic libraries and fonts stay fixed.
+
+All agents are same-capability GPT-6 Astra built-in agents. Shared compilation quota remains
+480%, jobs2, with owned process CPU/RSS sampled every second and separate shared cgroup evidence.
+Root partition pressure is avoided using short project-backed TMPDIR agent/t.
+Whole-goal score remains **19/100**, target98 unmet. Successful builds are not acceptance.
+
+### Recorded candidate iterations (as of 2026-10-29T14:05:56.497950+00:00)
+
+The intervals below are exact build/startup execution windows, not fabricated estimates of
+coding time. Implementation and independent reviews overlapped; their uninstrumented per-candidate
+start times are not claimed. Total task wall time includes them and must not be obtained by
+adding concurrent agent durations.
+
+|Candidate|Recorded start UTC|Recorded end UTC|Minutes|Score|Evaluation|
+|---|---|---|---:|---:|---|
+|169|2026-10-29T13:46:40Z|2026-10-29T13:47:07Z|0.450|19/100|not release accepted; concrete flex improvement verified, serialization barrier review required|
+|170|2026-10-29T13:54:54Z|2026-10-29T13:55:32Z|0.633|19/100|rejected|
+|171|2026-10-29T14:03:15Z|2026-10-29T14:03:41Z|0.433|19/100|flex repair verified; whole binary not release accepted because worker regression remains|
+
+**169**: Fresh fixed125:65→67 fully passing,847→921 PASS subtests,+74 exact gains,zero losses/missing/added; all125 native harnesses OK. Fresh authored93:168 15/93,169 93/93. Binary SHA256 e2c42107c6fd7b9aabbe7b75541555f63f92646a4b4d9636b27c4aa1dd371f7a; input digest 92f9738e29c899fdc372daf64c5c9520a0cbb5e79b695390db9911bebfb5d320.
+
+**170**: Native316 controls passed. Real browser authored93/93 and DOMException22/22 passed, but native-flex35 had3 failures: parent-change inheritance and row/column content basis. Worker transfer control lost3 prior message-preservation passes (1684/7 versus1701/7). Binary SHA256 cf78e30dfc2a416ebb2b9a1d5872fdaacca568bafe14ef131d103a2b3a7af7f1; input digest 1d24d9060c3ddcd86b2e7440fcc72e2febef78b8cb08d8db0d4e4bd57268ba75.
+
+**171**: Native336/336 controls, production JS bindings with JSRUN_LAYOUT=1 CSSOM100/100 and native cascade/content39/39. Fixes all serialization barrier, malformed decimals, inherited parent invalidation and content-size/cache holdouts. Await independent browser controls and worker transport repair. Binary SHA256 5a654e9b4adf3c604c048752302b1aa51049b2ea6d00db8b180c8e061d58e972; input digest b5df72c227ef6b89decc05f701ec2c9f956dcfe65a7cc59b85975cf7e8289d55.
+
+Fresh Chromium125 control:120/125 fully passing,1394 PASS/19 FAIL registered subtests,
+124 harnessOK and one Chromium crash (/css/css-cascade/revert-rule-cycle.tentative.html).
+Those registrations differ from native due to the crash; no common subtest denominator is asserted.
+Authored controls and overlapping upstream cohorts are not added to fixed-corpus totals.
+
+Operations startup ran13:40:40→13:45:14.932 UTC (4.58min), retained existing HTTPS dashboard,
+2s websocket telemetry/inbox and1s shared-cgroup monitor. No engine acceptance follows from dashboard health.
+Candidate169 build-owned CPU median61.966%,max98.001%,peakRSS440.709MB/PSS370.318MB;
+shared-slice build window median116.10%,max192.60%,quota480%,zero throttled periods. Scopes differ.
+Three trusted-fixture adapter attempts had zero browser launches because explicitly pinned capture
+library/audit environment was missing; retained failures were not counted as engine failures.
+Standard guarded WPT cohorts provided actual production browser results.
+
+As of 2026-10-29T14:05:56.497950+00:00, total task wall time is **26.27 minutes**.
+Session continues. Next gates: repair worker message loss, rerun paired production controls, then
+fresh matched non-URL954 and broader selected comparison; Grid containing-area repair is a separate lane.

@@ -1145,6 +1145,62 @@ static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
 static int split_top(char *s, char sep, char **out, int max);
 static bool angle_or_time(const char *v);
 #include "numeric-count.h"
+/* Flex's two factors are numbers, not lengths. Keep the range restriction
+ * separate from math typing: a negative literal is invalid, while a valid
+ * calculation is clamped at computed-value time. */
+static bool flex_factor(ACtx *c, const char *v, float *out) {
+    bool math = strchr(v, '(') != NULL;
+    if (!math && !isdigit((unsigned char)*v) && *v != '+' && *v != '-' && *v != '.') return false;
+    CssNumber n;
+    if (!css_number_parse(v, c->em, c->rem, c->mc, &n) || !css_number_scalar(&n)) return false;
+    if (!math && (!isfinite(n.value) || n.value < 0)) return false;
+    double value = isnan(n.value) ? 0 : n.value;
+    *out = (float)LMIN(3.4028234663852886e38, LMAX(0.0, value));
+    return true;
+}
+static bool flex_basis(ACtx *c, const char *v, Length *out) {
+    if (str_ieq(v, "content")) { *out = (Length){ .kind = LK_CONTENT }; return true; }
+    if (str_ieq(v, "auto") || str_ieq(v, "min-content") ||
+        str_ieq(v, "max-content") || str_ieq(v, "fit-content")) return alen(c, v, out);
+    bool math = strchr(v, '(') != NULL;
+    if (!math && !isdigit((unsigned char)*v) && *v != '+' && *v != '-' && *v != '.') return false;
+    CssNumber n;
+    if (!css_number_parse_hint(v, c->em, c->rem, c->mc, true, &n)) return false;
+    bool length = n.power[CN_LENGTH] == 1;
+    for (int i = 1; i < CN_DIMS; i++) if (n.power[i]) length = false;
+    if (!length && !(css_number_scalar(&n) && !math && n.value == 0)) return false;
+    if (!math && (!isfinite(n.value) || n.value < 0)) return false;
+    Length result = L_px(0);
+    if (!alen_size(c, v, &result)) return false;
+    *out = result;
+    return true;
+}
+static bool flex_parse(ACtx *c, const char *value, float *grow, float *shrink, Length *basis) {
+    if (str_ieq(value, "none")) { *grow = *shrink = 0; *basis = L_auto(); return true; }
+    char *tokens[4]; int count = split_ws(value, tokens, 4), number_end = -1;
+    bool have_grow = false, have_shrink = false, have_basis = false, valid = count > 0 && count < 4;
+    float g = 1, s = 1; Length b = L_px(0); b.pctu = true;
+    for (int i = 0; valid && i < count; i++) {
+        float factor;
+        bool number = flex_factor(c, tokens[i], &factor);
+        if (number && !have_grow) { g = factor; have_grow = true; number_end = i; }
+        else if (number && !have_shrink && i == number_end + 1) { s = factor; have_shrink = true; number_end = i; }
+        else if (!have_basis && flex_basis(c, tokens[i], &b)) have_basis = true;
+        else valid = false;
+    }
+    free_toks(tokens, count);
+    if (valid) { *grow = g; *shrink = s; *basis = b; }
+    return valid;
+}
+bool css_flex_valid(const char *prop, const char *value) {
+    if (strcmp(prop, "flex") && strcmp(prop, "flex-grow") && strcmp(prop, "flex-shrink") && strcmp(prop, "flex-basis")) return true;
+    if (str_ieq(value, "initial") || str_ieq(value, "inherit") || str_ieq(value, "unset") ||
+        str_ieq(value, "revert") || str_ieq(value, "revert-layer") || strstr(value, "var(") || strstr(value, "env(") || strstr(value, "attr(")) return true;
+    ACtx c = { .em = 16, .rem = 16 }; float g, sh; Length b;
+    return !strcmp(prop, "flex") ? flex_parse(&c, value, &g, &sh, &b) :
+        !strcmp(prop, "flex-basis") ? flex_basis(&c, value, &b) : flex_factor(&c, value, &g);
+}
+
 /* Literal integer tokens enforce the grammar range immediately; math functions
  * are typed as numbers, rounded toward +infinity at ties, then range-clamped.
  * Materialized tracks use the same 1000-track limit as the surrounding parser. */
@@ -1658,7 +1714,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (strstr(v, "var(")) {
         subst = subst_vars(v, st, 0);
         if (!subst) {
-            if (flow_basis_prop(prop)) css_apply_decl(st, par, prop, "unset", e, el);
+            if (flow_basis_prop(prop) || !strcmp(prop, "flex") || !strcmp(prop, "flex-grow") || !strcmp(prop, "flex-shrink") || !strcmp(prop, "flex-basis")) css_apply_decl(st, par, prop, "unset", e, el);
             return;
         }
         v = subst;
@@ -1692,6 +1748,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             if (invalid_substitution) css_apply_decl(st, par, P, "unset", e, el);
             return;
         }
+    }
+    bool flex_value = !strcmp(P, "flex") || !strcmp(P, "flex-grow") ||
+                      !strcmp(P, "flex-shrink") || !strcmp(P, "flex-basis");
+    if (flex_value && !inherit && !initial && !unset && !css_flex_valid(P, val)) {
+        bool invalid_substitution = subst != NULL;
+        free(vbuf); free(subst);
+        if (invalid_substitution) css_apply_decl(st, par, P, "unset", e, el);
+        return;
     }
     bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
     GridTrack *prepared_tracks = NULL; int prepared_count = 0;
@@ -1856,6 +1920,12 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
                     st->border_color[i] = inherit ? src->border_color[i] : st->color;
             if (inherit) st->parent_sensitive = true;
         }
+        else if (flex_value) {
+            if (!strcmp(P, "flex") || !strcmp(P, "flex-grow")) st->flex_grow = src->flex_grow;
+            if (!strcmp(P, "flex") || !strcmp(P, "flex-shrink")) st->flex_shrink = src->flex_shrink;
+            if (!strcmp(P, "flex") || !strcmp(P, "flex-basis")) st->flex_basis = src->flex_basis;
+            if (inherit) st->parent_sensitive = true;
+        }
         else if (!strcmp(P, "white-space")) st->white_space = src->white_space;
         else if (!strcmp(P, "visibility")) st->visibility = src->visibility;
         else if (!strcmp(P, "position")) st->position = src->position;
@@ -1994,24 +2064,10 @@ apply:
         else if (!strcmp(P, "font-style")) st->font_style = str_ieq(val, "italic") || str_istarts(val, "oblique");
         else if (!strcmp(P, "font")) apply_font(&c, val);
         else if (!strcmp(P, "float")) { st->float_ = str_ieq(val, "left") || str_ieq(val, "inline-start") ? F_LEFT : str_ieq(val, "right") || str_ieq(val, "inline-end") ? F_RIGHT : F_NONE; }
-        else if (!strcmp(P, "flex")) {
-            if (str_ieq(val, "none")) { st->flex_grow = 0; st->flex_shrink = 0; st->flex_basis = L_auto(); }
-            else if (str_ieq(val, "auto")) { st->flex_grow = 1; st->flex_shrink = 1; st->flex_basis = L_auto(); }
-            else {
-                char *t[3]; int n = split_ws(val, t, 3); int nums = 0;
-                st->flex_grow = 1; st->flex_shrink = 1; st->flex_basis = L_px(0); st->flex_basis.pctu = true;
-                for (int i = 0; i < n; i++) {
-                    char *end; float x = strtof(t[i], &end);
-                    if (end != t[i] && !*end && nums < 2) { if (nums == 0) st->flex_grow = x; else st->flex_shrink = x; nums++; }
-                    else if (alen(&c, t[i], &l)) st->flex_basis = l;
-                    else if (str_ieq(t[i], "content")) st->flex_basis = L_auto();
-                }
-                free_toks(t, n);
-            }
-        }
-        else if (!strcmp(P, "flex-grow")) st->flex_grow = strtof(val, NULL);
-        else if (!strcmp(P, "flex-shrink")) st->flex_shrink = strtof(val, NULL);
-        else if (!strcmp(P, "flex-basis")) { if (str_ieq(val, "content")) st->flex_basis = L_auto(); else alen(&c, val, &st->flex_basis); }
+        else if (!strcmp(P, "flex")) (void)flex_parse(&c, val, &st->flex_grow, &st->flex_shrink, &st->flex_basis);
+        else if (!strcmp(P, "flex-grow")) (void)flex_factor(&c, val, &st->flex_grow);
+        else if (!strcmp(P, "flex-shrink")) (void)flex_factor(&c, val, &st->flex_shrink);
+        else if (!strcmp(P, "flex-basis")) (void)flex_basis(&c, val, &st->flex_basis);
         else if (!strcmp(P, "flex-direction")) { static const char *const fd[] = { "row", "row-reverse", "column", "column-reverse", NULL }; k = kw(val, fd); if (k >= 0) st->flex_direction = (uint8_t)k; }
         else if (!strcmp(P, "flex-wrap")) st->flex_wrap = str_ieq(val, "wrap") ? 1 : str_ieq(val, "wrap-reverse") ? 2 : 0;
         else if (!strcmp(P, "flex-flow")) { char *t[2]; int n = split_ws(val, t, 2); for (int i = 0; i < n; i++) { if (strstr(t[i], "wrap")) css_apply_decl(st, par, "flex-wrap", t[i], e, el); else css_apply_decl(st, par, "flex-direction", t[i], e, el); } free_toks(t, n); }
@@ -4161,6 +4217,8 @@ static bool uncompared_differ(const ComputedStyle *a, const ComputedStyle *b) {
         memcmp(&a->max_width, &b->max_width, sizeof a->max_width) || memcmp(&a->max_height, &b->max_height, sizeof a->max_height) ||
         memcmp(a->margin, b->margin, sizeof a->margin) || memcmp(a->padding, b->padding, sizeof a->padding) ||
         memcmp(a->inset, b->inset, sizeof a->inset) ||
+        a->flex_grow != b->flex_grow || a->flex_shrink != b->flex_shrink ||
+        memcmp(&a->flex_basis, &b->flex_basis, sizeof a->flex_basis) ||
         memcmp(a->border_style, b->border_style, sizeof a->border_style) ||
         memcmp(a->border_width, b->border_width, sizeof a->border_width) ||
         memcmp(a->border_color, b->border_color, sizeof a->border_color) || a->position != b->position ||
@@ -5025,6 +5083,7 @@ static void len_str(SB *b, Length l, const char *au) {
     else if (l.kind == LK_MIN_CONTENT) sb_puts(b, "min-content");
     else if (l.kind == LK_MAX_CONTENT) sb_puts(b, "max-content");
     else if (l.kind == LK_FIT_CONTENT) sb_puts(b, "fit-content");
+    else if (l.kind == LK_CONTENT) sb_puts(b, "content");
     else if (l.pct && l.px) sb_printf(b, "calc(%g%% %c %gpx)", l.pct, l.px < 0 ? '-' : '+', fabsf(l.px));
     else if (l.pct || (l.pctu && !l.px)) sb_printf(b, "%g%%", l.pct);
     else sb_printf(b, "%gpx", l.px);

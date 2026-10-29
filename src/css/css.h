@@ -3,7 +3,7 @@
 #include "../dom/dom.h"
 
 /* ---------------- values ---------------- */
-enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT };
+enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT, LK_CONTENT };
 typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm; float px2, pct2; } Length;  /* pctu: written with % (so 0% != 0px); mm 1/2: min/max(px+pct, px2+pct2), px/pct alone is a best guess */
 /* Length value = px + pct/100 * reference */  /* value = px + pct/100 * reference */
 static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
@@ -331,6 +331,7 @@ Node *css_query(Node *root, const char *sel, bool all, NodeVec *out);
 bool css_media_matches(const char *q, const MediaCtx *mc);
 bool css_media_valid(const char *q);
 bool css_supports(const char *cond);
+bool css_flex_valid(const char *prop, const char *value);
 /* Grid1/2 automatic-repeat constraint; not a complete property grammar validator. */
 bool css_grid_repeat_valid(const char *property, const char *value);
 /* Caller owns *out. Used for implicit grid track-size patterns. */
