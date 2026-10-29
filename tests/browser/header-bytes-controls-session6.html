@@ -1,0 +1,28 @@
+<!doctype html><meta charset="utf-8"><title>Header ByteString negative controls</title><body><script>
+(async()=>{
+const rows=[];const hex=x=>x===null?null:Array.from(x,c=>c.charCodeAt(0).toString(16).padStart(2,"0")).join(" ");
+for(const [name,value]of [["ascii","abc"],["latin1-e9","caf\u00e9"],["utf8-byte-spelling","caf\u00c3\u00a9"],["all-high-bytes","\u0080\u00ff"],["empty",""],["trim-space-tab"," \talpha\t "],["internal-tab","a\tb"],["nul","a\0b"],["lf","a\nb"],["cr","a\rb"],["above-byte","\u0100"],["ellipsis","\u2026"],["lone-surrogate","\ud800"],["non-bmp","\ud83d\ude00"],["del","\u007f"]]){
+const values={constructorException:"",constructorHex:null,appendException:"",appendHex:null,setException:"",setHex:null};
+try{values.constructorHex=hex(new Headers({"x-value":value}).get("x-value"))}catch(e){values.constructorException=e.name}
+try{const h=new Headers();h.append("x-value",value);values.appendHex=hex(h.get("x-value"))}catch(e){values.appendException=e.name}
+try{const h=new Headers();h.set("x-value",value);values.setHex=hex(h.get("x-value"))}catch(e){values.setException=e.name}
+rows.push({name,values});
+}
+for(const name of ["","x bad","x:y","x\nz","x\u00e9","x\u0100","x\0z"," X-A"]){
+const values={exception:"",size:0};try{const h=new Headers();h.append(name,"ok");values.size=Array.from(h).length}catch(e){values.exception=e.name}rows.push({name:"header-name-"+JSON.stringify(name),values});
+}
+{
+const h=new Headers();h.append("X-Test"," first ");h.append("x-test","\u00e9");const values={combined:hex(h.get("X-TEST")),entries:Array.from(h).length,caseInsensitive:h.has("x-TEST"),copyIndependent:false,sourceIndependent:false};const q=new Headers(h);q.set("x-test","copy");values.copyIndependent=h.get("x-test")==="first, \u00e9";h.set("x-other","source");values.sourceIndependent=!q.has("x-other");rows.push({name:"duplicates-and-independent-copy",values});
+}
+{
+let calls=0;const h=new Headers();h.append("x-object",{toString(){calls++;return "\u00e9"}});rows.push({name:"value-coercion-once",values:{calls,value:hex(h.get("x-object"))}});
+}
+{
+const r=new Request(location.href,{headers:{"Cookie":"a=b","Sec-QA":"blocked","Proxy-QA":"blocked","X-Normal":"ok"}});rows.push({name:"request-forbidden-name-controls",values:{cookie:r.headers.get("cookie"),sec:r.headers.get("sec-qa"),proxy:r.headers.get("proxy-qa"),normal:r.headers.get("x-normal")}});
+}
+{
+const text=await new Response(new Uint8Array([0x63,0x61,0x66,0xc3,0xa9])).text();rows.push({name:"body-utf8-decoding-independent",values:{text,codeUnits:text.length,tailCode:text.charCodeAt(3)}});
+}
+const total=rows.reduce((n,r)=>n+Object.keys(r.values).length,0);const raw=JSON.stringify({rows,total});const count=Math.ceil(raw.length/256);for(let i=0;i<count;i++)console.log("LUMEN_AUTHORED_CHUNK "+i+" "+JSON.stringify(raw.slice(i*256,(i+1)*256)));console.log("LUMEN_AUTHORED_DONE "+count);console.log("RESULTS HEADER_BYTES_OBSERVATIONS:PASS");
+})().catch(e=>console.log("RESULTS HEADER_BYTES_OBSERVATIONS:FAIL "+e.stack));
+</script></body>
