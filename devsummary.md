@@ -1087,3 +1087,33 @@ including colspan/rowspan and resize; capture completion is not conformance.
 No fresh185 score is claimed yet. Agents:engine_lead andconformance_qa;
 release_ops forms prototype in an isolated worktree;root PM.
 Source checkpointUTC:2026-10-29T18:33:04.144936+00:00
+
+
+### Iteration6 / Ruby candidate185 — accepted table spacing
+
+Start18:30:34UTC; independent native/browser seal completed18:35:14UTC;
+4.67minutes. Fresh fixed table observations504→960/960 (+456;100/100 focused),
+zero lost passes/missing/added identities. Retained111/30/27 observations are
+identical to184, including three known holdouts. Fresh rebuilt native suite
+140/140 PASS,zero skipped/disabled/failed. Source0fb1aa6a446369bf9ab756c8935e93d754503301;
+immutable browserSHA256e03dab1c3ed3bfde89dc3ef4a97e20c6d291fc40d1cf58c8094efef3b15b4915.
+All618 inputs unchanged, digest8703a58c9ecc606970d32b0c074135c3213c3997152207b5da4faf43f04feb5c.
+App build/startup25.07s; owned build/monitor drained. Independent evidence:
+session6/qa-table185/comparison.json andsession6/qa-native185.
+Agents:engine_lead,conformance_qa,release_ops;root PM. Overall Chromium parity
+remains unverified(last estimate19/100); URL conformance deferred. Total
+wall time17:25:47→18:35:14=69.45minutes; parallel work is not summed.
+
+### Iteration7 / candidate186 — form-validity source checkpoint
+
+A separate reviewed04f-forms.js patch from release_ops's isolated Ruby worktree
+now preserves live validity flags on controls barred from validation, while
+checkValidity/reportValidity/message/event gating remains eligibility-based.
+Text-like/textarea required missingness still respects mutability; checkbox,
+radio and file constraints retain their state-specific rules. The readonly
+input candidacy rule is independent from readonly applicability to mutability.
+Raw pattern compilation precedes anchoring. Unnamed required-radio behavior
+is supported by the unchanged pinned upstream WPT and fresh Chromium, with
+ambiguity in current group prose explicitly retained.
+Fresh312-row8127-check oracle and pinned forms24 outcomes remain pending.
+This source checkpoint is not a conformance score. StartUTC:2026-10-29T18:36:38.527166+00:00

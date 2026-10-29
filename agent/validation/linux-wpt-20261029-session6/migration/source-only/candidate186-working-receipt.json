@@ -1,0 +1,12 @@
+{
+  "candidate": 186,
+  "started_utc": "2026-10-29T18:36:38.527166+00:00",
+  "base_head": "0fb1aa6a446369bf9ab756c8935e93d754503301",
+  "source_worktree_branch": "gpt-6-astra-release-ops-form-validity-20261029",
+  "source_worktree_base": "5f9019f187865037108e1d1e1ceab11a226e0dd3",
+  "file": "src/js/prelude/04f-forms.js",
+  "before": "f126cfa3c6e114f768dc2bfb8cdc71db79a0efe26f99a30c3ffdec133d881746",
+  "after": "d1b7c8e6ea48e38b26a71ce8c105ecb1dd17f61c3d5ed279598b0242e136cff8",
+  "patch_sha256": "d6ab2735d4fed99f7fbf74447eedb0c681f4fc489ea70537b2d4e6a02b590823",
+  "scope": "Separate live ValidityState introspection from candidacy; preserve mutability-specific required rules and API/event gating; validate raw pattern; readonly input candidacy; unnamed radio supported by pinned upstream WPT and Chromium with normative prose ambiguity retained."
+}

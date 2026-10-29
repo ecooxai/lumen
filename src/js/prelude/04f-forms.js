@@ -406,7 +406,7 @@ function willValidate(el) {
     case 'input': {
         const t = inType(el);
         if (t === 'hidden' || t === 'reset' || t === 'button') return false;
-        if (READONLY_TYPES.test(t) && N.attr(el, 'readonly') != null) return false;
+        if (N.attr(el, 'readonly') != null) return false;
         break;
     }
     case 'button': { const t = el.type; if (t !== 'submit') return false; break; }
@@ -420,7 +420,11 @@ let patternCache = new SMap();
 const patternRe = p => {
     let r = patternCache.get(p);
     if (r === undefined) {
-        try { r = new RegExp('^(?:' + p + ')$', 'v'); } catch (e) { r = null; }
+        try {
+            /* Validate the author's expression before adding the whole-value anchors. */
+            new RegExp(p, 'v');
+            r = new RegExp('^(?:' + p + ')$', 'v');
+        } catch (e) { r = null; }
         if (patternCache.size > 200) patternCache = new SMap();
         patternCache.set(p, r);
     }
@@ -434,19 +438,19 @@ const radioGroup = el => {
     return N.query(scope.nodeType === 9 || scope.nodeType === 11 || scope.nodeType === 1 ? scope : root, 'input', true)
         .filter(r => r === el || (N.ns(r) === 0 && inType(r) === 'radio' && N.attr(r, 'name') === name && formOwner(r) === owner && r.getRootNode() === root));
 };
-/* the element's validity flags; all clear for an element barred from constraint validation */
+/* Validity describes the control's state even when it is barred from validation.
+   Eligibility gates the validation APIs; mutability only gates specific constraints. */
 function validityFlags(el) {
     const f = { valueMissing: false, typeMismatch: false, patternMismatch: false, tooLong: false, tooShort: false, rangeUnderflow: false, rangeOverflow: false, stepMismatch: false, badInput: false, customError: false };
-    if (!willValidate(el)) return f;
     f.customError = !!customMsg.get(el);
     const name = N.name(el);
     if (name === 'input') {
         const t = inType(el), v = inputValue(el), req = N.attr(el, 'required') != null && REQUIRED_TYPES.test(t);
         if (req) {
             if (t === 'checkbox') f.valueMissing = !N.checked(el);
-            else if (t === 'radio') f.valueMissing = !radioGroup(el).some(r => N.checked(r));
+            else if (t === 'radio') f.valueMissing = !!N.attr(el, 'name') && !radioGroup(el).some(r => N.checked(r));
             else if (t === 'file') f.valueMissing = !(el.files && el.files.length);
-            else f.valueMissing = v === '';
+            else f.valueMissing = v === '' && !ctlDisabled(el) && !(READONLY_TYPES.test(t) && N.attr(el, 'readonly') != null);
         } else if (t === 'radio' && N.attr(el, 'name')) {
             const g = radioGroup(el);
             f.valueMissing = g.some(r => N.attr(r, 'required') != null) && !g.some(r => N.checked(r));
@@ -483,7 +487,7 @@ function validityFlags(el) {
             }
         }
     } else if (name === 'textarea') {
-        if (N.attr(el, 'required') != null) f.valueMissing = el.value === '';
+        if (N.attr(el, 'required') != null) f.valueMissing = el.value === '' && !ctlDisabled(el) && N.attr(el, 'readonly') == null;
     }
     return f;
 }
