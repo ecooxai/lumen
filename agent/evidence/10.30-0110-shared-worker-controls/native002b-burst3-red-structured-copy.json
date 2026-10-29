@@ -1,0 +1,48 @@
+{
+  "transport": "Structured copy of authorized native Mac tool read",
+  "sourceRelaySHA256": "9eafc29c874be1f8f5d8cc8c81e81153868cda0273e76c22e81415fe207df1ee",
+  "record": {
+    "kind": "shared-worker-native-input-queue-migration",
+    "officialWPT": false,
+    "nativeLumenExecuted": true,
+    "chromiumControlExecuted": false,
+    "binary": "/Users/devin/repos/lumen/out/10300110-mac/native-shared-002b/jsrun-7279890736d7c926",
+    "binarySHA256": "7279890736d7c92603e689edfec803cf7b8ed5721ce692c058a33a24f02ac6a9",
+    "browserVersion": null,
+    "fixtureSHA256": "bba6e0e2b38ebb161d64ddc1654e87e8068db9c11101226d7d2db04b448ba5a1",
+    "pageTemplateSHA256": "3a3297fc93060c940b17449755e8d883679b234598515130d29bc03df61723f0",
+    "workerSHA256": "d29d306727f3013c0307d2df547c1267d546c22ff3adbfbae30ce0d4260c3462",
+    "inheritedFixtureSHA256": "2c66901eb9a5a12bf8947c3ce5f217d88da45f2a7795295a5a6e88a58f020dae",
+    "caseManifestSHA256": "258d4f2a7a68e50845bb4bb6a260a846f5db8cf870ba448e31f9e94d1aa21e95",
+    "started": "2026-10-29T18:18:23.932633+00:00",
+    "ended": "2026-10-29T18:18:31.987871+00:00",
+    "durationSeconds": 8.055026,
+    "total": 3,
+    "passed": 0,
+    "failed": 3,
+    "rows": [
+      {
+        "i": 0,
+        "name": "queued native messages survive port return, round 1",
+        "ok": false,
+        "error": "Error: timeout: all25 queued messages follow endpoint"
+      },
+      {
+        "i": 1,
+        "name": "queued native messages survive port return, round 2",
+        "ok": false,
+        "error": "Error: timeout: all25 queued messages follow endpoint"
+      },
+      {
+        "i": 2,
+        "name": "queued native messages survive port return, round 3",
+        "ok": false,
+        "error": "Error: timeout: all25 queued messages follow endpoint"
+      }
+    ],
+    "infrastructureErrors": [],
+    "monitor": "External one-second monitor required",
+    "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSHA256": "0b2a15863d0a1095ee91762f7ba31aa1621b2faff26be0b87be2c85da9a02fe1"
+  }
+}

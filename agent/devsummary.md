@@ -637,3 +637,11 @@ Start `2026-10-29T18:10:11.592587+00:00`; end `2026-10-29T18:13:25.595994+00:00`
 ### Iteration 4 — real Unicode18 data through pinned ICU79 (in progress)
 
 Product build override/cache invalidation committedb28a181; no URL validation changes, no host upgrade, no V8 rebuild. Final native acceptance will bind the staged official bottle hashes, cached URLobject UIDNA79 imports, final executable linkage, then the unchanged77 URL variants and complete1515 inventory.
+
+### Iteration 4 completed — native queue migration and real ICU79
+
+Start `2026-10-29T18:13:25.595994+00:00`; end `2026-10-29T18:27:47.750973+00:00`; elapsed862.154979s. A new unchanged Chrome-qualified3-round/75-message public oracle reproduced0/3 on002b, with all producer-before-return barriers established and zero messages delivered. Source619a2d3 migrates both the remaining worker input batch and native input queue, redirects late forwards, preserves queued child endpoints, and lets the owner claim the FIFO before old-worker termination. No timeout or oracle changes supplied the fix.
+
+Final003 built with the reviewed project-localICU79.1/Unicode18 bottle and passed26/26 native/actualGUI gates in52.959s (native incremental build10.097s). Both URLobject and final executable importUIDNA79; exact staged library hashes, original URLsource bytes, host78alias and prebuiltV8 binaries were verified unchanged. Existing68 transfer, SharedWorker22, boundary13, transfer9, return-owner2 and burst3 all pass; five actualGUI cohorts use the same frozen expectations. Compiled source619a2d3 is now frozen. Full1515 and final300native cycles/resource/package/TLS remain separate gates.
+
+Per-stage UTC timestamps and measured seconds are recorded in `agent/evidence/10.30-0110-native-shared-003/iteration-ledger.json`. Total session wall time through native verification4607.750973s; concurrent agent time is not falsely summed. Overall accepted taskscore remains66.426948447154565/100 until the final evidence set is evaluated.

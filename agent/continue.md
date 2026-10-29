@@ -37,3 +37,17 @@ Candidate fullhistoryarchiveb541SHA b0c2c28b7200e9a33079b715e6cc624c0794ad9f53e3
 Candidate001 subsequently passed unchangedSharedWorker30/30 (574assertions) and100cycles/1691lifetimechecks, but its13boundarycohort was12/13. Implemented private native connection-port moves, queued-transfer serialization, bridge collapse on return and last-port-close/lifecycle cleanup. Candidate002 then exposed an existing ordinary MessagePort reply ordering regression67/68; held unchanged. Source46a6e6a repaired peer disentanglement to preserve the receiving queue. Candidate002b passed all13 gate stages, including68/68,22/22,13/13,9/9,2/2, in27.513s at18:13:25.595994UTC. LumenSHA5e2d07ce5fee8f124d648d3f9660aec94fcd2181cf139f79b890bcca8d87ef5a; jsrunSHA7279890736d7c92603e689edfec803cf7b8ed5721ce692c058a33a24f02ac6a9. Basic+transferred100cycle gates are being renewed.
 
 Iteration3 is the last completed focused-fix iteration; iteration4 pinnedICU79 finalcandidate is in progress. NativeICU79.1/Unicode18officialbottle staging14/14 passed with host78aliasunchanged; productMakefileoverride/cacheguardb28a181 pendingfinalbuild. Onlysrc/base/url.cusesnativeICUheaders; prebuiltV8 keepsitsmatchedICU. Full1515, relocatedself-containedMacpackage, TLS, resourcegateandmobileexecutionremainseparate. Do not promote old66.426948score or claim a stitched WPT rate.
+
+## Frozen candidate003 — full acceptance in progress
+
+Reviewed product source `619a2d36e068f0e2efc00d856f4471b201e191e8`, compiled metadata `457edae5f116cb007b10999d1b207f24ce41dd6f`. Native26/26 gate stages passed at2026-10-29T18:27:47.750973UTC in52.959s; incremental build10.097s. LumenSHA `0b20cd1139a5794eaa5d020105665c3093ca7b3504d338045b0a545db4b6ad3e`; jsrunSHA `863c711532d3d43b65ad3bb5c1df6595a6651142c01436373777c7f7d4a83fa7`. Summary `out/10300110-mac/native-shared-003/summary.json`. Complete priorityWPT, all three100cycle native lifecycle gates and relocated app/TLS/resource acceptance are still separate; never substitute focused gates for those receipts.
+
+Build identity requires the exact pinned `ICU_PREFIX=/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1` and stage receipt `out/10300110-mac/icu79-stage-v2/receipt.json` SHA `dd25b7f2ba669d54af02e4c96758e1820d4b40e16415988d353284e429944666`. Both URLobject and executable useUIDNA79; host unversionedICU still78.3. A plain make command against host78 is not the accepted dependency configuration. PrebuiltV8 remains byte-identical and keeps its matching ICU. The build summary carries exact `buildMakeVariables`, library hashes, official bottle hash and source manifest; stress and package tools bind to that summary.
+
+To repeat native acceptance on this host using fresh output:
+
+```sh
+python3 tools/apple-session-gpt6as/build_shared_worker_10300110.py --reviewed-source 619a2d36e068f0e2efc00d856f4471b201e191e8 --output out/10300110-mac/native-shared-recheck --transfer-acceptance --icu-prefix out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1 --icu-receipt out/10300110-mac/icu79-stage-v2/receipt.json
+```
+
+For a recovered source-only checkout, first stage the same independently pinned official bottle with `stage_icu79_10300110.py` into a fresh project output, then pass its actual prefix and receipt. Do not relink systemHomebrew or rebuildV8 just to reproduce this change.

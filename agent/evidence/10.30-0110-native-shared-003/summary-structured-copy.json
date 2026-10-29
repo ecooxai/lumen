@@ -1,0 +1,753 @@
+{
+  "transport": "Structured copy of authorized Mac tool read; raw native files retain hashes in record",
+  "sourceRelaySHA256": "1799871822999b2f0a756698026f9697da4373110c0a5b9fd0b67b8fa7a43840",
+  "record": {
+    "startedUTC": "2026-10-29T18:26:54.774088+00:00",
+    "sourceBaseCommit": "457edae5f116cb007b10999d1b207f24ce41dd6f",
+    "reviewedProductSource": "619a2d36e068f0e2efc00d856f4471b201e191e8",
+    "branch": "gpt6-astra-pro_builtin-agents_lumen-10.30-0110-sharedworker",
+    "platform": "Darwin arm64",
+    "buildCache": "build-apple-load-20261029",
+    "sourceManifestSHA256": "48597220842bfd9155396f981edf4fcd8aea8b7913082869971b25aaf8d0c186",
+    "prebuiltV8": "Existing compatible /opt/homebrew/opt/v8; no V8 source build",
+    "rtc": true,
+    "webtransport": true,
+    "buildMakeVariables": {
+      "BUILD": "build-apple-load-20261029",
+      "MODE": "release",
+      "RTC": "1",
+      "WT": "1",
+      "ICU_PREFIX": "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1"
+    },
+    "icuPrefix": "/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1",
+    "stages": [
+      {
+        "name": "build",
+        "startedUTC": "2026-10-29T18:26:54.805775+00:00",
+        "finishedUTC": "2026-10-29T18:27:04.862302+00:00",
+        "durationSeconds": 10.097,
+        "passed": true,
+        "command": [
+          "make",
+          "-j3",
+          "BUILD=build-apple-load-20261029",
+          "MODE=release",
+          "RTC=1",
+          "WT=1",
+          "ICU_PREFIX=/Users/devin/repos/lumen/out/10300110-mac/icu79-stage-v2/bottle/icu4c@79/79.1",
+          "build-apple-load-20261029/lumen",
+          "build-apple-load-20261029/jsrun",
+          "build-apple-load-20261029/test_worker_lifecycle",
+          "build-apple-load-20261029/test_worker_async_lifecycle",
+          "build-apple-load-20261029/test_worker_security",
+          "build-apple-load-20261029/test_url",
+          "build-apple-load-20261029/test_url_encoding",
+          "build-apple-load-20261029/test_url_dom",
+          "build-apple-load-20261029/test_url_idl",
+          "build-apple-load-20261029/test_url_params",
+          "build-apple-load-20261029/test_history_origin",
+          "build-apple-load-20261029/test_csp_inherit"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/build.json",
+        "monitorSHA256": "78dee6d685d24533d4a6440b8e74a27d7fd6d87e97fc8fa61cf6c064e7ce73aa",
+        "log": "out/10300110-mac/native-shared-003/build.log",
+        "logSHA256": "4044173e8d403c1c221bfa7f32da3d6a02692fb890b20d453b024f55a857857b",
+        "resultLines": []
+      },
+      {
+        "name": "test_worker_lifecycle",
+        "startedUTC": "2026-10-29T18:27:05.171518+00:00",
+        "finishedUTC": "2026-10-29T18:27:06.227469+00:00",
+        "durationSeconds": 1.103,
+        "passed": true,
+        "command": [
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/test_worker_lifecycle-a70c43ba619da522"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/test_worker_lifecycle.json",
+        "monitorSHA256": "0b6e21e1cc79ef903c917bd6ba0629ffcfd7714289bbbd7033cecae5c792e90b",
+        "log": "out/10300110-mac/native-shared-003/test_worker_lifecycle.log",
+        "logSHA256": "36b233d457ea6cb8ec608af8c75a7b13d9456c93c692630768923ac3738a92e0",
+        "resultLines": [
+          "RESULTS worker-lifecycle PASS (266/266 checks)"
+        ]
+      },
+      {
+        "name": "test_worker_async_lifecycle",
+        "startedUTC": "2026-10-29T18:27:06.270193+00:00",
+        "finishedUTC": "2026-10-29T18:27:08.314206+00:00",
+        "durationSeconds": 2.085,
+        "passed": true,
+        "command": [
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/test_worker_async_lifecycle-d987cbd008bf040e"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/test_worker_async_lifecycle.json",
+        "monitorSHA256": "729fba9dbb73e8b1799631226f04b0d096cb6224d8009dbb1c8bd3214931c07c",
+        "log": "out/10300110-mac/native-shared-003/test_worker_async_lifecycle.log",
+        "logSHA256": "6eb01dd9ffb301497715153860f179aae8786c427806a195707c0a70c67c4473",
+        "resultLines": [
+          "RESULTS worker-async-lifecycle PASS (118/118 checks)"
+        ]
+      },
+      {
+        "name": "test_worker_security",
+        "startedUTC": "2026-10-29T18:27:08.361909+00:00",
+        "finishedUTC": "2026-10-29T18:27:09.418229+00:00",
+        "durationSeconds": 1.107,
+        "passed": true,
+        "command": [
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/test_worker_security-5d59329c7c140068"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/test_worker_security.json",
+        "monitorSHA256": "63787450ae93cbe0f76fee10a6e3b283707a0f2408c1593caffaeccaf31afc69",
+        "log": "out/10300110-mac/native-shared-003/test_worker_security.log",
+        "logSHA256": "e2ebdc83e89fed0812f3128e9b12110dd22b07d562cc44d40f4423c4dbc15d76",
+        "resultLines": [
+          "RESULTS worker-security PASS (51/51 checks)"
+        ]
+      },
+      {
+        "name": "test_url",
+        "startedUTC": "2026-10-29T18:27:09.471715+00:00",
+        "finishedUTC": "2026-10-29T18:27:10.529047+00:00",
+        "durationSeconds": 1.108,
+        "passed": true,
+        "command": [
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/test_url-a7ffe12af27ab90b"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/test_url.json",
+        "monitorSHA256": "e86a9f6b06cdf2a1d231b72303a2e6cff76928109c2f805afe6121c2f2a314c5",
+        "log": "out/10300110-mac/native-shared-003/test_url.log",
+        "logSHA256": "22c83e3d6f215618446104f3cc8a7732da40528669b0e5e0cb5e14e099fff485",
+        "resultLines": []
+      },
+      {
+        "name": "test_url_encoding",
+        "startedUTC": "2026-10-29T18:27:10.577740+00:00",
+        "finishedUTC": "2026-10-29T18:27:11.630649+00:00",
+        "durationSeconds": 1.101,
+        "passed": true,
+        "command": [
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/test_url_encoding-b21de151daa6600a"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/test_url_encoding.json",
+        "monitorSHA256": "7bd0ae21b1566690afb8467d534a7c2d5495952eec72700ee18d884309ee28cc",
+        "log": "out/10300110-mac/native-shared-003/test_url_encoding.log",
+        "logSHA256": "bf0b0ec6a486af905b4aa0dc3415d15c7822111fe415e2ad09fba5ba79c3ee2f",
+        "resultLines": []
+      },
+      {
+        "name": "test_url_dom",
+        "startedUTC": "2026-10-29T18:27:11.675078+00:00",
+        "finishedUTC": "2026-10-29T18:27:13.721965+00:00",
+        "durationSeconds": 2.091,
+        "passed": true,
+        "command": [
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/test_url_dom-086b93a5ca523049"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/test_url_dom.json",
+        "monitorSHA256": "e06b04594968829ae24aadea846b0d1767bc9235df232729b4b7fa3639f6ccc8",
+        "log": "out/10300110-mac/native-shared-003/test_url_dom.log",
+        "logSHA256": "a45086c8107ec55458e92b4c1a8bc47f6a70511100de94c8a964723007d9fa71",
+        "resultLines": [
+          "RESULTS url-dom PASS (287/287 checks)"
+        ]
+      },
+      {
+        "name": "test_url_idl",
+        "startedUTC": "2026-10-29T18:27:13.765970+00:00",
+        "finishedUTC": "2026-10-29T18:27:14.822335+00:00",
+        "durationSeconds": 1.101,
+        "passed": true,
+        "command": [
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/test_url_idl-7ffff1bd4a807ad8"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/test_url_idl.json",
+        "monitorSHA256": "7f6628a40a6ca9226ab60dff416bc91eaa2429e26b59495bba2de080fb0734ad",
+        "log": "out/10300110-mac/native-shared-003/test_url_idl.log",
+        "logSHA256": "2485c0352a261d87323b449e90f7fbcc58fd3d8133caa607372bd612035972eb",
+        "resultLines": [
+          "RESULTS url-idl PASS (206/206 checks)"
+        ]
+      },
+      {
+        "name": "test_url_params",
+        "startedUTC": "2026-10-29T18:27:14.864508+00:00",
+        "finishedUTC": "2026-10-29T18:27:15.922654+00:00",
+        "durationSeconds": 1.098,
+        "passed": true,
+        "command": [
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/test_url_params-a95f952d595c7736"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/test_url_params.json",
+        "monitorSHA256": "28aa2fe1ac8d71c4bcaf39b6e5854ad5f10e823c2c0978ce4b974c6b10047edf",
+        "log": "out/10300110-mac/native-shared-003/test_url_params.log",
+        "logSHA256": "7e4afce38c0f4da046c3eb7fc56e5180b8d5a0b3c032bf4790e7de12a9bcd249",
+        "resultLines": [
+          "RESULTS url-params-body PASS (62/62 checks)"
+        ]
+      },
+      {
+        "name": "test_history_origin",
+        "startedUTC": "2026-10-29T18:27:15.960181+00:00",
+        "finishedUTC": "2026-10-29T18:27:17.019100+00:00",
+        "durationSeconds": 1.098,
+        "passed": true,
+        "command": [
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/test_history_origin-628545bfb7e065e8"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/test_history_origin.json",
+        "monitorSHA256": "f11be4fd33d4e770f8d0f7f305badaca7768c1312eed3d5cfef4564c8845d4cc",
+        "log": "out/10300110-mac/native-shared-003/test_history_origin.log",
+        "logSHA256": "c5dabc46fe87ae1da86b4ce7d2606d2f027e86cf6f3c26627a27e0320fc15e9e",
+        "resultLines": [
+          "RESULTS history-origin PASS (114/114 checks)"
+        ]
+      },
+      {
+        "name": "test_csp_inherit",
+        "startedUTC": "2026-10-29T18:27:17.060420+00:00",
+        "finishedUTC": "2026-10-29T18:27:18.109690+00:00",
+        "durationSeconds": 1.088,
+        "passed": true,
+        "command": [
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/test_csp_inherit-39b6e2b0d5a63c9b"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/test_csp_inherit.json",
+        "monitorSHA256": "6bfc4178e625a45fe7f09192754f15b1027e3c54c6b48a6b991f5f7f70c05050",
+        "log": "out/10300110-mac/native-shared-003/test_csp_inherit.log",
+        "logSHA256": "0c917021fa107e67d79acdaa0e4c773d30af03caad5277c4231574e5197ab0d3",
+        "resultLines": [
+          "RESULTS 245/245 checks passed"
+        ]
+      },
+      {
+        "name": "shared-worker",
+        "startedUTC": "2026-10-29T18:27:18.145828+00:00",
+        "finishedUTC": "2026-10-29T18:27:20.196150+00:00",
+        "durationSeconds": 2.087,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_shared_worker.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/jsrun-863c711532d3d43b",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/shared-worker-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/shared-worker.json",
+        "monitorSHA256": "acd9f23ce3cd13cd1c7b3ad0ea81ce525c46956bbb9660b23d7dd8c127e8f604",
+        "log": "out/10300110-mac/native-shared-003/shared-worker.log",
+        "logSHA256": "e46808a174193fc537f7975d2a6fb1e055b1726725cde50ac8c692ef1dd47084",
+        "resultLines": []
+      },
+      {
+        "name": "message-transfer",
+        "startedUTC": "2026-10-29T18:27:20.237938+00:00",
+        "finishedUTC": "2026-10-29T18:27:21.288148+00:00",
+        "durationSeconds": 1.097,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_message_transfer.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/jsrun-863c711532d3d43b"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/message-transfer.json",
+        "monitorSHA256": "cb5f51c953bf1f9aaa44eb3418d0ab6bb114f0737ca4783e83f63e8ecd2cda69",
+        "log": "out/10300110-mac/native-shared-003/message-transfer.log",
+        "logSHA256": "e45ea41987f831f7f1db8990d416b604d1c5c2ef9c8ca5d09c4dc5d17ebe6999",
+        "resultLines": [
+          "RESULTS message-transfer PASS (68/68 checks)"
+        ]
+      },
+      {
+        "name": "worker-headers",
+        "startedUTC": "2026-10-29T18:27:21.341607+00:00",
+        "finishedUTC": "2026-10-29T18:27:23.393461+00:00",
+        "durationSeconds": 2.099,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_worker_response_headers.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/jsrun-863c711532d3d43b",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/worker-headers-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/worker-headers.json",
+        "monitorSHA256": "ce2ef8d9707ea828ff7fc5e4efca1470229b9fe95ec1c73060317febd04d7fc5",
+        "log": "out/10300110-mac/native-shared-003/worker-headers.log",
+        "logSHA256": "1ae1ee4a200f95af0a5f2abd7627141f7069cd3b6ae1b1d4c4ea5c310180d33a",
+        "resultLines": []
+      },
+      {
+        "name": "parser-policy",
+        "startedUTC": "2026-10-29T18:27:23.436370+00:00",
+        "finishedUTC": "2026-10-29T18:27:25.489798+00:00",
+        "durationSeconds": 2.097,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_parser_handler_csp.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/jsrun-863c711532d3d43b",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/parser-policy-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/parser-policy.json",
+        "monitorSHA256": "33d0f72e56def7f2be5c11c0178858dc0d1fc2946e000ae39ca436666b749be7",
+        "log": "out/10300110-mac/native-shared-003/parser-policy.log",
+        "logSHA256": "6400c53b606c619a142b3c41763b27bb9dba60c101f57b9d29b99328c9a56281",
+        "resultLines": []
+      },
+      {
+        "name": "data-form-policy",
+        "startedUTC": "2026-10-29T18:27:25.535129+00:00",
+        "finishedUTC": "2026-10-29T18:27:26.588692+00:00",
+        "durationSeconds": 1.097,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_data_form_csp.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/jsrun-863c711532d3d43b",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/data-form-policy-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/data-form-policy.json",
+        "monitorSHA256": "2e0a395fb93c8e96a32cb8d51e0572e80459e5aec2679cca773b9f8d53f5c264",
+        "log": "out/10300110-mac/native-shared-003/data-form-policy.log",
+        "logSHA256": "0a4609f87eed4a5fbc2bd368b2ca1d81f9b437301a265ad55ed7f7197c2213d7",
+        "resultLines": []
+      },
+      {
+        "name": "shared-boundaries",
+        "startedUTC": "2026-10-29T18:27:26.627790+00:00",
+        "finishedUTC": "2026-10-29T18:27:28.664841+00:00",
+        "durationSeconds": 2.075,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_shared_worker_boundaries.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/jsrun-863c711532d3d43b",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/shared-boundaries-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/shared-boundaries.json",
+        "monitorSHA256": "3d2c98b9236b267db2f01b4f0150536be4be4feee8e770bf7c11bfe1250af7b0",
+        "log": "out/10300110-mac/native-shared-003/shared-boundaries.log",
+        "logSHA256": "c854b18a83f68545d27a10c63120abef3cd63ca3d04388c178dbea29c5f1c65e",
+        "resultLines": []
+      },
+      {
+        "name": "shared-transfer",
+        "startedUTC": "2026-10-29T18:27:28.702004+00:00",
+        "finishedUTC": "2026-10-29T18:27:30.758061+00:00",
+        "durationSeconds": 2.093,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_shared_worker_transfer_lifecycle.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/jsrun-863c711532d3d43b",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/shared-transfer-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/shared-transfer.json",
+        "monitorSHA256": "63e5dff2e17075843563df08c1c93fbadb8ccdd6852a4b09a57caa6cca004e07",
+        "log": "out/10300110-mac/native-shared-003/shared-transfer.log",
+        "logSHA256": "17404bcf9241a868f5c8821a2f3c5818f3d5966912aed4f75c5570697ffbf764",
+        "resultLines": []
+      },
+      {
+        "name": "shared-return-owner",
+        "startedUTC": "2026-10-29T18:27:30.796018+00:00",
+        "finishedUTC": "2026-10-29T18:27:32.847547+00:00",
+        "durationSeconds": 2.089,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_shared_worker_return_owner.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/jsrun-863c711532d3d43b",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/shared-return-owner-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/shared-return-owner.json",
+        "monitorSHA256": "d9b7cb7d654fc5cf7163976034088a3d28a2bc35eeb932543d4773ac4217c667",
+        "log": "out/10300110-mac/native-shared-003/shared-return-owner.log",
+        "logSHA256": "23c712ae5067ca754d6c9fa0cecbfc3a7f3d4bc835538d14df84fb3beb984fc4",
+        "resultLines": []
+      },
+      {
+        "name": "shared-return-burst",
+        "startedUTC": "2026-10-29T18:27:32.888299+00:00",
+        "finishedUTC": "2026-10-29T18:27:34.931050+00:00",
+        "durationSeconds": 2.079,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_shared_worker_return_burst.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/jsrun-863c711532d3d43b",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/shared-return-burst-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/shared-return-burst.json",
+        "monitorSHA256": "830db170e3aa1f89664849de406b123d6f9eb93618055f29381dcc93a3881918",
+        "log": "out/10300110-mac/native-shared-003/shared-return-burst.log",
+        "logSHA256": "040e5b6945ae78b0b16f3d3bfffa27a76c3666b51f1bc71421d7144f6681d2c1",
+        "resultLines": []
+      },
+      {
+        "name": "parser-policy-gui",
+        "startedUTC": "2026-10-29T18:27:34.969194+00:00",
+        "finishedUTC": "2026-10-29T18:27:37.014127+00:00",
+        "durationSeconds": 2.078,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/test_parser_handler_csp.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/lumen-0b20cd1139a5794e",
+          "--native-gui",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/parser-policy-gui-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/parser-policy-gui.json",
+        "monitorSHA256": "245b6624cc1146d92bbe4447f7502ef5ff788fd58e9a81f7c64fa186ce106759",
+        "log": "out/10300110-mac/native-shared-003/parser-policy-gui.log",
+        "logSHA256": "dceac2348bccf8371e1e106e911327705caaf076c397a11d10a4ba0597f56626",
+        "resultLines": []
+      },
+      {
+        "name": "shared-gui-core",
+        "startedUTC": "2026-10-29T18:27:37.062448+00:00",
+        "finishedUTC": "2026-10-29T18:27:39.104370+00:00",
+        "durationSeconds": 2.087,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/run_shared_worker_gui.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/lumen-0b20cd1139a5794e",
+          "--sha256",
+          "0b20cd1139a5794eaa5d020105665c3093ca7b3504d338045b0a545db4b6ad3e",
+          "--suite",
+          "core",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/shared-gui-core-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/shared-gui-core.json",
+        "monitorSHA256": "9f1d7ccf8dfe2608290e91e8bfb8ee389cab04703bd3a31180345175e336030c",
+        "log": "out/10300110-mac/native-shared-003/shared-gui-core.log",
+        "logSHA256": "f0f31475c6c758583a2f89472296bfbf844fef4ff3b42d685f4f7618af087c6d",
+        "resultLines": []
+      },
+      {
+        "name": "shared-gui-boundaries",
+        "startedUTC": "2026-10-29T18:27:39.139462+00:00",
+        "finishedUTC": "2026-10-29T18:27:41.182249+00:00",
+        "durationSeconds": 2.075,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/run_shared_worker_gui.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/lumen-0b20cd1139a5794e",
+          "--sha256",
+          "0b20cd1139a5794eaa5d020105665c3093ca7b3504d338045b0a545db4b6ad3e",
+          "--suite",
+          "boundaries",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/shared-gui-boundaries-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/shared-gui-boundaries.json",
+        "monitorSHA256": "7e392c84327e8cb7cf1fb6503ad4304f18301eace4bb76aeade6d2afec76946d",
+        "log": "out/10300110-mac/native-shared-003/shared-gui-boundaries.log",
+        "logSHA256": "27d23baea92eeb0fc518e24744d205921f3268fe82de1aebf09584668c447398",
+        "resultLines": []
+      },
+      {
+        "name": "shared-gui-transfer",
+        "startedUTC": "2026-10-29T18:27:41.216759+00:00",
+        "finishedUTC": "2026-10-29T18:27:43.265752+00:00",
+        "durationSeconds": 2.082,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/run_shared_worker_gui.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/lumen-0b20cd1139a5794e",
+          "--sha256",
+          "0b20cd1139a5794eaa5d020105665c3093ca7b3504d338045b0a545db4b6ad3e",
+          "--suite",
+          "transfer",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/shared-gui-transfer-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/shared-gui-transfer.json",
+        "monitorSHA256": "f1496297e633f0eb4c09581ea2a5ea76af630af81ff0bfdaa1416a0e3324abaf",
+        "log": "out/10300110-mac/native-shared-003/shared-gui-transfer.log",
+        "logSHA256": "3c21c4607fb7cbf4eded09c999ddec97df27cd8331fa0f28468f83986065e4cc",
+        "resultLines": []
+      },
+      {
+        "name": "shared-gui-return-owner",
+        "startedUTC": "2026-10-29T18:27:43.305217+00:00",
+        "finishedUTC": "2026-10-29T18:27:45.361577+00:00",
+        "durationSeconds": 2.095,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/run_shared_worker_gui.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/lumen-0b20cd1139a5794e",
+          "--sha256",
+          "0b20cd1139a5794eaa5d020105665c3093ca7b3504d338045b0a545db4b6ad3e",
+          "--suite",
+          "return-owner",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/shared-gui-return-owner-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/shared-gui-return-owner.json",
+        "monitorSHA256": "9b8668a004f0d0c275c949d169b9fe30c8e16d77ed21008067cd60a212f9e533",
+        "log": "out/10300110-mac/native-shared-003/shared-gui-return-owner.log",
+        "logSHA256": "6293dc64f5d9bb9a6cd79440e4dbf6d1bcbf9a51d0ddf7ea1d8e82d88e32bde0",
+        "resultLines": []
+      },
+      {
+        "name": "shared-gui-burst",
+        "startedUTC": "2026-10-29T18:27:45.415839+00:00",
+        "finishedUTC": "2026-10-29T18:27:47.468765+00:00",
+        "durationSeconds": 2.103,
+        "passed": true,
+        "command": [
+          "/opt/homebrew/opt/python@3.15/bin/python3.15",
+          "tests/run_shared_worker_gui.py",
+          "--binary",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/lumen-0b20cd1139a5794e",
+          "--sha256",
+          "0b20cd1139a5794eaa5d020105665c3093ca7b3504d338045b0a545db4b6ad3e",
+          "--suite",
+          "burst",
+          "--output",
+          "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/shared-gui-burst-receipt.json"
+        ],
+        "monitor": "out/10300110-mac/native-shared-003/shared-gui-burst.json",
+        "monitorSHA256": "9e1fcf05dad145a291275b5488d0640a282400766a80bc965d4d6af85e5a2c1b",
+        "log": "out/10300110-mac/native-shared-003/shared-gui-burst.log",
+        "logSHA256": "fb97227e07c72d1515a1d020d400ee74a3f9835f6a8f268d1ace55775cce92ae",
+        "resultLines": []
+      }
+    ],
+    "artifacts": {
+      "lumen": {
+        "path": "out/10300110-mac/native-shared-003/lumen-0b20cd1139a5794e",
+        "sha256": "0b20cd1139a5794eaa5d020105665c3093ca7b3504d338045b0a545db4b6ad3e",
+        "bytes": 14168264
+      },
+      "jsrun": {
+        "path": "out/10300110-mac/native-shared-003/jsrun-863c711532d3d43b",
+        "sha256": "863c711532d3d43b65ad3bb5c1df6595a6651142c01436373777c7f7d4a83fa7",
+        "bytes": 13940472
+      },
+      "test_worker_lifecycle": {
+        "path": "out/10300110-mac/native-shared-003/test_worker_lifecycle-a70c43ba619da522",
+        "sha256": "a70c43ba619da522ce5b647f97165e3bdddfed85499f07192b7ee423cce0c2dc",
+        "bytes": 13976072
+      },
+      "test_worker_async_lifecycle": {
+        "path": "out/10300110-mac/native-shared-003/test_worker_async_lifecycle-d987cbd008bf040e",
+        "sha256": "d987cbd008bf040eda4701e8b3f299c51dbacb8f7c2ddf916cbe01331b568069",
+        "bytes": 14017800
+      },
+      "test_worker_security": {
+        "path": "out/10300110-mac/native-shared-003/test_worker_security-5d59329c7c140068",
+        "sha256": "5d59329c7c140068e06c7fc326c37fd2efa3e06b8a3b1829efb859ec914a07d3",
+        "bytes": 13957352
+      },
+      "test_url": {
+        "path": "out/10300110-mac/native-shared-003/test_url-a7ffe12af27ab90b",
+        "sha256": "a7ffe12af27ab90b0e2f29d5ee3a52a0e79ef698b19521d0925ac33dc19c92aa",
+        "bytes": 611032
+      },
+      "test_url_encoding": {
+        "path": "out/10300110-mac/native-shared-003/test_url_encoding-b21de151daa6600a",
+        "sha256": "b21de151daa6600add6ab7e4a1c2a852b7eef2072d1ce05f09f20f36b642a791",
+        "bytes": 609664
+      },
+      "test_url_dom": {
+        "path": "out/10300110-mac/native-shared-003/test_url_dom-086b93a5ca523049",
+        "sha256": "086b93a5ca523049cd29cec16e2851a4f6858237f047f3ef98c00726bcdfa9c6",
+        "bytes": 14023616
+      },
+      "test_url_idl": {
+        "path": "out/10300110-mac/native-shared-003/test_url_idl-7ffff1bd4a807ad8",
+        "sha256": "7ffff1bd4a807ad8772cea2bd6fdd814b471d8cc11bbc4738fe7e7b97fda001e",
+        "bytes": 13958816
+      },
+      "test_url_params": {
+        "path": "out/10300110-mac/native-shared-003/test_url_params-a95f952d595c7736",
+        "sha256": "a95f952d595c7736bf784b387c5295f3c9a5d57d1d740eabcce3e70c1d3196e9",
+        "bytes": 13957472
+      },
+      "test_history_origin": {
+        "path": "out/10300110-mac/native-shared-003/test_history_origin-628545bfb7e065e8",
+        "sha256": "628545bfb7e065e8924460eaccde67bc3806d0d25bdf490d34f3134e556123cd",
+        "bytes": 13957296
+      },
+      "test_csp_inherit": {
+        "path": "out/10300110-mac/native-shared-003/test_csp_inherit-39b6e2b0d5a63c9b",
+        "sha256": "39b6e2b0d5a63c9bee30dd6199663fb9a18c977d2a80527fc403ac4a9930675e",
+        "bytes": 693776
+      }
+    },
+    "passed": true,
+    "scope": "Candidate build and focused regressions; full WPT, resource soak and mobile acceptance remain separate.",
+    "icuAttestation": {
+      "stagingReceipt": "out/10300110-mac/icu79-stage-v2/receipt.json",
+      "stagingReceiptSHA256": "dd25b7f2ba669d54af02e4c96758e1820d4b40e16415988d353284e429944666",
+      "bottleSHA256": "4424c58d257d07b28086814a575baa9e462560460fdea5455581d99062896cec",
+      "ICUVersion": [
+        79,
+        1,
+        0,
+        0
+      ],
+      "UnicodeDataVersion": [
+        18,
+        0,
+        0,
+        0
+      ],
+      "urlSourceSHA256": "55b2563cc28d7413e68684a807babcfddd108bea23a15f8221f3e82f3233c5cb",
+      "libraries": [
+        {
+          "library": "lib/libicudata.79.1.dylib",
+          "changes": [
+            "-change",
+            "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicudata.79.dylib",
+            "@loader_path/libicudata.79.dylib"
+          ],
+          "originalSHA256": "8f66c0859d820d76cdff39c241e78de804e321603262b0c3e5f234954627918d",
+          "relocatedSHA256": "586c060425ee97d41148e92a6de6f59e071fc117ffb196ca48b38a996d095004"
+        },
+        {
+          "library": "lib/libicui18n.79.1.dylib",
+          "changes": [
+            "-change",
+            "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicui18n.79.dylib",
+            "@loader_path/libicui18n.79.dylib",
+            "-change",
+            "@loader_path/libicuuc.79.dylib",
+            "@loader_path/libicuuc.79.dylib",
+            "-change",
+            "@loader_path/libicudata.79.dylib",
+            "@loader_path/libicudata.79.dylib"
+          ],
+          "originalSHA256": "20382650cd365ef0441aae84ef51e5f3dbd9df981039bf4aac8aa0e01b4d01fa",
+          "relocatedSHA256": "e35408e684746d327b626091d3fc4b93da063f8ba34318d574e0ca3bc5c4e818"
+        },
+        {
+          "library": "lib/libicuio.79.1.dylib",
+          "changes": [
+            "-change",
+            "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicuio.79.dylib",
+            "@loader_path/libicuio.79.dylib",
+            "-change",
+            "@loader_path/libicuuc.79.dylib",
+            "@loader_path/libicuuc.79.dylib",
+            "-change",
+            "@loader_path/libicudata.79.dylib",
+            "@loader_path/libicudata.79.dylib",
+            "-change",
+            "@loader_path/libicui18n.79.dylib",
+            "@loader_path/libicui18n.79.dylib"
+          ],
+          "originalSHA256": "08b094cdb83d731b869354aa347b2badf138a343b05bc6519a4f532942bef866",
+          "relocatedSHA256": "0db038ee21baf67f687c6ad3bcb335357c7989f0309fef032d283fce352b069c"
+        },
+        {
+          "library": "lib/libicutest.79.1.dylib",
+          "changes": [
+            "-change",
+            "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicutest.79.dylib",
+            "@loader_path/libicutest.79.dylib",
+            "-change",
+            "@loader_path/libicutu.79.dylib",
+            "@loader_path/libicutu.79.dylib",
+            "-change",
+            "@loader_path/libicui18n.79.dylib",
+            "@loader_path/libicui18n.79.dylib",
+            "-change",
+            "@loader_path/libicuuc.79.dylib",
+            "@loader_path/libicuuc.79.dylib",
+            "-change",
+            "@loader_path/libicudata.79.dylib",
+            "@loader_path/libicudata.79.dylib"
+          ],
+          "originalSHA256": "666c5aa684efc28b30dfe558059847cb5a92d5ff8eec7e9f7d85c76945201ce0",
+          "relocatedSHA256": "d5d0157402201f587faf90a14153677861ae3494ac12d0c98e62434e423baef5"
+        },
+        {
+          "library": "lib/libicutu.79.1.dylib",
+          "changes": [
+            "-change",
+            "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicutu.79.dylib",
+            "@loader_path/libicutu.79.dylib",
+            "-change",
+            "@loader_path/libicui18n.79.dylib",
+            "@loader_path/libicui18n.79.dylib",
+            "-change",
+            "@loader_path/libicuuc.79.dylib",
+            "@loader_path/libicuuc.79.dylib",
+            "-change",
+            "@loader_path/libicudata.79.dylib",
+            "@loader_path/libicudata.79.dylib"
+          ],
+          "originalSHA256": "b543ef9d43ebd2cffc358e71d3cdcf06ab7c2d11a2afc7f80ac215a970bacbf4",
+          "relocatedSHA256": "a21093c50e1a07cbcd3a1e6fba05f1a9e2c46091b5ae64831ab9fbcdd3d7ca51"
+        },
+        {
+          "library": "lib/libicuuc.79.1.dylib",
+          "changes": [
+            "-change",
+            "@@HOMEBREW_PREFIX@@/opt/icu4c@79/lib/libicuuc.79.dylib",
+            "@loader_path/libicuuc.79.dylib",
+            "-change",
+            "@loader_path/libicudata.79.dylib",
+            "@loader_path/libicudata.79.dylib"
+          ],
+          "originalSHA256": "a27a12a9844609f1e635ff2bc1f788e7021cdf3dd0d5d5a32cd9bf6e98652159",
+          "relocatedSHA256": "eb3330a8002c5c5a532ebd736bce9fbbe7f25d30632589410ae904e1a6d48421"
+        }
+      ],
+      "prebuiltV8FileHashes": {
+        "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8.dylib": "0a29ecc47ab9bee167a024816dd22d949fb9b755b9e9606d2bc4a40214e55130",
+        "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libplatform.dylib": "fdfcb079996d81353c65f5cba2ab4d85ad62e0b58f2d15302ff4dab8459120e7",
+        "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libbase.dylib": "4d7a3756a942dc97d0f080864a7ad366c9e7de4a5c50093506146e424338edd4"
+      },
+      "binaryUIDNAImports": [
+        "_uidna_nameToASCII_UTF8_79",
+        "_uidna_openUTS46_79"
+      ],
+      "binaryImportsSHA256": "e1fe7f8e344a0b47ec63762f60bd6eb1b50d56160c8908b0c6cb5d0a5e5758e7",
+      "url-objectUIDNAImports": [
+        "_uidna_nameToASCII_UTF8_79",
+        "_uidna_openUTS46_79"
+      ],
+      "url-objectImportsSHA256": "fdd9106912b7f17d303435c55f0b6fd90105fbb1a99689713e85a62cba09a038",
+      "hostAliasUnchanged": true,
+      "prebuiltV8Unchanged": true
+    },
+    "linkedV8": [
+      "/opt/homebrew/opt/v8/libexec/libv8.dylib (compatibility version 0.0.0, current version 0.0.0)",
+      "/opt/homebrew/opt/v8/libexec/libv8_libplatform.dylib (compatibility version 0.0.0, current version 0.0.0)",
+      "/opt/homebrew/opt/v8/libexec/libv8_libbase.dylib (compatibility version 0.0.0, current version 0.0.0)"
+    ],
+    "finishedUTC": "2026-10-29T18:27:47.750973+00:00",
+    "durationSeconds": 52.959
+  }
+}

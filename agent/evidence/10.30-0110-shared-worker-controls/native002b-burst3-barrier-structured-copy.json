@@ -1,0 +1,51 @@
+{
+  "transport": "Structured copy of authorized native Mac console marker read",
+  "sourceRelaySHA256": "0f6ed67abfeb0e06da6436c5ba55bcdefce12bb9b40eb1cc9923800645735c7f",
+  "rows": [
+    {
+      "marker": "SHARED_BURST_BARRIER",
+      "value": {
+        "round": 1,
+        "barrierEstablished": true,
+        "count": 25
+      }
+    },
+    {
+      "marker": "SHARED_BURST_DELIVERY",
+      "value": {
+        "round": 1,
+        "received": []
+      }
+    },
+    {
+      "marker": "SHARED_BURST_BARRIER",
+      "value": {
+        "round": 2,
+        "barrierEstablished": true,
+        "count": 25
+      }
+    },
+    {
+      "marker": "SHARED_BURST_DELIVERY",
+      "value": {
+        "round": 2,
+        "received": []
+      }
+    },
+    {
+      "marker": "SHARED_BURST_BARRIER",
+      "value": {
+        "round": 3,
+        "barrierEstablished": true,
+        "count": 25
+      }
+    },
+    {
+      "marker": "SHARED_BURST_DELIVERY",
+      "value": {
+        "round": 3,
+        "received": []
+      }
+    }
+  ]
+}
