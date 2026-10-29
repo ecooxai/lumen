@@ -1,0 +1,5 @@
+SHARED_BURST_CHECK {"i":0,"name":"queued native messages survive port return, round 1","ok":false,"error":"Error: timeout: recipient script barrier"}
+SHARED_BURST_CHECK {"i":1,"name":"queued native messages survive port return, round 2","ok":false,"error":"Error: timeout: recipient script barrier"}
+SHARED_BURST_CHECK {"i":2,"name":"queued native messages survive port return, round 3","ok":false,"error":"Error: timeout: recipient script barrier"}
+SHARED_BURST_RESULTS {"total":3,"passed":0,"failed":3}
+CHROMIUM_CONTROL_CLEANUP {"gracefulRequested": true, "gracefulAcknowledged": true, "sent_sigterm": false, "sent_sigkill": false, "error": null, "processGroupGone": true, "rootExitCode": 0}

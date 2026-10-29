@@ -1,0 +1,8 @@
+{
+  "recordedUTC": "2026-10-29T18:17:35.352053+00:00",
+  "scope": "Three bounded migration-race qualifiers; not officialWPT; earlier22/13/9/2 unchanged",
+  "initialRun": "Held:0/3 recipient setup timeout. A wrong string replacement failed to install the barrier command; this is a fixture bug, not browser nonconformance. Originalfixture bytes retained.",
+  "acceptedRun": "v2 exactCfT156:3/3, all3producer acknowledgements precede endpoint return, all75messages delivered inFIFOorder afterformerrecipient termination; no infrastructureerrors; gracefulBrowser.close andownedgroupgone.",
+  "fixtureSHA256": "bba6e0e2b38ebb161d64ddc1654e87e8068db9c11101226d7d2db04b448ba5a1",
+  "CPUqualification": "Each round deliberately holds one worker task for120ms to create the queue-migration boundary. The<2second acceptedrun is not a browser performance or steadyRSS measurement."
+}

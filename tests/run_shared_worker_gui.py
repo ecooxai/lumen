@@ -30,6 +30,8 @@ SUITES = {
         'SHARED_TRANSFER_INFRA ', '2c66901eb9a5a12bf8947c3ce5f217d88da45f2a7795295a5a6e88a58f020dae'),
     'return-owner': ('test_shared_worker_return_owner.py', 'SHARED_RETURN_CHECK ', 'SHARED_RETURN_RESULTS ',
         'SHARED_RETURN_INFRA ', 'b7e200f9077ef6bc5ec8b0f51689f374386fa5269d1f10f01c1c6d80a92b3f55'),
+    'burst': ('test_shared_worker_return_burst.py', 'SHARED_BURST_CHECK ', 'SHARED_BURST_RESULTS ',
+        'SHARED_BURST_INFRA ', 'bba6e0e2b38ebb161d64ddc1654e87e8068db9c11101226d7d2db04b448ba5a1'),
 }
 
 

@@ -1,0 +1,54 @@
+{
+  "startedUTC": "2026-10-29T18:16:47.445477+00:00",
+  "scope": "Project top-level IPA files and breadth-first known delivery/build directories; metadata only",
+  "limits": {
+    "maxDepthPerRoot": 8,
+    "maxEntries": 200000,
+    "maxSeconds": 8
+  },
+  "excludedDirectoryNames": [
+    ".git",
+    "chrome-linux64",
+    "chromium",
+    "cohort",
+    "launch-profile",
+    "node_modules",
+    "private-fixture",
+    "profile",
+    "profiles",
+    "target",
+    "third_party",
+    "v8",
+    "web-platform-tests",
+    "wpt"
+  ],
+  "excludedDirectoryNamePatterns": [
+    "wpt-*",
+    "*-profile"
+  ],
+  "roots": [
+    "ios",
+    "output",
+    "out"
+  ],
+  "ipaCandidates": [],
+  "mobileAppCandidates": [],
+  "entriesVisited": 12294,
+  "completeWithinDeclaredScope": true,
+  "executionOrSigningClaimed": false,
+  "errors": [],
+  "entriesPerRoot": {
+    "ios": 45,
+    "output": 4696,
+    "out": 7553
+  },
+  "prunedDirectories": {
+    "excludedName": 328,
+    "appContents": 5,
+    "symlink": 20,
+    "depthLimit": 61
+  },
+  "queuedDirectoriesUnscanned": 0,
+  "finishedUTC": "2026-10-29T18:16:47.596218+00:00",
+  "durationSeconds": 0.151
+}

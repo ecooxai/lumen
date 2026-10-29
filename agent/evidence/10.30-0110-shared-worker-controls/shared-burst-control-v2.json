@@ -1,0 +1,47 @@
+{
+  "kind": "shared-worker-native-input-queue-migration",
+  "officialWPT": false,
+  "nativeLumenExecuted": false,
+  "chromiumControlExecuted": true,
+  "binary": "/workspace/scratch/4aa97518bdcd/project/lumen/out/10300110-chromium/chrome-linux64/chrome",
+  "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "browserVersion": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.47",
+    "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.19"
+  },
+  "fixtureSHA256": "bba6e0e2b38ebb161d64ddc1654e87e8068db9c11101226d7d2db04b448ba5a1",
+  "pageTemplateSHA256": "3a3297fc93060c940b17449755e8d883679b234598515130d29bc03df61723f0",
+  "workerSHA256": "d29d306727f3013c0307d2df547c1267d546c22ff3adbfbae30ce0d4260c3462",
+  "inheritedFixtureSHA256": "2c66901eb9a5a12bf8947c3ce5f217d88da45f2a7795295a5a6e88a58f020dae",
+  "caseManifestSHA256": "258d4f2a7a68e50845bb4bb6a260a846f5db8cf870ba448e31f9e94d1aa21e95",
+  "started": "2026-10-29T18:16:25.308268+00:00",
+  "ended": "2026-10-29T18:16:27.166405+00:00",
+  "durationSeconds": 1.858115,
+  "total": 3,
+  "passed": 3,
+  "failed": 0,
+  "rows": [
+    {
+      "i": 0,
+      "name": "queued native messages survive port return, round 1",
+      "ok": true
+    },
+    {
+      "i": 1,
+      "name": "queued native messages survive port return, round 2",
+      "ok": true
+    },
+    {
+      "i": 2,
+      "name": "queued native messages survive port return, round 3",
+      "ok": true
+    }
+  ],
+  "infrastructureErrors": [],
+  "monitor": "External one-second monitor required",
+  "stdoutSHA256": "22bb9bb0cf3af943bb17a6fed25256d6b8543b4a9c38723214e09132cd3c731d",
+  "stderrSHA256": "dd8bd1de307614d94659f156bb3c6000a2e1b074d2db2c1be726d0f9d71740d9"
+}

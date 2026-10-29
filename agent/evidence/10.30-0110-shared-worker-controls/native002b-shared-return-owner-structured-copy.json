@@ -1,0 +1,40 @@
+{
+  "transport": "Structured copy of authorized native Mac tool read",
+  "sourceRelaySHA256": "84d978ec4a45f1488128ff5b3f698a14a04e9729e4fe32e3dbe24978a6b927c2",
+  "record": {
+    "kind": "shared-worker-returned-endpoint-ownership",
+    "officialWPT": false,
+    "nativeLumenExecuted": true,
+    "chromiumControlExecuted": false,
+    "binary": "/Users/devin/repos/lumen/out/10300110-mac/native-shared-002b/jsrun-7279890736d7c926",
+    "binarySHA256": "7279890736d7c92603e689edfec803cf7b8ed5721ce692c058a33a24f02ac6a9",
+    "browserVersion": null,
+    "fixtureSHA256": "b7e200f9077ef6bc5ec8b0f51689f374386fa5269d1f10f01c1c6d80a92b3f55",
+    "pageTemplateSHA256": "e8109ead6addd29efb6f21d12e24b663b237ac134342d56211a3771fa9978c7c",
+    "workerSHA256": "b0fdeb7b06ceef17db56a8432f796f2dd3cd868874a583dbadf7c0f1dfabf3c6",
+    "inheritedFixtureSHA256": "2c66901eb9a5a12bf8947c3ce5f217d88da45f2a7795295a5a6e88a58f020dae",
+    "caseManifestSHA256": "6c347a7ff8b50cf0cafb916790115d80891b0d0e86741a4a09b04de112b6d8c1",
+    "started": "2026-10-29T18:13:21.455003+00:00",
+    "ended": "2026-10-29T18:13:22.466788+00:00",
+    "durationSeconds": 1.011677,
+    "total": 2,
+    "passed": 2,
+    "failed": 0,
+    "rows": [
+      {
+        "i": 0,
+        "name": "returned connection survives termination of its former worker before retransfer",
+        "ok": true
+      },
+      {
+        "i": 1,
+        "name": "an in-flight shared-worker reply follows the returned endpoint after former owner exits",
+        "ok": true
+      }
+    ],
+    "infrastructureErrors": [],
+    "monitor": "External one-second monitor required",
+    "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSHA256": "099a8482f57998121b720fb3f0793f0a45bae42727a3d7ab2d80d77b67d2c234"
+  }
+}

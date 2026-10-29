@@ -64,8 +64,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build-summary', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--kind', choices=('shared', 'transferred'), default='shared',
-                        help='Separate basic owner lifetime or transferred last-client lifetime oracle')
+    parser.add_argument('--kind', choices=('shared', 'transferred', 'queued'), default='shared',
+                        help='Separate basic, transferred endpoint, or queued-return/close lifetime oracle')
     args = parser.parse_args()
     root = Path.cwd().resolve()
     if sys.platform != 'darwin' or str(root) != '/Users/devin/repos/lumen':
@@ -92,9 +92,13 @@ def main():
     profile = out / 'profile'
     profile.mkdir()
     env['LUMEN_PROFILE_DIR'] = str(profile)
-    transferred = args.kind == 'transferred'
-    target = 'test_shared_worker_transfer_stress' if transferred else 'test_shared_worker_lifetime_stress'
-    result_label = 'shared-worker-transfer-stress' if transferred else 'shared-worker-lifetime-stress'
+    transferred = args.kind != 'shared'
+    queued = args.kind == 'queued'
+    target, result_label = {
+        'shared': ('test_shared_worker_lifetime_stress', 'shared-worker-lifetime-stress'),
+        'transferred': ('test_shared_worker_transfer_stress', 'shared-worker-transfer-stress'),
+        'queued': ('test_shared_worker_queue_lifetime_stress', 'shared-worker-queue-lifetime-stress'),
+    }[args.kind]
     report = {'startedUTC': datetime.now(timezone.utc).isoformat(), 'passed': False, 'kind': args.kind,
               'scope': 'Actual native SharedWorker isolate/owner/port lifecycle; not official WPT or GUI scrolling',
               'carrierSHA256': sha(Path(__file__)),
@@ -104,6 +108,11 @@ def main():
               'candidateDependencyHashes': dependency_hashes,
               'limits': {'threadDescriptorSettlingMilliseconds': 500, 'warmRSSGrowthMiB': 64,
                          'postWorkIdleP95OneCoreCPUPercent': 3}, 'productArtifacts': product['artifacts']}
+    if queued:
+        report['declaredQueueWorkload'] = {'producerMessagesPerCycle': 50,
+            'returnedMessagesRequiredPerCycle': 25, 'barriersPerCycle': 2,
+            'intentionalBusyMillisecondsPerBarrier': 120,
+            'scope': 'Deliberate bounded worker task barriers; active stress CPU is not scrolling CPU'}
 
     def save():
         temporary = out / 'summary.json.tmp'
@@ -160,6 +169,9 @@ def main():
                 or any(row['failures'] or row['workers'] != (1 if transferred and row['cycle'] <= 100 else 0)
                        or row['clients'] or row['pending'] for row in journal)):
             raise RuntimeError('Shared lifecycle journal, console, or result is incomplete')
+        if queued and any(row.get(key) != 0 for row in journal
+                          for key in ('movingRoutes', 'movingMessages', 'queuedInput', 'queuedOutput')):
+            raise RuntimeError('Native queued payloads or migration routes remain after a lifecycle checkpoint')
         warm, final = journal[3], journal[-1]
         report['resources'] = {'warmCycle': 4, 'warmRSSMiB': warm['rss_kib']/1024,
             'finalRSSMiB': final['rss_kib']/1024, 'warmToFinalRSSMiB': (final['rss_kib']-warm['rss_kib'])/1024,

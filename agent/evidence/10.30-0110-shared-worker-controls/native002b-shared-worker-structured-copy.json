@@ -1,0 +1,139 @@
+{
+  "transport": "Structured copy of authorized native Mac tool read",
+  "sourceRelaySHA256": "6c4c576aa750ff5949e48fd1540747ecc4a82729eaec189fbea74563807840fc",
+  "record": {
+    "kind": "shared-worker-public-api-regression",
+    "officialWPT": false,
+    "nativeLumenExecuted": true,
+    "chromiumControlExecuted": false,
+    "binary": "/Users/devin/repos/lumen/out/10300110-mac/native-shared-002b/jsrun-7279890736d7c926",
+    "binarySHA256": "7279890736d7c92603e689edfec803cf7b8ed5721ce692c058a33a24f02ac6a9",
+    "browserVersion": null,
+    "fixtureSHA256": "bfce5fed315f65f67087c6bf231b83217aec34c1efae9921566c16f84e4907d0",
+    "pageTemplateSHA256": "f399d92e0b2e2a9e546ae6146bc3b0bc751aebc7bd2284c487ae20511017ac02",
+    "workerSHA256": "c4db01ff1032009352804ab3dd5e18f5f2e2f59a76d499bd3732241406197384",
+    "caseManifestSHA256": "87ab8e59d1b46f629d9de53b104b1ea15bdf02e6313277f7583c317f09c5e385",
+    "started": "2026-10-29T18:13:08.760509+00:00",
+    "ended": "2026-10-29T18:13:10.620265+00:00",
+    "durationSeconds": 1.859628,
+    "total": 22,
+    "passed": 22,
+    "failed": 0,
+    "rows": [
+      {
+        "i": 0,
+        "name": "SharedWorker exposes its own public interface and stable MessagePort",
+        "ok": true
+      },
+      {
+        "i": 1,
+        "name": "connect carries a trusted source port and empty data",
+        "ok": true
+      },
+      {
+        "i": 2,
+        "name": "worker has a genuine SharedWorkerGlobalScope and no document",
+        "ok": true
+      },
+      {
+        "i": 3,
+        "name": "same URL and string or dictionary name share one global",
+        "ok": true
+      },
+      {
+        "i": 4,
+        "name": "different names isolate globals",
+        "ok": true
+      },
+      {
+        "i": 5,
+        "name": "different URLs with the same name isolate globals",
+        "ok": true
+      },
+      {
+        "i": 6,
+        "name": "two clients receive only their own replies",
+        "ok": true
+      },
+      {
+        "i": 7,
+        "name": "addEventListener does not start a port and start drains queued messages",
+        "ok": true
+      },
+      {
+        "i": 8,
+        "name": "onmessage assignment starts a port automatically",
+        "ok": true
+      },
+      {
+        "i": 9,
+        "name": "ArrayBuffer round trip transfers and detaches in both directions",
+        "ok": true
+      },
+      {
+        "i": 10,
+        "name": "duplicate buffer transfer throws without detaching or breaking the port",
+        "ok": true
+      },
+      {
+        "i": 11,
+        "name": "structured clone preserves cycles and typed arrays",
+        "ok": true
+      },
+      {
+        "i": 12,
+        "name": "closing one client leaves the other client usable",
+        "ok": true
+      },
+      {
+        "i": 13,
+        "name": "same-origin child frame joins the existing shared global",
+        "ok": true
+      },
+      {
+        "i": 14,
+        "name": "removing a child owner does not terminate the remaining owner",
+        "ok": true
+      },
+      {
+        "i": 15,
+        "name": "cross-origin pages do not share same-named worker globals",
+        "ok": true
+      },
+      {
+        "i": 16,
+        "name": "matching URL and name with different type raises an asynchronous error",
+        "ok": true
+      },
+      {
+        "i": 17,
+        "name": "matching URL and name with different credentials raises an asynchronous error",
+        "ok": true
+      },
+      {
+        "i": 18,
+        "name": "invalid constructor enums and missing script argument throw TypeError",
+        "ok": true
+      },
+      {
+        "i": 19,
+        "name": "failed script loading raises an asynchronous error",
+        "ok": true
+      },
+      {
+        "i": 20,
+        "name": "module SharedWorker executes an imported module in its own global",
+        "ok": true
+      },
+      {
+        "i": 21,
+        "name": "worker close permits a new independent global with the same identity",
+        "ok": true
+      }
+    ],
+    "infrastructureErrors": [],
+    "monitor": "External 1Hz monitor required",
+    "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stderrSHA256": "2e91687e1a94e34a38a596c1b3bc4dd9aeeb55b67c882fb172492be140a41363"
+  }
+}

@@ -1,0 +1,11 @@
+SHARED_BURST_BARRIER {"round":1,"barrierEstablished":true,"count":25}
+SHARED_BURST_DELIVERY {"round":1,"received":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]}
+SHARED_BURST_CHECK {"i":0,"name":"queued native messages survive port return, round 1","ok":true}
+SHARED_BURST_BARRIER {"round":2,"barrierEstablished":true,"count":25}
+SHARED_BURST_DELIVERY {"round":2,"received":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]}
+SHARED_BURST_CHECK {"i":1,"name":"queued native messages survive port return, round 2","ok":true}
+SHARED_BURST_BARRIER {"round":3,"barrierEstablished":true,"count":25}
+SHARED_BURST_DELIVERY {"round":3,"received":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]}
+SHARED_BURST_CHECK {"i":2,"name":"queued native messages survive port return, round 3","ok":true}
+SHARED_BURST_RESULTS {"total":3,"passed":3,"failed":0}
+CHROMIUM_CONTROL_CLEANUP {"gracefulRequested": true, "gracefulAcknowledged": true, "sent_sigterm": false, "sent_sigkill": false, "error": null, "processGroupGone": true, "rootExitCode": 0}

@@ -170,13 +170,20 @@ try:
     if args.transfer_acceptance:
         for label, driver in [('shared-boundaries', 'tests/test_shared_worker_boundaries.py'),
                               ('shared-transfer', 'tests/test_shared_worker_transfer_lifecycle.py'),
-                              ('shared-return-owner', 'tests/test_shared_worker_return_owner.py')]:
+                              ('shared-return-owner', 'tests/test_shared_worker_return_owner.py'),
+                              ('shared-return-burst', 'tests/test_shared_worker_return_burst.py')]:
             if not measured(label, [sys.executable, driver, '--binary', jsrun,
                             '--output', str(out / (label + '-receipt.json'))], 110):
                 raise RuntimeError('Native transferred-port acceptance failed: ' + label)
     if not measured('parser-policy-gui', [sys.executable, 'tests/test_parser_handler_csp.py', '--binary', lumen,
                      '--native-gui', '--output', str(out / 'parser-policy-gui-receipt.json')], 110):
         raise RuntimeError('Actual Mac GUI parser-policy regression failed')
+    if icu_record:
+        for suite in ('core', 'boundaries', 'transfer', 'return-owner', 'burst'):
+            if not measured('shared-gui-' + suite, [sys.executable, 'tests/run_shared_worker_gui.py',
+                            '--binary', lumen, '--sha256', summary['artifacts']['lumen']['sha256'],
+                            '--suite', suite, '--output', str(out / ('shared-gui-' + suite + '-receipt.json'))], 110):
+                raise RuntimeError('Actual Mac GUI SharedWorker acceptance failed: ' + suite)
     for name, digest in sources.items():
         if sha(root / name) != digest:
             raise RuntimeError('Production source changed during candidate validation: ' + name)

@@ -1,0 +1,55 @@
+{
+  "reviewedUTC": "2026-10-29T18:18:58.140150+00:00",
+  "scope": "Independent review of parent-relayed structured native summaries and all101 included journal rows per fixture; raw console/CSV/journal byte audit remains separate",
+  "acceptedForTheseStressOracles": true,
+  "completeBrowserAcceptanceClaimed": false,
+  "sameIPAExecutionClaimed": false,
+  "resources": [
+    {
+      "kind": "shared",
+      "checksPassed": 1691,
+      "realWorkerIsolatesCreated": 200,
+      "warmRSSMiB": 87.625,
+      "finalRSSMiB": 88.296875,
+      "rssDeltaMiB": 0.671875,
+      "warmThreads": 13,
+      "finalThreads": 13,
+      "warmFDs": 5,
+      "finalFDs": 5,
+      "postWorkIdle": {
+        "p95OneCoreCPUPercent": 1.014,
+        "samples": 9,
+        "peakOneCoreCPUPercent": 1.014,
+        "scope": "Final nine seconds of the declared 12-second native fixture idle interval"
+      },
+      "durationSeconds": 23.262,
+      "summaryStructuredCopy": "shared-summary-structured-copy.json",
+      "summaryStructuredCopySHA256": "0dc5ac76c50f1c4ebe7350cfa4fa28075a65b7e9f6c4ce8f0220315c49e8229e",
+      "rawJournalRemoteSHA256": "9594254066f6aaa897b16e092434d291d21dbadecf21ae5246cec3cb1190f518"
+    },
+    {
+      "kind": "transferred",
+      "checksPassed": 1896,
+      "realWorkerIsolatesCreated": 201,
+      "warmRSSMiB": 78.234375,
+      "finalRSSMiB": 77.828125,
+      "rssDeltaMiB": -0.40625,
+      "warmThreads": 14,
+      "finalThreads": 12,
+      "warmFDs": 4,
+      "finalFDs": 4,
+      "postWorkIdle": {
+        "p95OneCoreCPUPercent": 0.0,
+        "samples": 9,
+        "peakOneCoreCPUPercent": 0.0,
+        "scope": "Final nine seconds of the declared 12-second native fixture idle interval"
+      },
+      "durationSeconds": 22.248,
+      "summaryStructuredCopy": "transferred-summary-structured-copy.json",
+      "summaryStructuredCopySHA256": "b6905dab48d8776234ece80f1a28d30211ca46b4232c070263e8209a4092f8e3",
+      "rawJournalRemoteSHA256": "2a83987037bbb40fe211ed9a88a037de4a4ddf29d92bc340401288fda510356f"
+    }
+  ],
+  "activeChurnCPUExplanation": "The basic fixture intentionally creates200native isolates and temporarily reached100.786percent of one logical CPU; post-work idle returned to1.014percent p95. This is not scrolling CPU.",
+  "overallScoreUnchanged": 66.42694844715456
+}
