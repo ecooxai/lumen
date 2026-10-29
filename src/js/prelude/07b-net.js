@@ -739,7 +739,7 @@ class MessagePort extends EventTarget {
         if (ports.includes(this)) throw new DOMException('A port cannot transfer itself.', 'DataCloneError');
         if (remote) {
             const ids = ports.map(() => ++portSeq);
-            N.workerPost(remote[0], { __lumenPort: remote[1], data: portSub(data, ports), xfer: ids }, buffers);
+            N.workerPost(remote[0], { __lumenPort: remote[1], data: portSub(data, ports), xfer: ids }, buffers, remote[1], ids);
             adoptWorkerPorts(remote[0], ports, ids);
             return;
         }
@@ -821,7 +821,7 @@ function remotePort(worker, key) {
 }
 function sendPortMessage(route, data, ports) {
     const ids = ports.map(() => ++portSeq);
-    N.workerPost(route[0], {__lumenPort: route[1], data: portSub(data, ports), xfer: ids}, []);
+    N.workerPost(route[0], {__lumenPort: route[1], data: portSub(data, ports), xfer: ids}, [], route[1], ids);
     adoptWorkerPorts(route[0], ports, ids);
 }
 function watchBridge(worker, bridge) {
@@ -918,7 +918,7 @@ class Worker extends EventTarget {
         const { ports, buffers } = portList(options);
         if (!ports.length) return N.workerPost(this._id, data, buffers);
         const ids = ports.map(() => ++portSeq);
-        N.workerPost(this._id, { __lumenXfer: ids, data: portSub(data, ports) }, buffers);
+        N.workerPost(this._id, { __lumenXfer: ids, data: portSub(data, ports) }, buffers, undefined, ids);
         adoptWorkerPorts(this._id, ports, ids);
     }
     terminate() { if (this._id) { closeWorkerBridges(this._id); N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
@@ -967,6 +967,9 @@ function workerEvent(id, kind, data, message, filename, lineno, colno, moves, qu
     }
     if (kind === 0) {
         const moved = new Map(moves || []), incoming = new Map();
+        // Claim native FIFOs before route collapse can release the old
+        // connection. Claim and collapse run in the same owner task.
+        const nativePending = moved.size ? N.workerTakeMoved(id, [...moved.values()]) : [];
         const receive = key => {
             if (!incoming.has(key)) incoming.set(key, moved.has(key) ? movedWorkerPort(id, moved.get(key)) : remotePort(id, key));
             return incoming.get(key);
@@ -977,6 +980,20 @@ function workerEvent(id, kind, data, message, filename, lineno, colno, moves, qu
                 const ports = message.xfer.map(receive);
                 port._deliver(portRes(message.data, ports), ports);
             }
+        }
+        const targets = new Map([...moved].map(([target, source]) => [source, target])), nativePorts = new Map();
+        for (const [source, kind, message] of nativePending) {
+            if (!nativePorts.has(source)) nativePorts.set(source, targets.has(source) ? receive(targets.get(source)) : movedWorkerPort(id, source));
+            const port = nativePorts.get(source);
+            if (kind === 3) { disconnectWorkerPeer(port); continue; }
+            if (kind === -1) { setTimeout(() => dispatch(port, new MessageEvent('messageerror', {}), true)); continue; }
+            // Endpoints transferred inside an undelivered native message also
+            // leave the old recipient; they must not retain a proxy in it.
+            const ports = (message.xfer || []).map(key => {
+                if (!nativePorts.has(key)) nativePorts.set(key, movedWorkerPort(id, key));
+                return nativePorts.get(key);
+            });
+            port._deliver(portRes(message.data, ports), ports);
         }
         let ports = [];
         if (data && typeof data === 'object') {

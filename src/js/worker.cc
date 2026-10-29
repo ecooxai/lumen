@@ -19,6 +19,7 @@
 #include <cstring>
 #include <deque>
 #include <map>
+#include <set>
 #include <vector>
 #include <memory>
 extern "C" {
@@ -39,7 +40,7 @@ struct Side {
 };
 struct Buf { uint8_t *p = nullptr; size_t n = 0; std::shared_ptr<Side> side; };
 enum { WI_MESSAGE, WI_CONNECT, WI_DISCONNECT, WI_PORT_CLOSED };
-struct InMsg { Buf data; uint32_t connection = 0; int kind = WI_MESSAGE; int32_t port = 0; };
+struct InMsg { Buf data; uint32_t connection = 0; int kind = WI_MESSAGE; int32_t port = 0; bool to_port = false; std::vector<int32_t> transferred_ports; };
 enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL, WM_MESSAGEERROR, WM_FINISHED, WM_PORT_CLOSED };
 struct PortMove { int32_t target = 0, source = 0; };
 struct OutMsg {
@@ -64,6 +65,10 @@ struct Worker {
     std::string ocsp, odoc; bool has_ocsp = false;   /* creator document's CSP: worker-src check, inherited by blob:/data: workers */
     std::mutex mu; std::condition_variable cv;
     std::deque<InMsg> in; std::deque<OutMsg> out;
+    // A returned endpoint owns its pending native messages independently of
+    // this isolate. The owner claims these queues synchronously with its route
+    // migration; late sends to the old route join the same FIFO under mu.
+    std::map<std::pair<uint32_t, int32_t>, std::deque<InMsg>> moving_ports;
     // Network threads/main-loop callbacks own only native data. V8 handles stay
     // in WEnv and are entered exclusively by this worker's event loop.
     std::map<uint32_t, uint64_t> requests; // protected by mu
@@ -75,6 +80,9 @@ struct Worker {
     v8::Isolate *iso = nullptr;
     NetRequest *request = nullptr; /* protected by mu; owned by the synchronous worker_fetch call */
     std::atomic<size_t> heap{0}, ext{0};
+    ~Worker() {
+        for (auto &entry : moving_ports) for (InMsg &message : entry.second) free(message.data.p);
+    }
 };
 struct WTimer { double due = 0, interval = 0; bool repeat = false; v8::Global<v8::Function> fn; std::vector<v8::Global<v8::Value>> args; };
 struct WEnv {
@@ -85,6 +93,7 @@ struct WEnv {
     std::map<std::string, v8::Global<v8::Module>> mods; std::multimap<int, std::string> murl;
     std::map<uint32_t, v8::Global<v8::Function>> network_callbacks; uint32_t nseq = 0;
     std::map<uint32_t, WTimer> timers; uint32_t tseq = 0; bool closing = false, reporting = false; double t0 = 0;
+    std::deque<InMsg> *pending_messages = nullptr; // this worker thread's unprocessed input batch
 };
 std::map<uint32_t, std::shared_ptr<Worker>> g_workers;   /* main thread only */
 struct SharedClient { std::shared_ptr<Worker> worker; JsCtx *owner; };
@@ -366,6 +375,30 @@ WFN(post) {
             v8::Local<v8::Value> target, source;
             if (move->Length() != 2 || !move->Get(ctx, 0).ToLocal(&target) || !move->Get(ctx, 1).ToLocal(&source)) continue;
             message.ports.push_back({target->Int32Value(ctx).FromMaybe(0), source->Int32Value(ctx).FromMaybe(0)});
+        }
+    }
+    if (!message.ports.empty()) {
+        std::lock_guard<std::mutex> lock(E->w->mu);
+        if (E->w->term || (connection && !E->w->clients.count(connection))) { free(message.data.p); return; }
+        std::vector<int32_t> routes;
+        std::set<int32_t> seen;
+        for (const PortMove &move : message.ports) if (seen.insert(move.source).second) routes.push_back(move.source);
+        for (size_t index = 0; index < routes.size(); ++index) {
+            const int32_t source = routes[index];
+            auto &pending = E->w->moving_ports[{connection, source}];
+            auto migrate = [&](std::deque<InMsg> &input) {
+                for (auto it = input.begin(); it != input.end();) {
+                    if (it->connection == connection && it->port == source &&
+                            (it->to_port || it->kind == WI_PORT_CLOSED)) {
+                        for (int32_t child : it->transferred_ports) if (seen.insert(child).second) routes.push_back(child);
+                        pending.push_back(std::move(*it));
+                        it->data = {}; // raw serialization bytes now have one owning queue
+                        it = input.erase(it);
+                    } else ++it;
+                }
+            };
+            if (E->pending_messages) migrate(*E->pending_messages);
+            migrate(E->w->in);
         }
     }
     post_out(E, std::move(message));
@@ -1649,7 +1682,9 @@ void worker_main(std::shared_ptr<Worker> w) {
                 network.swap(w->network);
             }
             if (!msgs.empty() || !network.empty()) { last_act = now_ms(); idle_gc = false; }
-            for (InMsg &message : msgs) {
+            E->pending_messages = &msgs;
+            while (!msgs.empty()) {
+                InMsg message = std::move(msgs.front()); msgs.front().data = {}; msgs.pop_front();
                 Buf &b = message.data;
                 if (!w->term && !E->closing) {
                     v8::HandleScope hs2(iso);
@@ -1665,6 +1700,7 @@ void worker_main(std::shared_ptr<Worker> w) {
                 }
                 free(b.p);
             }
+            E->pending_messages = nullptr;
             for (auto &result : network) {
                 if (w->term || E->closing) break;
                 auto callback = E->network_callbacks.find(result.id);
@@ -1802,6 +1838,8 @@ void worker_terminate(Worker *w) {
     if (w->iso) w->iso->TerminateExecution();
     for (OutMsg &m : w->out) free(m.data.p);
     w->out.clear();
+    for (auto &entry : w->moving_ports) for (InMsg &message : entry.second) free(message.data.p);
+    w->moving_ports.clear();
     w->cv.notify_all();
 }
 
@@ -1925,6 +1963,11 @@ void close_shared_connection(uint32_t id, JsCtx *owner) {
             if (it->connection == id) { free(it->data.p); it = w->out.erase(it); } else ++it;
         for (auto it = w->in.begin(); it != w->in.end();)
             if (it->connection == id) { free(it->data.p); it = w->in.erase(it); } else ++it;
+        for (auto it = w->moving_ports.begin(); it != w->moving_ports.end();)
+            if (it->first.first == id) {
+                for (InMsg &message : it->second) free(message.data.p);
+                it = w->moving_ports.erase(it);
+            } else ++it;
         empty = w->clients.empty();
         if (!empty && w->accepting) w->in.push_back(InMsg{{}, id, WI_DISCONNECT});
         if (w->owner == owner) w->owner = nullptr; // never retain a destroyed creator pointer
@@ -1951,13 +1994,77 @@ void n_workerPost(const FCI &a) {
     Buf b;
     if (!ser(iso, ctx, a[1], b, a[2])) return;
     if (!w) { free(b.p); return; }
+    const bool to_port = a.Length() > 3 && a[3]->IsInt32();
+    const int32_t port = to_port ? a[3]->Int32Value(ctx).FromMaybe(0) : 0;
+    InMsg incoming{std::move(b), connection, WI_MESSAGE, port, to_port};
+    if (a.Length() > 4 && a[4]->IsArray()) {
+        auto transfers = a[4].As<v8::Array>();
+        for (uint32_t index = 0; index < transfers->Length(); ++index) {
+            v8::Local<v8::Value> value;
+            if (transfers->Get(ctx, index).ToLocal(&value) && value->IsInt32()) incoming.transferred_ports.push_back(value->Int32Value(ctx).FromMaybe(0));
+        }
+    }
     {
         std::lock_guard<std::mutex> lk(w->mu);
         /* Recheck under the queue lock: close/exit may race serialization. */
-        if (w->term || !w->accepting || (connection && !w->clients.count(connection))) { free(b.p); return; }
-        w->in.push_back(InMsg{std::move(b), connection, WI_MESSAGE});
+        if (w->term || (connection && !w->clients.count(connection))) { free(incoming.data.p); return; }
+        auto moving = w->moving_ports.find({connection, port});
+        if (to_port && moving != w->moving_ports.end()) {
+            for (int32_t child : incoming.transferred_ports) w->moving_ports.try_emplace({connection, child});
+            moving->second.push_back(std::move(incoming));
+            return;
+        }
+        if (!w->accepting) { free(incoming.data.p); return; }
+        w->in.push_back(std::move(incoming));
     }
     w->cv.notify_all();
+}
+void n_workerTakeMoved(const FCI &a) {
+    auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
+    const uint32_t id = a[0]->Uint32Value(ctx).FromMaybe(0);
+    auto found = g_workers.find(id); auto client = g_shared_clients.find(id);
+    auto *owner = jctx(iso);
+    uint32_t connection = 0; std::shared_ptr<Worker> w;
+    if (client != g_shared_clients.end() && client->second.owner == owner) { w = client->second.worker; connection = id; }
+    else if (found != g_workers.end() && !found->second->shared && found->second->owner == owner) w = found->second;
+    auto result = v8::Array::New(iso);
+    a.GetReturnValue().Set(result);
+    if (!w || a.Length() < 2 || !a[1]->IsArray()) return;
+    std::vector<int32_t> keys;
+    auto input = a[1].As<v8::Array>();
+    for (uint32_t index = 0; index < input->Length(); ++index) {
+        v8::Local<v8::Value> value;
+        if (input->Get(ctx, index).ToLocal(&value) && value->IsInt32()) keys.push_back(value->Int32Value(ctx).FromMaybe(0));
+    }
+    std::deque<InMsg> pending;
+    {
+        std::lock_guard<std::mutex> lock(w->mu);
+        std::set<int32_t> seen(keys.begin(), keys.end());
+        for (size_t index = 0; index < keys.size(); ++index) {
+            auto queue = w->moving_ports.find({connection, keys[index]});
+            if (queue == w->moving_ports.end()) continue;
+            for (InMsg &message : queue->second) {
+                for (int32_t child : message.transferred_ports) if (seen.insert(child).second) keys.push_back(child);
+                pending.push_back(std::move(message)); message.data = {};
+            }
+            w->moving_ports.erase(queue);
+        }
+    }
+    uint32_t index = 0;
+    for (InMsg &message : pending) {
+        v8::Local<v8::Value> data = v8::Undefined(iso);
+        int kind = message.kind;
+        if (kind == WI_MESSAGE) {
+            v8::TryCatch caught(iso);
+            if (!deser(iso, ctx, message.data).ToLocal(&data)) { data = v8::Undefined(iso); kind = -1; }
+        }
+        auto item = v8::Array::New(iso, 3);
+        (void)item->Set(ctx, 0, v8::Integer::New(iso, message.port));
+        (void)item->Set(ctx, 1, v8::Integer::New(iso, kind));
+        (void)item->Set(ctx, 2, data);
+        (void)result->Set(ctx, index++, item);
+        free(message.data.p); message.data = {};
+    }
 }
 void n_workerWatchLifecycle(const FCI &a) {
     auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
@@ -1987,8 +2094,12 @@ void n_workerPortClose(const FCI &a) {
     if (!w) return;
     {
         std::lock_guard<std::mutex> lock(w->mu);
-        if (w->term || !w->accepting || (connection && !w->clients.count(connection))) return;
-        w->in.push_back(InMsg{{}, connection, WI_PORT_CLOSED, a[1]->Int32Value(ctx).FromMaybe(0)});
+        if (w->term || (connection && !w->clients.count(connection))) return;
+        const int32_t port = a[1]->Int32Value(ctx).FromMaybe(0);
+        auto moving = w->moving_ports.find({connection, port});
+        if (moving != w->moving_ports.end()) { moving->second.push_back(InMsg{{}, connection, WI_PORT_CLOSED, port}); return; }
+        if (!w->accepting) return;
+        w->in.push_back(InMsg{{}, connection, WI_PORT_CLOSED, port});
     }
     w->cv.notify_all();
 }
@@ -2024,6 +2135,7 @@ void js_install_workers(JsCtx *c, v8::Local<v8::Object> N) {
     (void)N->Set(ctx, jstr(iso, "sharedWorkerClose"), v8::Function::New(ctx, n_sharedWorkerClose).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "workerPost"), v8::Function::New(ctx, n_workerPost).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "workerTerm"), v8::Function::New(ctx, n_workerTerm).ToLocalChecked());
+    (void)N->Set(ctx, jstr(iso, "workerTakeMoved"), v8::Function::New(ctx, n_workerTakeMoved).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "workerWatchLifecycle"), v8::Function::New(ctx, n_workerWatchLifecycle).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "workerPortClose"), v8::Function::New(ctx, n_workerPortClose).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "transferClone"), v8::Function::New(ctx, n_transferClone).ToLocalChecked());
