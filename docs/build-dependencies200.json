@@ -1,7 +1,7 @@
 {
   "recorded_dependency_metadata_from_candidate": 186,
-  "applies_to_source_candidate": 196,
-  "qualification": "No new external dependency was introduced in candidates 187\u2013196. These are the already reviewed Ruby build-family dependency settings; external libraries and caches are not redistributed.",
+  "applies_to_source_candidate": 200,
+  "qualification": "Recorded build dependencies from the accepted restored Ruby environment are reused for candidate 200. No new external dependency is introduced by the later source changes. This is a source checkpoint, not a portable binary package.",
   "recorded_settings": {
     "scope": "Recorded Ruby configure settings, with task-specific source paths replaced by variables; external dependencies are not included",
     "settings": {

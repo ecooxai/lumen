@@ -1,0 +1,414 @@
+{
+  "schema": "lumen-final-fixed-workload-public-v1",
+  "candidate": 200,
+  "source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+  "baseline_source_commit": "b4d8147c7b7945f5eddc11cfc444a80dd5a9ff13",
+  "baseline_binary_sha256": "648145f52b7c11b0a95c2c4aa99f0527879a757969998fade4de15773ce70f01",
+  "final_binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+  "chromium_version": "150.0.7871.114",
+  "chromium_elf_sha256": "2d4adea820c95eee0c24dcc5eb729043df570838b8693fa3449df15040b0460f",
+  "chromium_launcher_sha256": "d176751de81c10df1a96052f897155b2b055a8426cddd102f5a1ad102832d5d9",
+  "started_utc": "2026-10-29T20:37:22.645129+00:00",
+  "finished_utc": "2026-10-29T20:38:58.254334+00:00",
+  "elapsed_seconds": 95.60682243399788,
+  "measured_trials": 21,
+  "measured_trials_per_browser": 7,
+  "separately_launched_warmup_trials": 0,
+  "internal_warmup_count": "Not separately declared by the fixed public protocol metadata.",
+  "pre_window_activity": "Three native candidate 200 media-only capture runs completed before the quiet window. No other team browser/build/encoding work overlapped the measured trials. No cold-start comparison is claimed.",
+  "all_trials_retained": true,
+  "checks_per_trial": 9395,
+  "all_trials_pass": true,
+  "trial_sequence": [
+    "Lumen 176",
+    "Lumen 200",
+    "Chromium 150.0.7871.114",
+    "Lumen 200",
+    "Chromium 150.0.7871.114",
+    "Lumen 176",
+    "Chromium 150.0.7871.114",
+    "Lumen 176",
+    "Lumen 200",
+    "Lumen 176",
+    "Chromium 150.0.7871.114",
+    "Lumen 200",
+    "Chromium 150.0.7871.114",
+    "Lumen 200",
+    "Lumen 176",
+    "Lumen 200",
+    "Lumen 176",
+    "Chromium 150.0.7871.114",
+    "Lumen 176",
+    "Lumen 200",
+    "Chromium 150.0.7871.114"
+  ],
+  "environment": {
+    "width": 748,
+    "height": 596,
+    "dpr": 1
+  },
+  "renderer_scope": "CPU/offscreen. Same Chromium ELF and launcher as the independently observed software-rendering reference. Actual Lumen hardware rendering is unverified.",
+  "one_second_sampling": true,
+  "protocol_sources_unchanged": true,
+  "protocol_binaries_unchanged": true,
+  "source_commit_and_all_binary_identities_unchanged": true,
+  "engines": {
+    "Lumen 176": {
+      "measured_trials": 7,
+      "timings_ms": {
+        "dom_create_remove": {
+          "median": 42.61024099960923,
+          "minimum": 40.0211240015924,
+          "maximum": 44.21170900017023,
+          "all_trials": [
+            41.20677199959755,
+            43.36418899893761,
+            40.0211240015924,
+            44.21170900017023,
+            42.61024099960923,
+            43.15352400019765,
+            42.056940998882055
+          ]
+        },
+        "style_layout": {
+          "median": 361.1117419973016,
+          "minimum": 349.7325580008328,
+          "maximum": 395.3236190006137,
+          "all_trials": [
+            356.0321439988911,
+            377.30000699684024,
+            359.7609729990363,
+            349.7325580008328,
+            383.6074449978769,
+            395.3236190006137,
+            361.1117419973016
+          ]
+        },
+        "grid_cache_rebuild": {
+          "median": 148.20992700010538,
+          "minimum": 134.5187189988792,
+          "maximum": 154.88487700000405,
+          "all_trials": [
+            150.97242099791765,
+            142.41999299824238,
+            148.20992700010538,
+            135.95689500123262,
+            154.88487700000405,
+            154.5780100002885,
+            134.5187189988792
+          ]
+        }
+      },
+      "sampled_browser_tree_resources": {
+        "cpu_pct": {
+          "median_of_trial_sample_medians": 21.002,
+          "minimum_observed_sample": 9.999,
+          "maximum_observed_sample": 64.005,
+          "sample_counts_by_trial": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "rss_mb": {
+          "median_of_trial_sample_medians": 164.4155,
+          "minimum_observed_sample": 86.548,
+          "maximum_observed_sample": 181.244,
+          "sample_counts_by_trial": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        "pss_mb": {
+          "median_of_trial_sample_medians": 139.274,
+          "minimum_observed_sample": 62.024,
+          "maximum_observed_sample": 156.079,
+          "sample_counts_by_trial": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        }
+      },
+      "resource_aggregation": "For each trial and metric, take the median of that trial's available one-second samples. The headline value is the median of those seven trial medians. Minimum and maximum are the extrema of all observed samples for that browser. This is not a median of per-trial maxima.",
+      "resource_units": "Decimal MB (1 MB = 1,000,000 bytes); CPU percent is the sampled browser process-tree value.",
+      "resource_scope": "Fresh browser process tree over startup, workload and cleanup. Not steady idle, whole-system memory, or a phase-specific CPU measurement. Summed RSS can count shared mappings multiple times; PSS is sampled proportional memory.",
+      "actual_native_exit_receipts_zero": 7,
+      "all_owned_profiles_removed": true,
+      "remaining_owned_identities": 0
+    },
+    "Lumen 200": {
+      "measured_trials": 7,
+      "timings_ms": {
+        "dom_create_remove": {
+          "median": 41.407053999602795,
+          "minimum": 39.72597600147128,
+          "maximum": 56.10716800019145,
+          "all_trials": [
+            39.93087099865079,
+            39.72597600147128,
+            44.64492800086737,
+            45.17948600277305,
+            40.31001900136471,
+            56.10716800019145,
+            41.407053999602795
+          ]
+        },
+        "style_layout": {
+          "median": 356.52809999883175,
+          "minimum": 343.2456989996135,
+          "maximum": 388.8277520015836,
+          "all_trials": [
+            370.60938499867916,
+            345.2666600011289,
+            343.2456989996135,
+            367.8166290000081,
+            355.1278619989753,
+            388.8277520015836,
+            356.52809999883175
+          ]
+        },
+        "grid_cache_rebuild": {
+          "median": 142.2101369984448,
+          "minimum": 132.73938800022006,
+          "maximum": 151.98480599746108,
+          "all_trials": [
+            142.2101369984448,
+            138.28338000178337,
+            148.3807139992714,
+            132.73938800022006,
+            149.91453900188208,
+            151.98480599746108,
+            137.96065000072122
+          ]
+        }
+      },
+      "sampled_browser_tree_resources": {
+        "cpu_pct": {
+          "median_of_trial_sample_medians": 20.999,
+          "minimum_observed_sample": 10.006,
+          "maximum_observed_sample": 63.0,
+          "sample_counts_by_trial": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "rss_mb": {
+          "median_of_trial_sample_medians": 165.21800000000002,
+          "minimum_observed_sample": 90.403,
+          "maximum_observed_sample": 183.804,
+          "sample_counts_by_trial": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        "pss_mb": {
+          "median_of_trial_sample_medians": 139.9735,
+          "minimum_observed_sample": 65.681,
+          "maximum_observed_sample": 158.766,
+          "sample_counts_by_trial": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        }
+      },
+      "resource_aggregation": "For each trial and metric, take the median of that trial's available one-second samples. The headline value is the median of those seven trial medians. Minimum and maximum are the extrema of all observed samples for that browser. This is not a median of per-trial maxima.",
+      "resource_units": "Decimal MB (1 MB = 1,000,000 bytes); CPU percent is the sampled browser process-tree value.",
+      "resource_scope": "Fresh browser process tree over startup, workload and cleanup. Not steady idle, whole-system memory, or a phase-specific CPU measurement. Summed RSS can count shared mappings multiple times; PSS is sampled proportional memory.",
+      "actual_native_exit_receipts_zero": 7,
+      "all_owned_profiles_removed": true,
+      "remaining_owned_identities": 0
+    },
+    "Chromium 150.0.7871.114": {
+      "measured_trials": 7,
+      "timings_ms": {
+        "dom_create_remove": {
+          "median": 11.399999998509884,
+          "minimum": 9.799999997019768,
+          "maximum": 18.5,
+          "all_trials": [
+            12.899999998509884,
+            14.099999997764826,
+            9.799999997019768,
+            18.5,
+            10.099999997764826,
+            11.399999998509884,
+            10.599999997764826
+          ]
+        },
+        "style_layout": {
+          "median": 58.399999998509884,
+          "minimum": 53.30000000074506,
+          "maximum": 72.60000000149012,
+          "all_trials": [
+            53.30000000074506,
+            55.400000002235174,
+            60.79999999701977,
+            62.399999998509884,
+            58.399999998509884,
+            55.100000001490116,
+            72.60000000149012
+          ]
+        },
+        "grid_cache_rebuild": {
+          "median": 49,
+          "minimum": 44.80000000074506,
+          "maximum": 62.70000000298023,
+          "all_trials": [
+            50.69999999925494,
+            48,
+            47.600000001490116,
+            60.099999997764826,
+            49,
+            44.80000000074506,
+            62.70000000298023
+          ]
+        }
+      },
+      "sampled_browser_tree_resources": {
+        "cpu_pct": {
+          "median_of_trial_sample_medians": 20.999000000000002,
+          "minimum_observed_sample": 17.003,
+          "maximum_observed_sample": 53.003,
+          "sample_counts_by_trial": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        "rss_mb": {
+          "median_of_trial_sample_medians": 935.907,
+          "minimum_observed_sample": 832.823,
+          "maximum_observed_sample": 975.868,
+          "sample_counts_by_trial": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "pss_mb": {
+          "median_of_trial_sample_medians": 382.451,
+          "minimum_observed_sample": 375.405,
+          "maximum_observed_sample": 413.028,
+          "sample_counts_by_trial": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        }
+      },
+      "resource_aggregation": "For each trial and metric, take the median of that trial's available one-second samples. The headline value is the median of those seven trial medians. Minimum and maximum are the extrema of all observed samples for that browser. This is not a median of per-trial maxima.",
+      "resource_units": "Decimal MB (1 MB = 1,000,000 bytes); CPU percent is the sampled browser process-tree value.",
+      "resource_scope": "Fresh browser process tree over startup, workload and cleanup. Not steady idle, whole-system memory, or a phase-specific CPU measurement. Summed RSS can count shared mappings multiple times; PSS is sampled proportional memory.",
+      "actual_native_exit_receipts_zero": null,
+      "all_owned_profiles_removed": true,
+      "remaining_owned_identities": 0
+    }
+  },
+  "comparison": {
+    "dom_create_remove": {
+      "median_time_reduction_percent": 2.823703813403622,
+      "balanced_triplet_time_reduction_percent": [
+        3.0963381479122476,
+        8.38990208615561,
+        -11.553408642623308,
+        -2.188960853332067,
+        5.398284413049015,
+        -30.01758095105853,
+        1.545255037204285
+      ],
+      "median_triplet_reduction_percent": 1.545255037204285,
+      "triplets_with_lower_final_time": 4,
+      "triplet_count": 7
+    },
+    "style_layout": {
+      "median_time_reduction_percent": 1.2693140281503479,
+      "balanced_triplet_time_reduction_percent": [
+        -4.094360929341656,
+        8.490152770121629,
+        4.5906241196059465,
+        -5.170828561844165,
+        7.424147620247368,
+        1.6431770546500135,
+        1.2693140281503479
+      ],
+      "median_triplet_reduction_percent": 1.6431770546500135,
+      "triplets_with_lower_final_time": 5,
+      "triplet_count": 7
+    },
+    "grid_cache_rebuild": {
+      "median_time_reduction_percent": 4.048170134822559,
+      "balanced_triplet_time_reduction_percent": [
+        5.803897123431378,
+        2.904517062088363,
+        -0.11523317136907796,
+        2.3665640503068186,
+        3.2090531331356864,
+        1.6776021394133367,
+        -2.5587004005522163
+      ],
+      "median_triplet_reduction_percent": 2.3665640503068186,
+      "triplets_with_lower_final_time": 5,
+      "triplet_count": 7
+    }
+  },
+  "cleanup": {
+    "native_actual_zero_exit_receipts": 14,
+    "native_profiles_removed": 14,
+    "chromium_trials_with_empty_owned_identity_lists": 7,
+    "chromium_profiles_removal_receipts_true": 7,
+    "chromium_exact_owned_profile_paths_confirmed_absent": 7,
+    "cleanup_review_sha256": "515c8966649808a607d56dd7ef34462997ea99ad6ac3eddbbf072086663cfb81"
+  },
+  "conclusion": "All fixed-workload correctness checks and cleanup gates passed. The before/after Lumen timing ranges overlap and pair directions are mixed; no stable broad speedup is established. Chromium remains faster in the measured phases.",
+  "notes": [
+    "All 21 trials are retained; no outliers were removed.",
+    "Host launch/readiness differs between guarded native and WebDriver and is excluded from speed comparisons.",
+    "Renderer controls remain CPU/offscreen. The same exact Chromium ELF was previously observed alive with software compositing/rasterization and disabled Vulkan/WebGL/WebGPU.",
+    "Intel adapter enumeration is separate; actual Lumen Intel rendering remains unverified.",
+    "Repeated workload checks are not WPT counts. This result is specific to these two source revisions and this fixed workload.",
+    "All timing trial values, ranges and matched-triplet effects are retained. These repeated workload checks are not WPT counts.",
+    "Native trials have four available memory samples and three CPU interval samples each. Chromium trials have three memory samples and two CPU interval samples each.",
+    "The separate 194/195 setter diagnostic remains a different experiment: 39.4% setter median reduction, but a slower later attribute phase and fixed-order/shared-process limitations."
+  ]
+}

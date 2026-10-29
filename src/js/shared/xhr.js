@@ -65,12 +65,20 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
     }
     setRequestHeader(k, v) {
         if (arguments.length < 2) throw new TypeError(`Failed to execute 'setRequestHeader' on 'XMLHttpRequest': 2 arguments required, but only ${arguments.length} present.`);
+        const where = "execute 'setRequestHeader' on 'XMLHttpRequest'";
+        k = fbyteString(k, where); v = fbyteString(v, where);
         if (this._rs !== 1 || this._send) throw new DOMException("The object's state must be OPENED.", 'InvalidStateError');
-        k = String(k); v = String(v).replace(/^[\t\n\r ]+|[\t\n\r ]+$/g, '');
+        v = v.replace(/^[\t\n\r ]+|[\t\n\r ]+$/g, '');
         if (!FETCH_TOKEN.test(k)) throw new DOMException(`'${k}' is not a valid HTTP header field name.`, 'SyntaxError');
-        if (/[\0\r\n]/.test(v) || /[^\x00-\xff]/.test(v)) throw new DOMException(`'${v}' is not a valid HTTP header field value.`, 'SyntaxError');
+        if (/[\0\r\n]/.test(v)) throw new DOMException(`'${v}' is not a valid HTTP header field value.`, 'SyntaxError');
         if (forbiddenRequestHeader(k, v)) return;
-        this._rh.append(k, v);
+        /* XHR combines values in its author request-header list, including
+           empty values, while retaining the first spelling of the name. */
+        const headers = hdrOf(this._rh), lower = k.toLowerCase();
+        const previous = headers.list.find(([name]) => name.toLowerCase() === lower);
+        if (previous) previous[1] += ', ' + v;
+        else headers.list.push([k, v]);
+        headers.ver++;
     }
     _hdrList() { const a = []; for (let i = 0; i + 1 < this._hdrs.length; i += 2) a.push([String(this._hdrs[i]).toLowerCase(), String(this._hdrs[i + 1])]); return a; }
     getResponseHeader(k) {

@@ -82,8 +82,16 @@ static void finish_line(IC *c, bool forced) {
     if (b->st->direction && ta == TA_START) ta = TA_RIGHT;
     if (ta == TA_END) ta = b->st->direction ? TA_LEFT : TA_RIGHT;
     if (avail > used) { if (ta == TA_CENTER) shift = (avail - used) / 2; else if (ta == TA_RIGHT) shift = avail - used; }
+    /* A text-free sequence of direct atomic inlines consists of neutral
+       bidi items, whose visual order follows the paragraph direction. Keep
+       text shaping and nested inline rectangle handling on their own paths. */
+    bool reverse_atoms = b->st->direction && b->nfrags > c->line_f0;
+    for (int i = c->line_f0; reverse_atoms && i < b->nfrags; i++)
+        if (b->frags[i].box->kind == BX_TEXT || b->frags[i].box->parent != b)
+            reverse_atoms = false;
     for (int i = c->line_f0; i < b->nfrags; i++) {
         TextFrag *f = &b->frags[i];
+        if (reverse_atoms) f->x = c->left + c->pen - f->x - f->w;
         f->x += shift;
         if (f->box->kind == BX_TEXT) {
             Font *fo = f->box->font;

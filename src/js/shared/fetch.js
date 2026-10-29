@@ -18,7 +18,7 @@ const FETCH_WS_TRIM = /^[\t\n\r ]+|[\t\n\r ]+$/g;
 const ferr = (where, msg) => new TypeError(`Failed to ${where}: ${msg}`);
 const fnet = () => new TypeError('Failed to fetch');
 const fargs = (n, have, where) => { if (have < n) throw ferr(where, `${n} argument${n > 1 ? 's' : ''} required, but only ${have} present.`); };
-const fbyteString = (v, where) => { const s = String(v); if (/[^\x00-\xff]/.test(s)) throw ferr(where, 'String contains non ISO-8859-1 code point.'); return s; };
+const fbyteString = (v, where) => { const s = `${v}`; if (/[^\x00-\xff]/.test(s)) throw ferr(where, 'String contains non ISO-8859-1 code point.'); return s; };
 const fenc = s => new TextEncoder().encode(s);
 const fdec = b => new TextDecoder().decode(b);
 const fisObj = v => v !== null && (typeof v === 'object' || typeof v === 'function');
@@ -177,9 +177,9 @@ function hdrSorted(s) {
     s.sorted = out; s.sortedVer = s.ver; s.sortedList = s.list;
     return out;
 }
-/* HeadersInit: a Headers object's list, else (record<ByteString, ByteString> or sequence<sequence<ByteString>>) */
+/* HeadersInit follows Web IDL sequence/record conversion even for a Headers
+   object: its observable iterator can be overridden by the caller. */
 function headersInit(init, where) {
-    if (hdrState.has(init)) return hdrState.get(init).list.map(e => e.slice());
     if (!fisObj(init)) throw ferr(where, "The provided value is not of type '(record<ByteString, ByteString> or sequence<sequence<ByteString>>)'.");
     const out = [], it = init[Symbol.iterator];
     if (it !== undefined && it !== null) {

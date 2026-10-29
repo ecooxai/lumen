@@ -6,23 +6,6 @@ typedef struct { Box *b; int ord; float base, hypo, mn, mx, main, cross, mm0, mm
 typedef struct { int first; float cross; } FLine;
 static int ord_cmp(const void *a, const void *b) { const FItem *x = a, *y = b; int d = x->b->st->order - y->b->st->order; return d ? d : (x->ord - y->ord); }
 
-/* A content flex basis ignores the preferred main size. Measure with a
- * read-only style copy, then restore the ordinary intrinsic cache: content
- * measurements must not poison later auto-basis or non-flex sizing. */
-static void flex_content_width(Layout *L, Box *b, float *mn, float *mx) {
-    ComputedStyle measured = *b->st, *original = b->st;
-    measured.width = L_auto(); measured.min_width = L_auto();
-    measured.max_width = (Length){ .kind = LK_NONE };
-    bool cached = b->intr_ok; float old_min = b->imin, old_max = b->imax;
-    float margin[4], border[4], padding[4];
-    memcpy(margin, b->m, sizeof margin); memcpy(border, b->b, sizeof border);
-    memcpy(padding, b->p, sizeof padding);
-    b->st = &measured; b->intr_ok = false;
-    intrinsic(L, b, mn, mx);
-    b->st = original; b->intr_ok = cached; b->imin = old_min; b->imax = old_max;
-    memcpy(b->m, margin, sizeof margin); memcpy(b->b, border, sizeof border);
-    memcpy(b->p, padding, sizeof padding);
-}
 /* Retain alignment qualifiers and logical start/end: the compact Align enum
  * intentionally does not encode safe/unsafe or self-start/self-end. */
 static const char *flex_alignment(const ComputedStyle *s, const char *property, int fallback, char out[64]) {
@@ -56,18 +39,24 @@ static float flex_cross_offset(const char *value, bool reverse, bool normal_reve
     if (safe && free_space < 0) fraction = reverse ? 1 : 0;
     return free_space * fraction;
 }
-static float flex_cross_stretch_size(const Box *c, bool row, float available, float reference) {
+static float flex_cross_stretch_size(Layout *L, Box *c, bool row, float available, float reference) {
     const ComputedStyle *s = c->st;
     float bp = row ? vbp(c) : hbp(c), extra = s->box_sizing == BOX_BORDER ? 0 : bp;
     Length lo = row ? s->min_height : s->min_width, hi = row ? s->max_height : s->max_width;
-    float size = LMAX(bp, available);
+    float size = LMAX(bp, available), mn = 0, mx = 0;
+    bool ilo = !row && !s->writing_mode && intrinsic_width_keyword(lo);
+    bool ihi = !row && !s->writing_mode && intrinsic_width_keyword(hi);
+    if (ilo || ihi) intrinsic_content_width(L, c, reference, &mn, &mx);
     if (len_def(hi, reference)) size = LMIN(size, LMAX(bp, res(hi, reference) + extra));
+    else if (ihi) size = LMIN(size, intrinsic_width_size(hi, mn, mx, available));
     if (len_def(lo, reference)) size = LMAX(size, res(lo, reference) + extra);
+    else if (ilo) size = LMAX(size, intrinsic_width_size(lo, mn, mx, available));
     return size;
 }
 float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
     bool row = s->flex_direction <= FD_ROW_REVERSE, rev = s->flex_direction == FD_ROW_REVERSE || s->flex_direction == FD_COLUMN_REVERSE;
+    if (row && !s->writing_mode && s->direction) rev = !rev;
     float mgap = row ? s->column_gap : s->row_gap, cgap = row ? s->row_gap : s->column_gap;
     if (row && s->column_gap_l.pct) mgap = res(s->column_gap_l, cw);
     VEC(FItem) it = {0}; int idx = 0;
@@ -86,7 +75,7 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         float bp = row ? hbp(c) : vbp(c); bool bs = cs->box_sizing == BOX_BORDER;
         Length fb = cs->flex_basis, sz = row ? cs->width : cs->height;
         float mn, mx;
-        if (row && fb.kind == LK_CONTENT) flex_content_width(L, c, &mn, &mx);
+        if (row && fb.kind == LK_CONTENT) intrinsic_content_width(L, c, -1, &mn, &mx);
         else intrinsic(L, c, &mn, &mx);
         float content_h = -1;
         if (len_def(fb, mainsz) && !(fb.pctu && mainsz < 0)) f->base = res(fb, mainsz) + (bs ? 0 : bp);
@@ -105,14 +94,20 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
             f->base = content_h = c->h;
         }
         Length mnl = row ? cs->min_width : cs->min_height, mxl = row ? cs->max_width : cs->max_height;
+        bool ilo = row && !cs->writing_mode && intrinsic_width_keyword(mnl);
+        bool ihi = row && !cs->writing_mode && intrinsic_width_keyword(mxl);
+        float imn = mn, imx = mx, available = mainsz - f->mm0 - f->mm1;
+        if (ilo || ihi) intrinsic_content_width(L, c, cw, &imn, &imx);
         if (mnl.kind == LK_LEN) f->mn = res(mnl, mainsz) + (bs ? 0 : bp);
-        else if (row && cs->overflow_x == OV_VISIBLE) f->mn = LMIN(mn, len_def(sz, mainsz) && sz.kind == LK_LEN ? res(sz, mainsz) + (bs ? 0 : bp) : mn);
+        else if (ilo) f->mn = intrinsic_width_size(mnl, imn, imx, available);
+        else if (row && cs->overflow_x == OV_VISIBLE) f->mn = LMIN(imn, len_def(sz, mainsz) && sz.kind == LK_LEN ? res(sz, mainsz) + (bs ? 0 : bp) : imn);
         else if (!row && cs->overflow_y == OV_VISIBLE) {
             if (content_h < 0) { float w = (cs->width.kind == LK_LEN) ? 0 : cw - c->m[1] - c->m[3]; layout_box(L, c, cx + c->m[3], cy, cw, -1, NULL, cs->width.kind == LK_LEN ? SZ_FILL : SZ_FORCED, w, -1); content_h = c->h; }
             f->mn = len_def(sz, mainsz) && sz.kind == LK_LEN ? LMIN(content_h, res(sz, mainsz) + (bs ? 0 : bp)) : content_h;
         }
         else f->mn = bp;
-        f->mx = mxl.kind == LK_LEN && len_def(mxl, mainsz) ? res(mxl, mainsz) + (bs ? 0 : bp) : 1e30f;
+        f->mx = mxl.kind == LK_LEN && len_def(mxl, mainsz) ? res(mxl, mainsz) + (bs ? 0 : bp) :
+                ihi ? intrinsic_width_size(mxl, imn, imx, available) : 1e30f;
         if (f->mx < f->mn) f->mx = f->mn;
         f->hypo = LCLAMP(f->base, f->mn, f->mx);
     }
@@ -164,14 +159,14 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
             if (row) {
                 int al = cs->align_self == AL_AUTO ? s->align_items : cs->align_self;
                 float fh = -1;
-                if ((al == AL_STRETCH || al == AL_NORMAL) && cs->height.kind == LK_AUTO && chdef >= 0 && !s->flex_wrap && cs->margin[0].kind != LK_AUTO && cs->margin[2].kind != LK_AUTO) fh = flex_cross_stretch_size(c, true, chdef - c->m[0] - c->m[2], chdef);
+                if ((al == AL_STRETCH || al == AL_NORMAL) && cs->height.kind == LK_AUTO && chdef >= 0 && !s->flex_wrap && cs->margin[0].kind != LK_AUTO && cs->margin[2].kind != LK_AUTO) fh = flex_cross_stretch_size(L, c, true, chdef - c->m[0] - c->m[2], chdef);
                 layout_box(L, c, cx + mpos, cy + c->m[0], cw, chdef, NULL, SZ_FORCED, f->main, fh);
                 f->cross = c->h + c->m[0] + c->m[2];
             } else {
                 int al = cs->align_self == AL_AUTO ? s->align_items : cs->align_self;
                 bool stretch = !s->flex_wrap && (al == AL_STRETCH || al == AL_NORMAL) && cs->width.kind == LK_AUTO && cs->margin[1].kind != LK_AUTO && cs->margin[3].kind != LK_AUTO;
                 float w = cw - c->m[1] - c->m[3];
-                if (stretch) w = flex_cross_stretch_size(c, false, w, cw);
+                if (stretch) w = flex_cross_stretch_size(L, c, false, w, cw);
                 layout_box(L, c, cx + c->m[3], cy + mpos, cw, chdef >= 0 ? chdef : -1, NULL, stretch ? SZ_FORCED : SZ_SHRINK, w, f->main);
                 f->cross = c->w + c->m[1] + c->m[3];
             }
@@ -222,7 +217,7 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
             bool auto_low = cs->margin[low].kind == LK_AUTO, auto_high = cs->margin[high].kind == LK_AUTO;
             bool stretch = !strcmp(align, "normal") || !strcmp(align, "stretch");
             if (stretch && !auto_low && !auto_high && (row ? cs->height : cs->width).kind == LK_AUTO) {
-                float size = flex_cross_stretch_size(c, row, linecross - c->m[low] - c->m[high], crossdef);
+                float size = flex_cross_stretch_size(L, c, row, linecross - c->m[low] - c->m[high], crossdef);
                 /* Equal dimensions can still become definite for percentage
                  * descendants. The initial nowrap pass already establishes
                  * this when its cross size was forced; other lines must redo

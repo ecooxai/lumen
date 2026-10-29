@@ -1,0 +1,3306 @@
+{
+  "schema_version": 1,
+  "candidate": 200,
+  "source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+  "binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+  "manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f",
+  "identity": "case path/variant + assertion name + duplicate occurrence index",
+  "comparisons": {
+    "176": {
+      "counts": {
+        "semantic_gains": 251,
+        "semantic_losses": 0,
+        "completion_changes": 0,
+        "missing_or_added": 0,
+        "case_gains": 23,
+        "case_losses": 0,
+        "case_status_changes": 0
+      },
+      "gain_categories": {
+        "css-sizing": 20,
+        "css-values": 60,
+        "fetch-headers": 2,
+        "fetch-request": 16,
+        "fetch-response": 14,
+        "forms-constraints": 128,
+        "xhr": 11
+      },
+      "loss_categories": {},
+      "changes": {
+        "semantic_gains": [
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 10",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 11",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 12",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 13",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 14",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 15",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 16",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 17",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 18",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 19",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 20",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 21",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 22",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 23",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 24",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 25",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 26",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 27",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/min-width-min-content-contribution.html",
+            "category": "css-sizing",
+            "name": "used width, min-width: min-content; max-width: 50px \u2014 no width, for comparison: min-width floors above the 50px maximum",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/min-width-min-content-contribution.html",
+            "category": "css-sizing",
+            "name": "used width, width: 200px; min-width: min-content; max-width: 50px \u2014 the 200px must not be read as the min-content size",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max( ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max())\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(, 1deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(,))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0%))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0Hz))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0dpi))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0fr))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0px))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0s))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1dag))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg * ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg + ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg - ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg / ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg 2deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, , 2deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0%))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0Hz))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0dpi))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0fr))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0px))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0s))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min( ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min())\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(, 1deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(,))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0%))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0Hz))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0dpi))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0fr))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0px))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0s))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1dag))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg * ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg + ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg - ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg / ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg 2deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, , 2deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0%))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0Hz))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0dpi))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0fr))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0px))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0s))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-length-percent-computed.html",
+            "category": "css-values",
+            "name": "calc(max(1em, 15%) * 2) should be used-value-equivalent to 120px",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-length-percent-computed.html",
+            "category": "css-values",
+            "name": "calc(max(1em, 15%) + 10px) should be used-value-equivalent to 70px",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-length-percent-computed.html",
+            "category": "css-values",
+            "name": "calc(max(1em, 15%) - 10px) should be used-value-equivalent to 50px",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-length-percent-computed.html",
+            "category": "css-values",
+            "name": "calc(max(1em, 15%) / 2) should be used-value-equivalent to 30px",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-length-percent-computed.html",
+            "category": "css-values",
+            "name": "max(1em, 10%) should be used-value-equivalent to 40px",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-length-percent-computed.html",
+            "category": "css-values",
+            "name": "max(20px, 10%) should be used-value-equivalent to 40px",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-length-percent-computed.html",
+            "category": "css-values",
+            "name": "min(1em, 10%) should be used-value-equivalent to 10px; width=100px",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-length-percent-computed.html",
+            "category": "css-values",
+            "name": "min(20px, 10%) should be used-value-equivalent to 10px; width=100px",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/headers/header-values-last-event-id.any.html",
+            "category": "fetch-headers",
+            "name": "fetch() sends the bytes of a non-ASCII Last-Event-ID header value unchanged",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/headers/headers-basic.any.html",
+            "category": "fetch-headers",
+            "name": "Create headers with existing headers with custom iterator",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-force-cache.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for stale responses with Etag and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-force-cache.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for stale responses with Last-Modified and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-no-store.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"no-store\" mode does not store the response in the cache with Etag and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-no-store.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"no-store\" mode does not store the response in the cache with Last-Modified and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") does not follow redirects across origins and rejects with Etag and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") does not follow redirects across origins and rejects with Etag and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") does not follow redirects across origins and rejects with Last-Modified and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") does not follow redirects across origins and rejects with Last-Modified and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Etag and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Etag and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Last-Modified and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Last-Modified and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for stale responses with Etag and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for stale responses with Last-Modified and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and does not go to the network if a cached response is not found with Etag and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and does not go to the network if a cached response is not found with Last-Modified and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (ArrayBufferchunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (BigInt64Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (BigUint64Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (DataViewchunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Float16Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Float32Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Float64Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Int16Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Int32Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Int8Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Uint16Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Uint32Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Uint8Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Uint8ClampedArraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-customError.html",
+            "category": "forms-constraints",
+            "name": "[button]  The validity.customError must be true if the custom validity error message is not empty",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-customError.html",
+            "category": "forms-constraints",
+            "name": "[input]  The validity.customError must be true if the custom validity error message is not empty",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-customError.html",
+            "category": "forms-constraints",
+            "name": "[select]  The validity.customError must be true if the custom validity error message is not empty",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-customError.html",
+            "category": "forms-constraints",
+            "name": "[textarea]  The validity.customError must be true if the custom validity error message is not empty",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] Commas should be stripped from regex input, if multiple is present",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The pattern attribute tries to escape a group",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The pattern attribute tries to escape a group, if multiple is present",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The value attribute mismatches JavaScript-specific regular expression",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The value attribute mismatches JavaScript-specific regular expression, if multiple is present",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The value attribute mismatches the pattern attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The value attribute mismatches the pattern attribute even when a subset matches",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The value attribute mismatches the pattern attribute even when a subset matches, if multiple is present",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The value attribute mismatches the pattern attribute, if multiple is present",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in PASSWORD status] The pattern attribute tries to escape a group",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in PASSWORD status] The value attribute mismatches JavaScript-specific regular expression",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in PASSWORD status] The value attribute mismatches the pattern attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in PASSWORD status] The value attribute mismatches the pattern attribute even when a subset matches",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in SEARCH status] The pattern attribute tries to escape a group",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in SEARCH status] The value attribute mismatches JavaScript-specific regular expression",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in SEARCH status] The value attribute mismatches the pattern attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in SEARCH status] The value attribute mismatches the pattern attribute even when a subset matches",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TEL status] The pattern attribute tries to escape a group",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TEL status] The value attribute mismatches JavaScript-specific regular expression",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TEL status] The value attribute mismatches the pattern attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TEL status] The value attribute mismatches the pattern attribute even when a subset matches",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TEXT status] The pattern attribute tries to escape a group",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TEXT status] The value attribute mismatches JavaScript-specific regular expression",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TEXT status] The value attribute mismatches the pattern attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TEXT status] The value attribute mismatches the pattern attribute even when a subset matches",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in URL status] The pattern attribute tries to escape a group",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in URL status] The value attribute mismatches JavaScript-specific regular expression",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in URL status] The value attribute mismatches the pattern attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in URL status] The value attribute mismatches the pattern attribute even when a subset matches",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in MONTH status] The value attribute is greater than max attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in MONTH status] The value attribute is greater than max attribute(Year is 10000 should be valid)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in WEEK status] The value attribute is greater than max attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in WEEK status] The value attribute is greater than max attribute(Year is 10000 should be valid)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATE status] The value attribute is greater than max attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATE status] The value attribute is greater than max attribute(Year is 10000 should be valid)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value is greater than max",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value is greater than max(Year is 10000 should be valid)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value is greater than max(with millisecond in 1 digit)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value is greater than max(with millisecond in 2 digits)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value is greater than max(with millisecond in 3 digits)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] The value is greater than max(floating number)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] The value is greater than max(integer)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] The value is greater than max(scientific notation)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] The value is greater than max(special floating number)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The time is outside the accepted range for reversed range",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The time missing second part is valid",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The value attribute is greater than max attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The value is greater than max(with millisecond in 1 digit)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The value is greater than max(with millisecond in 2 digit)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The value is greater than max(with millisecond in 3 digit)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in MONTH status] The value attribute is less than min attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in MONTH status] The value attribute is less than min attribute(Year is 10000 should be valid)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in WEEK status] The value attribute is less than min attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in WEEK status] The value attribute is less than min attribute(Year is 10000 should be valid)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATE status] The value attribute is less than min attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATE status] The value attribute is less than min attribute(Year is 10000 should be valid)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value is less than min",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value is less than min(Year is 10000 should be valid)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value is less than min(with millisecond in 1 digit)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value is less than min(with millisecond in 2 digits)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value is less than min(with millisecond in 3 digits)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] The value is less than min(floating number)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] The value is less than min(integer)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] The value is less than min(scientific notation)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] The value is less than min(special floating number)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The time is outside the accepted range for reversed range",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The time missing second part is valid",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The value attribute is less than min attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The value is less than min(with millisecond in 1 digit)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The value is less than min(with millisecond in 2 digit)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The value is less than min(with millisecond in 3 digit)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATE status] The value must mismatch the step",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] The value must mismatch the step",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in MONTH status] The value must mismatch the step",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] Step mismatch when step is a very small floating number and value is not its integral multiple",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] The step attribute is not set and the value attribute is a floating number",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] The value must mismatch the step",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] The value must mismatch the step",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in WEEK status] The value must mismatch the step",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-typeMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The value contains invalid separator",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-typeMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The value contains multiple email addresses",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-typeMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] The value is not an email address",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-typeMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in URL status] The value is not an url",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in MONTH status] validity.valid must be false if validity.rangeOverflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in MONTH status] validity.valid must be false if validity.rangeUnderflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in MONTH status] validity.valid must be false if validity.stepMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in WEEK status] validity.valid must be false if validity.rangeOverflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in WEEK status] validity.valid must be false if validity.rangeUnderflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid-weekmonth.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in WEEK status] validity.valid must be false if validity.stepMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in CHECKBOX status] validity.valid must be false if validity.valueMissing is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATE status] validity.valid must be false if validity.rangeOverflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATE status] validity.valid must be false if validity.rangeUnderflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATE status] validity.valid must be false if validity.stepMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] validity.valid must be false if validity.rangeOverflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] validity.valid must be false if validity.rangeUnderflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in DATETIME-LOCAL status] validity.valid must be false if validity.stepMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] validity.valid must be false if validity.patternMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in EMAIL status] validity.valid must be false if validity.typeMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in FILE status] validity.valid must be false if validity.valueMissing is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] validity.valid must be false if validity.rangeOverflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] validity.valid must be false if validity.rangeUnderflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] validity.valid must be false if validity.stepMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in PASSWORD status] validity.valid must be false if validity.patternMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in RADIO status] validity.valid must be false if validity.valueMissing is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in SEARCH status] validity.valid must be false if validity.patternMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TEL status] validity.valid must be false if validity.patternMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TEXT status] validity.valid must be false if validity.patternMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] validity.valid must be false if validity.rangeOverflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] validity.valid must be false if validity.rangeUnderflow is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in TIME status] validity.valid must be false if validity.stepMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in URL status] validity.valid must be false if validity.patternMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in URL status] validity.valid must be false if validity.typeMismatch is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "name": "[select]  validity.valid must be false if validity.valueMissing is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valueMissing.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in CHECKBOX status] The checked attribute is false",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valueMissing.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in FILE status] The Files attribute is null",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valueMissing.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in RADIO status] The checked attribute is false",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valueMissing.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in RADIO status] The checked attribute is false and the name attribute is empty",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valueMissing.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in RADIO status] The checked attribute is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valueMissing.html",
+            "category": "forms-constraints",
+            "name": "[select]  Selected the option with value equals to empty",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-willValidate.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in COLOR status] Must be barred from the constraint validation if it is readonly",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-willValidate.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in FILE status] Must be barred from the constraint validation if it is readonly",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-willValidate.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in SUBMIT status] Must be barred from the constraint validation if it is readonly",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/input-maxlength-emoji.html",
+            "category": "forms-constraints",
+            "name": "Emoji gets truncated due to maxlength attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/radio-valueMissing.html",
+            "category": "forms-constraints",
+            "name": "One of the radios is required and disabled, but none checked",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/getresponseheader-special-characters.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: getResponseHeader() funny characters",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyz)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Authorization)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Content-Transfer-Encoding)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Content-Type)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (If)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Overwrite)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Pragma)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Status-URI)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (User-Agent)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (X-Pink-Unicorn)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          }
+        ],
+        "semantic_losses": [],
+        "completion_changes": [],
+        "missing_or_added": [],
+        "case_gains": [
+          {
+            "url": "/xhr/getresponseheader-special-characters.htm",
+            "category": "xhr",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/headers/headers-basic.any.html",
+            "category": "fetch-headers",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow-weekmonth.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/headers/header-values-last-event-id.any.html",
+            "category": "fetch-headers",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-typeMismatch.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/radio-valueMissing.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow-weekmonth.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-no-store.any.html",
+            "category": "fetch-request",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valueMissing.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/input-maxlength-emoji.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-patternMismatch.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-willValidate.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeOverflow.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid-weekmonth.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-customError.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-force-cache.any.html",
+            "category": "fetch-request",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-rangeUnderflow.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valid.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          }
+        ],
+        "case_losses": [],
+        "case_status_changes": []
+      }
+    },
+    "187": {
+      "counts": {
+        "semantic_gains": 118,
+        "semantic_losses": 0,
+        "completion_changes": 0,
+        "missing_or_added": 0,
+        "case_gains": 12,
+        "case_losses": 0,
+        "case_status_changes": 0
+      },
+      "gain_categories": {
+        "css-sizing": 20,
+        "css-values": 52,
+        "fetch-headers": 2,
+        "fetch-request": 16,
+        "fetch-response": 14,
+        "forms-constraints": 3,
+        "xhr": 11
+      },
+      "loss_categories": {},
+      "changes": {
+        "semantic_gains": [
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 10",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 11",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 12",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 13",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 14",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 15",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 16",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 17",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 18",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 19",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 20",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 21",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 22",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 23",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 24",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 25",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 26",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/keyword-sizes-on-flex-item-002.html",
+            "category": "css-sizing",
+            "name": ".test 27",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/min-width-min-content-contribution.html",
+            "category": "css-sizing",
+            "name": "used width, min-width: min-content; max-width: 50px \u2014 no width, for comparison: min-width floors above the 50px maximum",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-sizing/min-width-min-content-contribution.html",
+            "category": "css-sizing",
+            "name": "used width, width: 200px; min-width: min-content; max-width: 50px \u2014 the 200px must not be read as the min-content size",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max( ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max())\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(, 1deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(,))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0%))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0Hz))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0dpi))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0fr))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0px))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(0s))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1dag))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg * ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg + ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg - ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg / ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg 2deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, , 2deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0%))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0Hz))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0dpi))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0fr))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0px))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(max(1deg, 0s))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min( ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min())\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(, 1deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(,))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0%))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0Hz))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0dpi))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0fr))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0px))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(0s))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1dag))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg * ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg + ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg - ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg / ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg 2deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, ))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, , 2deg))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0%))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0Hz))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0dpi))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0fr))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0px))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "name": "e.style['transform'] = \"rotate(min(1deg, 0s))\" should not set the property value",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/headers/header-values-last-event-id.any.html",
+            "category": "fetch-headers",
+            "name": "fetch() sends the bytes of a non-ASCII Last-Event-ID header value unchanged",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/headers/headers-basic.any.html",
+            "category": "fetch-headers",
+            "name": "Create headers with existing headers with custom iterator",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-force-cache.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for stale responses with Etag and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-force-cache.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"force-cache\" mode checks the cache for previously cached content and avoid revalidation for stale responses with Last-Modified and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-no-store.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"no-store\" mode does not store the response in the cache with Etag and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-no-store.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"no-store\" mode does not store the response in the cache with Last-Modified and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") does not follow redirects across origins and rejects with Etag and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") does not follow redirects across origins and rejects with Etag and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") does not follow redirects across origins and rejects with Last-Modified and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") does not follow redirects across origins and rejects with Last-Modified and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Etag and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Etag and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Last-Modified and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" (with \"same-origin\") uses cached same-origin redirects to same-origin content with Last-Modified and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for stale responses with Etag and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and avoids revalidation for stale responses with Last-Modified and stale response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and does not go to the network if a cached response is not found with Etag and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "name": "RequestCache \"only-if-cached\" mode checks the cache for previously cached content and does not go to the network if a cached response is not found with Last-Modified and fresh response",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (ArrayBufferchunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (BigInt64Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (BigUint64Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (DataViewchunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Float16Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Float32Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Float64Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Int16Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Int32Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Int8Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Uint16Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Uint32Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Uint8Arraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "name": "Check response clone use structureClone for teed ReadableStreams (Uint8ClampedArraychunk)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in NUMBER status] Step mismatch when step is a very small floating number and value is not its integral multiple",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valueMissing.html",
+            "category": "forms-constraints",
+            "name": "[INPUT in RADIO status] The checked attribute is true",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/input-maxlength-emoji.html",
+            "category": "forms-constraints",
+            "name": "Emoji gets truncated due to maxlength attribute",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/getresponseheader-special-characters.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: getResponseHeader() funny characters",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyz)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Authorization)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Content-Transfer-Encoding)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Content-Type)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (If)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Overwrite)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Pragma)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (Status-URI)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (User-Agent)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "name": "XMLHttpRequest: setRequestHeader() - headers that are allowed (X-Pink-Unicorn)",
+            "occurrence": 0,
+            "before": "FAIL",
+            "after": "PASS"
+          }
+        ],
+        "semantic_losses": [],
+        "completion_changes": [],
+        "missing_or_added": [],
+        "case_gains": [
+          {
+            "url": "/xhr/getresponseheader-special-characters.htm",
+            "category": "xhr",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/headers/headers-basic.any.html",
+            "category": "fetch-headers",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/headers/header-values-last-event-id.any.html",
+            "category": "fetch-headers",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-only-if-cached.any.html",
+            "category": "fetch-request",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-no-store.any.html",
+            "category": "fetch-request",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/response/response-clone.any.html",
+            "category": "fetch-response",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-valueMissing.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/xhr/setrequestheader-header-allowed.htm",
+            "category": "xhr",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/input-maxlength-emoji.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/css/css-values/minmax-angle-invalid.html",
+            "category": "css-values",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/fetch/api/request/request-cache-force-cache.any.html",
+            "category": "fetch-request",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          },
+          {
+            "url": "/html/semantics/forms/constraints/form-validation-validity-stepMismatch.html",
+            "category": "forms-constraints",
+            "before_full": false,
+            "after_full": true,
+            "before_classification": "harness-ok",
+            "after_classification": "harness-ok"
+          }
+        ],
+        "case_losses": [],
+        "case_status_changes": []
+      }
+    }
+  }
+}

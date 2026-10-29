@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>Independent request header conversion and iteration controls</title><body><script>
+function emit(v){const s=JSON.stringify(v);let n=0;for(let i=0;i<s.length;i+=256)console.log('LUMEN_AUTHORED_CHUNK '+(n++)+' '+JSON.stringify(s.slice(i,i+256)));console.log('LUMEN_AUTHORED_DONE '+n);console.log('RESULTS HEADER_ORDER_OBSERVATIONS:PASS')}
+setTimeout(function(){const rows=[];
+const variants=['valid','empty','syntax-name','syntax-value','high-name-value-object','name-object-high-value','name-symbol','value-symbol','name-object','value-object','name-throws','value-throws','forbidden'];
+for(const state of ['closed','opened','sent'])for(const kind of variants){const xhr=new XMLHttpRequest(),log=[];let name='X-QA-Header',value='ascii',exception='',completed=false;
+const obj=(label,result,throws)=>({toString(){log.push(label);if(throws)throw new RangeError('QA coercion sentinel');return result}});
+if(kind==='empty')value='';if(kind==='syntax-name')name='Bad Name';if(kind==='syntax-value')value='line\r\nbreak';
+if(kind==='high-name-value-object'){name='X-\u0100';value=obj('value','ok',false)}if(kind==='name-object-high-value'){name=obj('name','X-QA-Header',false);value='\u0100'}
+if(kind==='name-symbol')name=Symbol('QA name');if(kind==='value-symbol')value=Symbol('QA value');
+if(kind==='name-object')name=obj('name','X-QA-Header',false);if(kind==='value-object')value=obj('value','ok',false);
+if(kind==='name-throws'){name=obj('name','',true);value=obj('value','ok',false)}if(kind==='value-throws'){name=obj('name','X-QA-Header',false);value=obj('value','',true)}
+if(kind==='forbidden')name='Host';
+if(state!=='closed')xhr.open('GET',location.href,true);if(state==='sent')xhr.send(null);
+try{xhr.setRequestHeader(name,value);completed=true}catch(e){exception=e.name}
+rows.push({name:'xhr/'+state+'/'+kind,values:{exception,completed,coercionOrder:log.join('|'),readyState:xhr.readyState,argumentKind:kind}});try{xhr.abort()}catch(e){}
+}
+for(const kind of ['default-copy','custom-iterator','throwing-iterator','symbol-value','bad-pair','null-iterator','poison-entries','array-symbol']){let source=new Headers([['X-Original','one']]),copy,exception='',gets=0,calls=0;
+if(['custom-iterator','throwing-iterator','symbol-value','bad-pair','null-iterator'].includes(kind))Object.defineProperty(source,Symbol.iterator,{get(){gets++;if(kind==='null-iterator')return null;return function*(){calls++;if(kind==='symbol-value'){yield ['X-QA',Symbol('QA byte')];return}if(kind==='bad-pair'){yield ['X-QA','one','extra'];return}yield ['X-Override','two'];if(kind==='throwing-iterator')throw new RangeError('QA iterator sentinel')}}});
+if(kind==='poison-entries')source.entries=()=>{throw new RangeError('entries must not be called')};
+try{copy=new Headers(kind==='array-symbol'?[['X-QA',Symbol('QA byte')]]:source)}catch(e){exception=e.name}
+if(kind==='default-copy')source.set('X-Original','changed');
+rows.push({name:'headers/'+kind,values:{exception,entries:copy?Array.from(copy.entries()):[],iteratorGets:gets,iteratorCalls:calls,sourceValue:source.get('x-original')}})
+}
+emit({rows,total:rows.length*5});
+},0);
+</script></body>

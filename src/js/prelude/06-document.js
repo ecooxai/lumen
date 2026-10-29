@@ -201,12 +201,8 @@ methods(Document.prototype, {
             return true;
         }
         if (!ed(t) && ae && ed(ae)) t = ae;
-        if (!ed(t) && cmd === 'inserttext' && ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) {
-            const str = String(val ?? '');
-            if (ae.setRangeText) ae.setRangeText(str, ae.selectionStart, ae.selectionEnd, 'end'); else ae.value += str;
-            ae.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: str, bubbles: true }));
-            return true;
-        }
+        if (!ed(t) && (cmd === 'inserttext' || cmd === 'inserthtml') && ae && (isHtmlEl(ae, 'input') || isHtmlEl(ae, 'textarea')))
+            return this === document && execControlInsert(ae, cmd, val);
         if (this !== document) return false;
         const E = editing();
         val = val === undefined ? '' : `${val}`;
@@ -250,6 +246,59 @@ methods(Document.prototype, {
 /* a document script opened (document.open(), or a write once it has loaded): the markup written so far, parsed
    when it is closed. A write that opened it implicitly closes it in a later task if the script does not. */
 const docOpened = new WeakMap(), designModes = new WeakMap();
+/* Text-control commands use the existing selection splice, not the contenteditable engine.
+   maxlength limits UTF-16 code units; a truncation must not create half a surrogate pair. */
+function execControlInsert(el, cmd, value) {
+    const multiline = isHtmlEl(el, 'textarea');
+    if (!multiline && !SEL_TYPES.test(inType(el))) return false;
+    if (ctlDisabled(el) || N.attr(el, 'readonly') != null) return false;
+    let text = cmd === 'inserthtml' ? execControlHTMLText(value, multiline) : (value === undefined ? '' : `${value}`);
+    text = text.replace(/\r\n?/g, '\n');
+    if (!multiline) text = text.replace(/\n/g, ' ');
+    const before = el.value, [start, end] = selGet(el), max = el.maxLength;
+    if (Number.isFinite(max) && max >= 0) {
+        let take = Math.min(text.length, Math.max(0, max - (before.length - (end - start))));
+        if (take && take < text.length && /[\uD800-\uDBFF]/.test(text[take - 1]) && /[\uDC00-\uDFFF]/.test(text[take])) take--;
+        text = text.slice(0, take);
+    }
+    if (!text && start === end) return true;
+    textSelection.setRangeText.call(el, text, start, end, 'end');
+    const caret = Math.min(start + text.length, el.value.length);
+    selSet(el, caret, caret, 'forward', true);
+    const htmlArea = multiline && cmd === 'inserthtml';
+    dispatch(el, new InputEvent('input', { inputType: htmlArea ? '' : 'insertText', data: htmlArea ? null : text, bubbles: true, composed: true }), true);
+    return true;
+}
+/* A detached fragment is never inserted into the live document. parseFrag marks scripts
+   started. Single-line controls retain inert text; textarea insertion keeps ordinary
+   block/line boundaries. Full CSS-dependent rich-paste layout is outside this path. */
+function execControlHTMLText(html, multiline) {
+    const fragment = N.parseFrag(N.create('div', 0), html);
+    let text = '', pending = 0;
+    const flush = () => { if (text && pending) text += '\n'.repeat(pending); pending = 0; };
+    const blocks = /^(address|article|aside|blockquote|dd|div|dl|dt|fieldset|figcaption|figure|footer|form|h[1-6]|header|hgroup|hr|li|main|nav|ol|p|pre|section|table|ul)$/;
+    const walk = parent => {
+        for (let node = N.first(parent); node; node = N.next(node)) {
+            const type = N.type(node);
+            if (type === 3 || type === 4) { const data = N.text(node); if (data) { flush(); text += data; } continue; }
+            if (type !== 1) continue;
+            const tag = N.ns(node) === 0 ? N.name(node) : '';
+            if (tag === 'template') continue;
+            if (multiline && (tag === 'script' || tag === 'style' || N.attr(node, 'hidden') != null)) continue;
+            if (multiline) {
+                const display = parseDecls(N.attr(node, 'style') || '').get('display');
+                if (display && display[0].trim().toLowerCase() === 'none') continue;
+            }
+            if (tag === 'br') { flush(); text += '\n'; continue; }
+            const block = multiline && blocks.test(tag);
+            if (block) { flush(); if (text && !text.endsWith('\n')) text += '\n'; }
+            walk(node);
+            if (block) pending = Math.max(pending, tag === 'p' ? 2 : 1);
+        }
+    };
+    if (fragment) walk(fragment);
+    return text;
+}
 /* the editing commands, compiled on the document's first editing call with the prelude's own globals */
 let editEngine = null;
 function editing() {

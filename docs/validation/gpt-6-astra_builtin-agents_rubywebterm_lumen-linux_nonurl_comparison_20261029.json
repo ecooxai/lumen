@@ -1,0 +1,1777 @@
+{
+  "schema_version": 1,
+  "status": "Final candidate200 accepted and fixed640 comparison complete;98/100 whole-browser goal not achieved or certified",
+  "generated_utc": "2026-10-29T21:01:29.339326+00:00",
+  "task": "Lumen Linux non-URL-focused standards and Chromium comparison",
+  "wpt": {
+    "revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+    "fixed_manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f",
+    "variants": 640,
+    "predeclared_buckets": 24,
+    "nonempty_buckets": 23,
+    "scope": "Deterministic HTTP/window sample; generated .any and .window variants retained. Dedicated URL/navigation algorithms, tentative directories, worker-only, secure-context/serviceworker/H2, manual/visual and long-timeout tests excluded before capture. Shared form URL-type validity remains in scope."
+  },
+  "definitions": {
+    "full_case": "Harness OK, at least one reported assertion, and every reported assertion PASS. Zero-assertion cases remain visible and do not count as full passes.",
+    "assertion_identity": "case URL + assertion name + duplicate occurrence index",
+    "comparison": "Identity union, including missing assertions; no intersection-only filtering.",
+    "timeout": "Harness-reported timeout is distinguished from the unchanged15-second external per-case deadline.",
+    "readiness": "The98/100 whole-browser goal is not achieved or certified. Fixed-sample case and assertion percentages are scoped measurements; no defensible current whole-browser score is available. The dated19/100 checkpoint is not recomputed or presented as a current score."
+  },
+  "browsers": {
+    "lumen176": {
+      "source_commit": "b4d8147c7b7945f5eddc11cfc444a80dd5a9ff13",
+      "sha256": "648145f52b7c11b0a95c2c4aa99f0527879a757969998fade4de15773ce70f01"
+    },
+    "lumen187": {
+      "source_commit": "3367b5d29a95ad5e742449cdfff145ef8e3dec9b",
+      "sha256": "7733ac7bf2f35d482f410a79273900a496101c395100eae45b6a494a803ad6de"
+    },
+    "lumen194": {
+      "source_commit": "8da17b585764c0a94363a00452d45cf1afa12cb3",
+      "sha256": "fe1fb9248d40907ea1f6f5cbe4b04ebd2b646e13849b7f6adde3a134baf79a41"
+    },
+    "chromium": {
+      "version": "150.0.7871.114",
+      "elf_sha256": "2d4adea820c95eee0c24dcc5eb729043df570838b8693fa3449df15040b0460f",
+      "launcher_sha256": "d176751de81c10df1a96052f897155b2b055a8426cddd102f5a1ad102832d5d9",
+      "driver_version": "150.0.7871.114",
+      "provenance": "Live owned-process executable matched the sealed ELF. Launcher and ELF are distinct files."
+    },
+    "lumen200": {
+      "source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+      "sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927"
+    }
+  },
+  "primary640": {
+    "lumen176": {
+      "full_cases": 357,
+      "cases": 640,
+      "passed_assertions": 8073,
+      "reported_assertions": 10540,
+      "harness_ok": 616,
+      "harness_timeout": 23,
+      "harness_error": 1,
+      "external_deadline": 0
+    },
+    "lumen187": {
+      "full_cases": 368,
+      "cases": 640,
+      "passed_assertions": 8206,
+      "reported_assertions": 10540,
+      "harness_ok": 616,
+      "harness_timeout": 23,
+      "harness_error": 1,
+      "external_deadline": 0,
+      "empty_assertion_cases": 1
+    },
+    "chromium": {
+      "full_cases": 544,
+      "cases": 640,
+      "passed_assertions": 9516,
+      "reported_assertions": 10549,
+      "harness_ok": 623,
+      "harness_timeout": 13,
+      "harness_error": 1,
+      "external_deadline": 3,
+      "empty_assertion_cases": 3
+    },
+    "occurrence_union": {
+      "assertions": 10554,
+      "missing_lumen187": 14,
+      "missing_chromium": 5,
+      "chromium_pass_retained": 7632,
+      "chromium_pass_total": 9516,
+      "chromium_pass_lumen_nonpass": 1884,
+      "lumen_pass_chromium_nonpass": 574
+    },
+    "full_case_overlap": {
+      "both": 347,
+      "chromium_only": 197,
+      "lumen_only": 21,
+      "neither": 75
+    },
+    "baseline176_to187": {
+      "full_case_gain": 11,
+      "semantic_assertion_gains": 133,
+      "semantic_assertion_losses": 0,
+      "missing": 0,
+      "added": 0,
+      "harness_status_changes": 0,
+      "timeout_or_notrun_changes": 0,
+      "gain_categories": {
+        "forms": 125,
+        "css_values": 8
+      }
+    },
+    "completed_utc": {
+      "lumen176": "2026-10-29T19:32:53.832955Z",
+      "lumen187": "2026-10-29T19:03:15Z",
+      "chromium": "2026-10-29T19:01:46Z",
+      "lumen200": "2026-10-29T20:54:49Z"
+    },
+    "lumen200": {
+      "full_cases": 380,
+      "cases": 640,
+      "passed_assertions": 8324,
+      "reported_assertions": 10540,
+      "full_case_percent": 59.375,
+      "assertion_pass_percent": 78.97533206831119,
+      "harness_ok": 616,
+      "harness_timeout": 23,
+      "harness_error": 1,
+      "external_deadline": 0,
+      "empty_assertion_cases": 1
+    }
+  },
+  "lifecycle": {
+    "primary187": "All640 browser process identities were gone. Original daemon cleanup race produced638/640 native exit receipts and left2 inactive task-owned profiles. Their metadata was retained and those exact profiles removed; no synthetic exit receipts were created.",
+    "baseline176": "Existing supported cleanup-joining wrapper produced640/640 actual exit receipts, removed all640 profiles, and left no owned processes or cleanup workers.",
+    "chromium": "All640 profiles removed,640 driver Quit responses, and all4250 sampled owned process identities gone.",
+    "later_runs": "Final200:640/640 actual native exit-code-zero receipts,640 removed profiles, no remaining owned native roots or cleanup workers, both source receipts unchanged. The fixed manifest and executable hashes remained unchanged."
+  },
+  "reference_caveats": [
+    "451 of574 Lumen-only assertion passes were DOM parsing; dominant files use newer afterHTML/appendHTML APIs absent in this Chromium150 reference. These remain actual captured differences, not a claim of global superiority.",
+    "Authored form oracle has2 retained Chromium validation-message failures; Lumen later passes8127/8127 authored checks.",
+    "Chromium150 stalls on the independently isolated uncloneable Response.clone stream case.114 stable reference fields and5 separately predeclared normative error-propagation checks are reported separately.",
+    "Unchanged22-file network reference passes315/317; both remaining reference failures are retained.",
+    "Whole5-file transform-angle reference passes174/184;10 valid-transform reference failures are retained.",
+    "Network22 Chromium315/317 retains User-Agent header filtering and trailing header-whitespace combining failures; Lumen200 passes317. These two file observations do not imply global superiority."
+  ],
+  "category_chromium_pass_gaps187": {
+    "css_values": 604,
+    "css_sizing": 425,
+    "css_grid": 224,
+    "dom_parsing": 158,
+    "css_variables": 147,
+    "flexbox": 112,
+    "cssom": 32,
+    "fetch_basic": 30,
+    "fetch_response": 27,
+    "xhr": 25,
+    "selectors": 16,
+    "fetch_request": 16,
+    "encoding": 16,
+    "html_parsing": 13,
+    "dom_events": 10,
+    "dom_nodes": 7,
+    "timers": 6,
+    "forms": 5,
+    "dom_traversal": 4,
+    "event_loops": 3,
+    "collections": 2,
+    "headers": 2,
+    "ranges": 0
+  },
+  "focused_later_gates": [
+    {
+      "scope": "Forms upstream24",
+      "before": 522,
+      "before_candidate": 183,
+      "after": 647,
+      "total": 649,
+      "candidate": 200,
+      "losses": 0,
+      "note": "Two dynamic validity-selector failures remain. The maxlength emoji insertion case now passes. URL parsing algorithms were not repaired."
+    },
+    {
+      "scope": "Forms authored eligibility",
+      "after": 8127,
+      "total": 8127,
+      "candidate": 200,
+      "note": "312 authored rows; Chromium8125/8127 has two retained reversed-time validation-message reference differences."
+    },
+    {
+      "scope": "Numeric/radio authored",
+      "before": 541,
+      "before_candidate": 186,
+      "after": 572,
+      "total": 588,
+      "candidate": 200,
+      "losses": 0,
+      "holdouts": 16
+    },
+    {
+      "scope": "Numeric tolerance authored",
+      "before": 66,
+      "before_candidate": 189,
+      "after": 96,
+      "total": 96,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Response.clone authored stable reference",
+      "after": 114,
+      "total": 114,
+      "candidate": 200,
+      "note": "Independent ordinary default-stream tee identity, byte offsets, mutable public helper controls retained."
+    },
+    {
+      "scope": "Response.clone authored normative error propagation",
+      "after": 5,
+      "total": 5,
+      "candidate": 200,
+      "note": "Separate normative assertions; Chromium150's renderer stalls on the isolated function-chunk case, so these are not five Chromium-comparable passes."
+    },
+    {
+      "scope": "Network upstream22",
+      "before": 255,
+      "before_candidate": 190,
+      "after": 317,
+      "total": 317,
+      "candidate": 200,
+      "losses": 0,
+      "note": "Whole-file scope includes clone/tee, request/response headers, XHR and six cache modes. Retained Chromium reference315/317."
+    },
+    {
+      "scope": "Header neighboring upstream5",
+      "before": 9,
+      "before_candidate": 196,
+      "after": 11,
+      "total": 11,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Header/body authored bytes",
+      "after": 120,
+      "total": 120,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Header conversion/state authored",
+      "before": 188,
+      "before_candidate": 196,
+      "after": 235,
+      "total": 235,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Private cloning/public iterator authored",
+      "before": 27,
+      "before_candidate": 196,
+      "after": 42,
+      "total": 42,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Editing insertion authored",
+      "before": 718,
+      "before_candidate": 193,
+      "after": 1021,
+      "total": 1034,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Editing coercion authored",
+      "before": 96,
+      "before_candidate": 194,
+      "after": 160,
+      "total": 160,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Editing Symbol conversion authored",
+      "before": 50,
+      "before_candidate": 194,
+      "after": 64,
+      "total": 64,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "CSSOM canonical-px authored retention",
+      "after": 2447,
+      "total": 3268,
+      "candidate": 200,
+      "losses": 0,
+      "note": "All3268 observations unchanged;821 preexisting reference differences retained."
+    },
+    {
+      "scope": "CSSOM scanner authored",
+      "before": 164,
+      "before_candidate": 186,
+      "after": 196,
+      "total": 200,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "CSS quoted-string authored",
+      "before": 24,
+      "before_candidate": 183,
+      "after": 27,
+      "total": 27,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Angle parsing/computed upstream5",
+      "before": 31,
+      "before_candidate": 193,
+      "after": 89,
+      "total": 184,
+      "candidate": 200,
+      "losses": 0,
+      "note": "Chromium174/184;19 assertion-name asymmetries each side retained where names embed runtime serialization."
+    },
+    {
+      "scope": "Angle authored positives/negatives",
+      "before": 401,
+      "before_candidate": 193,
+      "after": 473,
+      "total": 832,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Table spacing authored",
+      "before": 504,
+      "before_candidate": 184,
+      "after": 960,
+      "total": 960,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Intrinsic flex keyword upstream2",
+      "before": 40,
+      "before_candidate": 194,
+      "after": 76,
+      "total": 148,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Intrinsic width/mutation authored",
+      "before": 2724,
+      "before_candidate": 194,
+      "after": 3352,
+      "total": 3528,
+      "candidate": 200,
+      "losses": 0
+    },
+    {
+      "scope": "Nested intrinsic edge preservation authored",
+      "before": 252,
+      "before_candidate": 196,
+      "after": 270,
+      "total": 672,
+      "candidate": 200,
+      "losses": 0,
+      "note": "Strict1e-5 observation tolerance retained; many existing differences involve1/64-pixel quantization or computed-percentage serialization, not established used-pixel failures."
+    },
+    {
+      "scope": "RTL atomic retention authored",
+      "before": 288,
+      "before_candidate": 197,
+      "after": 332,
+      "total": 336,
+      "candidate": 200,
+      "losses": 0,
+      "note": "Four preexisting mixed-bidi coordinate differences remain;0.02px declared tolerance."
+    },
+    {
+      "scope": "Node.removeChild upstream1",
+      "before": 27,
+      "before_candidate": 184,
+      "after": 28,
+      "total": 28,
+      "candidate": 200,
+      "losses": 0
+    }
+  ],
+  "backend": "Conformance captures use CPU/offscreen. Chromium reference software compositing/rasterization verified. Adapter enumeration alone is not a rendered-GPU proof.",
+  "limitations": [
+    "This is a preselected640-variant HTTP/window comparison, not all WPT. Unrun secure-context, worker-only, visual, long-timeout and dedicated URL/navigation categories remain outside this sample.",
+    "Authored controls, upstream assertions, native CTests and benchmark checks are distinct denominators and must not be summed into a global conformance percentage.",
+    "Shared-host contention is recorded; broad case duration is not a fair engine speed benchmark.",
+    "CPU/offscreen results do not establish hardware GPU rendering. EventSource is undefined in the checked runtime; SSE is unsupported.",
+    "Source implementation changes remained separate from frozen expectations. Rejected intermediate candidates and reference/harness failures remain in private raw evidence.",
+    "The immutable176/187 anchors and original Chromium reference are preserved; final200 has its own complete640 rows and lifecycle receipts."
+  ],
+  "final640": {
+    "status": "complete",
+    "candidate": 200,
+    "capture_started_utc": "2026-10-29T20:40:53Z",
+    "capture_finished_utc": "2026-10-29T20:54:49Z",
+    "source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+    "binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+    "comparator_sha256": "21a14db75200a1ef34721b3740160b7e907d91fd680be00e7aa997dcb140b2f3",
+    "result_file": "gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_wpt640_results.json",
+    "result_sha256": "42cb9682263f9ac73b090cb0f5253d4e161743f221cbcf16bfa7d586b66e75a2",
+    "engines": {
+      "176": {
+        "cases": 640,
+        "fully_passing_cases": 357,
+        "harness_statuses": {
+          "OK": 616,
+          "TIMEOUT": 23,
+          "ERROR": 1
+        },
+        "classifications": {
+          "harness-ok": 616,
+          "harness-timeout": 23,
+          "harness-error": 1
+        },
+        "empty_assertion_cases": 1,
+        "passing_assertions": 8073,
+        "reported_assertions": 10540,
+        "assertion_statuses": {
+          "PASS": 8073,
+          "FAIL": 2419,
+          "TIMEOUT": 21,
+          "NOTRUN": 27
+        }
+      },
+      "187": {
+        "cases": 640,
+        "fully_passing_cases": 368,
+        "harness_statuses": {
+          "OK": 616,
+          "TIMEOUT": 23,
+          "ERROR": 1
+        },
+        "classifications": {
+          "harness-ok": 616,
+          "harness-timeout": 23,
+          "harness-error": 1
+        },
+        "empty_assertion_cases": 1,
+        "passing_assertions": 8206,
+        "reported_assertions": 10540,
+        "assertion_statuses": {
+          "PASS": 8206,
+          "FAIL": 2286,
+          "TIMEOUT": 21,
+          "NOTRUN": 27
+        }
+      },
+      "chromium": {
+        "cases": 640,
+        "fully_passing_cases": 544,
+        "harness_statuses": {
+          "OK": 623,
+          "TIMEOUT": 16,
+          "ERROR": 1
+        },
+        "classifications": {
+          "harness-ok": 623,
+          "harness-timeout": 13,
+          "external-deadline": 3,
+          "harness-error": 1
+        },
+        "empty_assertion_cases": 3,
+        "passing_assertions": 9516,
+        "reported_assertions": 10549,
+        "assertion_statuses": {
+          "PASS": 9516,
+          "FAIL": 1015,
+          "NOTRUN": 7,
+          "TIMEOUT": 11
+        }
+      },
+      "candidate": {
+        "cases": 640,
+        "fully_passing_cases": 380,
+        "harness_statuses": {
+          "OK": 616,
+          "TIMEOUT": 23,
+          "ERROR": 1
+        },
+        "classifications": {
+          "harness-ok": 616,
+          "harness-timeout": 23,
+          "harness-error": 1
+        },
+        "empty_assertion_cases": 1,
+        "passing_assertions": 8324,
+        "reported_assertions": 10540,
+        "assertion_statuses": {
+          "PASS": 8324,
+          "FAIL": 2168,
+          "TIMEOUT": 21,
+          "NOTRUN": 27
+        }
+      }
+    },
+    "deltas": {
+      "176": {
+        "counts": {
+          "semantic_gains": 251,
+          "semantic_losses": 0,
+          "completion_changes": 0,
+          "missing_or_added": 0,
+          "case_gains": 23,
+          "case_losses": 0,
+          "case_status_changes": 0
+        },
+        "gain_categories": {
+          "css-sizing": 20,
+          "css-values": 60,
+          "fetch-headers": 2,
+          "fetch-request": 16,
+          "fetch-response": 14,
+          "forms-constraints": 128,
+          "xhr": 11
+        },
+        "loss_categories": {}
+      },
+      "187": {
+        "counts": {
+          "semantic_gains": 118,
+          "semantic_losses": 0,
+          "completion_changes": 0,
+          "missing_or_added": 0,
+          "case_gains": 12,
+          "case_losses": 0,
+          "case_status_changes": 0
+        },
+        "gain_categories": {
+          "css-sizing": 20,
+          "css-values": 52,
+          "fetch-headers": 2,
+          "fetch-request": 16,
+          "fetch-response": 14,
+          "forms-constraints": 3,
+          "xhr": 11
+        },
+        "loss_categories": {}
+      }
+    },
+    "reference_comparison": {
+      "union_assertions": 10554,
+      "chromium_pass_retained": 7749,
+      "chromium_pass_total": 9516,
+      "chromium_pass_gap": 1767,
+      "candidate_only_pass": 575,
+      "missing_candidate": 14,
+      "missing_chromium": 5,
+      "full_case_overlap": {
+        "both": 358,
+        "chromium_only": 186,
+        "neither": 74,
+        "candidate_only": 22
+      }
+    },
+    "category_matrix": {
+      "dom-nodes": {
+        "cases": 35,
+        "candidate_full": 27,
+        "chromium_full": 33,
+        "candidate_pass": 270,
+        "candidate_total": 280,
+        "chromium_pass": 277,
+        "chromium_total": 280,
+        "chromium_pass_gap": 7,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "dom-events": {
+        "cases": 35,
+        "candidate_full": 18,
+        "chromium_full": 19,
+        "candidate_pass": 196,
+        "candidate_total": 224,
+        "chromium_pass": 202,
+        "chromium_total": 224,
+        "chromium_pass_gap": 10,
+        "candidate_only_pass": 4,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "dom-ranges": {
+        "cases": 16,
+        "candidate_full": 16,
+        "chromium_full": 16,
+        "candidate_pass": 174,
+        "candidate_total": 174,
+        "chromium_pass": 174,
+        "chromium_total": 174,
+        "chromium_pass_gap": 0,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "dom-traversal": {
+        "cases": 15,
+        "candidate_full": 12,
+        "chromium_full": 14,
+        "candidate_pass": 51,
+        "candidate_total": 56,
+        "chromium_pass": 55,
+        "chromium_total": 56,
+        "chromium_pass_gap": 4,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "dom-collections": {
+        "cases": 12,
+        "candidate_full": 10,
+        "chromium_full": 11,
+        "candidate_pass": 57,
+        "candidate_total": 60,
+        "chromium_pass": 59,
+        "chromium_total": 60,
+        "chromium_pass_gap": 2,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "dom-attributes": {
+        "cases": 0,
+        "candidate_full": 0,
+        "chromium_full": 0,
+        "candidate_pass": 0,
+        "candidate_total": 0,
+        "chromium_pass": 0,
+        "chromium_total": 0,
+        "chromium_pass_gap": 0,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "css-values": {
+        "cases": 35,
+        "candidate_full": 9,
+        "chromium_full": 31,
+        "candidate_pass": 1173,
+        "candidate_total": 1778,
+        "chromium_pass": 1725,
+        "chromium_total": 1778,
+        "chromium_pass_gap": 552,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "css-sizing": {
+        "cases": 35,
+        "candidate_full": 7,
+        "chromium_full": 33,
+        "candidate_pass": 307,
+        "candidate_total": 717,
+        "chromium_pass": 712,
+        "chromium_total": 717,
+        "chromium_pass_gap": 405,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "css-grid": {
+        "cases": 35,
+        "candidate_full": 8,
+        "chromium_full": 28,
+        "candidate_pass": 462,
+        "candidate_total": 721,
+        "chromium_pass": 686,
+        "chromium_total": 721,
+        "chromium_pass_gap": 224,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "css-flexbox": {
+        "cases": 35,
+        "candidate_full": 17,
+        "chromium_full": 35,
+        "candidate_pass": 456,
+        "candidate_total": 568,
+        "chromium_pass": 568,
+        "chromium_total": 568,
+        "chromium_pass_gap": 112,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "css-selectors": {
+        "cases": 34,
+        "candidate_full": 20,
+        "chromium_full": 24,
+        "candidate_pass": 332,
+        "candidate_total": 375,
+        "chromium_pass": 347,
+        "chromium_total": 375,
+        "chromium_pass_gap": 16,
+        "candidate_only_pass": 1,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "css-variables": {
+        "cases": 34,
+        "candidate_full": 8,
+        "chromium_full": 30,
+        "candidate_pass": 138,
+        "candidate_total": 299,
+        "chromium_pass": 267,
+        "chromium_total": 299,
+        "chromium_pass_gap": 147,
+        "candidate_only_pass": 18,
+        "missing_candidate": 2,
+        "missing_chromium": 2
+      },
+      "forms-constraints": {
+        "cases": 27,
+        "candidate_full": 24,
+        "chromium_full": 26,
+        "candidate_pass": 785,
+        "candidate_total": 790,
+        "chromium_pass": 787,
+        "chromium_total": 790,
+        "chromium_pass_gap": 2,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "html-parsing": {
+        "cases": 34,
+        "candidate_full": 20,
+        "chromium_full": 25,
+        "candidate_pass": 105,
+        "candidate_total": 127,
+        "chromium_pass": 114,
+        "chromium_total": 124,
+        "chromium_pass_gap": 13,
+        "candidate_only_pass": 4,
+        "missing_candidate": 0,
+        "missing_chromium": 3
+      },
+      "event-loops": {
+        "cases": 8,
+        "candidate_full": 3,
+        "chromium_full": 6,
+        "candidate_pass": 4,
+        "candidate_total": 9,
+        "chromium_pass": 7,
+        "chromium_total": 9,
+        "chromium_pass_gap": 3,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "timers": {
+        "cases": 16,
+        "candidate_full": 9,
+        "chromium_full": 15,
+        "candidate_pass": 18,
+        "candidate_total": 25,
+        "chromium_pass": 24,
+        "chromium_total": 25,
+        "chromium_pass_gap": 6,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "xhr": {
+        "cases": 34,
+        "candidate_full": 25,
+        "chromium_full": 31,
+        "candidate_pass": 90,
+        "candidate_total": 105,
+        "chromium_pass": 102,
+        "chromium_total": 105,
+        "chromium_pass_gap": 15,
+        "candidate_only_pass": 3,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "fetch-basic": {
+        "cases": 31,
+        "candidate_full": 19,
+        "chromium_full": 29,
+        "candidate_pass": 350,
+        "candidate_total": 385,
+        "chromium_pass": 374,
+        "chromium_total": 385,
+        "chromium_pass_gap": 30,
+        "candidate_only_pass": 6,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "fetch-headers": {
+        "cases": 11,
+        "candidate_full": 11,
+        "chromium_full": 11,
+        "candidate_pass": 217,
+        "candidate_total": 217,
+        "chromium_pass": 217,
+        "chromium_total": 217,
+        "chromium_pass_gap": 0,
+        "candidate_only_pass": 0,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "fetch-request": {
+        "cases": 25,
+        "candidate_full": 23,
+        "chromium_full": 20,
+        "candidate_pass": 447,
+        "candidate_total": 449,
+        "chromium_pass": 443,
+        "chromium_total": 449,
+        "chromium_pass_gap": 0,
+        "candidate_only_pass": 4,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "fetch-response": {
+        "cases": 31,
+        "candidate_full": 25,
+        "chromium_full": 26,
+        "candidate_pass": 276,
+        "candidate_total": 290,
+        "chromium_pass": 273,
+        "chromium_total": 290,
+        "chromium_pass_gap": 13,
+        "candidate_only_pass": 16,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "encoding": {
+        "cases": 34,
+        "candidate_full": 30,
+        "chromium_full": 30,
+        "candidate_pass": 1062,
+        "candidate_total": 1066,
+        "chromium_pass": 1015,
+        "chromium_total": 1078,
+        "chromium_pass_gap": 16,
+        "candidate_only_pass": 63,
+        "missing_candidate": 12,
+        "missing_chromium": 0
+      },
+      "domparsing": {
+        "cases": 34,
+        "candidate_full": 15,
+        "chromium_full": 21,
+        "candidate_pass": 844,
+        "candidate_total": 1281,
+        "chromium_pass": 551,
+        "chromium_total": 1281,
+        "chromium_pass_gap": 158,
+        "candidate_only_pass": 451,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      },
+      "cssom": {
+        "cases": 34,
+        "candidate_full": 24,
+        "chromium_full": 30,
+        "candidate_pass": 510,
+        "candidate_total": 544,
+        "chromium_pass": 537,
+        "chromium_total": 544,
+        "chromium_pass_gap": 32,
+        "candidate_only_pass": 5,
+        "missing_candidate": 0,
+        "missing_chromium": 0
+      }
+    },
+    "cleanup": {
+      "audit_event_counts": {
+        "started_at_private_gate": 640,
+        "constructor_verified_and_acknowledged": 640,
+        "author_url_released": 640,
+        "exited": 640
+      },
+      "native_exit_codes": {
+        "0": 640
+      },
+      "profiles_recorded": 640,
+      "remaining_profiles": [],
+      "native_root_ids_recorded": 640,
+      "remaining_native_root_pids": [],
+      "source_receipts": 2,
+      "sources_unchanged": true,
+      "remaining_cleanup_workers": []
+    }
+  },
+  "exact_final_identity": {
+    "candidate": 200,
+    "source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+    "binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+    "backend": "CPU/offscreen",
+    "native_unit_gate": {
+      "passed": 140,
+      "total": 140,
+      "dedicated_url_units_excluded": 3,
+      "source_stable": true,
+      "completed_utc": "2026-10-29T20:34:13.442135+00:00"
+    }
+  },
+  "rejected_candidates": [
+    {
+      "candidate": 193,
+      "reason": "Unsolicited304 streaming-head regression; native139/140.",
+      "repair_candidate": 194,
+      "verified": "Native140/140 including258 zstd sync/stream/sink checks; cache-mode gains retained."
+    },
+    {
+      "candidate": 197,
+      "reason": "Sixteen newly failing authored intrinsic/RTL observations despite native140/140.",
+      "repair_candidate": 198,
+      "verified": "All16 restored; original3528/672 baselines show zero losses, and independent336 RTL supplement adds44 gains with zero losses."
+    }
+  ],
+  "editing_holdouts": [
+    {
+      "family": "Multiline textarea InsertText event granularity",
+      "fields": 1
+    },
+    {
+      "family": "Disabled-control focus state",
+      "fields": 4
+    },
+    {
+      "family": "Email-input insertion value/return/event behavior",
+      "fields": 6
+    },
+    {
+      "family": "Number-input editing return value",
+      "fields": 2
+    }
+  ],
+  "numeric_interpretation": {
+    "identity": [
+      "numericRows",
+      "negative-min-base",
+      "step-up",
+      "value"
+    ],
+    "initial_value": "-0.35",
+    "minimum": "-0.05",
+    "step": "0.1",
+    "invocation": "Exactly one no-argument stepUp()",
+    "chromium": "+0.05",
+    "lumen": "-0.05",
+    "assessment": "Retained interoperability mismatch. Current HTML stepUp minimum-clamping algorithm supports the Lumen result; no Chrome-specific special case or expectation rewrite was made.",
+    "standard": "https://html.spec.whatwg.org/multipage/input.html#dom-input-stepup"
+  },
+  "performance195": {
+    "fixed_workload": {
+      "checks_per_trial": 9395,
+      "trials": 21,
+      "per_browser": 7,
+      "separate_warmup_trials": 0,
+      "assessment": "Full-workload effect inconclusive; timing ranges overlap."
+    },
+    "phase_diagnostic": {
+      "checks_per_trial": 12289,
+      "trials": 14,
+      "pairs": 7,
+      "setter_median_ms": {
+        "before194": 58.536,
+        "after195": 35.459
+      },
+      "setter_median_reduction_percent": 39.4,
+      "all_pairs_lower": true,
+      "following_attribute_stage": {
+        "before194_ms": 14.601,
+        "after195_ms": 20.155,
+        "all_pairs_slower": true
+      },
+      "limitations": "Fixed phase order and shared process; no end-to-end browser speedup claim."
+    }
+  },
+  "reproduction": {
+    "source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+    "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+    "frozen_manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f",
+    "sample_selection": "Deterministic hash rank within24 predeclared category buckets, round-robin to640;23 nonempty buckets.",
+    "browser_workers": 2,
+    "external_deadline_seconds": 15,
+    "kind": "HTTP testharness document variants including generated .any/.window wrappers",
+    "chromium_reference": "Same retained Chromium150.0.7871.114 results used for176,187 and200 comparisons.",
+    "native_command": "ctest --test-dir build/codex-native --output-on-failure -E '^(url|url_host_nul|data_url)$' -j2",
+    "native_gate": "Fresh all-target build before final140CTest run; source and immutable browser binary seals stable.",
+    "guarded_runner": "agent/validation/run_guarded_cohort.py --runner paired_wpt",
+    "quota_wrapper": "tools/codex_compile.py",
+    "guarded_configuration_document": "agent/validation/README.capture-refusal.md",
+    "lifecycle_note": "Original approved capture implementation and private raw logs remain in the original project. The public report contains selected test paths, source hashes, aggregate results and whitelisted lifecycle outcomes."
+  },
+  "clamp_memory_tradeoff": {
+    "comparison": "Immutable182 versus183; earlier fixed10000-node style workload, separate from final benchmark",
+    "measured_trials": 6,
+    "separate_warmup_trials": 1,
+    "computed_style_bytes": {
+      "before": 1368,
+      "after": 1640,
+      "increase": 272
+    },
+    "settled_rss_reported_mb": {
+      "before": 187.97,
+      "after": 190.374,
+      "increase": 2.404,
+      "percent": 1.279
+    },
+    "sampled_pss_reported_mb": {
+      "before": 162.889,
+      "after": 165.482,
+      "increase": 2.593
+    },
+    "settled_cpu_percent": {
+      "before": 1,
+      "after": 1
+    },
+    "interpretation": "Measured cost of retaining three affine clamp arms. Timing ranges overlap; no speed improvement claimed. This workload does not establish memory cost for all pages."
+  },
+  "performance_final": {
+    "public_summary_file": "gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_performance.json",
+    "public_summary_sha256": "11f40969099be21d2badbae4d1e95dddbc0fe3e4e161929a1706358b69d25898",
+    "started_utc": "2026-10-29T20:37:22.645129+00:00",
+    "finished_utc": "2026-10-29T20:38:58.254334+00:00",
+    "elapsed_seconds": 95.60682243399788,
+    "measured_trials": 21,
+    "measured_trials_per_browser": 7,
+    "separately_launched_warmup_trials": 0,
+    "internal_warmup_count": "Not separately declared by the fixed public protocol metadata.",
+    "checks_per_trial": 9395,
+    "all_trials_pass": true,
+    "one_second_sampling": true,
+    "source_and_binaries_unchanged": true,
+    "engines": {
+      "Lumen 176": {
+        "measured_trials": 7,
+        "timings_ms": {
+          "dom_create_remove": {
+            "median": 42.61024099960923,
+            "minimum": 40.0211240015924,
+            "maximum": 44.21170900017023,
+            "all_trials": [
+              41.20677199959755,
+              43.36418899893761,
+              40.0211240015924,
+              44.21170900017023,
+              42.61024099960923,
+              43.15352400019765,
+              42.056940998882055
+            ]
+          },
+          "style_layout": {
+            "median": 361.1117419973016,
+            "minimum": 349.7325580008328,
+            "maximum": 395.3236190006137,
+            "all_trials": [
+              356.0321439988911,
+              377.30000699684024,
+              359.7609729990363,
+              349.7325580008328,
+              383.6074449978769,
+              395.3236190006137,
+              361.1117419973016
+            ]
+          },
+          "grid_cache_rebuild": {
+            "median": 148.20992700010538,
+            "minimum": 134.5187189988792,
+            "maximum": 154.88487700000405,
+            "all_trials": [
+              150.97242099791765,
+              142.41999299824238,
+              148.20992700010538,
+              135.95689500123262,
+              154.88487700000405,
+              154.5780100002885,
+              134.5187189988792
+            ]
+          }
+        },
+        "sampled_browser_tree_resources": {
+          "cpu_pct": {
+            "median_of_trial_sample_medians": 21.002,
+            "minimum_observed_sample": 9.999,
+            "maximum_observed_sample": 64.005,
+            "sample_counts_by_trial": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ]
+          },
+          "rss_mb": {
+            "median_of_trial_sample_medians": 164.4155,
+            "minimum_observed_sample": 86.548,
+            "maximum_observed_sample": 181.244,
+            "sample_counts_by_trial": [
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          },
+          "pss_mb": {
+            "median_of_trial_sample_medians": 139.274,
+            "minimum_observed_sample": 62.024,
+            "maximum_observed_sample": 156.079,
+            "sample_counts_by_trial": [
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        },
+        "resource_aggregation": "For each trial and metric, take the median of that trial's available one-second samples. The headline value is the median of those seven trial medians. Minimum and maximum are the extrema of all observed samples for that browser. This is not a median of per-trial maxima.",
+        "resource_units": "Decimal MB (1 MB = 1,000,000 bytes); CPU percent is the sampled browser process-tree value.",
+        "resource_scope": "Fresh browser process tree over startup, workload and cleanup. Not steady idle, whole-system memory, or a phase-specific CPU measurement. Summed RSS can count shared mappings multiple times; PSS is sampled proportional memory.",
+        "actual_native_exit_receipts_zero": 7,
+        "all_owned_profiles_removed": true,
+        "remaining_owned_identities": 0
+      },
+      "Lumen 200": {
+        "measured_trials": 7,
+        "timings_ms": {
+          "dom_create_remove": {
+            "median": 41.407053999602795,
+            "minimum": 39.72597600147128,
+            "maximum": 56.10716800019145,
+            "all_trials": [
+              39.93087099865079,
+              39.72597600147128,
+              44.64492800086737,
+              45.17948600277305,
+              40.31001900136471,
+              56.10716800019145,
+              41.407053999602795
+            ]
+          },
+          "style_layout": {
+            "median": 356.52809999883175,
+            "minimum": 343.2456989996135,
+            "maximum": 388.8277520015836,
+            "all_trials": [
+              370.60938499867916,
+              345.2666600011289,
+              343.2456989996135,
+              367.8166290000081,
+              355.1278619989753,
+              388.8277520015836,
+              356.52809999883175
+            ]
+          },
+          "grid_cache_rebuild": {
+            "median": 142.2101369984448,
+            "minimum": 132.73938800022006,
+            "maximum": 151.98480599746108,
+            "all_trials": [
+              142.2101369984448,
+              138.28338000178337,
+              148.3807139992714,
+              132.73938800022006,
+              149.91453900188208,
+              151.98480599746108,
+              137.96065000072122
+            ]
+          }
+        },
+        "sampled_browser_tree_resources": {
+          "cpu_pct": {
+            "median_of_trial_sample_medians": 20.999,
+            "minimum_observed_sample": 10.006,
+            "maximum_observed_sample": 63,
+            "sample_counts_by_trial": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ]
+          },
+          "rss_mb": {
+            "median_of_trial_sample_medians": 165.21800000000002,
+            "minimum_observed_sample": 90.403,
+            "maximum_observed_sample": 183.804,
+            "sample_counts_by_trial": [
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          },
+          "pss_mb": {
+            "median_of_trial_sample_medians": 139.9735,
+            "minimum_observed_sample": 65.681,
+            "maximum_observed_sample": 158.766,
+            "sample_counts_by_trial": [
+              4,
+              4,
+              4,
+              4,
+              4,
+              4,
+              4
+            ]
+          }
+        },
+        "resource_aggregation": "For each trial and metric, take the median of that trial's available one-second samples. The headline value is the median of those seven trial medians. Minimum and maximum are the extrema of all observed samples for that browser. This is not a median of per-trial maxima.",
+        "resource_units": "Decimal MB (1 MB = 1,000,000 bytes); CPU percent is the sampled browser process-tree value.",
+        "resource_scope": "Fresh browser process tree over startup, workload and cleanup. Not steady idle, whole-system memory, or a phase-specific CPU measurement. Summed RSS can count shared mappings multiple times; PSS is sampled proportional memory.",
+        "actual_native_exit_receipts_zero": 7,
+        "all_owned_profiles_removed": true,
+        "remaining_owned_identities": 0
+      },
+      "Chromium 150.0.7871.114": {
+        "measured_trials": 7,
+        "timings_ms": {
+          "dom_create_remove": {
+            "median": 11.399999998509884,
+            "minimum": 9.799999997019768,
+            "maximum": 18.5,
+            "all_trials": [
+              12.899999998509884,
+              14.099999997764826,
+              9.799999997019768,
+              18.5,
+              10.099999997764826,
+              11.399999998509884,
+              10.599999997764826
+            ]
+          },
+          "style_layout": {
+            "median": 58.399999998509884,
+            "minimum": 53.30000000074506,
+            "maximum": 72.60000000149012,
+            "all_trials": [
+              53.30000000074506,
+              55.400000002235174,
+              60.79999999701977,
+              62.399999998509884,
+              58.399999998509884,
+              55.100000001490116,
+              72.60000000149012
+            ]
+          },
+          "grid_cache_rebuild": {
+            "median": 49,
+            "minimum": 44.80000000074506,
+            "maximum": 62.70000000298023,
+            "all_trials": [
+              50.69999999925494,
+              48,
+              47.600000001490116,
+              60.099999997764826,
+              49,
+              44.80000000074506,
+              62.70000000298023
+            ]
+          }
+        },
+        "sampled_browser_tree_resources": {
+          "cpu_pct": {
+            "median_of_trial_sample_medians": 20.999000000000002,
+            "minimum_observed_sample": 17.003,
+            "maximum_observed_sample": 53.003,
+            "sample_counts_by_trial": [
+              2,
+              2,
+              2,
+              2,
+              2,
+              2,
+              2
+            ]
+          },
+          "rss_mb": {
+            "median_of_trial_sample_medians": 935.907,
+            "minimum_observed_sample": 832.823,
+            "maximum_observed_sample": 975.868,
+            "sample_counts_by_trial": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ]
+          },
+          "pss_mb": {
+            "median_of_trial_sample_medians": 382.451,
+            "minimum_observed_sample": 375.405,
+            "maximum_observed_sample": 413.028,
+            "sample_counts_by_trial": [
+              3,
+              3,
+              3,
+              3,
+              3,
+              3,
+              3
+            ]
+          }
+        },
+        "resource_aggregation": "For each trial and metric, take the median of that trial's available one-second samples. The headline value is the median of those seven trial medians. Minimum and maximum are the extrema of all observed samples for that browser. This is not a median of per-trial maxima.",
+        "resource_units": "Decimal MB (1 MB = 1,000,000 bytes); CPU percent is the sampled browser process-tree value.",
+        "resource_scope": "Fresh browser process tree over startup, workload and cleanup. Not steady idle, whole-system memory, or a phase-specific CPU measurement. Summed RSS can count shared mappings multiple times; PSS is sampled proportional memory.",
+        "actual_native_exit_receipts_zero": null,
+        "all_owned_profiles_removed": true,
+        "remaining_owned_identities": 0
+      }
+    },
+    "comparison": {
+      "dom_create_remove": {
+        "median_time_reduction_percent": 2.823703813403622,
+        "balanced_triplet_time_reduction_percent": [
+          3.0963381479122476,
+          8.38990208615561,
+          -11.553408642623308,
+          -2.188960853332067,
+          5.398284413049015,
+          -30.01758095105853,
+          1.545255037204285
+        ],
+        "median_triplet_reduction_percent": 1.545255037204285,
+        "triplets_with_lower_final_time": 4,
+        "triplet_count": 7
+      },
+      "style_layout": {
+        "median_time_reduction_percent": 1.2693140281503479,
+        "balanced_triplet_time_reduction_percent": [
+          -4.094360929341656,
+          8.490152770121629,
+          4.5906241196059465,
+          -5.170828561844165,
+          7.424147620247368,
+          1.6431770546500135,
+          1.2693140281503479
+        ],
+        "median_triplet_reduction_percent": 1.6431770546500135,
+        "triplets_with_lower_final_time": 5,
+        "triplet_count": 7
+      },
+      "grid_cache_rebuild": {
+        "median_time_reduction_percent": 4.048170134822559,
+        "balanced_triplet_time_reduction_percent": [
+          5.803897123431378,
+          2.904517062088363,
+          -0.11523317136907796,
+          2.3665640503068186,
+          3.2090531331356864,
+          1.6776021394133367,
+          -2.5587004005522163
+        ],
+        "median_triplet_reduction_percent": 2.3665640503068186,
+        "triplets_with_lower_final_time": 5,
+        "triplet_count": 7
+      }
+    },
+    "cleanup": {
+      "native_actual_zero_exit_receipts": 14,
+      "native_profiles_removed": 14,
+      "chromium_trials_with_empty_owned_identity_lists": 7,
+      "chromium_profiles_removal_receipts_true": 7,
+      "chromium_exact_owned_profile_paths_confirmed_absent": 7,
+      "cleanup_review_sha256": "515c8966649808a607d56dd7ef34462997ea99ad6ac3eddbbf072086663cfb81"
+    },
+    "conclusion": "All fixed-workload correctness checks and cleanup gates passed. The before/after Lumen timing ranges overlap and pair directions are mixed; no stable broad speedup is established. Chromium remains faster in the measured phases.",
+    "notes": [
+      "All 21 trials are retained; no outliers were removed.",
+      "Host launch/readiness differs between guarded native and WebDriver and is excluded from speed comparisons.",
+      "Renderer controls remain CPU/offscreen. The same exact Chromium ELF was previously observed alive with software compositing/rasterization and disabled Vulkan/WebGL/WebGPU.",
+      "Intel adapter enumeration is separate; actual Lumen Intel rendering remains unverified.",
+      "Repeated workload checks are not WPT counts. This result is specific to these two source revisions and this fixed workload.",
+      "All timing trial values, ranges and matched-triplet effects are retained. These repeated workload checks are not WPT counts.",
+      "Native trials have four available memory samples and three CPU interval samples each. Chromium trials have three memory samples and two CPU interval samples each.",
+      "The separate 194/195 setter diagnostic remains a different experiment: 39.4% setter median reduction, but a slower later attribute phase and fixed-order/shared-process limitations."
+    ]
+  },
+  "public_manifest": {
+    "file": "gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_wpt640_manifest.json",
+    "sha256": "c7a3d26a0b69a013f012905edc1054d8ce04fcf4581d452db765bafe2679c1e1",
+    "count": 640
+  },
+  "changed_identities_file": "gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_changes.json",
+  "remaining_priorities": {
+    "all_chromium_pass_gaps": 1767,
+    "top_files": [
+      {
+        "url": "/css/css-sizing/stretch/block-height-008.html",
+        "category": "css-sizing",
+        "chromium_pass_gap": 160,
+        "status_counts": {
+          "FAIL": 160
+        },
+        "example_identities": [
+          {
+            "name": ".child 1",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": ".child 2",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": ".child 3",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/css/css-values/calc-size/animation/interpolate-size-min-height-interpolation.html",
+        "category": "css-values",
+        "chromium_pass_gap": 120,
+        "status_counts": {
+          "FAIL": 120
+        },
+        "example_identities": [
+          {
+            "name": "CSS Transitions: property <min-height> from [initial] to [20px] at (-0.3) should be [calc-size(auto, -6px + size * 1.3)]",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "CSS Transitions: property <min-height> from [initial] to [20px] at (0) should be [calc-size(auto, 0px + size * 1)]",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "CSS Transitions: property <min-height> from [initial] to [20px] at (0.3) should be [calc-size(auto, 6px + size * 0.7)]",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/domparsing/positional-methods-with-trusted-types-no-createParserOptions.html",
+        "category": "domparsing",
+        "chromium_pass_gap": 120,
+        "status_counts": {
+          "FAIL": 120
+        },
+        "example_identities": [
+          {
+            "name": "Element.beforeHTMLUnsafe throws TypeError with string and unvetted options { sanitizer: 'default' } when default policy lacks createParserOptions",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "Element.beforeHTMLUnsafe throws TypeError with TrustedHTML and unvetted options { sanitizer: 'default' } when default policy lacks createParserOptions",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "Element.beforeHTMLUnsafe throws TypeError with string and unvetted options { sanitizer: { removeElements: [] } } when default policy lacks createParserOptions",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/css/css-values/attr-all-types.html",
+        "category": "css-values",
+        "chromium_pass_gap": 116,
+        "status_counts": {
+          "FAIL": 116
+        },
+        "example_identities": [
+          {
+            "name": "CSS Values and Units Test: attr",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "CSS Values and Units Test: attr 1",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "CSS Values and Units Test: attr 2",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/css/css-grid/abspos/orthogonal-positioned-grid-descendants-008.html",
+        "category": "css-grid",
+        "chromium_pass_gap": 100,
+        "status_counts": {
+          "FAIL": 100
+        },
+        "example_identities": [
+          {
+            "name": ".grid 1",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": ".grid 2",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": ".grid 3",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+        "category": "css-sizing",
+        "chromium_pass_gap": 48,
+        "status_counts": {
+          "FAIL": 48
+        },
+        "example_identities": [
+          {
+            "name": ".test 1",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": ".test 2",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": ".test 3",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/css/css-values/calc-size/animation/interpolate-size-max-width-interpolation.html",
+        "category": "css-values",
+        "chromium_pass_gap": 48,
+        "status_counts": {
+          "FAIL": 48
+        },
+        "example_identities": [
+          {
+            "name": "CSS Transitions: property <max-width> from [fit-content] to [50px] at (-0.3) should be [calc-size(fit-content, -15px + size * 1.3)]",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "CSS Transitions: property <max-width> from [fit-content] to [50px] at (0) should be [calc-size(fit-content, 0px + size * 1)]",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "CSS Transitions: property <max-width> from [fit-content] to [50px] at (0.3) should be [calc-size(fit-content, 15px + size * 0.7)]",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/css/css-sizing/stretch/stretch-max-inline-size-001.html",
+        "category": "css-sizing",
+        "chromium_pass_gap": 40,
+        "status_counts": {
+          "FAIL": 40
+        },
+        "example_identities": [
+          {
+            "name": "[data-expected-width] 1",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "[data-expected-width] 2",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "[data-expected-width] 3",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/css/css-values/sin-cos-tan-serialize.html",
+        "category": "css-values",
+        "chromium_pass_gap": 36,
+        "status_counts": {
+          "FAIL": 36
+        },
+        "example_identities": [
+          {
+            "name": "calc(sin(infinity)) should be computed-value-equivalent to 0",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "calc(sin(infinity)) should be used-value-equivalent to 0",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "calc(calc(sin(infinity))) should be computed-value-equivalent to 0",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/css/css-variables/variables-animation-math-functions.html",
+        "category": "css-variables",
+        "chromium_pass_gap": 35,
+        "status_counts": {
+          "FAIL": 35
+        },
+        "example_identities": [
+          {
+            "name": "CSS Transitions: property <--my-angle> from [100deg] to [calc(sign(20rem - 20px) * 180deg)] at (-1) should be [20deg]",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "CSS Transitions: property <--my-angle> from [100deg] to [calc(sign(20rem - 20px) * 180deg)] at (0) should be [100deg]",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "CSS Transitions: property <--my-angle> from [100deg] to [calc(sign(20rem - 20px) * 180deg)] at (0.125) should be [110deg]",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/css/css-values/attr-cycle.html",
+        "category": "css-values",
+        "chromium_pass_gap": 34,
+        "status_counts": {
+          "FAIL": 34
+        },
+        "example_identities": [
+          {
+            "name": "CSS Values and Units Test: attr",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "CSS Values and Units Test: attr 1",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "CSS Values and Units Test: attr 2",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      },
+      {
+        "url": "/css/css-values/calc-size/calc-size-height.html",
+        "category": "css-values",
+        "chromium_pass_gap": 33,
+        "status_counts": {
+          "FAIL": 33
+        },
+        "example_identities": [
+          {
+            "name": "resolved height for height in auto height container: calc-size(any, 357px)",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "resolved height for height in definite height container: calc-size(any, 357px)",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          },
+          {
+            "name": "resolved height for height in auto height container: calc-size(any, 31%)",
+            "occurrence": 0,
+            "candidate_status": "FAIL"
+          }
+        ]
+      }
+    ],
+    "top_css_values_sizing_grid": [
+      {
+        "url": "/css/css-sizing/stretch/block-height-008.html",
+        "category": "css-sizing",
+        "chromium_pass_gap": 160,
+        "status_counts": {
+          "FAIL": 160
+        }
+      },
+      {
+        "url": "/css/css-values/calc-size/animation/interpolate-size-min-height-interpolation.html",
+        "category": "css-values",
+        "chromium_pass_gap": 120,
+        "status_counts": {
+          "FAIL": 120
+        }
+      },
+      {
+        "url": "/css/css-values/attr-all-types.html",
+        "category": "css-values",
+        "chromium_pass_gap": 116,
+        "status_counts": {
+          "FAIL": 116
+        }
+      },
+      {
+        "url": "/css/css-grid/abspos/orthogonal-positioned-grid-descendants-008.html",
+        "category": "css-grid",
+        "chromium_pass_gap": 100,
+        "status_counts": {
+          "FAIL": 100
+        }
+      },
+      {
+        "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+        "category": "css-sizing",
+        "chromium_pass_gap": 48,
+        "status_counts": {
+          "FAIL": 48
+        }
+      },
+      {
+        "url": "/css/css-values/calc-size/animation/interpolate-size-max-width-interpolation.html",
+        "category": "css-values",
+        "chromium_pass_gap": 48,
+        "status_counts": {
+          "FAIL": 48
+        }
+      },
+      {
+        "url": "/css/css-sizing/stretch/stretch-max-inline-size-001.html",
+        "category": "css-sizing",
+        "chromium_pass_gap": 40,
+        "status_counts": {
+          "FAIL": 40
+        }
+      },
+      {
+        "url": "/css/css-values/sin-cos-tan-serialize.html",
+        "category": "css-values",
+        "chromium_pass_gap": 36,
+        "status_counts": {
+          "FAIL": 36
+        }
+      }
+    ]
+  },
+  "changed_identities_sha256": "03947c8f77161efc45e7f340d4435bcb6d86981eb386c4b5efa6c13d2cd767d3"
+}
