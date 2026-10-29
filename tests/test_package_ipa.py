@@ -37,7 +37,7 @@ def plan(profile=None, **kwargs):
     return ipa.signing_plan(PROFILE if profile is None else profile, "com.ecooxai.lumen", FINGERPRINT, now=NOW, **kwargs)
 
 
-def device_app(root: Path, platform=2) -> Path:
+def device_app(root: Path, platform=2, *, dependencies=()) -> Path:
     app = root / "Lumen.app"
     app.mkdir()
     info = {"CFBundleSupportedPlatforms": ["iPhoneOS"], "CFBundleExecutable": "Lumen",
@@ -45,10 +45,19 @@ def device_app(root: Path, platform=2) -> Path:
     with (app / "Info.plist").open("wb") as target:
         plistlib.dump(info, target)
     # Only a header is needed to test platform inspection; this is not runnable.
-    (app / "Lumen").write_bytes(struct.pack("<8I", 0xFEEDFACF, 0x0100000C, 0, 2, 1, 24, 0, 0)
-                               + struct.pack("<6I", 0x32, 24, platform, 0x00100000, 0x001A0000, 0))
+    commands = [struct.pack("<6I", 0x32, 24, platform, 0x00100000, 0x001A0000, 0)]
+    for kind, name in dependencies:
+        encoded = name.encode("utf-8") + b"\0"
+        size = (24 + len(encoded) + 7) & ~7
+        commands.append(struct.pack("<6I", kind, size, 24, 0, 0, 0) + encoded.ljust(size - 24, b"\0"))
+    (app / "Lumen").write_bytes(struct.pack("<8I", 0xFEEDFACF, 0x0100000C, 0, 2,
+                                            len(commands), sum(map(len, commands)), 0, 0)
+                               + b"".join(commands))
     (app / "Lumen").chmod(0o755)
     (app / "cacert.pem").write_text("inert resource fixture\n")
+    for name in ["icudtl.dat", "AppIcon60x60@3x.png", "AppIcon83.5x83.5@2x~ipad.png",
+                 "AppIcon76x76@2x~ipad.png", "AppIcon60x60@2x.png"]:
+        (app / name).write_bytes(b"inert non-runnable resource fixture")
     return app
 
 
@@ -123,6 +132,75 @@ class ProfileTests(unittest.TestCase):
 
 
 class PackagingTests(unittest.TestCase):
+    def test_device_dependency_closure_accepts_system_libraries(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app = device_app(Path(temporary), dependencies=[
+                (0xC, "/usr/lib/libSystem.B.dylib"),
+                (0xC, "/System/Library/Frameworks/UIKit.framework/UIKit"),
+                (0x80000018, "/System/Library/Frameworks/Metal.framework/Metal"),
+            ])
+            self.assertEqual(ipa.require_device_app(app)["CFBundleIdentifier"], "com.ecooxai.lumen")
+
+    def test_device_dependency_closure_rejects_uncopied_libraries(self):
+        for kind in [0xC, 0x80000018, 0x8000001F, 0x20, 0x80000023]:
+            for name in ["/opt/homebrew/opt/v8/lib/libv8.dylib", "@rpath/libv8.dylib",
+                         "@executable_path/Frameworks/libv8.dylib", "libv8.dylib",
+                         "/usr/lib/../../opt/external.dylib"]:
+                with self.subTest(kind=kind, name=name), tempfile.TemporaryDirectory() as temporary:
+                    app = device_app(Path(temporary), dependencies=[(kind, name)])
+                    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+                        ipa.require_device_app(app)
+
+    def test_missing_empty_or_linked_runtime_resources_fail_before_export(self):
+        for name in ["icudtl.dat", "cacert.pem", "AppIcon60x60@3x.png"]:
+            for state in ["absent", "empty", "symlink"]:
+                with self.subTest(name=name, state=state), tempfile.TemporaryDirectory() as temporary:
+                    root = Path(temporary); app = device_app(root)
+                    target = app / name
+                    target.unlink()
+                    if state == "empty":
+                        target.touch()
+                    elif state == "symlink":
+                        outside = root / "outside"
+                        outside.write_bytes(b"resource not owned by the app")
+                        target.symlink_to(outside)
+                    output = root / "Lumen.ipa"
+                    output.write_bytes(b"prior artifact")
+                    with mock.patch.dict("os.environ", {}, clear=True), mock.patch.object(ipa, "package_local") as package:
+                        result = ipa.main(["--app", str(app), "--output", str(output), "--check-only"])
+                    self.assertEqual(result, 2)
+                    self.assertEqual(output.read_bytes(), b"prior artifact")
+                    package.assert_not_called()
+
+    def test_invalid_dependency_bounds_and_hidden_load_commands_fail_closed(self):
+        for mutation in ["offset", "terminator", "count"]:
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as temporary:
+                app = device_app(Path(temporary), dependencies=[(0xC, "/usr/lib/libSystem.B.dylib")])
+                data = bytearray((app / "Lumen").read_bytes())
+                command_at = 32 + 24
+                if mutation == "offset":
+                    struct.pack_into("<I", data, command_at + 8, 1)
+                elif mutation == "terminator":
+                    data[command_at + 24:] = b"x" * (len(data) - command_at - 24)
+                else:
+                    struct.pack_into("<I", data, 16, 1)
+                (app / "Lumen").write_bytes(data)
+                with self.assertRaises(ipa.PackagingError):
+                    ipa.require_device_app(app)
+
+    def test_external_dependency_stops_before_signing_and_preserves_output(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            app = device_app(root, dependencies=[(0xC, "/opt/homebrew/lib/libv8.dylib")])
+            output = root / "Lumen.ipa"
+            output.write_bytes(b"prior artifact")
+            with mock.patch.dict("os.environ", {}, clear=True), mock.patch.object(ipa, "command_output") as command:
+                result = ipa.main(["--app", str(app), "--output", str(output), "--identity", FINGERPRINT,
+                                   "--profile", str(root / "unused.mobileprovision")])
+            self.assertEqual(result, 2)
+            self.assertEqual(output.read_bytes(), b"prior artifact")
+            command.assert_not_called()
+
     def test_platform_header_rejects_disguised_simulator_and_catalyst(self):
         for platform in [2, 6, 7]:
             with self.subTest(platform=platform), tempfile.TemporaryDirectory() as temporary:

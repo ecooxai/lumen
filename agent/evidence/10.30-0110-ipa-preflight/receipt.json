@@ -1,0 +1,59 @@
+{
+  "task": "10.30-0110",
+  "stage": "IPA dependency/resource preflight regression",
+  "change": "Reject uncopied host/runtime dylibs and missing, empty, or linked runtime resources before signing/export; keep platform and profile gates.",
+  "baseline": {
+    "tests": 14,
+    "failing_subtests": 34,
+    "started_utc": "2026-10-29T17:30:22.913180+00:00",
+    "finished_utc": "2026-10-29T17:30:23.924712+00:00",
+    "test_s": 0.05,
+    "monitor_s": 1.011,
+    "exit_code": 1
+  },
+  "corrected": {
+    "tests": 16,
+    "failing_subtests": 0,
+    "started_utc": "2026-10-29T17:31:08.030383+00:00",
+    "finished_utc": "2026-10-29T17:31:09.043960+00:00",
+    "test_s": 0.049,
+    "monitor_s": 1.013,
+    "exit_code": 0
+  },
+  "cpu_note": "One-second monitor attached; suite ended before a second sample, so no steady CPU/performance claim.",
+  "platform_note": "Linux synthetic Mach-O/profile fixture tests only; no Apple signing, device IPA execution, simulator run, or mobile score awarded.",
+  "quality_score": 66.42694844715456,
+  "score_note": "Existing verified score retained; this tooling improvement is not new platform/WPT evidence.",
+  "files": [
+    {
+      "path": "agent/evidence/10.30-0110-ipa-preflight/package-preflight-red.json",
+      "bytes": 2187,
+      "sha256": "0f810468f6900aeaaa8a1d50191fee8822b9208a8a291c41eaab84fcf8a8e5a3"
+    },
+    {
+      "path": "agent/evidence/10.30-0110-ipa-preflight/package-preflight-red.csv",
+      "bytes": 80,
+      "sha256": "5aa077ae38fa479e4280504d2cd299e374b364cacfe235c23b169cfce92fc549"
+    },
+    {
+      "path": "agent/evidence/10.30-0110-ipa-preflight/package-preflight-red.log",
+      "bytes": 33625,
+      "sha256": "0fba75080619628e8fd1970ecd74df22043d28d976908415f0965bc66dd67742"
+    },
+    {
+      "path": "agent/evidence/10.30-0110-ipa-preflight/package-preflight-green.json",
+      "bytes": 2152,
+      "sha256": "4bdec434847f43cae1b7a9c5d44d13d654bdda70379fe18fd0a18cc121836667"
+    },
+    {
+      "path": "agent/evidence/10.30-0110-ipa-preflight/package-preflight-green.csv",
+      "bytes": 80,
+      "sha256": "469fb123dfcb984ec3669589c9d47c63632a38c783fdbb52127e599a2d46b325"
+    },
+    {
+      "path": "agent/evidence/10.30-0110-ipa-preflight/package-preflight-green.log",
+      "bytes": 3669,
+      "sha256": "16d32d27e5e1030d05a19bb39b68a87687fbb1ca6b3d322a30f186ef30523d34"
+    }
+  ]
+}

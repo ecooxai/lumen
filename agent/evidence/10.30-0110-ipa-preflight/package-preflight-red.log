@@ -1,0 +1,360 @@
+test_device_dependency_closure_accepts_system_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_accepts_system_libraries) ... ok
+test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) ... 
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=12, name='/opt/homebrew/opt/v8/lib/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=12, name='@rpath/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=12, name='@executable_path/Frameworks/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=12, name='libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=12, name='/usr/lib/../../opt/external.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483672, name='/opt/homebrew/opt/v8/lib/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483672, name='@rpath/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483672, name='@executable_path/Frameworks/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483672, name='libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483672, name='/usr/lib/../../opt/external.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483679, name='/opt/homebrew/opt/v8/lib/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483679, name='@rpath/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483679, name='@executable_path/Frameworks/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483679, name='libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483679, name='/usr/lib/../../opt/external.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=32, name='/opt/homebrew/opt/v8/lib/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=32, name='@rpath/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=32, name='@executable_path/Frameworks/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=32, name='libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=32, name='/usr/lib/../../opt/external.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483683, name='/opt/homebrew/opt/v8/lib/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483683, name='@rpath/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483683, name='@executable_path/Frameworks/libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483683, name='libv8.dylib') ... FAIL
+  test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483683, name='/usr/lib/../../opt/external.dylib') ... FAIL
+test_incomplete_signing_options_do_not_run_external_commands (test_package_ipa.PackagingTests.test_incomplete_signing_options_do_not_run_external_commands) ... IPA packaging: Supply both IOS_SIGNING_IDENTITY and IOS_PROVISIONING_PROFILE, or neither for a local unprovisioned IPA.
+ok
+test_local_archive_preserves_executable_and_rejects_external_symlink (test_package_ipa.PackagingTests.test_local_archive_preserves_executable_and_rejects_external_symlink) ... ok
+test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) ... 
+  test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='icudtl.dat', state='absent') ... FAIL
+  test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='icudtl.dat', state='empty') ... FAIL
+  test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='icudtl.dat', state='symlink') ... FAIL
+  test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='cacert.pem', state='absent') ... FAIL
+  test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='cacert.pem', state='empty') ... FAIL
+  test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='cacert.pem', state='symlink') ... FAIL
+  test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='AppIcon60x60@3x.png', state='absent') ... FAIL
+  test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='AppIcon60x60@3x.png', state='empty') ... FAIL
+  test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='AppIcon60x60@3x.png', state='symlink') ... FAIL
+test_platform_header_rejects_disguised_simulator_and_catalyst (test_package_ipa.PackagingTests.test_platform_header_rejects_disguised_simulator_and_catalyst) ... ok
+test_xcode_export_is_authoritative_and_failure_keeps_prior_output (test_package_ipa.PackagingTests.test_xcode_export_is_authoritative_and_failure_keeps_prior_output) ... ok
+test_app_identifier_scope (test_package_ipa.ProfileTests.test_app_identifier_scope) ... ok
+test_device_membership_and_distribution_jit_rejected (test_package_ipa.ProfileTests.test_device_membership_and_distribution_jit_rejected) ... ok
+test_enterprise_and_app_store_are_distinct (test_package_ipa.ProfileTests.test_enterprise_and_app_store_are_distinct) ... ok
+test_expired_wrong_team_prefix_certificate_or_platform (test_package_ipa.ProfileTests.test_expired_wrong_team_prefix_certificate_or_platform) ... ok
+test_identity_selection_requires_valid_unambiguous_keychain_entry (test_package_ipa.ProfileTests.test_identity_selection_requires_valid_unambiguous_keychain_entry) ... ok
+test_legacy_prefix_can_differ_from_team (test_package_ipa.ProfileTests.test_legacy_prefix_can_differ_from_team) ... ok
+test_malformed_metadata_fails_with_diagnostic (test_package_ipa.ProfileTests.test_malformed_metadata_fails_with_diagnostic) ... ok
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=12, name='/opt/homebrew/opt/v8/lib/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=12, name='@rpath/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=12, name='@executable_path/Frameworks/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=12, name='libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=12, name='/usr/lib/../../opt/external.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483672, name='/opt/homebrew/opt/v8/lib/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483672, name='@rpath/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483672, name='@executable_path/Frameworks/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483672, name='libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483672, name='/usr/lib/../../opt/external.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483679, name='/opt/homebrew/opt/v8/lib/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483679, name='@rpath/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483679, name='@executable_path/Frameworks/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483679, name='libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483679, name='/usr/lib/../../opt/external.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=32, name='/opt/homebrew/opt/v8/lib/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=32, name='@rpath/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=32, name='@executable_path/Frameworks/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=32, name='libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=32, name='/usr/lib/../../opt/external.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483683, name='/opt/homebrew/opt/v8/lib/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483683, name='@rpath/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483683, name='@executable_path/Frameworks/libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483683, name='libv8.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_device_dependency_closure_rejects_uncopied_libraries (test_package_ipa.PackagingTests.test_device_dependency_closure_rejects_uncopied_libraries) (kind=2147483683, name='/usr/lib/../../opt/external.dylib')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 151, in test_device_dependency_closure_rejects_uncopied_libraries
+    with self.assertRaisesRegex(ipa.PackagingError, "dependency"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PackagingError not raised
+
+======================================================================
+FAIL: test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='icudtl.dat', state='absent')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 171, in test_missing_empty_or_linked_runtime_resources_fail_before_export
+    self.assertEqual(result, 2)
+AssertionError: 0 != 2
+
+======================================================================
+FAIL: test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='icudtl.dat', state='empty')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 171, in test_missing_empty_or_linked_runtime_resources_fail_before_export
+    self.assertEqual(result, 2)
+AssertionError: 0 != 2
+
+======================================================================
+FAIL: test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='icudtl.dat', state='symlink')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 171, in test_missing_empty_or_linked_runtime_resources_fail_before_export
+    self.assertEqual(result, 2)
+AssertionError: 0 != 2
+
+======================================================================
+FAIL: test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='cacert.pem', state='absent')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 171, in test_missing_empty_or_linked_runtime_resources_fail_before_export
+    self.assertEqual(result, 2)
+AssertionError: 0 != 2
+
+======================================================================
+FAIL: test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='cacert.pem', state='empty')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 171, in test_missing_empty_or_linked_runtime_resources_fail_before_export
+    self.assertEqual(result, 2)
+AssertionError: 0 != 2
+
+======================================================================
+FAIL: test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='cacert.pem', state='symlink')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 171, in test_missing_empty_or_linked_runtime_resources_fail_before_export
+    self.assertEqual(result, 2)
+AssertionError: 0 != 2
+
+======================================================================
+FAIL: test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='AppIcon60x60@3x.png', state='absent')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 171, in test_missing_empty_or_linked_runtime_resources_fail_before_export
+    self.assertEqual(result, 2)
+AssertionError: 0 != 2
+
+======================================================================
+FAIL: test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='AppIcon60x60@3x.png', state='empty')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 171, in test_missing_empty_or_linked_runtime_resources_fail_before_export
+    self.assertEqual(result, 2)
+AssertionError: 0 != 2
+
+======================================================================
+FAIL: test_missing_empty_or_linked_runtime_resources_fail_before_export (test_package_ipa.PackagingTests.test_missing_empty_or_linked_runtime_resources_fail_before_export) (name='AppIcon60x60@3x.png', state='symlink')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_package_ipa.py", line 171, in test_missing_empty_or_linked_runtime_resources_fail_before_export
+    self.assertEqual(result, 2)
+AssertionError: 0 != 2
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.050s
+
+FAILED (failures=34)
+Metadata preflight passed; Xcode signing/export and device installation were not run.
+Metadata preflight passed; Xcode signing/export and device installation were not run.
+Metadata preflight passed; Xcode signing/export and device installation were not run.
+Metadata preflight passed; Xcode signing/export and device installation were not run.
+Metadata preflight passed; Xcode signing/export and device installation were not run.
+Metadata preflight passed; Xcode signing/export and device installation were not run.
+Metadata preflight passed; Xcode signing/export and device installation were not run.
+Metadata preflight passed; Xcode signing/export and device installation were not run.
+Metadata preflight passed; Xcode signing/export and device installation were not run.

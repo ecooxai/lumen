@@ -27,7 +27,26 @@ class PackagingError(Exception):
     pass
 
 
+# The Xcode copy phase intentionally exports a flat, statically linked Lumen
+# app. Keep its runtime resource closure explicit; an iOS Mach-O header alone
+# does not establish that the resulting device package can launch.
+DEVICE_RESOURCES = ("icudtl.dat", "cacert.pem", "AppIcon60x60@3x.png",
+                    "AppIcon83.5x83.5@2x~ipad.png", "AppIcon76x76@2x~ipad.png",
+                    "AppIcon60x60@2x.png")
+DYLIB_COMMANDS = {0xC, 0x80000018, 0x8000001F, 0x20, 0x80000023}
+
+
+def require_system_dependency(name: str) -> None:
+    if (not name.startswith(("/usr/lib/", "/System/Library/Frameworks/"))
+            or any(part in (".", "..") for part in name.split("/"))):
+        raise PackagingError("The flat device app has a non-system dylib dependency: " + name
+                             + ". Link this dependency statically; the signing copy phase does not embed dylibs or frameworks.")
+
+
 def require_device_app(app: Path) -> dict:
+    for name in ("Info.plist", "Lumen"):
+        if (app / name).is_symlink():
+            raise PackagingError("The device app's " + name + " must be a regular bundle file, not a symlink.")
     try:
         with (app / "Info.plist").open("rb") as source:
             info = plistlib.load(source)
@@ -59,20 +78,44 @@ def require_device_app(app: Path) -> dict:
                 if len(command) != 8:
                     raise PackagingError("The executable has a truncated load command.")
                 kind, length = struct.unpack("<2I", command)
-                if length < 8 or length > left:
+                if length < 8 or length > left or length % 8:
                     raise PackagingError("The executable has an invalid load-command size.")
                 if kind == 0x32:  # LC_BUILD_VERSION
                     if length < 24 or platform is not None:
                         raise PackagingError("The executable has an invalid build-version command.")
                     platform = struct.unpack("<I", source.read(4))[0]
                     source.seek(length - 12, 1)
+                elif kind in DYLIB_COMMANDS:
+                    if length < 32:
+                        raise PackagingError("The executable has an invalid dylib dependency command.")
+                    metadata = source.read(16)
+                    if len(metadata) != 16:
+                        raise PackagingError("The executable has a truncated dylib dependency command.")
+                    name_offset = struct.unpack("<4I", metadata)[0]
+                    if name_offset < 24 or name_offset >= length or length - name_offset > 4096:
+                        raise PackagingError("The executable has invalid dylib dependency name bounds.")
+                    source.seek(name_offset - 24, 1)
+                    encoded = source.read(length - name_offset)
+                    if len(encoded) != length - name_offset or b"\0" not in encoded:
+                        raise PackagingError("The executable has an unterminated dylib dependency name.")
+                    try:
+                        dependency = encoded.split(b"\0", 1)[0].decode("utf-8", "strict")
+                    except UnicodeDecodeError as exc:
+                        raise PackagingError("The executable has an unreadable dylib dependency name.") from exc
+                    require_system_dependency(dependency)
                 else:
                     source.seek(length - 8, 1)
                 left -= length
+            if left:
+                raise PackagingError("The executable's load-command count does not cover its declared metadata.")
             if platform != 2:  # PLATFORM_IOS
                 raise PackagingError("The executable is not an iOS device binary; simulator and Catalyst IPAs are unsupported.")
     except (OSError, struct.error) as exc:
         raise PackagingError("Cannot read the device executable's platform metadata.") from exc
+    for name in DEVICE_RESOURCES:
+        resource = app / name
+        if resource.is_symlink() or not resource.is_file() or not resource.stat().st_size:
+            raise PackagingError("The device app requires a nonempty regular bundle resource: " + name + ".")
     return info
 
 
