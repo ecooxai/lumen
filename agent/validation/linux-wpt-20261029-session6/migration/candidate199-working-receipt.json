@@ -1,0 +1,11 @@
+{
+  "prepared_utc": "2026-10-29T20:14:53.061920+00:00",
+  "file": "src/js/prelude/06-document.js",
+  "before_sha256": "978435147f8705f640a162c4fa5ec152d34dd2789b595d4f5259cd5752b992c0",
+  "after_sha256": "881de16ed8e924c2d2e2486c8a74130ffed2d803ba3fbb33eed383aa3b8b1148",
+  "patch_sha256": "087899871fa50e98a336b6da56af10962a857f043a0ea9bea9c05b3fe639ef63",
+  "scope": "Selection-capable text-control insertion, inert HTML text conversion, surrogate-safe maxlength and DOMString coercion; isolated release_ops implementation, independent frozen 1034/160/64 controls.",
+  "candidate": 199,
+  "parent": "3df4b8882224bec0bae447c70473443a5a9e02c3",
+  "integrated_utc": "2026-10-29T20:24:38.406207+00:00"
+}
