@@ -91,6 +91,7 @@ float grid_item_auto_min(Layout *L, Box *c, float maxlen);   /* contribution to 
 float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 void table_intrinsic(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic(Layout *L, Box *b, float *mn, float *mx);
+void intrinsic_with_basis(Layout *L, Box *b, float cbw, float *mn, float *mx);
 void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx);
 /* fw/fh are resolved border-box sizes from flex/grid, or -1 when unforced. */
 void replaced_size(Layout *L, Box *b, float cbw, float cbh, float fw, float fh, float *w, float *h);

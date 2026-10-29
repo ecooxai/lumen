@@ -321,23 +321,6 @@ static float clamph(const ComputedStyle *s, float h, float cbh, float bp);
    memo keys include mode, cbw and fw, so the two inputs remain independent. */
 enum { SZ_ABS_SHRINK = SZ_FORCED + 1 };
 
-static bool abs_shrink_fixed_horizontal_padding(const ComputedStyle *s) {
-    for (int i = 1; i <= 3; i += 2) {
-        Length p = s->padding[i];
-        if (p.kind != LK_LEN || p.pctu || p.pct || p.pct2 || p.mm || !isfinite(p.px)) return false;
-    }
-    /* The compact Length parser can approximate unresolved clamp/min/max
-       forms. Preserve those paths even when its chosen arm has no percent.
-       Stale shorthand strings may conservatively exclude an overridden form. */
-    static const char *const props[] = { "padding", "padding-left", "padding-right",
-        "padding-inline", "padding-inline-start", "padding-inline-end" };
-    for (size_t i = 0; i < sizeof props / sizeof *props; i++) {
-        const char *v = custom_get(s->gen_n, props[i]);
-        if (v && strchr(v, '(')) return false;
-    }
-    return true;
-}
-
 static float g_imcb[2];   /* the last abs_place's inset-modified containing block size */
 static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int src[4], const int kwm[4]) {
     float px, py, pw, ph;
@@ -395,16 +378,16 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
         if (s->anchor_sz[0] && anchor_size(a, 0, pw, &v)) { mode = SZ_FORCED; fw = bs ? v : v + a->b[1] + a->b[3] + a->p[1] + a->p[3]; }
         if (s->anchor_sz[1] && anchor_size(a, 1, ph, &v)) fh = bs ? v : v + a->b[0] + a->b[2] + a->p[0] + a->p[2];
     }
-    /* Keep intrinsic border-box contributions unchanged: this bounded path
-       requires fixed horizontal padding and preserves ratios, tables,
-       replaced/orthogonal boxes and anchor/try sizing. */
+    /* Resolve own intrinsic edges against the percentage containing block.
+       Ratio, table, replaced/orthogonal and anchor/try sizing retain their
+       separate sizing paths. */
     bool ordinary_try = src[0] == 0 && src[1] == 1 && src[2] == 2 && src[3] == 3;
     if (mode == SZ_SHRINK && !wdef && s->width.kind == LK_AUTO &&
         (!cb->st || !cb->st->writing_mode) && !s->writing_mode && s->aspect_ratio <= 0 &&
         a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE && !area && ordinary_try &&
         !s->pos_try && !s->pos_anchor && !s->pos_area &&
         !s->anchor_ins[0] && !s->anchor_ins[1] && !s->anchor_ins[2] && !s->anchor_ins[3] &&
-        !s->anchor_sz[0] && !s->anchor_sz[1] && abs_shrink_fixed_horizontal_padding(s)) {
+        !s->anchor_sz[0] && !s->anchor_sz[1]) {
         mode = SZ_ABS_SHRINK;
         fw = avail;
     }
@@ -624,11 +607,9 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     else if (len_def(s->width, cbw) && !is_cell) { b->w = clampw(s, res(s->width, cbw) + (bs ? 0 : hb), cbw, hb); if (b->w < hb) b->w = hb; }
     else if (mode == SZ_FILL && b->fmt != FMT_TABLE && s->width.kind != LK_FIT_CONTENT && s->width.kind != LK_MAX_CONTENT && s->width.kind != LK_MIN_CONTENT) b->w = clampw(s, cbw - b->m[1] - b->m[3], cbw, hb);
     else {
-        float mn, mx; intrinsic(L, b, &mn, &mx);
-        /* Intrinsic measurement can leave this box's used edges resolved
-           against zero. Restore only this private absolute path, using the
-           original percentage basis, before margins and child origins. */
-        if (mode == SZ_ABS_SHRINK) compute_mbp(b, cbw);
+        float mn, mx;
+        if (mode == SZ_ABS_SHRINK) intrinsic_with_basis(L, b, cbw, &mn, &mx);
+        else intrinsic(L, b, &mn, &mx);
         float avail = (mode == SZ_ABS_SHRINK ? fw : cbw) - b->m[1] - b->m[3];
         float w = s->width.kind == LK_MIN_CONTENT ? mn : s->width.kind == LK_MAX_CONTENT ? mx : LMIN(LMAX(mn, avail), mx);
         b->w = clampw(s, w, cbw, hb);

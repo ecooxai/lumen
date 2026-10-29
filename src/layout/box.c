@@ -406,13 +406,13 @@ void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx) {
     *mn += m; *mx += m;
 }
 
-void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
-    if (b->intr_ok) { *omn = b->imin; *omx = b->imax; return; }
-    compute_mbp(b, 0);
+static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, float *omn, float *omx) {
+    if (!resolve_own && b->intr_ok) { *omn = b->imin; *omx = b->imax; return; }
+    compute_mbp(b, resolve_own ? cbw : 0);
     const ComputedStyle *st = b->st;
     float bp = hbp(b), mn = 0, mx = 0;
-    if (st->width.kind == LK_LEN && st->width.pct == 0 && b->fmt != FMT_TABLE) {
-        mn = mx = st->width.px - (st->box_sizing == BOX_BORDER ? bp : 0);
+    if (st->width.kind == LK_LEN && (resolve_own ? len_def(st->width, cbw) : st->width.pct == 0) && b->fmt != FMT_TABLE) {
+        mn = mx = (resolve_own ? res(st->width, cbw) : st->width.px) - (st->box_sizing == BOX_BORDER ? bp : 0);
     } else if (b->fmt == FMT_REPLACED) {
         float w, h; replaced_size(L, b, -1, -1, -1, -1, &w, &h); mn = mx = w;
         if (st->width.kind == LK_LEN && st->width.pct) mn = 0;
@@ -457,11 +457,24 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
             mn = LMAX(mn, a); mx = LMAX(mx, z);
         }
     }
-    if (st->max_width.kind == LK_LEN && !st->max_width.pct) { float v = st->max_width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
-    if (st->min_width.kind == LK_LEN && !st->min_width.pct) { float v = st->min_width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
+    if (st->max_width.kind == LK_LEN && (resolve_own ? len_def(st->max_width, cbw) : !st->max_width.pct)) { float v = (resolve_own ? res(st->max_width, cbw) : st->max_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
+    if (st->min_width.kind == LK_LEN && (resolve_own ? len_def(st->min_width, cbw) : !st->min_width.pct)) { float v = (resolve_own ? res(st->min_width, cbw) : st->min_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
+    if (resolve_own) { mn = LMAX(0, mn); mx = LMAX(0, mx); }
     if (mn > mx) mx = mn;
-    b->imin = mn + bp; b->imax = mx + bp; b->intr_ok = true;
-    *omn = b->imin; *omx = b->imax;
+    *omn = mn + bp; *omx = mx + bp;
+    if (!resolve_own) { b->imin = *omn; b->imax = *omx; b->intr_ok = true; }
+}
+
+void intrinsic(Layout *L, Box *b, float *mn, float *mx) {
+    intrinsic_measure(L, b, 0, false, mn, mx);
+}
+
+/* A positioned box has a definite percentage containing block even when its
+   width is shrink-to-fit. Resolve its own edges and constraints there; child
+   percentages still participate in the ordinary cyclic intrinsic algorithm.
+   Keep this result out of the zero-basis intrinsic cache used by its parent. */
+void intrinsic_with_basis(Layout *L, Box *b, float cbw, float *mn, float *mx) {
+    intrinsic_measure(L, b, cbw, true, mn, mx);
 }
 
 /* CSS Sizing 4: transfer only definite constraints, then clamp each axis
