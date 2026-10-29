@@ -1,0 +1,9 @@
+{
+  "executor_pid": 5,
+  "proc_self_pid": "22638",
+  "exit_code": 2,
+  "child_started": false,
+  "namespace_mismatch_reported": true,
+  "output_directory_created": false,
+  "stderr": "usage: monitor_process.py [-h] [--pid PID] [--duration DURATION]\n                          [--settle SETTLE] --output OUTPUT\n                          [--max-steady-cpu MAX_STEADY_CPU]\n                          [--max-steady-interval-cpu MAX_STEADY_INTERVAL_CPU]\n                          [--min-steady-interval-samples MIN_STEADY_INTERVAL_SAMPLES]\n                          [--max-sampling-gap MAX_SAMPLING_GAP]\n                          [--max-rss-mb MAX_RSS_MB]\n                          ...\nmonitor_process.py: error: PID namespace mismatch between the executor and /proc; refusing to sample or signal unrelated processes. Use an execution environment with consistent process IDs.\n"
+}

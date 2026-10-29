@@ -1,0 +1,53 @@
+{
+  "iteration": "10.292019r-monitor-namespace",
+  "accepted_scope": "resource-monitor process identity guard",
+  "accepted": true,
+  "project_score": 55,
+  "wpt_change": null,
+  "defect": "Linux executor translated getpid/Popen.pid while ps read host /proc IDs; old monitor could sample unrelated host processes",
+  "fix": "Validate observer PID against /proc/self before starting any owned command or collecting/sending signals; non-Linux behavior unchanged",
+  "positive_tests": 35,
+  "positive_monitor_seconds": 1.011,
+  "actual_negative_execution": {
+    "executor_pid": 5,
+    "proc_self_pid": "22638",
+    "exit_code": 2,
+    "child_started": false,
+    "namespace_mismatch_reported": true,
+    "output_directory_created": false
+  },
+  "invalid_evidence": [
+    "apple-static-baseline.json"
+  ],
+  "limitations": "Positive unit tests are too short for interval CPU statistics. No Mac/browser performance or IPA claim.",
+  "source_sha256": {
+    "tools/monitor_process.py": "151268d453347665bd83dbc5f407999880800dacb749df76fdefa42c53163307",
+    "tests/test_monitor_process.py": "bcc64c9390f31281b4d4cd7e6728d31b6a08873f5186dd87925ac233ace84159"
+  },
+  "evidence": {
+    "agent/evidence/10.292019r-monitor-namespace/monitor-namespace-positive.json": {
+      "sha256": "eb409e8381af2b6c9736d9b3d01d650bd79ce09dbba9fffd5eb280f56e1e0265",
+      "bytes": 2005
+    },
+    "agent/evidence/10.292019r-monitor-namespace/monitor-namespace-positive.csv": {
+      "sha256": "622a0dfd56252a44b577f98c5be5bf9c1223c3d42f2a4648107e2ea30b8bedbd",
+      "bytes": 80
+    },
+    "agent/evidence/10.292019r-monitor-namespace/monitor-namespace-negative-result.json": {
+      "sha256": "05280bf8b15fa446ef182d6eae8a699d82d0d7b0a75296cb1ac93661f9bcaba1",
+      "bytes": 882
+    },
+    "agent/evidence/10.292019r-monitor-namespace/apple-static-baseline.log": {
+      "sha256": "8c7bfebe5719153695c35e8417ecd276227402bd8169e0f6571150a03e294cf2",
+      "bytes": 250
+    },
+    "agent/evidence/10.292019r-monitor-namespace/monitor-namespace-positive.log": {
+      "sha256": "bd0617289b9a299a47593bf1e88984ef7b0ab5b81132c0d13e92c43e7eda8a95",
+      "bytes": 254
+    },
+    "agent/evidence/10.292019r-monitor-namespace/apple-static-baseline.json": {
+      "sha256": "c4d6e91123cb7da801d3dff79a14414264c1f690cac8391b6e3a70a1e13e5dbe",
+      "bytes": 2250
+    }
+  }
+}

@@ -1,0 +1,6 @@
+IPA packaging: Supply both IOS_SIGNING_IDENTITY and IOS_PROVISIONING_PROFILE, or neither for a local unprovisioned IPA.
+...............................
+----------------------------------------------------------------------
+Ran 31 tests in 0.016s
+
+OK

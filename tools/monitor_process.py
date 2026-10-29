@@ -21,6 +21,26 @@ import sys
 import time
 
 
+def pid_namespace_error():
+    """Refuse PID translation that makes ps observe a different process.
+
+    Some execution sandboxes translate getpid/Popen.pid but expose a host
+    /proc mount to ps. Sampling or signalling those numeric IDs would select
+    unrelated host processes. Check before launching an owned command.
+    """
+    if not sys.platform.startswith('linux'):
+        return None
+    try:
+        visible = int(os.readlink('/proc/self'))
+    except (OSError, ValueError):
+        return 'cannot verify the Linux observer PID against /proc/self; process monitoring is unavailable'
+    if visible != os.getpid():
+        return ('PID namespace mismatch between the executor and /proc; '
+                'refusing to sample or signal unrelated processes. '
+                'Use an execution environment with consistent process IDs.')
+    return None
+
+
 def cpu_time_seconds(value):
     """Parse the BSD ps [[days-]hours:]minutes:seconds CPU-time format."""
     days = 0
@@ -273,6 +293,9 @@ def main():
     for ceiling in (args.max_steady_cpu, args.max_steady_interval_cpu, args.max_rss_mb):
         if ceiling is not None and (not math.isfinite(ceiling) or ceiling < 0):
             parser.error('CPU and RSS ceilings must be finite and nonnegative')
+    namespace_error = pid_namespace_error()
+    if namespace_error:
+        parser.error(namespace_error)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     rows = []
     process = None

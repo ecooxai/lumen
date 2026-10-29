@@ -13,6 +13,12 @@ spec.loader.exec_module(monitor)
 
 
 class MonitorTests(unittest.TestCase):
+    def setUp(self):
+        # These tests supply synthetic ps snapshots; host namespace validation
+        # is covered separately below and must not alter the mocked process IDs.
+        self.namespace = mock.patch.object(monitor, 'pid_namespace_error', return_value=None)
+        self.namespace.start()
+        self.addCleanup(self.namespace.stop)
     def test_descendants_are_included_without_unrelated_processes(self):
         raw = '10 1 1.0 100 S\n11 10 2.0 200 S\n12 11 3.0 300 R\n20 1 99.0 900 S\n'
         tree = monitor.process_tree(raw, 10)
@@ -191,6 +197,34 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(result['measurement_status'], 'failed')
         self.assertEqual(result['stop_reason'], 'collector_error')
         self.assertIn('ps unavailable', result['collector_error'])
+
+
+class NamespaceTests(unittest.TestCase):
+    def test_matching_linux_identity_is_accepted(self):
+        with mock.patch.object(monitor.sys, 'platform', 'linux'), mock.patch.object(monitor.os, 'getpid', return_value=2468), mock.patch.object(monitor.os, 'readlink', return_value='2468'):
+            self.assertIsNone(monitor.pid_namespace_error())
+
+    def test_mismatched_identity_rejected_before_launch_output_or_signal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / 'not-created' / 'sample'
+            with mock.patch.object(monitor.sys, 'platform', 'linux'), mock.patch.object(monitor.os, 'getpid', return_value=6), mock.patch.object(monitor.os, 'readlink', return_value='15666'), mock.patch.object(monitor.sys, 'argv', ['monitor_process.py', '--output', str(prefix), '--', 'fixture-command']), mock.patch.object(monitor.subprocess, 'Popen') as launch, mock.patch.object(monitor.subprocess, 'check_output') as inspect, mock.patch.object(monitor.os, 'killpg') as signal, contextlib.redirect_stderr(io.StringIO()) as error:
+                with self.assertRaises(SystemExit) as raised:
+                    monitor.main()
+            self.assertEqual(raised.exception.code, 2)
+            self.assertIn('PID namespace mismatch', error.getvalue())
+            self.assertFalse(prefix.parent.exists())
+            launch.assert_not_called()
+            inspect.assert_not_called()
+            signal.assert_not_called()
+
+    def test_unreadable_linux_identity_is_not_assumed_safe(self):
+        with mock.patch.object(monitor.sys, 'platform', 'linux'), mock.patch.object(monitor.os, 'readlink', side_effect=OSError('missing proc')):
+            self.assertIn('cannot verify', monitor.pid_namespace_error())
+
+    def test_macos_does_not_require_proc_mount(self):
+        with mock.patch.object(monitor.sys, 'platform', 'darwin'), mock.patch.object(monitor.os, 'readlink') as readlink:
+            self.assertIsNone(monitor.pid_namespace_error())
+            readlink.assert_not_called()
 
 
 if __name__ == '__main__':
