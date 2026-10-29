@@ -1158,3 +1158,38 @@ were24/32 and separate22 branding checks14/22; fresh Chromium passes all54.
 Candidate187 outcomes are pending. New43-case numeric/12-case radio and
 200-field CSSOM declarations are saved for subsequent separate candidates.
 Source checkpointUTC:2026-10-29T18:47:12.576675+00:00
+
+
+### Iteration8 / Ruby candidate187 — accepted Node conversion
+
+Start18:46:15UTC; acceptance checkpoint2026-10-29T18:50:05.574819+00:00;3.84minutes.
+Frozen conversion/mutation controls24→32/32 (+8;100/100); independent
+branding controls14→22/22 (+8;100/100). Genuine attached/detached, prototype-
+altered and cross-realm Attr/Node behavior is preserved; forged/proxy arguments
+throwTypeError. Pinned upstreamNode-removeChild.html27→28/28 (+1;100/100),
+harnessOK both. Guarded cleanup completes with no residual PIDs/sourcechanges.
+Source3367b5d29a95ad5e742449cdfff145ef8e3dec9b; immutable browser
+SHA2567733ac7bf2f35d482f410a79273900a496101c395100eae45b6a494a803ad6de.
+Build/startup25.06s,618 inputs unchanged digest33cbb4649fe06f1c85e9cc6478b9cd1f71010fda0e285661fab214a1fc0fdc34.
+Agents:engine_lead,conformance_qa;release_ops source review/runtime;root PM.
+Total task wall time84.31minutes; parallel work is not summed.
+
+The fixed176/186/Chromium performance comparison passed all21trials, each
+with9395correctness checks;14native exits0/profile removals/no leftovers.
+MedianDOM/style-layout/grid times(ms):17645.22/420.91/165.68;
+18650.66/416.55/171.87;Chromium11.90/65.30/53.00. Native ranges overlap,
+so neither a broad speedup nor regression is claimed. Chromium is materially
+faster in this workload. Browser-tree sampledRSS/PSS medians(MB):
+176162.351/136.876;186162.298/136.609;Chromium936.526/418.823. These samples
+include startup/work/cleanup; summedRSS double-counts shared pages. See
+session6/performance-v2-176-186/reviewed-summary.json.
+
+### Iteration9 / candidate188 — CSSOM scanner source checkpoint
+
+Start2026-10-29T18:50:05.574819+00:00. Separate reviewed03-element.js repair from release_ops
+recognizes escaped characters atomically, excludes comment contents from
+delimiter scanning, and finds the unquoted/unescaped declaration colon. Raw
+custom-property value slices and existing validation/priority handling remain.
+Fresh200 observations and retained27 string checks are frozen;188 outcomes
+remain pending. Boundary-comment serialization remains a named holdout.
+Current overall assessment is pending;19/100 is historical only.

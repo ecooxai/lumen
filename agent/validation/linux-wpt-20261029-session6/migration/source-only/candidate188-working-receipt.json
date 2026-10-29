@@ -1,0 +1,10 @@
+{
+  "candidate": 188,
+  "started_utc": "2026-10-29T18:50:05.574819+00:00",
+  "base_head": "3367b5d29a95ad5e742449cdfff145ef8e3dec9b",
+  "file": "src/js/prelude/03-element.js",
+  "before": "bb4819b8bf96ee321e892f269487534fb6ad86c86e22b39dbf72250249c38b64",
+  "after": "b1e2cbad0a4b8d830b54d8886bfcc32d914ac5e9be4b41169b6601fdadc792fd",
+  "patch_sha256": "a004e7073a84785bb529fe842b26365ae3ee3664a5808d92bdf93843ae147766",
+  "scope": "CSSOM declaration scanning recognizes escaped quote/backslash parity and comment/colon boundaries, retaining raw value slices; independent200+27 controls pending; boundary-comment serialization holdouts remain."
+}

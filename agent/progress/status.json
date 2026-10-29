@@ -1,55 +1,54 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Ruby186 forms accepted:8127/8127 authored and644/649 upstream, zero losses. Candidate187 Node.removeChild conversion and genuine Attr branding is frozen for independent32+22 controls.",
-  "iteration": 187,
-  "score": 19,
-  "iteration_quality": 19,
-  "score_note": "19/100 is historical and has no reproducible formula; current overall assessment is pending. Scoped conformance results are numeric.",
+  "phase": "Ruby187 Node conversion accepted:32/32 +22/22 controls and28/28 upstream. Candidate188 CSSOM escape/comment scanner is frozen for independent200-field and27-string gates.",
+  "iteration": 188,
+  "score": null,
+  "iteration_quality": null,
+  "score_note": "Current whole-browser readiness is not certified. The requested target is 98/100; numeric results below describe only their named test scopes. A fresh broad non-URL assessment is pending.",
   "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
-  "checkpoint": "e6b585f01ef5f46e2d4af2cefc180bfc06d1383f",
-  "updated_utc": "2026-10-29T18:47:12.576675+00:00",
+  "checkpoint": "3731a114676dc87ffe7bce27bff78235431bd6f5",
+  "updated_utc": "2026-10-29T18:50:05.574819+00:00",
   "session_started_utc": "2026-10-29T17:25:47Z",
   "deadline_utc": "2026-10-29T21:25:47Z",
   "current_evidence": [
     [
-      "Accepted Ruby candidate 184",
-      "Fresh rebuild passed all 140/140 selected non-URL native tests. Independent browser controls passed 109/111 clamp checks, 30/30 CSS comment checks, and 26/27 CSS string checks. The three residual control failures remain visible; these groups are not additive WPT totals."
+      "Accepted candidate 186 \u00b7 form validity",
+      "8,127/8,127 authored checks (100% of this fixture), +1,099 passes and zero losses. The independently calibrated Chromium reference passed 8,125/8,127; its two reversed-time message nonpasses remain separately recorded."
     ],
     [
-      "Next engine candidates",
-      "Candidate 185 table spacing is integrated but not yet accepted. Reviewed candidate 186 form-validity changes await integration and independent 8,127-check / 24-WPT validation. No patched-form pass count is claimed yet."
+      "Pinned upstream forms \u00b7 candidate 186",
+      "644/649 assertions and 19/24 complete files, compared with baseline 183 at 522/649 and 9/24. Gain: 122 assertions, no prior-PASS losses. Chromium passed 649/649 and 24/24. Five Lumen failures remain. These are a focused selection, not the full WPT suite."
     ],
     [
-      "Actual Ruby memory comparison",
-      "Balanced candidate 182/183 runs with 10,000 uniquely styled nodes: settled summed RSS medians 187.970 / 190.374 MB (+1.279%); sampled PSS medians 162.889 / 165.482 MB. Three measured runs per candidate, explicit CPU renderer, median settled CPU 1%; no general speedup claim."
+      "Retained accepted CSS/table gates",
+      "Candidate 184: 109/111 clamp, 30/30 comment and 26/27 string controls. Candidate 185: 960/960 table-spacing fields (+456). The last fresh selected native suite passed 140/140 non-URL entries. These scopes are separate and are not additive coverage totals."
     ],
     [
-      "Guarded browser lifecycle",
-      "The approved installed capture-refusal library path is restored. All seven style-workload lifecycles completed with actual native exit 0, removed fresh profiles and no remaining recorded PIDs. Hardware rendering is not established by these CPU runs."
+      "Fixed CPU comparison \u00b7 21/21 trials",
+      "Seven trials each for immutable 176, accepted 186 and Chromium, with all 9,395 workload checks passing every trial. Median DOM/style-layout/grid milliseconds: 176 45.22/420.91/165.68; 186 50.66/416.55/171.87; Chromium 11.90/65.30/53.00. Native ranges overlap; no overall speedup claim."
     ],
     [
-      "Reference browser identity",
-      "Installed Chromium 150.0.7871.114 actual ELF SHA256 2d4adea820c95eee0c24dcc5eb729043df570838b8693fa3449df15040b0460f. The separately retained d176751d hash identifies its launcher only."
+      "Measured memory and lifecycle",
+      "Median-of-trial sampled browser-tree RSS/PSS: 186 162.298/136.609 MB; Chromium 936.526/418.823 MB. Samples include startup, work and cleanup; RSS can count shared mappings more than once. All 14 native children exited 0; all profiles were removed and no owned processes remained."
     ],
     [
-      "Retained local checkpoint",
-      "Earlier local candidate 182 evidence remains separate: 1,531/1,569 native fields and 938/1,008 in a second authored corpus, plus 10/10 DOM/event smoke. These are not current Ruby WPT totals."
+      "Active work \u00b7 candidate 187",
+      "The 187 DOM build has sealed; independent removal/Attr controls are pending. The separate 188 CSSOM scanner patch is reviewed but unaccepted. Intel UHD 620 Vulkan enumeration succeeded, but actual Lumen hardware rendering remains unverified; the comparison used explicit CPU modes."
     ]
   ],
-  "coverage": "Current Ruby candidate 182: genuine build and startup 1/1 passed; guarded browser controls pending. Local 180/182 DOM/event smoke passed 10/10 each. Broader conformance and balanced performance remain separate gates.",
+  "coverage": "Accepted Ruby candidate 186: 8,127/8,127 authored form checks and 644/649 pinned upstream form assertions (19/24 complete files), with zero prior-PASS losses. Candidate 187 is active and awaiting independent acceptance. Fresh broader non-URL WPT coverage remains pending.",
   "findings": [
-    "Active work returned to Ruby after the user restarted MCP.",
-    "Exact reviewed source changes are integrated through MCP with before/after hashes; existing remote work was checkpointed.",
-    "Fresh browser conformance, ordinary cleanup and balanced memory/performance gates remain open.",
-    "URL conformance remains deferred.",
-    "Whole-browser goal score 98/100 is not established."
+    "Whole-browser parity is not certified; broad non-URL WPT validation and a reproducible assessment are pending.",
+    "Five focused upstream form assertions remain. The authored/reference disagreement is retained as two separate Chromium message nonpasses.",
+    "Hardware rendering and ordinary desktop-close behavior remain separate unverified gates.",
+    "The downloadable archive below is the historical 168 export until the audited 186 source replacement is published."
   ],
-  "active_iteration": 187,
-  "accepted_binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
-  "accepted_binary_scope": "Immutable build168, qualified experimental acceptance at2026-10-29T02:03:24Z; full-browser sanitizer shutdown remains unproven.",
+  "active_iteration": 188,
+  "accepted_binary_sha256": "124ebb8663e0293d4820de406c0e9d5f976477c2f4d52032526ea0b652232744",
+  "accepted_binary_scope": "Immutable Ruby candidate 186, accepted for the named authored/upstream forms gates and fixed CPU workload; whole-browser parity is not certified.",
   "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
-  "candidate_binary_sha256": "648145f52b7c11b0a95c2c4aa99f0527879a757969998fade4de15773ce70f01",
+  "candidate_binary_sha256": null,
   "publication_status": "Existing reviewed source and showcase belong to accepted historical build168; a new accepted checkpoint will be identified separately.",
   "showcase_note": "The34-second4:3 walkthrough uses actual build168 native captures; it is not continuous recording. The live site previews progress, not an online replacement for native Lumen.",
   "source_archive_url": "https://ecooxai.github.io/lumen/src.tar.gz",
@@ -139,11 +138,13 @@
   "historical": {
     "label": "Retained experimental162 \u2014 previous completed session, all original combined-run losses retained",
     "test_files": 4200,
-    "comparison": "Lumen162: 1,627 fully passing URLs, 199,248/215,641 PASS reported subtests. Chromium: 3,534 fully passing URLs, 209,574/217,350 PASS reported subtests. Fixed selection, not full WPT."
+    "comparison": "Lumen162: 1,627 fully passing URLs, 199,248/215,641 PASS reported subtests. Chromium: 3,534 fully passing URLs, 209,574/217,350 PASS reported subtests. Fixed selection, not full WPT.",
+    "conservative_task_score": 19,
+    "readiness_estimate_note": "Historical estimate recorded before this session began at 2026-10-29 17:25:47 UTC; no reproducible formula was recovered. It is not the current assessment."
   },
   "source_archive_iteration": 168,
   "source_archive_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
-  "source_archive_note": "Published source is qualified experimental build168: all605 recorded inputs matched,698 repository files plus one metadata file. The reviewed archive was freshly built with declared dependencies, with22 whitespace and74 actual-font controls passing. The new archive-built binary is distinct from the measured binary.",
+  "source_archive_note": "Historical download: candidate 168, not the active 186/187 source. Its original 605-input qualification and archive hash remain unchanged. A reviewed source-only candidate 186 export is being prepared; no newer binary or WPT claim is inferred from this older download.",
   "fresh_chromium4200": {
     "completed_utc": "2026-10-28T17:36:29Z",
     "fully_passing_variants": 3534,
@@ -405,76 +406,37 @@
   "work_session_number": 5,
   "historical_public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "candidate_focused_results": {
-    "iteration": 168,
-    "session_iteration": 6,
-    "classification": "Qualified EXPERIMENTAL checkpoint; not a clean release",
-    "engine_commit": "pending scoped commit and605-input mapping",
-    "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
-    "recorded_input_count": 605,
-    "recorded_input_digest": "caddfbad3c0df624b82cd3a846ce42475d49a6544ec5f53cb136e58753a4bdc7",
-    "normal_native_ctest": [
-      140,
-      140
-    ],
-    "new_whitespace_controls_passed": 22,
-    "actual_font_controls_passed": 74,
-    "restored_render_case": {
-      "name": "overflow-wrap-anywhere-002.html",
-      "status": "PASS",
-      "differing_pixels": 0
-    },
-    "fresh_font_wpt_subtests": [
-      6,
-      20
-    ],
-    "chromium_font_wpt_subtests": [
-      14,
-      20
-    ],
-    "retained_negative_margin_wpt_subtests": [
-      13,
-      13
-    ],
-    "native_gate_processes": {
-      "actual_exit0": 7,
-      "owned_cleanup_complete": true
-    },
-    "normal_gate_seal_sha256": "573d778addde7fac88ea02bd7ccd47abc4d77cbfef45902ff0b82b1f3de92828",
-    "native_font_sanitizer_proof": {
-      "source_iteration": 167,
-      "unchanged_font_controls": 74,
-      "actual_exit_code": 0,
-      "observed_diagnostics": false,
-      "qualification": "Retained167 proof for unchanged font code; not a new whole-browser168 sanitizer run."
-    },
-    "browser_sanitizer_shutdown_verified": false,
-    "browser_sanitizer_qualification": "Original instrumented children ended-9 despite completed markers; whole-browser sanitizer shutdown remains unproven.",
-    "final_v2_performance_render100_and4200": "pending",
-    "public_source_replacement_approved": false
+    "iteration": 187,
+    "state": "build sealed; independent runtime acceptance pending"
   },
   "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
-  "session_iteration": 2,
+  "session_iteration": null,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 186,
+  "accepted_iteration": 187,
   "accepted_focused_results": {
-    "iteration": 168,
-    "normal_native_ctest": [
-      140,
-      140
-    ],
-    "actual_font_controls": 74,
-    "new_whitespace_controls": 22,
-    "fresh_font_wpt_subtests": [
-      6,
-      20
-    ],
-    "chromium_font_wpt_subtests": [
-      14,
-      20
-    ],
-    "restored_render_case_differing_pixels": 0,
-    "whole_browser_sanitizer_shutdown_verified": false,
-    "historical_focused163_preserved_separately": true
+    "iteration": 186,
+    "source_commit": "3731a114676dc87ffe7bce27bff78235431bd6f5",
+    "authored_forms": {
+      "pass": 8127,
+      "total": 8127,
+      "gained": 1099,
+      "lost": 0
+    },
+    "upstream_forms": {
+      "pass": 644,
+      "total": 649,
+      "full_files": 19,
+      "files": 24,
+      "gained": 122,
+      "lost": 0
+    },
+    "chromium_authored_nonpasses": 2,
+    "fixed_cpu_trials": {
+      "pass": 21,
+      "total": 21,
+      "checks_each": 9395
+    },
+    "whole_browser_assessment": "pending"
   },
   "rejected_session4_iterations": [
     {
@@ -593,7 +555,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 187,
+  "current_candidate": 188,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1270,7 +1232,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-29T18:47:12.576675+00:00",
+  "updated_at": "2026-10-29T18:50:05.574819+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1380,23 +1342,30 @@
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   },
   "session6_current": {
-    "candidate": 187,
+    "candidate": 188,
     "state": "source frozen for build",
-    "accepted186": {
-      "authored_pass": 8127,
-      "authored_total": 8127,
-      "authored_gained": 1099,
-      "upstream_pass": 644,
-      "upstream_total": 649,
-      "upstream_gained": 122,
-      "full_files": 19,
-      "total_files": 24,
+    "accepted187": {
+      "removal": {
+        "pass": 32,
+        "total": 32,
+        "gain": 8
+      },
+      "branding": {
+        "pass": 22,
+        "total": 22,
+        "gain": 8
+      },
+      "upstream": {
+        "pass": 28,
+        "total": 28,
+        "gain": 1
+      },
       "lost": 0
     },
     "pending": [
-      "187 full build/startup",
-      "32 removal conversion/mutation checks",
-      "22 genuine/forged/cross-realm branding checks",
+      "188 build/startup",
+      "200 scanner observations",
+      "27 retained string controls",
       "broad non-URL WPT comparison"
     ],
     "overall_assessment": "pending;19/100 historical only"
@@ -1422,5 +1391,6 @@
       "total": 27
     },
     "updated_utc": "2026-10-29T18:32:11.478100+00:00"
-  }
+  },
+  "overall_assessment": "Assessment pending"
 }
