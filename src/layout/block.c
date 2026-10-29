@@ -613,6 +613,10 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
         float avail = (mode == SZ_ABS_SHRINK ? fw : cbw) - b->m[1] - b->m[3];
         float w = s->width.kind == LK_MIN_CONTENT ? mn : s->width.kind == LK_MAX_CONTENT ? mx : LMIN(LMAX(mn, avail), mx);
         b->w = clampw(s, w, cbw, hb);
+        /* A border-box maximum cannot make the content box negative. The
+           resolved padding and border remain present even when they alone
+           exceed max-width. */
+        if (mode == SZ_ABS_SHRINK) b->w = LMAX(hb, b->w);
     }
     if (b->w < 0) b->w = 0;
     /* auto margins for in-flow blocks */
