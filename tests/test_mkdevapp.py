@@ -112,5 +112,41 @@ class ImmutableExecutableTests(unittest.TestCase):
                               inspect=race)
 
 
+class PortableResourceTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.v8 = self.root / 'v8'
+        self.v8.mkdir()
+        (self.v8 / 'icudtl.dat').write_bytes(b'fixture ICU data')
+        self.ca = self.root / 'ca.pem'
+        self.ca.write_bytes(b'-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----\n')
+        self.closure = {'files': [{'path': str(self.v8 / 'libv8.dylib')}]}
+
+    def test_icu_resource_comes_from_the_inspected_v8_directory(self):
+        resources = MODULE.portable_resources(self.closure, self.ca)
+        self.assertEqual(resources['icudtl.dat'], (self.v8 / 'icudtl.dat').resolve())
+        self.assertEqual(resources['cacert.pem'], self.ca.resolve())
+
+    def test_missing_or_ambiguous_icu_data_is_rejected(self):
+        (self.v8 / 'icudtl.dat').unlink()
+        with self.assertRaisesRegex(ValueError, 'exactly one'):
+            MODULE.portable_resources(self.closure, self.ca)
+        (self.v8 / 'icudtl.dat').write_bytes(b'fixture')
+        other = self.root / 'different-v8'
+        other.mkdir(); (other / 'icudtl.dat').write_bytes(b'incompatible fixture')
+        self.closure['files'].append({'path': str(other / 'libv8_libbase.dylib')})
+        with self.assertRaisesRegex(ValueError, 'exactly one'):
+            MODULE.portable_resources(self.closure, self.ca)
+
+    def test_ca_bundle_must_not_accidentally_publish_a_private_key(self):
+        for data in [b'no certificate resource', self.ca.read_bytes() + b'-----BEGIN PRIVATE KEY-----']:
+            with self.subTest(data=data):
+                self.ca.write_bytes(data)
+                with self.assertRaisesRegex(ValueError, 'certificates and no private keys'):
+                    MODULE.portable_resources(self.closure, self.ca)
+
+
 if __name__ == '__main__':
     unittest.main()

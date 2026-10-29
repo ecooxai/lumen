@@ -26,3 +26,8 @@ Prior artifact scrollp9517.021%,peak18.855%ofonecore (<30), settlednavigationRSS
 4. Renew focusedregression/fullfrozenWPT/resource acceptance only when concretecandidate ready; preserve denominators and exactartifactidentity. Checkpoint importantprogress andevery10realiterations.
 
 Gitpush is previously blocked by automaticapprovalreview and configuredDestinationMatches=false; no alternateconnector/remoterewrite/credentialworkaround. Authorized source/evidence backup is separate. Liveprogress andSurge addresses from historicalcontinuation must be rechecked bydeliveryowner before claims. No secrets/inboxtext/privatecapabilities in archives.
+
+## Candidate001 — focused native gates pass, broader acceptance pending
+
+Reviewedproduct33c44c37f98d99fe9f748ba89be3018f61fb1e5d; buildmetadata3737e654c56884a723b3372f4cd313289eaeb6da. LumenSHA4328d848b53427899811425385d3121c48e7ccb5d285c18b56f6813dd3145e8a; jsrunSHAa3db34326e59f012d84303bfeebbf6a559bac66fdc7114462f8d1eb1b2fd294e. Nativecachebuild7.097s,10/10gates23.215s;22SharedWorkeroraclepassesfrombaseline0/22. ExactMacsummaryout/10300110-mac/native-shared-001/summary.json. NewcandidatefullWPT/resource/deliveryremainpending. New13boundaryoracle testsporttransferandCSPjoiningbeforepromotion. Source33cisfrozenwhiletestsrun.
+Candidate fullhistoryarchiveb541SHA b0c2c28b7200e9a33079b715e6cc624c0794ad9f53e3730adf43c3a49bb854ab,44,766,772bytes,Librarylibfile_396ffd6db92081919fb5f06aa6a3e60f. Thisisanunacceptedcandidatecheckpoint,notreplacementofacceptednative004. Currentacceptedtaskscore66.426948447154565.

@@ -1,0 +1,14 @@
+SHARED_BOUNDARY_CHECK {"i":0,"name":"worker-src self permits a second document to join the same worker","ok":true}
+SHARED_BOUNDARY_CHECK {"i":1,"name":"worker-src none rejects a fresh worker in a restricted document","ok":true}
+SHARED_BOUNDARY_CHECK {"i":2,"name":"worker-src none rejects joining an already-running worker","ok":true}
+SHARED_BOUNDARY_CHECK {"i":3,"name":"child-src none fallback rejects joining an already-running worker","ok":true}
+SHARED_BOUNDARY_CHECK {"i":4,"name":"explicit worker-src self overrides child-src none for a worker join","ok":true}
+SHARED_BOUNDARY_CHECK {"i":5,"name":"native cross-origin script rejection raises SecurityError","ok":true}
+SHARED_BOUNDARY_CHECK {"i":6,"name":"malformed SharedWorker script URL raises SyntaxError","ok":true}
+SHARED_BOUNDARY_CHECK {"i":7,"name":"setting MessagePort onmessage to null enables its message queue","ok":true}
+SHARED_BOUNDARY_CHECK {"i":8,"name":"shared global does not expose DedicatedWorkerGlobalScope","ok":true}
+SHARED_BOUNDARY_CHECK {"i":9,"name":"owner transfers a MessageChannel endpoint into SharedWorker","ok":true}
+SHARED_BOUNDARY_CHECK {"i":10,"name":"SharedWorker transfers a MessageChannel endpoint to its owner","ok":true}
+SHARED_BOUNDARY_CHECK {"i":11,"name":"a SharedWorker connection port can transfer into a dedicated worker","ok":true}
+SHARED_BOUNDARY_CHECK {"i":12,"name":"data SharedWorker reports an opaque origin","ok":true}
+SHARED_BOUNDARY_RESULTS {"total":13,"passed":13,"failed":0}

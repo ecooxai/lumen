@@ -1,0 +1,77 @@
+{
+  "scope": "Independent13-case SharedWorker policy and MessagePort boundary control; not official WPT.",
+  "acceptedControl": "shared-boundary-control-v2.json",
+  "passed": 13,
+  "total": 13,
+  "durationSeconds": 1.948037,
+  "samePageAndWorkerBytesInBothAttempts": true,
+  "initialAttemptDisposition": "Retained but rejected for infrastructure: temporary profile cleanup raced a still-running Chrome helper. All13 functional outcomes were PASS.",
+  "acceptedCleanup": {
+    "gracefulRequested": true,
+    "gracefulAcknowledged": true,
+    "sentSIGTERM": false,
+    "sentSIGKILL": false,
+    "processGroupGone": true,
+    "rootExitCode": 0
+  },
+  "helperSHA256ForAcceptedControl": "9693d73c21824670a504f89584cbeba37d487004b994695e944f95123c641351",
+  "helperSourceSnapshot": "chrome-helper-control-v2.py",
+  "laterHardening": "The current helper additionally refuses to register unproven reused group members after root exit. That fallback signalling path was not exercised by this normally exited accepted control.",
+  "files": [
+    {
+      "name": "shared-boundary-control.json",
+      "bytes": 3175,
+      "sha256": "b28f2de86fd37726b4892d99fe1525dffba2926793a7497f2fe7a5eb20f83b2e"
+    },
+    {
+      "name": "shared-boundary-control.stdout.log",
+      "bytes": 1487,
+      "sha256": "848eb7b69982b5e49ee8779a6a27cc55182bb0cd54594a65f35a36dcb1ce0525"
+    },
+    {
+      "name": "shared-boundary-control.stderr.log",
+      "bytes": 7758,
+      "sha256": "18ac90bd312bacde72363eddab0b64952162fa80f542a1d6adbee046bf52b0a4"
+    },
+    {
+      "name": "shared-boundary-control-monitor.json",
+      "bytes": 2210,
+      "sha256": "fbbedb0d48ba375be919620c49b35cda0c99e7761a00095eb0d1e7c42a2dff83"
+    },
+    {
+      "name": "shared-boundary-control-monitor.csv",
+      "bytes": 107,
+      "sha256": "f411f4cc8dea3c2317036e23db91d6e6b159407bbf3ca95d63c06050f3e2be6d"
+    },
+    {
+      "name": "shared-boundary-control-v2.json",
+      "bytes": 3036,
+      "sha256": "0ec7c148c84bc92aee3653bf8cd2cb97beaa45547a3633053ec812e6ca2ebfb7"
+    },
+    {
+      "name": "shared-boundary-control-v2.stdout.log",
+      "bytes": 1676,
+      "sha256": "bb2b1caafd1343f1deaa653c941c4048b146e4feecc4c8bf3a77df0edb475d0c"
+    },
+    {
+      "name": "shared-boundary-control-v2.stderr.log",
+      "bytes": 8050,
+      "sha256": "83f2204702ff2953b9813172ec848df7a7506380c05b5da4aac6cf5963600196"
+    },
+    {
+      "name": "shared-boundary-control-v2-monitor.json",
+      "bytes": 2179,
+      "sha256": "9aecad29cd7c4c98ccc472ffa85c6141133664b9f0e7bb69b976d36eb80530f9"
+    },
+    {
+      "name": "shared-boundary-control-v2-monitor.csv",
+      "bytes": 135,
+      "sha256": "8e3830633a4f978d85a31e15ab2ecfc6a394bd2a768ae791254d81de4e4e7e8a"
+    },
+    {
+      "name": "chrome-helper-control-v2.py",
+      "bytes": 20475,
+      "sha256": "9693d73c21824670a504f89584cbeba37d487004b994695e944f95123c641351"
+    }
+  ]
+}

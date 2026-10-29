@@ -1,0 +1,4 @@
+elapsed_s,cpu_percent,interval_cpu_percent,rss_kb,processes
+0.007,0.0,,3660,1
+1.007,15.0,14.998,23016,1
+2.011,26.0,36.881,316856,1

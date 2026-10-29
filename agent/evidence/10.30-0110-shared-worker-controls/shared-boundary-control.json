@@ -1,0 +1,101 @@
+{
+  "kind": "shared-worker-policy-port-boundaries",
+  "officialWPT": false,
+  "nativeLumenExecuted": false,
+  "chromiumControlExecuted": true,
+  "binary": "/workspace/scratch/4aa97518bdcd/project/lumen/out/10300110-chromium/chrome-linux64/chrome",
+  "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "browserVersion": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.47",
+    "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.19"
+  },
+  "fixtureSHA256": "ae9398fdb1c16007efce49415b503058b89bc0ffff101ba921c5f81ef98e11cf",
+  "pageTemplateSHA256": "8e8f82678d310efc9dc06ad021451817bdcb6206dbb8765e7b36e04948248367",
+  "workerSHA256": "e232bbfbb6653a637383275737130591614b7affca8e19198512ecb926b2f796",
+  "caseManifestSHA256": "e5479ca94f34a9d95cef5c1709a76be4124c11bf878481a1ed41a8ac7d3a779d",
+  "started": "2026-10-29T17:42:27.596359+00:00",
+  "ended": "2026-10-29T17:42:29.404457+00:00",
+  "durationSeconds": 1.808102,
+  "total": 13,
+  "passed": 13,
+  "failed": 0,
+  "rows": [
+    {
+      "i": 0,
+      "name": "worker-src self permits a second document to join the same worker",
+      "ok": true
+    },
+    {
+      "i": 1,
+      "name": "worker-src none rejects a fresh worker in a restricted document",
+      "ok": true
+    },
+    {
+      "i": 2,
+      "name": "worker-src none rejects joining an already-running worker",
+      "ok": true
+    },
+    {
+      "i": 3,
+      "name": "child-src none fallback rejects joining an already-running worker",
+      "ok": true
+    },
+    {
+      "i": 4,
+      "name": "explicit worker-src self overrides child-src none for a worker join",
+      "ok": true
+    },
+    {
+      "i": 5,
+      "name": "native cross-origin script rejection raises SecurityError",
+      "ok": true
+    },
+    {
+      "i": 6,
+      "name": "malformed SharedWorker script URL raises SyntaxError",
+      "ok": true
+    },
+    {
+      "i": 7,
+      "name": "setting MessagePort onmessage to null enables its message queue",
+      "ok": true
+    },
+    {
+      "i": 8,
+      "name": "shared global does not expose DedicatedWorkerGlobalScope",
+      "ok": true
+    },
+    {
+      "i": 9,
+      "name": "owner transfers a MessageChannel endpoint into SharedWorker",
+      "ok": true
+    },
+    {
+      "i": 10,
+      "name": "SharedWorker transfers a MessageChannel endpoint to its owner",
+      "ok": true
+    },
+    {
+      "i": 11,
+      "name": "a SharedWorker connection port can transfer into a dedicated worker",
+      "ok": true
+    },
+    {
+      "i": 12,
+      "name": "data SharedWorker reports an opaque origin",
+      "ok": true
+    }
+  ],
+  "infrastructureErrors": [
+    {
+      "error": "OSError",
+      "detail": "[Errno 39] Directory not empty: '/tmp/lumen-shared-boundaries-1pfccpwz/Default'"
+    }
+  ],
+  "monitor": "External one-second monitor required",
+  "stdoutSHA256": "848eb7b69982b5e49ee8779a6a27cc55182bb0cd54594a65f35a36dcb1ce0525",
+  "stderrSHA256": "18ac90bd312bacde72363eddab0b64952162fa80f542a1d6adbee046bf52b0a4"
+}

@@ -605,3 +605,10 @@ Actual Mac supplemental53 retry6378 ran15:59:29.774924–16:00:55.150250UTC,85.3
 - Verified sourcearchive SHA f40de5360f16470414e54fd269e8b234bf9aae4930a2fbfacac065f22dd3fc75, recovered fullGit to d4eefd9 then ff-only a17ac5f metadata. Source recovery used supported approved transfer; no remote/unrelatedchanges.
 - Fullcurrentprompt captured; previouscontinuationarchived; newtaskbranchcreated. PlannedRED→GREEN independentSharedWorker oracle plus native registry/per-ownerports.
 - Root walltime begins17:11:00Z. Parallelworker effort will be reported separately where measured; do not sum it as elapsedtime.
+
+## Iteration1 first candidate verification — 2026-10-29T17:43:32.950593Z
+
+- Candidate product33c44c3, compiledmetadata3737e65; nativeMac10/10focusedgatesPASS. Build7.097s, completebuild+tests23.215s; prebuiltV8reused. Threeinheritednativeworkeroracles266/266,118/118,51/51; unchangedMessageTransfer68/68; newSharedWorker22/22 fromexact004RED0/22; parserpolicy includesactualGUI.
+- Taskwalltimefrom17:11:00Ztofirstcandidateverification:1952.950593s(32m32.951s). Includes789.9sblockedchildtransportoverhead; parallelagenttimeisnotaddedtoelapsed. Eachbuild/teststageUTC andduration inagent/evidence/10.30-0110-native-shared-001/summary-structured-copy.json.
+- Prioracceptedscore66.426948447154565/100remainsbaseline; thisfocusedcandidateisnotacceptedreleaseanddoesnotreplace1515WPTpassrate. FullWPT/resource/deliverygatespending. Candidate sourcecheckpointb541Librarylibfile_396ffd6db92081919fb5f06aa6a3e60fverifiedpersisted.
+- Independentboundary13controlnowqualifiedChrome13/13; includestransferofSharedWorkerconnectionintoDedicatedWorker. Candidate001boundaryrunpending; sourceinspectionpredictsaroutinggap. PreserveREDandrepairbeforepromotion.

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Create a fresh local macOS development bundle from its actual dependency floor.
 
-The bundle uses this Mac's installed build dependencies. For distributable,
-self-contained packaging use tools/mkdmg.py instead.
+By default the bundle uses this Mac's installed build dependencies. Opt into
+--bundle-dependencies to copy and relocate the inspected prebuilt closure. Both
+modes create an ad-hoc development app; neither performs notarization.
 """
 from __future__ import annotations
 import argparse
@@ -14,6 +15,28 @@ import subprocess
 import sys
 
 from macos_deployment_closure import inspect_closure, sha256, version_text, version_tuple
+from macos_bundle_dependencies import embed_dependencies, require_embedded_closure
+
+
+def portable_resources(closure, ca_bundle=None):
+    candidates = {Path(row['path']).parent / 'icudtl.dat' for row in closure['files']
+                  if Path(row['path']).name.startswith('libv8')}
+    candidates = {path.resolve() for path in candidates if path.is_file() and path.stat().st_size}
+    if len(candidates) != 1:
+        raise ValueError('The inspected prebuilt V8 closure must identify exactly one nonempty ICU data file')
+    if ca_bundle is None:
+        ca_bundle = next((path for path in [Path('/opt/homebrew/etc/ca-certificates/cert.pem'),
+                       Path('/opt/homebrew/etc/openssl@3/cert.pem'), Path('/etc/ssl/cert.pem')]
+                          if path.is_file() and path.stat().st_size), None)
+    if ca_bundle is None or not Path(ca_bundle).is_file():
+        raise ValueError('A trusted CA bundle is required for the self-contained development app')
+    ca_bundle = Path(ca_bundle).resolve()
+    if ca_bundle.stat().st_size > 4 * 1024 * 1024:
+        raise ValueError('The selected CA bundle exceeds the bounded certificate resource size')
+    content = ca_bundle.read_bytes()
+    if b'-----BEGIN CERTIFICATE-----' not in content or b'PRIVATE KEY-----' in content:
+        raise ValueError('The selected CA resource must contain certificates and no private keys')
+    return {'icudtl.dat': candidates.pop(), 'cacert.pem': ca_bundle}
 
 
 def main():
@@ -24,6 +47,10 @@ def main():
     parser.add_argument('--expected-binary-sha256',
                         help='Require the selected executable to match its recorded test artifact SHA-256')
     parser.add_argument('--identifier', default='ai.ecoox.lumen.development')
+    parser.add_argument('--bundle-dependencies', action='store_true',
+                        help='Embed the inspected dylibs, matching V8 ICU data and a CA bundle; ad-hoc development app only')
+    parser.add_argument('--ca-bundle', type=Path,
+                        help='Explicit CA certificate resource for --bundle-dependencies; defaults to the installed trusted CA bundle')
     parser.add_argument('--minimum-system-version',
                         help='Optional conservative minimum; cannot understate the inspected dependency closure')
     args = parser.parse_args()
@@ -51,6 +78,9 @@ def main():
     if expected is not None and source_before != expected:
         parser.error('The selected executable does not match --expected-binary-sha256')
     closure = inspect_closure(root, source)
+    if args.ca_bundle is not None and not args.bundle_dependencies:
+        parser.error('--ca-bundle requires --bundle-dependencies')
+    selected_resources = portable_resources(closure, args.ca_bundle) if args.bundle_dependencies else {}
     minimum = closure['maximumDeclaredMinimum']
     if args.minimum_system_version is not None:
         try:
@@ -72,8 +102,16 @@ def main():
     if icon.is_file():
         shutil.copy2(icon, resources / 'Lumen.icns')
     icu = Path('/opt/homebrew/opt/v8/libexec/icudtl.dat')
-    if icu.is_file():
-        shutil.copy2(icu, resources / 'icudtl.dat')
+    if not args.bundle_dependencies and icu.is_file():
+        selected_resources['icudtl.dat'] = icu.resolve()
+    resource_receipts = []
+    for name, path in selected_resources.items():
+        digest = sha256(path)
+        target = resources / name
+        shutil.copy2(path, target)
+        if sha256(target) != digest or sha256(path) != digest:
+            raise RuntimeError('A runtime resource changed during bundle copy: ' + name)
+        resource_receipts.append({'name': name, 'source': str(path), 'sha256': digest, 'bytes': target.stat().st_size})
     info = {
         'CFBundleName': 'Lumen', 'CFBundleDisplayName': 'Lumen',
         'CFBundleIdentifier': args.identifier, 'CFBundleExecutable': 'lumen',
@@ -86,16 +124,26 @@ def main():
     }
     with (output / 'Contents/Info.plist').open('wb') as file:
         plistlib.dump(info, file)
+    embedded = embed_dependencies(root, closure, output) if args.bundle_dependencies else None
     subprocess.run(['codesign', '--force', '--timestamp=none', '--sign', '-', str(output)],
                    check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30)
-    subprocess.run(['codesign', '--verify', '--strict', str(output)], check=True,
+    subprocess.run(['codesign', '--verify', '--strict', *(['--deep'] if embedded else []), str(output)], check=True,
                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=15)
     signed_closure = inspect_closure(root, executable)
+    if embedded:
+        require_embedded_closure(signed_closure, output)
+        for row in embedded['images']:
+            row['bundledSha256'] = sha256(Path(row['target']))
+        embedded['deploymentClosure'] = signed_closure
     if version_tuple(signed_closure['maximumDeclaredMinimum']) > version_tuple(minimum):
         raise RuntimeError('The signed bundle dependency floor exceeds its declared minimum')
     if sha256(source) != source_before or any(sha256(Path(entry['path'])) != entry['sha256']
                                             for entry in closure['files']):
         raise RuntimeError('A source executable or dependency changed during packaging')
+    for resource in resource_receipts:
+        if (sha256(Path(resource['source'])) != resource['sha256']
+                or sha256(resources / resource['name']) != resource['sha256']):
+            raise RuntimeError('A runtime resource changed during packaging')
     print(json.dumps({'app': str(output), 'executable': str(executable),
                       'bundleIdentifier': args.identifier, 'developmentOnly': True,
                       'sourceExecutable': str(source),
@@ -103,6 +151,9 @@ def main():
                       'binaryBeforeBundleSigningSha256': source_before,
                       'binarySha256': sha256(executable), 'minimumSystemVersion': minimum,
                       'deploymentClosure': signed_closure,
+                      'embeddedDependencies': embedded,
+                      'runtimeResources': resource_receipts,
+                      'notarized': False,
                       'minimumDerivedFromActualDependencyClosure': args.minimum_system_version is None,
                       'olderMacOSRuntimeTested': False}))
 

@@ -11,6 +11,7 @@ import asyncio
 import datetime
 import hashlib
 import http.server
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -120,15 +121,24 @@ def chrome_control(binary, url, profile, completion_marker='WORKER_HEADERS_RESUL
                    infrastructure_marker='WORKER_HEADERS_INFRA '):
     """Drive an actual isolated Chrome page; never substitute it for Lumen."""
     import websockets
+    specification = importlib.util.spec_from_file_location('worker_control_monitor',
+        Path(__file__).resolve().parents[1] / 'tools/monitor_process.py')
+    monitor = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(monitor)
+    namespace_error = monitor.pid_namespace_error()
+    if namespace_error:
+        raise RuntimeError(namespace_error)
     log = tempfile.TemporaryFile(mode='w+t')
     process = subprocess.Popen([
         str(binary), '--headless=new', '--no-sandbox', '--disable-gpu',
         '--disable-background-networking', '--no-first-run', '--no-default-browser-check',
         '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1',
         '--user-data-dir=' + profile, 'about:blank',
-    ], stdout=log, stderr=log)
+    ], stdout=log, stderr=log, start_new_session=True)
     lines = []
     version = None
+    observed_identities = {}
+    cleanup = {'gracefulRequested': False}
     try:
         active = Path(profile) / 'DevToolsActivePort'
         deadline = time.monotonic() + 10
@@ -183,16 +193,41 @@ def chrome_control(binary, url, profile, completion_marker='WORKER_HEADERS_RESUL
                 if not finished:
                     raise TimeoutError('Chrome fixture did not report all expected results')
                 await call('Target.closeTarget', {'targetId': target['targetId']})
+                if process.poll() is None:
+                    observed_identities.update(monitor.owned_group_members(process.pid))
+                cleanup['gracefulRequested'] = True
+                try:
+                    await asyncio.wait_for(call('Browser.close'), 5)
+                    cleanup['gracefulAcknowledged'] = True
+                except Exception as error:
+                    # A normal close can drop DevTools before acknowledging.
+                    # Actual owned-group disappearance below decides success.
+                    cleanup['gracefulRequestError'] = type(error).__name__ + ': ' + str(error)
                 return build
 
         version = asyncio.run(execute())
     finally:
-        process.terminate()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait(timeout=5)
+        deadline = time.monotonic() + 10
+        while cleanup['gracefulRequested']:
+            members = monitor.owned_group_members(process.pid)
+            root_alive = process.poll() is None
+            # Do not bless a newly reused group after the owned root exits.
+            if root_alive or any(observed_identities.get(pid) == identity
+                                 for pid, identity in members.items()):
+                observed_identities.update(members)
+            if not members or time.monotonic() >= deadline:
+                break
+            time.sleep(0.05)
+        cleanup.update(monitor.cleanup_owned_group(process, observed_identities, grace=3))
+        remaining = monitor.owned_group_members(process.pid)
+        cleanup['processGroupGone'] = not remaining
+        cleanup['rootExitCode'] = process.poll()
+        if remaining:
+            cleanup['error'] = cleanup.get('error') or 'Owned Chrome helpers remain after cleanup'
+        if cleanup.get('error'):
+            lines.append(infrastructure_marker + json.dumps({'error': 'Chrome cleanup failed', 'cleanup': cleanup}))
+        else:
+            lines.append('CHROMIUM_CONTROL_CLEANUP ' + json.dumps(cleanup))
         log.seek(0)
         diagnostics = log.read()
         log.close()
