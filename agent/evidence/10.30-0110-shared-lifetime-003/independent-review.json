@@ -1,0 +1,119 @@
+{
+  "reviewedUTC": "2026-10-29T18:34:41.585632+00:00",
+  "scope": "Independent metadata and all303 included native journal checkpoint review; original raw monitor/log/journal byte audit remains separate",
+  "sourceLumenBinarySHA256": "0b20cd1139a5794eaa5d020105665c3093ca7b3504d338045b0a545db4b6ad3e",
+  "nativeICUPrefixAttested": true,
+  "allDeclaredStressGatesPassed": true,
+  "workloads": [
+    {
+      "kind": "queued",
+      "checksPassed": 2896,
+      "isolatesCreated": 201,
+      "durationSeconds": 51.555,
+      "warmRSSMiB": 87.578125,
+      "finalRSSMiB": 76.203125,
+      "warmToFinalRSSMiB": -11.375,
+      "warmThreads": 14,
+      "finalThreads": 12,
+      "warmFDs": 4,
+      "finalFDs": 4,
+      "postWorkIdle": {
+        "p95OneCoreCPUPercent": 0.0,
+        "samples": 10,
+        "peakOneCoreCPUPercent": 0.0,
+        "scope": "Final nine seconds of the declared 12-second native fixture idle interval"
+      },
+      "runTelemetry": {
+        "name": "run",
+        "passed": true,
+        "durationSeconds": 47.08,
+        "monitor": "out/10300110-mac/shared-queue-stress-003/run.json",
+        "monitorSHA256": "974ccef795d57cf25afff4833aa963ec0c3f9b0e1859d01449e48d588bbad71d",
+        "logSHA256": "2fa8d75ffe3d230029ea6730325f564cc510cd0db8cabd6ce8ed8dafa366cdf4",
+        "rssPeakMiB": 93.234,
+        "intervalCPU_P95Percent": 77.061,
+        "intervalCPU_PeakPercent": 79.748,
+        "maxSamplingGapSeconds": 1.027,
+        "cpuUnit": "percent of one logical CPU; may exceed 100"
+      },
+      "summaryStructuredCopy": "queued-summary-structured-copy.json",
+      "summaryStructuredCopySHA256": "13bbc3f4245c501e0d09d95857fc2e8efc3f2c7fc9cd60c08704e2437f70017b",
+      "rawJournalRemoteSHA256": "cbd563751b2824393ee76900f84e17ec9a0643527882f07ffcedf8ea5de093f3"
+    },
+    {
+      "kind": "shared",
+      "checksPassed": 1691,
+      "isolatesCreated": 200,
+      "durationSeconds": 25.302,
+      "warmRSSMiB": 87.640625,
+      "finalRSSMiB": 88.328125,
+      "warmToFinalRSSMiB": 0.6875,
+      "warmThreads": 13,
+      "finalThreads": 13,
+      "warmFDs": 5,
+      "finalFDs": 5,
+      "postWorkIdle": {
+        "p95OneCoreCPUPercent": 0.0,
+        "samples": 8,
+        "peakOneCoreCPUPercent": 0.0,
+        "scope": "Final nine seconds of the declared 12-second native fixture idle interval"
+      },
+      "runTelemetry": {
+        "name": "run",
+        "passed": true,
+        "durationSeconds": 21.041,
+        "monitor": "out/10300110-mac/shared-stress-003/run.json",
+        "monitorSHA256": "55a2e90a281d11fec1b32959e36799042517a104f7e3fb19c5e029addb587d9e",
+        "logSHA256": "b0ad904739e13e0f84369942ad0a1d59c07249575aef5b6b7de6ac730cec36cb",
+        "rssPeakMiB": 91.625,
+        "intervalCPU_P95Percent": 101.356,
+        "intervalCPU_PeakPercent": 102.046,
+        "maxSamplingGapSeconds": 1.005,
+        "cpuUnit": "percent of one logical CPU; may exceed 100"
+      },
+      "summaryStructuredCopy": "shared-summary-structured-copy.json",
+      "summaryStructuredCopySHA256": "ae1e0dbf30f61e49a9002130556c501f706c8e29ee36aec95d8587b3ac7b3188",
+      "rawJournalRemoteSHA256": "6a7ee365bb2d80a0138a46e5a9761161402bb92397fadfabb956e8af16232fca"
+    },
+    {
+      "kind": "transferred",
+      "checksPassed": 1896,
+      "isolatesCreated": 201,
+      "durationSeconds": 23.291,
+      "warmRSSMiB": 78.34375,
+      "finalRSSMiB": 78.375,
+      "warmToFinalRSSMiB": 0.03125,
+      "warmThreads": 14,
+      "finalThreads": 12,
+      "warmFDs": 4,
+      "finalFDs": 4,
+      "postWorkIdle": {
+        "p95OneCoreCPUPercent": 0.0,
+        "samples": 8,
+        "peakOneCoreCPUPercent": 0.0,
+        "scope": "Final nine seconds of the declared 12-second native fixture idle interval"
+      },
+      "runTelemetry": {
+        "name": "run",
+        "passed": true,
+        "durationSeconds": 18.051,
+        "monitor": "out/10300110-mac/shared-transfer-stress-003/run.json",
+        "monitorSHA256": "e4c0fec5605361d91724a4b0eb57f17090f2f393823d7c0994a6ac5bbce85a7b",
+        "logSHA256": "f15ee6fe037dc40c3cbe6eb765a3f5d1e2e815d6f41e46130bb045baf2d47554",
+        "rssPeakMiB": 81.844,
+        "intervalCPU_P95Percent": 32.254,
+        "intervalCPU_PeakPercent": 32.254,
+        "maxSamplingGapSeconds": 1.023,
+        "cpuUnit": "percent of one logical CPU; may exceed 100"
+      },
+      "summaryStructuredCopy": "transferred-summary-structured-copy.json",
+      "summaryStructuredCopySHA256": "5dce7cfe7e23590b4d553baa3381097a2c74fd7b7b8bf495fc990b80449ade12",
+      "rawJournalRemoteSHA256": "00ec9f8a5f13d38ef630dd94748b083c242234b21d91fd209860ca535aff4673"
+    }
+  ],
+  "completeWPTClaimed": false,
+  "scrollingAcceptanceClaimed": false,
+  "sameSignedDeviceIPAClaimed": false,
+  "activeCPUQualification": "The queued fixture deliberately holds two120ms busy tasks per cycle. Its77.061percent p95 is expected active stress load; final idle measured0percent. The basic fixture intentionally creates200 isolates and briefly exceeds one logical CPU. Neither statistic is scrolling CPU.",
+  "cpuSamplingQualification": "Percentages are cumulative CPU-time deltas at one-second intervals; a measured0percent is limited by the OS CPU-time resolution."
+}

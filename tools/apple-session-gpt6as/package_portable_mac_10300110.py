@@ -35,7 +35,8 @@ def main():
         parser.error('Use the actual canonical native Mac workspace')
     sys.path.insert(0, str(root / 'tools'))
     from macos_deployment_closure import inspect_closure
-    from macos_bundle_dependencies import require_embedded_closure, system_install_name
+    from macos_bundle_dependencies import require_embedded_closure, system_install_name, verify_recorded_bundle
+    from monitor_macos_host_10300110 import HostSampler
     product_path = args.build_summary.resolve()
     product_path.relative_to(root / 'out')
     product = json.loads(product_path.read_text())
@@ -47,6 +48,7 @@ def main():
     sources = json.loads(manifest.read_text())
     tool_names = ['tools/mkdevapp.py', 'tools/macos_bundle_dependencies.py',
         'tools/macos_deployment_closure.py', 'tools/monitor_process.py',
+        'tools/monitor_macos_host_10300110.py',
         'tools/apple-session-gpt6as/package_portable_mac_10300110.py']
     tools = {name: sha(root / name) for name in tool_names}
     for name, digest in sources.items():
@@ -96,7 +98,10 @@ def main():
             raise RuntimeError(name + ' failed; raw monitor and log retained')
         return data
 
+    host_sampler = None
     try:
+        host_sampler = HostSampler(out / 'host-telemetry', max_seconds=600)
+        host_sampler.start()
         staging, delivery = out / 'staging', out / 'delivery'
         staging.mkdir(); delivery.mkdir()
         app_name = 'GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.30-0110.app'
@@ -199,6 +204,7 @@ console.log('LUMEN_PORTABLE_MAC_READY');}catch(e){console.error('LUMEN_PORTABLE_
         archive = out / 'GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.30-0110-Mac-development.zip'
         measured('archive', ['/usr/bin/ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(delivery), str(archive)], 120)
         report['archive'] = {'path': str(archive.relative_to(root)), 'bytes': archive.stat().st_size, 'sha256': sha(archive)}
+        report['recordedRuntimeClosureReverified'] = verify_recorded_bundle(relocated, app, metadata['runtimeResources'])
         if sha(binary) != artifact['sha256'] or sha(executable) != metadata['binarySha256']:
             raise RuntimeError('Frozen source or signed bundle changed during validation')
         for name, digest in {**sources, **tools}.items():
@@ -208,6 +214,10 @@ console.log('LUMEN_PORTABLE_MAC_READY');}catch(e){console.error('LUMEN_PORTABLE_
     except Exception as error:
         report['error'] = type(error).__name__ + ': ' + str(error)
     finally:
+        if host_sampler is not None:
+            report['hostTelemetry'] = host_sampler.finish()
+            if report['passed'] and not report['hostTelemetry']['validOneSecondCoverage']:
+                report.update(passed=False, error='Required one-second whole-host telemetry was incomplete')
         report['finishedUTC'] = datetime.now(timezone.utc).isoformat()
         report['durationSeconds'] = round(time.monotonic() - started, 3)
         save()

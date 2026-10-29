@@ -1,0 +1,33 @@
+✔ native downloads remain absent without explicitly configured acceptance files (40.067171ms)
+✖ only two exact native routes serve the configured bytes and truthful download name (11.756509ms)
+✔ native artifact routes reject symlink targets instead of exposing unrelated files (8.134376ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 2
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 166.920716
+
+✖ failing tests:
+
+test at tools/lume-progress-10290244/tests/native_delivery.test.mjs:29:1
+✖ only two exact native routes serve the configured bytes and truthful download name (11.756509ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  404 !== 200
+  
+      at file:///workspace/scratch/4aa97518bdcd/project/lumen/tools/lume-progress-10290244/tests/native_delivery.test.mjs:32:12
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async fixture (file:///workspace/scratch/4aa97518bdcd/project/lumen/tools/lume-progress-10290244/tests/native_delivery.test.mjs:19:8)
+      at async TestContext.<anonymous> (file:///workspace/scratch/4aa97518bdcd/project/lumen/tools/lume-progress-10290244/tests/native_delivery.test.mjs:30:3)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 404,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

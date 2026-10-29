@@ -1,0 +1,782 @@
+{
+  "schema": 1,
+  "task": "10.292019r",
+  "scope": "Supplemental pinned XHR lifecycle, types, bytes, CORS and IDL; every manifest variant of the27 preselected sources retained, separate from original1515.",
+  "wptRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "manifestSHA256": "486d91d11e06b7eda7d5ea23ffbaf1b383affc8c06190ba370f5dd0d1a569bc8",
+  "schedule": [
+    {
+      "type": "testharness",
+      "test": "/xhr/XMLHttpRequest-withCredentials.any.html",
+      "source": "xhr/XMLHttpRequest-withCredentials.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/XMLHttpRequest-withCredentials.any.worker.html",
+      "source": "xhr/XMLHttpRequest-withCredentials.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-after-receive.any.html",
+      "source": "xhr/abort-after-receive.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: abort() after successful receive should not fire \"abort\" event"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-after-receive.any.worker.html",
+      "source": "xhr/abort-after-receive.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: abort() after successful receive should not fire \"abort\" event"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-after-send.any.html",
+      "source": "xhr/abort-after-send.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: abort() after send()"
+          ],
+          [
+            "script",
+            "resources/xmlhttprequest-event-order.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-after-send.any.worker.html",
+      "source": "xhr/abort-after-send.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: abort() after send()"
+          ],
+          [
+            "script",
+            "resources/xmlhttprequest-event-order.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-after-timeout.any.html",
+      "source": "xhr/abort-after-timeout.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: abort() after a timeout should not fire \"abort\" event"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-after-timeout.any.worker.html",
+      "source": "xhr/abort-after-timeout.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: abort() after a timeout should not fire \"abort\" event"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-during-open.any.html",
+      "source": "xhr/abort-during-open.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-during-open.any.worker.html",
+      "source": "xhr/abort-during-open.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-during-readystatechange.any.html",
+      "source": "xhr/abort-during-readystatechange.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-during-readystatechange.any.worker.html",
+      "source": "xhr/abort-during-readystatechange.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-during-unsent.any.html",
+      "source": "xhr/abort-during-unsent.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: abort() during UNSENT"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-during-unsent.any.worker.html",
+      "source": "xhr/abort-during-unsent.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: abort() during UNSENT"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-event-abort.any.html",
+      "source": "xhr/abort-event-abort.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: The abort() method: do not fire abort event in OPENED state when send() flag is unset."
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-event-abort.any.worker.html",
+      "source": "xhr/abort-event-abort.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: The abort() method: do not fire abort event in OPENED state when send() flag is unset."
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-event-loadend.any.html",
+      "source": "xhr/abort-event-loadend.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: The abort() method: Fire a progress event named loadend"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/abort-event-loadend.any.worker.html",
+      "source": "xhr/abort-event-loadend.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: The abort() method: Fire a progress event named loadend"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/blob-range.any.html",
+      "source": "xhr/blob-range.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/blob-range.any.worker.html",
+      "source": "xhr/blob-range.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/close-worker-with-xhr-in-progress.html",
+      "source": "xhr/close-worker-with-xhr-in-progress.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/cors-upload.any.html",
+      "source": "xhr/cors-upload.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Cross-Origin POST with preflight and FormData body should send body"
+          ],
+          [
+            "script",
+            "/common/get-host-info.sub.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/cors-upload.any.worker.html",
+      "source": "xhr/cors-upload.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "Cross-Origin POST with preflight and FormData body should send body"
+          ],
+          [
+            "script",
+            "/common/get-host-info.sub.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/event-timeout-order.any.html",
+      "source": "xhr/event-timeout-order.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: event - timeout (order of events)"
+          ],
+          [
+            "script",
+            "resources/xmlhttprequest-event-order.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/event-timeout-order.any.worker.html",
+      "source": "xhr/event-timeout-order.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: event - timeout (order of events)"
+          ],
+          [
+            "script",
+            "resources/xmlhttprequest-event-order.js"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/getresponseheader.any.html",
+      "source": "xhr/getresponseheader.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/getresponseheader.any.worker.html",
+      "source": "xhr/getresponseheader.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/idlharness.any.html",
+      "source": "xhr/idlharness.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker,sharedworker"
+          ],
+          [
+            "script",
+            "/resources/WebIDLParser.js"
+          ],
+          [
+            "script",
+            "/resources/idlharness.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/idlharness.any.sharedworker.html",
+      "source": "xhr/idlharness.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker,sharedworker"
+          ],
+          [
+            "script",
+            "/resources/WebIDLParser.js"
+          ],
+          [
+            "script",
+            "/resources/idlharness.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/idlharness.any.worker.html",
+      "source": "xhr/idlharness.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker,sharedworker"
+          ],
+          [
+            "script",
+            "/resources/WebIDLParser.js"
+          ],
+          [
+            "script",
+            "/resources/idlharness.js"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/json.any.html",
+      "source": "xhr/json.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/json.any.worker.html",
+      "source": "xhr/json.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/responseType-document-in-worker.html",
+      "source": "xhr/responseType-document-in-worker.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/responseXML-unavailable-in-worker.html",
+      "source": "xhr/responseXML-unavailable-in-worker.html",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/responsetype.any.html",
+      "source": "xhr/responsetype.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest.responseType"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/responsetype.any.worker.html",
+      "source": "xhr/responsetype.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest.responseType"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/responseurl-after-abort.any.html",
+      "source": "xhr/responseurl-after-abort.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: responseURL is the empty string after abort()"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/responseurl-after-abort.any.worker.html",
+      "source": "xhr/responseurl-after-abort.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest: responseURL is the empty string after abort()"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/send-data-arraybuffer.any.html",
+      "source": "xhr/send-data-arraybuffer.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest.send(arraybuffer)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/send-data-arraybuffer.any.worker.html",
+      "source": "xhr/send-data-arraybuffer.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest.send(arraybuffer)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/send-data-arraybufferview.any.html",
+      "source": "xhr/send-data-arraybufferview.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest.send(arraybufferview)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/send-data-arraybufferview.any.worker.html",
+      "source": "xhr/send-data-arraybufferview.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest.send(arraybufferview)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/send-data-string-invalid-unicode.any.html",
+      "source": "xhr/send-data-string-invalid-unicode.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest.send(invalidUnicodeString)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/send-data-string-invalid-unicode.any.worker.html",
+      "source": "xhr/send-data-string-invalid-unicode.any.js",
+      "timeout": "normal",
+      "metadata": {
+        "script_metadata": [
+          [
+            "title",
+            "XMLHttpRequest.send(invalidUnicodeString)"
+          ]
+        ]
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/send-send.any.html",
+      "source": "xhr/send-send.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/send-send.any.worker.html",
+      "source": "xhr/send-send.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/sync-no-progress.any.html",
+      "source": "xhr/sync-no-progress.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/sync-no-progress.any.worker.html",
+      "source": "xhr/sync-no-progress.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/sync-no-timeout.any.html",
+      "source": "xhr/sync-no-timeout.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker,sharedworker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/sync-no-timeout.any.sharedworker.html",
+      "source": "xhr/sync-no-timeout.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker,sharedworker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/sync-no-timeout.any.worker.html",
+      "source": "xhr/sync-no-timeout.any.js",
+      "timeout": "long",
+      "metadata": {
+        "script_metadata": [
+          [
+            "global",
+            "window,dedicatedworker,sharedworker"
+          ],
+          [
+            "timeout",
+            "long"
+          ]
+        ],
+        "timeout": "long"
+      },
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/xhr-timeout-longtask.any.html",
+      "source": "xhr/xhr-timeout-longtask.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    },
+    {
+      "type": "testharness",
+      "test": "/xhr/xhr-timeout-longtask.any.worker.html",
+      "source": "xhr/xhr-timeout-longtask.any.js",
+      "timeout": "normal",
+      "metadata": {},
+      "references": []
+    }
+  ],
+  "scheduleSHA256": "523450d693819e78c75b69828318075cd493928ab91d62c4a0718238559623ce",
+  "sources": {
+    "xhr/XMLHttpRequest-withCredentials.any.js": "27755a8ee1086372eb5a4132a5e12c213e6c6289a6b8dd985cfe770946afdccb",
+    "xhr/abort-after-receive.any.js": "a9b12d0f292f0091472180ffe555e6c1ba39f4931b12605ff379d6d9fc54c282",
+    "xhr/abort-after-send.any.js": "a15805c4e0bb83cb1de8a2bfdfe6a8ac050891d8f16e1c170dc9a8b700368a0e",
+    "xhr/abort-after-timeout.any.js": "9647348a25f003761f88d5564969ffb51721a71ddc3eafcc1a31703aa45343b7",
+    "xhr/abort-during-open.any.js": "3bde4861d7f16be275e7e976d22ba7337f2cd0fd1fb339b1a827775c60aa95d0",
+    "xhr/abort-during-readystatechange.any.js": "3a01cdc95f3d926ad2c2fc7196c66e42a8f129bf66adee7ccd0999ecbd73beec",
+    "xhr/abort-during-unsent.any.js": "e98667f2458bc92da16db45b0c75452ecb9072eae94b10e1650137259e1d1591",
+    "xhr/abort-event-abort.any.js": "18b7f04c9fcdde74bc4f3902ecd7e9bab74f0a03036779578044798b6a529174",
+    "xhr/abort-event-loadend.any.js": "01157e239eaa7069d7c4bf37f8a455cec191e6a18521c7e274689b312c75eef4",
+    "xhr/event-timeout-order.any.js": "ccec67457a1e3c75d713892437ef7eb71466d1587e112d6ed7de6ee9a16f1585",
+    "xhr/getresponseheader.any.js": "60896a0f063e74bd12fa6033cd784b08dd4072c40de25c4c31f731898f4a48ff",
+    "xhr/idlharness.any.js": "9190b8b2582ba33c8b6715e41f6661690978b1b631e3164375c21eb662a3d9fb",
+    "xhr/json.any.js": "1c1947accd5a177bc336828ccdf451d25bc94b3279551a463f2c336a4e642b93",
+    "xhr/responsetype.any.js": "190f23546ae6255445e1e0edf39c3a281e529251af1fae72f4b23aa439ecd4a3",
+    "xhr/responseurl-after-abort.any.js": "a5ac76530b9643ac1b23b43f1b90e52783d5b25cda32310158aa27bcbfaecc84",
+    "xhr/send-data-arraybuffer.any.js": "902f7e1fddfb6a360031c5fe88c91179710836c7ca19c8126e113f062c2a2963",
+    "xhr/send-data-arraybufferview.any.js": "631191fd2f7f13423be187c5f0db396889927cf998cc1c898e3d8afd9af26300",
+    "xhr/send-data-string-invalid-unicode.any.js": "7ea3ebb893004b6e3def4d7843a636d8e6e124b5ade9c70735c3803c5082ca18",
+    "xhr/send-send.any.js": "c6c459e45aa9b5a6ecd1af369733f769dc38464fa5a089bb895e659d80c6ba2c",
+    "xhr/sync-no-progress.any.js": "62cce1c53a251f77036452f6560e61b3fd26e34224d2e4f9feb72ed8423f372e",
+    "xhr/sync-no-timeout.any.js": "b5a0a467d5dc790bdfa3dd2db94bbc806c560958d5e985c6a9b45dd23f16a94b",
+    "xhr/responseXML-unavailable-in-worker.html": "623cc3ac8994e50010fd8c150ab01215b3831d62a81435a594fc1a1672c79eb9",
+    "xhr/responseType-document-in-worker.html": "025c3cf867935c04d8e987c6d95827a789cad93d0a2e7b2768e4b4b29d737382",
+    "xhr/close-worker-with-xhr-in-progress.html": "0f2d8a4e38a0544d7c6c970a668219455ee3ca8a7d5c7e42aaacdc2c6efffcec",
+    "xhr/xhr-timeout-longtask.any.js": "030519701ef5c9ae377af0710d4b399da79fbe45a71dfbf1ae6ae830d995e468",
+    "xhr/cors-upload.any.js": "2b8d3220e741c90319d85d8f736382a2ab62afa62ba901a5c068cdbd1d035635",
+    "xhr/blob-range.any.js": "ba974a38c427520ec1788815b095be3cf6e4c14b8bbad3fb59af50f94c301245"
+  },
+  "selectionFrozenBeforeRuns": true
+}

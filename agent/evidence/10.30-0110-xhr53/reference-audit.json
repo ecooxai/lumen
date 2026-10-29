@@ -1,0 +1,79 @@
+{
+  "scope": "Supplemental unchanged official XHR53 selection, separate from original1515 and full official WPT",
+  "auditedUTC": "2026-10-29T18:27:30.223331+00:00",
+  "sourceArchive": "agent/evidence/10.292019r-xhr-wpt-005/raw-evidence.tar.gz",
+  "sourceArchiveSHA256": "8a15f68a06532c227d71b07843de6772962cbf1cac414426808915204474fc6e",
+  "scheduleSHA256": "523450d693819e78c75b69828318075cd493928ab91d62c4a0718238559623ce",
+  "wptRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "sourceCount": 27,
+  "variants": 53,
+  "reference": {
+    "browser": {
+      "protocolVersion": "1.3",
+      "product": "Chrome/156.0.8078.47",
+      "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "jsVersion": "15.6.75.19"
+    },
+    "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+    "summary": {
+      "scheduled": 53,
+      "recorded": 53,
+      "fullyPassing": 51,
+      "unrun": 0,
+      "passPercentOfRecorded": 96.22641509433963,
+      "assertions": {
+        "PASS": 768,
+        "FAIL": 2
+      },
+      "harnessStatuses": {
+        "OK": 53
+      },
+      "unqualifiedEvidenceVariants": 0
+    },
+    "failed": [
+      {
+        "test": "/xhr/abort-after-send.any.html",
+        "status": "OK",
+        "message": null,
+        "assertions": [
+          {
+            "name": "XMLHttpRequest: abort() after send()",
+            "status": "FAIL",
+            "message": "assert_equals: expected \"abort(0,0,false)\" but got \"upload.abort(0,0,false)\""
+          }
+        ]
+      },
+      {
+        "test": "/xhr/abort-after-send.any.worker.html",
+        "status": "OK",
+        "message": null,
+        "assertions": [
+          {
+            "name": "XMLHttpRequest: abort() after send()",
+            "status": "FAIL",
+            "message": "assert_equals: expected \"abort(0,0,false)\" but got \"upload.abort(0,0,false)\""
+          }
+        ]
+      }
+    ],
+    "cleanOwnedBrowserExit": true
+  },
+  "sharedWorkerReference": [
+    {
+      "test": "/xhr/idlharness.any.sharedworker.html",
+      "status": "OK",
+      "subtest_count": 160
+    },
+    {
+      "test": "/xhr/sync-no-timeout.any.sharedworker.html",
+      "status": "OK",
+      "subtest_count": 1
+    }
+  ],
+  "files": {
+    "frozen-selection.json": "8c81c214e10d27b7a8ce7cc40db0ff528fec5dac5e5db231f599c289d1aa385f",
+    "official-chrome-reference-results.jsonl": "2fd52a47b128b4068303eac693b0352daa4868419fe92056d2cea9b5ba26f4c7",
+    "official-chrome-reference-receipt.json": "2953b7957685cda0570fb59a12485621576b4fbed08adbe30d6e10c99446a499"
+  }
+}

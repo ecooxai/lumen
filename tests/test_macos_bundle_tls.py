@@ -34,6 +34,9 @@ def main():
     root = Path.cwd().resolve()
     if sys.platform != 'darwin' or str(root) != '/Users/devin/repos/lumen':
         parser.error('Run on the actual canonical Mac workspace')
+    sys.path.insert(0, str(root / 'tools'))
+    from macos_bundle_dependencies import verify_recorded_bundle
+    from monitor_macos_host_10300110 import HostSampler
     package_path = args.package_summary.resolve()
     package_path.relative_to(root / 'out')
     package = json.loads(package_path.read_text())
@@ -46,6 +49,8 @@ def main():
     expected_binary = package['package']['binarySha256']
     if sha(executable) != expected_binary:
         parser.error('The accepted package executable differs')
+    bundle_verified = verify_recorded_bundle(package['relocation']['deploymentClosure'], app,
+        package['package']['runtimeResources'])
     original_ca = sha(ca_resource)
     out = args.output.resolve(); out.relative_to(root / 'out')
     out.mkdir(parents=True, exist_ok=False); out.chmod(0o700)
@@ -57,6 +62,7 @@ def main():
         'packageSummarySHA256': sha(package_path), 'packageBinarySHA256': expected_binary,
         'originalCAResourceSHA256': original_ca, 'testFixtureSHA256': sha(Path(__file__)),
         'sourceAppModified': False, 'systemTrustModified': False, 'cases': []}
+    report['recordedRuntimeClosureVerifiedBefore'] = bundle_verified
     servers, threads = [], []
 
     def save():
@@ -68,7 +74,10 @@ def main():
             raise RuntimeError('Fixture/signing command failed: ' + argv[0] + ': ' + result.stderr[-400:])
         return result
 
+    host_sampler = None
     try:
+        host_sampler = HostSampler(out / 'host-telemetry', max_seconds=150)
+        host_sampler.start()
         openssl = Path('/opt/homebrew/opt/openssl@3/bin/openssl')
         if not openssl.is_file():
             raise RuntimeError('Observed compatible OpenSSL fixture tool is unavailable')
@@ -211,6 +220,8 @@ def main():
                 raise RuntimeError(name + ' did not prove its declared native certificate behavior')
         if sha(executable) != expected_binary or sha(ca_resource) != original_ca:
             raise RuntimeError('The delivery app changed during trust tests')
+        report['recordedRuntimeClosureVerifiedAfter'] = verify_recorded_bundle(package['relocation']['deploymentClosure'], app,
+            package['package']['runtimeResources'])
         if sha(Path(__file__)) != report['testFixtureSHA256']:
             raise RuntimeError('The TLS fixture changed during execution')
         report['passed'] = True
@@ -221,6 +232,10 @@ def main():
             server.shutdown(); server.server_close()
         for thread in threads:
             thread.join(timeout=5)
+        if host_sampler is not None:
+            report['hostTelemetry'] = host_sampler.finish()
+            if report['passed'] and not report['hostTelemetry']['validOneSecondCoverage']:
+                report.update(passed=False, error='Required one-second whole-host telemetry was incomplete')
         report['finishedUTC'] = datetime.now(timezone.utc).isoformat()
         report['durationSeconds'] = round(time.monotonic() - started, 3)
         save()

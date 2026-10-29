@@ -1,0 +1,36 @@
+{
+  "recordedUTC": "2026-10-29T18:32:45.553229+00:00",
+  "scope": "Local tooling verification only, not native application execution or WPT",
+  "nativeRouteRed": {
+    "passed": 2,
+    "total": 3,
+    "failure": "Configured exact archive route returned404 before implementation",
+    "durationMilliseconds": 166.920716
+  },
+  "nativeRouteAndExistingServerGreen": {
+    "passed": 15,
+    "total": 15,
+    "durationMilliseconds": 240.749383,
+    "includes": [
+      "exact native bytes/HEAD/name",
+      "default absence",
+      "symlink rejection",
+      "private inbox isolation",
+      "origin controls",
+      "real nonce WebSocket echo",
+      "UI artifact identity"
+    ]
+  },
+  "recordedRuntimeClosureIdentity": {
+    "passed": 8,
+    "total": 8,
+    "durationSeconds": 0.005,
+    "newCoverage": [
+      "Changed library detected while executable stays identical",
+      "Changed ICU resource detected",
+      "Resource symlink escape rejected"
+    ]
+  },
+  "monitoring": "One-second collectors attached; these commands finished before any valid CPU interval, so no interval CPU/performance claim is made",
+  "nativePackageTLSAndResourceAcceptance": "Pending actual Mac execution"
+}

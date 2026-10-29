@@ -9,7 +9,7 @@ import {encodeFrame,decodeFrames} from '../apple-web-lab-gpt6as/server.mjs';
 
 const HERE=path.dirname(fileURLToPath(import.meta.url));
 const STATIC={'/':'index.html','/app.js':'app.js','/style.css':'style.css','/config.json':'config.json'};
-const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.gz':'application/gzip'};
+const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.gz':'application/gzip','.zip':'application/zip'};
 const EMPTY_STATUS={taskId:'10290244',phase:'Awaiting a verified status receipt',iteration:0,fullOfficialWptPassPercent:null,wpt:null,apple:{sameIpa:'unverified'}};
 
 function equalSecret(actual,expected) {
@@ -100,12 +100,16 @@ export function createProgressServer(options={}) {
     }
     if(req.method!=='GET'&&req.method!=='HEAD')return json(req,res,405,{error:'Method not allowed'});
     const selected=STATIC[url.pathname];
-    const filename=selected?path.join(publicDir,selected):url.pathname==='/src.tar.gz'?options.sourceArchive:null;
+    const nativeArchive=url.pathname==='/lumen-macos.zip';
+    const nativeReceipt=url.pathname==='/lumen-macos-receipt.json';
+    const filename=selected?path.join(publicDir,selected):url.pathname==='/src.tar.gz'?options.sourceArchive:
+      nativeArchive?options.nativeMacArchive:nativeReceipt?options.nativeMacReceipt:null;
     if(!filename)return json(req,res,404,{error:'Not found'});
     try {
-      const stat=await fsp.stat(filename);
+      const stat=await (nativeArchive||nativeReceipt?fsp.lstat(filename):fsp.stat(filename));
       if(!stat.isFile())throw Error('Not a file');
-      res.writeHead(200,{...headers(req),'Content-Type':MIME[path.extname(filename)]||'application/octet-stream','Content-Length':stat.size});
+      res.writeHead(200,{...headers(req),'Content-Type':MIME[path.extname(filename)]||'application/octet-stream','Content-Length':stat.size,
+        ...(nativeArchive?{'Content-Disposition':'attachment; filename="GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.30-0110-Mac-development.zip"'}:{})});
       if(req.method==='HEAD')return res.end();
       const stream=fs.createReadStream(filename);stream.on('error',()=>res.destroy());stream.pipe(res);
     } catch {return json(req,res,404,{error:'Not found'});}
@@ -154,7 +158,7 @@ if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
   let messageToken;
   try{messageToken=(await fsp.readFile(keyFile,'utf8')).trim();}
   catch{messageToken=crypto.randomBytes(24).toString('hex');await fsp.writeFile(keyFile,messageToken+'\n',{mode:0o600,flag:'wx'});}
-  const server=createProgressServer({taskId,messageSessionId:process.env.LUME_MESSAGE_SESSION_ID||taskId,stateDir,messageToken,scorecard:process.env.LUME_SCORECARD?path.resolve(process.env.LUME_SCORECARD):path.resolve(HERE,`../../agent/scorecard-${taskId}.json`),sourceArchive:process.env.LUME_SOURCE_ARCHIVE?path.resolve(process.env.LUME_SOURCE_ARCHIVE):undefined,allowedOrigins:(process.env.LUME_ALLOWED_ORIGINS||'').split(',').filter(Boolean)});
+  const server=createProgressServer({taskId,messageSessionId:process.env.LUME_MESSAGE_SESSION_ID||taskId,stateDir,messageToken,scorecard:process.env.LUME_SCORECARD?path.resolve(process.env.LUME_SCORECARD):path.resolve(HERE,`../../agent/scorecard-${taskId}.json`),sourceArchive:process.env.LUME_SOURCE_ARCHIVE?path.resolve(process.env.LUME_SOURCE_ARCHIVE):undefined,nativeMacArchive:process.env.LUME_NATIVE_MAC_ARCHIVE?path.resolve(process.env.LUME_NATIVE_MAC_ARCHIVE):undefined,nativeMacReceipt:process.env.LUME_NATIVE_MAC_RECEIPT?path.resolve(process.env.LUME_NATIVE_MAC_RECEIPT):undefined,allowedOrigins:(process.env.LUME_ALLOWED_ORIGINS||'').split(',').filter(Boolean)});
   const port=Number(process.env.PORT||18784);
   server.listen(port,'127.0.0.1',()=>process.stdout.write(`Lume progress listening on http://127.0.0.1:${port}; private message key stored outside published files.\n`));
   process.on('SIGTERM',()=>server.closeProgress());process.on('SIGINT',()=>server.closeProgress());

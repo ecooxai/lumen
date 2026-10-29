@@ -26,6 +26,29 @@ Write `output/session-10290244/progress-state/status.json` atomically with `task
 
 The score comes from `agent/scorecard-10290244.json`, using the fixed rubric. It is task acceptance, not a browser conformance percentage. Historical and current artifacts stay distinct.
 
+## Native Mac development download
+
+The server optionally accepts `LUME_NATIVE_MAC_ARCHIVE` and
+`LUME_NATIVE_MAC_RECEIPT` for the two exact routes `/lumen-macos.zip` and
+`/lumen-macos-receipt.json`. These routes stay absent until explicitly configured;
+they do not expose an output directory, private inbox, profile, or TLS fixture.
+The browser shows the download only when a published receipt matches the current
+candidate or measured source executable identity.
+
+Task 10.30 01:10 uses `tools/apple-session-gpt6as/publish_native_mac_10300110.py`
+after package, four certificate controls, and relocated scrolling/navigation
+acceptance. It preserves the current route and inbox capability, replaces only
+the verified task server PID, checks the complete public ZIP hash, and records
+the actual arm64 dependency floor and original versus signed executable hashes.
+The download is an ad-hoc signed native macOS development app. Device IPA and
+Simulator execution remain separate acceptance tasks.
+
+`tools/apple-session-gpt6as/publish_surge_10300110.py` reuses the already installed,
+authenticated project-local Surge CLI and existing domain. It publishes only the
+committed static view and audited source archive, preserves the private message
+session, and verifies every public static file plus all source archive bytes.
+The native ZIP link points to the existing live task route.
+
 Live host CPU, RAM, volume statistics and measured WebSocket round trip refresh every two seconds. Host RAM is total minus free and includes caches. It is not Lume RSS. Per-test Lume measurements still use `tools/monitor_process.py` every second. APFS/shared volumes are listed separately and never summed. The network value is measured round trip, not inferred one-way latency.
 
 Every storage row retains its measured capacity, usage and available GB. Non-system mount names use numbered private labels in both the view and public JSON; network filesystem addresses and private path names are never published.

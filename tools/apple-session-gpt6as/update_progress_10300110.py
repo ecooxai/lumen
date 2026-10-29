@@ -21,6 +21,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build-summary', type=Path, required=True)
     parser.add_argument('--boundary-receipt', type=Path, required=True)
+    parser.add_argument('--burst-receipt', type=Path,
+                        help='Exact native queued-return regression receipt; required when this candidate includes that gate')
     parser.add_argument('--iteration', type=int, required=True)
     args = parser.parse_args()
     root = Path.cwd().resolve()
@@ -60,6 +62,18 @@ def main():
         raise RuntimeError('Boundary regression receipt is not tied to this native candidate')
     boundary_text = (f"Independent SharedWorker boundary controls: {boundary['passed']}/{boundary['total']} passed"
         + ('; remaining failures are under repair. ' if boundary['failed'] else '. '))
+    burst, burst_path = None, None
+    if any(stage['name'] == 'shared-return-burst' for stage in build['stages']) and args.burst_receipt is None:
+        raise RuntimeError('The queued-return gate requires its exact source-bound regression receipt')
+    if args.burst_receipt is not None:
+        burst_path = args.burst_receipt.resolve(); burst_path.relative_to(root / 'out')
+        burst = json.loads(burst_path.read_text())
+        if (burst.get('kind') != 'shared-worker-native-input-queue-migration'
+                or burst.get('binarySHA256') != build['artifacts']['jsrun']['sha256']
+                or not burst.get('nativeLumenExecuted') or burst.get('infrastructureErrors')
+                or burst.get('total') != 3 or burst.get('passed') != 3 or burst.get('failed') != 0):
+            raise RuntimeError('The exact native queued-return acceptance is incomplete')
+        boundary_text += 'Queued-return burst controls: 3/3 passed on this candidate. '
     now = datetime.now(timezone.utc).isoformat()
     card.update(task_id='10300110', human_task_id='10.30 01:10', updated_utc=now,
         score_state='inherited_accepted_baseline_candidate_acceptance_pending',
@@ -78,6 +92,9 @@ def main():
             'boundaryReceiptSHA256': sha(boundary_path),
             'boundary': {key: boundary[key] for key in ('passed', 'total', 'failed')},
             'accepted': False, 'scope': 'Actual native macOS candidate, not a shared signed device IPA'})
+    if burst is not None:
+        status['developmentCandidate']['queuedReturn'] = {'passed': 3, 'total': 3, 'failed': 0,
+            'receiptSHA256': sha(burst_path), 'previousCandidateHoldClearedByNewMeasuredArtifact': True}
     status['phase'] = (
         'Task 10.30 01:10: the accepted baseline remains 1454/1515 frozen priority variants fully passing (95.974%). '
         'The new native SharedWorker candidate has passed its build and focused regression gates using prebuilt V8. '

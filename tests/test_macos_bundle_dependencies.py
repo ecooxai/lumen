@@ -79,6 +79,42 @@ class BundlePlanTests(unittest.TestCase):
             {"path": str(app_exe)}, {"path": str(self.app / "Contents/Frameworks/libv8.dylib")},
         ]}, self.app)
 
+    def test_later_gate_detects_changed_library_even_when_executable_is_unchanged(self):
+        executable = self.app / 'Contents/MacOS/lumen'
+        library = self.app / 'Contents/Frameworks/libv8.dylib'
+        resource = self.app / 'Contents/Resources/icudtl.dat'
+        for path in (executable, library, resource):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(('original:' + path.name).encode())
+        closure = {'nonSystemClosureFullyResolved': True, 'files': [
+            {'path': str(path), 'sha256': bundle.sha256(path)} for path in (executable, library)]}
+        resources = [{'name': resource.name, 'sha256': bundle.sha256(resource)}]
+        self.assertEqual(bundle.verify_recorded_bundle(closure, self.app, resources),
+                         {'imagesVerified': 2, 'resourcesVerified': 1})
+        for changed in (library, resource):
+            with self.subTest(changed=changed.name):
+                original = changed.read_bytes()
+                changed.write_bytes(b'unexpected replacement')
+                with self.assertRaisesRegex(ValueError, 'changed'):
+                    bundle.verify_recorded_bundle(closure, self.app, resources)
+                self.assertEqual(bundle.sha256(executable), closure['files'][0]['sha256'])
+                changed.write_bytes(original)
+
+    def test_recorded_resource_cannot_escape_app_through_a_symlink(self):
+        executable = self.app / 'Contents/MacOS/lumen'
+        executable.parent.mkdir(parents=True)
+        executable.write_bytes(b'owned executable')
+        external = self.root / 'external-ca.pem'
+        external.write_bytes(b'external certificate fixture')
+        resource = self.app / 'Contents/Resources/cacert.pem'
+        resource.parent.mkdir(parents=True)
+        resource.symlink_to(external)
+        closure = {'nonSystemClosureFullyResolved': True, 'files': [
+            {'path': str(executable), 'sha256': bundle.sha256(executable)}]}
+        with self.assertRaisesRegex(ValueError, 'changed'):
+            bundle.verify_recorded_bundle(closure, self.app, [
+                {'name': resource.name, 'sha256': bundle.sha256(external)}])
+
 
 if __name__ == "__main__":
     unittest.main()

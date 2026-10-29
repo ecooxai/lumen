@@ -1,0 +1,278 @@
+{
+  "schema": 1,
+  "scope": "Supplemental pinned XHR lifecycle, types, bytes, CORS and IDL; every manifest variant of the27 preselected sources retained, separate from original1515.",
+  "engine": "chromium",
+  "startedUTC": "2026-10-29T13:33:34.339857+00:00",
+  "wptRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "scheduleSHA256": "523450d693819e78c75b69828318075cd493928ab91d62c4a0718238559623ce",
+  "scheduled": 53,
+  "binary": "/tmp/astra10292021-runtime/chrome-linux64/chrome",
+  "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "protocol": {
+    "tests/wpt/linux_headless_runner.py": "1c3f4c553af7d3208a6d3fc3226c3d17be40ed5390a6e012ecc0e789fd98c85b",
+    "tests/wpt/full_runner.py": "f279529ae78f58916a1d87170bc068ad34b15f175072a0a01f63695bc8e44a6b",
+    "tools/monitor_process.py": "46bda36325c6881ceed174ef6fc19fd4745b64894c833717949ea60e4a18d3e1",
+    "tests/wpt/testharnessreport.js": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "out/10292019r-xhr-wpt/selection.json": "8c81c214e10d27b7a8ce7cc40db0ff528fec5dac5e5db231f599c289d1aa385f",
+    "out/10292019r-xhr-wpt/environment.json": "a9c7a086aa846a5e73319cda6088d2c0e86290a92b1111fb542b4e5dc59b20f6",
+    "out/10292019r-xhr-wpt/server.config.json": "44f078b0631b61211ba8cfd092dcc347c3a78b9c3aa7d8951c0440facecb0456",
+    "out/10292019r-xhr-wpt/upstream/MANIFEST.json": "486d91d11e06b7eda7d5ea23ffbaf1b383affc8c06190ba370f5dd0d1a569bc8"
+  },
+  "runtime": null,
+  "platform": "Linux x86_64",
+  "officialWptFullRate": null,
+  "fixtureProxy": {
+    "enabled": true,
+    "scope": "Exact loopback WPT fixture only; inherited external HTTP/HTTPS proxy endpoints retained",
+    "proxyConfigurationSHA256": "9b849fa10d70ed8064ea75aa921174a7319d7ecc31a2707385b9cd654e817543",
+    "inheritedBypassSHA256": "c151730dcb2884236ed16355b1272fc59ebb31389c63b549f352b1e7220632ce",
+    "localHosts": [
+      "not-web-platform.test",
+      "web-platform.test",
+      "www.not-web-platform.test",
+      "www.web-platform.test",
+      "www.www.not-web-platform.test",
+      "www.www.web-platform.test",
+      "www.www1.not-web-platform.test",
+      "www.www1.web-platform.test",
+      "www.www2.not-web-platform.test",
+      "www.www2.web-platform.test",
+      "www.xn--lve-6lad.not-web-platform.test",
+      "www.xn--lve-6lad.web-platform.test",
+      "www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+      "www.xn--n8j6ds53lwwkrqhv28a.web-platform.test",
+      "www1.not-web-platform.test",
+      "www1.web-platform.test",
+      "www1.www.not-web-platform.test",
+      "www1.www.web-platform.test",
+      "www1.www1.not-web-platform.test",
+      "www1.www1.web-platform.test",
+      "www1.www2.not-web-platform.test",
+      "www1.www2.web-platform.test",
+      "www1.xn--lve-6lad.not-web-platform.test",
+      "www1.xn--lve-6lad.web-platform.test",
+      "www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+      "www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test",
+      "www2.not-web-platform.test",
+      "www2.web-platform.test",
+      "www2.www.not-web-platform.test",
+      "www2.www.web-platform.test",
+      "www2.www1.not-web-platform.test",
+      "www2.www1.web-platform.test",
+      "www2.www2.not-web-platform.test",
+      "www2.www2.web-platform.test",
+      "www2.xn--lve-6lad.not-web-platform.test",
+      "www2.xn--lve-6lad.web-platform.test",
+      "www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+      "www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test",
+      "xn--lve-6lad.not-web-platform.test",
+      "xn--lve-6lad.web-platform.test",
+      "xn--lve-6lad.www.not-web-platform.test",
+      "xn--lve-6lad.www.web-platform.test",
+      "xn--lve-6lad.www1.not-web-platform.test",
+      "xn--lve-6lad.www1.web-platform.test",
+      "xn--lve-6lad.www2.not-web-platform.test",
+      "xn--lve-6lad.www2.web-platform.test",
+      "xn--lve-6lad.xn--lve-6lad.not-web-platform.test",
+      "xn--lve-6lad.xn--lve-6lad.web-platform.test",
+      "xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+      "xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.www.web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test",
+      "xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test"
+    ],
+    "localPorts": [
+      28443,
+      28444,
+      28445,
+      28800,
+      28801,
+      28802,
+      28900
+    ],
+    "localExceptionCount": 434,
+    "argumentsSHA256": "3be42981ea165815390708f50b12e679d1f588cf6b4c0bef0e4d8de4a104483e"
+  },
+  "proxyHelperSHA256": "3dada00586edbb4067d749f7d6bb71f7776c11c9891b433d8eb63967c853b450",
+  "version": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.47",
+    "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.19"
+  },
+  "browserCleanup": {
+    "process": {
+      "sent_sigterm": false,
+      "sent_sigkill": false,
+      "error": null,
+      "post_signal_verification": {
+        "allowed_wait_s": 10,
+        "initial_live_members": {},
+        "duration_ms": 4
+      },
+      "process_group_gone": true,
+      "remaining_group_members": {},
+      "root_exit_code": 0,
+      "root_exit_before_signal_cleanup": 0,
+      "root_exit_observation_verified": true
+    },
+    "errors": [],
+    "graceful_close": {
+      "method": "Browser.close",
+      "attempted": true,
+      "acknowledged": true,
+      "allowed_drain_s": 20,
+      "exit_requirement": "All live owned-group members must disappear; an exiting process state is not ignored.",
+      "initial_process_state": {
+        "observed_unix_ms": 1793280918506,
+        "members": [
+          {
+            "pid": 129620,
+            "ppid": 129564,
+            "pgid": 129620,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Rsl",
+            "start_identity": "Thu Oct 29 06:33:33 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 129647,
+            "ppid": 129620,
+            "pgid": 129620,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "S",
+            "start_identity": "Thu Oct 29 06:33:33 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 129648,
+            "ppid": 129620,
+            "pgid": 129620,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "S",
+            "start_identity": "Thu Oct 29 06:33:33 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 129670,
+            "ppid": 129647,
+            "pgid": 129620,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 06:33:33 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 129671,
+            "ppid": 129620,
+            "pgid": 129620,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 06:33:33 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 129701,
+            "ppid": 129648,
+            "pgid": 129620,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Rl",
+            "start_identity": "Thu Oct 29 06:33:33 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 129730,
+            "ppid": 129648,
+            "pgid": 129620,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "RNl",
+            "start_identity": "Thu Oct 29 06:33:33 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 129748,
+            "ppid": 129648,
+            "pgid": 129620,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "SNl",
+            "start_identity": "Thu Oct 29 06:33:33 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 135526,
+            "ppid": 129648,
+            "pgid": 129620,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "ZN",
+            "start_identity": "Thu Oct 29 06:35:17 2026",
+            "executable": "chrome"
+          }
+        ]
+      },
+      "process_group_gone": true,
+      "drain_duration_ms": 216
+    }
+  },
+  "summary": {
+    "scheduled": 53,
+    "recorded": 53,
+    "fullyPassing": 51,
+    "unrun": 0,
+    "passPercentOfRecorded": 96.22641509433963,
+    "assertions": {
+      "PASS": 768,
+      "FAIL": 2
+    },
+    "harnessStatuses": {
+      "OK": 53
+    },
+    "unqualifiedEvidenceVariants": 0
+  },
+  "failed": [
+    {
+      "test": "/xhr/abort-after-send.any.html",
+      "status": "OK",
+      "message": null,
+      "assertions": [
+        {
+          "name": "XMLHttpRequest: abort() after send()",
+          "status": "FAIL",
+          "message": "assert_equals: expected \"abort(0,0,false)\" but got \"upload.abort(0,0,false)\""
+        }
+      ]
+    },
+    {
+      "test": "/xhr/abort-after-send.any.worker.html",
+      "status": "OK",
+      "message": null,
+      "assertions": [
+        {
+          "name": "XMLHttpRequest: abort() after send()",
+          "status": "FAIL",
+          "message": "assert_equals: expected \"abort(0,0,false)\" but got \"upload.abort(0,0,false)\""
+        }
+      ]
+    }
+  ],
+  "finishedUTC": "2026-10-29T13:35:18.733561+00:00",
+  "durationSeconds": 104.39331720100017
+}

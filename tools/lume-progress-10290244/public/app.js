@@ -44,6 +44,14 @@ function render(snapshot){
   renderExpanded(status.expandedWpt&&current?{...status.expandedWpt,isCurrentAcceptedNativeArtifact:status.expandedWpt.lumenBinarySHA256===current.binarySha256}:status.expandedWpt);
   $('source-link').href=base+'/src.tar.gz';
   text('source-detail',status.sourceArchive?`Archive source ${status.sourceArchive.sourceCommit?.slice(0,12)||'pending'} · SHA ${status.sourceArchive.sha256?.slice(0,16)||'hash pending'}… · committed source only`:'Source archive availability is checked separately.');
+  const delivery=status.nativeMacDelivery;
+  const delivered=delivery?.published===true&&/^[a-f0-9]{64}$/.test(delivery.archiveSHA256||'')
+    &&[current?.binarySha256,status.developmentCandidate?.binarySha256].includes(delivery.sourceBinarySHA256);
+  $('native-download').hidden=!delivered;
+  if(delivered){
+    $('native-download-link').href=base+'/lumen-macos.zip';$('native-receipt-link').href=base+'/lumen-macos-receipt.json';
+    text('native-download-detail',`Self-contained arm64 app · macOS ${delivery.minimumSystemVersion} or newer declared by its dependencies · ${number(delivery.archiveBytes/1048576,1)} MiB · ZIP SHA-256 ${delivery.archiveSHA256} · source executable ${delivery.sourceBinarySHA256.slice(0,16)}…`);
+  }
   if(metrics){
     text('cpu',number(metrics.cpuPercent,1)+'%');text('cpu-detail',`Across ${metrics.cpuCores} logical CPUs`);
     text('ram',number(metrics.memory?.usedGB,2)+' GB');text('ram-detail',`${number(metrics.memory?.totalGB,2)} GB total · ${number(metrics.memory?.freeGB,2)} GB free · includes caches`);

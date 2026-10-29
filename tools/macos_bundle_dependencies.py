@@ -73,6 +73,23 @@ def require_embedded_closure(closure, app):
             raise ValueError("A non-system runtime dependency remains outside the app: " + entry["path"])
 
 
+def verify_recorded_bundle(closure, app, resources):
+    """Bind subsequent GUI gates to every delivered image and data resource."""
+    require_embedded_closure(closure, app)
+    app = Path(app).resolve()
+    for entry in closure["files"]:
+        if sha256(Path(entry["path"])) != entry["sha256"]:
+            raise ValueError("A recorded bundle image changed: " + Path(entry["path"]).name)
+    for entry in resources:
+        name = entry["name"]
+        if not isinstance(name, str) or name in ("", ".", "..") or Path(name).name != name:
+            raise ValueError("A recorded bundle resource has an invalid name")
+        path = (app / "Contents/Resources" / name).resolve()
+        if not path.is_relative_to(app) or sha256(path) != entry["sha256"]:
+            raise ValueError("A recorded bundle resource changed: " + name)
+    return {"imagesVerified": len(closure["files"]), "resourcesVerified": len(resources)}
+
+
 def command_output(command):
     result = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True,
                             text=True, timeout=20, check=False)

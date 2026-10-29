@@ -23,6 +23,9 @@ def main():
     root = Path.cwd().resolve()
     if sys.platform != 'darwin' or str(root) != '/Users/devin/repos/lumen':
         parser.error('Use the actual canonical native Mac workspace')
+    sys.path.insert(0, str(root / 'tools'))
+    from macos_bundle_dependencies import verify_recorded_bundle
+    from monitor_macos_host_10300110 import HostSampler
     package_path = args.package_summary.resolve(); package_path.relative_to(root / 'out')
     package = json.loads(package_path.read_text())
     if not package.get('passed'):
@@ -40,6 +43,8 @@ def main():
     expected = package['package']['binarySha256']
     if sha(executable) != expected:
         parser.error('The signed delivery executable changed')
+    bundle_verified = verify_recorded_bundle(package['relocation']['deploymentClosure'], app,
+        package['package']['runtimeResources'])
     runner = root / 'tools/apple-session-gpt6as/run_native_resources_20261029_cpu30.py'
     runner_sha = sha(runner)
     for name, digest in sources.items():
@@ -60,10 +65,13 @@ def main():
         'scope': 'Unchanged synthetic SDL scrolling and actual navigation workload on the signed relocated delivery app',
         'packageSummarySHA256': sha(package_path), 'runnerSHA256': runner_sha,
         'artifact': binding['artifacts']['lumen'], 'originalProductArtifact': binding['originalProductArtifact'],
-        'sourceManifestSHA256': sha(source_manifest)}
+        'sourceManifestSHA256': sha(source_manifest), 'recordedRuntimeClosureVerifiedBefore': bundle_verified}
     env = {key: value for key, value in os.environ.items() if not key.startswith('LUMEN_')}
     env['DEVELOPER_DIR'] = '/Library/Developer/CommandLineTools'
+    host_sampler = None
     try:
+        host_sampler = HostSampler(out / 'host-telemetry', max_seconds=420)
+        host_sampler.start()
         with (out / 'runner.log').open('x') as log:
             result = subprocess.run([sys.executable, str(runner), '--build-summary', str(binding_path),
                 '--output', str(out / 'workload')], env=env, stdout=log, stderr=subprocess.STDOUT, timeout=390)
@@ -76,6 +84,8 @@ def main():
             raise RuntimeError('Native signed-app resource acceptance failed: ' + str(workload.get('error')))
         if sha(executable) != expected or sha(runner) != runner_sha:
             raise RuntimeError('Package executable or workload wrapper changed during acceptance')
+        report['recordedRuntimeClosureVerifiedAfter'] = verify_recorded_bundle(package['relocation']['deploymentClosure'], app,
+            package['package']['runtimeResources'])
         for name, digest in sources.items():
             if sha(root / name) != digest:
                 raise RuntimeError('Compiled source changed during signed-app resource acceptance')
@@ -83,6 +93,10 @@ def main():
     except Exception as error:
         report['error'] = type(error).__name__ + ': ' + str(error)
     finally:
+        if host_sampler is not None:
+            report['hostTelemetry'] = host_sampler.finish()
+            if report['accepted'] and not report['hostTelemetry']['validOneSecondCoverage']:
+                report.update(accepted=False, error='Required one-second whole-host telemetry was incomplete')
         report['finishedUTC'] = datetime.now(timezone.utc).isoformat()
         report['durationSeconds'] = round(time.monotonic() - started, 3)
         (out / 'summary.json').write_text(json.dumps(report, indent=2) + '\n')

@@ -1,0 +1,33 @@
+{
+  "recordedUTC": "2026-10-29T18:32:45.553463+00:00",
+  "sameSignedDeviceIPAVerified": false,
+  "directSDKCompilation": "Prior exact matching CLTclang and explicit SDK probes already compiled and linked tiny UIKit/Foundation executables for both device and simulator in2.228s; no repeat probe or full-Lumen execution claimed",
+  "directSDKEvidence": "agent/evidence/20261029-cpu30-004/apple_feasibility_audit_cpu30.json",
+  "currentArchiveSurvey": "existing-ipa-inventory-v2-structured-copy.json",
+  "surveyConclusion": "No IPA or mobile Lumen app candidates in the declared shallow-first project scope;12294entries/0.151s, exclusions/depth limits retained. This is not a whole-disk absence proof.",
+  "currentMissingArtifacts": [
+    "Compatible prebuiltV8 15.6.75.16 mobile monolith, headers, ICU and Rust/Temporal link closure",
+    "22configured platform static libraries plus required headers",
+    "Valid device signing identity and provisioning profile",
+    "Actual Lumen install/launch evidence on the observed iPad runtime and a Mac consuming the same signed device IPA"
+  ],
+  "upstreamReferences": [
+    {
+      "url": "https://v8.dev/docs/cross-compile-ios",
+      "retrieval": "Opened29Oct2026",
+      "finding": "Official documentation describes source-building an iOS/device or Simulator monolith; no compatible pinned prebuilt identified in bounded check"
+    },
+    {
+      "url": "https://blog.nativescript.org/",
+      "retrieval": "Primary blog index search29Oct2026",
+      "finding": "Current release index describesV8 14.9; GitHub config/release pages unavailable in this browsing tool; not asserted as a compatible replacement"
+    }
+  ],
+  "workNotStarted": [
+    "No speculative V8 source build",
+    "No global Xcode selection or vendor SDK mutation",
+    "No further simulator RPC retry",
+    "No incompatible third-party binary substituted"
+  ],
+  "practicalNextStep": "Recover or qualify matching prebuilt mobile dependency artifacts and a valid signed device IPA; use existing safe explicit SDK/CLT overrides rather than fabricate vendor files"
+}

@@ -1,0 +1,196 @@
+{
+  "transport": "Structured copy of authorized native Mac tool read",
+  "sourceRelaySHA256": "795f130530c4c9ad6cb82aaa41eacfab0ea717cdc6b874b1aaab6f02aabe2aea",
+  "record": {
+    "kind": "actual-native-mac-shared-worker-gui",
+    "officialWPT": false,
+    "suite": "core",
+    "nativeGui": true,
+    "nativeLumenExecuted": true,
+    "binary": "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/lumen-0b20cd1139a5794e",
+    "binarySHA256": "0b20cd1139a5794eaa5d020105665c3093ca7b3504d338045b0a545db4b6ad3e",
+    "fixtureSHA256": "bfce5fed315f65f67087c6bf231b83217aec34c1efae9921566c16f84e4907d0",
+    "adapterSHA256": "623e28ff5f7657e301074d456e6e0b74e30d01e537ee5d03243d911217415626",
+    "ownedTransportSHA256": "f279529ae78f58916a1d87170bc068ad34b15f175072a0a01f63695bc8e44a6b",
+    "pageTemplateSHA256": "f399d92e0b2e2a9e546ae6146bc3b0bc751aebc7bd2284c487ae20511017ac02",
+    "workerSHA256": "c4db01ff1032009352804ab3dd5e18f5f2e2f59a76d499bd3732241406197384",
+    "startedUTC": "2026-10-29T18:27:37.147915+00:00",
+    "rows": [
+      {
+        "i": 0,
+        "name": "SharedWorker exposes its own public interface and stable MessagePort",
+        "ok": true
+      },
+      {
+        "i": 1,
+        "name": "connect carries a trusted source port and empty data",
+        "ok": true
+      },
+      {
+        "i": 2,
+        "name": "worker has a genuine SharedWorkerGlobalScope and no document",
+        "ok": true
+      },
+      {
+        "i": 3,
+        "name": "same URL and string or dictionary name share one global",
+        "ok": true
+      },
+      {
+        "i": 4,
+        "name": "different names isolate globals",
+        "ok": true
+      },
+      {
+        "i": 5,
+        "name": "different URLs with the same name isolate globals",
+        "ok": true
+      },
+      {
+        "i": 6,
+        "name": "two clients receive only their own replies",
+        "ok": true
+      },
+      {
+        "i": 7,
+        "name": "addEventListener does not start a port and start drains queued messages",
+        "ok": true
+      },
+      {
+        "i": 8,
+        "name": "onmessage assignment starts a port automatically",
+        "ok": true
+      },
+      {
+        "i": 9,
+        "name": "ArrayBuffer round trip transfers and detaches in both directions",
+        "ok": true
+      },
+      {
+        "i": 10,
+        "name": "duplicate buffer transfer throws without detaching or breaking the port",
+        "ok": true
+      },
+      {
+        "i": 11,
+        "name": "structured clone preserves cycles and typed arrays",
+        "ok": true
+      },
+      {
+        "i": 12,
+        "name": "closing one client leaves the other client usable",
+        "ok": true
+      },
+      {
+        "i": 13,
+        "name": "same-origin child frame joins the existing shared global",
+        "ok": true
+      },
+      {
+        "i": 14,
+        "name": "removing a child owner does not terminate the remaining owner",
+        "ok": true
+      },
+      {
+        "i": 15,
+        "name": "cross-origin pages do not share same-named worker globals",
+        "ok": true
+      },
+      {
+        "i": 16,
+        "name": "matching URL and name with different type raises an asynchronous error",
+        "ok": true
+      },
+      {
+        "i": 17,
+        "name": "matching URL and name with different credentials raises an asynchronous error",
+        "ok": true
+      },
+      {
+        "i": 18,
+        "name": "invalid constructor enums and missing script argument throw TypeError",
+        "ok": true
+      },
+      {
+        "i": 19,
+        "name": "failed script loading raises an asynchronous error",
+        "ok": true
+      },
+      {
+        "i": 20,
+        "name": "module SharedWorker executes an imported module in its own global",
+        "ok": true
+      },
+      {
+        "i": 21,
+        "name": "worker close permits a new independent global with the same identity",
+        "ok": true
+      }
+    ],
+    "infrastructureErrors": [],
+    "naturalExitCode": null,
+    "metrics": {
+      "samples": 1,
+      "steady_samples": 1,
+      "interval_cpu_samples": 0,
+      "steady_interval_cpu_samples": 0,
+      "max_sampling_gap_s": 0.02,
+      "cpu_mean_percent": 0.0,
+      "steady_cpu_mean_percent": 0.0,
+      "steady_cpu_median_percent": 0.0,
+      "steady_cpu_p95_percent": 0.0,
+      "cpu_peak_percent": 0.0,
+      "interval_cpu_mean_percent": null,
+      "steady_interval_cpu_mean_percent": null,
+      "steady_interval_cpu_median_percent": null,
+      "steady_interval_cpu_p95_percent": null,
+      "interval_cpu_peak_percent": null,
+      "rss_peak_mb": 0.719,
+      "rss_final_mb": 0.719,
+      "rss_steady_median_mb": 0.719,
+      "rss_steady_p95_mb": 0.719,
+      "rss_steady_growth_mb": 0.0,
+      "in_memory_sample_limit": 600,
+      "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+      "quantile_scope": "all recorded samples",
+      "errors": [],
+      "sample_interval_s": 1,
+      "stop_reason": "requested_stop",
+      "telemetry_status": "partial",
+      "interval_cpu_coverage": "unavailable",
+      "observed_span_s": 0,
+      "root_start_identity": "Thu Oct 29 11:27:37 2026",
+      "root_cpu_start_identity": null,
+      "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+      "cpu_time_source": "ps time (fractional seconds on macOS)",
+      "cpu_time_resolution_s": null,
+      "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+      "memory_unit": "MiB (legacy field names retain mb)",
+      "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+      "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+      "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+    },
+    "cleanup": {
+      "sent_sigterm": true,
+      "sent_sigkill": false,
+      "error": null,
+      "post_signal_verification": {
+        "allowed_wait_s": 1,
+        "initial_live_members": {},
+        "duration_ms": 22
+      },
+      "process_group_gone": true,
+      "remaining_group_members": {},
+      "root_exit_code": 0
+    },
+    "profileRemoved": true,
+    "total": 22,
+    "passed": 22,
+    "failed": 0,
+    "recorded": 22,
+    "unrun": 0,
+    "finishedUTC": "2026-10-29T18:27:38.772246+00:00",
+    "durationSeconds": 1.623327,
+    "stdoutSHA256": "ba130d106268aa91e9670d375fc7792a722a2d95c849a3421264fa08de3a356c"
+  }
+}

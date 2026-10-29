@@ -1,0 +1,101 @@
+{
+  "transport": "Structured copy of authorized native Mac tool read",
+  "sourceRelaySHA256": "da04fc152ade6a409519e907a274a03d1383cfacbbbf21cec6120adf34f5ae2b",
+  "record": {
+    "kind": "actual-native-mac-shared-worker-gui",
+    "officialWPT": false,
+    "suite": "burst",
+    "nativeGui": true,
+    "nativeLumenExecuted": true,
+    "binary": "/Users/devin/repos/lumen/out/10300110-mac/native-shared-003/lumen-0b20cd1139a5794e",
+    "binarySHA256": "0b20cd1139a5794eaa5d020105665c3093ca7b3504d338045b0a545db4b6ad3e",
+    "fixtureSHA256": "bba6e0e2b38ebb161d64ddc1654e87e8068db9c11101226d7d2db04b448ba5a1",
+    "adapterSHA256": "623e28ff5f7657e301074d456e6e0b74e30d01e537ee5d03243d911217415626",
+    "ownedTransportSHA256": "f279529ae78f58916a1d87170bc068ad34b15f175072a0a01f63695bc8e44a6b",
+    "pageTemplateSHA256": "3a3297fc93060c940b17449755e8d883679b234598515130d29bc03df61723f0",
+    "workerSHA256": "d29d306727f3013c0307d2df547c1267d546c22ff3adbfbae30ce0d4260c3462",
+    "startedUTC": "2026-10-29T18:27:45.516676+00:00",
+    "rows": [
+      {
+        "i": 0,
+        "name": "queued native messages survive port return, round 1",
+        "ok": true
+      },
+      {
+        "i": 1,
+        "name": "queued native messages survive port return, round 2",
+        "ok": true
+      },
+      {
+        "i": 2,
+        "name": "queued native messages survive port return, round 3",
+        "ok": true
+      }
+    ],
+    "infrastructureErrors": [],
+    "naturalExitCode": null,
+    "metrics": {
+      "samples": 1,
+      "steady_samples": 1,
+      "interval_cpu_samples": 0,
+      "steady_interval_cpu_samples": 0,
+      "max_sampling_gap_s": 0.035,
+      "cpu_mean_percent": 0.0,
+      "steady_cpu_mean_percent": 0.0,
+      "steady_cpu_median_percent": 0.0,
+      "steady_cpu_p95_percent": 0.0,
+      "cpu_peak_percent": 0.0,
+      "interval_cpu_mean_percent": null,
+      "steady_interval_cpu_mean_percent": null,
+      "steady_interval_cpu_median_percent": null,
+      "steady_interval_cpu_p95_percent": null,
+      "interval_cpu_peak_percent": null,
+      "rss_peak_mb": 2.047,
+      "rss_final_mb": 2.047,
+      "rss_steady_median_mb": 2.047,
+      "rss_steady_p95_mb": 2.047,
+      "rss_steady_growth_mb": 0.0,
+      "in_memory_sample_limit": 600,
+      "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+      "quantile_scope": "all recorded samples",
+      "errors": [],
+      "sample_interval_s": 1,
+      "stop_reason": "requested_stop",
+      "telemetry_status": "partial",
+      "interval_cpu_coverage": "unavailable",
+      "observed_span_s": 0,
+      "root_start_identity": "Thu Oct 29 11:27:45 2026",
+      "root_cpu_start_identity": null,
+      "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+      "cpu_time_source": "ps time (fractional seconds on macOS)",
+      "cpu_time_resolution_s": null,
+      "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+      "memory_unit": "MiB (legacy field names retain mb)",
+      "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+      "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+      "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+    },
+    "cleanup": {
+      "sent_sigterm": true,
+      "sent_sigkill": false,
+      "error": null,
+      "post_signal_verification": {
+        "allowed_wait_s": 1,
+        "initial_live_members": {},
+        "duration_ms": 24
+      },
+      "process_group_gone": true,
+      "remaining_group_members": {},
+      "root_exit_code": 0
+    },
+    "profileRemoved": true,
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "recorded": 3,
+    "unrun": 0,
+    "finishedUTC": "2026-10-29T18:27:47.030174+00:00",
+    "durationSeconds": 1.512826,
+    "stdoutSHA256": "53bd480da4a8dd7f3572b2efae99fde1e196a74450949501326d3c3648d07539"
+  }
+}

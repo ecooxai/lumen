@@ -1,0 +1,23 @@
+✔ new active task displays its own inherited score on the reused route (20.061582ms)
+✔ explicit task identity rejects a stale nested score and transport score (2.133859ms)
+✔ matching active task score may arrive from the snapshot scorecard (2.100558ms)
+✔ previous published task remains readable before explicit handoff (1.789327ms)
+✔ unmatched snapshot cannot create a score when no nested task exists (1.640241ms)
+✔ native download is shown only for the explicitly published candidate identity (3.584003ms)
+✔ native downloads remain absent without explicitly configured acceptance files (50.108693ms)
+✔ only two exact native routes serve the configured bytes and truthful download name (35.719202ms)
+✔ native artifact routes reject symlink targets instead of exposing unrelated files (16.19002ms)
+✔ disk measurements retain every mount and never sum shared APFS volumes (1.550176ms)
+✔ CPU is an interval measurement with an unavailable first sample (0.215205ms)
+✔ message replies require the private receipt key and never execute message text (14.99052ms)
+✔ public routes are allowlisted; inbox and filesystem secrets cannot be read (61.919747ms)
+✔ live WebSocket returns a real nonce echo for client measured round-trip time (11.18664ms)
+✔ message HTTP submission enforces same origin, content type and receipt access (33.131631ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 240.749383

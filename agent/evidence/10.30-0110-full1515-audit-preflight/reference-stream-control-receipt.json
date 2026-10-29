@@ -1,0 +1,18 @@
+{
+  "accepted": true,
+  "scope": "Independent streaming parser readback of the retained exact qualified Chrome1515 reference; no browser execution",
+  "referenceSHA256": "3480ef53ee582e96fa7ef0a2fc5eb662f136cfa7268fad635712653013bedbb6",
+  "parserSHA256": "50c0f2a68668a0186e7cf742b5f3ad0dc86b5e880ab036821618a2508bdf65bc",
+  "variants": 1515,
+  "fullyPassing": 1462,
+  "assertions": {
+    "PASS": 1166990,
+    "FAIL": 1023
+  },
+  "harnessStatuses": {
+    "OK": 1515
+  },
+  "largestVariantAssertions": 2676,
+  "maximumProcessRSSKiB": 15444,
+  "durationSeconds": 1.0933333520006272
+}

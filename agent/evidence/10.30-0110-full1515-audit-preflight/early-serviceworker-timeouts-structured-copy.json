@@ -1,0 +1,144 @@
+{
+  "transport": "Structured copy of authorized native Mac read during full1515; partial evidence only",
+  "sourceRelaySHA256": "3133cd5c7558d46662f282eebe7404ddec21baf5da89f9bd1480bf4ad5796322",
+  "record": {
+    "completedNonpassingHarnesses": [
+      {
+        "group": "microtasks",
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "durationMs": 10491,
+        "expectedUnsupportedServiceWorker": true,
+        "telemetryErrors": [],
+        "cleanup": {
+          "sent_sigterm": true,
+          "sent_sigkill": false,
+          "error": null,
+          "post_signal_verification": {
+            "allowed_wait_s": 1,
+            "initial_live_members": {},
+            "duration_ms": 19
+          },
+          "process_group_gone": true,
+          "remaining_group_members": {},
+          "root_exit_code": 0
+        }
+      },
+      {
+        "group": "microtasks",
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "durationMs": 10478,
+        "expectedUnsupportedServiceWorker": true,
+        "telemetryErrors": [],
+        "cleanup": {
+          "sent_sigterm": true,
+          "sent_sigkill": false,
+          "error": null,
+          "post_signal_verification": {
+            "allowed_wait_s": 1,
+            "initial_live_members": {},
+            "duration_ms": 17
+          },
+          "process_group_gone": true,
+          "remaining_group_members": {},
+          "root_exit_code": 0
+        }
+      },
+      {
+        "group": "headers",
+        "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "durationMs": 10458,
+        "expectedUnsupportedServiceWorker": true,
+        "telemetryErrors": [],
+        "cleanup": {
+          "sent_sigterm": true,
+          "sent_sigkill": false,
+          "error": null,
+          "post_signal_verification": {
+            "allowed_wait_s": 1,
+            "initial_live_members": {},
+            "duration_ms": 17
+          },
+          "process_group_gone": true,
+          "remaining_group_members": {},
+          "root_exit_code": 0
+        }
+      },
+      {
+        "group": "headers",
+        "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "durationMs": 10474,
+        "expectedUnsupportedServiceWorker": true,
+        "telemetryErrors": [],
+        "cleanup": {
+          "sent_sigterm": true,
+          "sent_sigkill": false,
+          "error": null,
+          "post_signal_verification": {
+            "allowed_wait_s": 1,
+            "initial_live_members": {},
+            "duration_ms": 20
+          },
+          "process_group_gone": true,
+          "remaining_group_members": {},
+          "root_exit_code": 0
+        }
+      },
+      {
+        "group": "headers",
+        "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "durationMs": 60479,
+        "expectedUnsupportedServiceWorker": true,
+        "telemetryErrors": [],
+        "cleanup": {
+          "sent_sigterm": true,
+          "sent_sigkill": false,
+          "error": null,
+          "post_signal_verification": {
+            "allowed_wait_s": 1,
+            "initial_live_members": {},
+            "duration_ms": 18
+          },
+          "process_group_gone": true,
+          "remaining_group_members": {},
+          "root_exit_code": 0
+        }
+      },
+      {
+        "group": "headers",
+        "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "durationMs": 60493,
+        "expectedUnsupportedServiceWorker": true,
+        "telemetryErrors": [],
+        "cleanup": {
+          "sent_sigterm": true,
+          "sent_sigkill": false,
+          "error": null,
+          "post_signal_verification": {
+            "allowed_wait_s": 1,
+            "initial_live_members": {},
+            "duration_ms": 16
+          },
+          "process_group_gone": true,
+          "remaining_group_members": {},
+          "root_exit_code": 0
+        }
+      }
+    ],
+    "unexpectedContexts": []
+  },
+  "timingAssessment": "The full frozen1515 cohort is expected to exceed5 minutes. Six early nonpassing harnesses are exactly retained unsupported ServiceWorker contexts: four approximately10.5-second waits and two approximately60.5-second waits. No unexpected context, collector error or surviving owned group was observed. Preserve pinned15/65-second external watchdogs and all1515 variants; do not skip or shorten failures to improve the rate.",
+  "partialOnly": true,
+  "fullPassRate": null
+}

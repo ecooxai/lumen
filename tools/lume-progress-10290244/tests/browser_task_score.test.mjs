@@ -23,7 +23,7 @@ async function browser() {
   const source = await fs.readFile(new URL('../public/app.js', import.meta.url), 'utf8');
   await vm.runInContext(`(async()=>{${source}\n globalThis.__render=render;})()`, context);
   await Promise.resolve();
-  return {render: context.__render, score: () => nodes.get('score').textContent};
+  return {render: context.__render, nodes, score: () => nodes.get('score').textContent};
 }
 
 test('new active task displays its own inherited score on the reused route', async () => {
@@ -63,4 +63,18 @@ test('unmatched snapshot cannot create a score when no nested task exists', asyn
   view.render({status: {taskId: 'transport-id', iteration: 5},
     scorecard: {task_id: 'unrelated-task', score: 98}});
   assert.equal(view.score(), 'Iteration 5 · —/100 task gates');
+});
+
+test('native download is shown only for the explicitly published candidate identity',async()=>{
+  const view=await browser();
+  const delivery={published:true,sourceBinarySHA256:'a'.repeat(64),archiveSHA256:'b'.repeat(64),
+    archiveBytes:1048576,minimumSystemVersion:'26.0'};
+  view.render({status:{developmentCandidate:{binarySha256:'a'.repeat(64)},nativeMacDelivery:delivery}});
+  assert.equal(view.nodes.get('native-download').hidden,false);
+  assert.equal(view.nodes.get('native-download-link').href,'https://progress.example/lumen-macos.zip');
+  assert.match(view.nodes.get('native-download-detail').textContent,/1\.0 MiB/);
+  view.render({status:{developmentCandidate:{binarySha256:'c'.repeat(64)},nativeMacDelivery:delivery}});
+  assert.equal(view.nodes.get('native-download').hidden,true);
+  view.render({status:{developmentCandidate:{binarySha256:'a'.repeat(64)},nativeMacDelivery:{...delivery,published:false}}});
+  assert.equal(view.nodes.get('native-download').hidden,true);
 });
