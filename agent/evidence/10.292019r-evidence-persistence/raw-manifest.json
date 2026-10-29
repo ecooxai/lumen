@@ -1,0 +1,250 @@
+{
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/summary.json": {
+    "sha256": "5f033dfad6cce3e8c731120d5c454f904c7593e31b66f7595b42a09602214426",
+    "bytes": 370
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/invocation-1793285387575373699.json": {
+    "sha256": "038b5c79bcc9a6b1e683f8dc771b1170965429d4f9c865945e34ebee3a8d0138",
+    "bytes": 1035
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/invocation-1793285308068771122.json": {
+    "sha256": "b762a87b6ddbee22e55b18fe5e3ea197881697ba22a8cad6ff1d25c9d8a1c4a8",
+    "bytes": 1032
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/runtime-manifest.json": {
+    "sha256": "0a209f463cf04fcec6460ac50d7e6a45afa5e0f0698edc556cd5f328aa093a47",
+    "bytes": 1735
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/writer.lock": {
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/active-invocation.json": {
+    "sha256": "2bd319bf3d5aa98c7f386b7348173e4ff39ad6608ad04a327c56aaf218ddc372",
+    "bytes": 222
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/source-manifest.json": {
+    "sha256": "8f223f36c48b32535662c6fe691d4d405b7517c64d6056ab3f53ebd676c7fd8c",
+    "bytes": 13874
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/cohort.json": {
+    "sha256": "a8d0e309e425e9e9e32619eb44f265b544602b70e24e607cfcc32737faec3383",
+    "bytes": 1104970
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000005-7f13473240.metrics.jsonl": {
+    "sha256": "6f092c266398a7a132ed5bf92fe437d70a8f57e8fddee5519f9d9d2ad2496049",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000013-8cad5f3560.console.log": {
+    "sha256": "1b82a1630f14397493e82a7a9b54333febf9983e36e427cf6222e6a6300e5efa",
+    "bytes": 11571
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000004-a60e516f0b.console.log": {
+    "sha256": "bda6013e916648d5e7a7d3d81520cae810c8140f49433e3d3fdf6f53d2b26a89",
+    "bytes": 15810
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000001-dc38e75d60.console.log": {
+    "sha256": "6be2a76a9489bf83fc19c04ac7e1a1a56c51badcdf3ded676c4a4ea89abf5479",
+    "bytes": 929
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000005-7f13473240.console.log": {
+    "sha256": "c17871d793ebd58abec1ee5e97dc944190166cb1c48651ccb531af6c624c8e18",
+    "bytes": 87878
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/schedule.json": {
+    "sha256": "90a94ec5fea249cfa78a39b39fafaa83f0d076b56644924c5f72790665e270be",
+    "bytes": 3187
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000012-fdc99c9bf6.metrics.jsonl": {
+    "sha256": "8db92ca560ba5814abdb8bf08599f2ffdceb3561fea29484f340f89b59bc285e",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000007-f4f97021cf.console.log": {
+    "sha256": "0d01f7dc3faf714ceef613f68025ec5a946b82352489331d1445d2ff6987737b",
+    "bytes": 210
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000010-6ff5799cd7.console.log": {
+    "sha256": "a643a37bc906ddd847ddd4c42d322eac158780da489c90195bf3209120f0952e",
+    "bytes": 249
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000000-f89fad8e22.console.log": {
+    "sha256": "51608bb0b37138eb2cbcd179bfd2e0010c939ab2d124ff32e8a672fdc0997e20",
+    "bytes": 1037
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000003-8016c7484b.console.log": {
+    "sha256": "36876f6508377d643c2874d28b2544a402ec42f7af05dafe18c2a80a676e64e3",
+    "bytes": 5954
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000011-daa321f63d.console.log": {
+    "sha256": "e32a2fdc515299bb56e0f2345d932db74e8a05d03351a887f5d5a2db710ec218",
+    "bytes": 356
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000011-daa321f63d.metrics.jsonl": {
+    "sha256": "a4b1a9602f57a90869fa1b14115d58f18ecde86fe9d3408ccb4e52f78792d388",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000006-20600bdea0.metrics.jsonl": {
+    "sha256": "4312ea05f8afd067eccd8231a211f6d10dfae698f83fc7fafd2f488b2eb39965",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000009-677750f167.console.log": {
+    "sha256": "565a481904b351174c13003326dc7c808616dc1e2d18536b7c614ce959251a6b",
+    "bytes": 420
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000004-a60e516f0b.metrics.jsonl": {
+    "sha256": "dd66c50351c0ec27b57212eeb6c01fe96a4f3e4a12d887c0f22795dc17cc4ade",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/results.jsonl": {
+    "sha256": "4b7f73dda8fdce4d02bbb8b4f30b8c8d40e3d6e8caf77079a8ba37226fcbf789",
+    "bytes": 145685
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000001-dc38e75d60.metrics.jsonl": {
+    "sha256": "0eda6257eab38d7632d19be80d67cb22885dc7b5d791e03d58f837b79486f572",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000008-8cf548d5cd.metrics.jsonl": {
+    "sha256": "ec0c09552011f75f6aeef90fb9e19aebaa15cce898f4d507eed501ab051c1ddd",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000002-2df28cf53c.metrics.jsonl": {
+    "sha256": "b3372ffa61287f425a082bdd3b2b6658c46c0f713eff6e0a04aefc7b83f3c09c",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000003-8016c7484b.metrics.jsonl": {
+    "sha256": "a8e1c1562ff5c99bfa19ed5254b823e5e1769c475a7d74867e1ac23ec4cd1a5e",
+    "bytes": 213
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/results-evidence.json": {
+    "sha256": "b3b3baf94549d432c822c56d19f80a7e960607077d5840b26f50cb38114766e1",
+    "bytes": 2267
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000013-8cad5f3560.metrics.jsonl": {
+    "sha256": "3ac8a1da31e1189903eef4db819d37d150dcff9f0cf11968ce7707c1a379af84",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000012-fdc99c9bf6.console.log": {
+    "sha256": "52c79691071cd894fda9f10432748bc10839207cc7f3b125fb6d4d5fac910e3d",
+    "bytes": 605
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000009-677750f167.metrics.jsonl": {
+    "sha256": "f10b561916873dd110263245d23daefb2758ff7a191f94207040e8fcd14e56c9",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000007-f4f97021cf.metrics.jsonl": {
+    "sha256": "d03d8b8bad941dc4d74b5b57b72948f55cd34a372cbde2a64c0ccc0cb0581f02",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/run.json": {
+    "sha256": "6c31f3873246f0cf4a226827ff23a83cfb5c73cb09f3a0bfc3d2406e542ccced",
+    "bytes": 5831
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000008-8cf548d5cd.console.log": {
+    "sha256": "ea27943260241e34e8b7de8bb1454a0c40d20e090dfd75302d1202ebf125fe1f",
+    "bytes": 240
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000002-2df28cf53c.console.log": {
+    "sha256": "7fef0d9f51ed7ce26aa31292eddabd9d177af0a740f8585ce53cae79162e8a87",
+    "bytes": 3835
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000010-6ff5799cd7.metrics.jsonl": {
+    "sha256": "45ba7badd4b8c59913b2235e3d4929299bd0d1fcf6d4e0ad9d0b1e7a4acbc936",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000000-f89fad8e22.metrics.jsonl": {
+    "sha256": "a153939c1ff3f316fc1585b1e7f77d36f5336d8c44ab8a7fea3f1633797154b8",
+    "bytes": 103
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/case-000006-20600bdea0.console.log": {
+    "sha256": "39a8a0ea37a11768deaa7506fb0705814dd95b73f7b609848a82e59f95217040",
+    "bytes": 583
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000007-f4f97021cf.json": {
+    "sha256": "1f24f46e9abb620250591699ccd6381d0296845e2a1716669656703faaa8ac51",
+    "bytes": 2567
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000004-a60e516f0b.json": {
+    "sha256": "fae79c9fe63f0596ff5e5e13374e52c2f41c57fb67b717b93e9eaa63ad5204e2",
+    "bytes": 15823
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000013-8cad5f3560.json": {
+    "sha256": "009c8744cec6aa5476ce629cf34274a59ecdbc9148d0c0ef64abf93075c9a694",
+    "bytes": 11761
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000008-8cf548d5cd.json": {
+    "sha256": "395ee71f13b4bf95a537b699f32afd3732619c5f3631f22a42cb37718f147576",
+    "bytes": 2667
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000012-fdc99c9bf6.json": {
+    "sha256": "76da25cd18f2c629433056d6d599b01c3e3ced8a0a8d33745a8a8da6cb992100",
+    "bytes": 2899
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000006-20600bdea0.json": {
+    "sha256": "6f6c042c831eb767577d62bf0ce25b68ad16046ff8924dcd293ba682bac7b95a",
+    "bytes": 2862
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000010-6ff5799cd7.json": {
+    "sha256": "bcdf7321c0006dad6dbef59fede97b22e8a3001f89e90870e2bce2a83588df6d",
+    "bytes": 2643
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000001-dc38e75d60.json": {
+    "sha256": "e706bb0a4fb4c9eca955a102b8942c2c56fb60391d99429410d6a95b94c4f6eb",
+    "bytes": 3174
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000000-f89fad8e22.json": {
+    "sha256": "3ac611087b303610e2e08e3ffa1ac664ebe9dd9fa0fc38a15e36b651f055f385",
+    "bytes": 3350
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000005-7f13473240.json": {
+    "sha256": "b2e97563dcc4883610d472f54800cbc5bca8afc913ed6bcf9d88ba1c0d3374da",
+    "bytes": 80711
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000002-2df28cf53c.json": {
+    "sha256": "d003887b08f447220031970f1d5b8f3eb2532f868b906afcd1e84c73c44c1f2b",
+    "bytes": 5628
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000003-8016c7484b.json": {
+    "sha256": "fe2f52de39acf3bea18ea430c9e744bb60a013d22a8a6a2054f9a202257a81b9",
+    "bytes": 7561
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000009-677750f167.json": {
+    "sha256": "dba078c2046fd1658048ec22caeaf53736ba86958d2bde1fcbbcc1f2cd4175a5",
+    "bytes": 2765
+  },
+  "out/lumen-10292019r/wpt-v2-persistence-final-dom/dom/cases/case-000011-daa321f63d.json": {
+    "sha256": "576887c406b6bc1b9c485455a995f607aa07ef7c7d99ed0e34d4577ef436fea4",
+    "bytes": 2716
+  },
+  "out/10292019r-linux-worker/persistence-tests-final.log": {
+    "sha256": "27184a1578a6b869791470fa2316719ce82fdecb38eb238b876c14120e227f25",
+    "bytes": 114
+  },
+  "out/10292019r-linux-worker/persistence-audit-controls.log": {
+    "sha256": "4dced8ea8878af0a8b24aeaef1f95be8d365dadb60c2e79b95c4e30ee0b163d7",
+    "bytes": 121
+  },
+  "out/10292019r-linux-worker/wpt-v2-persistence-final-dom-driver.log": {
+    "sha256": "010a36f98b853ccd2448051f46b24fa8f6b78222fea4a4aebb9bba4c4b2c8ed7",
+    "bytes": 640
+  },
+  "out/10292019r-linux-worker/wpt-v2-persistence-resume-driver.log": {
+    "sha256": "010a36f98b853ccd2448051f46b24fa8f6b78222fea4a4aebb9bba4c4b2c8ed7",
+    "bytes": 640
+  },
+  "out/10292019r-linux-worker/persistence-resume-proof.json": {
+    "sha256": "3fd513f68e116656b637139c2e073f41d6f8640940bedfc1112ff2c4e86b6010",
+    "bytes": 175
+  },
+  "out/10292019r-linux-worker/persistence-before-resume.json": {
+    "sha256": "3808fa613fbdc3032ff1fdc7eabcc3e0b92abfb66db420f7f8b0abfa064dad3d",
+    "bytes": 2531
+  },
+  "tests/wpt/linux_headless_runner.py": {
+    "sha256": "6f23cb537ecaa7aa6431572b7d8559bfd21793e90141d5e37ae024b508e60551",
+    "bytes": 26992
+  },
+  "tests/wpt/test_linux_evidence_persistence.py": {
+    "sha256": "64abb0d01cd3da12afef05e9ce25378cdb0b584f2095f1c2c93b34fbde8af9e4",
+    "bytes": 6542
+  }
+}

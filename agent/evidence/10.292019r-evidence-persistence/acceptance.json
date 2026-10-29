@@ -1,0 +1,44 @@
+{
+  "task": "10.292019r",
+  "iteration": 12,
+  "score": 55,
+  "scope": "Linux evidence persistence reliability; no product change or conformance-rate increase",
+  "startedUTC": "2026-10-29T14:48:23.225090+00:00",
+  "finishedUTC": "2026-10-29T14:49:47.575038+00:00",
+  "testSeconds": 4.881059638999432,
+  "unitTests": 15,
+  "auditorControls": 22,
+  "actualNativeProbe": {
+    "scheduled": 1515,
+    "recorded": 14,
+    "fullyPassing": 14,
+    "unrun": 1501,
+    "passPercentOfRecorded": 100.0,
+    "assertions": {
+      "PASS": 996
+    },
+    "harnessStatuses": {
+      "OK": 14
+    },
+    "unqualifiedEvidenceVariants": 0,
+    "evidenceQualified": true,
+    "groupEvidenceSHA256": {
+      "dom": "b3b3baf94549d432c822c56d19f80a7e960607077d5840b26f50cb38114766e1"
+    }
+  },
+  "resumeProof": {
+    "all16EvidenceFilesUnchanged": true,
+    "changedPaths": [],
+    "sourceAdapterSHA256": "6f23cb537ecaa7aa6431572b7d8559bfd21793e90141d5e37ae024b508e60551",
+    "recorded": 14
+  },
+  "artifactSourceCommit": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
+  "binarySHA256": "ff3601542440df092406d646e9f5051646af861b3ccd268e8e2de18766ed725a",
+  "adapterSHA256": "6f23cb537ecaa7aa6431572b7d8559bfd21793e90141d5e37ae024b508e60551",
+  "sharedMacRunnerSHA256": "f279529ae78f58916a1d87170bc068ad34b15f175072a0a01f63695bc8e44a6b",
+  "rawArchiveSHA256": "dc9e232f612fa0baa2491563fcae96cf493aeb50e6e9ec2b9f01421f7cbab9ba",
+  "reviewFix": "Previously finalized cases are now verified against their immutable manifest before resume; missing/changed files cannot silently rerun and replace a failure.",
+  "priorReviewState": "pre-review-* files preserve the initial12-test implementation and its14-case probe before the finalized-resume corruption guard.",
+  "causeOfOriginalFilesystemLoss": "unproven; old130/133 evidence remains excluded and untouched",
+  "completeOfficialWPT": false
+}

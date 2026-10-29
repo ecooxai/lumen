@@ -1,0 +1,36 @@
+{
+  "iteration": 12,
+  "task": "10.292019r",
+  "createdUTC": "2026-10-29T14:47:20.401895+00:00",
+  "score": 55,
+  "scope": "Linux evidence persistence tooling only; no engine change or extra full-WPT claim",
+  "protocol": "linux-headless-v2",
+  "unitTests": 12,
+  "auditorControls": 22,
+  "actualNativeProbe": {
+    "scheduled": 1515,
+    "recorded": 14,
+    "fullyPassing": 14,
+    "unrun": 1501,
+    "passPercentOfRecorded": 100.0,
+    "assertions": {
+      "PASS": 996
+    },
+    "harnessStatuses": {
+      "OK": 14
+    },
+    "unqualifiedEvidenceVariants": 0,
+    "evidenceQualified": true,
+    "groupEvidenceSHA256": {
+      "dom": "2e45e40a6d274a994cde5d6f57c2e6904178cc307fa99b8a938a0069d0ae02be"
+    }
+  },
+  "priorAttempt": "agent/evidence/10.292019r-form-encoding-007/acceptance.json records excluded130/133 saved rows despite133 in-memory; no old result rewritten",
+  "causeOfOriginalFilesystemLoss": "unproven",
+  "fix": "Exclusive writer lock; atomic immutable per-case records; complete aggregate rebuilt solely from verified real case records; unique temporary file,fsync,rename and readback; missing/conflicting/foreign evidence rejected",
+  "artifactSourceCommit": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
+  "binarySHA256": "ff3601542440df092406d646e9f5051646af861b3ccd268e8e2de18766ed725a",
+  "sharedMacRunnerSHA256": "f279529ae78f58916a1d87170bc068ad34b15f175072a0a01f63695bc8e44a6b",
+  "linuxAdapterSHA256": "9ac7429fd95c5736b41585873eecc8f49a97f39c4e74adf0470406d0d4605986",
+  "rawArchiveSHA256": "4c84ffe87430bb0f61c7e93475238f063fe72bdf39df070e8d60ec583ee351ed"
+}
