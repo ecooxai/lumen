@@ -11,6 +11,7 @@ Read `agent/task.md`, `agent/continue.md`, this file and relevant `CONTINUE.md` 
 - Canonical Mac repository: `/Users/devin/repos/lumen` (user alias `~/project/lumen`). Current authorized Linux fallback: `/workspace/scratch/2b90c4e9e7b5/project/lumen`, recovered with complete nonshallow Git history from accepted handoff `0cf82085d63eb42e789f57d303f9489d010d3fd5`.
 - Child `devinmac3d` calls hang in this environment, as documented by the prior task and observed again. Root may transport agent-authored payloads as a necessary exception; do not repeat opaque child calls. Parent relay status must be reported separately. Linux success never establishes Apple execution.
 - Supported sandbox network escalation allowed the authorized Git recovery without modifying proxy configuration. Do not change network controls, print credentials or bypass signing.
+- Local default execution has translated PIDs that disagree with host `/proc`. The resource monitor now refuses before launch/sample/signals. Run monitored work in the supported consistent execution context (`require_escalated`) while retaining the identity guard. Never interpret invalid/short samples as app performance acceptance.
 
 ## Ownership and safe integration
 
@@ -54,4 +55,4 @@ Baseline assessment is55/100 under the existing fixed task rubric, not a WPT per
 
 ## Next-agent context
 
-Continue from the task branch and `agent/continue.md`. First check whether the Mac connector has recovered. Preserve the accepted c259 baseline and the complete historical raw WPT receipts. Finish real worker async/XHR source changes with independent lifetime/abort tests, then run fixed native/Chromium selections and fresh native resources on the exact candidate. Expand coverage without dropping failed contexts. Establish actual compatible iPad and signed shared-IPA execution before awarding those gates. Keep full-suite uncertainty explicit.
+Continue from the task branch and `agent/continue.md`. Validated subsystem checkpoint6596e87 includes real C transport background completion and the monitor PID guard; the full V8 worker candidate remains unaccepted. Independent worker factory26/26 and actual Chrome header fixture36/36 are explicitly different evidence classes. First check whether the Mac connector has recovered. Preserve the accepted c259 baseline and the complete historical raw WPT receipts. Finish real worker async/XHR source changes with independent lifetime/abort tests, then run fixed native/Chromium selections and fresh native resources on the exact candidate. Expand coverage without dropping failed contexts. Establish actual compatible iPad and signed shared-IPA execution before awarding those gates. Keep full-suite uncertainty explicit.

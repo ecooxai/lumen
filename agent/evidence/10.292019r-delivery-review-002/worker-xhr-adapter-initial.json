@@ -1,0 +1,151 @@
+{
+  "kind": "host-adapter-semantic-checks",
+  "nativeLumenExecuted": false,
+  "officialWPT": false,
+  "nativeTransportExercised": false,
+  "decoder": "Node TextDecoder adapter; native decoder untested",
+  "node": "v24.22.1",
+  "sourcePath": "/workspace/scratch/2b90c4e9e7b5/engineering_staging/src/js/worker_xhr.js",
+  "sourceSHA256": "8420a6d23b92acc3da630dc7d681bf6c84a2ffa849448e7d62e28e2d2a58899d",
+  "fixtureSHA256": "5e7293e59e65cbba80c349709bff2f5e5093c480c7ff21c82e38179f1e307d74",
+  "started": "2026-10-29T12:53:27.501Z",
+  "ended": "2026-10-29T12:53:27.567Z",
+  "durationSeconds": 0.06489682299999999,
+  "total": 26,
+  "passed": 25,
+  "failed": 1,
+  "monitor": "Subsecond host-adapter suite; no meaningful 1Hz app resource measurement",
+  "rows": [
+    {
+      "name": "async: same-origin headers hide both cookie names",
+      "ok": true,
+      "durationSeconds": 0.022000190999999995
+    },
+    {
+      "name": "async: cross-origin defaults hide private headers but retain safelist",
+      "ok": true,
+      "durationSeconds": 0.0009148139999999998
+    },
+    {
+      "name": "async: explicit exposure never overrides forbidden cookies",
+      "ok": true,
+      "durationSeconds": 0.0005761620000000036
+    },
+    {
+      "name": "async: wildcard exposes private headers without credentials",
+      "ok": true,
+      "durationSeconds": 0.0006276300000000035
+    },
+    {
+      "name": "async: credentialed wildcard does not expose private headers",
+      "ok": true,
+      "durationSeconds": 0.00043328499999999794
+    },
+    {
+      "name": "sync: same-origin headers hide both cookie names",
+      "ok": true,
+      "durationSeconds": 0.0005032210000000035
+    },
+    {
+      "name": "sync: cross-origin defaults hide private headers but retain safelist",
+      "ok": true,
+      "durationSeconds": 0.00037167300000000124
+    },
+    {
+      "name": "sync: explicit exposure never overrides forbidden cookies",
+      "ok": true,
+      "durationSeconds": 0.0009297269999999998
+    },
+    {
+      "name": "sync: wildcard exposes private headers without credentials",
+      "ok": true,
+      "durationSeconds": 0.00034408100000000275
+    },
+    {
+      "name": "sync: credentialed wildcard does not expose private headers",
+      "ok": true,
+      "durationSeconds": 0.00038447200000000235
+    },
+    {
+      "name": "shared response filtering preserves duplicate values and excludes forbidden cookies",
+      "ok": true,
+      "durationSeconds": 0.001443685000000002
+    },
+    {
+      "name": "response redirected cross-origin retains CORS header filtering",
+      "ok": true,
+      "durationSeconds": 0.00046726699999999257
+    },
+    {
+      "name": "CORS denial dispatches error and leaves response unreadable",
+      "ok": true,
+      "durationSeconds": 0.0007167850000000016
+    },
+    {
+      "name": "send returns before asynchronous completion and preserves state/event order",
+      "ok": true,
+      "durationSeconds": 0.0005918849999999907
+    },
+    {
+      "name": "abort cancels native request and suppresses late completion",
+      "ok": true,
+      "durationSeconds": 0.0016800520000000035
+    },
+    {
+      "name": "abort during loadstart prevents issuing a request",
+      "ok": true,
+      "durationSeconds": 0.00033841199999999107
+    },
+    {
+      "name": "reentrant open during HEADERS_RECEIVED suppresses stale load events",
+      "ok": true,
+      "durationSeconds": 0.0016063000000000045
+    },
+    {
+      "name": "timeout cancels native request and suppresses late success",
+      "ok": true,
+      "durationSeconds": 0.021725505
+    },
+    {
+      "name": "reopening aborts old transport and only new response becomes visible",
+      "ok": true,
+      "durationSeconds": 0.000791207
+    },
+    {
+      "name": "GET request ignores body and strips author forbidden request headers",
+      "ok": true,
+      "durationSeconds": 0.0022230239999999953
+    },
+    {
+      "name": "brand checks and send state failures are observable",
+      "ok": true,
+      "durationSeconds": 0.0009753960000000035
+    },
+    {
+      "name": "worker document responseType is ignored and responseXML is absent",
+      "ok": true,
+      "durationSeconds": 0.0002836190000000016
+    },
+    {
+      "name": "JSON response parses the bytes through explicit decoder adapter",
+      "ok": true,
+      "durationSeconds": 0.0005878890000000041
+    },
+    {
+      "name": "response URL removes fragments",
+      "ok": true,
+      "durationSeconds": 0.00041188300000000313
+    },
+    {
+      "name": "XMLHttpRequestUpload cannot be directly constructed",
+      "ok": true,
+      "durationSeconds": 0.00033176199999999765
+    },
+    {
+      "name": "XMLHttpRequestEventTarget cannot be directly constructed",
+      "ok": false,
+      "error": "AssertionError [ERR_ASSERTION]: Missing expected exception (TypeError).\n    at file:///workspace/scratch/2b90c4e9e7b5/engineering_staging/tests/test_worker_xhr_adapter.mjs:175:109\n    at async check (file:///workspace/scratch/2b90c4e9e7b5/engineering_staging/tests/test_worker_xhr_adapter.mjs:71:9)\n    at async file:///workspace/scratch/2b90c4e9e7b5/engineering_staging/tests/test_worker_xhr_adapter.mjs:175:1",
+      "durationSeconds": 0.0008381080000000054
+    }
+  ]
+}

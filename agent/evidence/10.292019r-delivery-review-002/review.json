@@ -1,0 +1,99 @@
+{
+  "iteration": "10.292019r-delivery-review-002",
+  "started_utc": "2026-10-29T12:52:05Z",
+  "finished_utc": "2026-10-29T12:57:56.648281+00:00",
+  "elapsed_seconds": 351.648281,
+  "session_elapsed_seconds": 2269.648281,
+  "project_score": 55,
+  "score_is_wpt_percentage": false,
+  "native_worker_candidate_accepted": false,
+  "native_wpt_change": null,
+  "historical_selected_wpt": {
+    "fully_passing": 246,
+    "executed": 279,
+    "scheduled": 1515,
+    "unrun": 1236
+  },
+  "reviewed_checkpoint": "6596e87ffe77bc512e95586e0e556a65ed2269db",
+  "network_review": {
+    "source_hashes_match": true,
+    "fixture_hashes_match_before_after": true,
+    "old_controls": "32/32 before and after",
+    "background_controls": "33/40 baseline;40/40 candidate",
+    "new_assertions_ignored": false,
+    "scope": "Native Linux C transport only; neither V8 worker execution nor Apple conformance",
+    "raw_evidence": "agent/evidence/10.292019r-native-network-001.json"
+  },
+  "monitor_review": {
+    "source_hashes_match": true,
+    "unit_tests": "35/35",
+    "real_namespace_mismatch_rejected_before_launch": true,
+    "safe_context": "Supported require_escalated execution; verify gate remains enabled",
+    "raw_evidence": "agent/evidence/10.292019r-monitor-namespace.json"
+  },
+  "host_adapter": {
+    "red": "25/26 at12:53:27Z,0.064897s",
+    "green": "26/26 at12:54:50Z,0.084848s",
+    "same_fixture_sha256": "5e7293e59e65cbba80c349709bff2f5e5093c480c7ff21c82e38179f1e307d74",
+    "defect_fixed": "XMLHttpRequestEventTarget incorrectly allowed direct construction",
+    "native_transport": false,
+    "native_decoder": false,
+    "official_wpt": false
+  },
+  "actual_chrome_fixture": {
+    "passed": 36,
+    "total": 36,
+    "version": "156.0.8078.47",
+    "binary_sha256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+    "actual_browser_duration_seconds": 0.966603,
+    "monitor_wall_seconds": 2.013,
+    "native_lumen_executed": false,
+    "official_wpt": false,
+    "resource_limit": "Short-lived Chrome children may occur between1Hz samples; no Chrome or Lumen resource acceptance"
+  },
+  "durable_prior_checkpoint": {
+    "git_head": "52af04e81e8256119b30d686e2e506a1fb3ebb45",
+    "archive_sha256": "d37f60d4ac3a98484a7618f5c311ff4266ea195f46d42df083f344b8797c6e15",
+    "archive_library_id": "libfile_d0a443aeb0b48191a22ddbedf95d2f7a",
+    "receipt_library_id": "libfile_51d313cb793c8191a7920c973a6a8a46"
+  },
+  "timing_limit": "Root and subagents overlap; elapsed session time is not their sum. Model-compute timing is unavailable.",
+  "files": {
+    "test_worker_response_headers.py": {
+      "sha256": "9b2c3193da9ec4d5b53ab551c3c23b5f856f1cac5ec500cc519520358874c8a0",
+      "bytes": 18525
+    },
+    "test_worker_xhr_adapter.mjs": {
+      "sha256": "5e7293e59e65cbba80c349709bff2f5e5093c480c7ff21c82e38179f1e307d74",
+      "bytes": 15068
+    },
+    "worker-headers-chrome-control-receipt.json": {
+      "sha256": "b56ea70fa0399163e54377d2f827dfe0c92651acf1c5070f969007f9f1c82bf4",
+      "bytes": 5524
+    },
+    "worker-headers-chrome-control.csv": {
+      "sha256": "ab4562ebf56803b3e2f2e913fb70345a69bb8e400be2756cff55577dc75ed9cc",
+      "bytes": 104
+    },
+    "worker-headers-chrome-control.json": {
+      "sha256": "3fa50c063a4b754a95b48d22928358ce027c0b6c6b20a7632958e2fdaf43776f",
+      "bytes": 2009
+    },
+    "worker-headers-chrome-control.log": {
+      "sha256": "ca35ee7c8e1f90a79625badfa9fc96f3fee1f94b9c949870ddbc22bcd7643e24",
+      "bytes": 12292
+    },
+    "worker-xhr-adapter-green.json": {
+      "sha256": "fa0252f1e28f2c6a631238e69c0abdbc231f85974b77abe9005787274a39f32d",
+      "bytes": 4798
+    },
+    "worker-xhr-adapter-initial.json": {
+      "sha256": "a80304b303530276ff2fcd81a03ce9ed4a53dca5891893c405455a44241fcfc3",
+      "bytes": 5228
+    },
+    "worker_xhr.candidate-unaccepted.js": {
+      "sha256": "1365ceadd9921c8f36b1ab3463f2a7b013851f9acfca7d9b6c900a08a2064774",
+      "bytes": 23324
+    }
+  }
+}

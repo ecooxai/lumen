@@ -1,0 +1,81 @@
+WORKER_HEADERS_CHECK {"i":0,"name":"fetch: same-origin Set-Cookie is hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":1,"name":"fetch: same-origin Set-Cookie2 is hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":2,"name":"fetch: same-origin custom header is visible","ok":true}
+WORKER_HEADERS_CHECK {"i":3,"name":"fetch: cross-origin private header is hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":4,"name":"fetch: cross-origin safelisted Content-Type is visible","ok":true}
+WORKER_HEADERS_CHECK {"i":5,"name":"fetch: cross-origin CORS control header is hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":6,"name":"fetch: explicitly exposed custom header is visible","ok":true}
+WORKER_HEADERS_CHECK {"i":7,"name":"fetch: explicit exposure keeps other custom header hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":8,"name":"fetch: explicit exposure cannot reveal Set-Cookie","ok":true}
+WORKER_HEADERS_CHECK {"i":9,"name":"fetch: explicit exposure cannot reveal Set-Cookie2","ok":true}
+WORKER_HEADERS_CHECK {"i":10,"name":"fetch: credentialed wildcard keeps private header hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":11,"name":"fetch: credentialed wildcard retains safelisted header","ok":true}
+WORKER_HEADERS_CHECK {"i":12,"name":"fetch: uncredentialed wildcard exposes custom header","ok":true}
+WORKER_HEADERS_CHECK {"i":13,"name":"fetch: uncredentialed wildcard never exposes cookie","ok":true}
+WORKER_HEADERS_CHECK {"i":14,"name":"fetch: credentialed explicit exposure remains effective","ok":true}
+WORKER_HEADERS_CHECK {"i":15,"name":"fetch: credentialed wildcard plus explicit name exposes only explicit name","ok":true}
+WORKER_HEADERS_CHECK {"i":16,"name":"fetch: cross-origin redirect does not reveal private headers","ok":true}
+WORKER_HEADERS_CHECK {"i":17,"name":"fetch: missing CORS permission rejects response","ok":true}
+WORKER_HEADERS_CHECK {"i":18,"name":"xhr: same-origin Set-Cookie is hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":19,"name":"xhr: same-origin Set-Cookie2 is hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":20,"name":"xhr: same-origin custom header is visible","ok":true}
+WORKER_HEADERS_CHECK {"i":21,"name":"xhr: cross-origin private header is hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":22,"name":"xhr: cross-origin safelisted Content-Type is visible","ok":true}
+WORKER_HEADERS_CHECK {"i":23,"name":"xhr: cross-origin CORS control header is hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":24,"name":"xhr: explicitly exposed custom header is visible","ok":true}
+WORKER_HEADERS_CHECK {"i":25,"name":"xhr: explicit exposure keeps other custom header hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":26,"name":"xhr: explicit exposure cannot reveal Set-Cookie","ok":true}
+WORKER_HEADERS_CHECK {"i":27,"name":"xhr: explicit exposure cannot reveal Set-Cookie2","ok":true}
+WORKER_HEADERS_CHECK {"i":28,"name":"xhr: credentialed wildcard keeps private header hidden","ok":true}
+WORKER_HEADERS_CHECK {"i":29,"name":"xhr: credentialed wildcard retains safelisted header","ok":true}
+WORKER_HEADERS_CHECK {"i":30,"name":"xhr: uncredentialed wildcard exposes custom header","ok":true}
+WORKER_HEADERS_CHECK {"i":31,"name":"xhr: uncredentialed wildcard never exposes cookie","ok":true}
+WORKER_HEADERS_CHECK {"i":32,"name":"xhr: credentialed explicit exposure remains effective","ok":true}
+WORKER_HEADERS_CHECK {"i":33,"name":"xhr: credentialed wildcard plus explicit name exposes only explicit name","ok":true}
+WORKER_HEADERS_CHECK {"i":34,"name":"xhr: cross-origin redirect does not reveal private headers","ok":true}
+WORKER_HEADERS_CHECK {"i":35,"name":"xhr: missing CORS permission rejects response","ok":true}
+WORKER_HEADERS_RESULTS {"total":36,"passed":36,"failed":0}
+[24465:24477:1029/055615.452952:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[24465:24477:1029/055615.453126:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[24465:24477:1029/055615.464668:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[24465:24477:1029/055615.465542:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[24465:24477:1029/055615.465571:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[24465:24477:1029/055615.465578:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[24465:24477:1029/055615.465584:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[24465:24477:1029/055615.468240:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[24465:24477:1029/055615.500629:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+
+DevTools listening on ws://127.0.0.1:42755/devtools/browser/7ba4803a-9078-46c5-ac7e-c882319e26ca
+[24465:24465:1029/055615.608562:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[24465:24477:1029/055615.608700:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[24465:24465:1029/055615.608720:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[24465:24477:1029/055615.608774:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[24465:24465:1029/055615.608899:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[24465:24465:1029/055615.614052:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[24465:24477:1029/055615.614257:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[24465:24465:1029/055615.629059:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[24465:24465:1029/055615.629461:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[24465:24477:1029/055615.629832:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[24465:24477:1029/055615.629887:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[24465:24477:1029/055615.630172:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[24465:24465:1029/055615.631153:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[24465:24465:1029/055615.639970:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.Properties.GetAll: object_path= /org/freedesktop/UPower/devices/DisplayDevice: unknown error type: 
+[24465:24465:1029/055615.639996:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[24465:24477:1029/055615.640099:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[24465:24465:1029/055615.660887:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[24465:24477:1029/055615.661023:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[24465:24465:1029/055615.671543:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[24465:24477:1029/055615.671663:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[24465:24465:1029/055615.691391:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.NetworkManager.GetDevices: object_path= /org/freedesktop/NetworkManager: unknown error type: 
+[24496:24540:1029/055615.693710:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202
+[24496:24540:1029/055615.693870:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202
+[24496:24540:1029/055615.693904:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202
+[24496:24540:1029/055615.702229:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202
+[24496:24540:1029/055615.719999:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202
+[24496:24540:1029/055615.763250:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202
+[24496:24540:1029/055615.788867:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202
+[24465:24465:1029/055615.790153:ERROR:chrome/browser/component_updater/soda_component_installer.cc:101] On demand update of the SODA component failed with error: 5
+[24496:24540:1029/055615.796345:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202
+[24465:24465:1029/055615.797264:ERROR:chrome/browser/component_updater/soda_language_pack_component_installer.cc:87] On demand update of the SODA language component failed with error: 5
+[24496:24540:1029/055615.883662:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202
+WORKER_HEADERS_RECEIPT {"kind": "dedicated-worker-public-api-http-regression", "officialWPT": false, "nativeLumenExecuted": false, "chromiumControlExecuted": true, "browserVersion": {"protocolVersion": "1.3", "product": "Chrome/156.0.8078.47", "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775", "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36", "jsVersion": "15.6.75.19"}, "binary": "/tmp/astra10292021-runtime/chrome-linux64/chrome", "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2", "fixtureSHA256": "9b2c3193da9ec4d5b53ab551c3c23b5f856f1cac5ec500cc519520358874c8a0", "htmlSHA256": "134b85e6bc373e2a22572be05052b7f2adadd0fd77e8c11f5ba89c10e84925fd", "workerTemplateSHA256": "72a6323fc656c5cbe33b1953c90868e8e32563db2acd593cc825f63fe1b0634a", "caseManifestSHA256": "b11ca57547bd3a2af341c9c3ee45769988952ede5e4b8bbda306fc458287d14e", "started": "2026-10-29T12:56:15.404184+00:00", "ended": "2026-10-29T12:56:16.735616+00:00", "durationSeconds": 0.9666028600004211, "total": 36, "passed": 36, "failed": 0, "infrastructureErrors": [], "monitor": "Run with the external 1Hz monitor; no embedded resource claim", "stdoutSHA256": "2aa93b655fecc1eae3baf89d14d197b64e1737ad8fa36676c4cc5ec457ffeeff", "stderrSHA256": "6aa0aff8a03dffd8d6fa9f63b17606b525af9ddb1ae0c4047e5246d717f028f0"}
