@@ -1,0 +1,22 @@
+{
+  "candidate": 196,
+  "source_commit": "2b301e545be9055fbc933fdd187fce099e6fd148",
+  "checked_files": 706,
+  "checked_bytes": 10546598,
+  "actual_files": 712,
+  "additive_files": [
+    "SOURCE-MANIFEST.json",
+    "EXPORT-QUALIFICATION.json",
+    "docs/Linux-candidate196.md",
+    "docs/build-dependencies196.json",
+    "docs/performance195-summary.json",
+    "docs/style-phases-diagnostic-v2.html"
+  ],
+  "errors": [],
+  "private_pattern_findings": [],
+  "reviewed_at_utc": "2026-10-29T20:12:16.973376+00:00",
+  "recorded_source_set_entries": 638,
+  "recorded_source_set_digest": "5993efeb0dee61f2ec121fda9dd953448a36ad610053cd305fa325eafad2daf0",
+  "source_set_mismatches": [],
+  "before_after_seal_identical": true
+}

@@ -469,6 +469,47 @@ void intrinsic(Layout *L, Box *b, float *mn, float *mx) {
     intrinsic_measure(L, b, 0, false, mn, mx);
 }
 
+/* Content-based width limits ignore the preferred width and other width
+ * limits. Restore the style, edges and ordinary intrinsic cache afterwards;
+ * the temporary definite padding basis must not leak into parent sizing. */
+void intrinsic_content_width(Layout *L, Box *b, float cbw, float *mn, float *mx) {
+    ComputedStyle measured = *b->st, *original = b->st;
+    measured.width = L_auto(); measured.min_width = L_auto();
+    measured.max_width = (Length){ .kind = LK_NONE };
+    /* Intrinsic traversal also resolves descendant inline edges. This helper
+       may run after layout, so retain every affected box's edges and cache;
+       a size-preserving flex pass is allowed to reuse its existing geometry. */
+    typedef struct {
+        Box *box;
+        float margin[4], border[4], padding[4], min, max;
+        bool cached;
+    } IntrinsicState;
+    VEC(IntrinsicState) saved = {0};
+    for (Box *node = b; node;) {
+        IntrinsicState state = { .box = node, .min = node->imin,
+                                 .max = node->imax, .cached = node->intr_ok };
+        memcpy(state.margin, node->m, sizeof state.margin);
+        memcpy(state.border, node->b, sizeof state.border);
+        memcpy(state.padding, node->p, sizeof state.padding);
+        vec_push(saved, state);
+        if (node->first) { node = node->first; continue; }
+        while (node != b && !node->next) node = node->parent;
+        if (node == b) break;
+        node = node->next;
+    }
+    b->st = &measured; b->intr_ok = false;
+    intrinsic_measure(L, b, cbw >= 0 ? cbw : 0, cbw >= 0, mn, mx);
+    b->st = original;
+    for (int i = 0; i < saved.n; i++) {
+        IntrinsicState *state = &saved.v[i]; Box *node = state->box;
+        memcpy(node->m, state->margin, sizeof state->margin);
+        memcpy(node->b, state->border, sizeof state->border);
+        memcpy(node->p, state->padding, sizeof state->padding);
+        node->imin = state->min; node->imax = state->max; node->intr_ok = state->cached;
+    }
+    vec_free(saved);
+}
+
 /* A positioned box has a definite percentage containing block even when its
    width is shrink-to-fit. Resolve its own edges and constraints there; child
    percentages still participate in the ordinary cyclic intrinsic algorithm.

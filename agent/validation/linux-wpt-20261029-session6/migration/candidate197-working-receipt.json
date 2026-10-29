@@ -1,0 +1,32 @@
+{
+  "candidate": 197,
+  "parent": "2b301e545be9055fbc933fdd187fce099e6fd148",
+  "prototype_started_utc": "2026-10-29T19:52:25.057043+00:00",
+  "integrated_utc": "2026-10-29T20:13:36.530068+00:00",
+  "files": {
+    "src/layout/box.c": {
+      "before": "f3701321a23217da38269b8b263d445387f550689941dd37db260aeda62fa628",
+      "after": "2a09104ef64040a2c05bddde74ad3d0782b4baf5cbfec1d0f4ed7a9021872ade"
+    },
+    "src/layout/block.c": {
+      "before": "144f82f07a93c6834a4c04563c2adb44b6de564bc8c08ceecc098094ed47ddbb",
+      "after": "911c7722d4eeb13d6b1b3f3c27ab0347d509dbbdd0e71f2d8a7d4fe119ee1551"
+    },
+    "src/layout/flex.c": {
+      "before": "f2f0e7084ad6a65156ac9c14c811b974d990940a9d483345855a1312a1cd506b",
+      "after": "ea1f2b71367e4462876b2bfe0ce14f2bc3c381ef8b298f9581b8991d111e209c"
+    },
+    "src/layout/layout.h": {
+      "before": "bf55aa0294f8386e6cd8f887660a1c4dffff75b3c8eeeba6947a99f73b79dc6d",
+      "after": "ce20b49c7aa93c110716a584900d26628f022ec54c61b37ad574636c729f5a81"
+    }
+  },
+  "patch_sha256": "43ce4b8898e453a5bab8cc6a2ca974893983d11b1ec2ffcef9962d3cb3726a46",
+  "scope": "Horizontal intrinsic width constraints using existing content measurement; descendant edges and intrinsic caches restored. Numeric constraint paths unchanged.",
+  "independent_review_scope": "Existing constraint design reviewed; latest state-preservation implementation author-reviewed, with independent frozen behavioral gates. No denied source excerpts relayed.",
+  "pending_gates": {
+    "whole_upstream": 148,
+    "authored_mutation_fields": 3528,
+    "descendant_fields": 672
+  }
+}

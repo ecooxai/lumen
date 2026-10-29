@@ -548,10 +548,17 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
 }
 
 /* ---------------- generic box layout ---------------- */
-static float clampw(const ComputedStyle *s, float w, float cbw, float bp) {
+static float clampw(Layout *L, Box *b, float w, float cbw, float bp) {
+    const ComputedStyle *s = b->st;
     bool bs = s->box_sizing == BOX_BORDER;
+    bool ilo = !s->writing_mode && intrinsic_width_keyword(s->min_width);
+    bool ihi = !s->writing_mode && intrinsic_width_keyword(s->max_width);
+    float mn = 0, mx = 0, available = cbw - b->m[1] - b->m[3];
+    if (ilo || ihi) intrinsic_content_width(L, b, cbw, &mn, &mx);
     if (s->max_width.kind == LK_LEN && len_def(s->max_width, cbw)) { float v = res(s->max_width, cbw) + (bs ? 0 : bp); if (w > v) w = v; }
+    else if (ihi) w = LMIN(w, intrinsic_width_size(s->max_width, mn, mx, available));
     if (s->min_width.kind == LK_LEN && len_def(s->min_width, cbw)) { float v = res(s->min_width, cbw) + (bs ? 0 : bp); if (w < v) w = v; }
+    else if (ilo) w = LMAX(w, intrinsic_width_size(s->min_width, mn, mx, available));
     return w;
 }
 static float clamph(const ComputedStyle *s, float h, float cbh, float bp) {
@@ -604,15 +611,15 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     bool is_cell = s->display == D_TABLE_CELL;
     if (mode == SZ_FORCED) b->w = fw;
     else if (b->fmt == FMT_REPLACED) { float w, h; replaced_size(L, b, cbw, cbh, -1, fh, &w, &h); b->w = w + hb; }
-    else if (len_def(s->width, cbw) && !is_cell) { b->w = clampw(s, res(s->width, cbw) + (bs ? 0 : hb), cbw, hb); if (b->w < hb) b->w = hb; }
-    else if (mode == SZ_FILL && b->fmt != FMT_TABLE && s->width.kind != LK_FIT_CONTENT && s->width.kind != LK_MAX_CONTENT && s->width.kind != LK_MIN_CONTENT) b->w = clampw(s, cbw - b->m[1] - b->m[3], cbw, hb);
+    else if (len_def(s->width, cbw) && !is_cell) { b->w = clampw(L, b, res(s->width, cbw) + (bs ? 0 : hb), cbw, hb); if (b->w < hb) b->w = hb; }
+    else if (mode == SZ_FILL && b->fmt != FMT_TABLE && s->width.kind != LK_FIT_CONTENT && s->width.kind != LK_MAX_CONTENT && s->width.kind != LK_MIN_CONTENT) b->w = clampw(L, b, cbw - b->m[1] - b->m[3], cbw, hb);
     else {
         float mn, mx;
         if (mode == SZ_ABS_SHRINK) intrinsic_with_basis(L, b, cbw, &mn, &mx);
         else intrinsic(L, b, &mn, &mx);
         float avail = (mode == SZ_ABS_SHRINK ? fw : cbw) - b->m[1] - b->m[3];
         float w = s->width.kind == LK_MIN_CONTENT ? mn : s->width.kind == LK_MAX_CONTENT ? mx : LMIN(LMAX(mn, avail), mx);
-        b->w = clampw(s, w, cbw, hb);
+        b->w = clampw(L, b, w, cbw, hb);
         /* A border-box maximum cannot make the content box negative. The
            resolved padding and border remain present even when they alone
            exceed max-width. */

@@ -1,0 +1,210 @@
+--- a/src/layout/box.c
++++ b/src/layout/box.c
+@@ -467,6 +467,47 @@
+ 
+ void intrinsic(Layout *L, Box *b, float *mn, float *mx) {
+     intrinsic_measure(L, b, 0, false, mn, mx);
++}
++
++/* Content-based width limits ignore the preferred width and other width
++ * limits. Restore the style, edges and ordinary intrinsic cache afterwards;
++ * the temporary definite padding basis must not leak into parent sizing. */
++void intrinsic_content_width(Layout *L, Box *b, float cbw, float *mn, float *mx) {
++    ComputedStyle measured = *b->st, *original = b->st;
++    measured.width = L_auto(); measured.min_width = L_auto();
++    measured.max_width = (Length){ .kind = LK_NONE };
++    /* Intrinsic traversal also resolves descendant inline edges. This helper
++       may run after layout, so retain every affected box's edges and cache;
++       a size-preserving flex pass is allowed to reuse its existing geometry. */
++    typedef struct {
++        Box *box;
++        float margin[4], border[4], padding[4], min, max;
++        bool cached;
++    } IntrinsicState;
++    VEC(IntrinsicState) saved = {0};
++    for (Box *node = b; node;) {
++        IntrinsicState state = { .box = node, .min = node->imin,
++                                 .max = node->imax, .cached = node->intr_ok };
++        memcpy(state.margin, node->m, sizeof state.margin);
++        memcpy(state.border, node->b, sizeof state.border);
++        memcpy(state.padding, node->p, sizeof state.padding);
++        vec_push(saved, state);
++        if (node->first) { node = node->first; continue; }
++        while (node != b && !node->next) node = node->parent;
++        if (node == b) break;
++        node = node->next;
++    }
++    b->st = &measured; b->intr_ok = false;
++    intrinsic_measure(L, b, cbw >= 0 ? cbw : 0, cbw >= 0, mn, mx);
++    b->st = original;
++    for (int i = 0; i < saved.n; i++) {
++        IntrinsicState *state = &saved.v[i]; Box *node = state->box;
++        memcpy(node->m, state->margin, sizeof state->margin);
++        memcpy(node->b, state->border, sizeof state->border);
++        memcpy(node->p, state->padding, sizeof state->padding);
++        node->imin = state->min; node->imax = state->max; node->intr_ok = state->cached;
++    }
++    vec_free(saved);
+ }
+ 
+ /* A positioned box has a definite percentage containing block even when its
+--- a/src/layout/block.c
++++ b/src/layout/block.c
+@@ -548,10 +548,17 @@
+ }
+ 
+ /* ---------------- generic box layout ---------------- */
+-static float clampw(const ComputedStyle *s, float w, float cbw, float bp) {
++static float clampw(Layout *L, Box *b, float w, float cbw, float bp) {
++    const ComputedStyle *s = b->st;
+     bool bs = s->box_sizing == BOX_BORDER;
++    bool ilo = !s->writing_mode && intrinsic_width_keyword(s->min_width);
++    bool ihi = !s->writing_mode && intrinsic_width_keyword(s->max_width);
++    float mn = 0, mx = 0, available = cbw - b->m[1] - b->m[3];
++    if (ilo || ihi) intrinsic_content_width(L, b, cbw, &mn, &mx);
+     if (s->max_width.kind == LK_LEN && len_def(s->max_width, cbw)) { float v = res(s->max_width, cbw) + (bs ? 0 : bp); if (w > v) w = v; }
++    else if (ihi) w = LMIN(w, intrinsic_width_size(s->max_width, mn, mx, available));
+     if (s->min_width.kind == LK_LEN && len_def(s->min_width, cbw)) { float v = res(s->min_width, cbw) + (bs ? 0 : bp); if (w < v) w = v; }
++    else if (ilo) w = LMAX(w, intrinsic_width_size(s->min_width, mn, mx, available));
+     return w;
+ }
+ static float clamph(const ComputedStyle *s, float h, float cbh, float bp) {
+@@ -604,15 +611,15 @@
+     bool is_cell = s->display == D_TABLE_CELL;
+     if (mode == SZ_FORCED) b->w = fw;
+     else if (b->fmt == FMT_REPLACED) { float w, h; replaced_size(L, b, cbw, cbh, -1, fh, &w, &h); b->w = w + hb; }
+-    else if (len_def(s->width, cbw) && !is_cell) { b->w = clampw(s, res(s->width, cbw) + (bs ? 0 : hb), cbw, hb); if (b->w < hb) b->w = hb; }
+-    else if (mode == SZ_FILL && b->fmt != FMT_TABLE && s->width.kind != LK_FIT_CONTENT && s->width.kind != LK_MAX_CONTENT && s->width.kind != LK_MIN_CONTENT) b->w = clampw(s, cbw - b->m[1] - b->m[3], cbw, hb);
++    else if (len_def(s->width, cbw) && !is_cell) { b->w = clampw(L, b, res(s->width, cbw) + (bs ? 0 : hb), cbw, hb); if (b->w < hb) b->w = hb; }
++    else if (mode == SZ_FILL && b->fmt != FMT_TABLE && s->width.kind != LK_FIT_CONTENT && s->width.kind != LK_MAX_CONTENT && s->width.kind != LK_MIN_CONTENT) b->w = clampw(L, b, cbw - b->m[1] - b->m[3], cbw, hb);
+     else {
+         float mn, mx;
+         if (mode == SZ_ABS_SHRINK) intrinsic_with_basis(L, b, cbw, &mn, &mx);
+         else intrinsic(L, b, &mn, &mx);
+         float avail = (mode == SZ_ABS_SHRINK ? fw : cbw) - b->m[1] - b->m[3];
+         float w = s->width.kind == LK_MIN_CONTENT ? mn : s->width.kind == LK_MAX_CONTENT ? mx : LMIN(LMAX(mn, avail), mx);
+-        b->w = clampw(s, w, cbw, hb);
++        b->w = clampw(L, b, w, cbw, hb);
+         /* A border-box maximum cannot make the content box negative. The
+            resolved padding and border remain present even when they alone
+            exceed max-width. */
+--- a/src/layout/flex.c
++++ b/src/layout/flex.c
+@@ -6,23 +6,6 @@
+ typedef struct { int first; float cross; } FLine;
+ static int ord_cmp(const void *a, const void *b) { const FItem *x = a, *y = b; int d = x->b->st->order - y->b->st->order; return d ? d : (x->ord - y->ord); }
+ 
+-/* A content flex basis ignores the preferred main size. Measure with a
+- * read-only style copy, then restore the ordinary intrinsic cache: content
+- * measurements must not poison later auto-basis or non-flex sizing. */
+-static void flex_content_width(Layout *L, Box *b, float *mn, float *mx) {
+-    ComputedStyle measured = *b->st, *original = b->st;
+-    measured.width = L_auto(); measured.min_width = L_auto();
+-    measured.max_width = (Length){ .kind = LK_NONE };
+-    bool cached = b->intr_ok; float old_min = b->imin, old_max = b->imax;
+-    float margin[4], border[4], padding[4];
+-    memcpy(margin, b->m, sizeof margin); memcpy(border, b->b, sizeof border);
+-    memcpy(padding, b->p, sizeof padding);
+-    b->st = &measured; b->intr_ok = false;
+-    intrinsic(L, b, mn, mx);
+-    b->st = original; b->intr_ok = cached; b->imin = old_min; b->imax = old_max;
+-    memcpy(b->m, margin, sizeof margin); memcpy(b->b, border, sizeof border);
+-    memcpy(b->p, padding, sizeof padding);
+-}
+ /* Retain alignment qualifiers and logical start/end: the compact Align enum
+  * intentionally does not encode safe/unsafe or self-start/self-end. */
+ static const char *flex_alignment(const ComputedStyle *s, const char *property, int fallback, char out[64]) {
+@@ -56,13 +39,18 @@
+     if (safe && free_space < 0) fraction = reverse ? 1 : 0;
+     return free_space * fraction;
+ }
+-static float flex_cross_stretch_size(const Box *c, bool row, float available, float reference) {
++static float flex_cross_stretch_size(Layout *L, Box *c, bool row, float available, float reference) {
+     const ComputedStyle *s = c->st;
+     float bp = row ? vbp(c) : hbp(c), extra = s->box_sizing == BOX_BORDER ? 0 : bp;
+     Length lo = row ? s->min_height : s->min_width, hi = row ? s->max_height : s->max_width;
+-    float size = LMAX(bp, available);
++    float size = LMAX(bp, available), mn = 0, mx = 0;
++    bool ilo = !row && !s->writing_mode && intrinsic_width_keyword(lo);
++    bool ihi = !row && !s->writing_mode && intrinsic_width_keyword(hi);
++    if (ilo || ihi) intrinsic_content_width(L, c, reference, &mn, &mx);
+     if (len_def(hi, reference)) size = LMIN(size, LMAX(bp, res(hi, reference) + extra));
++    else if (ihi) size = LMIN(size, intrinsic_width_size(hi, mn, mx, available));
+     if (len_def(lo, reference)) size = LMAX(size, res(lo, reference) + extra);
++    else if (ilo) size = LMAX(size, intrinsic_width_size(lo, mn, mx, available));
+     return size;
+ }
+ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
+@@ -86,7 +74,7 @@
+         float bp = row ? hbp(c) : vbp(c); bool bs = cs->box_sizing == BOX_BORDER;
+         Length fb = cs->flex_basis, sz = row ? cs->width : cs->height;
+         float mn, mx;
+-        if (row && fb.kind == LK_CONTENT) flex_content_width(L, c, &mn, &mx);
++        if (row && fb.kind == LK_CONTENT) intrinsic_content_width(L, c, -1, &mn, &mx);
+         else intrinsic(L, c, &mn, &mx);
+         float content_h = -1;
+         if (len_def(fb, mainsz) && !(fb.pctu && mainsz < 0)) f->base = res(fb, mainsz) + (bs ? 0 : bp);
+@@ -105,14 +93,20 @@
+             f->base = content_h = c->h;
+         }
+         Length mnl = row ? cs->min_width : cs->min_height, mxl = row ? cs->max_width : cs->max_height;
++        bool ilo = row && !cs->writing_mode && intrinsic_width_keyword(mnl);
++        bool ihi = row && !cs->writing_mode && intrinsic_width_keyword(mxl);
++        float imn = mn, imx = mx, available = mainsz - f->mm0 - f->mm1;
++        if (ilo || ihi) intrinsic_content_width(L, c, cw, &imn, &imx);
+         if (mnl.kind == LK_LEN) f->mn = res(mnl, mainsz) + (bs ? 0 : bp);
+-        else if (row && cs->overflow_x == OV_VISIBLE) f->mn = LMIN(mn, len_def(sz, mainsz) && sz.kind == LK_LEN ? res(sz, mainsz) + (bs ? 0 : bp) : mn);
++        else if (ilo) f->mn = intrinsic_width_size(mnl, imn, imx, available);
++        else if (row && cs->overflow_x == OV_VISIBLE) f->mn = LMIN(imn, len_def(sz, mainsz) && sz.kind == LK_LEN ? res(sz, mainsz) + (bs ? 0 : bp) : imn);
+         else if (!row && cs->overflow_y == OV_VISIBLE) {
+             if (content_h < 0) { float w = (cs->width.kind == LK_LEN) ? 0 : cw - c->m[1] - c->m[3]; layout_box(L, c, cx + c->m[3], cy, cw, -1, NULL, cs->width.kind == LK_LEN ? SZ_FILL : SZ_FORCED, w, -1); content_h = c->h; }
+             f->mn = len_def(sz, mainsz) && sz.kind == LK_LEN ? LMIN(content_h, res(sz, mainsz) + (bs ? 0 : bp)) : content_h;
+         }
+         else f->mn = bp;
+-        f->mx = mxl.kind == LK_LEN && len_def(mxl, mainsz) ? res(mxl, mainsz) + (bs ? 0 : bp) : 1e30f;
++        f->mx = mxl.kind == LK_LEN && len_def(mxl, mainsz) ? res(mxl, mainsz) + (bs ? 0 : bp) :
++                ihi ? intrinsic_width_size(mxl, imn, imx, available) : 1e30f;
+         if (f->mx < f->mn) f->mx = f->mn;
+         f->hypo = LCLAMP(f->base, f->mn, f->mx);
+     }
+@@ -164,14 +158,14 @@
+             if (row) {
+                 int al = cs->align_self == AL_AUTO ? s->align_items : cs->align_self;
+                 float fh = -1;
+-                if ((al == AL_STRETCH || al == AL_NORMAL) && cs->height.kind == LK_AUTO && chdef >= 0 && !s->flex_wrap && cs->margin[0].kind != LK_AUTO && cs->margin[2].kind != LK_AUTO) fh = flex_cross_stretch_size(c, true, chdef - c->m[0] - c->m[2], chdef);
++                if ((al == AL_STRETCH || al == AL_NORMAL) && cs->height.kind == LK_AUTO && chdef >= 0 && !s->flex_wrap && cs->margin[0].kind != LK_AUTO && cs->margin[2].kind != LK_AUTO) fh = flex_cross_stretch_size(L, c, true, chdef - c->m[0] - c->m[2], chdef);
+                 layout_box(L, c, cx + mpos, cy + c->m[0], cw, chdef, NULL, SZ_FORCED, f->main, fh);
+                 f->cross = c->h + c->m[0] + c->m[2];
+             } else {
+                 int al = cs->align_self == AL_AUTO ? s->align_items : cs->align_self;
+                 bool stretch = !s->flex_wrap && (al == AL_STRETCH || al == AL_NORMAL) && cs->width.kind == LK_AUTO && cs->margin[1].kind != LK_AUTO && cs->margin[3].kind != LK_AUTO;
+                 float w = cw - c->m[1] - c->m[3];
+-                if (stretch) w = flex_cross_stretch_size(c, false, w, cw);
++                if (stretch) w = flex_cross_stretch_size(L, c, false, w, cw);
+                 layout_box(L, c, cx + c->m[3], cy + mpos, cw, chdef >= 0 ? chdef : -1, NULL, stretch ? SZ_FORCED : SZ_SHRINK, w, f->main);
+                 f->cross = c->w + c->m[1] + c->m[3];
+             }
+@@ -222,7 +216,7 @@
+             bool auto_low = cs->margin[low].kind == LK_AUTO, auto_high = cs->margin[high].kind == LK_AUTO;
+             bool stretch = !strcmp(align, "normal") || !strcmp(align, "stretch");
+             if (stretch && !auto_low && !auto_high && (row ? cs->height : cs->width).kind == LK_AUTO) {
+-                float size = flex_cross_stretch_size(c, row, linecross - c->m[low] - c->m[high], crossdef);
++                float size = flex_cross_stretch_size(L, c, row, linecross - c->m[low] - c->m[high], crossdef);
+                 /* Equal dimensions can still become definite for percentage
+                  * descendants. The initial nowrap pass already establishes
+                  * this when its cross size was forced; other lines must redo
+--- a/src/layout/layout.h
++++ b/src/layout/layout.h
+@@ -93,6 +93,12 @@
+ void intrinsic(Layout *L, Box *b, float *mn, float *mx);
+ void intrinsic_with_basis(Layout *L, Box *b, float cbw, float *mn, float *mx);
+ void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx);
++void intrinsic_content_width(Layout *L, Box *b, float cbw, float *mn, float *mx);
++/* These measurements and the available size are already border-box values. */
++static inline bool intrinsic_width_keyword(Length l) { return l.kind == LK_MIN_CONTENT || l.kind == LK_MAX_CONTENT || l.kind == LK_FIT_CONTENT; }
++static inline float intrinsic_width_size(Length l, float mn, float mx, float available) {
++    return l.kind == LK_MIN_CONTENT ? mn : l.kind == LK_MAX_CONTENT ? mx : LMIN(mx, LMAX(mn, available));
++}
+ /* fw/fh are resolved border-box sizes from flex/grid, or -1 when unforced. */
+ void replaced_size(Layout *L, Box *b, float cbw, float cbh, float fw, float fh, float *w, float *h);
+ void box_translate(Box *b, float dx, float dy);

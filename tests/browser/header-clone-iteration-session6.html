@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><title>Internal header clone and public iterable controls</title><body><script>
+function emit(v){const s=JSON.stringify(v);let n=0;for(let i=0;i<s.length;i+=256)console.log('LUMEN_AUTHORED_CHUNK '+(n++)+' '+JSON.stringify(s.slice(i,i+256)));console.log('LUMEN_AUTHORED_DONE '+n);console.log('RESULTS HEADER_CLONE_ITERATION:PASS')}
+setTimeout(async function(){const rows=[];for(const kind of ['response-clone','request-clone','request-copy','public-headers','public-request-init','public-response-init']){let gets=0,calls=0,exception='',headerValue='<none>',bodyText='<none>';const source=kind.startsWith('request')?new Request(location.href,{method:'POST',body:'body',headers:[['X-Internal','one']]}):new Response('body',{headers:[['X-Internal','one']]});const headers=source.headers;
+Object.defineProperty(headers,Symbol.iterator,{get(){gets++;return function*(){calls++;throw new RangeError('QA header iterator sentinel')}}});
+try{let copy;if(kind==='response-clone'||kind==='request-clone')copy=source.clone();else if(kind==='request-copy')copy=new Request(source);else if(kind==='public-headers')copy=new Headers(headers);else if(kind==='public-request-init')copy=new Request(location.href,{headers});else copy=new Response('copy',{headers});headerValue=(copy.headers||copy).get('x-internal');bodyText=typeof copy.text==='function'?await copy.text():'<not-body>'}catch(e){exception=e.name}
+rows.push({name:kind,values:{exception,iteratorGets:gets,iteratorCalls:calls,headerValue,bodyText,sourceHeader:headers.get('x-internal'),kind}})}
+emit({rows,total:rows.length*7})},0);
+</script></body>

@@ -93,6 +93,12 @@ void table_intrinsic(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic_with_basis(Layout *L, Box *b, float cbw, float *mn, float *mx);
 void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx);
+void intrinsic_content_width(Layout *L, Box *b, float cbw, float *mn, float *mx);
+/* These measurements and the available size are already border-box values. */
+static inline bool intrinsic_width_keyword(Length l) { return l.kind == LK_MIN_CONTENT || l.kind == LK_MAX_CONTENT || l.kind == LK_FIT_CONTENT; }
+static inline float intrinsic_width_size(Length l, float mn, float mx, float available) {
+    return l.kind == LK_MIN_CONTENT ? mn : l.kind == LK_MAX_CONTENT ? mx : LMIN(mx, LMAX(mn, available));
+}
 /* fw/fh are resolved border-box sizes from flex/grid, or -1 when unforced. */
 void replaced_size(Layout *L, Box *b, float cbw, float cbh, float fw, float fh, float *w, float *h);
 void box_translate(Box *b, float dx, float dy);
