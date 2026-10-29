@@ -1,4 +1,5 @@
-/* Dedicated Web Workers: each worker runs on its own thread with its own V8 isolate.
+/* Dedicated and shared Web Workers run on their own native thread/V8 isolate.
+   Shared connections are distinct native routes, never dedicated-worker aliases.
    Messages cross threads as V8 ValueSerializer buffers. */
 #include "js_int.h"
 #include "header_bytes.h"
@@ -37,8 +38,10 @@ struct Side {
     std::vector<std::shared_ptr<v8::BackingStore>> buffers;
 };
 struct Buf { uint8_t *p = nullptr; size_t n = 0; std::shared_ptr<Side> side; };
+enum { WI_MESSAGE, WI_CONNECT, WI_DISCONNECT };
+struct InMsg { Buf data; uint32_t connection = 0; int kind = WI_MESSAGE; };
 enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
-struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; };
+struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; uint32_t connection = 0; };
 struct WNetworkResult {
     uint32_t id = 0;
     std::unique_ptr<NetResponse, decltype(&net_response_free)> response{nullptr, net_response_free};
@@ -47,9 +50,14 @@ struct Worker {
     uint32_t id = 0; JsCtx *owner = nullptr;
     bool creator_secure = false; /* native owner setting, captured before thread creation */
     std::string url, src, ua, platform, name, top; bool have_src = false, module = false, coi = false;
+    bool shared = false;
+    std::string creator_origin, top_origin, credentials = "same-origin";
+    // Protected by mu. The worker thread only uses these IDs as routing
+    // capabilities; it never dereferences an owning document pointer.
+    std::map<uint32_t, JsCtx *> clients;
     std::string ocsp, odoc; bool has_ocsp = false;   /* creator document's CSP: worker-src check, inherited by blob:/data: workers */
     std::mutex mu; std::condition_variable cv;
-    std::deque<Buf> in; std::deque<OutMsg> out;
+    std::deque<InMsg> in; std::deque<OutMsg> out;
     // Network threads/main-loop callbacks own only native data. V8 handles stay
     // in WEnv and are entered exclusively by this worker's event loop.
     std::map<uint32_t, uint64_t> requests; // protected by mu
@@ -72,6 +80,8 @@ struct WEnv {
     std::map<uint32_t, WTimer> timers; uint32_t tseq = 0; bool closing = false, reporting = false; double t0 = 0;
 };
 std::map<uint32_t, std::shared_ptr<Worker>> g_workers;   /* main thread only */
+struct SharedClient { std::shared_ptr<Worker> worker; JsCtx *owner; };
+std::map<uint32_t, SharedClient> g_shared_clients;       /* main thread only */
 uint32_t g_wseq;
 
 /* Per-page termination stays asynchronous. The process, however, must not
@@ -210,7 +220,7 @@ WEnv *wenv(v8::Isolate *iso) { return static_cast<WEnv *>(iso->GetData(kEnvSlot)
  * handles, so they must be released even when no worker thread remains. */
 void close_input_locked(Worker *w) {
     w->accepting = false;
-    for (Buf &b : w->in) free(b.p);
+    for (InMsg &m : w->in) free(m.data.p);
     w->in.clear();
 }
 // Caller holds Worker::mu. net_cancel never enters a V8 isolate or invokes a
@@ -249,7 +259,19 @@ void post_out(WEnv *E, OutMsg &&m) {
     {
         std::lock_guard<std::mutex> lk(E->w->mu);
         if (E->w->term) { free(m.data.p); return; }
-        E->w->out.push_back(std::move(m));
+        if (!E->w->shared) E->w->out.push_back(std::move(m));
+        else if (m.connection) {
+            if (E->w->clients.count(m.connection)) E->w->out.push_back(std::move(m));
+            else free(m.data.p);
+        } else {
+            // Only errors broadcast. A serialized message belongs to exactly
+            // one port; sharing its transfer buffer between clients is unsafe.
+            if (m.kind == WM_MESSAGE) { free(m.data.p); return; }
+            for (const auto &client : E->w->clients) {
+                OutMsg copy{m.kind, {}, m.msg, m.file, m.line, m.col, client.first};
+                E->w->out.push_back(std::move(copy));
+            }
+        }
     }
     wake();
 }
@@ -315,7 +337,11 @@ std::string resolve(WEnv *E, const std::string &rel, const char *base = nullptr)
 typedef v8::FunctionCallbackInfo<v8::Value> FCI;
 #define WFN(nm) void w_##nm(const FCI &a)
 #define WENV WEnv *E = wenv(a.GetIsolate()); v8::Isolate *iso = E->iso; v8::Local<v8::Context> ctx = iso->GetCurrentContext(); (void)ctx
-WFN(post) { WENV; Buf b; if (ser(iso, ctx, a[0], b, a[1])) post_out(E, OutMsg{ WM_MESSAGE, b, {}, {}, 0, 0 }); }
+WFN(post) {
+    WENV; Buf b;
+    uint32_t connection = E->w->shared && a.Length() > 2 ? a[2]->Uint32Value(ctx).FromMaybe(0) : 0;
+    if (ser(iso, ctx, a[0], b, a[1])) post_out(E, OutMsg{ WM_MESSAGE, b, {}, {}, 0, 0, connection });
+}
 WFN(clone) { WENV; Buf b; if (!ser(iso, ctx, a[0], b, a[1])) return; v8::Local<v8::Value> v; if (deser(iso, ctx, b).ToLocal(&v)) a.GetReturnValue().Set(v); free(b.p); }
 WFN(timer) {
     WENV; if (!a[0]->IsFunction()) return;
@@ -655,7 +681,8 @@ class EventTarget {
 }
 class WorkerGlobalScope extends EventTarget {}
 class DedicatedWorkerGlobalScope extends WorkerGlobalScope {}
-Object.setPrototypeOf(G, DedicatedWorkerGlobalScope.prototype);
+class SharedWorkerGlobalScope extends WorkerGlobalScope {}
+Object.setPrototypeOf(G, W.shared ? SharedWorkerGlobalScope.prototype : DedicatedWorkerGlobalScope.prototype);
 
 )JS"
 #include "dom_exception.inc"
@@ -1230,37 +1257,81 @@ function portList(options) {
     return { ports, buffers };
 }
 const wports = new Map(); let wpseq = 0;
+const workerPortState = new WeakMap();
+const workerPortKey = (connection, key) => connection + ':' + key;
+function portState(port) {
+    const state = workerPortState.get(port);
+    if (!state) throw new TypeError('Illegal MessagePort receiver');
+    return state;
+}
 class MessagePort extends EventTarget {
-    constructor() { super(); this.onmessage = null; this.onmessageerror = null; Object.defineProperty(this, '_other', { value: null, writable: true }); Object.defineProperty(this, '_k', { value: 0, writable: true }); }
+    constructor() {
+        super();
+        workerPortState.set(this, { started: false, closed: false, scheduled: false, queue: [], handler: null });
+        this.onmessageerror = null;
+        def(this, '_other', null); def(this, '_k', 0); def(this, '_client', 0); def(this, '_remote', false);
+    }
+    get onmessage() { return portState(this).handler; }
+    set onmessage(value) {
+        const state = portState(this); state.handler = typeof value === 'function' ? value : null;
+        this.start();
+    }
     postMessage(data, options) {
+        const state = portState(this);
         if (!arguments.length) throw new TypeError("Failed to execute 'postMessage': 1 argument required.");
-        const { ports, buffers } = portList(options), key = this._k || (this._other && this._other._k);
-        if (key) {
-            const ids = ports.map(() => -(++wpseq));
-            W.post({ __lumenPort: key, data: portSub(data, ports), xfer: ids }, buffers);
-            ports.forEach((port, i) => { port._k = ids[i]; if (port._other) wports.set(ids[i], port._other); });
+        const { ports, buffers } = portList(options);
+        const endpoint = !state.closed && (this._remote ? this : this._other && this._other._remote ? this._other : null);
+        if (endpoint) {
+            const ids = ports.map(() => -(++wpseq)), connection = endpoint._client;
+            W.post({ __lumenPort: endpoint._k, data: portSub(data, ports), xfer: ids }, buffers, connection);
+            ports.forEach((port, i) => {
+                port._k = ids[i]; port._client = connection; port._remote = true;
+                if (port._other) wports.set(workerPortKey(connection, ids[i]), port._other);
+            });
             return;
         }
-        const other = this._other;
+        const other = !state.closed && this._other;
         const cloned = W.clone(portSub(data, ports), buffers);
-        if (other) setTimeout(() => {
-            const event = new MessageEvent('message', { data: portRes(cloned, ports), ports });
-            event.isTrusted = true; fireOn(other, event);
-        });
+        if (other) other._deliver(portRes(cloned, ports), ports);
     }
-    start() {} close() { this._other = null; }
+    _deliver(data, ports) {
+        const state = portState(this); if (state.closed) return;
+        state.queue.push({data, ports: ports || []}); this._flush();
+    }
+    _flush() {
+        const state = portState(this);
+        if (state.closed || !state.started || state.scheduled || !state.queue.length) return;
+        state.scheduled = true;
+        W.timer(() => {
+            state.scheduled = false;
+            if (state.closed || !state.started || !state.queue.length) return;
+            const event = new MessageEvent('message', state.queue.shift()); event.isTrusted = true;
+            fireOn(this, event); this._flush();
+        }, 0, false, []);
+    }
+    start() { const state = portState(this); state.started = true; this._flush(); }
+    close() {
+        const state = portState(this); if (state.closed) return;
+        state.closed = true; state.queue.length = 0; this._other = null;
+        if (this._remote) wports.delete(workerPortKey(this._client, this._k));
+        this._remote = false;
+    }
+}
+function incomingPort(connection, key) {
+    const port = new MessagePort(); port._client = connection; port._k = key; port._remote = true;
+    wports.set(workerPortKey(connection, key), port); return port;
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const api = {
-    self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: !!W.secure, crossOriginIsolated: !!W.coi,
-    onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
+    self: G, globalThis: G, location, navigator, name: W.name, origin: W.shared ? W.origin : location.origin, isSecureContext: !!W.secure, crossOriginIsolated: !!W.coi,
+    onmessage: null, onmessageerror: null, onconnect: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
     postMessage(data, options) {
         if (!arguments.length) throw new TypeError("Failed to execute 'postMessage': 1 argument required.");
         const { ports, buffers } = portList(options);
         if (!ports.length) return W.post(data, buffers);
         const ids = ports.map(() => -(++wpseq));
         W.post({ __lumenXfer: ids, data: portSub(data, ports) }, buffers);
-        ports.forEach((port, i) => { port._k = ids[i]; if (port._other) wports.set(ids[i], port._other); });
+        ports.forEach((port, i) => { port._k = ids[i]; port._remote = true; if (port._other) wports.set(workerPortKey(0, ids[i]), port._other); });
     },
     close() { W.close(); },
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
@@ -1276,8 +1347,10 @@ const api = {
     TransformStream, ByteLengthQueuingStrategy, CountQueuingStrategy, AbortController, AbortSignal,
     Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, FormData, Headers, Request, Response, fetch, performance, console,
     XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload,
-    Event, ProgressEvent, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
+    Event, ProgressEvent, MessageEvent, MessagePort, MessageChannel, BroadcastChannel, ErrorEvent, CustomEvent, PromiseRejectionEvent, EventTarget, DOMException, WorkerGlobalScope, DedicatedWorkerGlobalScope, SharedWorkerGlobalScope, WorkerLocation, WorkerNavigator,
 };
+if (W.shared) { delete api.postMessage; delete api.onmessage; delete api.onmessageerror; delete api.DedicatedWorkerGlobalScope; }
+else { delete api.onconnect; delete api.SharedWorkerGlobalScope; }
 for (const k of Object.keys(api)) Object.defineProperty(G, k, { value: api[k], writable: true, configurable: true, enumerable: false });
 return {
     busDeliver(kind, name, data, id, same) {
@@ -1285,13 +1358,33 @@ return {
         let first = true;
         for (const ch of [...bcAll]) if (!ch._closed && ch.name === name && !(same && ch._id === id)) { ch.dispatchEvent(new MessageEvent('message', { data: first ? data : W.clone(data), origin: location.origin })); first = false; }
     },
-    onmsg(data) {
+    onmsg(data, connection, kind) {
+        if (W.shared && kind === 1) {
+            const port = incomingPort(connection, 0);
+            const event = new MessageEvent('connect', {data: '', ports: [port], source: port});
+            event.isTrusted = true; fireOn(G, event); return;
+        }
+        if (W.shared && kind === 2) {
+            for (const port of [...wports.values()]) if (port._client === connection) port.close();
+            return;
+        }
         let ports = [];
         if (data && typeof data === 'object') {
-            if (data.__lumenPort) { const p = wports.get(data.__lumenPort); if (p) { const qs = (data.xfer || []).map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }); const e = new MessageEvent('message', { data: portRes(data.data, qs), ports: qs }); e.isTrusted = true; fireOn(p, e); } return; }
-            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._k = k; wports.set(k, q); return q; }); data = portRes(data.data, ports); }
+            if (Object.prototype.hasOwnProperty.call(data, '__lumenPort')) {
+                const port = wports.get(workerPortKey(connection, data.__lumenPort));
+                if (port) {
+                    const incoming = (data.xfer || []).map(key => incomingPort(connection, key));
+                    port._deliver(portRes(data.data, incoming), incoming);
+                }
+                return;
+            }
+            if (data.__lumenXfer) {
+                ports = data.__lumenXfer.map(key => incomingPort(connection, key));
+                data = portRes(data.data, ports);
+            }
         }
-        const e = new MessageEvent('message', { data, ports }); e.isTrusted = true; fireOn(G, e);
+        if (W.shared) return; // SharedWorkerGlobalScope has no global message port.
+        const event = new MessageEvent('message', {data, ports}); event.isTrusted = true; fireOn(G, event);
     },
     report(error, message, filename, lineno, colno) {
         const e = new ErrorEvent('error', { message, filename, lineno, colno, error, cancelable: true });
@@ -1367,6 +1460,8 @@ void worker_main(std::shared_ptr<Worker> w) {
         WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(textEncoding); WREG(textDecode); WREG(responseTextDecode); WREG(blobState); WREG(fileReaderPackage); WREG(fileReaderCheckpoint); WREG(resolve); WREG(urlParse); WREG(urlSet); WREG(idlGet); WREG(idlPut); WREG(idlRegister); WREG(idlFallback); WREG(initCloneIntrinsic); WREG(send); WREG(sendSync); WREG(abort); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };
         setS("url", w->url); setS("ua", w->ua); setS("platform", w->platform); setS("name", w->name);
+        setS("origin", w->creator_origin);
+        (void)W->Set(ctx, jstr(iso, "shared"), v8::Boolean::New(iso, w->shared));
         (void)W->Set(ctx, jstr(iso, "coi"), v8::Boolean::New(iso, w->coi));
         (void)W->Set(ctx, jstr(iso, "secure"), v8::Boolean::New(iso, w->creator_secure));
         (void)W->Set(ctx, jstr(iso, "cores"), v8::Integer::New(iso, (int)std::max(1u, std::thread::hardware_concurrency())));
@@ -1391,7 +1486,15 @@ void worker_main(std::shared_ptr<Worker> w) {
             fprintf(stderr, "lumen: CSP worker-src blocked %.120s\n", w->url.c_str()); ok = false;
         } else if (ok) { E->csp = w->ocsp; E->cspdoc = w->odoc; E->has_csp = w->has_ocsp; }
         else if (!w->term) {
-            NetRequest *rq = net_request_new("GET", w->url.c_str());
+            NetRequest *rq = net_request_ctx("GET", w->url.c_str(), w->top.empty() ? nullptr : w->top.c_str());
+            if (w->shared) {
+                const std::string credentials = w->module ? w->credentials : "same-origin";
+                rq->no_cookies = credentials == "omit";
+                if (!rq->no_cookies && credentials != "include") rq->credentials_origin = strdup(w->creator_origin.c_str());
+                if (w->has_ocsp) {
+                    rq->csp = strdup(w->ocsp.c_str()); rq->csp_doc = strdup(w->odoc.c_str()); rq->csp_dir = "worker-src";
+                }
+            }
             NetResponse *r = worker_fetch(w.get(), rq);
             if (r && r->status >= 200 && r->status < 300) {
                 src.assign(r->body ? r->body : "", r->body_len); ok = true;
@@ -1427,7 +1530,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         while (ok && !w->term && !E->closing) {
             { v8::HeapStatistics hs; iso->GetHeapStatistics(&hs); w->heap = hs.total_heap_size(); w->ext = hs.external_memory(); }
             if (!idle_gc && now_ms() - last_act > 10000) { iso->LowMemoryNotification(); idle_gc = true; continue; }  /* idle worker: give memory back once */
-            std::deque<Buf> msgs;
+            std::deque<InMsg> msgs;
             std::deque<WNetworkResult> network;
             bool bg = iso->HasPendingBackgroundTasks();   /* e.g. async WebAssembly compile: poll until it posts back */
             while (v8::platform::PumpMessageLoop(js_platform(), iso)) {}
@@ -1446,12 +1549,17 @@ void worker_main(std::shared_ptr<Worker> w) {
                 network.swap(w->network);
             }
             if (!msgs.empty() || !network.empty()) { last_act = now_ms(); idle_gc = false; }
-            for (Buf &b : msgs) {
+            for (InMsg &message : msgs) {
+                Buf &b = message.data;
                 if (!w->term && !E->closing) {
                     v8::HandleScope hs2(iso);
                     v8::TryCatch tc(iso);
-                    v8::Local<v8::Value> v;
-                    if (deser(iso, ctx, b).ToLocal(&v) && !E->onmsg.IsEmpty()) { (void)E->onmsg.Get(iso)->Call(ctx, v8::Undefined(iso), 1, &v); wcheck(E, tc); }
+                    v8::Local<v8::Value> value = v8::Undefined(iso);
+                    bool decoded = message.kind != WI_MESSAGE || deser(iso, ctx, b).ToLocal(&value);
+                    if (decoded && !E->onmsg.IsEmpty()) {
+                        v8::Local<v8::Value> args[3] = {value, v8::Integer::NewFromUnsigned(iso, message.connection), v8::Integer::New(iso, message.kind)};
+                        (void)E->onmsg.Get(iso)->Call(ctx, v8::Undefined(iso), 3, args); wcheck(E, tc);
+                    }
                     iso->PerformMicrotaskCheckpoint();
                 }
                 free(b.p);
@@ -1597,17 +1705,8 @@ void worker_exit() {
 }
 
 /* ---- main thread ---- */
-void n_workerNew(const FCI &a) {
-    v8::Isolate *iso = a.GetIsolate();
+bool start_worker(const std::shared_ptr<Worker> &w) {
     WorkerThreads &threads = worker_threads();
-    { std::lock_guard<std::mutex> lock(threads.mu); if (threads.stopping) { a.GetReturnValue().Set(0); return; } }
-    auto w = std::make_shared<Worker>();
-    w->id = ++g_wseq; w->owner = jctx(iso); w->coi = w->owner && w->owner->doc && w->owner->doc->cross_origin_isolated;
-    w->creator_secure = js_windows_is_secure(w->owner);
-    if (const char *t = js_top_url(w->owner)) w->top = t;
-    if (w->owner && w->owner->doc && w->owner->doc->csp) { w->ocsp = w->owner->doc->csp; w->odoc = w->owner->doc->url ? w->owner->doc->url : ""; w->has_ocsp = true; }
-    w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);
-    w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : ""; w->module = a.Length() > 5 && a[5]->IsTrue();
     g_workers[w->id] = w;
     pthread_attr_t at; pthread_attr_init(&at); pthread_attr_setstacksize(&at, 8u << 20); pthread_attr_setdetachstate(&at, PTHREAD_CREATE_DETACHED);
     pthread_t th;
@@ -1615,25 +1714,137 @@ void n_workerNew(const FCI &a) {
     { std::lock_guard<std::mutex> lock(threads.mu); ++threads.running; }
     if (pthread_create(&th, &at, worker_thread, arg) != 0) {
         { std::lock_guard<std::mutex> lock(threads.mu); --threads.running; threads.cv.notify_all(); }
-        delete arg; g_workers.erase(w->id); a.GetReturnValue().Set(0); pthread_attr_destroy(&at); return;
+        delete arg; g_workers.erase(w->id); pthread_attr_destroy(&at); return false;
     }
     pthread_attr_destroy(&at);
-    a.GetReturnValue().Set(w->id);
+    return true;
+}
+std::shared_ptr<Worker> worker_arguments(const FCI &a) {
+    auto iso = a.GetIsolate();
+    auto w = std::make_shared<Worker>();
+    w->id = ++g_wseq; w->owner = jctx(iso); w->coi = w->owner && w->owner->doc && w->owner->doc->cross_origin_isolated;
+    w->creator_secure = js_windows_is_secure(w->owner);
+    if (const char *t = js_top_url(w->owner)) w->top = t;
+    if (w->owner) {
+        w->creator_origin = w->owner->origin;
+        auto *top = w->owner; while (top->parent) top = top->parent;
+        w->top_origin = top->origin;
+    }
+    if (w->owner && w->owner->doc && w->owner->doc->csp) { w->ocsp = w->owner->doc->csp; w->odoc = w->owner->doc->url ? w->owner->doc->url : ""; w->has_ocsp = true; }
+    w->url = jcstr(iso, a[0]); w->have_src = a[1]->IsString(); if (w->have_src) w->src = jcstr(iso, a[1]);
+    w->ua = jcstr(iso, a[2]); w->platform = jcstr(iso, a[3]); w->name = a[4]->IsString() ? jcstr(iso, a[4]) : ""; w->module = a.Length() > 5 && a[5]->IsTrue();
+    return w;
+}
+void n_workerNew(const FCI &a) {
+    WorkerThreads &threads = worker_threads();
+    { std::lock_guard<std::mutex> lock(threads.mu); if (threads.stopping) { a.GetReturnValue().Set(0); return; } }
+    auto w = worker_arguments(a);
+    a.GetReturnValue().Set(start_worker(w) ? w->id : 0);
+}
+void n_sharedWorkerNew(const FCI &a) {
+    auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
+    WorkerThreads &threads = worker_threads();
+    { std::lock_guard<std::mutex> lock(threads.mu); if (threads.stopping) { a.GetReturnValue().Set(0); return; } }
+    auto candidate = worker_arguments(a);
+    auto *owner = candidate->owner;
+    if (!owner || owner->dead || owner->opaque_origin || candidate->creator_origin.empty() || candidate->creator_origin == "null") {
+        throw_dom(iso, ctx, "SharedWorker requires a non-opaque document origin.", "SecurityError"); return;
+    }
+    // The immutable native document principal is authoritative, including
+    // about:blank/srcdoc inheritance and sandboxed origins. Public location,
+    // URL constructors and JavaScript fields cannot grant a shared connection.
+    URL parsed{};
+    if (!url_parse_n(candidate->url.data(), candidate->url.size(), &parsed)) {
+        url_free(&parsed); throw_dom(iso, ctx, "Invalid SharedWorker script URL.", "SyntaxError"); return;
+    }
+    char *raw_origin = url_origin(&parsed);
+    const bool local_data = parsed.scheme && !strcmp(parsed.scheme, "data") && candidate->have_src;
+    const bool same_origin = raw_origin && candidate->creator_origin == raw_origin;
+    free(raw_origin); url_free(&parsed);
+    if (!same_origin && !local_data) {
+        throw_dom(iso, ctx, "SharedWorker script is not same-origin.", "SecurityError"); return;
+    }
+    // Every joining owner must pass worker-src, even when a permissive page
+    // already created a worker with this identity. A denied join is async error.
+    if (candidate->has_ocsp && !csp_allows_url(candidate->ocsp.c_str(), candidate->odoc.c_str(), candidate->url.c_str(), "worker-src")) {
+        a.GetReturnValue().Set(0); return;
+    }
+    candidate->shared = true;
+    candidate->credentials = a.Length() > 6 && a[6]->IsString() ? jcstr(iso, a[6]) : "same-origin";
+    std::shared_ptr<Worker> w;
+    for (const auto &entry : g_workers) {
+        auto existing = entry.second;
+        if (!existing->shared || existing->term || existing->finished ||
+            existing->creator_origin != candidate->creator_origin || existing->top_origin != candidate->top_origin ||
+            existing->url != candidate->url || existing->name != candidate->name) continue;
+        std::lock_guard<std::mutex> lock(existing->mu);
+        if (!existing->accepting) continue;
+        if (existing->module != candidate->module || existing->credentials != candidate->credentials || existing->coi != candidate->coi) {
+            a.GetReturnValue().Set(0); return;
+        }
+        w = std::move(existing); break;
+    }
+    bool created = !w;
+    if (created) w = candidate;
+    const uint32_t connection = candidate->id;
+    {
+        std::lock_guard<std::mutex> lock(w->mu);
+        // A worker can close between identity lookup and connection creation.
+        if (w->term || !w->accepting || w->finished) { a.GetReturnValue().Set(0); return; }
+        w->clients.emplace(connection, owner);
+        w->in.push_back(InMsg{{}, connection, WI_CONNECT});
+    }
+    g_shared_clients.emplace(connection, SharedClient{w, owner});
+    if (created && !start_worker(w)) {
+        g_shared_clients.erase(connection); a.GetReturnValue().Set(0); return;
+    }
+    w->cv.notify_all();
+    a.GetReturnValue().Set(connection);
+}
+void close_shared_connection(uint32_t id, JsCtx *owner) {
+    auto found = g_shared_clients.find(id);
+    if (found == g_shared_clients.end() || found->second.owner != owner) return;
+    auto w = found->second.worker;
+    g_shared_clients.erase(found);
+    bool empty;
+    {
+        std::lock_guard<std::mutex> lock(w->mu);
+        w->clients.erase(id);
+        for (auto it = w->out.begin(); it != w->out.end();)
+            if (it->connection == id) { free(it->data.p); it = w->out.erase(it); } else ++it;
+        for (auto it = w->in.begin(); it != w->in.end();)
+            if (it->connection == id) { free(it->data.p); it = w->in.erase(it); } else ++it;
+        empty = w->clients.empty();
+        if (!empty && w->accepting) w->in.push_back(InMsg{{}, id, WI_DISCONNECT});
+        if (w->owner == owner) w->owner = nullptr; // never retain a destroyed creator pointer
+    }
+    if (empty) { worker_terminate(w.get()); g_workers.erase(w->id); }
+    else w->cv.notify_all();
+}
+void n_sharedWorkerClose(const FCI &a) {
+    close_shared_connection(a[0]->Uint32Value(a.GetIsolate()->GetCurrentContext()).FromMaybe(0), jctx(a.GetIsolate()));
 }
 void n_workerPost(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate(); v8::Local<v8::Context> ctx = iso->GetCurrentContext();
-    auto it = g_workers.find(a[0]->Uint32Value(ctx).FromMaybe(0));
-    /* Serialization invokes getters; one can call terminate() and erase the
-     * registry entry. Keep the Worker alive, never retain an iterator across JS. */
-    std::shared_ptr<Worker> w = it == g_workers.end() ? nullptr : it->second;
+    const uint32_t id = a[0]->Uint32Value(ctx).FromMaybe(0);
+    auto it = g_workers.find(id);
+    auto client = g_shared_clients.find(id);
+    auto *owner = jctx(iso);
+    /* Serialization invokes getters; one can close a port and erase registry
+     * entries. Retain only the Worker, never iterators across JavaScript. */
+    uint32_t connection = 0;
+    std::shared_ptr<Worker> w;
+    if (client != g_shared_clients.end() && client->second.owner == owner) {
+        w = client->second.worker; connection = id;
+    } else if (it != g_workers.end() && !it->second->shared && it->second->owner == owner) w = it->second;
     Buf b;
     if (!ser(iso, ctx, a[1], b, a[2])) return;
     if (!w) { free(b.p); return; }
     {
         std::lock_guard<std::mutex> lk(w->mu);
         /* Recheck under the queue lock: close/exit may race serialization. */
-        if (w->term || !w->accepting) { free(b.p); return; }
-        w->in.push_back(std::move(b));
+        if (w->term || !w->accepting || (connection && !w->clients.count(connection))) { free(b.p); return; }
+        w->in.push_back(InMsg{std::move(b), connection, WI_MESSAGE});
     }
     w->cv.notify_all();
 }
@@ -1648,7 +1859,7 @@ void n_transferClone(const FCI &a) {
 void n_workerTerm(const FCI &a) {
     v8::Isolate *iso = a.GetIsolate(); v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     auto it = g_workers.find(a[0]->Uint32Value(ctx).FromMaybe(0));
-    if (it == g_workers.end()) return;
+    if (it == g_workers.end() || it->second->shared || it->second->owner != jctx(iso)) return;
     worker_terminate(it->second.get());
     g_workers.erase(it);
 }
@@ -1658,13 +1869,15 @@ extern "C" bool js_workers_shutdown(unsigned timeout_ms) {
     WorkerThreads &threads = worker_threads();
     { std::lock_guard<std::mutex> lock(threads.mu); threads.stopping = true; }
     for (auto &entry : g_workers) worker_terminate(entry.second.get());
-    g_workers.clear();
+    g_workers.clear(); g_shared_clients.clear();
     return wait_worker_threads(timeout_ms);
 }
 
 void js_install_workers(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso; v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     (void)N->Set(ctx, jstr(iso, "workerNew"), v8::Function::New(ctx, n_workerNew).ToLocalChecked());
+    (void)N->Set(ctx, jstr(iso, "sharedWorkerNew"), v8::Function::New(ctx, n_sharedWorkerNew).ToLocalChecked());
+    (void)N->Set(ctx, jstr(iso, "sharedWorkerClose"), v8::Function::New(ctx, n_sharedWorkerClose).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "workerPost"), v8::Function::New(ctx, n_workerPost).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "workerTerm"), v8::Function::New(ctx, n_workerTerm).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "transferClone"), v8::Function::New(ctx, n_transferClone).ToLocalChecked());
@@ -1672,42 +1885,57 @@ void js_install_workers(JsCtx *c, v8::Local<v8::Object> N) {
 
 double workers_deadline(JsCtx *c) {
     for (auto &kv : g_workers) {
-        if (kv.second->owner != c) continue;
-        std::lock_guard<std::mutex> lk(kv.second->mu);
-        if (!kv.second->out.empty()) return now_ms();
+        auto &w = kv.second;
+        std::lock_guard<std::mutex> lk(w->mu);
+        for (const auto &message : w->out) {
+            if (!w->shared && w->owner == c) return now_ms();
+            auto client = w->clients.find(message.connection);
+            if (w->shared && client != w->clients.end() && client->second == c) return now_ms();
+        }
     }
     return 1e300;
 }
 
 void workers_pump(JsCtx *c) {
-    std::vector<std::pair<uint32_t, std::deque<OutMsg>>> batch;
+    std::vector<std::pair<uint32_t, OutMsg>> batch;
     for (auto &kv : g_workers) {
-        if (kv.second->owner != c) continue;
-        std::deque<OutMsg> q;
-        { std::lock_guard<std::mutex> lk(kv.second->mu); q.swap(kv.second->out); }
-        if (!q.empty()) batch.push_back({ kv.first, std::move(q) });
+        auto &w = kv.second;
+        std::lock_guard<std::mutex> lk(w->mu);
+        for (auto it = w->out.begin(); it != w->out.end();) {
+            bool belongs = !w->shared && w->owner == c;
+            if (w->shared) {
+                auto client = w->clients.find(it->connection);
+                belongs = client != w->clients.end() && client->second == c;
+            }
+            if (!belongs) { ++it; continue; }
+            batch.push_back({w->shared ? it->connection : w->id, std::move(*it)});
+            it = w->out.erase(it);
+        }
     }
     if (batch.empty()) return;
     JS_ENTER(c);
     v8::Local<v8::Value> fv;
     bool have = !c->api.IsEmpty() && c->api.Get(iso)->Get(ctx, jstr(iso, "workerEvent")).ToLocal(&fv) && fv->IsFunction();
-    for (auto &b : batch)
-        for (OutMsg &m : b.second) {
-            if (have && g_workers.count(b.first)) {
-                v8::HandleScope hs(iso);
-                v8::Local<v8::Value> data = v8::Undefined(iso);
-                int kind = m.kind;
-                if (kind == WM_MESSAGE) { v8::TryCatch tc(iso); if (!deser(iso, ctx, m.data).ToLocal(&data)) { data = v8::Undefined(iso); kind = 3; } }
-                v8::Local<v8::Value> argv[7] = { v8::Integer::NewFromUnsigned(iso, b.first), v8::Integer::New(iso, kind), data, jstr(iso, m.msg.c_str()), jstr(iso, m.file.c_str()), v8::Integer::New(iso, m.line), v8::Integer::New(iso, m.col) };
-                (void)jcall(c, fv.As<v8::Function>(), v8::Undefined(iso), 7, argv);
-            }
-            free(m.data.p);
+    for (auto &item : batch) {
+        auto &m = item.second;
+        if (have && (g_workers.count(item.first) || g_shared_clients.count(item.first))) {
+            v8::HandleScope hs(iso);
+            v8::Local<v8::Value> data = v8::Undefined(iso);
+            int kind = m.kind;
+            if (kind == WM_MESSAGE) { v8::TryCatch tc(iso); if (!deser(iso, ctx, m.data).ToLocal(&data)) { data = v8::Undefined(iso); kind = 3; } }
+            v8::Local<v8::Value> argv[7] = { v8::Integer::NewFromUnsigned(iso, item.first), v8::Integer::New(iso, kind), data, jstr(iso, m.msg.c_str()), jstr(iso, m.file.c_str()), v8::Integer::New(iso, m.line), v8::Integer::New(iso, m.col) };
+            (void)jcall(c, fv.As<v8::Function>(), v8::Undefined(iso), 7, argv);
         }
+        free(m.data.p);
+    }
 }
 
 void workers_kill(JsCtx *c) {
+    std::vector<uint32_t> connections;
+    for (const auto &client : g_shared_clients) if (client.second.owner == c) connections.push_back(client.first);
+    for (uint32_t connection : connections) close_shared_connection(connection, c);
     for (auto it = g_workers.begin(); it != g_workers.end();)
-        if (it->second->owner == c) { worker_terminate(it->second.get()); it = g_workers.erase(it); }
+        if (!it->second->shared && it->second->owner == c) { worker_terminate(it->second.get()); it = g_workers.erase(it); }
         else ++it;
 }
 

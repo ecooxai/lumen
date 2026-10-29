@@ -710,24 +710,69 @@ function portList(options) {
     }
     return { ports, buffers };
 }
+const messagePortState = new WeakMap();
+const remotePortKey = (worker, port) => worker + ':' + port;
+function portState(port) {
+    const state = messagePortState.get(port);
+    if (!state) throw new TypeError('Illegal MessagePort receiver');
+    return state;
+}
 class MessagePort extends EventTarget {
-    constructor() { super(); this.onmessage = null; def(this, '_other', null); }
+    constructor() {
+        super();
+        messagePortState.set(this, { started: false, closed: false, scheduled: false, queue: [], handler: null, sharedConnection: 0 });
+        this.onmessageerror = null; def(this, '_other', null);
+    }
+    get onmessage() { return portState(this).handler; }
+    set onmessage(value) {
+        const state = portState(this);
+        state.handler = typeof value === 'function' ? value : null;
+        this.start();
+    }
     postMessage(data, options) {
+        const state = portState(this);
         if (!arguments.length) throw new TypeError("Failed to execute 'postMessage': 1 argument required.");
-        const { ports, buffers } = portList(options), remote = this._wk || (this._other && this._other._wk);
+        const { ports, buffers } = portList(options), remote = !state.closed && (this._wk || (this._other && this._other._wk));
         if (remote) {
             const ids = ports.map(() => ++portSeq);
             N.workerPost(remote[0], { __lumenPort: remote[1], data: portSub(data, ports), xfer: ids }, buffers);
-            ports.forEach((port, i) => { port._wk = [remote[0], ids[i]]; if (port._other) remotePorts.set(ids[i], port._other); });
+            ports.forEach((port, i) => { port._wk = [remote[0], ids[i]]; if (port._other) remotePorts.set(remotePortKey(remote[0], ids[i]), port._other); });
             return;
         }
-        const other = this._other;
+        const other = !state.closed && this._other;
         const cloned = structuredClone(portSub(data, ports), { transfer: buffers });
         if (other) setTimeout(() => other._deliver(portRes(cloned, ports), ports));
     }
-    _deliver(data, ports) { dispatch(this, new MessageEvent('message', { data, ports: ports || [] }), true); }
-    start() {}
-    close() { this._other = null; }
+    _deliver(data, ports) {
+        const state = portState(this);
+        if (state.closed) return;
+        state.queue.push({ data, ports: ports || [] });
+        this._flush();
+    }
+    _flush() {
+        const state = portState(this);
+        if (state.closed || !state.started || state.scheduled || !state.queue.length) return;
+        state.scheduled = true;
+        setTimeout(() => {
+            state.scheduled = false;
+            if (state.closed || !state.started || !state.queue.length) return;
+            const message = state.queue.shift();
+            dispatch(this, new MessageEvent('message', message), true);
+            this._flush();
+        });
+    }
+    start() { const state = portState(this); state.started = true; this._flush(); }
+    close() {
+        const state = portState(this);
+        if (state.closed) return;
+        state.closed = true; state.queue.length = 0; this._other = null;
+        if (this._wk) remotePorts.delete(remotePortKey(this._wk[0], this._wk[1]));
+        this._wk = null;
+        if (state.sharedConnection) {
+            N.sharedWorkerClose(state.sharedConnection);
+            workers.delete(state.sharedConnection); state.sharedConnection = 0;
+        }
+    }
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const bcAll = new Set();
@@ -768,17 +813,56 @@ class Worker extends EventTarget {
         if (!ports.length) return N.workerPost(this._id, data, buffers);
         const ids = ports.map(() => ++portSeq);
         N.workerPost(this._id, { __lumenXfer: ids, data: portSub(data, ports) }, buffers);
-        ports.forEach((port, i) => { port._wk = [this._id, ids[i]]; if (port._other) remotePorts.set(ids[i], port._other); });
+        ports.forEach((port, i) => { port._wk = [this._id, ids[i]]; if (port._other) remotePorts.set(remotePortKey(this._id, ids[i]), port._other); });
     }
     terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
+}
+class SharedWorker extends EventTarget {
+    constructor(url, options) {
+        super();
+        if (arguments.length < 1) throw new TypeError("Failed to construct 'SharedWorker': 1 argument required.");
+        // Web IDL union: primitive second arguments name the worker; objects
+        // are WorkerOptions dictionaries. Enum failures are synchronous.
+        const opts = options !== null && (typeof options === 'object' || typeof options === 'function')
+            ? options : options === undefined || options === null ? {} : { name: '' + options };
+        const rawCredentials = opts.credentials, rawName = opts.name, rawType = opts.type;
+        const credentials = rawCredentials === undefined ? 'same-origin' : '' + rawCredentials;
+        const name = rawName === undefined ? '' : '' + rawName;
+        const type = rawType === undefined ? 'classic' : '' + rawType;
+        if (type !== 'classic' && type !== 'module') throw new TypeError('Invalid SharedWorker type');
+        if (!['omit', 'same-origin', 'include'].includes(credentials)) throw new TypeError('Invalid SharedWorker credentials');
+        const input = '' + url;
+        let u;
+        try { u = new URL(input, document.baseURI || N.url()); }
+        catch (_) { throw new DOMException('Invalid SharedWorker script URL.', 'SyntaxError'); }
+        let src = null;
+        if (u.protocol === 'blob:') { const b = objectURLs.get(u.href); if (blobFileOps.isBlob(b)) src = N.decode(blobFileOps.copyBuffer(b)); }
+        else if (u.protocol === 'data:') { const lb = localBody(u.href); if (lb) src = new TextDecoder().decode(lb[0]); }
+        this.onerror = null;
+        const port = new MessagePort();
+        Object.defineProperty(this, 'port', { value: port, enumerable: true });
+        const id = N.sharedWorkerNew(u.href, src, N.userAgent(), N.platform(), name, type === 'module', credentials);
+        if (!id) { setTimeout(() => dispatch(this, new Event('error', { cancelable: true }), true)); return; }
+        def(this, '_id', id);
+        port._wk = [id, 0]; portState(port).sharedConnection = id;
+        remotePorts.set(remotePortKey(id, 0), port);
+        workers.set(id, this);
+    }
 }
 function workerEvent(id, kind, data, message, filename, lineno, colno) {
     const w = workers.get(id); if (!w) return;
     if (kind === 0) {
         let ports = [];
         if (data && typeof data === 'object') {
-            if (data.__lumenPort) { const p = remotePorts.get(data.__lumenPort); if (p) { const qs = (data.xfer || []).map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; }); p._deliver(portRes(data.data, qs), qs); } return; }
-            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(k, q); return q; }); data = portRes(data.data, ports); }
+            if (Object.prototype.hasOwnProperty.call(data, '__lumenPort')) {
+                const p = remotePorts.get(remotePortKey(id, data.__lumenPort));
+                if (p) {
+                    const qs = (data.xfer || []).map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(remotePortKey(id, k), q); return q; });
+                    p._deliver(portRes(data.data, qs), qs);
+                }
+                return;
+            }
+            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(remotePortKey(id, k), q); return q; }); data = portRes(data.data, ports); }
         }
         dispatch(w, new MessageEvent('message', { data, ports }), true);
     }

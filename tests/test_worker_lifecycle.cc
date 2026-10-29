@@ -600,7 +600,7 @@ int main(int argc, char **argv) {
     /* Keep the regression itself leak-free even when run against the old code. */
     for (OutMsg &m : terminated->out) free(m.data.p);
     terminated->out.clear();
-    for (Buf &b : w->in) free(b.p);
+    for (InMsg &m : w->in) free(m.data.p);
     w->in.clear();
     for (int order = 0; order < 3; ++order) check_shared_buffer_lifetime(order);
     js_free(c); doc_free(d);
