@@ -248,12 +248,25 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
         while (n < 3) { if (!calc_expr(&p, &v[n], c)) return false; n++; while (is_ws((unsigned char)*p)) p++; if (*p == ',') { p++; continue; } break; }
         if (*p == ')') p++;
         *pp = p;
-        /* when percentages are involved we can't resolve; pick a reasonable operand */
+        if (kind == 2 && n == 3 && !v[0].mm && !v[1].mm && !v[2].mm) {
+            Length r = v[1];
+            r.mm = 3; r.px2 = v[0].px; r.pct2 = v[0].pct;
+            r.px3 = v[2].px; r.pct3 = v[2].pct;
+            r.math_pct_mask = (v[1].pctu ? 1 : 0) | (v[0].pctu ? 2 : 0) | (v[2].pctu ? 4 : 0);
+            r.pctu |= v[0].pctu || v[2].pctu;
+            /* A constant clamp can be folded now; otherwise both bounds
+               must remain available after a containing-block resize. */
+            if (!len_has_pct(r) && !r.pctu) r = L_px(len_resolve(r, 0));
+            *out = r; return true;
+        }
+        /* More deeply nested comparison expressions retain the legacy
+           approximation. Three affine clamp arms are represented exactly;
+           this compact Length is not a general CSS expression tree. */
         if (kind == 2 && n == 3) { Length r = v[1]; if (!r.pct && !v[0].pct && r.px < v[0].px) r = v[0]; if (!r.pct && !v[2].pct && r.px > v[2].px) r = v[2]; *out = r; return true; }
         Length best = v[0]; int bi = 0;
         for (int i = 1; i < n; i++) { if (v[i].pct || best.pct) { if (kind == 0 && v[i].pct && !best.pct) {} else if (!v[i].pct && kind != 0) { best = v[i]; bi = i; } continue; } if (kind == 0 ? v[i].px < best.px : v[i].px > best.px) { best = v[i]; bi = i; } }
         *out = best;
-        if (n == 2 && (v[0].pct || v[1].pct) && !v[0].mm && !v[1].mm) { const Length *o = &v[1 - bi]; out->mm = (uint8_t)(kind + 1); out->px2 = o->px; out->pct2 = o->pct; }
+        if (n == 2 && (v[0].pct || v[1].pct) && !v[0].mm && !v[1].mm) { const Length *o = &v[1 - bi]; out->mm = (uint8_t)(kind + 1); out->px2 = o->px; out->pct2 = o->pct; out->math_pct_mask = (out->pctu ? 1 : 0) | (o->pctu ? 2 : 0); out->pctu |= o->pctu; }
         return true;
     }
     if (str_istarts(p, "var(")) return false;
@@ -292,6 +305,18 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     else return false;
     *out = l; *pp = p; return true;
 }
+static void calc_scale(Length *value, float scale) {
+    value->px *= scale; value->pct *= scale;
+    if (value->mm) { value->px2 *= scale; value->pct2 *= scale; }
+    if (value->mm >= 3) { value->px3 *= scale; value->pct3 *= scale; }
+    if (scale < 0) value->mm = len_math_flip(value->mm);
+}
+static void calc_add_linear(Length *value, float px, float pct, bool pctu) {
+    value->px += px; value->pct += pct;
+    if (value->mm) { value->px2 += px; value->pct2 += pct; }
+    if (value->mm >= 3) { value->px3 += px; value->pct3 += pct; }
+    if (pctu) { value->pctu = true; if (value->mm) value->math_pct_mask |= value->mm >= 3 ? 7 : 3; }
+}
 static bool calc_term(const char **pp, Length *out, LCtx *c) {
     if (!parse_dim(pp, out, c)) return false;
     for (;;) {
@@ -299,12 +324,12 @@ static bool calc_term(const char **pp, Length *out, LCtx *c) {
         if (*p == '*' || *p == '/') {
             char op = *p++; Length r; if (!parse_dim(&p, &r, c)) return false;
             if (op == '*' && (out->mm || r.mm)) {
-                if (r.mm && !out->mm && !out->pct) { float k = out->px; *out = r; r.px = k; r.mm = 0; r.pct = 0; }
-                if (!r.mm && !r.pct) { out->px *= r.px; out->pct *= r.px; out->px2 *= r.px; out->pct2 *= r.px; if (r.px < 0) out->mm = (uint8_t)(3 - out->mm); *pp = p; continue; }
+                if (r.mm && !out->mm && !out->pct) { float k = out->px; *out = r; r = L_px(k); }
+                if (!r.mm && !r.pct) { calc_scale(out, r.px); *pp = p; continue; }
                 out->mm = 0;
             }
             if (op == '*') { float f = r.pct ? 1 : r.px; if (r.pct == 0 && out->pct == 0 && false) {} if (out->pct == 0 && out->px != 0 && r.pct) { float k = out->px; *out = r; out->px *= k; out->pct *= k; } else { out->px *= f; out->pct *= f; } }
-            else { if (r.px) { out->px /= r.px; out->pct /= r.px; out->px2 /= r.px; out->pct2 /= r.px; if (r.px < 0 && out->mm) out->mm = (uint8_t)(3 - out->mm); } }
+            else { if (r.px) calc_scale(out, 1.f / r.px); }
             *pp = p;
         } else break;
     }
@@ -316,9 +341,9 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
         const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
         if ((*p == '+' || *p == '-') && (p[1] == ' ' || p[1] == '\t' || p[1] == '\n')) {
             char op = *p++; Length r; if (!calc_term(&p, &r, c)) return false;
-            if (op == '-') { r.px = -r.px; r.pct = -r.pct; r.px2 = -r.px2; r.pct2 = -r.pct2; if (r.mm) r.mm = (uint8_t)(3 - r.mm); }
-            if (r.mm && !out->mm) { float bx = out->px, bp = out->pct; bool pu = out->pctu; *out = r; out->pctu |= pu; out->px += bx; out->pct += bp; out->px2 += bx; out->pct2 += bp; }
-            else { if (r.mm) out->mm = 0; out->px += r.px; out->pct += r.pct; if (out->mm) { out->px2 += r.px; out->pct2 += r.pct; } }
+            if (op == '-') calc_scale(&r, -1);
+            if (r.mm && !out->mm) { float bx = out->px, bp = out->pct; bool pu = out->pctu; *out = r; calc_add_linear(out, bx, bp, pu); }
+            else { if (r.mm) out->mm = 0; calc_add_linear(out, r.px, r.pct, r.pctu); }
             out->pctu |= r.pctu;
             *pp = p;
         } else break;
@@ -329,10 +354,10 @@ static bool css_parse_length_context(const char *s, Length *out, float em, float
                                      const ComputedStyle *basis, bool actual, bool *used) {
     while (is_ws((unsigned char)*s)) s++;
     if (str_istarts(s, "auto")) { *out = L_auto(); return true; }
-    if (str_istarts(s, "none")) { out->kind = LK_NONE; out->px = out->pct = 0; return true; }
-    if (str_istarts(s, "min-content")) { out->kind = LK_MIN_CONTENT; out->px = out->pct = 0; return true; }
-    if (str_istarts(s, "max-content")) { out->kind = LK_MAX_CONTENT; out->px = out->pct = 0; return true; }
-    if (str_istarts(s, "fit-content") || str_istarts(s, "-webkit-fit-content") || str_istarts(s, "-moz-fit-content")) { out->kind = LK_FIT_CONTENT; out->px = out->pct = 0; return true; }
+    if (str_istarts(s, "none")) { *out = (Length){0, 0, LK_NONE}; return true; }
+    if (str_istarts(s, "min-content")) { *out = (Length){0, 0, LK_MIN_CONTENT}; return true; }
+    if (str_istarts(s, "max-content")) { *out = (Length){0, 0, LK_MAX_CONTENT}; return true; }
+    if (str_istarts(s, "fit-content") || str_istarts(s, "-webkit-fit-content") || str_istarts(s, "-moz-fit-content")) { *out = (Length){0, 0, LK_FIT_CONTENT}; return true; }
     LCtx c = { em, rem, mc, basis, actual, used };
     const char *p = s;
     if (!parse_dim(&p, out, &c)) return false;
@@ -746,8 +771,7 @@ static int bg_keyword(const ACtx *c, const char *text, int axis, bool logical) {
 }
 static Length bg_offset(Length value, int edge) {
     if (edge != 2) return value;
-    value.px = -value.px; value.pct = 100 - value.pct; value.pctu = true;
-    if (value.mm) { value.px2 = -value.px2; value.pct2 = 100 - value.pct2; value.mm = (uint8_t)(3 - value.mm); }
+    calc_scale(&value, -1); calc_add_linear(&value, 0, 100, true);
     return value;
 }
 static bool bg_component(ACtx *c, const char *text, int axis, bool logical, Length *out) {
@@ -785,7 +809,25 @@ static bool bg_position_item(ACtx *c, const char *text, int axis, Length out[2])
     free_toks(t, n); return ok;
 }
 static void bg_length_str(SB *b, Length value) {
+    if (value.mm >= 3) {
+        Length preferred = value, lower = value, upper = value;
+        preferred.mm = lower.mm = upper.mm = 0;
+        preferred.pctu = !!(value.math_pct_mask & 1);
+        lower.pctu = !!(value.math_pct_mask & 2);
+        upper.pctu = !!(value.math_pct_mask & 4);
+        lower.px = value.px2; lower.pct = value.pct2;
+        upper.px = value.px3; upper.pct = value.pct3;
+        if (value.mm == 3) {
+            sb_puts(b, "clamp("); bg_length_str(b, lower); sb_puts(b, ", ");
+            bg_length_str(b, preferred); sb_puts(b, ", "); bg_length_str(b, upper); sb_putc(b, ')');
+        } else {
+            sb_puts(b, "min("); bg_length_str(b, lower); sb_puts(b, ", max(");
+            bg_length_str(b, preferred); sb_puts(b, ", "); bg_length_str(b, upper); sb_puts(b, "))");
+        }
+        return;
+    }
     if (value.mm) { Length a = value, z = value; a.mm = z.mm = 0; z.px = value.px2; z.pct = value.pct2;
+        if (value.math_pct_mask) { a.pctu = !!(value.math_pct_mask & 1); z.pctu = !!(value.math_pct_mask & 2); }
         sb_puts(b, value.mm == 1 ? "min(" : "max("); bg_length_str(b, a); sb_puts(b, ", "); bg_length_str(b, z); sb_putc(b, ')'); return; }
     /* A zero percentage still carries a percentage basis, including when a
        length is present. Do not collapse calc(0% + 10px) to a length. */

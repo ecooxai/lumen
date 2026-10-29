@@ -4,13 +4,26 @@
 
 /* ---------------- values ---------------- */
 enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT, LK_CONTENT };
-typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm; float px2, pct2; } Length;  /* pctu: written with % (so 0% != 0px); mm 1/2: min/max(px+pct, px2+pct2), px/pct alone is a best guess */
+typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm, math_pct_mask; float px2, pct2, px3, pct3; } Length;
+/* pctu: written with % (so 0% != 0px). mm1/2 are two-arm min/max.
+   mm3 is max(arm2,min(arm1,arm3)); mm4 is its min/max dual after
+   negative scaling. math_pct_mask retains each arm's written percentage
+   type for serialization without using additional structure padding. */
 /* Length value = px + pct/100 * reference */  /* value = px + pct/100 * reference */
 static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
 static inline Length L_auto(void) { Length l = { 0, 0, LK_AUTO }; return l; }
-static inline float len_resolve(Length l, float ref) { return l.px + l.pct * ref / 100.f; }
+static inline float len_resolve(Length l, float ref) {
+    float a = l.px + l.pct * ref / 100.f;
+    if (!l.mm) return a;
+    float b = l.px2 + l.pct2 * ref / 100.f;
+    if (l.mm == 1) return LMIN(a, b);
+    if (l.mm == 2) return LMAX(a, b);
+    float c = l.px3 + l.pct3 * ref / 100.f;
+    return l.mm == 3 ? LMAX(b, LMIN(a, c)) : LMIN(b, LMAX(a, c));
+}
+static inline uint8_t len_math_flip(uint8_t mm) { return mm ? (uint8_t)((mm <= 2 ? 3 : 7) - mm) : 0; }
 static inline bool len_is_auto(Length l) { return l.kind == LK_AUTO; }
-static inline bool len_has_pct(Length l) { return l.kind == LK_LEN && l.pct != 0; }
+static inline bool len_has_pct(Length l) { return l.kind == LK_LEN && (l.pct != 0 || (l.mm && l.pct2 != 0) || (l.mm >= 3 && l.pct3 != 0)); }
 
 typedef uint32_t Color; /* 0xAARRGGBB */
 #define COLOR_A(c) (((c) >> 24) & 0xff)

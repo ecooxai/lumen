@@ -76,10 +76,7 @@ static BgArea background_area(const Box *b, float x, float y, float w, float h,
  * may be negative. Layout's indefinite-size resolver must not be used here. */
 static float background_length(Length l, float reference) {
     if (l.kind != LK_LEN) return 0;
-    float a = l.px + l.pct * reference / 100.f;
-    if (!l.mm) return a;
-    float b = l.px2 + l.pct2 * reference / 100.f;
-    return l.mm == 1 ? LMIN(a, b) : LMAX(a, b);
+    return len_resolve(l, reference);
 }
 static void paint_background_source(PB *p, const ComputedStyle *s, const BgArea *area,
                                     const BgArea *clip_area, Image *im, Gradient *grad) {
