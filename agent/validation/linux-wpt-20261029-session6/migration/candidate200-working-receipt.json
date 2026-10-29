@@ -1,0 +1,18 @@
+{
+  "prepared_utc": "2026-10-29T20:06:40.880760+00:00",
+  "base_commit": "2b301e545be9055fbc933fdd187fce099e6fd148",
+  "before": {
+    "src/js/shared/xhr.js": "20b755c42ab59ce109fd1858dd10bd0064f4dcc49d3c392ebfe46c5d366354d2",
+    "src/js/shared/fetch.js": "dcdbc049a1487b8cc1e8a06bed71bbf269243e4f1b65a020c8aadacdeb7928de"
+  },
+  "after": {
+    "src/js/shared/xhr.js": "8defe64a226a4b8b6207622e62a33997d6a63b7742bd11fe9a776a4b7f1eaf31",
+    "src/js/shared/fetch.js": "fb8be66ad5c67d92052302f05a3c8bdbdc954c3d8266c707d1d1b00f94459c71"
+  },
+  "patch_sha256": "2cf4a03b5e7dc642c2dda2225505050f5dc050f56c3caeacad59c742e4d446a3",
+  "scope": "XHR ByteString conversion and header-list combining; HeadersInit observable iteration and Symbol conversion.",
+  "candidate": 200,
+  "parent": "cd742d5c2f447dfd5eb1b20606ae64f936b6888b",
+  "integrated_utc": "2026-10-29T20:31:12.534853+00:00",
+  "review_qualification": "Proposal author-reviewed and independently reviewed before later private source excerpts were refused; internal clone/public iteration behavior is gated by separately frozen controls. No refused excerpts were relayed."
+}
