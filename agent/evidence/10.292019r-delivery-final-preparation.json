@@ -1,0 +1,26 @@
+{
+  "scope": "Task-specific independent final audit/comparison/publication tooling, syntax-checked and pending actual final runtime results; no new browser pass claims",
+  "tools": [
+    {
+      "path": "tools/apple-session-gpt6as/audit_final_priority_10292019r.py",
+      "bytes": 7791,
+      "sha256": "6f1148ae3246de383de9d538cdc2a1ad9f550a604eea27cb7124bec7748c30b6"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/compare_final_chrome279_10292019r.py",
+      "bytes": 5540,
+      "sha256": "ad66a37eb5b4b10db3833a676461d55f6019f18b8a30e9a030a7a34ac3b19cce"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/publish_final_priority_10292019r.py",
+      "bytes": 6671,
+      "sha256": "0b17e204c7d9314be6607df2e8eb5326dbf9ba8f825a682c4793b49338d14d0e"
+    },
+    {
+      "path": "tools/apple-session-gpt6as/compare_chrome279_canonical_10292019r.py",
+      "bytes": 6122,
+      "sha256": "4c87f984962c2d3f540a797c1f7cd089f6c3f18a2d2a0321c7da428722c253c9"
+    }
+  ],
+  "excluded": "Private materialization descriptors/carriers remain outside Git and publication"
+}
