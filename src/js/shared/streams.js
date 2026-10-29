@@ -6,7 +6,7 @@
 const { ReadableStream, ReadableStreamDefaultReader, ReadableStreamBYOBReader, ReadableStreamDefaultController,
         ReadableByteStreamController, ReadableStreamBYOBRequest, WritableStream, WritableStreamDefaultWriter,
         WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy,
-        CountQueuingStrategy, streamDisturbed } = (() => {
+        CountQueuingStrategy, streamDisturbed, streamTee } = (() => {
 const $Promise = Promise, thenP = Promise.prototype.then, PResolve = Promise.resolve.bind(Promise), PReject = Promise.reject.bind(Promise);
 const noop = () => {}, one = () => 1;
 const INTERNAL = Symbol('streams internal'), END = Symbol('end of iteration');
@@ -571,8 +571,8 @@ const setUpRBSCFromSource = (s, src, d, hwm) => {
 };
 
 /* tee */
-const rsTee = s => s.ctl.byte ? rsByteTee(s) : rsDefaultTee(s);
-const rsDefaultTee = s => {
+const rsTee = (s, cloneForBranch2 = false) => s.ctl.byte ? rsByteTee(s) : rsDefaultTee(s, cloneForBranch2);
+const rsDefaultTee = (s, cloneForBranch2) => {
     const reader = acquireDefaultReader(s);
     let reading = false, readAgain = false, canceled1 = false, canceled2 = false, reason1, reason2, branch1, branch2;
     const cancelP = cap();
@@ -583,8 +583,18 @@ const rsDefaultTee = s => {
             chunk: chunk => {
                 micro(() => {
                     readAgain = false;
+                    let chunk2 = chunk;
+                    // Fetch's body clone uses the specification tee wrapper;
+                    // public default-stream tee deliberately shares chunks.
+                    if (!canceled2 && cloneForBranch2) {
+                        try { chunk2 = structuredClone(chunk); }
+                        catch (e) {
+                            rsdcError(branch1.ctl, e); rsdcError(branch2.ctl, e);
+                            capResolve(cancelP, rsCancel(s, e)); return;
+                        }
+                    }
                     if (!canceled1) rsdcEnqueue(branch1.ctl, chunk);
-                    if (!canceled2) rsdcEnqueue(branch2.ctl, chunk);
+                    if (!canceled2) rsdcEnqueue(branch2.ctl, chunk2);
                     reading = false;
                     if (readAgain) pull();
                 });
@@ -1637,5 +1647,10 @@ for (const [name, C] of Object.entries(classes)) {
 for (const k of ['next', 'return']) { const d = Object.getOwnPropertyDescriptor(RSAsyncIterator.prototype, k); d.enumerable = true; Object.defineProperty(RSAsyncIterator.prototype, k, d); }
 
 const streamDisturbed = s => rsIs(s) && rsOf(s).disturbed;
-return { ...classes, streamDisturbed };
+// Internal consumers must not invoke an author-overridden public tee method.
+const streamTee = (s, cloneForBranch2) => {
+    const branches = rsTee(rsOf(s), cloneForBranch2);
+    return [branches[0].pub, branches[1].pub];
+};
+return { ...classes, streamDisturbed, streamTee };
 })();

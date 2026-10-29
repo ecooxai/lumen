@@ -8,10 +8,43 @@ const camelToKebab = (p) => {
 };
 function parseDecls(s) {
     const m = new SMap(); if (!s) return m;
-    let depth = 0, q = 0, start = 0; const parts = [];
-    for (let i = 0; i < s.length; i++) { const c = s[i]; if (q) { if (c === q) q = 0; } else if (c === '"' || c === "'") q = c; else if (c === '(') depth++; else if (c === ')') depth--; else if (c === ';' && !depth) { parts.push(s.slice(start, i)); start = i + 1; } }
-    parts.push(s.slice(start));
-    for (const p of parts) { const i = p.indexOf(':'); if (i < 0) continue; const k = p.slice(0, i).trim(); let v = p.slice(i + 1).trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    let depth = 0, q = '', colon = -1, name = ''; const parts = [];
+    const finish = end => {
+        if (colon >= 0) parts.push([name, s.slice(colon + 1, end)]);
+        colon = -1; name = '';
+    };
+    /* Delimiters inside strings, escapes and comments cannot end a declaration.
+       Keep value slices intact: custom properties retain the author's comments. */
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (q) {
+            if (colon < 0) name += c;
+            if (c === '\\' && i + 1 < s.length) {
+                if (colon < 0) name += s[i + 1];
+                i++;
+            } else if (c === q) q = '';
+            continue;
+        }
+        if (c === '/' && s[i + 1] === '*') {
+            if (colon < 0) name += ' ';
+            const end = s.indexOf('*/', i + 2);
+            i = end < 0 ? s.length : end + 1;
+            continue;
+        }
+        if (c === '\\') {
+            if (colon < 0) name += s.slice(i, i + 2);
+            i++;
+            continue;
+        }
+        if (c === ';' && !depth) { finish(i); continue; }
+        if (c === ':' && !depth && colon < 0) { colon = i; continue; }
+        if (colon < 0) name += c;
+        if (c === '"' || c === "'") q = c;
+        else if (c === '(') depth++;
+        else if (c === ')') depth--;
+    }
+    finish(s.length);
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
 /* Flex declarations are stored as their longhands, so enumeration, removal,
@@ -220,15 +253,15 @@ const MATH_UNITS = (() => {
     return m;
 })();
 const MATH_FNS = /^(calc|-webkit-calc|min|max|clamp|round|mod|rem|abs|sign|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp)$/;
-function mathType(src) {   /* src starts at a math function name; returns [type | null (invalid) | undefined (unknown), end] */
+function mathType(src, strictUnits = false) {   /* returns [type | null (invalid) | undefined (unknown), end] */
     let i = 0, unknown = false;
     const ws = () => { const s = i; while (/\s/.test(src[i] || '')) i++; return i > s; };
     const dec = t => { const m = {}; if (t) for (const e of t.split(',')) { const [d, n] = e.split('^'); m[d] = +n; } return m; };
     const enc = m => Object.keys(m).filter(d => m[d]).sort().map(d => d + '^' + m[d]).join(',');
-    const mul = (a, b, sg) => { if (a === '?' || b === '?') return '?'; const m = dec(a), n = dec(b); for (const d in n) m[d] = (m[d] || 0) + sg * n[d]; return enc(m); };
+    const mul = (a, b, sg) => { if (a === 'none' || b === 'none') return null; if (a === '?' || b === '?') return '?'; const m = dec(a), n = dec(b); for (const d in n) m[d] = (m[d] || 0) + sg * n[d]; return enc(m); };
     const pl = t => { const m = dec(t); if (m['%']) { m.length = (m.length || 0) + m['%']; delete m['%']; } return enc(m); };
     const add = (a, b) => {
-        if (a === null || b === null) return null;
+        if (a === null || b === null || a === 'none' || b === 'none') return null;
         if (a === '?' || b === '?') return '?';
         if (a === b) return a;
         return pl(a) === pl(b) && pl(a) === 'length^1' ? 'length^1' : null;
@@ -248,7 +281,7 @@ function mathType(src) {   /* src starts at a math function name; returns [type 
             const op = src[i];
             if (op !== '*' && op !== '/') { i = s; return t; }
             i++; ws(); const u = val(); if (u === null) return null;
-            t = mul(t, u, op === '*' ? 1 : -1);
+            t = mul(t, u, op === '*' ? 1 : -1); if (t === null) return null;
         }
     }
     function args() {   /* comma list of sums up to ')' */
@@ -269,13 +302,17 @@ function mathType(src) {   /* src starts at a math function name; returns [type 
         }
         let strat = false;
         if (name === 'round') { const m = /^\s*(nearest|up|down|to-zero)\s*,/i.exec(src.slice(i)); if (m) { i += m[0].length; strat = true; } }
-        const a = args(); if (a === null) return null;
+        const a = args(); if (a === null || name !== 'clamp' && a.includes('none')) return null;
         const same = () => a.reduce((x, y) => x === '?' || y === '?' ? '?' : x === null ? null : add(x, y));
         const num = t => t === '' || t === '?';
         switch (name) {
         case 'calc': case '-webkit-calc': case 'abs': return a.length === 1 ? a[0] : null;
         case 'min': case 'max': case 'hypot': return a.length ? same() : null;
-        case 'clamp': return a.length === 3 ? same() : null;
+        case 'clamp':
+            if (a.length !== 3 || a[1] === 'none') return null;
+            if (a[0] === 'none') a[0] = a[1];
+            if (a[2] === 'none') a[2] = a[1];
+            return same();
         case 'round': if (a.length === 1) return strat || num(a[0]) || a[0] === '?' ? (num(a[0]) ? a[0] : null) : null;
             return a.length === 2 ? same() : null;
         case 'mod': case 'rem': return a.length === 2 ? same() : null;
@@ -298,7 +335,7 @@ function mathType(src) {   /* src starts at a math function name; returns [type 
             if (!m[3]) return '';
             if (m[3] === '%') return '%^1';
             const u = MATH_UNITS.get(m[3].toLowerCase());
-            if (u === undefined) { unknown = true; return '?'; }
+            if (u === undefined) { if (strictUnits) return null; unknown = true; return '?'; }
             return u + '^1';
         }
         m = /^-?[a-z_][\w-]*/i.exec(src.slice(i));
@@ -306,12 +343,49 @@ function mathType(src) {   /* src starts at a math function name; returns [type 
         i += m[0].length;
         if (src[i] === '(') { i++; return fn(m[0]); }
         if (/^(-?infinity|pi|e|nan)$/i.test(m[0])) return '';
+        if (strictUnits) return /^none$/i.test(m[0]) ? 'none' : null;
         unknown = true; return '?';   /* e.g. a relative color's channel keyword */
     }
     const t = val();
-    return [unknown || t === '?' ? undefined : t, i];
+    return [strictUnits && t === null ? null : unknown || t === '?' ? undefined : t, i];
+}
+/* Angle-bearing transform arguments need their own expected type: a nested
+   min()/max() is not a whole-property expression. Other transform components
+   keep their existing validation, including deferred var()/env()/attr(). */
+function transformAnglesValid(value) {
+    // Escaped tokens retain the existing parser path until token-level decoding.
+    if (value.includes(String.fromCharCode(92))) return true;
+    const src = value.includes('/*') ? value.replace(/\/\*[\s\S]*?(?:\*\/|$)/g, ' ') : value;
+    const re = /(^|[\s)])(rotate(?:3d|[xyz])?|skew(?:[xy])?)\(/gi;
+    let m;
+    while ((m = re.exec(src))) {
+        const start = re.lastIndex; let i = start, depth = 1;
+        while (i < src.length && depth) { if (src[i] === '(') depth++; else if (src[i] === ')') depth--; i++; }
+        const body = src.slice(start, depth ? src.length : i - 1), args = [];
+        let part = 0, nested = 0;
+        for (let j = 0; j < body.length; j++) {
+            if (body[j] === '(') nested++;
+            else if (body[j] === ')') nested--;
+            else if (body[j] === ',' && !nested) { args.push(body.slice(part, j).trim()); part = j + 1; }
+        }
+        args.push(body.slice(part).trim());
+        const name = m[2].toLowerCase(), first = name === 'rotate3d' ? 3 : 0;
+        if (name === 'rotate3d' ? args.length !== 4 : name === 'skew' ? args.length < 1 || args.length > 2 : args.length !== 1) return false;
+        for (let j = first; j < args.length; j++) {
+            const arg = args[j];
+            // The legacy unitless-zero exception does not apply inside math.
+            if (/^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?$/i.test(arg) && Number(arg) === 0) continue;
+            const [type, end] = mathType(arg, true);
+            if (arg.slice(end).trim() || type !== undefined && type !== 'angle^1') return false;
+        }
+        re.lastIndex = Math.max(start, i - 1);
+    }
+    return true;
 }
 const MATH_LEN_PROPS = /^((min-|max-)?(width|height|block-size|inline-size))$/;
+/* Canonical nonnegative px sizes below 1e9 with at most six fractional digits
+   already have Lumen's existing specified serialization. Other values keep the full path. */
+const CSS_CANONICAL_PX_SIZE = /^(?:0|[1-9]\d{0,8})(?:\.\d{0,5}[1-9])?px$/;
 const MATH_NUM_PROPS = /^((fill-|stroke-|stop-|flood-)?opacity|flex-grow|flex-shrink)$/;
 /* the <color-interpolation-method> of gradients: only "in <space> [<hue> hue]" at the start or end of the first argument */
 const GRAD_SPACES = /^(srgb|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020|lab|oklab|xyz|xyz-d50|xyz-d65|hsl|hwb|lch|oklch)$/i;
@@ -418,6 +492,7 @@ function mathValid(p, v) {
         return /^\s*(inherit|initial|unset|revert|revert-layer|none|auto|base|base-select|textfield|menulist-button|button|checkbox|listbox|menulist|meter|progress-bar|radio|searchfield|textarea)\s*$/i.test(v);
     if (/-gradient\(/i.test(v) && !/var\(|env\(|attr\(/i.test(v) && !gradInterpValid(v)) return false;
     if (/var\(|env\(|attr\(|calc-size\(|anchor/i.test(v)) return true;
+    if (p === 'transform' && !transformAnglesValid(v)) return false;
     if (/^background-position(?:-[xy])?$/.test(p) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return cssPositionParse(v, cssPositionAxis(p)) !== null;
     const re = /(^|[\s,(/])((?:-webkit-)?[a-z][a-z0-9-]*)\(/gi;
     let m;
@@ -789,7 +864,7 @@ class CSSStyleDeclaration {
             else if (priority && !/^important$/i.test(priority) || !cssGridSet(m, p, value, priority ? 'important' : '')) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
-        if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
+        if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
     removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {

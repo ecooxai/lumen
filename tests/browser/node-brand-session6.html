@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>Independent genuine and forged Node brand controls</title><pre id="results"></pre><script>
+(async()=>{
+const checks=[];let passed=0;function check(name,actual,expected){const pass=Object.is(actual,expected);checks.push({name,actual,expected,pass});if(pass)passed++;}function errorName(fn){try{fn();return 'no exception';}catch(e){return e.name;}}
+const parent=document.createElement('div'),child=document.createElement('i');parent.appendChild(child);document.body.appendChild(parent);
+parent.setAttribute('data-own','x');const attached=parent.getAttributeNode('data-own'),detached=document.createAttribute('data-detached');
+for(const[name,node]of [['attached-attr',attached],['detached-attr',detached],['doctype',document.implementation.createDocumentType('html','','')]])check('genuine/'+name,errorName(()=>parent.removeChild(node)),'NotFoundError');
+const host=document.createElement('div'),shadow=host.attachShadow({mode:'open'});check('genuine/shadow-root',errorName(()=>parent.removeChild(shadow)),'NotFoundError');
+for(const[name,value]of [['fake-node',Object.create(Node.prototype)],['fake-attr',Object.create(Attr.prototype)],['undefined',undefined],['null',null],['plain-object',{}],['proxy-attr',new Proxy(detached,{})],['proxy-node',new Proxy(child,{})]])check('conversion/'+name,errorName(()=>parent.removeChild(value)),'TypeError');
+check('conversion/missing',errorName(()=>parent.removeChild()),'TypeError');
+let accessed=0;const forged={get ownerElement(){accessed++;throw Error('author getter');},get name(){accessed++;throw Error('author getter');},get nodeType(){accessed++;throw Error('author getter');},toString(){accessed++;throw Error('author coercion');}};
+check('conversion/forged-fields',errorName(()=>parent.removeChild(forged)),'TypeError');check('conversion/no-author-access',accessed,0);
+const altered=document.createAttribute('data-altered');Object.setPrototypeOf(altered,null);check('genuine/altered-prototype-attr',errorName(()=>parent.removeChild(altered)),'NotFoundError');
+check('errors/preserve-child',parent.firstChild===child&&parent.childNodes.length===1,true);check('success/identity',parent.removeChild(child)===child,true);check('success/detached',child.parentNode===null,true);
+const frame=document.createElement('iframe');frame.src='about:blank';const ready=new Promise(resolve=>{frame.onload=()=>resolve(true);setTimeout(()=>resolve(false),2000);});document.body.appendChild(frame);await ready;
+let foreignNode,foreignAttr;try{foreignNode=frame.contentWindow.eval('document.createElement("span")');foreignAttr=frame.contentWindow.eval('document.createAttribute("data-foreign")');}catch(e){}
+check('cross-realm/available',!!foreignNode&&!!foreignAttr,true);
+check('cross-realm/nonchild-node',foreignNode?errorName(()=>parent.removeChild(foreignNode)):'unavailable','NotFoundError');
+check('cross-realm/nonchild-attr',foreignAttr?errorName(()=>parent.removeChild(foreignAttr)):'unavailable','NotFoundError');
+let moved=false;try{if(foreignNode){parent.appendChild(foreignNode);moved=parent.removeChild(foreignNode)===foreignNode;}}catch(e){}check('cross-realm/actual-child',moved,true);
+frame.remove();parent.remove();
+const result={passed,failed:checks.length-passed,total:checks.length,checks},serialized=JSON.stringify(result);document.getElementById('results').textContent=serialized;
+for(let i=0;i<Math.ceil(serialized.length/256);i++)console.log('LUMEN_AUTHORED_CHUNK '+i+' '+JSON.stringify(serialized.slice(i*256,(i+1)*256)));
+console.log('LUMEN_AUTHORED_DONE '+Math.ceil(serialized.length/256));console.log('RESULTS NODE_BRAND:'+(result.failed?'FAIL':'PASS')+' '+passed+'/'+checks.length);
+})();
+</script>
+

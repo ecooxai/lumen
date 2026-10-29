@@ -1,0 +1,59 @@
+<!doctype html><meta charset="utf-8"><title>Response clone isolation controls</title><body><script>
+(async()=>{
+const rows=[];
+const wait=(p)=>new Promise((resolve,reject)=>{const id=setTimeout(()=>reject(new Error("bounded operation timeout")),1800);Promise.resolve(p).then(x=>{clearTimeout(id);resolve(x)},e=>{clearTimeout(id);reject(e)})});
+async function record(name,defaults,fn){const values={...defaults,error:""};console.log("QA_CASE_START "+name);try{await wait(fn(values))}catch(e){values.error=e.name+": "+e.message}rows.push({name,values});console.log("QA_CASE_END "+name+" "+values.error)}
+const bytes=x=>new Uint8Array(x instanceof ArrayBuffer?x:x.buffer);
+const same=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
+for(const [name,make]of [
+["uint8-offset",()=>new Uint8Array(new ArrayBuffer(16),3,7)],
+["int16-offset",()=>new Int16Array(new ArrayBuffer(16),2,4)],
+["dataview-offset",()=>new DataView(new ArrayBuffer(16),4,6)],
+["arraybuffer",()=>new ArrayBuffer(8)],
+["float64",()=>new Float64Array(new ArrayBuffer(16))]
+]){
+await record(name,{originalIdentity:false,cloneDistinct:false,prototype:false,bytesEqual:false,offset:false,length:false,backingDistinct:false,originalMutationIsolated:false,cloneMutationIsolated:false,bothDone:false},async v=>{
+const x=make();bytes(x).forEach((_,i,a)=>a[i]=i+11);const r=new Response(new ReadableStream({start(c){c.enqueue(x);c.close()}}));const q=r.clone();const a=r.body.getReader(),b=q.body.getReader();const [ar,br]=await wait(Promise.all([a.read(),b.read()]));const y=br.value;
+v.originalIdentity=ar.value===x;v.cloneDistinct=y!==x;v.prototype=Object.getPrototypeOf(y)===Object.getPrototypeOf(x);v.bytesEqual=same(bytes(x),bytes(y));v.offset=(x.byteOffset||0)===(y.byteOffset||0);v.length=x.byteLength===y.byteLength;v.backingDistinct=(x.buffer||x)!==(y.buffer||y);
+const before=bytes(y)[0];bytes(x)[0]=77;v.originalMutationIsolated=bytes(y)[0]===before;const originalLast=bytes(x)[bytes(x).length-1];bytes(y)[bytes(y).length-1]=88;v.cloneMutationIsolated=bytes(x)[bytes(x).length-1]===originalLast;v.bothDone=(await a.read()).done&&(await b.read()).done;
+});
+}
+await record("structured-object-cycle",{originalIdentity:false,cloneDistinct:false,nestedDistinct:false,cycle:false,aliasPreserved:false,prototype:false,originalMutationIsolated:false,cloneMutationIsolated:false,originalUsed:false,cloneUsed:false},async v=>{
+const x={nested:{n:3}};x.self=x;x.alias=x.nested;const r=new Response(new ReadableStream({start(c){c.enqueue(x);c.close()}}));const q=r.clone();const [a,b]=await wait(Promise.all([r.body.getReader().read(),q.body.getReader().read()]));const y=b.value;v.originalIdentity=a.value===x;v.cloneDistinct=y!==x;v.nestedDistinct=y.nested!==x.nested;v.cycle=y.self===y;v.aliasPreserved=y.alias===y.nested;v.prototype=Object.getPrototypeOf(y)===Object.getPrototypeOf(x);x.nested.n=4;v.originalMutationIsolated=y.nested.n===3;y.nested.n=5;v.cloneMutationIsolated=x.nested.n===4;v.originalUsed=r.bodyUsed;v.cloneUsed=q.bodyUsed;
+});
+await record("public-default-tee-shares-object",{firstIdentity:false,secondIdentity:false,sharedMutation:false,bothDone:false},async v=>{
+const x={n:1};const [a,b]=new ReadableStream({start(c){c.enqueue(x);c.close()}}).tee();const ar=a.getReader(),br=b.getReader();const [u,w]=await wait(Promise.all([ar.read(),br.read()]));v.firstIdentity=u.value===x;v.secondIdentity=w.value===x;u.value.n=2;v.sharedMutation=w.value.n===2;v.bothDone=(await ar.read()).done&&(await br.read()).done;
+});
+await record("public-tee-extra-argument-ignored",{firstIdentity:false,secondIdentity:false},async v=>{
+const x={n:1};const [a,b]=new ReadableStream({start(c){c.enqueue(x);c.close()}}).tee(true);const [u,w]=await wait(Promise.all([a.getReader().read(),b.getReader().read()]));v.firstIdentity=u.value===x;v.secondIdentity=w.value===x;
+});
+for(const method of ["tee","getReader"]){
+await record("response-ignores-source-public-"+method,{cloneSucceeded:false,overrideCalls:0,originalCorrect:false,copyCorrect:false},async v=>{
+const x=new Uint8Array([1,2,3]);const s=new ReadableStream({start(c){c.enqueue(x);c.close()}});Object.defineProperty(s,method,{value(){v.overrideCalls++;throw new Error("author override called")}});const r=new Response(s);const q=r.clone();v.cloneSucceeded=true;const [a,b]=await wait(Promise.all([r.body.getReader().read(),q.body.getReader().read()]));v.originalCorrect=a.value===x;v.copyCorrect=b.value!==x&&same(bytes(b.value),bytes(x));
+});
+}
+await record("response-ignores-global-structuredClone",{cloneSucceeded:false,overrideCalls:0,originalCorrect:false,copyCorrect:false},async v=>{
+const saved=globalThis.structuredClone;try{globalThis.structuredClone=()=>{v.overrideCalls++;throw new Error("author global clone called")};const x={n:1};const r=new Response(new ReadableStream({start(c){c.enqueue(x);c.close()}}));const q=r.clone();v.cloneSucceeded=true;const [a,b]=await wait(Promise.all([r.body.getReader().read(),q.body.getReader().read()]));v.originalCorrect=a.value===x;v.copyCorrect=b.value!==x&&b.value.n===1;}finally{globalThis.structuredClone=saved}
+});
+await record("disturbed-response",{exception:"",bodyUsed:false,originalStillReadable:false},async v=>{
+const r=new Response("abc");const reader=r.body.getReader();await reader.read();v.bodyUsed=r.bodyUsed;try{r.clone()}catch(e){v.exception=e.name}v.originalStillReadable=(await reader.read()).done;
+});
+await record("locked-undisturbed-response",{exception:"",bodyUsed:false,cloneAfterRelease:false},async v=>{
+const r=new Response("abc");const reader=r.body.getReader();v.bodyUsed=r.bodyUsed;try{r.clone()}catch(e){v.exception=e.name}reader.releaseLock();v.cloneAfterRelease=(await r.clone().text())==="abc";
+});
+await record("null-body-response",{originalNull:false,cloneNull:false,bodyUsed:false},async v=>{const r=new Response(null);const q=r.clone();v.originalNull=r.body===null;v.cloneNull=q.body===null;v.bodyUsed=q.bodyUsed});
+await record("headers-independent",{cloneOriginalValue:false,originalUnaffected:false,cloneUnaffected:false},async v=>{
+const r=new Response("x",{headers:{"x-a":"one"}});const q=r.clone();v.cloneOriginalValue=q.headers.get("x-a")==="one";q.headers.set("x-a","two");v.originalUnaffected=r.headers.get("x-a")==="one";r.headers.set("x-b","three");v.cloneUnaffected=!q.headers.has("x-b");
+});
+await record("both-branch-cancellation",{sourceCalls:0,reasonsArray:false,reasonsOrder:false,bothSettled:false},async v=>{
+let reason;const r=new Response(new ReadableStream({cancel(x){v.sourceCalls++;reason=x}}));const q=r.clone();await wait(Promise.all([r.body.cancel("original"),q.body.cancel("copy")]));v.bothSettled=true;v.reasonsArray=Array.isArray(reason);v.reasonsOrder=reason&&reason[0]==="original"&&reason[1]==="copy";
+});
+await record("uncloneable-chunk-errors-both",{originalException:"",copyException:"",sourceCalls:0,cancelException:""},async v=>{
+const r=new Response(new ReadableStream({start(c){c.enqueue(function uncloneable(){})},cancel(e){v.sourceCalls++;v.cancelException=e.name}}));const q=r.clone();const a=r.body.getReader(),b=q.body.getReader();a.closed.catch(()=>{});b.closed.catch(()=>{});const out=await wait(Promise.all([a.read().then(()=>"",e=>e.name),b.read().then(()=>"",e=>e.name)]));v.originalException=out[0];v.copyException=out[1];
+});
+await record("canceled-copy-skips-clone",{originalIdentity:false,originalDone:false,cancelSettled:false},async v=>{
+let ctrl;const x=function uncloneable(){};const r=new Response(new ReadableStream({start(c){ctrl=c}}));const q=r.clone();const canceled=q.body.cancel("copy");ctrl.enqueue(x);ctrl.close();const reader=r.body.getReader();v.originalIdentity=(await wait(reader.read())).value===x;v.originalDone=(await reader.read()).done;await wait(canceled);v.cancelSettled=true;
+});
+const total=rows.reduce((n,r)=>n+Object.keys(r.values).length,0);const raw=JSON.stringify({rows,total});const count=Math.ceil(raw.length/256);for(let i=0;i<count;i++)console.log("LUMEN_AUTHORED_CHUNK "+i+" "+JSON.stringify(raw.slice(i*256,(i+1)*256)));console.log("LUMEN_AUTHORED_DONE "+count);console.log("RESULTS RESPONSE_CLONE_OBSERVATIONS:PASS");
+})().catch(e=>console.log("RESULTS RESPONSE_CLONE_OBSERVATIONS:FAIL "+e.stack));
+</script></body>

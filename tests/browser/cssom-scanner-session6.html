@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><title>Independent CSSOM declaration scanner controls</title><div id="host"></div><pre id="results"></pre><script>
+const slash='\\';
+const cases=[['plain','alpha'],['quoted-paren','"a)b"'],['quoted-delimiters','"a;:)]}b"'],['quoted-comment','"a/*;:)]}*/b"'],['single-quoted',"'a;:)b'"]];
+for(let n=1;n<=4;n++)cases.push(['quote-backslash-'+n,'"a'+slash.repeat(n)+'"'+(n%2?';:)b"':'')]);
+cases.push(['escaped-semicolon','a'+slash+';b'],['escaped-colon','a'+slash+':b'],['escaped-closer','a'+slash+')b'],['comment-between','a/**/b'],['comment-leading','/**/a'],['comment-trailing','a/**/'],['comment-punctuation','a/* ; : ) ] } */b'],['comment-quotes','a/* " ; : \' */b'],['nested-quoted','fn(inner("a;b"), 2)'],['nested-escaped','fn(a'+slash+';b, c)'],['empty-value','']);
+const fields=['customValue','paddingDeclaration','paddingLeft','marginLeft','borderBoxWidth'],rows=[];
+for(const [name,value]of cases){
+ const el=document.createElement('div');el.style.cssText='width:30px;height:10px;padding-left:7px;--x:'+value+';padding-left:5px;margin-left:11px;';document.getElementById('host').appendChild(el);
+ for(const stage of ['initial','neighbor-mutation']){
+  if(stage==='neighbor-mutation')el.style.setProperty('margin-left','13px');
+  const s=getComputedStyle(el);rows.push({name,stage,values:{customValue:el.style.getPropertyValue('--x'),paddingDeclaration:el.style.getPropertyValue('padding-left'),paddingLeft:parseFloat(s.paddingLeft),marginLeft:parseFloat(s.marginLeft),borderBoxWidth:el.getBoundingClientRect().width}});
+ }
+ el.remove();
+}
+const result={cases:cases.length,rows,fields,total:rows.length*fields.length},serialized=JSON.stringify(result);document.getElementById('results').textContent=serialized;
+for(let i=0;i<Math.ceil(serialized.length/256);i++)console.log('LUMEN_AUTHORED_CHUNK '+i+' '+JSON.stringify(serialized.slice(i*256,(i+1)*256)));
+console.log('LUMEN_AUTHORED_DONE '+Math.ceil(serialized.length/256));console.log('RESULTS CSSOM_SCANNER_OBSERVATIONS:PASS '+rows.length+' rows '+result.total+' fields');
+</script>
+

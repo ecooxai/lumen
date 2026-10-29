@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>Lumen style phase diagnostic</title><style>html,body{margin:0;padding:0}#host{width:640px}.item{display:block;box-sizing:content-box;height:4px;margin:0;padding:0;border:0}</style><div id="host"></div><script>
+(async()=>{
+const N=128,R=32,host=document.getElementById('host'),nodes=[];let checks=0,failed=0;const failures=[];
+const ok=(v,label)=>{checks++;if(!v){failed++;if(failures.length<8)failures.push(label);}};
+for(let i=0;i<N;i++){const e=document.createElement('div');e.className='item';e.style.width='64px';host.appendChild(e);nodes.push(e);}
+await new Promise(resolve=>setTimeout(resolve,250));
+const phases=[];
+for(const mode of ['cssom','attribute','read-only']){
+ let mutation_ms=0,first_rect_ms=0,remaining_rect_ms=0;const begun=performance.now();
+ for(let round=0;round<R;round++){
+  let t=performance.now();
+  if(mode!=='read-only')for(let i=0;i<N;i++){const w=80+((i*7+round*3)%121);if(mode==='cssom')nodes[i].style.width=w+'px';else nodes[i].setAttribute('style','width:'+w+'px');}
+  mutation_ms+=performance.now()-t;t=performance.now();
+  const first=nodes[0].getBoundingClientRect();first_rect_ms+=performance.now()-t;
+  const useRound=mode==='read-only'?R-1:round;ok(Math.abs(first.width-(80+((useRound*3)%121)))<0.02,mode+':'+round+':0');t=performance.now();
+  for(let i=1;i<N;i++){const rect=nodes[i].getBoundingClientRect();ok(Math.abs(rect.width-(80+((i*7+useRound*3)%121)))<0.02,mode+':'+round+':'+i);}
+  remaining_rect_ms+=performance.now()-t;
+ }
+ phases.push({mode,mutation_ms,first_rect_ms,remaining_rect_ms,total_ms:performance.now()-begun,rounds:R,elements:N});
+}
+ok(host.children.length===N,'node count');console.log('RESULTS ops-style-phases:'+(failed?'FAIL':'PASS')+' '+JSON.stringify({pass:failed===0,checks,failed,failures,phases,scope:'Independent phase diagnostic; not the fixed protected performance workload'}));
+})();
+</script>

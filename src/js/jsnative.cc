@@ -69,6 +69,21 @@ FN(clipImage) {
     RET(v8::Array::New(iso, v, 2));
 }
 FN(isNode) { CTX; RET(junwrap(a[0]) != nullptr); }
+/* Attr wrappers live in the prelude rather than the native tree. A private
+   isolate-wide brand recognizes genuine attributes across same-origin realms
+   without trusting prototypes or page-visible fields. */
+static v8::Local<v8::Private> attr_brand_key(v8::Isolate *iso) {
+    return v8::Private::ForApi(iso, jstr(iso, "lumen:attribute-node"));
+}
+FN(attrBrand) {
+    CTX;
+    if (a[0]->IsObject())
+        (void)a[0].As<v8::Object>()->SetPrivate(ctx, attr_brand_key(iso), v8::True(iso));
+}
+FN(attrBranded) {
+    CTX;
+    RET(a[0]->IsObject() && a[0].As<v8::Object>()->HasPrivate(ctx, attr_brand_key(iso)).FromMaybe(false));
+}
 FN(type) { CTX; ARGN(n, 0); RET((int)n->type); }
 FN(name) { CTX; ARGN(n, 0); RET(jstr(iso, n->type == NODE_ELEMENT || n->type == NODE_PI ? n->tag : n->type == NODE_DOCTYPE ? n->text : "")); }
 FN(ns) { CTX; ARGN(n, 0); RET((int)n->ns); }
@@ -738,7 +753,7 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
         for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
             v8::Local<v8::Value> k, v;
             if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) continue;
-            std::string ks = jcstr(iso, k), vs = jcstr(iso, v);
+            std::string ks = jcbytes(iso, k), vs = jcbytes(iso, v);
             if (net_request_control(rq, ks.c_str(), vs.c_str())) continue;
             if (str_ieq(ks.c_str(), "referer")) { referer = true; if (vs.empty()) continue; }   /* an empty Referer: none sent */
             headers_add(&rq->headers, ks.c_str(), vs.c_str());
@@ -752,13 +767,13 @@ static NetRequest *mkreq(JsCtx *c, const FCI &a) {
 static void resp_args(v8::Isolate *iso, NetResponse *r, v8::Local<v8::Value> out[6]) {
     bool err = !r || r->status == 0 || r->error;
     out[0] = v8::Integer::New(iso, r ? r->status : 0);
-    out[1] = jstr(iso, r && r->status_text ? r->status_text : "");
+    out[1] = jbytes(iso, r && r->status_text ? r->status_text : "");
     out[2] = jstr(iso, r && r->url ? r->url : "");
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     v8::Local<v8::Array> h = v8::Array::New(iso, r ? (int)r->headers.n * 2 : 0);
     if (r) for (size_t i = 0; i < r->headers.n; i++) {
-        (void)h->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name));
-        (void)h->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value));
+        (void)h->Set(ctx, (uint32_t)(2 * i), jbytes(iso, r->headers.v[i].name));
+        (void)h->Set(ctx, (uint32_t)(2 * i + 1), jbytes(iso, r->headers.v[i].value));
     }
     out[3] = h;
     out[4] = mkab(iso, r && r->body ? r->body : "", r && r->body ? r->body_len : 0);
@@ -1520,7 +1535,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), NAT_FN(nm))
-    REG(isNode); REG(version);
+    REG(isNode); REG(attrBrand); REG(attrBranded); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev); REG(index);
     (void)N->Set(ctx, jstr(iso, "fontFace"), v8::Function::New(ctx, n_fontFace).ToLocalChecked()); REG(c2dFill); REG(c2dClip); REG(c2dMeasure); REG(c2dSource); REG(c2dPresent); REG(fontsPending);
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);

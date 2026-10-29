@@ -92,9 +92,61 @@ function rangeOf(el, t) {
     if (Number.isNaN(base)) base = numAttrOf(el, t, 'value');
     if (Number.isNaN(base)) base = t === 'range' ? min : T.base;
     if (t === 'range' && step !== null && max > min) { const k = Math.floor((max - base) / step + 1e-9); const m2 = base + k * step; if (m2 >= min) max = +m2.toPrecision(15); }
-    return { min, max, step, base };
+    return { min, max, step, base, realStep: t === 'number' || t === 'range' };
 }
-const misaligned = (v, r) => { if (r.step === null) return false; const q = (v - r.base) / r.step; return Math.abs(q - Math.round(q)) > 1e-9 * Math.max(1, Math.abs(q)); };
+const FORM_STEP_STRING = String, FORM_STEP_BIGINT = BigInt;
+let formStepDecimals = new SMap();
+/* Canonical finite Number strings bound the coefficient and exponent storage.
+   Raw authored decimals beyond Number precision remain a separate limitation. */
+function formStepDecimal(value) {
+    const cached = formStepDecimals.get(value);
+    if (cached) return cached;
+    const text = FORM_STEP_STRING(value);
+    if (text.length > 32) return null;
+    const match = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/.exec(text);
+    if (!match) return null;
+    const fraction = match[3] || '', digits = match[2] + fraction;
+    const exponent = +(match[4] || 0) - fraction.length;
+    if (digits.length > 24 || exponent < -324 || exponent > 308) return null;
+    const result = { coefficient: FORM_STEP_BIGINT(match[1] + digits), exponent };
+    if (formStepDecimals.size >= 64) formStepDecimals = new SMap();
+    formStepDecimals.set(value, result);
+    return result;
+}
+function formStepScaled(part, exponent) {
+    const shift = part.exponent - exponent;
+    if (shift < 0 || shift > 650) return null;
+    return part.coefficient === 0n || shift === 0 ? part.coefficient :
+        part.coefficient * (10n ** FORM_STEP_BIGINT(shift));
+}
+const misaligned = (v, r) => {
+    if (r.step === null) return false;
+    if (!r.realStep) {
+        const q = (v - r.base) / r.step;
+        return Math.abs(q - Math.round(q)) > 1e-9 * Math.max(1, Math.abs(q));
+    }
+    if (!Number.isFinite(v) || !Number.isFinite(r.base) || !Number.isFinite(r.step) || r.step <= 0) return false;
+    const difference = v - r.base;
+    /* Ratios safely beyond double precision cannot select a distinct step.
+       Leave the exact boundary to the integer comparison below. */
+    if (Number.isFinite(difference) && Math.abs(difference / r.step) > 18014398509481984) return false;
+    if (Number.isSafeInteger(difference) && Number.isSafeInteger(v) &&
+        Number.isSafeInteger(r.base) && Number.isSafeInteger(r.step)) {
+        const remainder = Math.abs(difference % r.step);
+        return Math.min(remainder, r.step - remainder) * 16777216 > r.step;
+    }
+    const value = formStepDecimal(v), base = formStepDecimal(r.base), step = formStepDecimal(r.step);
+    if (!value || !base || !step) return false;
+    const exponent = Math.min(value.exponent, base.exponent, step.exponent);
+    const a = formStepScaled(value, exponent), b = formStepScaled(base, exponent), size = formStepScaled(step, exponent);
+    if (a === null || b === null || size === null || size <= 0n) return false;
+    const delta = a >= b ? a - b : b - a;
+    if (delta > size * 9007199254740992n) return false;
+    const remainder = delta % size, distance = remainder < size - remainder ? remainder : size - remainder;
+    /* Compare the remainder against a step-relative representational tolerance,
+       instead of losing its fractional part in a huge floating-point quotient. */
+    return distance * 16777216n > size;
+};
 
 /* ---- value sanitization ---- */
 function sanitizeAs(el, t, v) {
@@ -434,9 +486,11 @@ const EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{
 const radioGroup = el => {
     const name = N.attr(el, 'name'); if (!name) return [el];
     const owner = formOwner(el), root = el.getRootNode();
-    const scope = owner || root;
-    return N.query(scope.nodeType === 9 || scope.nodeType === 11 || scope.nodeType === 1 ? scope : root, 'input', true)
-        .filter(r => r === el || (N.ns(r) === 0 && inType(r) === 'radio' && N.attr(r, 'name') === name && formOwner(r) === owner && r.getRootNode() === root));
+    /* A form can own controls outside its descendants. Search the shared tree,
+       then filter by owner/name; a detached root input is itself a candidate. */
+    const candidates = N.query(root, 'input', true);
+    if (root === el) candidates.unshift(el);
+    return candidates.filter(r => r === el || (N.ns(r) === 0 && inType(r) === 'radio' && N.attr(r, 'name') === name && formOwner(r) === owner && r.getRootNode() === root));
 };
 /* Validity describes the control's state even when it is barred from validation.
    Eligibility gates the validation APIs; mutability only gates specific constraints. */

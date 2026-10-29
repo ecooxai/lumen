@@ -1,0 +1,40 @@
+<!doctype html><meta charset="utf-8"><title>Independent numeric step and radio group controls</title><div id="host"></div><pre id="results"></pre><script>
+(async()=>{
+const cases=[
+ ['tiny-mismatch','number','3e-15','17'],['tiny-aligned','number','3e-15','18'],['tiny-negative','number','3e-15','-17'],['small-exponent-aligned','number','1e-12','-12345678.9'],
+ ['decimal-aligned','number','0.1','0.3'],['binary-sum','number','0.1',String(0.1+0.2)],['near-step','number','0.1','0.3000000001'],['off-step','number','0.1','0.300001'],
+ ['positive-min-base','number','0.1','0.35',{min:'0.05'}],['negative-min-base','number','0.1','-0.35',{min:'-0.05'}],['attribute-base','number','0.1','0.35',{value:'0.05'}],['min-precedes-value','number','0.1','0.35',{min:'0.03',value:'0.05'}],['invalid-min-falls-to-value','number','0.1','0.35',{min:'bad',value:'0.05'}],
+ ['step-any','number','any','17.3'],['step-zero-fallback','number','0','0.5'],['step-negative-fallback','number','-2','3.5'],['step-invalid-fallback','number','bad','3.5'],
+ ['finite-tiny-aligned','number','1e-300','3e-300'],['finite-tiny-mismatch','number','3e-300','1e-299'],['finite-extreme-ratio','number','3e-308','1e308'],['finite-huge-aligned','number','1e308','1e308'],['underflow-step-fallback','number','1e-324','1.5'],['subnormal-step','number','5e-324','1e-323'],['large-misaligned','number','0.1','10000000000.25'],
+ ['below-2pow52-half','number','1','4503599627370495.5'],['above-2pow52-half','number','1','4503599627370496.5'],['below-2pow53-odd','number','2','9007199254740991'],['at-2pow53-even','number','2','9007199254740992'],['above-2pow53-authored-odd','number','2','9007199254740993'],['step-half-boundary','number','0.5','4503599627370496.25'],['tiny-near-safe-ratio','number','3e-15','27'],['tiny-beyond-safe-ratio','number','3e-15','28'],
+ ['invalid-infinity','number','1','Infinity'],['invalid-nan','number','1','NaN'],['overflow-value','number','1','1'+'0'.repeat(10000)],['underflow-long-value','number','3e-300','0.'+'0'.repeat(10000)+'1'],
+ ['date-step','date','2','2024-01-04',{min:'2024-01-01'}],['week-step','week','2','2024-W04',{min:'2024-W01'}],['month-step','month','2','2024-04',{min:'2024-01'}],['time-millisecond','time','0.001','00:00:00.003'],['datetime-millisecond','datetime-local','0.001','2024-01-01T00:00:00.003'],['range-decimal','range','0.1','0.31',{min:'0.05',max:'1'}],['range-tiny','range','3e-15','17',{min:'0',max:'20'}]
+];
+const numericFields=['value','stepMismatch','rangeUnderflow','rangeOverflow','valid','stepException'],numericRows=[],radioRows=[];
+function fingerprint(v){if(v.length<100)return v;let h=2166136261;for(let i=0;i<v.length;i++){h^=v.charCodeAt(i);h=Math.imul(h,16777619);}return 'length='+v.length+';fnv1a32='+(h>>>0).toString(16)+';first='+v.slice(0,16)+';last='+v.slice(-16);}
+for(const[name,type,step,value,attrs]of cases){
+ const el=document.createElement('input');el.type=type;el.setAttribute('step',step);for(const[k,v]of Object.entries(attrs||{}))el.setAttribute(k,v);el.value=value;document.getElementById('host').appendChild(el);let error='';
+ for(const stage of ['initial','step-up']){if(stage==='step-up'){try{el.stepUp();}catch(e){error=e.name;}}const v=el.validity;numericRows.push({name,stage,values:{value:fingerprint(el.value),stepMismatch:v.stepMismatch,rangeUnderflow:v.rangeUnderflow,rangeOverflow:v.rangeOverflow,valid:v.valid,stepException:error}});}
+ el.remove();
+}
+const radioCases=[['detached-checked','self',true,false],['detached-unchecked','self',false,false],['detached-container','container',true,false],['detached-fragment','fragment',true,false],['connected-checked','connected',true,false],['connected-unchecked','connected',false,false],['connected-peer','connected',false,true],['shadow-peer','shadow',false,true],['root-descendants','root-descendants',true,false],['external-form-checked','external-form',true,false],['external-form-peer','external-form',false,true],['separate-owner-peer','separate-owner',false,true]];
+const radioFields=['valueMissing','valid','willValidate','checkValidity','invalidEvents','checked'];
+for(const[name,kind,checked,peerChecked]of radioCases){
+ const cleanup=document.createElement('div'),el=document.createElement('input'),peer=document.createElement('input');el.type=peer.type='radio';el.name=peer.name='qa-'+name;el.required=true;el.checked=checked;peer.checked=peerChecked;
+ let root;if(kind==='fragment')root=document.createDocumentFragment();else if(kind==='shadow'){document.body.appendChild(cleanup);root=cleanup.attachShadow({mode:'open'});}else root=cleanup;
+ if(kind==='connected')document.body.appendChild(cleanup);
+ if(kind==='external-form'||kind==='separate-owner'){
+  document.body.appendChild(cleanup);const form=document.createElement('form');form.id='qa-form-'+name;cleanup.appendChild(form);el.setAttribute('form',form.id);cleanup.appendChild(el);
+  if(kind==='external-form')form.appendChild(peer);else{const other=document.createElement('form');cleanup.appendChild(other);other.appendChild(peer);}
+ }else if(kind==='root-descendants')el.appendChild(document.createElement('span'));
+ else if(kind!=='self'){root.appendChild(el);root.appendChild(peer);}
+ let invalid=0;el.addEventListener('invalid',e=>{invalid++;e.preventDefault();});const v=el.validity,values={valueMissing:v.valueMissing,valid:v.valid,willValidate:el.willValidate,checkValidity:el.checkValidity(),invalidEvents:invalid,checked:el.checked};radioRows.push({name,stage:'initial',values});cleanup.remove();
+}
+const stress=[];for(const[step,value]of [['3e-308','1e308'],['1e-300','3e-300'],['0.1','0.3'],['3e-15','17']]){const e=document.createElement('input');e.type='number';e.step=step;e.value=value;stress.push(e);}
+let stressReads=0,stressTrue=0,activeMs=0;const stressStart=performance.now();for(let batch=0;batch<20;batch++){const start=performance.now();for(let i=0;i<50;i++)for(const e of stress){stressTrue+=+e.validity.stepMismatch;stressReads++;}activeMs+=performance.now()-start;await new Promise(resolve=>setTimeout(resolve,100));}
+const result={numericCases:cases.length,numericFields,numericRows,radioFields,radioRows,total:numericRows.length*numericFields.length+radioRows.length*radioFields.length,stress:{reads:stressReads,trueCount:stressTrue,activeMs,wallMs:performance.now()-stressStart}},serialized=JSON.stringify(result);document.getElementById('results').textContent=serialized;
+for(let i=0;i<Math.ceil(serialized.length/256);i++)console.log('LUMEN_AUTHORED_CHUNK '+i+' '+JSON.stringify(serialized.slice(i*256,(i+1)*256)));
+console.log('LUMEN_AUTHORED_DONE '+Math.ceil(serialized.length/256));console.log('RESULTS NUMERIC_RADIO_OBSERVATIONS:PASS '+result.total+' fields '+stressReads+' bounded reads');
+})();
+</script>
+

@@ -129,7 +129,7 @@ function fileFetchOk(url) {
 }
 const FETCH_NET = (o, h) => {
     if (/^file:/i.test(o.url) && !fileFetchOk(o.url)) { setTimeout(() => h.done('blocked', 0, '', o.url, [], null)); return () => {}; }
-    const flat = o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit']);
+    const flat = o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit', ':cache', o.cache || 'default']);
     const id = N.fetch(o.method, o.url, flat, o.body, (status, statusText, url, hdrs, body, err) => h.done(err || null, status, statusText, url, hdrs, body),
         (status, statusText, url, hdrs) => h.head(status, statusText, url, hdrs), ab => h.chunk(ab));
     const cancel = () => N.abort(id);

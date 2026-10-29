@@ -387,7 +387,14 @@ methods(Node.prototype, {
     set nodeValue(v) { if (isCD(this)) this.textContent = v; },
     appendChild(c) { return insertNode(this, c, null); },
     insertBefore(c, ref) { return insertNode(this, c, ref === undefined ? null : ref); },
-    removeChild(c) { if (!N.isNode(c) || N.parent(c) !== this) throw new DOMException('The node to be removed is not a child of this node.', 'NotFoundError'); return removeNode(c); },
+    removeChild(c) {
+        const node = N.isNode(c);
+        if (!node && !N.attrBranded(c)) throw new TypeError("Failed to execute 'removeChild' on 'Node': parameter 1 is not of type 'Node'.");
+        /* Attributes are Nodes with no parent and therefore reach pre-removal's
+           NotFoundError, just like any other legitimate non-child node. */
+        if (!node || N.parent(c) !== this) throw new DOMException('The node to be removed is not a child of this node.', 'NotFoundError');
+        return removeNode(c);
+    },
     replaceChild(n, old) {
         if (arguments.length < 2) throw new TypeError(`Failed to execute 'replaceChild' on 'Node': 2 arguments required, but only ${arguments.length} present.`);
         if (!N.isNode(n)) throw new TypeError("Failed to execute 'replaceChild' on 'Node': parameter 1 is not of type 'Node'.");
@@ -649,7 +656,7 @@ class Attr extends Node {
     isDefaultNamespace(ns) { return this._el ? this._el.isDefaultNamespace(ns) : ns == null || ns === ''; }
 }
 function mkAttr(el, ns, pfx, ln, v, doc) {
-    const a = Object.create(Attr.prototype);
+    const a = Object.create(Attr.prototype); N.attrBrand(a);
     def(a, '_el', el); def(a, '_ns', ns); def(a, '_pfx', pfx); def(a, '_ln', ln); def(a, '_v', v); def(a, '_doc', doc || null);
     return a;
 }

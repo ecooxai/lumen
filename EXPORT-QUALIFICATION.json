@@ -1,21 +1,23 @@
 {
   "schema": 1,
-  "candidate": 186,
-  "source_commit": "3731a114676dc87ffe7bce27bff78235431bd6f5",
+  "candidate": 196,
+  "source_commit": "2b301e545be9055fbc933fdd187fce099e6fd148",
   "already_public_parent": "73fdea3e4e7fe09dd87d1b849f85c634f320f7c5",
+  "previous_reviewed_export_commit": "f82796fd8dbba1a691521c78c74c8d085e059cc1",
   "proposed_public_branch": "gpt-6-astra-release-ops-linux-nonurl-source-20261029",
   "scope": "Reviewed Linux source checkpoint; no whole-browser conformance or portable binary claim",
-  "source_file_count": 692,
+  "source_file_count": 706,
   "all_recorded_inputs_included_and_exact": true,
-  "original_binary_sha256": "124ebb8663e0293d4820de406c0e9d5f976477c2f4d52032526ea0b652232744",
+  "original_binary_sha256": "57a96003f1e7c789d06db637812bd043472963a10ac7d8a066ec3d323fc952d9",
   "export_rebuild_performed": false,
-  "whole_browser_assessment": "pending",
+  "whole_browser_assessment": "Not certified; the active session continues",
   "additive_metadata": [
     "SOURCE-MANIFEST.json",
     "EXPORT-QUALIFICATION.json",
-    "docs/Linux-candidate186.md",
-    "docs/build-dependencies186.json",
-    "docs/performance186-summary.json"
+    "docs/Linux-candidate196.md",
+    "docs/build-dependencies196.json",
+    "docs/performance195-summary.json",
+    "docs/style-phases-diagnostic-v2.html"
   ],
   "excluded": [
     "agent/",
@@ -29,8 +31,8 @@
     "profiles/inbox/capabilities",
     "build artifacts and dependency caches"
   ],
-  "recorded_source_set_manifest_sha256": "9bd540cc6fb18cdc30d4e81392d37e4e45b95d0e417747be106a44004cf6441c",
-  "recorded_source_set_entries": 624,
+  "recorded_source_set_manifest_sha256": "5993efeb0dee61f2ec121fda9dd953448a36ad610053cd305fa325eafad2daf0",
+  "recorded_source_set_entries": 638,
   "source_set_count_erratum": {
     "176": 617,
     "182": 618,
@@ -40,6 +42,11 @@
     "186": 624,
     "187": 627,
     "188": 627,
-    "explanation": "Earlier narrative references to 618 entries for candidate 186 were stale. Original receipts and hashes are preserved; the exact candidate 186 set has 624 entries, including tracked fixtures."
-  }
+    "explanation": "Earlier narrative references to 618 entries for candidate 186 were stale. Original receipts and hashes are preserved; the exact candidate 186 set has 624 entries, including tracked fixtures.",
+    "194": 635,
+    "195": 636,
+    "196": 638
+  },
+  "failed_candidate_preserved": "Candidate 193 had an unsolicited-304 streaming-header regression (139/140 native tests). The separate accepted 194 repair restored 140/140 and 258/258 zstd controls; failed 193 is not the exported source.",
+  "performance_scope": "Measured immutable candidates 194 and 195; no final-candidate timing claim for later angle changes."
 }

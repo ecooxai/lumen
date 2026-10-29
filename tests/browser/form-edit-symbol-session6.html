@@ -1,0 +1,9 @@
+<!doctype html><meta charset="utf-8"><title>Independent editing coercion and event controls</title><body><script>
+function output(payload){const s=JSON.stringify(payload);let n=0;for(let i=0;i<s.length;i+=256)console.log('LUMEN_AUTHORED_CHUNK '+(n++)+' '+JSON.stringify(s.slice(i,i+256)));console.log('LUMEN_AUTHORED_DONE '+n);console.log('RESULTS FORM_EDIT_SYMBOL:PASS')}
+setTimeout(function(){const rows=[];for(const tag of ['input','textarea'])for(const command of ['InsertText','InsertHTML'])for(const kind of ['symbol','object-symbol']){
+const el=document.createElement(tag);el.value='abcd';document.body.appendChild(el);el.focus();el.setSelectionRange(1,3,'backward');let calls=0,returned='<undefined>',exception='',events=[];el.addEventListener('input',e=>events.push({data:e.data,inputType:e.inputType,bubbles:e.bubbles,cancelable:e.cancelable,composed:e.composed,isTrusted:e.isTrusted}));let value;if(kind==='symbol')value=Symbol('QA symbol');else if(kind==='object-symbol')value={toString(){calls++;return Symbol('QA object symbol')}};
+if(kind==='null')value=null;else if(kind==='counting')value={toString(){calls++;return 'XY'}};else if(kind==='throwing')value={toString(){calls++;throw new RangeError('QA coercion sentinel')}};
+try{const result=kind==='omitted'?document.execCommand(command,false):document.execCommand(command,false,value);returned=result===undefined?'<undefined>':result}catch(e){exception=e.name}
+rows.push({name:tag+'/'+command+'/'+kind,values:{value:el.value,start:el.selectionStart,end:el.selectionEnd,direction:el.selectionDirection,returned,exception,coercions:calls,events}});el.remove()}
+output({documentMode:document.compatMode,rows,total:rows.length*8})},0);
+</script></body>

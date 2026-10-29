@@ -159,14 +159,14 @@ WFN(fetch) {
         v8::Local<v8::Array> h = a[3].As<v8::Array>();
         for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
             v8::Local<v8::Value> k, v;
-            if (h->Get(ctx, i).ToLocal(&k) && h->Get(ctx, i + 1).ToLocal(&v)) headers_add(&rq->headers, jcstr(iso, k).c_str(), jcstr(iso, v).c_str());
+            if (h->Get(ctx, i).ToLocal(&k) && h->Get(ctx, i + 1).ToLocal(&v)) headers_add(&rq->headers, jcbytes(iso, k).c_str(), jcbytes(iso, v).c_str());
         }
     }
     if (a[4]->IsTrue()) rq->no_cookies = true;
     NetResponse *r = net_fetch_sync(rq);
     if (!r || r->status == 0 || r->error) { if (r) net_response_free(r); a.GetReturnValue().SetNull(); return; }
     v8::Local<v8::Array> hs = v8::Array::New(iso);
-    for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value)); }
+    for (int i = 0; i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jbytes(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jbytes(iso, r->headers.v[i].value)); }
     v8::Local<v8::Value> out[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->url ? r->url : u.c_str()), make_ab(iso, r->body, r->body_len), hs };
     net_response_free(r);
     a.GetReturnValue().Set(v8::Array::New(iso, out, 4));
@@ -198,7 +198,7 @@ WFN(fetchAsync) {
         for (uint32_t i = 0; i + 1 < h->Length(); i += 2) {
             v8::Local<v8::Value> k, v;
             if (!h->Get(ctx, i).ToLocal(&k) || !h->Get(ctx, i + 1).ToLocal(&v)) continue;
-            std::string ks = jcstr(iso, k), vs = jcstr(iso, v);
+            std::string ks = jcbytes(iso, k), vs = jcbytes(iso, v);
             if (!net_request_control(rq, ks.c_str(), vs.c_str()) && !(str_ieq(ks.c_str(), "referer") && vs.empty())) headers_add(&rq->headers, ks.c_str(), vs.c_str());
         }
     }
@@ -220,7 +220,7 @@ WFN(fetchAbort) {
 }
 v8::Local<v8::Array> resp_headers(v8::Isolate *iso, v8::Local<v8::Context> ctx, const NetResponse *r) {
     v8::Local<v8::Array> hs = v8::Array::New(iso);
-    for (size_t i = 0; r && i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jstr(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jstr(iso, r->headers.v[i].value)); }
+    for (size_t i = 0; r && i < r->headers.n; i++) { (void)hs->Set(ctx, (uint32_t)(2 * i), jbytes(iso, r->headers.v[i].name)); (void)hs->Set(ctx, (uint32_t)(2 * i + 1), jbytes(iso, r->headers.v[i].value)); }
     return hs;
 }
 void run_fetched(WEnv *E, std::deque<WFetchEv> &evs) {
@@ -231,7 +231,7 @@ void run_fetched(WEnv *E, std::deque<WFetchEv> &evs) {
         if (it != E->fetches.end() && !E->w->term && !E->closing) {
             v8::TryCatch tc(iso);
             if (f.kind == 1) {
-                v8::Local<v8::Value> argv[4] = { v8::Integer::New(iso, r->status), jstr(iso, r->status_text ? r->status_text : ""), jstr(iso, r->url ? r->url : ""), resp_headers(iso, ctx, r) };
+                v8::Local<v8::Value> argv[4] = { v8::Integer::New(iso, r->status), jbytes(iso, r->status_text ? r->status_text : ""), jstr(iso, r->url ? r->url : ""), resp_headers(iso, ctx, r) };
                 (void)it->second.head.Get(iso)->Call(ctx, v8::Undefined(iso), 4, argv);
             } else if (f.kind == 2) {
                 v8::Local<v8::Value> argv[1] = { make_ab(iso, f.data.data(), f.data.size()) };
@@ -239,7 +239,7 @@ void run_fetched(WEnv *E, std::deque<WFetchEv> &evs) {
             } else {
                 v8::Local<v8::Function> cb = it->second.done.Get(iso); E->fetches.erase(it);
                 bool err = !r || r->status == 0 || r->error;
-                v8::Local<v8::Value> argv[6] = { v8::Integer::New(iso, r ? r->status : 0), jstr(iso, r && r->status_text ? r->status_text : ""), jstr(iso, r && r->url ? r->url : ""), resp_headers(iso, ctx, r),
+                v8::Local<v8::Value> argv[6] = { v8::Integer::New(iso, r ? r->status : 0), jbytes(iso, r && r->status_text ? r->status_text : ""), jstr(iso, r && r->url ? r->url : ""), resp_headers(iso, ctx, r),
                     make_ab(iso, r && r->body ? r->body : "", r && r->body ? r->body_len : 0), err ? v8::Local<v8::Value>(jstr(iso, r && r->error ? r->error : "network error")) : v8::Local<v8::Value>(v8::False(iso)) };
                 (void)cb->Call(ctx, v8::Undefined(iso), 6, argv);
             }
@@ -458,7 +458,7 @@ const FETCH_WASM = f => W.wasmResponse(f);
 const FORM_FIRE = () => {};
 const FORM_ENTRIES = () => { throw new TypeError("Failed to construct 'FormData': parameter 1 is not of type 'HTMLFormElement'."); };
 const FETCH_NET = (o, h) => {
-    const id = W.fetchAsync(o.method, o.url, o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit']), o.body,
+    const id = W.fetchAsync(o.method, o.url, o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit', ':cache', o.cache || 'default']), o.body,
         (status, statusText, url, hdrs) => h.head(status, statusText, url, hdrs), ab => h.chunk(ab),
         (status, statusText, url, hdrs, body, err) => h.done(err || null, status, statusText, url, hdrs, body));
     const cancel = () => W.fetchAbort(id);
@@ -709,6 +709,8 @@ const swHandle = async (d, ports) => {
     case 'msgerror': { const e = new ExtendableMessageEvent('messageerror', {}); evTrusted(e); fireOn(G, e); break; }
     }
 };
+// Keep the internal clone operation independent of the writable global.
+function structuredClone(v, options) { if (options && options.transfer) for (const item of options.transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); if (v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${v[Symbol.toStringTag]} object could not be cloned.`, 'DataCloneError'); return W.clone(v); }
 const api = {
     self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: secureContext, crossOriginIsolated: false,
     onmessage: null, onmessageerror: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
@@ -718,7 +720,7 @@ const api = {
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
     setTimeout: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, false, args), setInterval: (f, ms, ...args) => W.timer(toFn(f), +ms || 0, true, args),
     clearTimeout: id => W.clear(+id || 0), clearInterval: id => W.clear(+id || 0),
-    queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone: (v, options) => { if (options && options.transfer) for (const item of options.transfer) if (W.isWasmModule(item)) throw new DOMException('WebAssembly.Module is not transferable.', 'DataCloneError'); if (v instanceof URL || v instanceof URLSearchParams) throw new DOMException(`${v[Symbol.toStringTag]} object could not be cloned.`, 'DataCloneError'); return W.clone(v); },
+    queueMicrotask: f => { Promise.resolve().then(() => f()); }, structuredClone,
     btoa, atob, TextEncoder, TextDecoder, TextEncoderStream, TextDecoderStream, CompressionStream, DecompressionStream, ReadableStream, ReadableStreamDefaultReader, ReadableStreamBYOBReader,
     ReadableStreamDefaultController, ReadableByteStreamController, ReadableStreamBYOBRequest, WritableStream, WritableStreamDefaultWriter,
     WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy, CountQueuingStrategy, Blob, File, FileReader, FileReaderSync, URL, URLSearchParams, Headers, Request, Response, FormData, fetch, Cache, CacheStorage, caches, URLPattern, XMLHttpRequest, XMLHttpRequestEventTarget, XMLHttpRequestUpload, ProgressEvent, performance, Performance, PerformanceEntry, PerformanceMark, PerformanceMeasure, PerformanceObserver, PerformanceObserverEntryList, console,

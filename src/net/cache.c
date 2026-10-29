@@ -127,7 +127,8 @@ static bool storable_header(const Header *h) {
 }
 
 /* ---- entry file: text head, then the body ----
- * LUMENCACHE 1 / stored lifetime age / status / url check / vary lines / header lines / body length */
+ * LUMENCACHE 2 / stored lifetime age / status / status text / url check / vary / headers / body length.
+ * Version1 entries remain readable with their historical200/OK status text. */
 typedef struct {
     double stored, lifetime, age; int status;
     Headers vary;    /* request header values this response was selected by */
@@ -135,12 +136,13 @@ typedef struct {
 } Entry;
 
 static bool write_entry(const char *url, const Entry *e) {
+    if (e->r->status_text && strpbrk(e->r->status_text, "\r\n")) return false;
     char path[1024], tmp[1100]; entry_path(path, sizeof path, url);
     pthread_mutex_lock(&g_mu); unsigned seq = ++g_seq; pthread_mutex_unlock(&g_mu);
     snprintf(tmp, sizeof tmp, "%s~%u.%u", path, (unsigned)getpid(), seq);
     SB b; sb_init(&b);
-    sb_printf(&b, "LUMENCACHE 1\n%.0f %.0f %.0f\n%d\n%016llx\n%d\n", e->stored, e->lifetime, e->age, e->status,
-        (unsigned long long)url_check(url), e->vary.n);
+    sb_printf(&b, "LUMENCACHE 2\n%.0f %.0f %.0f\n%d\n%s\n%016llx\n%d\n", e->stored, e->lifetime, e->age, e->status,
+        e->r->status_text ? e->r->status_text : "", (unsigned long long)url_check(url), e->vary.n);
     for (int i = 0; i < e->vary.n; i++) sb_printf(&b, "%s\t%s\n", e->vary.v[i].name, e->vary.v[i].value);
     int nh = 0; for (int i = 0; i < e->r->headers.n; i++) nh += storable_header(&e->r->headers.v[i]);
     sb_printf(&b, "%d\n", nh);
@@ -191,17 +193,20 @@ static bool read_entry(const char *url, Entry *e) {
     buf[n] = 0;
     int nv = 0, nh = 0; size_t blen = 0;
     char check[24]; snprintf(check, sizeof check, "%016llx", (unsigned long long)url_check(url));
-    ok = ok && (s = line(&p, end)) && !strcmp(s, "LUMENCACHE 1") &&
+    bool version2 = false; char *status_text = NULL;
+    ok = ok && (s = line(&p, end)) &&
+        (!strcmp(s, "LUMENCACHE 1") || (version2 = !strcmp(s, "LUMENCACHE 2"))) &&
         (s = line(&p, end)) && sscanf(s, "%lf %lf %lf", &e->stored, &e->lifetime, &e->age) == 3 &&
-        (s = line(&p, end)) && sscanf(s, "%d", &e->status) == 1 &&
-        (s = line(&p, end)) && !strcmp(s, check) &&
+        (s = line(&p, end)) && sscanf(s, "%d", &e->status) == 1;
+    if (ok && version2) ok = (status_text = line(&p, end)) != NULL;
+    ok = ok && (s = line(&p, end)) && !strcmp(s, check) &&
         (s = line(&p, end)) && sscanf(s, "%d", &nv) == 1;
     for (int i = 0; ok && i < nv; i++) ok = read_pair(&p, end, &e->vary);
     if (ok) { e->r = xcalloc(1, sizeof *e->r); ok = (s = line(&p, end)) && sscanf(s, "%d", &nh) == 1; }
     for (int i = 0; ok && i < nh; i++) ok = read_pair(&p, end, &e->r->headers);
     ok = ok && (s = line(&p, end)) && sscanf(s, "%zu", &blen) == 1 && blen == (size_t)(end - p);
     if (ok) {
-        e->r->status = e->status; e->r->status_text = xstrdup("OK"); e->r->url = xstrdup(url);
+        e->r->status = e->status; e->r->status_text = xstrdup(status_text ? status_text : "OK"); e->r->url = xstrdup(url);
         e->r->body = xmalloc(blen + 1); memcpy(e->r->body, p, blen); e->r->body[blen] = 0; e->r->body_len = blen;
         e->r->t_start = e->r->t_end = now_ms();
     }
@@ -224,6 +229,11 @@ static bool vary_matches(const Headers *vary, const Headers *req) {
 }
 
 NetResponse *http_cache_lookup(const char *url, const Headers *req, bool *fresh, Headers *cond) {
+    return http_cache_lookup_mode(url, req, false, false, fresh, cond);
+}
+
+NetResponse *http_cache_lookup_mode(const char *url, const Headers *req, bool allow_stale,
+                                  bool force_validate, bool *fresh, Headers *cond) {
     *fresh = false;
     if (!g_dir || request_uncacheable(req)) return NULL;
     Entry e;
@@ -231,8 +241,8 @@ NetResponse *http_cache_lookup(const char *url, const Headers *req, bool *fresh,
     if (!vary_matches(&e.vary, req)) { entry_free(&e); return NULL; }
     double now = (double)time(NULL), age = e.age + fmax(0, now - e.stored);
     CacheControl rc = cache_control(req);
-    *fresh = !rc.no_cache && rc.max_age != 0 && age < e.lifetime;
-    if (!*fresh) {
+    *fresh = !force_validate && !rc.no_cache && rc.max_age != 0 && age < e.lifetime;
+    if (!*fresh && !allow_stale) {
         const char *etag = headers_get(&e.r->headers, "etag"), *modified = headers_get(&e.r->headers, "last-modified");
         if (!etag && !modified) { entry_free(&e); return NULL; }
         for (int i = 0; i < req->n; i++) headers_add(cond, req->v[i].name, req->v[i].value);
@@ -252,7 +262,6 @@ static void store(const char *url, const Headers *req, const NetResponse *r, dou
     if (vary && strchr(vary, '*')) return;
     Entry e = { .stored = now, .status = r->status, .r = (NetResponse *)r };
     freshness(&r->headers, now, &e.lifetime, &e.age);
-    if (e.lifetime <= e.age && !headers_get(&r->headers, "etag") && !headers_get(&r->headers, "last-modified")) return;
     for (const char *p = vary; p && *p;) {
         while (*p == ' ' || *p == ',') p++;
         size_t n = strcspn(p, ", ");
@@ -264,7 +273,10 @@ static void store(const char *url, const Headers *req, const NetResponse *r, dou
 }
 
 void http_cache_store(const char *url, const Headers *req, const NetResponse *r) {
-    if (!g_dir || r->status != 200 || r->error || r->body_len > CACHE_MAX_BODY || request_uncacheable(req)) return;
+    bool status_ok = r->status == 200 || r->status == 301 || r->status == 308;
+    if (r->status == 302 || r->status == 303 || r->status == 307)
+        status_ok = cache_control(&r->headers).max_age >= 0 || headers_get(&r->headers, "expires");
+    if (!g_dir || !status_ok || r->error || r->body_len > CACHE_MAX_BODY || request_uncacheable(req)) return;
     store(url, req, r, (double)time(NULL));
 }
 
