@@ -1323,7 +1323,7 @@ function incomingPort(connection, key) {
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
 const api = {
-    self: G, globalThis: G, location, navigator, name: W.name, origin: W.shared ? W.origin : location.origin, isSecureContext: !!W.secure, crossOriginIsolated: !!W.coi,
+    self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: !!W.secure, crossOriginIsolated: !!W.coi,
     onmessage: null, onmessageerror: null, onconnect: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
     postMessage(data, options) {
         if (!arguments.length) throw new TypeError("Failed to execute 'postMessage': 1 argument required.");
@@ -1496,7 +1496,30 @@ void worker_main(std::shared_ptr<Worker> w) {
                 }
             }
             NetResponse *r = worker_fetch(w.get(), rq);
-            if (r && r->status >= 200 && r->status < 300) {
+            bool allowed_response = r && r->status >= 200 && r->status < 300;
+            if (allowed_response && w->shared) {
+                URL final_url{};
+                const bool parsed = url_parse(r->url ? r->url : w->url.c_str(), &final_url);
+                char *origin = parsed ? url_origin(&final_url) : nullptr;
+                allowed_response = origin && w->creator_origin == origin;
+                free(origin); url_free(&final_url);
+                // A SharedWorker classic script uses a same-origin script
+                // fetch. Do not execute HTML or a cross-origin redirect body.
+                const char *header = headers_get(&r->headers, "content-type");
+                std::string mime = header ? header : "";
+                auto separator = mime.find(';'); if (separator != std::string::npos) mime.resize(separator);
+                auto first = mime.find_first_not_of(" \t\r\n");
+                auto last = mime.find_last_not_of(" \t\r\n");
+                mime = first == std::string::npos ? "" : mime.substr(first, last - first + 1);
+                for (char &ch : mime) if (ch >= 'A' && ch <= 'Z') ch += 'a' - 'A';
+                const bool javascript = mime == "text/javascript" || mime == "application/javascript" ||
+                    mime == "text/ecmascript" || mime == "application/ecmascript" || mime == "application/x-ecmascript" ||
+                    mime == "application/x-javascript" || mime == "text/x-ecmascript" || mime == "text/x-javascript" ||
+                    mime == "text/jscript" || mime == "text/livescript" ||
+                    (mime.size() == 18 && mime.compare(0, 17, "text/javascript1.") == 0 && mime[17] >= '0' && mime[17] <= '5');
+                allowed_response = allowed_response && javascript;
+            }
+            if (allowed_response) {
                 src.assign(r->body ? r->body : "", r->body_len); ok = true;
                 if (const char *h = headers_get(&r->headers, "content-security-policy")) { E->csp = h; E->cspdoc = w->url; E->has_csp = true; }
             }
