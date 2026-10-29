@@ -1,7 +1,7 @@
 {
   "iteration": 167,
-  "status": "accepted qualified EXPERIMENTAL source checkpoint; final performance/render100/4200 pending; not a clean release",
-  "accepted": true,
+  "status": "rejected as final release after reproducible rendering regression; original qualified checkpoint and all raw evidence retained",
+  "accepted": false,
   "published": false,
   "started_utc": "2026-10-29T00:23:09.496265+00:00",
   "start_basis": "166 sanitizer rejection followed by explicit production font-buffer ownership repair",
@@ -122,5 +122,52 @@
   "binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
   "source_manifest_before": "accf917a6184a74c74035e57183cf62cf7bd8cbffd2694d9272764991eaae390",
   "source_unchanged_during_build": true,
-  "head": "1df07afad74459acae3d66cd5e9fd4225b593d1c"
+  "head": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
+  "original_qualified_checkpoint": {
+    "status": "accepted qualified EXPERIMENTAL source checkpoint; final performance/render100/4200 pending; not a clean release",
+    "accepted": true,
+    "commit": "0ab04bf2199659f443936b17372311f9fb5dc500"
+  },
+  "later_final_validation": {
+    "render100_completed_utc": "2026-10-29T00:49:56+00:00",
+    "render100": {
+      "PASS": 37,
+      "FAIL": 61,
+      "UNSUPPORTED": 1,
+      "TIMEOUT": 1
+    },
+    "actual_native_children": 198,
+    "native_exit0": 198,
+    "profiles_pids_absent": true,
+    "sole_dated162_loss": "/css/css-text/overflow-wrap/overflow-wrap-anywhere-002.html",
+    "paired_order": [
+      162,
+      167,
+      162,
+      167
+    ],
+    "paired_status": [
+      "PASS",
+      "FAIL",
+      "PASS",
+      "FAIL"
+    ],
+    "paired_different_pixels": [
+      0,
+      207,
+      0,
+      207
+    ],
+    "paired_actual_children_exit0": 8,
+    "paired_seal_sha256": "1e21483609fcb6b92b76f5a9a4221e483db3cecc9dad8ae6e7982c671d40dbed",
+    "repair_candidate": 168,
+    "performance_interim": {
+      "protocol": "basic DOM/style-layout, not Grid/v2",
+      "trials": 21,
+      "pass": 21,
+      "checks_per_trial": 4275,
+      "finished_utc": "2026-10-29T00:36:47+00:00",
+      "inherited9395_claim_withdrawn_for_this_run": true
+    }
+  }
 }

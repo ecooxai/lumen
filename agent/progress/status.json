@@ -1,23 +1,23 @@
 {
   "title": "Lumen · Linux engine conformance",
-  "phase": "Experimental167 checkpoint recorded. The font ownership repair passes its native sanitizer controls; browser-sanitizer shutdown remains unproven. Public source remains163.",
-  "iteration": 167,
+  "phase": "Experimental168 restores the confirmed wrapping regression to0 differing pixels. Final performance, render100 and4200 comparisons remain pending; source163 stays public.",
+  "iteration": 168,
   "score": 19,
   "iteration_quality": 19,
   "score_note": "Whole-engine readiness estimate19/100; requested98/100 target not achieved. Focused test totals and intermediate implementation scores are not Chromium parity.",
   "branch": "gpt-6-astra-engine-lead-linux-conformance-20261029-0647",
   "checkpoint": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
-  "updated_utc": "2026-10-29T00:33:37.845911Z",
+  "updated_utc": "2026-10-29T00:57:58.736006Z",
   "session_started_utc": "2026-10-28T22:46:53Z",
-  "deadline_utc": "2026-10-29T01:46:53Z",
+  "deadline_utc": "2026-10-29T02:46:53Z",
   "current_evidence": [
     [
-      "Experimental167; browser shutdown unproven",
-      "The actual font-memory ownership repair passes74 native sanitizer controls with exit0 and no observed diagnostics. Original instrumented browser children ended-9 despite their completed41/41 and12/12 markers. Browser-sanitizer shutdown remains unproven; this is not a clean release."
+      "Experimental168 restores the exact case",
+      "Native168 passes140/140 test entries, including22 new whitespace and74 actual-font controls. The unchanged overflow-wrap-anywhere-002.html case now passes with0 differing pixels; all7 native gate processes exited0 and drained. This is a focused repair, not a complete rendering claim."
     ],
     [
-      "Current normal checks",
-      "Native167 passes139/139 CTest entries, including74 actual-font and186 border controls. The fresh four-URL font cohort is6/20, Chromium14/20. These are separate units; final4200, performance and rendering comparisons remain pending."
+      "Instrumentation and remaining coverage",
+      "The74-control native font sanitizer proof is retained from167 for unchanged font code; it is not a new whole-browser168 sanitizer run. Browser-sanitizer shutdown remains unproven. Finalv2 performance, render100 and4200 are pending; original167 failure evidence remains."
     ],
     [
       "Fresh fixed-selection baseline",
@@ -66,17 +66,17 @@
     "Active agents poll task messages during this authorized work window. Unattended replies are not promised."
   ],
   "active_iteration": {
-    "iteration": 167,
-    "session_iteration": 5,
-    "state": "Qualified experimental checkpoint; performance, rendering and final4200 pending",
-    "last_tested_iteration": 167,
-    "last_tested_decision": "experimental checkpoint with explicit instrumentation limitations"
+    "iteration": 168,
+    "session_iteration": 6,
+    "state": "Qualified experimental checkpoint; final comparisons pending",
+    "last_tested_iteration": 168,
+    "last_tested_decision": "qualified experimental checkpoint, not clean release"
   },
-  "accepted_binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
-  "accepted_binary_scope": "Qualified experimental167 normal/native font-sanitizer checkpoint. Browser-sanitizer shutdown remains unproven; final comparison pending.",
+  "accepted_binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+  "accepted_binary_scope": "Qualified experimental168 focused checkpoint only; final comparisons pending and browser-sanitizer shutdown unproven.",
   "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
-  "candidate_binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
+  "candidate_binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
   "publication_status": "Accepted engine source 163 is published and verified; native video remains historical 162. Rejected 164 and unaccepted 165 are not public source snapshots.",
   "showcase_note": "The linked 36-second native video is retained162, recorded in the prior completed session.",
   "source_archive_url": "https://ecooxai.github.io/lumen/src.tar.gz",
@@ -88,7 +88,7 @@
   "cloud_snapshot_url": "https://ecooxai.github.io/lumen/",
   "session_active": true,
   "session_id": "20261028-1641",
-  "session_deadline_utc": "2026-10-29T01:46:53Z",
+  "session_deadline_utc": "2026-10-29T02:46:53Z",
   "previous_session_evidence": [
     [
       "Accepted combined source 150",
@@ -170,7 +170,7 @@
   },
   "source_archive_iteration": 163,
   "source_archive_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
-  "source_archive_note": "The served archive remains the separately reviewed163 engine-only snapshot. Experimental167 has no public-source replacement approval yet; rejected164/165/166 are not published. No full development-history export is claimed.",
+  "source_archive_note": "The served archive remains the reviewed163 engine-only snapshot until final168 comparison review. Experimental168 is not publicly released; original167 captures/results remain167. No complete development-history export is claimed.",
   "fresh_chromium4200": {
     "completed_utc": "2026-10-28T17:36:29Z",
     "fully_passing_variants": 3534,
@@ -181,7 +181,7 @@
     "freshness_note": "Historical previous-session comparator, not a new session 4 replay."
   },
   "source_archive_available": true,
-  "session_response_availability": "An agent is active for this session until 09:46:53 Asia/Shanghai on 29 October 2026. Replies require an active agent; after this work window messages remain queued.",
+  "session_response_availability": "Active repair session: replies while the agent is working, with hard stop10:46:53 Asia/Shanghai /02:46:53UTC. Current estimated delivery is~10:05 Asia/Shanghai; queued messages persist between sessions.",
   "selected_wpt": {
     "selected_urls": 4200,
     "native162": {
@@ -226,7 +226,7 @@
       "TIMEOUT": 1
     }
   },
-  "session_active_until": "2026-10-29T01:46:53Z",
+  "session_active_until": "2026-10-29T02:46:53Z",
   "retained_session3_evidence": {
     "label": "Historical experimental162; previous completed work session",
     "selected_wpt": {
@@ -279,19 +279,24 @@
   "work_session_number": 4,
   "historical_public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "candidate_focused_results": {
-    "iteration": 167,
-    "session_iteration": 5,
-    "classification": "EXPERIMENTAL checkpoint; not a clean release",
-    "binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
-    "recorded_input_count": 604,
-    "recorded_input_digest": "accf917a6184a74c74035e57183cf62cf7bd8cbffd2694d9272764991eaae390",
+    "iteration": 168,
+    "session_iteration": 6,
+    "classification": "Qualified EXPERIMENTAL checkpoint; not a clean release",
+    "engine_commit": "pending scoped commit and605-input mapping",
+    "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+    "recorded_input_count": 605,
+    "recorded_input_digest": "caddfbad3c0df624b82cd3a846ce42475d49a6544ec5f53cb136e58753a4bdc7",
     "normal_native_ctest": [
-      139,
-      139
+      140,
+      140
     ],
-    "normal_native_ctest_seconds": 40.04,
+    "new_whitespace_controls_passed": 22,
     "actual_font_controls_passed": 74,
-    "logical_border_controls_passed": 186,
+    "restored_render_case": {
+      "name": "overflow-wrap-anywhere-002.html",
+      "status": "PASS",
+      "differing_pixels": 0
+    },
     "fresh_font_wpt_subtests": [
       6,
       20
@@ -300,42 +305,50 @@
       14,
       20
     ],
-    "native_font_sanitizer": {
-      "passed_controls": 74,
+    "retained_negative_margin_wpt_subtests": [
+      13,
+      13
+    ],
+    "native_gate_processes": {
+      "actual_exit0": 7,
+      "owned_cleanup_complete": true
+    },
+    "normal_gate_seal_sha256": "573d778addde7fac88ea02bd7ccd47abc4d77cbfef45902ff0b82b1f3de92828",
+    "native_font_sanitizer_proof": {
+      "source_iteration": 167,
+      "unchanged_font_controls": 74,
       "actual_exit_code": 0,
-      "diagnostics_observed": false
+      "observed_diagnostics": false,
+      "qualification": "Retained167 proof for unchanged font code; not a new whole-browser168 sanitizer run."
     },
-    "browser_sanitizer": {
-      "shutdown_verified": false,
-      "original_instrumented_child_exit_codes": [
-        -9,
-        -9
-      ],
-      "qualification": "Original instrumented browser children ended-9 despite completed41/41 and12/12 markers and wrapper0. Browser-sanitizer shutdown remains unproven; this is not clean browser sanitizer coverage."
-    },
-    "qualified_checkpoint_seal_sha256": "729e697f5ddb8dce13e54d63da360593e402893acd1c6507e48a387fd6db2455",
-    "cleanup_diagnostic_sha256": "ddbe51ee2dbe9362ccb758a1b5bd1eea2eed284d6b0bfd019c521ccef716a6ea",
-    "performance_rendering_and_final4200": "pending",
+    "browser_sanitizer_shutdown_verified": false,
+    "browser_sanitizer_qualification": "Original instrumented children ended-9 despite completed markers; whole-browser sanitizer shutdown remains unproven.",
+    "final_v2_performance_render100_and4200": "pending",
     "public_source_replacement_approved": false
   },
   "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
-  "session_iteration": 5,
+  "session_iteration": 6,
   "iteration_identifier_note": "Global build164 is session4 candidate2. Build163 is the first accepted candidate; build164 is not yet built or accepted.",
-  "accepted_iteration": 167,
+  "accepted_iteration": 168,
   "accepted_focused_results": {
-    "iteration": 167,
-    "session_iteration": 5,
-    "classification": "EXPERIMENTAL checkpoint; not a clean release",
-    "binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
-    "recorded_input_count": 604,
-    "recorded_input_digest": "accf917a6184a74c74035e57183cf62cf7bd8cbffd2694d9272764991eaae390",
+    "iteration": 168,
+    "session_iteration": 6,
+    "classification": "Qualified EXPERIMENTAL checkpoint; not a clean release",
+    "engine_commit": "pending scoped commit and605-input mapping",
+    "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+    "recorded_input_count": 605,
+    "recorded_input_digest": "caddfbad3c0df624b82cd3a846ce42475d49a6544ec5f53cb136e58753a4bdc7",
     "normal_native_ctest": [
-      139,
-      139
+      140,
+      140
     ],
-    "normal_native_ctest_seconds": 40.04,
+    "new_whitespace_controls_passed": 22,
     "actual_font_controls_passed": 74,
-    "logical_border_controls_passed": 186,
+    "restored_render_case": {
+      "name": "overflow-wrap-anywhere-002.html",
+      "status": "PASS",
+      "differing_pixels": 0
+    },
     "fresh_font_wpt_subtests": [
       6,
       20
@@ -344,22 +357,25 @@
       14,
       20
     ],
-    "native_font_sanitizer": {
-      "passed_controls": 74,
+    "retained_negative_margin_wpt_subtests": [
+      13,
+      13
+    ],
+    "native_gate_processes": {
+      "actual_exit0": 7,
+      "owned_cleanup_complete": true
+    },
+    "normal_gate_seal_sha256": "573d778addde7fac88ea02bd7ccd47abc4d77cbfef45902ff0b82b1f3de92828",
+    "native_font_sanitizer_proof": {
+      "source_iteration": 167,
+      "unchanged_font_controls": 74,
       "actual_exit_code": 0,
-      "diagnostics_observed": false
+      "observed_diagnostics": false,
+      "qualification": "Retained167 proof for unchanged font code; not a new whole-browser168 sanitizer run."
     },
-    "browser_sanitizer": {
-      "shutdown_verified": false,
-      "original_instrumented_child_exit_codes": [
-        -9,
-        -9
-      ],
-      "qualification": "Original instrumented browser children ended-9 despite completed41/41 and12/12 markers and wrapper0. Browser-sanitizer shutdown remains unproven; this is not clean browser sanitizer coverage."
-    },
-    "qualified_checkpoint_seal_sha256": "729e697f5ddb8dce13e54d63da360593e402893acd1c6507e48a387fd6db2455",
-    "cleanup_diagnostic_sha256": "ddbe51ee2dbe9362ccb758a1b5bd1eea2eed284d6b0bfd019c521ccef716a6ea",
-    "performance_rendering_and_final4200": "pending",
+    "browser_sanitizer_shutdown_verified": false,
+    "browser_sanitizer_qualification": "Original instrumented children ended-9 despite completed markers; whole-browser sanitizer shutdown remains unproven.",
+    "final_v2_performance_render100_and4200": "pending",
     "public_source_replacement_approved": false
   },
   "rejected_session4_iterations": [
@@ -435,14 +451,56 @@
       },
       "independent_review_sha256": "9fcc255be6453b256e4b97dcc7282622977416d359c64d13fbdd07ced5fca655",
       "qualification": "Normal focused gains are retained as intermediate evidence, not accepted source or clean sanitizer coverage."
+    },
+    {
+      "iteration": 167,
+      "session_iteration": 5,
+      "decision": "rejected for final release",
+      "engine_commit": "0ab04bf2199659f443936b17372311f9fb5dc500",
+      "binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
+      "classification": "Retained experimental checkpoint, not a clean release",
+      "blocking_render_regression": {
+        "test": "overflow-wrap-anywhere-002.html",
+        "ordered_fresh_pairs": [
+          {
+            "engine": 162,
+            "status": "PASS",
+            "differing_pixels": 0
+          },
+          {
+            "engine": 167,
+            "status": "FAIL",
+            "differing_pixels": 207
+          },
+          {
+            "engine": 162,
+            "status": "PASS",
+            "differing_pixels": 0
+          },
+          {
+            "engine": 167,
+            "status": "FAIL",
+            "differing_pixels": 207
+          }
+        ]
+      },
+      "retained_render100": {
+        "pass": 37,
+        "fail": 61,
+        "unsupported": 1,
+        "timeout": 1
+      },
+      "retained_native_font_sanitizer": "74 controls, actual exit0, no observed diagnostics",
+      "browser_sanitizer_shutdown_verified": false,
+      "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
   "current_candidate": {
-    "iteration": 167,
-    "session_iteration": 5,
-    "state": "EXPERIMENTAL checkpoint; final comparison pending",
-    "qualification": "Not a clean release. Browser-sanitizer shutdown remains unproven.",
-    "published": false
+    "iteration": 168,
+    "session_iteration": 6,
+    "state": "Qualified EXPERIMENTAL checkpoint; finalv2/render100/4200 pending",
+    "published": false,
+    "browser_sanitizer_shutdown_verified": false
   },
   "fresh_session4_baseline162": {
     "iteration": 162,
@@ -463,7 +521,7 @@
     },
     "interpretation": "Fresh current-session comparison reference. Differences from historical 162 are replay variability, not source gains."
   },
-  "accepted_iteration_classification": "EXPERIMENTAL checkpoint; not a clean release",
+  "accepted_iteration_classification": "Qualified EXPERIMENTAL checkpoint; not a clean release",
   "retained_accepted_focused163": {
     "iteration": 163,
     "native_ctest": [
@@ -588,6 +646,60 @@
     "qualified_checkpoint_seal_sha256": "729e697f5ddb8dce13e54d63da360593e402893acd1c6507e48a387fd6db2455",
     "cleanup_diagnostic_sha256": "ddbe51ee2dbe9362ccb758a1b5bd1eea2eed284d6b0bfd019c521ccef716a6ea",
     "performance_rendering_and_final4200": "pending",
+    "public_source_replacement_approved": false,
+    "final_release_decision": "rejected after the repeated207-pixel rendering regression"
+  },
+  "original_deadline_utc": "2026-10-29T01:46:53Z",
+  "repair_extension_authorized": true,
+  "repair_hard_deadline_utc": "2026-10-29T02:46:53Z",
+  "estimated_completion_utc": "2026-10-29T02:05:00Z",
+  "repair_extension_reason": "User-authorized necessary repair extension after a reproducible rendering regression; original start and three-hour deadline remain recorded.",
+  "experimental_checkpoint168": {
+    "iteration": 168,
+    "session_iteration": 6,
+    "classification": "Qualified EXPERIMENTAL checkpoint; not a clean release",
+    "engine_commit": "pending scoped commit and605-input mapping",
+    "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+    "recorded_input_count": 605,
+    "recorded_input_digest": "caddfbad3c0df624b82cd3a846ce42475d49a6544ec5f53cb136e58753a4bdc7",
+    "normal_native_ctest": [
+      140,
+      140
+    ],
+    "new_whitespace_controls_passed": 22,
+    "actual_font_controls_passed": 74,
+    "restored_render_case": {
+      "name": "overflow-wrap-anywhere-002.html",
+      "status": "PASS",
+      "differing_pixels": 0
+    },
+    "fresh_font_wpt_subtests": [
+      6,
+      20
+    ],
+    "chromium_font_wpt_subtests": [
+      14,
+      20
+    ],
+    "retained_negative_margin_wpt_subtests": [
+      13,
+      13
+    ],
+    "native_gate_processes": {
+      "actual_exit0": 7,
+      "owned_cleanup_complete": true
+    },
+    "normal_gate_seal_sha256": "573d778addde7fac88ea02bd7ccd47abc4d77cbfef45902ff0b82b1f3de92828",
+    "native_font_sanitizer_proof": {
+      "source_iteration": 167,
+      "unchanged_font_controls": 74,
+      "actual_exit_code": 0,
+      "observed_diagnostics": false,
+      "qualification": "Retained167 proof for unchanged font code; not a new whole-browser168 sanitizer run."
+    },
+    "browser_sanitizer_shutdown_verified": false,
+    "browser_sanitizer_qualification": "Original instrumented children ended-9 despite completed markers; whole-browser sanitizer shutdown remains unproven.",
+    "final_v2_performance_render100_and4200": "pending",
     "public_source_replacement_approved": false
   }
 }

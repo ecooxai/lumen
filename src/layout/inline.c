@@ -155,11 +155,14 @@ static void place_text(IC *c, Box *t) {
             if (st->word_break == 1 || text_break_after(t, j)) { j++; break; }
             j++;
         }
+        /* break-spaces preserves the advance at the line edge. Keep space
+           classification separate from the other modes' hanging allowance. */
+        float fit_width = w - (ws == WS_BREAK_SPACES ? 0 : trail);
         bool only_space = (j - i == 1) && trail > 0;
         if (only_space && collapsible && !c->line_has_content && c->pen <= c->left + 0.01f + (c->first_line ? st->text_indent : 0)) { i = j; continue; }
-        if (wrap && c->line_has_content && c->pen + w - trail > c->right + 0.01f) { finish_line(c, false); cur = NULL; if (only_space && collapsible) { i = j; continue; } }
+        if (wrap && c->line_has_content && c->pen + fit_width > c->right + 0.01f) { finish_line(c, false); cur = NULL; if (only_space && collapsible) { i = j; continue; } }
         /* overlong word on an empty line: break inside when allowed */
-        if (wrap && !c->line_has_content && c->pen + w - trail > c->right + 0.01f && (st->overflow_wrap || st->word_break)) {
+        if (wrap && !c->line_has_content && c->pen + fit_width > c->right + 0.01f && (st->overflow_wrap || st->word_break)) {
             float x = c->pen; int k = i;
             while (k < j && (k == i || x + t->sh.g[k].adv <= c->right)) { x += t->sh.g[k].adv; k++; }
             if (k < j) { j = k; w = x - c->pen; trail = 0; }

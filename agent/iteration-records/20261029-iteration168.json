@@ -1,0 +1,88 @@
+{
+  "iteration": 168,
+  "session_iteration": 6,
+  "status": "accepted qualified EXPERIMENTAL source checkpoint; final v2 performance/render100/4200 pending, not a clean release",
+  "accepted": true,
+  "published": false,
+  "started_utc": "2026-10-29T00:51:25.803629+00:00",
+  "start_basis": "first immutable staged whitespace repair receipt; paired162/167 rendering classification retained separately",
+  "ended_utc": "2026-10-29T00:57:57.719606+00:00",
+  "end_basis": "root qualified checkpoint approval and independent normal gate seal; final measurements get separate timestamps",
+  "elapsed_minutes": 6.5319,
+  "session_elapsed_minutes": 131.0787,
+  "agents": [
+    "root",
+    "engine_lead_20261029",
+    "conformance_20261029",
+    "progress_20261029"
+  ],
+  "whole_goal_score": 19,
+  "target_score": 98,
+  "normal_deadline_utc": "2026-10-29T01:46:53+00:00",
+  "authorized_repair_hard_deadline_utc": "2026-10-29T02:46:53+00:00",
+  "repair": "Count preserved trailing-space advance in both WS_BREAK_SPACES line-fit paths; keep other modes hanging and space classification unchanged. Correct ch metrics retained.",
+  "changed_inputs": [
+    "src/layout/inline.c",
+    "CMakeLists.txt",
+    "tests/test_break_spaces.c"
+  ],
+  "native_ctest": {
+    "pass": 140,
+    "total": 140,
+    "actual_font_controls": 74,
+    "preserved_space_controls": 22,
+    "border_controls_retained": 186
+  },
+  "fresh_browser": {
+    "font4": [
+      6,
+      20
+    ],
+    "negative_margin": [
+      13,
+      13
+    ],
+    "fixed_regression_status": "PASS",
+    "fixed_regression_different_pixels": 0,
+    "guard_children": 7,
+    "guard_exit0": 7,
+    "all_profiles_pids_absent": true,
+    "common_status_or_registration_losses_in_font_and_negative_groups": 0
+  },
+  "reused_evidence": [
+    {
+      "candidate": 166,
+      "scope": "unchangedCSS logical/sizing/animation and normal stylesheet metadata/lifecycle cohorts, explicitly not relabeled168"
+    },
+    {
+      "candidate": 167,
+      "scope": "native instrumented74 font-owner controls clean; instrumented browser shutdown incomplete, remains an open limitation"
+    }
+  ],
+  "new168_inline_code_sanitizer_coverage": false,
+  "browser_sanitizer_shutdown": "unproven; previous actual children -9 and loader/LLVM diagnostics retained; no clean-browser claim",
+  "independent_review_sha256": "573d778addde7fac88ea02bd7ccd47abc4d77cbfef45902ff0b82b1f3de92828",
+  "qualification_sha256": "929cd22b7fcc29dc5c79c8cdd32fe48a95a33e1c6a68ae4c1df979d4d07f6d11",
+  "binary": "build/codex-native/lumen-astra-i168",
+  "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+  "source_manifest_sha256": "caddfbad3c0df624b82cd3a846ce42475d49a6544ec5f53cb136e58753a4bdc7",
+  "recorded_source_inputs": 605,
+  "source_unchanged_during_build": true,
+  "base_commit": "0ab04bf2199659f443936b17372311f9fb5dc500",
+  "build": {
+    "started_utc": "2026-10-29T00:54:40+00:00",
+    "finished_utc": "2026-10-29T00:54:55+00:00",
+    "build_exit": 0,
+    "startup_exit": 0,
+    "monitoring": "1s shared cgroup CPU and 2s live RAM during compile; no separate owned-compile RSS/PSS CSV, so no compile peak-memory claim. Startup and normal tests have their own1s owned CPU/RAM samples.",
+    "startup_resource_summary": "agent/validation/iteration-168/startup-resources.summary.json",
+    "shared_cpu_csv": "agent/progress/runtime/private-prepared/session4-progress/shared-cgroup-repair.csv"
+  },
+  "limits": [
+    "Whole-browser Chromium/WPT parity is not achieved; whole-goal score stays19.",
+    "Public source remains163 until final comparison review.",
+    "External real fonts are runtime test prerequisites, not bundled source inputs.",
+    "Instrumented native font evidence is167 with unchanged font.c, not fresh168 sanitizer coverage.",
+    "Full branch/history and denied private harness exports remain blocked."
+  ]
+}
