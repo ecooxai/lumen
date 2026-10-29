@@ -7,7 +7,11 @@
 
 using FCI = v8::FunctionCallbackInfo<v8::Value>;
 
-struct FrameLoad { JsCtx *p; Node *f; uint32_t kid; std::string url; std::string ref; };
+struct FrameLoad {
+    JsCtx *p; Node *f; uint32_t kid; std::string url; std::string ref;
+    bool inherits_data_policy = false;
+    std::string inherited_csp, inherited_permissions, inherited_policy_url; // immutable navigation initiator snapshots
+};
 static std::vector<FrameLoad *> g_loads;
 
 static std::string origin_of(const char *u) {
@@ -157,6 +161,14 @@ void js_run_parsed_script(JsCtx *c, Node *s) {
         free(t); free(u);
     } else if (src) {
         char *u = src_length ? url_join_n(c->doc->url, src, src_length) : nullptr;
+        // Enforce the source list before issuing the classic-script request;
+        // the execution check below still enforces the complete script policy.
+        if (u && !csp_allows_script(c->doc->csp, c->doc->url, u, node_attr(s, "nonce"),
+                                   nullptr, 0, s->flags & NF_PARSER_INSERTED)) {
+            s->flags |= NF_SCRIPT_STARTED;
+            js_dispatch(c, s, "error", "Event", false, false, 0, 0, 0, NULL);
+            free(u); return;
+        }
         NetRequest *srq = u ? net_request_ctx("GET", u, js_top_url(c)) : nullptr;
         if (srq && c->doc->url) { srq->no_cors_origin = strdup(c->doc->url); srq->coep_require_corp = c->doc->coep_require_corp; }
         NetResponse *sr = srq ? net_fetch_sync(srq) : nullptr;
@@ -173,7 +185,9 @@ void js_run_parsed_script(JsCtx *c, Node *s) {
 }
 
 static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html, size_t n, bool fire_load,
-                           const std::string &source_key, const char *content_type = nullptr) {
+                           const std::string &source_key, const char *content_type = nullptr,
+                           const std::string *inherited_csp = nullptr, const std::string *inherited_permissions = nullptr,
+                           const std::string *inherited_policy_url = nullptr) {
     JsCtx *old = js_frame_ctx(f);
     Document *d = doc_new(url);
     /* Initial eager frame parsing keeps the default-disabled shadow policy.
@@ -181,7 +195,24 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     if (!g_next_permissions.empty()) { d->permissions_policy = strdup(g_next_permissions.c_str()); g_next_permissions.clear(); }
     if (!g_next_csp.empty()) { d->csp = csp_append(nullptr, g_next_csp.c_str()); g_next_csp.clear(); }
     if (!g_next_ref.empty()) { d->referrer = strdup(g_next_ref.c_str()); g_next_ref.clear(); }
-    else if (!strncmp(url, "about:", 6) && p->doc && p->doc->csp) d->csp = strdup(p->doc->csp);
+    if (!strncmp(url, "about:", 6) && p->doc) {
+        const char *self = p->doc->csp_self_url ? p->doc->csp_self_url :
+            !p->inherited_origin_url.empty() ? p->inherited_origin_url.c_str() : p->doc->url;
+        d->csp_self_url = xstrdup(self ? self : "");
+        if (!d->csp) d->csp = csp_inherit(p->doc->csp, d->csp_self_url);
+    }
+    // CSP3 gives the whole inherited policy list one self-origin, including
+    // later meta policies. It is separate from the opaque data DOM principal.
+    if (inherited_policy_url) {
+        free(d->csp_self_url); d->csp_self_url = xstrdup(inherited_policy_url->c_str());
+    }
+    // Install the source restrictions before parsing or running child code.
+    if (inherited_csp && !inherited_csp->empty())
+        d->csp = csp_append(d->csp, inherited_csp->c_str());
+    if (inherited_permissions) {
+        free(d->permissions_policy);
+        d->permissions_policy = inherited_permissions->empty() ? nullptr : xstrdup(inherited_permissions->c_str());
+    }
     const std::string xml_type = xml_content_type(content_type);
     if (!xml_type.empty()) d->node.ns = NS_NONE;
     else if (content_type) {
@@ -208,7 +239,20 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
     if (!xml_type.empty() && !frame_parse_xml(k, html, n, content_type, xml_type))
         fprintf(stderr, "lumen: frame XML decoding or parsing exceeded its contract\n");
     for (Node *s = d->node.first; s && !k->dead && !k->sb_noscript; s = node_next_in_tree(s, &d->node)) {
-        if (s->type != NODE_ELEMENT || s->tag != A_script || s->ns != NS_HTML || (s->flags & NF_SCRIPT_STARTED)) continue;
+        if (s->type != NODE_ELEMENT || s->ns != NS_HTML) continue;
+        if (s->tag == A_meta) {
+            const char *equiv = node_attr(s, "http-equiv"), *content = node_attr(s, "content");
+            bool in_head = false;
+            for (Node *ancestor = s->parent; ancestor; ancestor = ancestor->parent)
+                if (ancestor == d->head) { in_head = true; break; }
+            if (in_head && equiv && content && str_ieq(equiv, "content-security-policy")) {
+                char *bound = d->csp_self_url ? csp_inherit(content, d->csp_self_url) : nullptr;
+                d->csp = csp_append(d->csp, bound ? bound : content);
+                free(bound);
+            }
+            continue;
+        }
+        if (s->tag != A_script || (s->flags & NF_SCRIPT_STARTED)) continue;
         js_run_parsed_script(k, s);
     }
     if (k->dead) return k;
@@ -297,7 +341,10 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
         if (ok) { const char *policy = headers_get(&r->headers, "permissions-policy"); g_next_permissions = policy ? policy : ""; g_next_ref = l->ref; }
         const char *content_type = ok ? headers_get(&r->headers, "content-type") : nullptr;
         JsCtx *k = frame_create(p, l->f, ok && r->url ? r->url : l->url.c_str(),
-            body, ok && r->body ? r->body_len : 0, true, key, ok ? (content_type ? content_type : "") : nullptr);
+            body, ok && r->body ? r->body_len : 0, true, key, ok ? (content_type ? content_type : "") : nullptr,
+            l->inherits_data_policy ? &l->inherited_csp : nullptr,
+            l->inherits_data_policy ? &l->inherited_permissions : nullptr,
+            l->inherits_data_policy ? &l->inherited_policy_url : nullptr);
         k->frame_src = key;
     }
     delete l;
@@ -310,6 +357,19 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key,
     if (submission && p->doc && p->doc->csp &&
         !csp_allows_url(p->doc->csp, p->doc->url, u, "frame-src")) {
         fprintf(stderr, "lumen: CSP frame-src blocked form target %.120s\n", u); return;
+    }
+    const bool inherits_data_policy = u && !strncmp(u, "data:", 5);
+    std::string inherited_csp, inherited_permissions, inherited_policy_url;
+    if (inherits_data_policy) {
+        const char *policy = submission ? submission->csp.c_str() : p->doc ? p->doc->csp : nullptr;
+        const char *policy_url = submission ? submission->policy_url.c_str() :
+            p->doc && p->doc->csp_self_url ? p->doc->csp_self_url :
+            !p->inherited_origin_url.empty() ? p->inherited_origin_url.c_str() : p->doc ? p->doc->url : "";
+        inherited_policy_url = policy_url ? policy_url : "";
+        char *bound = csp_inherit(policy, policy_url);
+        if (bound) { inherited_csp = bound; free(bound); }
+        inherited_permissions = submission ? submission->permissions_policy :
+            p->doc && p->doc->permissions_policy ? p->doc->permissions_policy : "";
     }
     JsCtx *k = frame_create(p, f, "about:blank", "", 0, !remote, key);
     k->frame_src = key;
@@ -336,7 +396,7 @@ static void frame_load(JsCtx *p, Node *f, const char *u, const std::string &key,
     } else if (char *ref = net_referrer(p->doc->url, u, p->doc->referrer_policy)) {
         headers_add(&rq->headers, "Referer", ref); refs = ref; free(ref);
     }
-    FrameLoad *l = new FrameLoad{ p, f, k->id, u, refs };
+    FrameLoad *l = new FrameLoad{ p, f, k->id, u, refs, inherits_data_policy, inherited_csp, inherited_permissions, inherited_policy_url };
     g_loads.push_back(l);
     rq->done = frame_done; rq->ud = l;
     net_fetch(rq);

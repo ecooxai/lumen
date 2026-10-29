@@ -248,7 +248,7 @@ void doc_free(Document *d) {
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
     if (d->template_contents_owner) doc_free(d->template_contents_owner);
-    free(d->url); free(d->base_url); free(d->title); free(d->csp); free(d->permissions_policy); free(d->referrer); free(d);
+    free(d->url); free(d->base_url); free(d->title); free(d->csp); free(d->csp_self_url); free(d->permissions_policy); free(d->referrer); free(d);
 }
 
 /* HTML fragment targeting is a document state, not an ID comparison performed

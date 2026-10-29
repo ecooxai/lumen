@@ -77,6 +77,7 @@ typedef struct Document {
     struct Document *template_contents_owner; /* owned, lazily created inert document */
     bool is_template_contents_owner;
     char *csp;                    /* enforced Content-Security-Policy, one policy per line (NULL = none) */
+    char *csp_self_url;           /* immutable inherited CSP-list self-origin URL, distinct from document origin */
     char *permissions_policy;     /* Permissions-Policy response header (NULL = default) */
     char *referrer;               /* document.referrer: the Referer sent for this navigation (NULL = none) */
     char referrer_policy[40];     /* Referrer-Policy response header / <meta name=referrer>; "" = default */

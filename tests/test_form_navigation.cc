@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 #include <poll.h>
 #include <dlfcn.h>
 #include <unistd.h>
@@ -21,11 +22,23 @@
 extern "C" void font_init(void);
 /* The baseline intentionally has no form queue. Resolve only the genuine
  * diagnostic exported by this executable; absence fails explicit rows.
- * RTLD_MAIN_ONLY confines lookup to the standalone test executable. */
+ * RTLD_MAIN_ONLY confines lookup to the standalone test executable on macOS;
+ * Linux verifies the resolved symbol's device/inode against /proc/self/exe. */
 using FormQueueCounter = void (*)(size_t *, size_t *);
 static FormQueueCounter form_queue_counter() {
-    static const auto counter = reinterpret_cast<FormQueueCounter>(
-        dlsym(RTLD_MAIN_ONLY, "js_form_navigations_pending"));
+    static const auto counter = []() -> FormQueueCounter {
+#ifdef __APPLE__
+        return reinterpret_cast<FormQueueCounter>(dlsym(RTLD_MAIN_ONLY, "js_form_navigations_pending"));
+#else
+        void *symbol = dlsym(RTLD_DEFAULT, "js_form_navigations_pending");
+        Dl_info info{};
+        struct stat executable{}, resolved{};
+        if (!symbol || !dladdr(symbol, &info) || !info.dli_fname ||
+            stat("/proc/self/exe", &executable) || stat(info.dli_fname, &resolved) ||
+            executable.st_dev != resolved.st_dev || executable.st_ino != resolved.st_ino) return nullptr;
+        return reinterpret_cast<FormQueueCounter>(symbol);
+#endif
+    }();
     return counter;
 }
 static int checks, failures;
@@ -46,7 +59,11 @@ class Server {
     static bool send_all(int fd, const std::string &value) {
         size_t done = 0;
         while (done < value.size()) {
-            const ssize_t n = send(fd, value.data() + done, value.size() - done, 0);
+            int flags = 0;
+#ifdef MSG_NOSIGNAL
+            flags = MSG_NOSIGNAL;
+#endif
+            const ssize_t n = send(fd, value.data() + done, value.size() - done, flags);
             if (n <= 0) return false;
             done += (size_t)n;
         }
@@ -94,7 +111,9 @@ class Server {
             timeval timeout{1, 0};
             setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof timeout);
             setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof timeout);
+#ifdef SO_NOSIGPIPE
             int one = 1; setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof one);
+#endif
             Receipt request;
             if (!read_request(fd, request)) { close(fd); continue; }
             std::string location;

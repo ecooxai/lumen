@@ -119,8 +119,9 @@ void n_formNavigate(const FCI &args) {
     if (!url_parse_n(url.data(), url.size(), &parsed)) return;
     const bool post = !args[3]->IsNullOrUndefined();
     const bool script = !strcmp(parsed.scheme, "javascript");
+    const bool data = !strcmp(parsed.scheme, "data");
     const bool supported = !strcmp(parsed.scheme, "http") || !strcmp(parsed.scheme, "https") ||
-        (!post && (script || !strcmp(url.c_str(), "about:blank") || !strncmp(url.c_str(), "about:blank#", 12)));
+        (!post && (script || data || !strcmp(url.c_str(), "about:blank") || !strncmp(url.c_str(), "about:blank#", 12)));
     char *canonical = supported ? url_to_string(&parsed) : nullptr;
     url_free(&parsed);
     if (!canonical) return;
@@ -145,6 +146,10 @@ void n_formNavigate(const FCI &args) {
         fprintf(stderr, "lumen: form submission has no supported existing target\n");
         return;
     }
+    // Data GET submissions use the existing child-frame loader, which assigns
+    // a fresh opaque origin and enforces frame-src, form-action and sandbox.
+    // The top-level host has no equivalent data-navigation policy contract.
+    if (data && !target->parent) return;
     if (!form_context_active(target->current) || !can_navigate(source, target)) return;
     /* The legacy top-level host accepts only URL/body/type, so it cannot carry
      * a different initiating document's origin/referrer/CSP snapshot. Keep
@@ -173,13 +178,15 @@ void n_formNavigate(const FCI &args) {
     submission.top_url = js_top_url(source) ? js_top_url(source) : "";
     submission.referrer = noreferrer ? "" : navigation_referrer(source, request.url);
     submission.csp = source->doc->csp ? source->doc->csp : "";
-    submission.policy_url = blank_url(source->doc->url) && !source->inherited_origin_url.empty() ?
+    submission.permissions_policy = source->doc->permissions_policy ? source->doc->permissions_policy : "";
+    submission.policy_url = source->doc->csp_self_url ? source->doc->csp_self_url :
+        blank_url(source->doc->url) && !source->inherited_origin_url.empty() ?
         source->inherited_origin_url : source->doc->url ? source->doc->url : "";
     if (!csp_allows_url(submission.csp.c_str(), submission.policy_url.c_str(),
                         request.url.c_str(), "form-action")) return;
     request.bytes = sizeof(FormNavigation) + request.url.size() + submission.body.size() +
         submission.content_type.size() + submission.origin.size() + submission.top_url.size() +
-        submission.referrer.size() + submission.csp.size() + submission.policy_url.size();
+        submission.referrer.size() + submission.csp.size() + submission.policy_url.size() + submission.permissions_policy.size();
     auto old = std::find_if(form_navigations.begin(), form_navigations.end(),
         [&](const FormNavigation &item) { return item.form.get() == form; });
     const size_t previous = old == form_navigations.end() ? 0 : old->bytes;

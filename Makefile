@@ -525,9 +525,19 @@ $(BUILD)/test_encoding: $(call OBJ,tests/test_encoding.c src/base/encoding.c src
 	$(CC) $(OPT) $(filter %.o,$^) -o $@ -lm
 
 # Actual planned form tasks, named iframe GET/POST and request ownership.
+ifeq ($(UNAME),Darwin)
+  FORM_TEST_EXPORT := -Wl,-export_dynamic
+else
+  FORM_TEST_EXPORT := -Wl,--export-dynamic
+endif
 $(BUILD)/tests/test_form_navigation.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
 $(BUILD)/test_form_navigation: $(call OBJ,tests/test_form_navigation.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
-	$(CXX) $(OPT) $(filter %.o,$^) -Wl,-export_dynamic -o $@ $(LIBS)
+	$(CXX) $(OPT) $(filter %.o,$^) $(FORM_TEST_EXPORT) -o $@ $(LIBS)
+
+# Data GET form targets retain opaque frame origins and navigation policy.
+$(BUILD)/tests/test_form_data_navigation.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
+$(BUILD)/test_form_data_navigation: $(call OBJ,tests/test_form_data_navigation.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
+	$(CXX) $(OPT) $(filter %.o,$^) $(FORM_TEST_EXPORT) -o $@ $(LIBS)
 
 # Public HTTP document encoding/HTML URL boundary and shared scalar encoder.
 $(BUILD)/tests/test_document_encoding.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
@@ -558,7 +568,7 @@ $(BUILD)/test_html_default_policy_network: $(call OBJ,tests/test_html_default_po
 # Raw HTTP form serialization with the shared Encoding Standard encoder.
 $(BUILD)/tests/test_form_encoding.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
 $(BUILD)/test_form_encoding: $(call OBJ,tests/test_form_encoding.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)
-	$(CXX) $(OPT) $(filter %.o,$^) -Wl,-export_dynamic -o $@ $(LIBS)
+	$(CXX) $(OPT) $(filter %.o,$^) $(FORM_TEST_EXPORT) -o $@ $(LIBS)
 
 # Public Blob/File behavior in actual window, parsed-child and worker realms.
 $(BUILD)/tests/test_blob_file.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
@@ -625,4 +635,8 @@ $(BUILD)/test_worker_async_lifecycle: $(call OBJ,tests/test_worker_async_lifecyc
 
 # Native owners may receive nonstreaming completions on a network-pool thread.
 $(BUILD)/test_net_background: $(call OBJ,tests/test_net_background.c $(BASE_SRC) $(NET_SRC))
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS) -lpthread
+
+# Copied local-document CSP policies keep the initiating self origin.
+$(BUILD)/test_csp_inherit: $(call OBJ,tests/test_csp_inherit.c $(BASE_SRC) $(NET_SRC))
 	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS) -lpthread

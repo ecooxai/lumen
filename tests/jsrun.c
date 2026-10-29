@@ -40,6 +40,13 @@ int main(int argc, char **argv) {
     net_request_free(rq);
     if (!r || r->status == 0) { fprintf(stderr, "jsrun: fetch failed: %s\n", r && r->error ? r->error : "?"); return 1; }
     Document *d = doc_new(r->url ? r->url : url);
+    /* Preserve the actual response policy container before the response is
+     * released, as the native browser does. Repeated CSP fields intersect. */
+    for (size_t i = 0; i < r->headers.n; ++i)
+        if (str_ieq(r->headers.v[i].name, "content-security-policy"))
+            d->csp = csp_append(d->csp, r->headers.v[i].value);
+    const char *permissions = headers_get(&r->headers, "permissions-policy");
+    if (permissions) d->permissions_policy = xstrdup(permissions);
     /* Match the browser's response-byte boundary, including transport
      * charset and exactly one BOM. html_parse() accepts Unicode strings. */
     if (!html_parse_bytes(d, r->body ? r->body : "", r->body ? r->body_len : 0,

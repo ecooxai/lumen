@@ -188,7 +188,7 @@ void frame_nav(JsCtx *k, const std::string &u);
  * intentionally independent of the target frame's mutable/current document. */
 struct FrameSubmission {
     bool post = false;
-    std::string body, content_type, origin, referrer, top_url, csp, policy_url;
+    std::string body, content_type, origin, referrer, top_url, csp, policy_url, permissions_policy;
 };
 void frame_submit(JsCtx *target, const std::string &url, const FrameSubmission &submission);
 void js_install_frames(JsCtx *c, v8::Local<v8::Object> N);

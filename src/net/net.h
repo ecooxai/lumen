@@ -116,6 +116,8 @@ char *net_referrer(const char *doc_url, const char *target, const char *policy);
 
 /* Content-Security-Policy: csp = enforced policies, one per line. csp_append adds a header value (realloc). */
 char *csp_append(char *csp, const char *policy);
+/* Owned local-document policy snapshot; bind inherited self to the original policy URL. */
+char *csp_inherit(const char *policy, const char *policy_url);
 /* Cross-Origin-Resource-Policy: would a no-cors response from resp_url be blocked for initiator? */
 bool net_corp_blocked(const char *initiator, const char *resp_url, const char *corp, bool require_corp);
 /* may this <script> run? src_url NULL = inline (body/n hashed). */

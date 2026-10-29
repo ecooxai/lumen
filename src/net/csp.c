@@ -21,6 +21,57 @@ char *csp_append(char *csp, const char *policy) {
 static bool tok_eq(const char *p, size_t n, const char *s) { return strlen(s) == n && !strncasecmp(p, s, n); }
 static bool tok_pre(const char *p, size_t n, const char *s) { size_t l = strlen(s); return n > l && !strncasecmp(p, s, l); }
 
+/* A local-scheme document keeps its own opaque principal. Bind inherited
+ * source-list 'self' tokens to the initiating policy's origin before copying
+ * the policy. Later child meta policies bind to the same CSP-list self-origin.
+ * This is ordinary CSP source syntax, never a privileged private directive. */
+static bool source_list_directive(const char *p, size_t n) {
+    static const char *names[] = { "default-src", "child-src", "connect-src", "font-src",
+        "frame-src", "img-src", "manifest-src", "media-src", "object-src", "script-src",
+        "script-src-elem", "script-src-attr", "style-src", "style-src-elem", "style-src-attr",
+        "worker-src", "base-uri", "form-action", "frame-ancestors", NULL };
+    for (size_t i = 0; names[i]; ++i) if (tok_eq(p, n, names[i])) return true;
+    return false;
+}
+
+char *csp_inherit(const char *policy, const char *policy_url) {
+    if (!policy || !*policy) return NULL;
+    SB self; sb_init(&self);
+    URL origin = {0}; bool parsed = policy_url && url_parse(policy_url, &origin);
+    /* Every tuple used by an HTML navigation has an HTTP(S) or FTP origin.
+     * A file/data/about origin, or a host that cannot be represented literally
+     * in CSP source grammar, must not turn into a wildcard or directive. */
+    bool literal = parsed && origin.host && *origin.host && origin.scheme &&
+        (!strcmp(origin.scheme, "http") || !strcmp(origin.scheme, "https") || !strcmp(origin.scheme, "ftp"));
+    if (literal) for (const unsigned char *p = (const unsigned char *)origin.host; *p; ++p)
+        if (!isalnum(*p) && !strchr("-._[]:", *p)) { literal = false; break; }
+    if (literal) {
+        sb_printf(&self, "%s://%s:%d", origin.scheme, origin.host, origin.port);
+        /* 'self' permits the default HTTP origin to upgrade to HTTPS. The
+         * explicit :80 expression also preserves same-port upgrade matching. */
+        if (!strcmp(origin.scheme, "http") && origin.port == 80)
+            sb_printf(&self, " https://%s:443", origin.host);
+    } else sb_puts(&self, "'none'");
+    if (parsed) url_free(&origin);
+    SB out; sb_init(&out);
+    const char *p = policy;
+    while (*p) {
+        const char *end = p; while (*end && *end != ';' && *end != '\n') ++end;
+        const char *name = p; while (name < end && isspace((unsigned char)*name)) ++name;
+        const char *name_end = name; while (name_end < end && !isspace((unsigned char)*name_end)) ++name_end;
+        const bool bind = source_list_directive(name, (size_t)(name_end - name));
+        while (p < end) {
+            if (isspace((unsigned char)*p)) { sb_putc(&out, *p++); continue; }
+            const char *token_end = p; while (token_end < end && !isspace((unsigned char)*token_end)) ++token_end;
+            if (bind && p >= name_end && tok_eq(p, (size_t)(token_end - p), "'self'")) sb_puts(&out, self.s);
+            else while (p < token_end) sb_putc(&out, *p++);
+            p = token_end;
+        }
+        if (*p) sb_putc(&out, *p++);
+    }
+    sb_free(&self); return sb_take(&out);
+}
+
 /* source list of the first directive called name in policy [p,e) */
 static const char *find_dir(const char *p, const char *e, const char *name, const char **ve) {
     while (p < e) {
