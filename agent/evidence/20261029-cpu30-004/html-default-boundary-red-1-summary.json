@@ -1,0 +1,51 @@
+{
+  "startedUTC": "2026-10-29T04:45:44.994263+00:00",
+  "finishedUTC": "2026-10-29T04:45:47.198529+00:00",
+  "durationSeconds": 2.204,
+  "redConfirmed": true,
+  "fixtureSHA256": "f55f5320f9d2069d7cec4d9b230e91e05dde91343de6bdc76a4ab447c68ea915",
+  "binary": {
+    "path": "out/lume-20261029-cpu30/html-default-boundary-red-1/test_html_default_policy-f5d26bc5984fabfd",
+    "sha256": "f5d26bc5984fabfdb3777aef034e880ee43f2706e00c0fc7025873ee759ff584"
+  },
+  "stages": [
+    {
+      "name": "build",
+      "durationSeconds": 1.105,
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "monitor": "out/lume-20261029-cpu30/html-default-boundary-red-1/build.json",
+      "monitorSHA256": "c2ba388035dc8d6dee37bd54b023cd985051e71b6f576f85a427eeab41af312b",
+      "logSHA256": "7fa979bd392a2d8f6e6e58b469692072ccc15c8d2e71316c1ad8f0720801e727"
+    },
+    {
+      "name": "fixture",
+      "durationSeconds": 1.098,
+      "exitCode": 1,
+      "naturalExitCode": 1,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "monitor": "out/lume-20261029-cpu30/html-default-boundary-red-1/fixture.json",
+      "monitorSHA256": "4bafeb1a22a25032ed507e65cf42e713bc01ff589e64edf2888c6da2f20871ca",
+      "logSHA256": "22f59bf3af02e628477907f81e618d191933c1a7e12516cd6825e75c6ce03503"
+    }
+  ],
+  "failures": [
+    "absent response MIME retains HTML default",
+    "en-US unlabelled HTML defaults Windows1252",
+    "unlabelled plaintext uses text-document default",
+    "unsupported header permits HTML default"
+  ],
+  "result": {
+    "total": 21,
+    "passed": 17,
+    "failed": 4
+  },
+  "sourcePreimages": {
+    "src/html/html.c": "1847af1618b33a3c856fd372125388572bc0096d0c9bbd106f1c27fbe3ec72c1",
+    "src/js/windows.cc": "b2982c11fbb5603c59bd139d51f4888400ac10da87e6199feb7f95cd11c4cbef",
+    "Makefile": "f35bdf1d3502bb7130e26a54b4949297da8aea6555ec8179bfd317bb810d8501"
+  }
+}

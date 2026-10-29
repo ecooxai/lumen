@@ -1,0 +1,57 @@
+{
+  "scheduled_files": 10,
+  "recorded_files": 10,
+  "remaining_files": 0,
+  "file_outcomes": {
+    "ERROR": 2,
+    "OK": 6,
+    "TIMEOUT": 2
+  },
+  "files_passing_all_assertions": 6,
+  "valid_completed_files": 8,
+  "attempted_files": 10,
+  "attempted_file_pass_rate": 0.6,
+  "zero_assertion_testharness_files": 4,
+  "zero_assertion_files_by_type": {
+    "testharness": 4
+  },
+  "all_assertions_pass_file_rate": 0.75,
+  "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+  "scheduled_file_pass_fraction": 0.6,
+  "subtest_outcomes": {
+    "PASS": 15
+  },
+  "executed_subtests_excluding_notrun": 15,
+  "subtest_pass_rate": 1.0,
+  "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes.",
+  "by_type": {
+    "testharness": {
+      "scheduled_files": 10,
+      "recorded_files": 10,
+      "remaining_files": 0,
+      "file_outcomes": {
+        "ERROR": 2,
+        "OK": 6,
+        "TIMEOUT": 2
+      },
+      "files_passing_all_assertions": 6,
+      "valid_completed_files": 8,
+      "attempted_files": 10,
+      "attempted_file_pass_rate": 0.6,
+      "zero_assertion_testharness_files": 4,
+      "zero_assertion_files_by_type": {
+        "testharness": 4
+      },
+      "all_assertions_pass_file_rate": 0.75,
+      "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+      "scheduled_file_pass_fraction": 0.6,
+      "subtest_outcomes": {
+        "PASS": 15
+      },
+      "executed_subtests_excluding_notrun": 15,
+      "subtest_pass_rate": 1.0,
+      "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes."
+    }
+  },
+  "headline_metric_note": "Report testharness and test262 separately; the combined counters are coverage bookkeeping, not a web-platform pass-rate headline."
+}

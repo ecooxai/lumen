@@ -1,0 +1,7 @@
+{
+  "executedInstalledWorkerSHA256": "a2df2efbc74dc0ee321788777ee7be1a218d339be8003424f8ca484c662d0d70",
+  "laterLocalHardeningSHA256": "4a711ddde783d168807af241236636b4dc86322e3787317a8db4e1573d82856e",
+  "laterLocalVersionExecuted": false,
+  "exactFiveLegacyMessagesIndependentlyVerified": true,
+  "note": "Preserve the actual718 producer version; do not claim later local validation-only hardening generated that result."
+}

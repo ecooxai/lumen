@@ -1,62 +1,45 @@
 #!/usr/bin/env python3
-"""Compose public current-artifact evidence without pooling historical runs."""
+"""Render the accepted final artifact from committed, independently reviewed evidence."""
 from pathlib import Path
 from datetime import datetime,timezone
+from collections import Counter
 import hashlib,json,subprocess
-ROOT=Path.cwd().resolve();TASK='20261029-cpu30';OUT=Path('out/lume-'+TASK)
-sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
-read=lambda p:json.loads(Path(p).read_text())
-def require(condition,message):
- if not condition:raise RuntimeError(message)
-def save(path,value):
- path.parent.mkdir(parents=True,exist_ok=True);tmp=path.with_suffix('.tmp');tmp.write_text(json.dumps(value,indent=2)+'\n');tmp.replace(path)
-score=read('agent/scorecard-'+TASK+'.json');native=score['current_baseline_binary_sha256'];source=score['current_native_source_commit']
-require(score['task_id']==TASK and score['new_session_native_validation'],'Task accepted evidence is not ready')
-# This compositor describes the explicitly accepted f52 checkpoint. A changed
-# executable requires a new reviewed compositor/input set, never a mutable alias.
-require(native=='f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c' and source=='df4ae3bc8d52a06778e0d8a1f706138201dd043d','Accepted artifact changed; review new evidence inputs before updating public status')
-build=read(OUT/'native-combined-1/summary.json');resources=read(OUT/'native-resources-1/summary.json');cohort=OUT/'compat-baseline-2/cohort';priority=read(cohort/'priority-summary.json');original=read(cohort/'original-six-receipt.json')
-require(build['passed'] and build['artifacts']['lumen']['sha256']==native and sha(build['artifacts']['lumen']['path'])==native,'Native build identity differs')
-require(resources['accepted'] and resources['artifact']['sha256']==native and priority['binarySHA256']==native and original['binarySHA256']==native and original['passed'],'Accepted evidence identity differs')
-require((priority['scheduled'],priority['run'],priority['fullyPassing'],priority['unrun'])==(1515,103,96,1412),'Scoped WPT evidence changed')
-status=read('output/session-102900614/progress-state/status.json')
-status.update(taskId=TASK,updatedUTC=datetime.now(timezone.utc).isoformat(),iteration=3,fullOfficialWptPassPercent=None,
- phase='Latest broader candidate: 242/279 important variants fully pass (86.738%); 1,236/1,515 frozen variants remain unrun. All15timeouts and15errors are counted. The fixed Encoding subset improved96/103 to98/103; broader coverage is a different selection. Accepted f52 retains its separate scroll/idle/RAM proof. Newer fatalUTF8 candidate9137 passed686 custom checks and26/28 independent observations, but its WPT and resource acceptance remain pending. Public live/Surge source, telemetry and message continuity are verified; task score55/100. Shared signed IPA and iPad app execution remain unverified.')
-status['currentWpt']={'binarySha256':native,'sourceCommit':source,'sourceManifestSHA256':build['sourceManifestSHA256'],'scheduled':1515,'recorded':103,'fullyPassing':96,'unrun':1412,'assertions':priority['assertions'],'groups':priority['groups'],'cohortSHA256':priority['cohortSHA256'],'scope':'Fresh selected upstream Encoding core and stream tests on this exact artifact; the original six-file, 1,850-assertion subset is separate. Every unrun test, error and failure remains visible; full official WPT is unknown.'}
-status['wpt']={'passed':1850,'total':1850,'passPercent':100,'reportedFiles':6,'fullyPassingFiles':6,'chromePassed':None,'chromeTotal':None,'binarySha256':native,'nativeSourceCommit':source,'scope':'Six unchanged upstream WPT-source files only; separate from the fresh 103-variant Encoding cohort and not full official WPT.','referenceStatus':'Separate qualified Chrome 103-variant control recorded 89/103; differences are under investigation and this six-file result is not that comparison.'}
-scenarios={row['name']:row for row in resources['scenarios']};scroll=scenarios['scroll']['phaseMetrics']['scrolling'];idle=scenarios['scroll']['phaseMetrics']['idle:after'];soak=scenarios['navigation']['settledRSSComparison']
-oldperformance=status.get('performance',{})
-status['performance']={'binarySha256':native,'sourceCommit':source,'idleStatus':'Passed controlled native idle','idleCpuP95Percent':idle['cpu_p95_percent'],'idleRssMiB':idle['rss_end_mib'],'interactionStatus':'Passed controlled scrolling','interactionCpuP95Percent':scroll['cpu_p95_percent'],'interactionCpuPeakPercent':scroll['cpu_peak_percent'],'interactionCpuCeilingPercent':30,'scrollSamples':scroll['samples'],'scrollDurationSeconds':scroll['duration_seconds'],'typingStatus':'Not freshly measured','memorySoakStatus':'Passed 20 navigation cycles','settledRssGrowthMiB':soak['growth_mib'],'scope':'Synthetic SDL wheel input and actual native page navigations;1Hz process-tree CPU (100%=one logical core) and RSS. Not whole-host, iPad or IPA measurements.'}
-if oldperformance.get('binarySha256'):
- status['performance']['historicalInteraction']={'binarySha256':oldperformance['binarySha256'],'status':oldperformance.get('interactionStatus','Historical'),'cpuP95Percent':oldperformance.get('interactionCpuP95Percent')}
-status['apple']={'macNative':'Verified f52 visible native app, scroll/idle/navigation checks','ipadSimulator':'Simulator OS reachable; Lume app execution unverified','sameIpa':'Unverified: no signed device IPA or signing identity; platform V8 unavailable and Xcode SDK resolution fails','iphoneExecutionRequired':False}
-candidate=read(OUT/'native-bom-1/summary.json');candidate_wpt=read(OUT/'compat-parser-1/summary.json')
-candidate_hash='4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54'
-require(candidate['passed'] and candidate['artifacts']['lumen']['sha256']==candidate_hash and sha(candidate['artifacts']['lumen']['path'])==candidate_hash,'Functional candidate identity differs')
-require(candidate_wpt['complete'] and candidate_wpt['sameArtifact'] and candidate_wpt['binarySHA256']==candidate_hash,'Functional WPT identity differs')
-candidate_counts=candidate_wpt['cohortSummary'];require((candidate_counts['scheduled'],candidate_counts['run'],candidate_counts['fullyPassing'],candidate_counts['unrun'])==(1515,103,98,1412),'Functional candidate scope differs')
-status['functionalCandidate']={'binarySha256':candidate_hash,'fullyPassingVariants':98,'recordedVariants':103,'scheduledFrozenVariants':1515,'unrunVariants':1412,'historicalRun':False,'scopeLabel':'Encoding core + streams','sourceBaseCommit':candidate['sourceBaseCommit'],'sourceManifestSHA256':candidate['compiledSourceManifestSHA256'],'resourceAcceptance':'Pending on this exact artifact','assertions':candidate_counts['assertions']}
-broad=read('agent/evidence/20261029-cpu30-003/broad-priority-summary.json')['cohortSummary']
-require((broad['scheduled'],broad['run'],broad['fullyPassing'],broad['unrun'])==(1515,279,242,1236) and broad['binarySHA256']==candidate_hash,'Committed broader candidate evidence differs')
-status['functionalCandidate'].update(fullyPassingVariants=242,recordedVariants=279,unrunVariants=1236,scopeLabel='Priority DOM, events, URL, storage, microtasks, headers and Encoding',assertions=broad['assertions'],harnessStatuses=broad['harnessStatuses'],fixed103Subset={'fullyPassing':98,'recorded':103,'assertions':candidate_counts['assertions']})
-status['currentChromeDiagnostic']={'recorded':279,'fullyPassing':234,'assertions':{'PASS':38382,'FAIL':895},'harnessOK':279,'scope':'QualifiedChrome disjoint103+176 executions on the exact279 selected variants; all raw failures retained. All30 service/shared-worker wrappers pass in Chrome at the same native URLs. No overall ranking claim.'}
-
-
+TASK='20261029-cpu30';NATIVE='3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce';OUT=Path('out/lume-'+TASK)
+read=lambda p:json.loads(Path(p).read_text());sha=lambda p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def require(ok,message):
+ if not ok:raise RuntimeError(message)
+score=read('agent/scorecard-'+TASK+'.json');entry=read(score['current_native_acceptance_receipt']);source=entry['artifact']['sourceCommit'];q=entry['broadWpt'];fixed=entry['fixedEncodingWpt'];resources=entry['nativeResources'];pair=entry['chromeComparison']
+require(score['current_baseline_binary_sha256']==NATIVE and entry['artifact']['sha256']==NATIVE and entry['accepted'],'Final artifact is not accepted')
+require(score['current_native_source_commit']==source and entry['artifact']['sourceManifestSHA256']=='0cd15150cf85c9699ea847fd1859ab8a8097694e802ca2ca66e650262dc38ab7','Source binding differs')
+require(q['run']==279 and q['scheduled']==1515 and q['unrun']==1236 and fixed['run']==103,'Frozen scopes differ')
+require(resources['accepted'] and resources['artifact']['sha256']==NATIVE and pair['nativeBinarySHA256']==NATIVE and pair['recorded']==279,'Resource/reference artifacts differ')
+state=Path('output/session-'+TASK+'/progress-state/status.json');status=read(state)
+status.update(taskId=TASK,updatedUTC=datetime.now(timezone.utc).isoformat(),iteration=4,fullOfficialWptPassPercent=None)
+status['phase']=f"Current native browser: {q['fullyPassing']}/279 important variants fully pass ({100*q['fullyPassing']/279:.3f}%). The fixed Encoding subset improved from 96/103 to {fixed['fullyPassing']}/103 ({100*fixed['fullyPassing']/103:.3f}%), with 1,850/1,850 original assertions retained. All errors/timeouts and 1,236 unrun frozen variants remain visible. Exact-artifact scrolling, idle and navigation memory checks passed. Task score 55/100; shared signed IPA and iPad app execution remain unverified."
+status['currentWpt']={'binarySha256':NATIVE,'sourceCommit':source,'buildSourceBaseCommit':entry['artifact']['buildSourceBaseCommit'],'sourceManifestSHA256':entry['artifact']['sourceManifestSHA256'],'scheduled':1515,'recorded':279,'fullyPassing':q['fullyPassing'],'unrun':1236,'assertions':q['assertions'],'harnessStatuses':q['harnessStatuses'],'groups':q['groups'],'cohortSHA256':q['cohortSHA256'],'scope':'Current accepted native artifact, frozen important 279 variant selection; the original six-file 1,850 assertion subset is separate. Full official WPT is unknown.'}
+status['wpt']={'passed':1850,'total':1850,'passPercent':100,'reportedFiles':6,'fullyPassingFiles':6,'chromePassed':None,'chromeTotal':None,'binarySha256':NATIVE,'nativeSourceCommit':source,'scope':'Six unchanged pinned upstream source files; separate from279 priority variants and not full WPT.','referenceStatus':'Qualified Chrome controls use the same279 priority variants, separate from this six-file subset.'}
+scenarios={r['name']:r for r in resources['scenarios']};scroll=scenarios['scroll']['phaseMetrics']['scrolling'];idle=scenarios['scroll']['phaseMetrics']['idle:after'];soak=scenarios['navigation']['settledRSSComparison'];previous=status.get('performance',{})
+status['performance']={'binarySha256':NATIVE,'sourceCommit':source,'idleStatus':'Passed controlled native idle','idleCpuP95Percent':idle['cpu_p95_percent'],'idleRssMiB':idle['rss_end_mib'],'interactionStatus':'Passed controlled native scrolling','interactionCpuP95Percent':scroll['cpu_p95_percent'],'interactionCpuPeakPercent':scroll['cpu_peak_percent'],'interactionCpuCeilingPercent':30,'scrollSamples':scroll['samples'],'scrollDurationSeconds':scroll['duration_seconds'],'typingStatus':'Not freshly measured','memorySoakStatus':'Passed 20 native navigation cycles','settledRssGrowthMiB':soak['growth_mib'],'scope':'Synthetic SDL wheel input and actual page navigation; 1 Hz process-tree CPU/RSS. 100% CPU equals one logical core. Host telemetry above is separate.'}
+if previous.get('binarySha256')!=NATIVE:status['performance']['historicalInteraction']={'binarySha256':previous.get('binarySha256'),'status':'Earlier artifact; separate measurement','cpuP95Percent':previous.get('interactionCpuP95Percent')}
+status['apple']={'macNative':'Verified visible native 3ad app and exact-artifact scroll/idle/navigation checks','ipadSimulator':'iPad simulator OS reachable; Lume app execution unverified','sameIpa':'Unverified: missing mobile V8/dependency closure and signed device IPA/profile. Explicit SDK + matching CLT compiler probes now pass; app execution is still unproved.','iphoneExecutionRequired':False}
+status.pop('functionalCandidate',None)
 catalog=status.setdefault('candidateCatalog',{})
-if catalog.get('qualifiedChrome'):catalog['qualifiedChrome']['historicalRun']=True
-if status.get('chromeControl'):status['chromeControl']['observationScope']='Earlier 26-variant control; separate fresh 103 control recorded 89/103 and is under investigation'
-for row in catalog.get('cohorts',[]):
- row['historicalRun']=True;row['acceptedArtifact']=row.get('binarySha256')==native
-fresh={'binarySha256':native,'scheduled':1515,'recorded':103,'fullyPassing':96,'unrun':1412,'passingPercentOfRun':100*96/103,'passingCoveragePercent':100*96/1515,'assertions':priority['assertions'],'acceptedArtifact':True,'historicalRun':False,'cohortSHA256':priority['cohortSHA256'],'scope':'Fresh 20261029-cpu30 baseline run; earlier runs retained separately.'}
-catalog['cohorts']=[fresh,*[row for row in catalog.get('cohorts',[]) if row.get('cohortSHA256')!=fresh['cohortSHA256']]];catalog['latestMeasuredCohort']=fresh
-if status.get('prioritySummary'):status['prioritySummary']['isCurrentAcceptedNativeArtifact']=status['prioritySummary'].get('binarySha256')==native
-if status.get('expandedWpt'):status['expandedWpt']['isCurrentAcceptedNativeArtifact']=status['expandedWpt'].get('lumenBinarySHA256')==native
-head=subprocess.check_output(['git','--no-pager','rev-parse','HEAD'],text=True).strip();status['sourceCommit']=head
-manifestpath=Path('output/session-'+TASK+'/public/manifest.json')
-if manifestpath.exists():
- archive=read(manifestpath);require(archive.get('sourceCommit')==head,'Source archive is stale; package current committed HEAD first')
- require(sha(manifestpath.parent/'src.tar.gz')==archive['sha256'],'Public source archive bytes differ')
- status['sourceArchive']={key:archive[key] for key in ['sourceCommit','sha256','bytes'] if key in archive}
-else:status.pop('sourceArchive',None)
-state=Path('output/session-'+TASK+'/progress-state');save(state/'status.json',status)
-print(json.dumps({'passed':True,'taskId':TASK,'state':str(state/'status.json'),'sourceCommit':head,'nativeSourceCommit':source,'nativeBinarySHA256':native,'currentWpt':{k:status['currentWpt'][k] for k in ['recorded','fullyPassing','unrun','scheduled']},'score':score['score'],'historicalCohortsKeptSeparate':True,'sourceArchivePresent':bool(status.get('sourceArchive'))},indent=2))
+for row in catalog.get('cohorts',[]):row['historicalRun']=True;row['acceptedArtifact']=row.get('binarySha256')==NATIVE
+fresh={'binarySha256':NATIVE,'scheduled':1515,'recorded':279,'fullyPassing':q['fullyPassing'],'unrun':1236,'passingPercentOfRun':100*q['fullyPassing']/279,'passingCoveragePercent':100*q['fullyPassing']/1515,'assertions':q['assertions'],'acceptedArtifact':True,'historicalRun':False,'cohortSHA256':q['cohortSHA256']}
+catalog['cohorts']=[fresh,*[r for r in catalog.get('cohorts',[]) if r.get('cohortSHA256')!=q['cohortSHA256']]];catalog['latestMeasuredCohort']=fresh
+catalog['qualified Chrome']={'binarySha256':pair['chromeBinarySHA256'],'recorded':279,'fullyPassing':234,'assertions':{'PASS':38382,'FAIL':895},'scopeLabel':'priority','historicalRun':False}
+status['chromeControl']={'qualifiedForPairedMeasurement':True,'version':'Chrome 156.0.8078.74','binarySha256':pair['chromeBinarySHA256'],'observationScope':f"Disjoint 103 + 176 runs on unchanged qualified Chrome; current native retains {pair['nativePassesAmongChromePassingAssertions']}/{pair['chromePassingAssertions']} Chrome-passing assertions and {pair['nativeFullyPassesAmongChromePassingVariants']}/{pair['chromePassingVariants']} fully passing variants. Missing contexts count; no overall browser ranking."}
+status['currentChromeDiagnostic']={'recorded':279,'fullyPassing':234,'assertions':{'PASS':38382,'FAIL':895},'harnessOK':279,'scope':'Same frozen279 variants; all raw Chrome failures retained.'}
+status['fixedEncodingComparison']={'baseline':{'fullyPassing':96,'recorded':103},'current':{'fullyPassing':fixed['fullyPassing'],'recorded':103},'currentAssertions':fixed['assertions'],'scope':'Same103 selection, separate from broader279 coverage.'}
+# Derive the visible category table from exact grouped native/Chrome receipts.
+controls=[read('agent/evidence/20261029-cpu30-003/chrome-control-1-summary.json'),read('agent/evidence/20261029-cpu30-003/chrome-control-2-summary.json')];cg={name:value for c in controls for name,value in c['groups'].items()}
+plan=read(entry['cohortPlanEvidence']);categories={}
+for category,nq in q['categories'].items():
+ names=['encoding-core','encoding-streams'] if category=='encoding' else [category];chromes=[cg[name] for name in names];assertions=sum((Counter(c['assertions']) for c in chromes),Counter());classes=sum((Counter(pair['groups'][name]['assertionClasses']) for name in names),Counter());den=sum(v for key,v in classes.items() if key.endswith('__chrome_PASS'))
+ native_errors=sum(sum(v for key,v in pair['groups'][name]['harnessClasses'].items() if key!='native_OK__chrome_OK') for name in names)
+ categories[category]={'scheduled':nq['scheduled'],'lumenRecorded':nq['run'],'lumenFullyPassing':nq['fullyPassing'],'chromeRecorded':sum(c['recorded'] for c in chromes),'chromeFullyPassing':sum(c['fullyPassing'] for c in chromes),'chromeSubtestOutcomes':dict(assertions),'chromePassRetention':classes['native_PASS__chrome_PASS']/den if den else None,'bothComplete':nq['unrun']==0 and sum(c['recorded'] for c in chromes)==nq['scheduled'],'harnessesHealthy':native_errors==0,'referenceStatus':'qualified_with_failures_retained'}
+status['expandedWpt']={'lumenBinarySHA256':NATIVE,'chromeBinarySHA256':pair['chromeBinarySHA256'],'selectedVariants':1515,'selectedSourceFiles':len({row['source'] for row in plan['frozenSchedule']}),'isCurrentAcceptedNativeArtifact':True,'categories':categories,'referenceReview':{'reason':'Same frozen variant identities, actual URLs and protocol signatures. Native missing contexts remain in observed Chrome-passing assertion denominators; 1,236 unrun variants remain unknown.'}}
+if status.get('prioritySummary'):status['prioritySummary']['isCurrentAcceptedNativeArtifact']=False
+head=subprocess.check_output(['git','--no-pager','rev-parse','HEAD'],text=True).strip();archive=read('output/session-'+TASK+'/public/manifest.json');require(archive['sourceCommit']==head and sha('output/session-'+TASK+'/public/src.tar.gz')==archive['sha256'],'Package the current committed HEAD before status publication')
+status['sourceCommit']=head;status['sourceArchive']={k:archive[k] for k in ['sourceCommit','sha256','bytes']};tmp=state.with_suffix('.tmp');tmp.write_text(json.dumps(status,indent=2)+'\n');tmp.replace(state)
+print(json.dumps({'passed':True,'taskId':TASK,'sourceCommit':head,'nativeSourceCommit':source,'nativeSHA256':NATIVE,'currentWpt':{k:status['currentWpt'][k] for k in ['fullyPassing','recorded','scheduled','unrun']},'fixedEncoding':status['fixedEncodingComparison'],'score':score['score'],'staleFunctionalCandidateRemoved':True},indent=2))

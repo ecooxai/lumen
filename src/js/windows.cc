@@ -406,25 +406,26 @@ bool js_windows_same_origin(const JsCtx *a, const JsCtx *b) {
 }
 WebEncoding js_windows_frame_encoding_fallback(const JsCtx *parent, Node *frame,
                                                const Document *incoming) {
+    /* UNKNOWN selects the locale default; UTF-8 is an actual eligible parent. */
     if (!parent || !current_context(parent) || !parent->doc || !frame ||
         frame->doc != parent->doc || !incoming || !incoming->url || parent->opaque_origin)
-        return WEB_ENC_UTF8;
+        return WEB_ENC_UNKNOWN;
     const WebEncoding encoding = parent->doc->encoding;
     if (encoding < WEB_ENC_UTF8 || encoding >= WEB_ENC_COUNT ||
         encoding == WEB_ENC_UTF16LE || encoding == WEB_ENC_UTF16BE)
-        return WEB_ENC_UTF8;
+        return WEB_ENC_UNKNOWN;
     const JsCtx *previous = js_frame_ctx(frame);
     const Window *window = previous ? find_window(previous->window_id) : nullptr;
     if (document_sandbox_flags(parent, frame, incoming, window) & SB_ORIGIN)
-        return WEB_ENC_UTF8;
+        return WEB_ENC_UNKNOWN;
     /* Compare only canonical tuple origins. Opaque "null" serializations do
      * not establish shared identity, and no synthetic principal is allocated. */
     URL url{};
-    if (!url_parse(incoming->url, &url)) return WEB_ENC_UTF8;
+    if (!url_parse(incoming->url, &url)) return WEB_ENC_UNKNOWN;
     char *origin = url_origin(&url);
     const bool same = origin && strcmp(origin, "null") && parent->origin == origin;
     free(origin); url_free(&url);
-    return same ? encoding : WEB_ENC_UTF8;
+    return same ? encoding : WEB_ENC_UNKNOWN;
 }
 
 v8::Local<v8::Value> js_window_value(JsCtx *viewer, JsWindowId id) {

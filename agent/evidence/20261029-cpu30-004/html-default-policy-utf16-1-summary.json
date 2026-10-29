@@ -1,0 +1,163 @@
+{
+  "complete": true,
+  "browsers": [
+    {
+      "browser": "lume",
+      "binarySHA256": "9137de2fb8cba151b7a4ca4f21aa02771061068cd41aa4327de4e3e20d709553",
+      "startedUTC": "2026-10-29T04:42:52.269597+00:00",
+      "frameFixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+      "complete": true,
+      "actual": {
+        "rows": [
+          {
+            "name": "Top-level unlabelled HTML",
+            "encoding": "UTF-8",
+            "text": "\u00e9",
+            "language": "en-US"
+          },
+          {
+            "name": "UTF16LE parent encoding is not inherited",
+            "parentEncoding": "UTF-16LE",
+            "encoding": "UTF-8",
+            "text": "\u00e9",
+            "error": null
+          },
+          {
+            "name": "UTF16BE parent encoding is not inherited",
+            "parentEncoding": "UTF-16BE",
+            "encoding": "UTF-8",
+            "text": "\u00e9",
+            "error": null
+          }
+        ],
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+      },
+      "ownedBrowserExitCode": 0,
+      "ownedProcessGroupGone": true,
+      "monitorExitCode": 0,
+      "resources": {
+        "path": "out/lume-20261029-cpu30/html-default-policy-utf16-1/lume/resources.json",
+        "sha256": "056706a8beda39f217f7cb34535c139ea87c4d59368b201378847507eb2ca698",
+        "samples": 2,
+        "collectorError": null
+      },
+      "finishedUTC": "2026-10-29T04:42:54.787792+00:00",
+      "wallSeconds": 2.518,
+      "binarySHA256After": "9137de2fb8cba151b7a4ca4f21aa02771061068cd41aa4327de4e3e20d709553"
+    },
+    {
+      "browser": "qualified-chrome",
+      "binarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+      "startedUTC": "2026-10-29T04:42:54.808128+00:00",
+      "frameFixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+      "complete": true,
+      "actual": {
+        "rows": [
+          {
+            "name": "Top-level unlabelled HTML",
+            "encoding": "windows-1252",
+            "text": "\u00c3\u00a9",
+            "language": "en-US"
+          },
+          {
+            "name": "UTF16LE parent encoding is not inherited",
+            "error": "Error: report timeout",
+            "parentEncoding": "UTF-16LE",
+            "parentText": "\nconst child=document.createElement('iframe');\nwindow.addEventListener('message',e=>{if(e.source===c",
+            "childPresent": true,
+            "childEncoding": "UTF-16LE",
+            "childText": "\u703c\u6920\u3d64\u6170\u6c79\u616f\u3e64\ua9c3\u2f3c\u3e70\u733c\u7263\u7069\u3e74\u6170\u6572\u746e\u702e\u736f\u4d74\u7365\u6173\u6567\u7b28\u696b\u646e\u273a\u6863\u6c69\u2d64\u6572\u7573\u746c\u2c27\u6e65\u6f63\u6964\u676e\u643a\u636f\u6d75\u6e65\u2e74\u6863\u7261\u6361\u6574\u5372\u7465\u742c\u7865\u3a74\u6f64\u7563\u656d\u746e\u672e\u7465\u6c45\u6d65\u6e65\u4274\u4979\u2864\u7027\u7961\u6f6c\u6461\u2927\u742e\u7865\u4374\u6e6f\u6574\u746e\u2c7d\u2a27\u2927\u3c3b\u732f\u7263\u7069\u3e74",
+            "childURL": "http://127.0.0.1:51559/child/0"
+          },
+          {
+            "name": "UTF16BE parent encoding is not inherited",
+            "error": "Error: report timeout",
+            "parentEncoding": "UTF-16BE",
+            "parentText": "\nconst child=document.createElement('iframe');\nwindow.addEventListener('message',e=>{if(e.source===c",
+            "childPresent": true,
+            "childEncoding": "UTF-16BE",
+            "childText": "\u3c70\u2069\u643d\u7061\u796c\u6f61\u643e\uc3a9\u3c2f\u703e\u3c73\u6372\u6970\u743e\u7061\u7265\u6e74\u2e70\u6f73\u744d\u6573\u7361\u6765\u287b\u6b69\u6e64\u3a27\u6368\u696c\u642d\u7265\u7375\u6c74\u272c\u656e\u636f\u6469\u6e67\u3a64\u6f63\u756d\u656e\u742e\u6368\u6172\u6163\u7465\u7253\u6574\u2c74\u6578\u743a\u646f\u6375\u6d65\u6e74\u2e67\u6574\u456c\u656d\u656e\u7442\u7949\u6428\u2770\u6179\u6c6f\u6164\u2729\u2e74\u6578\u7443\u6f6e\u7465\u6e74\u7d2c\u272a\u2729\u3b3c\u2f73\u6372\u6970\u743e",
+            "childURL": "http://127.0.0.1:51559/child/1"
+          }
+        ],
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36"
+      },
+      "ownedBrowserExitCode": 0,
+      "ownedProcessGroupGone": true,
+      "monitorExitCode": 0,
+      "resources": {
+        "path": "out/lume-20261029-cpu30/html-default-policy-utf16-1/qualified-chrome/resources.json",
+        "sha256": "31002d1e40033f5def7079c8e9c799fdfb8659c0a9648c0474a6c1f17e949172",
+        "samples": 5,
+        "collectorError": null
+      },
+      "finishedUTC": "2026-10-29T04:43:00.346213+00:00",
+      "wallSeconds": 5.538,
+      "binarySHA256After": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4"
+    }
+  ],
+  "comparisons": [
+    {
+      "name": "Top-level unlabelled HTML",
+      "same": false,
+      "lume": {
+        "name": "Top-level unlabelled HTML",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "language": "en-US"
+      },
+      "chrome": {
+        "name": "Top-level unlabelled HTML",
+        "encoding": "windows-1252",
+        "text": "\u00c3\u00a9",
+        "language": "en-US"
+      }
+    },
+    {
+      "name": "UTF16LE parent encoding is not inherited",
+      "same": false,
+      "lume": {
+        "name": "UTF16LE parent encoding is not inherited",
+        "parentEncoding": "UTF-16LE",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "chrome": {
+        "name": "UTF16LE parent encoding is not inherited",
+        "error": "Error: report timeout",
+        "parentEncoding": "UTF-16LE",
+        "parentText": "\nconst child=document.createElement('iframe');\nwindow.addEventListener('message',e=>{if(e.source===c",
+        "childPresent": true,
+        "childEncoding": "UTF-16LE",
+        "childText": "\u703c\u6920\u3d64\u6170\u6c79\u616f\u3e64\ua9c3\u2f3c\u3e70\u733c\u7263\u7069\u3e74\u6170\u6572\u746e\u702e\u736f\u4d74\u7365\u6173\u6567\u7b28\u696b\u646e\u273a\u6863\u6c69\u2d64\u6572\u7573\u746c\u2c27\u6e65\u6f63\u6964\u676e\u643a\u636f\u6d75\u6e65\u2e74\u6863\u7261\u6361\u6574\u5372\u7465\u742c\u7865\u3a74\u6f64\u7563\u656d\u746e\u672e\u7465\u6c45\u6d65\u6e65\u4274\u4979\u2864\u7027\u7961\u6f6c\u6461\u2927\u742e\u7865\u4374\u6e6f\u6574\u746e\u2c7d\u2a27\u2927\u3c3b\u732f\u7263\u7069\u3e74",
+        "childURL": "http://127.0.0.1:51559/child/0"
+      }
+    },
+    {
+      "name": "UTF16BE parent encoding is not inherited",
+      "same": false,
+      "lume": {
+        "name": "UTF16BE parent encoding is not inherited",
+        "parentEncoding": "UTF-16BE",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "chrome": {
+        "name": "UTF16BE parent encoding is not inherited",
+        "error": "Error: report timeout",
+        "parentEncoding": "UTF-16BE",
+        "parentText": "\nconst child=document.createElement('iframe');\nwindow.addEventListener('message',e=>{if(e.source===c",
+        "childPresent": true,
+        "childEncoding": "UTF-16BE",
+        "childText": "\u3c70\u2069\u643d\u7061\u796c\u6f61\u643e\uc3a9\u3c2f\u703e\u3c73\u6372\u6970\u743e\u7061\u7265\u6e74\u2e70\u6f73\u744d\u6573\u7361\u6765\u287b\u6b69\u6e64\u3a27\u6368\u696c\u642d\u7265\u7375\u6c74\u272c\u656e\u636f\u6469\u6e67\u3a64\u6f63\u756d\u656e\u742e\u6368\u6172\u6163\u7465\u7253\u6574\u2c74\u6578\u743a\u646f\u6375\u6d65\u6e74\u2e67\u6574\u456c\u656d\u656e\u7442\u7949\u6428\u2770\u6179\u6c6f\u6164\u2729\u2e74\u6578\u7443\u6f6e\u7465\u6e74\u7d2c\u272a\u2729\u3b3c\u2f73\u6372\u6970\u743e",
+        "childURL": "http://127.0.0.1:51559/child/1"
+      }
+    }
+  ],
+  "scope": "Observed default-encoding policy only. Unchanged frozen frame assertions remain separately recorded; this probe has no conformance score.",
+  "sources": [
+    "https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding"
+  ]
+}

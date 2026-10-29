@@ -1,0 +1,301 @@
+{
+  "complete": true,
+  "policyIsolationValid": true,
+  "caseInputs": [
+    {
+      "name": "same-origin Windows1251 parent remains eligible",
+      "parent": "windows-1251",
+      "bytes": [
+        128
+      ],
+      "encoding": "windows-1251",
+      "text": "\u0402"
+    },
+    {
+      "name": "cross-origin Windows1251 parent does not become inherited",
+      "parent": "windows-1251",
+      "cross": true,
+      "bytes": [
+        128
+      ],
+      "encoding": "windows-1252",
+      "text": "\u20ac"
+    },
+    {
+      "name": "sandbox Windows1251 parent does not become inherited",
+      "parent": "windows-1251",
+      "sandbox": true,
+      "bytes": [
+        128
+      ],
+      "encoding": "windows-1252",
+      "text": "\u20ac"
+    },
+    {
+      "name": "CSP sandbox Windows1251 parent does not become inherited",
+      "parent": "windows-1251",
+      "csp": true,
+      "bytes": [
+        128
+      ],
+      "encoding": "windows-1252",
+      "text": "\u20ac"
+    },
+    {
+      "name": "cross-origin explicit UTF8 still precedes locale fallback",
+      "parent": "windows-1251",
+      "cross": true,
+      "header": "utf-8",
+      "bytes": [
+        195,
+        169
+      ],
+      "encoding": "UTF-8",
+      "text": "\u00e9"
+    }
+  ],
+  "browsers": [
+    {
+      "browser": "lume",
+      "binarySHA256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+      "startedUTC": "2026-10-29T05:04:18.454968+00:00",
+      "frameFixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+      "complete": true,
+      "actual": {
+        "rows": [
+          {
+            "name": "Top-level unlabelled HTML",
+            "encoding": "windows-1252",
+            "text": "\u00c3\u00a9",
+            "language": "en-US"
+          },
+          {
+            "name": "same-origin Windows1251 parent remains eligible",
+            "parentEncoding": "windows-1251",
+            "encoding": "windows-1251",
+            "text": "\u0402",
+            "error": null
+          },
+          {
+            "name": "cross-origin Windows1251 parent does not become inherited",
+            "parentEncoding": "windows-1251",
+            "encoding": "windows-1252",
+            "text": "\u20ac",
+            "error": null
+          },
+          {
+            "name": "sandbox Windows1251 parent does not become inherited",
+            "parentEncoding": "windows-1251",
+            "encoding": "windows-1252",
+            "text": "\u20ac",
+            "error": null
+          },
+          {
+            "name": "CSP sandbox Windows1251 parent does not become inherited",
+            "parentEncoding": "windows-1251",
+            "encoding": "windows-1252",
+            "text": "\u20ac",
+            "error": null
+          },
+          {
+            "name": "cross-origin explicit UTF8 still precedes locale fallback",
+            "parentEncoding": "windows-1251",
+            "encoding": "UTF-8",
+            "text": "\u00e9",
+            "error": null
+          }
+        ],
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+      },
+      "ownedBrowserExitCode": 0,
+      "ownedProcessGroupGone": true,
+      "monitorExitCode": 0,
+      "resources": {
+        "path": "out/lume-20261029-cpu30/html-default-isolation-1/lume/resources.json",
+        "sha256": "99d34c43bc11f63ebf4f2af6993fc13c71ee502cb487582c1fe7582c56dc9e56",
+        "samples": 2,
+        "collectorError": null
+      },
+      "finishedUTC": "2026-10-29T05:04:21.401869+00:00",
+      "wallSeconds": 2.947,
+      "binarySHA256After": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce"
+    },
+    {
+      "browser": "qualified-chrome",
+      "binarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+      "startedUTC": "2026-10-29T05:04:21.430490+00:00",
+      "frameFixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+      "complete": true,
+      "actual": {
+        "rows": [
+          {
+            "name": "Top-level unlabelled HTML",
+            "encoding": "windows-1252",
+            "text": "\u00c3\u00a9",
+            "language": "en-US"
+          },
+          {
+            "name": "same-origin Windows1251 parent remains eligible",
+            "parentEncoding": "windows-1251",
+            "encoding": "windows-1251",
+            "text": "\u0402",
+            "error": null
+          },
+          {
+            "name": "cross-origin Windows1251 parent does not become inherited",
+            "parentEncoding": "windows-1251",
+            "encoding": "windows-1252",
+            "text": "\u20ac",
+            "error": null
+          },
+          {
+            "name": "sandbox Windows1251 parent does not become inherited",
+            "parentEncoding": "windows-1251",
+            "encoding": "windows-1252",
+            "text": "\u20ac",
+            "error": null
+          },
+          {
+            "name": "CSP sandbox Windows1251 parent does not become inherited",
+            "parentEncoding": "windows-1251",
+            "encoding": "windows-1252",
+            "text": "\u20ac",
+            "error": null
+          },
+          {
+            "name": "cross-origin explicit UTF8 still precedes locale fallback",
+            "parentEncoding": "windows-1251",
+            "encoding": "UTF-8",
+            "text": "\u00e9",
+            "error": null
+          }
+        ],
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36"
+      },
+      "ownedBrowserExitCode": 0,
+      "ownedProcessGroupGone": true,
+      "monitorExitCode": 0,
+      "resources": {
+        "path": "out/lume-20261029-cpu30/html-default-isolation-1/qualified-chrome/resources.json",
+        "sha256": "cdae441058a2e0eda5bac1e866416cfc4f256b1877cf82fb710dd981438a2f9a",
+        "samples": 2,
+        "collectorError": null
+      },
+      "finishedUTC": "2026-10-29T05:04:24.400617+00:00",
+      "wallSeconds": 2.97,
+      "binarySHA256After": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4"
+    }
+  ],
+  "comparisons": [
+    {
+      "name": "Top-level unlabelled HTML",
+      "same": true,
+      "lume": {
+        "name": "Top-level unlabelled HTML",
+        "encoding": "windows-1252",
+        "text": "\u00c3\u00a9",
+        "language": "en-US"
+      },
+      "chrome": {
+        "name": "Top-level unlabelled HTML",
+        "encoding": "windows-1252",
+        "text": "\u00c3\u00a9",
+        "language": "en-US"
+      }
+    },
+    {
+      "name": "same-origin Windows1251 parent remains eligible",
+      "same": true,
+      "lume": {
+        "name": "same-origin Windows1251 parent remains eligible",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1251",
+        "text": "\u0402",
+        "error": null
+      },
+      "chrome": {
+        "name": "same-origin Windows1251 parent remains eligible",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1251",
+        "text": "\u0402",
+        "error": null
+      }
+    },
+    {
+      "name": "cross-origin Windows1251 parent does not become inherited",
+      "same": true,
+      "lume": {
+        "name": "cross-origin Windows1251 parent does not become inherited",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      },
+      "chrome": {
+        "name": "cross-origin Windows1251 parent does not become inherited",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      }
+    },
+    {
+      "name": "sandbox Windows1251 parent does not become inherited",
+      "same": true,
+      "lume": {
+        "name": "sandbox Windows1251 parent does not become inherited",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      },
+      "chrome": {
+        "name": "sandbox Windows1251 parent does not become inherited",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      }
+    },
+    {
+      "name": "CSP sandbox Windows1251 parent does not become inherited",
+      "same": true,
+      "lume": {
+        "name": "CSP sandbox Windows1251 parent does not become inherited",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      },
+      "chrome": {
+        "name": "CSP sandbox Windows1251 parent does not become inherited",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      }
+    },
+    {
+      "name": "cross-origin explicit UTF8 still precedes locale fallback",
+      "same": true,
+      "lume": {
+        "name": "cross-origin explicit UTF8 still precedes locale fallback",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "chrome": {
+        "name": "cross-origin explicit UTF8 still precedes locale fallback",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    }
+  ],
+  "scope": "Observed default-encoding policy only. Unchanged frozen frame assertions remain separately recorded; this probe has no conformance score.",
+  "sources": [
+    "https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding"
+  ]
+}

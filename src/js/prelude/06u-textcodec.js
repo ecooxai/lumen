@@ -146,13 +146,19 @@ function createTextCodecInterfaces(privateState, codec) {
             if (cp <= 0xFFFF) units[used++] = cp;
             else { cp -= 0x10000; units[used++] = 0xD800 + (cp >> 10); units[used++] = 0xDC00 + (cp & 1023); }
         };
-        const invalid = (reconsume = null) => {
+        const invalid = (reconsume = null, discardTail = false) => {
             if (!state.fatal) { emit(0xFFFD); return; }
-            const prefix = reconsume || [], remaining = bytes.length - pos;
-            // Only a fatal call's unconsumed queue survives; successful calls
-            // retain no input chunks, just the unfinished scalar's small state.
-            state.queue = new U8(prefix.length + remaining);
-            state.queue.set(prefix); state.queue.set(bytes.subarray(pos), prefix.length);
+            if (discardTail) {
+                // Chromium and the pinned WPT recover from an invalid UTF-8
+                // leading byte without replaying the rejected chunk's tail.
+                // Keep this interop choice local to that error category;
+                // continuation, BOM, UTF-16 and legacy state are not reset.
+                state.queue = new U8(0);
+            } else {
+                const prefix = reconsume || [], remaining = bytes.length - pos;
+                state.queue = new U8(prefix.length + remaining);
+                state.queue.set(prefix); state.queue.set(bytes.subarray(pos), prefix.length);
+            }
             throw new TypeError('The encoded data is not valid for ' + state.encoding);
         };
         if (state.encoding === 'utf-8') {
@@ -169,7 +175,7 @@ function createTextCodecInterfaces(privateState, codec) {
                         state.need = 3; state.cp = b & 7;
                         if (b === 0xF0) state.low = 0x90;
                         if (b === 0xF4) state.high = 0x8F;
-                    } else invalid();
+                    } else invalid(null, true);
                     continue;
                 }
                 if (b < state.low || b > state.high) {

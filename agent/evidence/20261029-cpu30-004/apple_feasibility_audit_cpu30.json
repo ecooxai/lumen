@@ -1,0 +1,70 @@
+{
+  "taskId": "20261029-cpu30",
+  "audit": "Apple device and simulator feasibility",
+  "status": "Native Mac browser tested; current iPad simulator app and same signed device IPA on Mac remain unverified.",
+  "sourceReceipts": {
+    "platform": "broker/apple_platform_6009.json (captured current platform inventory)",
+    "directXcodeCompiler": "out/lume-20261029-cpu30/apple-sdk-direct-1/summary.json",
+    "existingCompilerAndCacheInventory": "out/lume-20261029-cpu30/icu-apple-readonly-audit.json",
+    "matchingCLTCompiler": "out/lume-20261029-cpu30/apple-sdk-direct-2/summary.json",
+    "nativePrebuiltV8": "out/lume-20261029-cpu30/v8-prebuilt-identity.json"
+  },
+  "established": {
+    "xcode": "/Applications/Xcode-27.0-RC.app",
+    "xcodeSDKResolution": "xcodebuild/xcrun resolution fails in the damaged Xcode bundle; zero-length plugin/property files were observed. Global selection and SDK contents were not modified.",
+    "specificCompilerObstacle": "The Xcode clang 21 ptrcheck.h resource is zero bytes. Existing CLT clang 21 has the exact same build ID clang-2100.3.34.2 and an intact 16,074-byte ptrcheck.h.",
+    "safeProjectLocalCompilePath": {
+      "compiler": "/Library/Developer/CommandLineTools/usr/bin/clang",
+      "result": "Both identical tiny UIKit/Foundation compile-and-link probes succeeded with explicit iOS SDK paths. This is toolchain feasibility, not Lume application execution.",
+      "durationSeconds": 2.228,
+      "targets": [
+        {
+          "platform": "sim",
+          "target": "arm64-apple-ios16.0-simulator",
+          "sdk": "/Applications/Xcode-27.0-RC.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk",
+          "artifactSHA256": "9bf9a70c18de9a9841d67039aa3e4294112ac9dc5a00689beb2c84b228e4d048",
+          "platformLoadCommand": [
+            "Load command 11\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform 7\n    minos 16.0\n      sdk 27.0\n   ntools 1\n     tool 3\n  version 27037.1\nLoad command 12"
+          ]
+        },
+        {
+          "platform": "ios",
+          "target": "arm64-apple-ios16.0",
+          "sdk": "/Applications/Xcode-27.0-RC.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk",
+          "artifactSHA256": "e7272d66b9d832bf5d4dc778576f2ce6b6ea257bdc9102e1e217ab90cfd0876f",
+          "platformLoadCommand": [
+            "Load command 11\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform 2\n    minos 16.0\n      sdk 27.0\n   ntools 1\n     tool 3\n  version 27037.1\nLoad command 12"
+          ]
+        }
+      ]
+    },
+    "ipadSimulator": "A project-owned iPad Air 11-inch M4 simulator on iOS 27 was available and booted. Launchctl query succeeded; current Lume install/runtime was not established.",
+    "signingIdentities": 0,
+    "currentIpaCandidates": 0,
+    "knownAppleBuildCache": "Known project build-sim, build-ios, build-cat apps/IPAs and project/home mobile dependency/V8 caches were absent.",
+    "prebuiltNativeV8": "All three existing arm64 Homebrew V8 dylibs were pinned and hashed at version 15.6.75.16; no V8 source compilation or replacement occurred."
+  },
+  "remainingBlockers": [
+    "No compatible current simulator/device V8 monolith and transitive dependency closure is present.",
+    "No current mobile dependency prefixes or Lume app/IPA artifacts were recovered at the documented project-owned paths.",
+    "A device IPA export still needs a valid matching signing identity/profile and working Xcode export path.",
+    "No same signed device IPA has been installed and run successfully on both a provisioned Apple device and Mac. A simulator executable is a separate platform build."
+  ],
+  "prebuiltV8Search": {
+    "scope": "Bounded official V8 documentation/search and documented local cache paths.",
+    "finding": "No compatible official prebuilt iOS archive was identified. Official V8 pages document source cross-building a monolith. This does not prove that no third-party binary exists.",
+    "rejectedDropInAssumption": "A third-party iOS XCFramework at V8 14.3.92 was surfaced, but the project expects 15.6.75.16 plus matching headers/GN closure and build flags; it was not blindly substituted.",
+    "primaryReferences": [
+      "https://v8.dev/docs/cross-compile-ios",
+      "https://v8.dev/docs/embed",
+      "https://v8.dev/docs/build"
+    ]
+  },
+  "nextConcreteSteps": [
+    "Recover or qualify prebuilt simulator and device V8 15.6.75.16 archives with matching headers, ICU and all required Rust/Temporal link archives; restore the other platform dependencies.",
+    "Use project-level SDK/CC/CXX overrides with explicit target and sysroot; the existing Makefile already accepts command-line overrides. Do not copy or alter SDK headers.",
+    "Build and install the current separate simulator app, then run the same selected WPT/interaction/resource acceptance on that artifact.",
+    "Export a properly provisioned device IPA through a working Xcode signing path and validate its exact SHA on the intended device and Mac before claiming shared-IPA support."
+  ],
+  "historicalEvidence": "The Oct 21 report describes an older simulator build and an unsuccessful normal Mac launch of an ad-hoc IPA. It supplied no current IPA/dependency artifact and earns no current execution credit."
+}

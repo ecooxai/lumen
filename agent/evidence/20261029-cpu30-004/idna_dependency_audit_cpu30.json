@@ -1,0 +1,78 @@
+{
+  "taskId": "20261029-cpu30",
+  "audit": "Exact native URL IDNA failures",
+  "scope": "Read-only diagnosis; no URL source flags, Unicode mappings or installed libraries changed.",
+  "rawReceipt": "out/lume-20261029-cpu30/icu-apple-readonly-audit.json",
+  "nativeArtifact": "4b26d5b59edf9f6866b1317e6ffa29aabe7d8681cdee26a2b56a670d23536d54",
+  "source": "src/base/url.c",
+  "sourceSHA256": "55b2563cc28d7413e68684a807babcfddd108bea23a15f8221f3e82f3233c5cb",
+  "icu": {
+    "resolvedLibrary": "/opt/homebrew/Cellar/icu4c@78/78.3/lib/libicuuc.78.3.dylib",
+    "sha256": "a78b3424a391c7afad52c0d69df9cdb7818b6c20f909a14d193ae0c66a5c1119",
+    "version": [
+      78,
+      3,
+      0,
+      0
+    ],
+    "unicodeVersion": [
+      17,
+      0,
+      0,
+      0
+    ],
+    "options": 60,
+    "codepoints": [
+      {
+        "codepoint": "U+3F8CD",
+        "generalCategory": 0,
+        "age": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "codepoint": "U+3E8AC",
+        "generalCategory": 0,
+        "age": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "codepoint": "U+4E00",
+        "generalCategory": 5,
+        "age": [
+          1,
+          1,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "diagnosis": {
+    "failedAssertions": 7,
+    "affectedVariants": 1,
+    "affectedCodepoints": [
+      "U+3F8CD",
+      "U+3E8AC"
+    ],
+    "allErrorBits": "UIDNA_ERROR_DISALLOWED (0x80)",
+    "otherErrorBits": 0,
+    "icuFunctionStatus": "U_ZERO_ERROR; invalid labels are represented by UIDNAInfo.errors",
+    "controls": "example.com and \u00e9.example both return no errors and the expected ASCII host",
+    "inference": "The exact native library classifies the two characters as unassigned under Unicode 17. The pinned upstream cases include these characters newly assigned in the Unicode 18 Seal block; this is a Unicode-data version gap, not an observed Bidi/ContextJ option defect."
+  },
+  "installedAlternative": "No ICU79 library appeared in the bounded relevant Homebrew paths; /opt/homebrew/opt/icu4c resolves to the same 78.3 installation.",
+  "primaryReferences": [
+    "https://www.unicode.org/versions/Unicode18.0.0/",
+    "https://icu.unicode.org/"
+  ],
+  "recommendation": "Retain the seven failures. A future project-local ICU79 upgrade must use a qualified prebuilt or reproducible build and rerun IDNA, all URL cases, negative/security-sensitive host cases, and decoding/rendering consumers before acceptance. Do not allow unassigned characters globally or add two-codepoint mappings to suppress these failures.",
+  "chromeComparison": "Compatibility agent independently matched the same seven assertion names in the qualified Chrome176 control; retained as raw control failures, not a ranking exemption."
+}

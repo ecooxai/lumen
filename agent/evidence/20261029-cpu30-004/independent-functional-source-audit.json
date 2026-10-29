@@ -1,0 +1,58 @@
+{
+  "auditedUTC": "2026-10-29T04:53:39.204390+00:00",
+  "passed": true,
+  "currentPolicyChecks": 718,
+  "legacyUnmodifiedFixture": {
+    "total": 15,
+    "passed": 10,
+    "intentionalChangedOutcomes": 5,
+    "exactMessagesVerified": true
+  },
+  "native": {
+    "path": "out/lume-20261029-cpu30/native-default-1/lumen-3ad884713a4aa896",
+    "sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+    "bytes": 14055960
+  },
+  "jsrun": {
+    "path": "out/lume-20261029-cpu30/native-default-1/jsrun-22e574acf9d05739",
+    "sha256": "22e574acf9d0573923303abded07223f07143a5a745a1b39166416325f5ddfa8",
+    "bytes": 13828152
+  },
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-default-1/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "0cd15150cf85c9699ea847fd1859ab8a8097694e802ca2ca66e650262dc38ab7",
+  "sourcesUnchangedSinceBuild": true,
+  "sourceAndHelperSHA256": {
+    "src/js/prelude/06u-textcodec.js": "e9afb6996377b03acdf150dc4867f893cc1c36c555ea0cc943e6c161b11168f7",
+    "src/html/html.c": "5cbeceeb402b0cf79bd46cc9af63b2dcf05dea3f0199c27b200d3e3611ba2db6",
+    "src/js/windows.cc": "0c5075d75d905285f22671bc87cd6080aac72fa64ce5081b56ea0c2d96d46e1d",
+    "Makefile": "ff4e4b7819c0009fe9f91ff81d237221b1a7fecee72cc3f3b02b6e4e1e7e37d8",
+    "tests/test_text_decoder_fatal_recovery.py": "cfa2d3d2c9bedb470409eb8a539d64cd9f1d30443500c7a9de7ac6397ffb9de0",
+    "tests/test_html_default_policy.py": "d8caa52328a1250afff8808a270b3ebf6dfc42ef81cc4f91c8435d210de6a737",
+    "tests/test_html_default_policy.c": "f55f5320f9d2069d7cec4d9b230e91e05dde91343de6bdc76a4ab447c68ea915",
+    "tests/test_html_default_policy_network.c": "8db32a7918ffac0bb787c109cf3ea4bd39fe63d375130ee7cb2b43aa79d7b7e7",
+    "tools/apple-session-gpt6as/run_textcodec_fatal_red_cpu30.py": "6c6febc333a836beaaae2deeb2f5cb28e1ed67524f91dd134f6885e1750e8909",
+    "tools/apple-session-gpt6as/run_textcodec_fatal_green_cpu30.py": "4cfa3156c3a4774532e8c085237867a3b4e0a440160527f6194e0c192a06837c",
+    "tools/apple-session-gpt6as/run_html_default_red_cpu30.py": "b5ffb54379691360522396f419a8972ead570b210a5b28703d5b1b413b9e05bc",
+    "tools/apple-session-gpt6as/run_html_default_boundary_red_cpu30.py": "6ae18dc1223824e02416ae893db90895dc6e47575ddd70f932f33c7854cc1c8b",
+    "tools/apple-session-gpt6as/run_html_default_boundary_red2_cpu30.py": "03047ca8fcabb517df7ba0bf876cb10db84bec8e6fb9c456a494b99456410519",
+    "tools/apple-session-gpt6as/run_html_default_green_cpu30.py": "a2df2efbc74dc0ee321788777ee7be1a218d339be8003424f8ca484c662d0d70",
+    "tools/apple-session-gpt6as/probe_html_default_policy_cpu30.py": "7935decb7bec16dca4569e839844e4479b778aeccbea76930f01a14cbde60ff6",
+    "tools/apple-session-gpt6as/probe_html_default_utf16_cpu30.py": "e264d701fe8484ef47a7ddf935cea6af39154e591233aae635042f6a8ce26ecc",
+    "tools/apple-session-gpt6as/run_priority_expansion_cpu30.py": "184065803e6f75dd7c7daecab39dc89151f4fbc904f3f9aafd3a7d47e23573c5"
+  },
+  "receipts": {
+    "out/lume-20261029-cpu30/textcodec-fatal-red-1/summary.json": "a25731bb44b87156ecdb8a7480e6fa9af1f600bfb0c5dfd7de80996f1e928839",
+    "out/lume-20261029-cpu30/textcodec-fatal-patch-1/receipt.json": "78918a04dc157ab8ef418494b3cd7dd2fa15b69e19ac19546c393d9cefc9ae63",
+    "out/lume-20261029-cpu30/native-codec-1/summary.json": "d2a626e9b21f3ac9f80af80d15f4fdef7d410232e8c34ee8697cee5f1c584c04",
+    "out/lume-20261029-cpu30/fatal-stream-interop-3/summary.json": "9c4aeadbcb4c2bd72f8566d828d10827245da1556fdea277c1ee91703264b7e9",
+    "out/lume-20261029-cpu30/html-default-policy-1/summary.json": "6bcc9db7ae226036c4c0abfcf573c776a6ad490aecd97225bb18c6298a5ec75e",
+    "out/lume-20261029-cpu30/html-default-policy-utf16-1/summary.json": "86d0d2986a40f1833ed3699b336a992fc355234b1273dd0fd13ea2517258b2f4",
+    "out/lume-20261029-cpu30/html-default-red-1/summary.json": "d7285521bdae430f451620e4ebc17182a8b35aabc2e52cac3ea1b51aa00b468e",
+    "out/lume-20261029-cpu30/html-default-boundary-red-1/summary.json": "589d99a842dbab0d067e9cd86b1299921cebb0e091b3dd50e6dce9a2bc132dbb",
+    "out/lume-20261029-cpu30/html-default-boundary-red-2/summary.json": "51971bd27d23e4031c6009c1e7f7099b36fcc5d50261814826c53194b81964bf",
+    "out/lume-20261029-cpu30/html-default-patch-1/receipt.json": "31e6aaa7ecdc24242a194d882254401b14c67c26b2b395bb0ac84e2709e7682c",
+    "out/lume-20261029-cpu30/native-default-1/summary.json": "bee72ec9d7f65f482ed7b3a577e4d1362c21de7073f0cdef9814d5fa958e4128",
+    "out/lume-20261029-cpu30/native-default-1/compiled-source-sha256.json": "0cd15150cf85c9699ea847fd1859ab8a8097694e802ca2ca66e650262dc38ab7"
+  },
+  "acceptanceScope": "Functional/source audit only. Final unchanged WPT279 and GUI resource gates remain separately required."
+}

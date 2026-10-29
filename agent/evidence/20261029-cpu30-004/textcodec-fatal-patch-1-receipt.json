@@ -1,0 +1,18 @@
+{
+  "updatedUTC": "2026-10-29T04:31:46.204826+00:00",
+  "source": "src/js/prelude/06u-textcodec.js",
+  "beforeSHA256": "7cade02452e3346de75880f5a2d7ebfafa7f1beb448d95af17124643c34a99a4",
+  "afterSHA256": "e9afb6996377b03acdf150dc4867f893cc1c36c555ea0cc943e6c161b11168f7",
+  "redReceipt": "out/lume-20261029-cpu30/textcodec-fatal-red-1/summary.json",
+  "redReceiptSHA256": "a25731bb44b87156ecdb8a7480e6fa9af1f600bfb0c5dfd7de80996f1e928839",
+  "fixtureSHA256": "cfa2d3d2c9bedb470409eb8a539d64cd9f1d30443500c7a9de7ac6397ffb9de0",
+  "baseFixtureSHA256": "5ff54ee9929df32e9922d3af45224ce568fe72345451aefc527c05244a187050",
+  "independentProbe": "out/lume-20261029-cpu30/fatal-stream-interop-2/summary.json",
+  "independentProbeSHA256": "7d42b874917cad9074e36a9af0a0a0446c3d322194b3e1324d8f7e04f1b693eb",
+  "policy": "Bounded Chrome/WPT interoperability change for the general UTF8 invalid-leading-byte error branch only. The literal Encoding Standard queue wording remains in tension with this behavior; no universal spec-conformance claim.",
+  "remainingDivergence": "Invalid UTF8 continuation followed by flush retains prior native behavior; qualified Chrome throws. Expected paired match26/28, not28/28.",
+  "sources": [
+    "https://encoding.spec.whatwg.org/#dom-textdecoder-decode",
+    "https://github.com/whatwg/encoding/issues/359"
+  ]
+}

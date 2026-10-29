@@ -116,6 +116,10 @@ try{
         assert.ok(observed.title.includes(taskId));assert.ok(observed.connection.startsWith('Live'));assert.ok(observed.latency.endsWith(' ms'));assert.ok(observed.cpu.endsWith('%'));assert.ok(observed.ram.endsWith(' GB'));assert.ok(observed.disks>0);
         assert.ok(observed.count.includes(String(progress.status.currentWpt.recorded)));assert.ok(observed.artifact.includes(progress.status.currentWpt.binarySha256.slice(0,20)));
         assert.ok(observed.scrollWidth<=observed.width+1,'Page has horizontal viewport overflow');
+        const card=await evaluate(`(()=>{const rate=document.querySelector('.hero>.rate-card'),summary=document.querySelector('.hero>div:not(.rate-card)');return {label:rate?.querySelector('.eyebrow')?.textContent,rateTop:rate?.getBoundingClientRect().top,summaryTop:summary?.getBoundingClientRect().top}})()`);
+        assert.equal(card.label,'Selected WPT pass rate');
+        if(viewport.mobile)assert.ok(card.rateTop<card.summaryTop,'Mobile WPT card must precede the long summary');
+        row.wptCard=card;
         if(viewport.name==='desktop'){
           await evaluate('sessionStorage.setItem("lume102900614-access",'+JSON.stringify(access)+');true');
           await call('Page.reload',{ignoreCache:true},sessionId);
@@ -126,6 +130,9 @@ try{
           assert.equal(enabled,true,'Ordinary reload lost the explicit old message namespace');row.privateAccessSurvivedOrdinaryReload=true;
           await sleep(2200);
         }
+        const actionLayout=await evaluate(`(()=>{const button=document.getElementById('send'),badge=document.getElementById('score');button.scrollIntoView({block:'end'});const a=button.getBoundingClientRect(),b=badge.getBoundingClientRect(),overlap=Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));const result={button:{left:a.left,right:a.right,top:a.top,bottom:a.bottom},badge:{left:b.left,right:b.right,top:b.top,bottom:b.bottom},intersectionArea:overlap};window.scrollTo(0,0);return result})()`);
+        assert.equal(actionLayout.intersectionArea,0,'Fixed score badge overlaps the message action');row.messageActionLayout=actionLayout;
+        await sleep(75);
         const screenshot=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false},sessionId);
         const file=path.join(out,origin.label+'-'+viewport.name+'.png'), bytes=Buffer.from(screenshot.data,'base64');await fs.writeFile(file,bytes,{mode:0o600});
         row.observed=observed;row.screenshot={path:path.relative(root,file),bytes:bytes.length,sha256:digest(bytes),scope:'Internal visual QA only; excludes private keys and messages'};row.passed=true;await save();

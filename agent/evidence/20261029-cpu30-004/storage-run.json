@@ -1,0 +1,117 @@
+{
+  "signature": {
+    "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+    "manifest_sha256": "7f2b0405286816226928047248543c709d4df237a2cfbe720e5c05e7a3554b24",
+    "inventory_sha256": "5ceae6d5879ba27038f530511428432d652d5e2d079c4b33a4d017c3fee94d1b",
+    "source_fixture": {
+      "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+      "manifest_sha256": "7f2b0405286816226928047248543c709d4df237a2cfbe720e5c05e7a3554b24",
+      "tracked_upstream_sources_clean": true
+    },
+    "server_config_sha256": "d3d4f26a540e3564d1d9f6137be4c465d99283ce5ad87531b67cd5719c79c9d0",
+    "fixture_manifest_sha256": "3f0ea2bafc7cac953cc5a141ef2e3717d2613428e5de70ddc09914cd31f25240",
+    "selection": {
+      "types": [
+        "testharness"
+      ],
+      "prefixes": [
+        "/webstorage/storage_clear.window.html",
+        "/webstorage/storage_getitem.window.html",
+        "/webstorage/storage_key.window.html",
+        "/webstorage/storage_key_empty_string.window.html",
+        "/webstorage/storage_length.window.html",
+        "/webstorage/storage_removeitem.window.html",
+        "/webstorage/storage_setitem.window.html"
+      ],
+      "order": [
+        "type",
+        "test URL"
+      ],
+      "offset": 0,
+      "limit": null,
+      "eligible_files_before_slice": 7,
+      "selected_files": 7
+    },
+    "schedule_sha256": "37ea6de0542117f1ac0600e5f87ac3b2bb95c7b04eb3c0cecf0147f127015e43",
+    "engine": "lumen",
+    "binary_sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+    "runner_sha256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+    "reporter_sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "reporter_delivery": "official WPT /resources/testharnessreport.js exact file alias",
+    "verified_http_reporter_sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "monitor_sha256": "e31aa4fc949b149ac9c0e8c6170ce72ec3def971dbab4d6b026635f262d9cd79",
+    "native_fixture": {
+      "host_map": "not-web-platform.test=127.0.0.1,web-platform.test=127.0.0.1,www.not-web-platform.test=127.0.0.1,www.web-platform.test=127.0.0.1,www.www.not-web-platform.test=127.0.0.1,www.www.web-platform.test=127.0.0.1,www.www1.not-web-platform.test=127.0.0.1,www.www1.web-platform.test=127.0.0.1,www.www2.not-web-platform.test=127.0.0.1,www.www2.web-platform.test=127.0.0.1,www.xn--lve-6lad.not-web-platform.test=127.0.0.1,www.xn--lve-6lad.web-platform.test=127.0.0.1,www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,www1.not-web-platform.test=127.0.0.1,www1.web-platform.test=127.0.0.1,www1.www.not-web-platform.test=127.0.0.1,www1.www.web-platform.test=127.0.0.1,www1.www1.not-web-platform.test=127.0.0.1,www1.www1.web-platform.test=127.0.0.1,www1.www2.not-web-platform.test=127.0.0.1,www1.www2.web-platform.test=127.0.0.1,www1.xn--lve-6lad.not-web-platform.test=127.0.0.1,www1.xn--lve-6lad.web-platform.test=127.0.0.1,www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,www2.not-web-platform.test=127.0.0.1,www2.web-platform.test=127.0.0.1,www2.www.not-web-platform.test=127.0.0.1,www2.www.web-platform.test=127.0.0.1,www2.www1.not-web-platform.test=127.0.0.1,www2.www1.web-platform.test=127.0.0.1,www2.www2.not-web-platform.test=127.0.0.1,www2.www2.web-platform.test=127.0.0.1,www2.xn--lve-6lad.not-web-platform.test=127.0.0.1,www2.xn--lve-6lad.web-platform.test=127.0.0.1,www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--lve-6lad.web-platform.test=127.0.0.1,xn--lve-6lad.www.not-web-platform.test=127.0.0.1,xn--lve-6lad.www.web-platform.test=127.0.0.1,xn--lve-6lad.www1.not-web-platform.test=127.0.0.1,xn--lve-6lad.www1.web-platform.test=127.0.0.1,xn--lve-6lad.www2.not-web-platform.test=127.0.0.1,xn--lve-6lad.www2.web-platform.test=127.0.0.1,xn--lve-6lad.xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--lve-6lad.xn--lve-6lad.web-platform.test=127.0.0.1,xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1",
+      "host_map_mode": "exact",
+      "ssl_cert_sha256": "6760c932218bfe2703b10f2ea89a54b409f04d94dc5a1c9cf0f1fe7da8b30b52"
+    },
+    "origin": "http://web-platform.test:18800",
+    "secure_origin": "https://web-platform.test:18443",
+    "h2_origin": "https://web-platform.test:18900",
+    "timeout_s": 15,
+    "long_timeout_s": 65,
+    "strict_infrastructure": false,
+    "chromium_args": [
+      "--host-resolver-rules=MAP not-web-platform.test 127.0.0.1, MAP web-platform.test 127.0.0.1, MAP www.not-web-platform.test 127.0.0.1, MAP www.web-platform.test 127.0.0.1, MAP www.www.not-web-platform.test 127.0.0.1, MAP www.www.web-platform.test 127.0.0.1, MAP www.www1.not-web-platform.test 127.0.0.1, MAP www.www1.web-platform.test 127.0.0.1, MAP www.www2.not-web-platform.test 127.0.0.1, MAP www.www2.web-platform.test 127.0.0.1, MAP www.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP www1.not-web-platform.test 127.0.0.1, MAP www1.web-platform.test 127.0.0.1, MAP www1.www.not-web-platform.test 127.0.0.1, MAP www1.www.web-platform.test 127.0.0.1, MAP www1.www1.not-web-platform.test 127.0.0.1, MAP www1.www1.web-platform.test 127.0.0.1, MAP www1.www2.not-web-platform.test 127.0.0.1, MAP www1.www2.web-platform.test 127.0.0.1, MAP www1.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www1.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP www2.not-web-platform.test 127.0.0.1, MAP www2.web-platform.test 127.0.0.1, MAP www2.www.not-web-platform.test 127.0.0.1, MAP www2.www.web-platform.test 127.0.0.1, MAP www2.www1.not-web-platform.test 127.0.0.1, MAP www2.www1.web-platform.test 127.0.0.1, MAP www2.www2.not-web-platform.test 127.0.0.1, MAP www2.www2.web-platform.test 127.0.0.1, MAP www2.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www2.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www1.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www1.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www2.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www2.web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1",
+      "--ignore-certificate-errors-spki-list=WXjEgm6G9rSgRQQVGbD5q+zOszPmv3ZBSfaIAMv+bY8="
+    ],
+    "chromium_headless": null
+  },
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "started_at_unix_ms": 1793249650561,
+  "binary": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/native-default-1/lumen-3ad884713a4aa896",
+  "lumen_revision": "7d2f27c1bacfeec19915a2c8b0b417cfa84c0963",
+  "lumen_dirty": true,
+  "full_inventory_counts": {
+    "crashtest": 28,
+    "manual": 2,
+    "reftest": 7,
+    "testharness": 2155
+  },
+  "scheduled_files": 7,
+  "supported_execution_types": [
+    "test262",
+    "testharness"
+  ],
+  "inventory_coverage_by_type": {
+    "crashtest": {
+      "inventory_variants": 28,
+      "selected_variants": 0,
+      "outside_selection_variants": 28,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "manual": {
+      "inventory_variants": 2,
+      "selected_variants": 0,
+      "outside_selection_variants": 2,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "reftest": {
+      "inventory_variants": 7,
+      "selected_variants": 0,
+      "outside_selection_variants": 7,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "testharness": {
+      "inventory_variants": 2155,
+      "selected_variants": 7,
+      "outside_selection_variants": 2148,
+      "executor_available": true,
+      "execution_plan": "SCHEDULED",
+      "reason": "Official server wrapper and synchronous reporter"
+    }
+  },
+  "automation_limitation": "No testdriver/WebDriver actions; manual, reference and protocol tests remain explicitly unrun.",
+  "is_full_suite_schedule": false,
+  "last_invocation_budget_s": 240.0,
+  "last_invocation_started_unix_ms": 1793249650591,
+  "last_checkpoint_unix_ms": 1793249654082,
+  "finished_schedule": true
+}

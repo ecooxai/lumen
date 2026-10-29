@@ -1,0 +1,7 @@
+{
+  "firstAttempt": "Stopped before source commit by git diff --check",
+  "path": "tools/apple-session-gpt6as/probe_html_default_utf16_cpu30.py",
+  "sha256": "e264d701fe8484ef47a7ddf935cea6af39154e591233aae635042f6a8ce26ecc",
+  "line": 67,
+  "decision": "Preserve byte-exact executed diagnostic producer. Exclude only this known historical whitespace from source whitespace gate; all other source paths are checked. No runtime code or test expectation is changed."
+}

@@ -1,0 +1,673 @@
+{
+  "startedUTC": "2026-10-29T04:43:49.999174+00:00",
+  "finishedUTC": "2026-10-29T04:43:52.704541+00:00",
+  "durationSeconds": 2.705,
+  "redConfirmed": true,
+  "exitCode": 1,
+  "fixtureSHA256": "d8caa52328a1250afff8808a270b3ebf6dfc42ef81cc4f91c8435d210de6a737",
+  "legacyFixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+  "artifact": {
+    "path": "out/lume-20261029-cpu30/native-codec-1/lumen-9137de2fb8cba151",
+    "sha256": "9137de2fb8cba151b7a4ca4f21aa02771061068cd41aa4327de4e3e20d709553",
+    "bytes": 14055960
+  },
+  "result": {
+    "total": 25,
+    "passed": 21,
+    "failed": 4,
+    "unresolvedLegacyControls": [
+      "UTF16LE parent encoding is not inherited",
+      "UTF16BE parent encoding is not inherited"
+    ]
+  },
+  "checks": [
+    {
+      "name": "Top-level unlabelled HTML",
+      "ok": false,
+      "actual": {
+        "name": "Top-level unlabelled HTML",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "language": "en-US"
+      },
+      "expected": {
+        "name": "Top-level unlabelled HTML",
+        "encoding": "windows-1252",
+        "text": "\u00c3\u00a9",
+        "language": "en-US"
+      }
+    },
+    {
+      "name": "Windows1252 parent fallback",
+      "ok": true,
+      "actual": {
+        "name": "Windows1252 parent fallback",
+        "parentEncoding": "windows-1252",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      },
+      "expected": {
+        "name": "Windows1252 parent fallback",
+        "parentEncoding": "windows-1252",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      }
+    },
+    {
+      "name": "unsupported transport label uses parent fallback",
+      "ok": true,
+      "actual": {
+        "name": "unsupported transport label uses parent fallback",
+        "parentEncoding": "windows-1252",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      },
+      "expected": {
+        "name": "unsupported transport label uses parent fallback",
+        "parentEncoding": "windows-1252",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      }
+    },
+    {
+      "name": "Big5 parent fallback",
+      "ok": true,
+      "actual": {
+        "name": "Big5 parent fallback",
+        "parentEncoding": "Big5",
+        "encoding": "Big5",
+        "text": "\u6c34",
+        "error": null
+      },
+      "expected": {
+        "name": "Big5 parent fallback",
+        "parentEncoding": "Big5",
+        "encoding": "Big5",
+        "text": "\u6c34",
+        "error": null
+      }
+    },
+    {
+      "name": "supported transport label overrides parent",
+      "ok": true,
+      "actual": {
+        "name": "supported transport label overrides parent",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "supported transport label overrides parent",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "HTML metadata overrides parent",
+      "ok": true,
+      "actual": {
+        "name": "HTML metadata overrides parent",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "HTML metadata overrides parent",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "UTF8 BOM overrides parent",
+      "ok": true,
+      "actual": {
+        "name": "UTF8 BOM overrides parent",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "UTF8 BOM overrides parent",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "cross-origin child does not inherit",
+      "ok": false,
+      "actual": {
+        "name": "cross-origin child does not inherit",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-8",
+        "text": "\ufffd",
+        "error": null
+      },
+      "expected": {
+        "name": "cross-origin child does not inherit",
+        "parentEncoding": "windows-1252",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      }
+    },
+    {
+      "name": "sandbox opaque-origin child does not inherit",
+      "ok": false,
+      "actual": {
+        "name": "sandbox opaque-origin child does not inherit",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-8",
+        "text": "\ufffd",
+        "error": null
+      },
+      "expected": {
+        "name": "sandbox opaque-origin child does not inherit",
+        "parentEncoding": "windows-1252",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      }
+    },
+    {
+      "name": "CSP sandbox opaque-origin child does not inherit",
+      "ok": false,
+      "actual": {
+        "name": "CSP sandbox opaque-origin child does not inherit",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-8",
+        "text": "\ufffd",
+        "error": null
+      },
+      "expected": {
+        "name": "CSP sandbox opaque-origin child does not inherit",
+        "parentEncoding": "windows-1252",
+        "encoding": "windows-1252",
+        "text": "\u20ac",
+        "error": null
+      }
+    },
+    {
+      "name": "UTF8 parent fallback stays UTF8",
+      "ok": true,
+      "actual": {
+        "name": "UTF8 parent fallback stays UTF8",
+        "parentEncoding": "UTF-8",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "UTF8 parent fallback stays UTF8",
+        "parentEncoding": "UTF-8",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "UTF16 child transport remains authoritative",
+      "ok": true,
+      "actual": {
+        "name": "UTF16 child transport remains authoritative",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-16LE",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "UTF16 child transport remains authoritative",
+        "parentEncoding": "windows-1252",
+        "encoding": "UTF-16LE",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "Big5 meta overrides a Windows1252 parent",
+      "ok": true,
+      "actual": {
+        "name": "Big5 meta overrides a Windows1252 parent",
+        "parentEncoding": "windows-1252",
+        "encoding": "Big5",
+        "text": "\u6c34",
+        "error": null
+      },
+      "expected": {
+        "name": "Big5 meta overrides a Windows1252 parent",
+        "parentEncoding": "windows-1252",
+        "encoding": "Big5",
+        "text": "\u6c34",
+        "error": null
+      }
+    },
+    {
+      "name": "unsupported meta label permits Big5 parent fallback",
+      "ok": true,
+      "actual": {
+        "name": "unsupported meta label permits Big5 parent fallback",
+        "parentEncoding": "Big5",
+        "encoding": "Big5",
+        "text": "\u6c34",
+        "error": null
+      },
+      "expected": {
+        "name": "unsupported meta label permits Big5 parent fallback",
+        "parentEncoding": "Big5",
+        "encoding": "Big5",
+        "text": "\u6c34",
+        "error": null
+      }
+    },
+    {
+      "name": "HTML inherited parent",
+      "ok": true,
+      "actual": {
+        "name": "HTML inherited parent",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1251",
+        "text": "\u0413\u00a9",
+        "error": null
+      },
+      "expected": {
+        "name": "HTML inherited parent",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1251",
+        "text": "\u0413\u00a9",
+        "error": null
+      }
+    },
+    {
+      "name": "HTML explicit UTF8",
+      "ok": true,
+      "actual": {
+        "name": "HTML explicit UTF8",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "HTML explicit UTF8",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "HTML UTF8 meta",
+      "ok": true,
+      "actual": {
+        "name": "HTML UTF8 meta",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "HTML UTF8 meta",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "HTML UTF8 BOM",
+      "ok": true,
+      "actual": {
+        "name": "HTML UTF8 BOM",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "HTML UTF8 BOM",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "JSON UTF8 default",
+      "ok": true,
+      "actual": {
+        "name": "JSON UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\"\u00e9\"",
+        "error": null
+      },
+      "expected": {
+        "name": "JSON UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\"\u00e9\"",
+        "error": null
+      }
+    },
+    {
+      "name": "text JSON UTF8 default",
+      "ok": true,
+      "actual": {
+        "name": "text JSON UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\"\u00e9\"",
+        "error": null
+      },
+      "expected": {
+        "name": "text JSON UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\"\u00e9\"",
+        "error": null
+      }
+    },
+    {
+      "name": "suffix JSON UTF8 default",
+      "ok": true,
+      "actual": {
+        "name": "suffix JSON UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\"\u00e9\"",
+        "error": null
+      },
+      "expected": {
+        "name": "suffix JSON UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\"\u00e9\"",
+        "error": null
+      }
+    },
+    {
+      "name": "XML UTF8 default",
+      "ok": true,
+      "actual": {
+        "name": "XML UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "XML UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "text XML UTF8 default",
+      "ok": true,
+      "actual": {
+        "name": "text XML UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "text XML UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "SVG UTF8 default",
+      "ok": true,
+      "actual": {
+        "name": "SVG UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      },
+      "expected": {
+        "name": "SVG UTF8 default",
+        "parentEncoding": "windows-1251",
+        "encoding": "UTF-8",
+        "text": "\u00e9",
+        "error": null
+      }
+    },
+    {
+      "name": "plain inherited/default policy",
+      "ok": true,
+      "actual": {
+        "name": "plain inherited/default policy",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1251",
+        "text": "\u0413\u00a9",
+        "error": null
+      },
+      "expected": {
+        "name": "plain inherited/default policy",
+        "parentEncoding": "windows-1251",
+        "encoding": "windows-1251",
+        "text": "\u0413\u00a9",
+        "error": null
+      }
+    }
+  ],
+  "nativeReceipt": {
+    "browser": "lume",
+    "binarySHA256": "9137de2fb8cba151b7a4ca4f21aa02771061068cd41aa4327de4e3e20d709553",
+    "startedUTC": "2026-10-29T04:43:50.055605+00:00",
+    "frameFixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+    "complete": true,
+    "actual": {
+      "rows": [
+        {
+          "name": "Top-level unlabelled HTML",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "language": "en-US"
+        },
+        {
+          "name": "Windows1252 parent fallback",
+          "parentEncoding": "windows-1252",
+          "encoding": "windows-1252",
+          "text": "\u20ac",
+          "error": null
+        },
+        {
+          "name": "unsupported transport label uses parent fallback",
+          "parentEncoding": "windows-1252",
+          "encoding": "windows-1252",
+          "text": "\u20ac",
+          "error": null
+        },
+        {
+          "name": "Big5 parent fallback",
+          "parentEncoding": "Big5",
+          "encoding": "Big5",
+          "text": "\u6c34",
+          "error": null
+        },
+        {
+          "name": "supported transport label overrides parent",
+          "parentEncoding": "windows-1252",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "HTML metadata overrides parent",
+          "parentEncoding": "windows-1252",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "UTF8 BOM overrides parent",
+          "parentEncoding": "windows-1252",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "cross-origin child does not inherit",
+          "parentEncoding": "windows-1252",
+          "encoding": "UTF-8",
+          "text": "\ufffd",
+          "error": null
+        },
+        {
+          "name": "sandbox opaque-origin child does not inherit",
+          "parentEncoding": "windows-1252",
+          "encoding": "UTF-8",
+          "text": "\ufffd",
+          "error": null
+        },
+        {
+          "name": "CSP sandbox opaque-origin child does not inherit",
+          "parentEncoding": "windows-1252",
+          "encoding": "UTF-8",
+          "text": "\ufffd",
+          "error": null
+        },
+        {
+          "name": "UTF8 parent fallback stays UTF8",
+          "parentEncoding": "UTF-8",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "UTF16 child transport remains authoritative",
+          "parentEncoding": "windows-1252",
+          "encoding": "UTF-16LE",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "Big5 meta overrides a Windows1252 parent",
+          "parentEncoding": "windows-1252",
+          "encoding": "Big5",
+          "text": "\u6c34",
+          "error": null
+        },
+        {
+          "name": "unsupported meta label permits Big5 parent fallback",
+          "parentEncoding": "Big5",
+          "encoding": "Big5",
+          "text": "\u6c34",
+          "error": null
+        },
+        {
+          "name": "HTML inherited parent",
+          "parentEncoding": "windows-1251",
+          "encoding": "windows-1251",
+          "text": "\u0413\u00a9",
+          "error": null
+        },
+        {
+          "name": "HTML explicit UTF8",
+          "parentEncoding": "windows-1251",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "HTML UTF8 meta",
+          "parentEncoding": "windows-1251",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "HTML UTF8 BOM",
+          "parentEncoding": "windows-1251",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "JSON UTF8 default",
+          "parentEncoding": "windows-1251",
+          "encoding": "UTF-8",
+          "text": "\"\u00e9\"",
+          "error": null
+        },
+        {
+          "name": "text JSON UTF8 default",
+          "parentEncoding": "windows-1251",
+          "encoding": "UTF-8",
+          "text": "\"\u00e9\"",
+          "error": null
+        },
+        {
+          "name": "suffix JSON UTF8 default",
+          "parentEncoding": "windows-1251",
+          "encoding": "UTF-8",
+          "text": "\"\u00e9\"",
+          "error": null
+        },
+        {
+          "name": "XML UTF8 default",
+          "parentEncoding": "windows-1251",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "text XML UTF8 default",
+          "parentEncoding": "windows-1251",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "SVG UTF8 default",
+          "parentEncoding": "windows-1251",
+          "encoding": "UTF-8",
+          "text": "\u00e9",
+          "error": null
+        },
+        {
+          "name": "plain inherited/default policy",
+          "parentEncoding": "windows-1251",
+          "encoding": "windows-1251",
+          "text": "\u0413\u00a9",
+          "error": null
+        }
+      ],
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+    },
+    "ownedBrowserExitCode": 0,
+    "ownedProcessGroupGone": true,
+    "monitorExitCode": 0,
+    "resources": {
+      "path": "out/lume-20261029-cpu30/html-default-red-1/run/lume/resources.json",
+      "sha256": "ab377305e07c7ca1f4cfc1a895967ce03faf64362dc1e3a51877bb7790ec119b",
+      "samples": 2,
+      "collectorError": null
+    },
+    "finishedUTC": "2026-10-29T04:43:52.664547+00:00",
+    "wallSeconds": 2.609,
+    "binarySHA256After": "9137de2fb8cba151b7a4ca4f21aa02771061068cd41aa4327de4e3e20d709553"
+  },
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-codec-1/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "ffb74d059ed1ae954c665d78bcd4ad08fe2c2e3f5d6ec4e77d40e61032befb06"
+}

@@ -1,0 +1,23 @@
+PASS en-US unlabelled HTML defaults Windows1252
+PASS absent response MIME retains HTML default
+PASS unlabelled plaintext uses text-document default
+PASS unsupported header permits HTML default
+PASS explicit UTF8 header precedes default
+PASS UTF8 metadata precedes default
+PASS UTF8 BOM precedes explicit legacy header
+PASS eligible legacy parent precedes locale fallback
+PASS eligible UTF8 parent precedes locale fallback
+PASS application JSON top-level default stays UTF8
+PASS text JSON top-level default stays UTF8
+PASS suffix JSON top-level default stays UTF8
+PASS application XML top-level default stays UTF8
+PASS text XML top-level default stays UTF8
+PASS SVG top-level default stays UTF8
+PASS suffix XML top-level default stays UTF8
+PASS XML MIME matching handles case and whitespace
+PASS XML explicit transport charset remains authoritative
+PASS XML BOM remains authoritative
+PASS XML declaration remains authoritative
+PASS local file unlabelled UTF8 behavior is preserved
+PASS all policy response documents are released
+RESULTS html-default-boundary PASS (22/22 checks)

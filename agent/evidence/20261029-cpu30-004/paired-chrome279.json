@@ -1,0 +1,496 @@
+{
+  "taskId": "20261029-cpu30",
+  "createdUTC": "2026-10-29T05:02:40.552211+00:00",
+  "nativeBinarySHA256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+  "chromeBinarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "scope": "Same frozen279 variants. QualifiedChrome103+176 are explicitly disjoint executions on one artifact/protocol. Native missing/failed contexts remain in the denominator; no overall engine ranking.",
+  "groups": {
+    "encoding-core": {
+      "variants": 77,
+      "assertionClasses": {
+        "native_PASS__chrome_PASS": 23107,
+        "native_PASS__chrome_FAIL": 167,
+        "native_FAIL__chrome_PASS": 26
+      },
+      "variantClasses": {
+        "native_PASS__chrome_PASS": 64,
+        "native_PASS__chrome_not_PASS": 11,
+        "native_not_PASS__chrome_PASS": 2
+      },
+      "harnessClasses": {
+        "native_OK__chrome_OK": 77
+      },
+      "nativeRawSHA256": "32553a3eb568a2a0febc47e0bb44c4b412ceb2355c636b28784720a71e740753",
+      "chromeRawSHA256": "4bbf1535b81a001f9b171206e3c8ae12628a1e09256180bc23be54c7350869ff",
+      "scheduleSHA256": "6ec47e6f74edcd585cad897c02a3b97079c264b65f6af4d8527fa8ef9cae9ba9"
+    },
+    "encoding-streams": {
+      "variants": 26,
+      "assertionClasses": {
+        "native_PASS__chrome_PASS": 344,
+        "native_PASS__chrome_FAIL": 14
+      },
+      "variantClasses": {
+        "native_PASS__chrome_PASS": 23,
+        "native_PASS__chrome_not_PASS": 3
+      },
+      "harnessClasses": {
+        "native_OK__chrome_OK": 26
+      },
+      "nativeRawSHA256": "f25a717605813f65387b394a0bfa636259b660beee89ad1f9e6e1d7e0ac75b07",
+      "chromeRawSHA256": "a2563dd5a73401fc47325ee7efca0257a25adc75e933b8c3a7425cc64a1c1de3",
+      "scheduleSHA256": "86c9bb4c01e0394b7052abab611088e7c68c7674cb083dd84ceefa6b063d594d"
+    },
+    "dom": {
+      "variants": 14,
+      "assertionClasses": {
+        "native_PASS__chrome_PASS": 983,
+        "native_PASS__chrome_FAIL": 12,
+        "native_FAIL__chrome_PASS": 1
+      },
+      "variantClasses": {
+        "native_PASS__chrome_PASS": 12,
+        "native_PASS__chrome_not_PASS": 1,
+        "native_not_PASS__chrome_PASS": 1
+      },
+      "harnessClasses": {
+        "native_OK__chrome_OK": 14
+      },
+      "nativeRawSHA256": "4dae4b9f0d4aee7fb7de3ae4ba09c20e0c2524c5f80f1441d01667c07c60bbf3",
+      "chromeRawSHA256": "0be317cac7683c41fab09a2f0e5f944093c800a236aa0f50320ba206233efa0d",
+      "scheduleSHA256": "6fe614abb37dc1d11f2ac087984cb5ac9bcc8f40d68ab70f596516ba80a80689"
+    },
+    "events": {
+      "variants": 16,
+      "assertionClasses": {
+        "native_PASS__chrome_PASS": 78
+      },
+      "variantClasses": {
+        "native_PASS__chrome_PASS": 16
+      },
+      "harnessClasses": {
+        "native_OK__chrome_OK": 16
+      },
+      "nativeRawSHA256": "542ed3a04541e6fcc05b54b6181a7e548d7ec3d514d2ba015e6a9a43b00bac02",
+      "chromeRawSHA256": "2e11537a5b0d890f52ad15440084fb8db7c45bad89c5c7f39f32181621dd85a8",
+      "scheduleSHA256": "86ab13dadb55d19bf875ca972fca9beb7c1560e717bfa1a5f2d36564f189f93e"
+    },
+    "url": {
+      "variants": 77,
+      "assertionClasses": {
+        "native_PASS__chrome_PASS": 11621,
+        "native_PASS__chrome_FAIL": 695,
+        "native_FAIL__chrome_FAIL": 7
+      },
+      "variantClasses": {
+        "native_PASS__chrome_PASS": 47,
+        "native_not_PASS__chrome_not_PASS": 1,
+        "native_PASS__chrome_not_PASS": 29
+      },
+      "harnessClasses": {
+        "native_OK__chrome_OK": 77
+      },
+      "nativeRawSHA256": "b2c029d45291ce7f13d2a92f33ebf68b28dd0769e486fd47ad24cc373e059c6d",
+      "chromeRawSHA256": "00a93f64b3c9eb3351689f001332e41446c2c7c8485b34d1bfda65329029b82d",
+      "scheduleSHA256": "b180a83552f49f36cf046e251ffa92dbfcc36467af2dc3a441fa7bc80dc6bb50"
+    },
+    "storage": {
+      "variants": 7,
+      "assertionClasses": {
+        "native_PASS__chrome_PASS": 1152
+      },
+      "variantClasses": {
+        "native_PASS__chrome_PASS": 7
+      },
+      "harnessClasses": {
+        "native_OK__chrome_OK": 7
+      },
+      "nativeRawSHA256": "811fdb84b000712f9deb8a4201b45ad6c0207f38e14ad0acb32818542718332d",
+      "chromeRawSHA256": "7e171c24462c5ca1894a9bd0ce1c4c31a5cd776132f705d9b934149aaddf3857",
+      "scheduleSHA256": "37ea6de0542117f1ac0600e5f87ac3b2bb95c7b04eb3c0cecf0147f127015e43"
+    },
+    "microtasks": {
+      "variants": 10,
+      "assertionClasses": {
+        "native_PASS__chrome_PASS": 15,
+        "native_MISSING__chrome_PASS": 12
+      },
+      "variantClasses": {
+        "native_PASS__chrome_PASS": 6,
+        "native_not_PASS__chrome_PASS": 4
+      },
+      "harnessClasses": {
+        "native_OK__chrome_OK": 6,
+        "native_TIMEOUT__chrome_OK": 2,
+        "native_ERROR__chrome_OK": 2
+      },
+      "nativeRawSHA256": "d605e0a8e755dea05bb9134b4e9b244333f8e24d453f385972faa9e876319d77",
+      "chromeRawSHA256": "19eed770e9dd4bf63d865feca95aab329444006ae972034480cb78854f54f24a",
+      "scheduleSHA256": "782b903f614382083dd961c9834743171bda5e757c3b7c2a8c73f4f32f42a0ba"
+    },
+    "headers": {
+      "variants": 52,
+      "assertionClasses": {
+        "native_PASS__chrome_PASS": 539,
+        "native_MISSING__chrome_PASS": 504
+      },
+      "variantClasses": {
+        "native_PASS__chrome_PASS": 26,
+        "native_not_PASS__chrome_PASS": 26
+      },
+      "harnessClasses": {
+        "native_OK__chrome_OK": 26,
+        "native_TIMEOUT__chrome_OK": 13,
+        "native_ERROR__chrome_OK": 13
+      },
+      "nativeRawSHA256": "f39c2eaf15e48d61845a246c5a7cd514842a763c6b208fdd38e52722b03e0318",
+      "chromeRawSHA256": "6f12f38b4f77f0290812dc50f7af26c0f5c168a82981aaad560f4571bb0bf7ee",
+      "scheduleSHA256": "f12a0f08d535d46a342b6d448eae918bbc834efd2daf7f5971977daec5f8bece"
+    }
+  },
+  "frozenVariants": 1515,
+  "recorded": 279,
+  "unrun": 1236,
+  "assertionClasses": {
+    "native_PASS__chrome_PASS": 37839,
+    "native_PASS__chrome_FAIL": 888,
+    "native_FAIL__chrome_PASS": 27,
+    "native_FAIL__chrome_FAIL": 7,
+    "native_MISSING__chrome_PASS": 516
+  },
+  "variantClasses": {
+    "native_PASS__chrome_PASS": 201,
+    "native_PASS__chrome_not_PASS": 44,
+    "native_not_PASS__chrome_PASS": 33,
+    "native_not_PASS__chrome_not_PASS": 1
+  },
+  "harnessClasses": {
+    "native_OK__chrome_OK": 249,
+    "native_TIMEOUT__chrome_OK": 15,
+    "native_ERROR__chrome_OK": 15
+  },
+  "missingNativeAssertions": [
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 1,
+      "chromeAssertions": 1
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 1,
+      "chromeAssertions": 1
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 5,
+      "chromeAssertions": 5
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 5,
+      "chromeAssertions": 5
+    },
+    {
+      "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 24,
+      "chromeAssertions": 24
+    },
+    {
+      "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 24,
+      "chromeAssertions": 24
+    },
+    {
+      "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 1,
+      "chromeAssertions": 1
+    },
+    {
+      "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 1,
+      "chromeAssertions": 1
+    },
+    {
+      "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 31,
+      "chromeAssertions": 31
+    },
+    {
+      "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 31,
+      "chromeAssertions": 31
+    },
+    {
+      "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 4,
+      "chromeAssertions": 4
+    },
+    {
+      "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 4,
+      "chromeAssertions": 4
+    },
+    {
+      "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 23,
+      "chromeAssertions": 23
+    },
+    {
+      "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 23,
+      "chromeAssertions": 23
+    },
+    {
+      "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 4,
+      "chromeAssertions": 4
+    },
+    {
+      "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 4,
+      "chromeAssertions": 4
+    },
+    {
+      "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 6,
+      "chromeAssertions": 6
+    },
+    {
+      "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 6,
+      "chromeAssertions": 6
+    },
+    {
+      "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 18,
+      "chromeAssertions": 18
+    },
+    {
+      "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 18,
+      "chromeAssertions": 18
+    },
+    {
+      "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 90,
+      "chromeAssertions": 90
+    },
+    {
+      "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 90,
+      "chromeAssertions": 90
+    },
+    {
+      "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 27,
+      "chromeAssertions": 27
+    },
+    {
+      "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 27,
+      "chromeAssertions": 27
+    },
+    {
+      "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 3,
+      "chromeAssertions": 3
+    },
+    {
+      "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 3,
+      "chromeAssertions": 3
+    },
+    {
+      "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 13,
+      "chromeAssertions": 13
+    },
+    {
+      "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 13,
+      "chromeAssertions": 13
+    },
+    {
+      "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+      "nativeHarness": "TIMEOUT",
+      "missing": 8,
+      "chromeAssertions": 8
+    },
+    {
+      "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+      "nativeHarness": "ERROR",
+      "missing": 8,
+      "chromeAssertions": 8
+    }
+  ],
+  "nativeFailedAssertionsOnChromePass": [
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn - empty input decodes to empty output.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-kr - empty input decodes to empty output.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "hz-gb-2312 - empty input decodes to empty output.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "replacement - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "replacement - empty input decodes to empty output.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "csiso2022kr - empty input decodes to empty output.",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32be with BOM should decode as UTF-8",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32le with BOM should decode as UTF-16LE",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32 with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32 with BOM should decode as UTF-16LE",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32be with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32LE with BOM should decode as UTF-16LE",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-7 should not be supported",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32be with BOM should decode as UTF-8",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32be with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32 with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-7 should not be supported",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32 with BOM should decode as UTF-16LE",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32LE with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32le with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL"
+    },
+    {
+      "test": "/dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.html",
+      "name": "cloneNode() and document's allow declarative shadow roots",
+      "nativeStatus": "FAIL"
+    }
+  ],
+  "chromePassingAssertions": 38382,
+  "nativePassesAmongChromePassingAssertions": 37839,
+  "chromePassingVariants": 234,
+  "nativeFullyPassesAmongChromePassingVariants": 201,
+  "complete": true
+}

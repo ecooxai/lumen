@@ -1,0 +1,38 @@
+{
+  "taskId": "20261029-cpu30",
+  "sampleUTC": "2026-10-29T04:43:32.866008+00:00",
+  "rawReceipt": "out/lume-20261029-cpu30/host-memory-readonly-audit.json",
+  "physicalMemory": {
+    "bytes": 17179869184,
+    "GiB": 16,
+    "decimalGB": 17.179869184
+  },
+  "dashboardDefinition": "(os.totalmem() - os.freemem()) / 1e9, including filesystem caches. It is a whole-host occupancy figure, not application RSS.",
+  "publicUiObservedUsedGB": [
+    16.97,
+    17.06,
+    17.02,
+    17.02
+  ],
+  "osSnapshot": {
+    "kernelPressureLevel": 1,
+    "swapUsedMiB": 0,
+    "swapIns": 0,
+    "swapOuts": 0,
+    "pageSizeBytes": 16384,
+    "fileBackedPages": 391363,
+    "inactivePages": 351839,
+    "purgeablePages": 3472,
+    "warning": "These categories overlap and must not be summed. Snapshot counters do not establish a long-term pressure or leak trend."
+  },
+  "interpretation": "The headline does not exceed the 16 GiB physical capacity when units are compared correctly. Substantial file-backed/inactive memory is present, with no swap in use at this snapshot. This figure must not be attributed to Lume. Exact-artifact Lume RSS trend and scroll CPU remain the separate native acceptance evidence.",
+  "uiSmokeResources": {
+    "scope": "Node verifier plus fresh multi-process headless Chrome, not Lume",
+    "processTreePeakRSSMiB": 1784.578,
+    "observedDurationSeconds": 20.042,
+    "naturalExitCode": 0,
+    "browserExitCode": 0,
+    "forcedCleanup": false,
+    "samplingNote": "RSS sums may count shared pages more than once; startup/layout work is included. No persistent test browser was left running."
+  }
+}

@@ -1,0 +1,318 @@
+{
+  "startedUTC": "2026-10-29T04:30:04.404284+00:00",
+  "artifact": {
+    "path": "out/lume-20261029-cpu30/native-bom-1/jsrun-546ddff56f24b2bf",
+    "sha256": "546ddff56f24b2bf34c56905f1899ebf28a07f56321e1a93892abe803d3ccf9b",
+    "bytes": 13828152
+  },
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-bom-1/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "9bca4d2fa19e09c1f9308cf6cd45f4fef103800736ae8452d1c79592c87c3349",
+  "fixtureSHA256": "cfa2d3d2c9bedb470409eb8a539d64cd9f1d30443500c7a9de7ac6397ffb9de0",
+  "baseFixtureSHA256": "5ff54ee9929df32e9922d3af45224ce568fe72345451aefc527c05244a187050",
+  "independentProbe": "out/lume-20261029-cpu30/fatal-stream-interop-2/summary.json",
+  "independentProbeSHA256": "7d42b874917cad9074e36a9af0a0a0446c3d322194b3e1324d8f7e04f1b693eb",
+  "redConfirmed": true,
+  "monitor": {
+    "path": "out/lume-20261029-cpu30/textcodec-fatal-red-1/codec.json",
+    "sha256": "aab932e2b01c7a44ce85e35eab4a1a6e1cb85ce61fc5f91d0fc0952c7c217fac",
+    "naturalExitCode": 1,
+    "collectorError": null,
+    "endedByMonitor": false,
+    "cpuSamples": 0,
+    "cpuPeakPercent": null,
+    "rssPeakMiB": 5.031
+  },
+  "failedChecks": [
+    {
+      "i": 81,
+      "scope": "window",
+      "name": "fatal UTF8 invalid leading byte 0x80 discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 82,
+      "scope": "window",
+      "name": "fatal UTF8 invalid leading byte 0xbf discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 83,
+      "scope": "window",
+      "name": "fatal UTF8 invalid leading byte 0xc0 discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 84,
+      "scope": "window",
+      "name": "fatal UTF8 invalid leading byte 0xc1 discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 85,
+      "scope": "window",
+      "name": "fatal UTF8 invalid leading byte 0xf5 discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 86,
+      "scope": "window",
+      "name": "fatal UTF8 invalid leading byte 0xfd discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 87,
+      "scope": "window",
+      "name": "fatal UTF8 invalid leading byte 0xfe discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 88,
+      "scope": "window",
+      "name": "fatal UTF8 invalid leading byte 0xff discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 89,
+      "scope": "window",
+      "name": "fatal UTF8 discards ASCII following an invalid leading byte",
+      "ok": false,
+      "error": null
+    },
+    {
+      "i": 90,
+      "scope": "window",
+      "name": "discarded UTF8 prefix cannot complete a later BOM",
+      "ok": false,
+      "error": null
+    },
+    {
+      "i": 91,
+      "scope": "window",
+      "name": "fatal UTF8 never consumes a later BOM in the rejected chunk",
+      "ok": false,
+      "error": null
+    },
+    {
+      "i": 92,
+      "scope": "window",
+      "name": "invalid UTF8 leading byte after valid text still discards its chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 194,
+      "scope": "worker",
+      "name": "fatal UTF8 invalid leading byte 0x80 discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 195,
+      "scope": "worker",
+      "name": "fatal UTF8 invalid leading byte 0xbf discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 196,
+      "scope": "worker",
+      "name": "fatal UTF8 invalid leading byte 0xc0 discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 197,
+      "scope": "worker",
+      "name": "fatal UTF8 invalid leading byte 0xc1 discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 198,
+      "scope": "worker",
+      "name": "fatal UTF8 invalid leading byte 0xf5 discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 199,
+      "scope": "worker",
+      "name": "fatal UTF8 invalid leading byte 0xfd discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 200,
+      "scope": "worker",
+      "name": "fatal UTF8 invalid leading byte 0xfe discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 201,
+      "scope": "worker",
+      "name": "fatal UTF8 invalid leading byte 0xff discards rejected chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    },
+    {
+      "i": 202,
+      "scope": "worker",
+      "name": "fatal UTF8 discards ASCII following an invalid leading byte",
+      "ok": false,
+      "error": null
+    },
+    {
+      "i": 203,
+      "scope": "worker",
+      "name": "discarded UTF8 prefix cannot complete a later BOM",
+      "ok": false,
+      "error": null
+    },
+    {
+      "i": 204,
+      "scope": "worker",
+      "name": "fatal UTF8 never consumes a later BOM in the rejected chunk",
+      "ok": false,
+      "error": null
+    },
+    {
+      "i": 205,
+      "scope": "worker",
+      "name": "invalid UTF8 leading byte after valid text still discards its chunk tail",
+      "ok": false,
+      "error": "TypeError: The encoded data is not valid for utf-8"
+    }
+  ],
+  "regression": {
+    "binary": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/native-bom-1/jsrun-546ddff56f24b2bf",
+    "binary_sha256": "546ddff56f24b2bf34c56905f1899ebf28a07f56321e1a93892abe803d3ccf9b",
+    "fixture_sha256": "06e264131d5aabb3c85aeaa2f45fdb1ef6c6bcb5138bd5814048892aa2e61a77",
+    "worker_sha256": "292540cfdea6e9a0005106464a8455051b7737e228b22beb67b984398a446406",
+    "total": 218,
+    "passed": 194,
+    "failed": 24,
+    "scopes": {
+      "window": {
+        "total": 105,
+        "passed": 93
+      },
+      "worker": {
+        "total": 105,
+        "passed": 93
+      },
+      "cross-realm": {
+        "total": 8,
+        "passed": 8
+      }
+    }
+  },
+  "expectedFailureIdentities": [
+    [
+      "window",
+      "discarded UTF8 prefix cannot complete a later BOM"
+    ],
+    [
+      "window",
+      "fatal UTF8 discards ASCII following an invalid leading byte"
+    ],
+    [
+      "window",
+      "fatal UTF8 invalid leading byte 0x80 discards rejected chunk tail"
+    ],
+    [
+      "window",
+      "fatal UTF8 invalid leading byte 0xbf discards rejected chunk tail"
+    ],
+    [
+      "window",
+      "fatal UTF8 invalid leading byte 0xc0 discards rejected chunk tail"
+    ],
+    [
+      "window",
+      "fatal UTF8 invalid leading byte 0xc1 discards rejected chunk tail"
+    ],
+    [
+      "window",
+      "fatal UTF8 invalid leading byte 0xf5 discards rejected chunk tail"
+    ],
+    [
+      "window",
+      "fatal UTF8 invalid leading byte 0xfd discards rejected chunk tail"
+    ],
+    [
+      "window",
+      "fatal UTF8 invalid leading byte 0xfe discards rejected chunk tail"
+    ],
+    [
+      "window",
+      "fatal UTF8 invalid leading byte 0xff discards rejected chunk tail"
+    ],
+    [
+      "window",
+      "fatal UTF8 never consumes a later BOM in the rejected chunk"
+    ],
+    [
+      "window",
+      "invalid UTF8 leading byte after valid text still discards its chunk tail"
+    ],
+    [
+      "worker",
+      "discarded UTF8 prefix cannot complete a later BOM"
+    ],
+    [
+      "worker",
+      "fatal UTF8 discards ASCII following an invalid leading byte"
+    ],
+    [
+      "worker",
+      "fatal UTF8 invalid leading byte 0x80 discards rejected chunk tail"
+    ],
+    [
+      "worker",
+      "fatal UTF8 invalid leading byte 0xbf discards rejected chunk tail"
+    ],
+    [
+      "worker",
+      "fatal UTF8 invalid leading byte 0xc0 discards rejected chunk tail"
+    ],
+    [
+      "worker",
+      "fatal UTF8 invalid leading byte 0xc1 discards rejected chunk tail"
+    ],
+    [
+      "worker",
+      "fatal UTF8 invalid leading byte 0xf5 discards rejected chunk tail"
+    ],
+    [
+      "worker",
+      "fatal UTF8 invalid leading byte 0xfd discards rejected chunk tail"
+    ],
+    [
+      "worker",
+      "fatal UTF8 invalid leading byte 0xfe discards rejected chunk tail"
+    ],
+    [
+      "worker",
+      "fatal UTF8 invalid leading byte 0xff discards rejected chunk tail"
+    ],
+    [
+      "worker",
+      "fatal UTF8 never consumes a later BOM in the rejected chunk"
+    ],
+    [
+      "worker",
+      "invalid UTF8 leading byte after valid text still discards its chunk tail"
+    ]
+  ],
+  "finishedUTC": "2026-10-29T04:30:05.529396+00:00",
+  "durationSeconds": 1.125
+}

@@ -1,0 +1,41 @@
+{
+  "updatedUTC": "2026-10-29T04:49:11.492341+00:00",
+  "sources": {
+    "src/html/html.c": {
+      "beforeSHA256": "1847af1618b33a3c856fd372125388572bc0096d0c9bbd106f1c27fbe3ec72c1",
+      "afterSHA256": "5cbeceeb402b0cf79bd46cc9af63b2dcf05dea3f0199c27b200d3e3611ba2db6",
+      "backup": "out/lume-20261029-cpu30/html-default-patch-1/src_html_html.c.before"
+    },
+    "src/js/windows.cc": {
+      "beforeSHA256": "b2982c11fbb5603c59bd139d51f4888400ac10da87e6199feb7f95cd11c4cbef",
+      "afterSHA256": "0c5075d75d905285f22671bc87cd6080aac72fa64ce5081b56ea0c2d96d46e1d",
+      "backup": "out/lume-20261029-cpu30/html-default-patch-1/src_js_windows.cc.before"
+    },
+    "Makefile": {
+      "beforeSHA256": "f35bdf1d3502bb7130e26a54b4949297da8aea6555ec8179bfd317bb810d8501",
+      "afterSHA256": "ff4e4b7819c0009fe9f91ff81d237221b1a7fecee72cc3f3b02b6e4e1e7e37d8",
+      "backup": "out/lume-20261029-cpu30/html-default-patch-1/Makefile.before"
+    }
+  },
+  "redReceipt": "out/lume-20261029-cpu30/html-default-red-1/summary.json",
+  "redReceiptSHA256": "d7285521bdae430f451620e4ebc17182a8b35aabc2e52cac3ea1b51aa00b468e",
+  "boundaryRedReceipt": "out/lume-20261029-cpu30/html-default-boundary-red-2/summary.json",
+  "boundaryRedReceiptSHA256": "51971bd27d23e4031c6009c1e7f7099b36fcc5d50261814826c53194b81964bf",
+  "fixtureSHA256": "d8caa52328a1250afff8808a270b3ebf6dfc42ef81cc4f91c8435d210de6a737",
+  "boundaryFixtureSHA256": "8db32a7918ffac0bb787c109cf3ea4bd39fe63d375130ee7cb2b43aa79d7b7e7",
+  "legacyFixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+  "utf16Diagnosis": "out/lume-20261029-cpu30/html-default-policy-utf16-1/summary.json",
+  "utf16DiagnosisSHA256": "86d0d2986a40f1833ed3699b336a992fc355234b1273dd0fd13ea2517258b2f4",
+  "scope": "Explicit en-US network HTML/plaintext default policy; existing file: UTF8 fallback preserved. Eligible parent, header/meta/BOM and JSON/XML defaults retained. UTF16 parents remain excluded by the HTML Standard; qualified Chrome inherits those parents, separately observed.",
+  "intentionalLegacyDeltas": [
+    "UTF16LE parent encoding is not inherited",
+    "cross-origin child does not inherit",
+    "sandbox opaque-origin child does not inherit",
+    "CSP sandbox opaque-origin child does not inherit",
+    "UTF16BE parent encoding is not inherited"
+  ],
+  "sourcesReviewed": [
+    "https://html.spec.whatwg.org/multipage/parsing.html#determining-the-character-encoding",
+    "https://mimesniff.spec.whatwg.org/#xml-mime-type"
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "groups": {
+    "lumen": {
+      "startup": {
+        "samples": 16,
+        "observed_samples": 16,
+        "duration_seconds": 15.001,
+        "cpu_mean_percent": 2.604,
+        "cpu_median_percent": 1.003,
+        "cpu_p95_percent": 23.088,
+        "cpu_peak_percent": 23.088,
+        "samples_above_threshold": null,
+        "cpu_threshold_percent": null,
+        "cpu_status": "measured_no_threshold",
+        "rss_start_mib": 19.078,
+        "rss_end_mib": 159.422,
+        "rss_peak_mib": 159.469,
+        "rss_change_mib": 140.344,
+        "phase_boundary_samples_excluded_from_cpu_summary": 1,
+        "first_seen_process_events": 1
+      },
+      "scrolling": {
+        "samples": 35,
+        "observed_samples": 35,
+        "duration_seconds": 33.996,
+        "cpu_mean_percent": 11.207,
+        "cpu_median_percent": 11.974,
+        "cpu_p95_percent": 15.823,
+        "cpu_peak_percent": 16.018,
+        "samples_above_threshold": null,
+        "cpu_threshold_percent": null,
+        "cpu_status": "measured_no_threshold",
+        "rss_start_mib": 162.406,
+        "rss_end_mib": 153.969,
+        "rss_peak_mib": 164.469,
+        "rss_change_mib": -8.438,
+        "phase_boundary_samples_excluded_from_cpu_summary": 1,
+        "first_seen_process_events": 0
+      },
+      "settle:after": {
+        "samples": 15,
+        "observed_samples": 15,
+        "duration_seconds": 13.998,
+        "cpu_mean_percent": 0.0,
+        "cpu_median_percent": 0.0,
+        "cpu_p95_percent": 0.0,
+        "cpu_peak_percent": 0.0,
+        "samples_above_threshold": null,
+        "cpu_threshold_percent": null,
+        "cpu_status": "measured_no_threshold",
+        "rss_start_mib": 153.406,
+        "rss_end_mib": 153.453,
+        "rss_peak_mib": 153.453,
+        "rss_change_mib": 0.047,
+        "phase_boundary_samples_excluded_from_cpu_summary": 1,
+        "first_seen_process_events": 0
+      },
+      "idle:after": {
+        "samples": 50,
+        "observed_samples": 50,
+        "duration_seconds": 49.002,
+        "cpu_mean_percent": 0.082,
+        "cpu_median_percent": 0.0,
+        "cpu_p95_percent": 0.996,
+        "cpu_peak_percent": 1.012,
+        "samples_above_threshold": 0,
+        "cpu_threshold_percent": 3,
+        "cpu_status": "within_threshold",
+        "rss_start_mib": 153.453,
+        "rss_end_mib": 153.453,
+        "rss_peak_mib": 153.453,
+        "rss_change_mib": 0.0,
+        "phase_boundary_samples_excluded_from_cpu_summary": 1,
+        "first_seen_process_events": 0
+      }
+    }
+  },
+  "sampling_gaps_over_1_5_seconds": [],
+  "errors": [],
+  "notes": [
+    "CPU is interval cumulative-process-time delta; 100% is one CPU core.",
+    "CPU used before the first observation of a new process is not in interval totals.",
+    "Summed RSS counts shared pages more than once and is not physical footprint.",
+    "Only explicit roots and observed descendants belong to a task; reparented descendants are retained.",
+    "A minimum of 10 observed samples is required for a phase verdict; longer windows are preferable.",
+    "A within_threshold verdict uses the 95th percentile; peaks and exceedance counts remain visible.",
+    "Unknown/missing samples do not count as passing.",
+    "Phase-transition intervals remain in raw samples but are excluded from CPU phase summaries.",
+    "Linux zombie/exited or unreadable processes are not reported as live RSS0 observations."
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "scope": "Retained one-second process-tree samples from the current 4b26 Encoding-core run, not an idle or scrolling benchmark.",
+  "startedUTC": "2026-10-29T04:09:01.499445+00:00",
+  "durationSeconds": 47.042,
+  "intervalSamples": 46,
+  "cpuMeanPercent": 40.401,
+  "cpuMedianPercent": 5.508,
+  "cpuP95Percent": 286.671,
+  "cpuPeakPercent": 321.533,
+  "rssPeakMiB": 768.438,
+  "rssFinalMiB": 53.234,
+  "naturalExitCode": 0,
+  "cleanup": {
+    "sent_sigterm": false,
+    "sent_sigkill": false,
+    "error": null
+  },
+  "highIntervalAttribution": [
+    {
+      "sampleElapsedSeconds": 14.033,
+      "cpuPercent": 66.577,
+      "rssMiB": 330.203,
+      "activeTestsAtSampleEndpoint": [
+        {
+          "test": "/encoding/single-byte-decoder-iframe.window.html",
+          "subtests": 168,
+          "startedRelativeSeconds": 13.63,
+          "durationSeconds": 3.004
+        }
+      ]
+    },
+    {
+      "sampleElapsedSeconds": 15.027,
+      "cpuPercent": 286.671,
+      "rssMiB": 564.531,
+      "activeTestsAtSampleEndpoint": [
+        {
+          "test": "/encoding/single-byte-decoder-iframe.window.html",
+          "subtests": 168,
+          "startedRelativeSeconds": 13.63,
+          "durationSeconds": 3.004
+        }
+      ]
+    },
+    {
+      "sampleElapsedSeconds": 16.022,
+      "cpuPercent": 321.533,
+      "rssMiB": 768.438,
+      "activeTestsAtSampleEndpoint": [
+        {
+          "test": "/encoding/single-byte-decoder-iframe.window.html",
+          "subtests": 168,
+          "startedRelativeSeconds": 13.63,
+          "durationSeconds": 3.004
+        }
+      ]
+    },
+    {
+      "sampleElapsedSeconds": 17.026,
+      "cpuPercent": 37.859,
+      "rssMiB": 222.625,
+      "activeTestsAtSampleEndpoint": [
+        {
+          "test": "/encoding/single-byte-decoder.any.html?TextDecoder",
+          "subtests": 168,
+          "startedRelativeSeconds": 16.636,
+          "durationSeconds": 1.636
+        }
+      ]
+    },
+    {
+      "sampleElapsedSeconds": 18.029,
+      "cpuPercent": 113.64,
+      "rssMiB": 699.984,
+      "activeTestsAtSampleEndpoint": [
+        {
+          "test": "/encoding/single-byte-decoder.any.html?TextDecoder",
+          "subtests": 168,
+          "startedRelativeSeconds": 16.636,
+          "durationSeconds": 1.636
+        }
+      ]
+    },
+    {
+      "sampleElapsedSeconds": 19.029,
+      "cpuPercent": 83.005,
+      "rssMiB": 296.188,
+      "activeTestsAtSampleEndpoint": [
+        {
+          "test": "/encoding/single-byte-decoder.any.html?XMLHttpRequest",
+          "subtests": 168,
+          "startedRelativeSeconds": 18.273,
+          "durationSeconds": 1.664
+        }
+      ]
+    },
+    {
+      "sampleElapsedSeconds": 43.036,
+      "cpuPercent": 64.675,
+      "rssMiB": 317.531,
+      "activeTestsAtSampleEndpoint": [
+        {
+          "test": "/encoding/unsupported-labels.window.html",
+          "subtests": 158,
+          "startedRelativeSeconds": 42.638,
+          "durationSeconds": 2.774
+        }
+      ]
+    },
+    {
+      "sampleElapsedSeconds": 44.024,
+      "cpuPercent": 283.444,
+      "rssMiB": 537.0,
+      "activeTestsAtSampleEndpoint": [
+        {
+          "test": "/encoding/unsupported-labels.window.html",
+          "subtests": 158,
+          "startedRelativeSeconds": 42.638,
+          "durationSeconds": 2.774
+        }
+      ]
+    },
+    {
+      "sampleElapsedSeconds": 45.026,
+      "cpuPercent": 320.339,
+      "rssMiB": 754.0,
+      "activeTestsAtSampleEndpoint": [
+        {
+          "test": "/encoding/unsupported-labels.window.html",
+          "subtests": 158,
+          "startedRelativeSeconds": 42.638,
+          "durationSeconds": 2.774
+        }
+      ]
+    }
+  ]
+}

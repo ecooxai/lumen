@@ -1,0 +1,69 @@
+PASS pending callback case presents
+PASS pending mapping releases its GPU buffer before deferred cancellation
+PASS cancellation after owner destruction completes once
+PASS foreign-thread map completion preserves exact pixels
+PASS synchronous completion holds token ownership before map returns
+PASS retained uploads preserve all padded source pixels over 120 frames
+PASS steady uploads reuse at most three mapped buffers
+PASS steady uploads avoid repeated temporary texture staging
+PASS staging storage is bounded by three aligned frames
+PASS unchanged frame remains presentable
+PASS unchanged frame performs no upload or map polling
+PASS retained partial case starts
+PASS retained one-row upload is exact
+PASS blocked drawable never creates, uploads or polls staging
+PASS retained upload restores every missed row
+PASS delayed maps never corrupt or omit a frame
+PASS delayed maps keep exactly a bounded staging pool
+PASS busy pool uses the existing bounded queue upload
+PASS completed maps resume exact retained uploads
+PASS completed maps reuse existing storage
+PASS staging allocation failure preserves frame presentation
+PASS failed allocation uses one existing queue upload
+PASS a later allocation recovers
+PASS failed asynchronous map recovers safely
+PASS resize preserves all pixels and source alignment
+PASS resize retains at most three staging buffers
+PASS shrinking the viewport remains exact
+PASS initial page presents
+PASS timeout requests a retry
+PASS outdated surface requests a retry
+PASS failed acquisition queues no uploads or uniforms
+PASS failed acquisition allocates no page texture
+PASS outdated surface is reconfigured once
+PASS zero-damage retry presents
+PASS retry includes every previously missed row
+PASS successful retry clears pending work
+PASS later unchanged frame presents
+PASS delivered damage is not uploaded again
+PASS surface textures are released
+PASS occluded frames never report presentation
+PASS occlusion keeps the native surface pending
+PASS occluded video queues zero staging memory
+PASS occluded video allocates no upload textures
+PASS occlusion preserves the valid surface configuration
+PASS suboptimal success is usable
+PASS first visible frame uploads the whole current page
+PASS first visible frame uses current luma
+PASS first visible frame uses current chroma
+PASS one visible frame submits once
+PASS one page and two video planes upload
+PASS visible video leaves no acquired texture retained
+PASS resize case starts with a valid page
+PASS lost resize retains retry
+PASS failed resize preserves the prior texture
+PASS failed acquisition releases an attached texture
+PASS returning to the prior dimensions presents
+PASS resize damage survives a return to old dimensions
+PASS another resize can be delayed
+PASS new dimensions recover with zero new rows
+PASS new texture receives every row
+PASS BGRA video waits for a drawable
+PASS blocked BGRA queues no frame or rectangle data
+PASS replacement BGRA frame presents
+PASS recovery reads the current caller-owned video
+PASS BGRA recovery submits a bounded upload
+PASS unconfigured case starts with a valid page
+PASS unconfigured surface skips acquisition
+PASS restored surface presents retained pixels
+GPU presentation: 68 checks, 0 failures

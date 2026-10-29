@@ -551,6 +551,10 @@ $(BUILD)/test_frame_removal: $(call OBJ,tests/test_frame_removal.cc $(CORE_SRC) 
 $(BUILD)/test_parser_input: $(call OBJ,tests/test_parser_input.c $(BASE_SRC) $(NET_SRC) $(wildcard src/dom/*.c) src/html/html.c src/html/entities.c)
 	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS)
 
+# Locale HTML fallback with top-level JSON/XML byte-boundary controls.
+$(BUILD)/test_html_default_policy_network: $(call OBJ,tests/test_html_default_policy_network.c $(BASE_SRC) $(NET_SRC) $(wildcard src/dom/*.c) src/html/html.c src/html/entities.c)
+	$(CC) $(OPT) $(filter %.o,$^) -o $@ $(NETLIBS)
+
 # Raw HTTP form serialization with the shared Encoding Standard encoder.
 $(BUILD)/tests/test_form_encoding.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG
 $(BUILD)/test_form_encoding: $(call OBJ,tests/test_form_encoding.cc $(CORE_SRC) $(JS_SRC)) $(V8LINK_RSP)

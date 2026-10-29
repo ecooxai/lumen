@@ -1,0 +1,138 @@
+[
+  {
+    "test": "/html/webappapis/microtask-queuing/queue-microtask-cross-realm-callback-report-exception.html",
+    "type": "testharness",
+    "source": "html/webappapis/microtask-queuing/queue-microtask-cross-realm-callback-report-exception.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.html",
+    "type": "testharness",
+    "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+    "type": "testharness",
+    "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+    "type": "testharness",
+    "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.worker.html",
+    "type": "testharness",
+    "source": "html/webappapis/microtask-queuing/queue-microtask-exceptions.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/html/webappapis/microtask-queuing/queue-microtask.any.html",
+    "type": "testharness",
+    "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+    "type": "testharness",
+    "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+    "type": "testharness",
+    "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/html/webappapis/microtask-queuing/queue-microtask.any.worker.html",
+    "type": "testharness",
+    "source": "html/webappapis/microtask-queuing/queue-microtask.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/html/webappapis/microtask-queuing/queue-microtask.window.html",
+    "type": "testharness",
+    "source": "html/webappapis/microtask-queuing/queue-microtask.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  }
+]

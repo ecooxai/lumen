@@ -1,0 +1,3017 @@
+{
+  "taskId": "20261029-cpu30",
+  "complete": true,
+  "browsers": [
+    {
+      "browser": "lume",
+      "binarySHA256": "9137de2fb8cba151b7a4ca4f21aa02771061068cd41aa4327de4e3e20d709553",
+      "startedUTC": "2026-10-29T04:38:04.667430+00:00",
+      "fixtureCoreSHA256": "99fd8f80444872fe0a97400f91eed72d840db57ff5033809402903f28af5d19e",
+      "complete": true,
+      "actual": {
+        "window": [
+          {
+            "name": "fd_ef_then_flush",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              }
+            ]
+          },
+          {
+            "name": "fd_ascii_then_flush",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  65
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ],
+              [
+                [
+                  66
+                ],
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "B",
+                "codepoints": [
+                  66
+                ]
+              }
+            ]
+          },
+          {
+            "name": "fd_ef_then_bom_completion",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                [
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              }
+            ]
+          },
+          {
+            "name": "fd_bom_then_fresh_bom",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239,
+                  187,
+                  191
+                ],
+                true
+              ],
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "A",
+                "codepoints": [
+                  65
+                ]
+              }
+            ]
+          },
+          {
+            "name": "invalid_continuation_reconsume",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  65
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "A",
+                "codepoints": [
+                  65
+                ]
+              }
+            ]
+          },
+          {
+            "name": "fatal_without_tail_then_success",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253
+                ],
+                true
+              ],
+              [
+                [
+                  194
+                ],
+                true
+              ],
+              [
+                [
+                  162
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "\u00a2",
+                "codepoints": [
+                  162
+                ]
+              }
+            ]
+          },
+          {
+            "name": "bom_before_fatal_then_bom",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  255
+                ],
+                true
+              ],
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "A",
+                "codepoints": [
+                  65
+                ]
+              }
+            ]
+          },
+          {
+            "name": "replacement_fd_ef",
+            "encoding": "utf-8",
+            "fatal": false,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "\ufffd",
+                "codepoints": [
+                  65533
+                ]
+              },
+              {
+                "kind": "return",
+                "value": "\ufffd",
+                "codepoints": [
+                  65533
+                ]
+              }
+            ]
+          },
+          {
+            "name": "successful_scalar_continuation",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  130
+                ],
+                true
+              ],
+              [
+                [
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "\u20ac",
+                "codepoints": [
+                  8364
+                ]
+              }
+            ]
+          },
+          {
+            "name": "iso2022jp_roman_state",
+            "encoding": "iso-2022-jp",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  27,
+                  40,
+                  74,
+                  255
+                ],
+                true
+              ],
+              [
+                [
+                  126
+                ],
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "\u203e",
+                "codepoints": [
+                  8254
+                ]
+              }
+            ]
+          },
+          {
+            "name": "partial_e2_bad_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  130,
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "partial_e2_82_bad_then_last_continuation",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  130,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "restricted_e0_bad_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  224,
+                  128,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  160,
+                  128
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "prior_e2_then_bad_call_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226
+                ],
+                true
+              ],
+              [
+                [
+                  65,
+                  66
+                ],
+                true
+              ],
+              [
+                [
+                  130,
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          }
+        ],
+        "worker": [
+          {
+            "name": "fd_ef_then_flush",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              }
+            ]
+          },
+          {
+            "name": "fd_ascii_then_flush",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  65
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ],
+              [
+                [
+                  66
+                ],
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "B",
+                "codepoints": [
+                  66
+                ]
+              }
+            ]
+          },
+          {
+            "name": "fd_ef_then_bom_completion",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                [
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              }
+            ]
+          },
+          {
+            "name": "fd_bom_then_fresh_bom",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239,
+                  187,
+                  191
+                ],
+                true
+              ],
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "A",
+                "codepoints": [
+                  65
+                ]
+              }
+            ]
+          },
+          {
+            "name": "invalid_continuation_reconsume",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  65
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "A",
+                "codepoints": [
+                  65
+                ]
+              }
+            ]
+          },
+          {
+            "name": "fatal_without_tail_then_success",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253
+                ],
+                true
+              ],
+              [
+                [
+                  194
+                ],
+                true
+              ],
+              [
+                [
+                  162
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "\u00a2",
+                "codepoints": [
+                  162
+                ]
+              }
+            ]
+          },
+          {
+            "name": "bom_before_fatal_then_bom",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  255
+                ],
+                true
+              ],
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "A",
+                "codepoints": [
+                  65
+                ]
+              }
+            ]
+          },
+          {
+            "name": "replacement_fd_ef",
+            "encoding": "utf-8",
+            "fatal": false,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "\ufffd",
+                "codepoints": [
+                  65533
+                ]
+              },
+              {
+                "kind": "return",
+                "value": "\ufffd",
+                "codepoints": [
+                  65533
+                ]
+              }
+            ]
+          },
+          {
+            "name": "successful_scalar_continuation",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  130
+                ],
+                true
+              ],
+              [
+                [
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "\u20ac",
+                "codepoints": [
+                  8364
+                ]
+              }
+            ]
+          },
+          {
+            "name": "iso2022jp_roman_state",
+            "encoding": "iso-2022-jp",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  27,
+                  40,
+                  74,
+                  255
+                ],
+                true
+              ],
+              [
+                [
+                  126
+                ],
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "\u203e",
+                "codepoints": [
+                  8254
+                ]
+              }
+            ]
+          },
+          {
+            "name": "partial_e2_bad_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  130,
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "partial_e2_82_bad_then_last_continuation",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  130,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "restricted_e0_bad_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  224,
+                  128,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  160,
+                  128
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "prior_e2_then_bad_call_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226
+                ],
+                true
+              ],
+              [
+                [
+                  65,
+                  66
+                ],
+                true
+              ],
+              [
+                [
+                  130,
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          }
+        ],
+        "workerIssue": null,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+      },
+      "ownedBrowserExitCode": 0,
+      "ownedProcessGroupGone": true,
+      "monitorExitCode": 0,
+      "resources": {
+        "path": "out/lume-20261029-cpu30/fatal-stream-interop-3/lume/resources.json",
+        "sha256": "052a6056a9330dec6b66d8f9c7da028402df9168d6e92adaa986ee124777bd38",
+        "samples": 2,
+        "intervalSamples": 1,
+        "collectorError": null,
+        "violations": []
+      },
+      "finishedUTC": "2026-10-29T04:38:06.832655+00:00",
+      "wallSeconds": 2.165,
+      "binarySHA256After": "9137de2fb8cba151b7a4ca4f21aa02771061068cd41aa4327de4e3e20d709553"
+    },
+    {
+      "browser": "qualified-chrome",
+      "binarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+      "startedUTC": "2026-10-29T04:38:06.849190+00:00",
+      "fixtureCoreSHA256": "99fd8f80444872fe0a97400f91eed72d840db57ff5033809402903f28af5d19e",
+      "complete": true,
+      "actual": {
+        "window": [
+          {
+            "name": "fd_ef_then_flush",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              }
+            ]
+          },
+          {
+            "name": "fd_ascii_then_flush",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  65
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ],
+              [
+                [
+                  66
+                ],
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "B",
+                "codepoints": [
+                  66
+                ]
+              }
+            ]
+          },
+          {
+            "name": "fd_ef_then_bom_completion",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                [
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              }
+            ]
+          },
+          {
+            "name": "fd_bom_then_fresh_bom",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239,
+                  187,
+                  191
+                ],
+                true
+              ],
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "A",
+                "codepoints": [
+                  65
+                ]
+              }
+            ]
+          },
+          {
+            "name": "invalid_continuation_reconsume",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  65
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "fatal_without_tail_then_success",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253
+                ],
+                true
+              ],
+              [
+                [
+                  194
+                ],
+                true
+              ],
+              [
+                [
+                  162
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "\u00a2",
+                "codepoints": [
+                  162
+                ]
+              }
+            ]
+          },
+          {
+            "name": "bom_before_fatal_then_bom",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  255
+                ],
+                true
+              ],
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "A",
+                "codepoints": [
+                  65
+                ]
+              }
+            ]
+          },
+          {
+            "name": "replacement_fd_ef",
+            "encoding": "utf-8",
+            "fatal": false,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "\ufffd",
+                "codepoints": [
+                  65533
+                ]
+              },
+              {
+                "kind": "return",
+                "value": "\ufffd",
+                "codepoints": [
+                  65533
+                ]
+              }
+            ]
+          },
+          {
+            "name": "successful_scalar_continuation",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  130
+                ],
+                true
+              ],
+              [
+                [
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "\u20ac",
+                "codepoints": [
+                  8364
+                ]
+              }
+            ]
+          },
+          {
+            "name": "iso2022jp_roman_state",
+            "encoding": "iso-2022-jp",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  27,
+                  40,
+                  74,
+                  255
+                ],
+                true
+              ],
+              [
+                [
+                  126
+                ],
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "\u203e",
+                "codepoints": [
+                  8254
+                ]
+              }
+            ]
+          },
+          {
+            "name": "partial_e2_bad_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  130,
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "partial_e2_82_bad_then_last_continuation",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  130,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "restricted_e0_bad_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  224,
+                  128,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  160,
+                  128
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "prior_e2_then_bad_call_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226
+                ],
+                true
+              ],
+              [
+                [
+                  65,
+                  66
+                ],
+                true
+              ],
+              [
+                [
+                  130,
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          }
+        ],
+        "worker": [
+          {
+            "name": "fd_ef_then_flush",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              }
+            ]
+          },
+          {
+            "name": "fd_ascii_then_flush",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  65
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ],
+              [
+                [
+                  66
+                ],
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "B",
+                "codepoints": [
+                  66
+                ]
+              }
+            ]
+          },
+          {
+            "name": "fd_ef_then_bom_completion",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                [
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              }
+            ]
+          },
+          {
+            "name": "fd_bom_then_fresh_bom",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253,
+                  239,
+                  187,
+                  191
+                ],
+                true
+              ],
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "A",
+                "codepoints": [
+                  65
+                ]
+              }
+            ]
+          },
+          {
+            "name": "invalid_continuation_reconsume",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  65
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "fatal_without_tail_then_success",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  253
+                ],
+                true
+              ],
+              [
+                [
+                  194
+                ],
+                true
+              ],
+              [
+                [
+                  162
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "\u00a2",
+                "codepoints": [
+                  162
+                ]
+              }
+            ]
+          },
+          {
+            "name": "bom_before_fatal_then_bom",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  255
+                ],
+                true
+              ],
+              [
+                [
+                  239,
+                  187,
+                  191,
+                  65
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "A",
+                "codepoints": [
+                  65
+                ]
+              }
+            ]
+          },
+          {
+            "name": "replacement_fd_ef",
+            "encoding": "utf-8",
+            "fatal": false,
+            "calls": [
+              [
+                [
+                  253,
+                  239
+                ],
+                true
+              ],
+              [
+                null,
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "\ufffd",
+                "codepoints": [
+                  65533
+                ]
+              },
+              {
+                "kind": "return",
+                "value": "\ufffd",
+                "codepoints": [
+                  65533
+                ]
+              }
+            ]
+          },
+          {
+            "name": "successful_scalar_continuation",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  130
+                ],
+                true
+              ],
+              [
+                [
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "return",
+                "value": "\u20ac",
+                "codepoints": [
+                  8364
+                ]
+              }
+            ]
+          },
+          {
+            "name": "iso2022jp_roman_state",
+            "encoding": "iso-2022-jp",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  27,
+                  40,
+                  74,
+                  255
+                ],
+                true
+              ],
+              [
+                [
+                  126
+                ],
+                null
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "return",
+                "value": "\u203e",
+                "codepoints": [
+                  8254
+                ]
+              }
+            ]
+          },
+          {
+            "name": "partial_e2_bad_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  130,
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "partial_e2_82_bad_then_last_continuation",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226,
+                  130,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "restricted_e0_bad_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  224,
+                  128,
+                  65
+                ],
+                true
+              ],
+              [
+                [
+                  160,
+                  128
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          },
+          {
+            "name": "prior_e2_then_bad_call_then_valid_continuations",
+            "encoding": "utf-8",
+            "fatal": true,
+            "calls": [
+              [
+                [
+                  226
+                ],
+                true
+              ],
+              [
+                [
+                  65,
+                  66
+                ],
+                true
+              ],
+              [
+                [
+                  130,
+                  172
+                ],
+                false
+              ]
+            ],
+            "observations": [
+              {
+                "kind": "return",
+                "value": "",
+                "codepoints": []
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              },
+              {
+                "kind": "throw",
+                "name": "TypeError"
+              }
+            ]
+          }
+        ],
+        "workerIssue": null,
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36"
+      },
+      "ownedBrowserExitCode": 0,
+      "ownedProcessGroupGone": true,
+      "monitorExitCode": 0,
+      "resources": {
+        "path": "out/lume-20261029-cpu30/fatal-stream-interop-3/qualified-chrome/resources.json",
+        "sha256": "5837e7f01ffa133b34e2d7adab3cee30e207e1a0db0077b8ecc2e50f7848928c",
+        "samples": 2,
+        "intervalSamples": 1,
+        "collectorError": null,
+        "violations": []
+      },
+      "finishedUTC": "2026-10-29T04:38:08.962714+00:00",
+      "wallSeconds": 2.114,
+      "binarySHA256After": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4"
+    }
+  ],
+  "fixtureCoreSHA256": "99fd8f80444872fe0a97400f91eed72d840db57ff5033809402903f28af5d19e",
+  "priorObservationReceipt": "out/lume-20261029-cpu30/fatal-stream-interop-2/summary.json",
+  "priorObservationSHA256": "7d42b874917cad9074e36a9af0a0a0446c3d322194b3e1324d8f7e04f1b693eb",
+  "unchanged14InputsAndChromeObservations": true,
+  "comparisons": [
+    {
+      "scope": "window",
+      "name": "fd_ef_then_flush",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "fd_ascii_then_flush",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "B",
+          "codepoints": [
+            66
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "B",
+          "codepoints": [
+            66
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "fd_ef_then_bom_completion",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "fd_bom_then_fresh_bom",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "A",
+          "codepoints": [
+            65
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "A",
+          "codepoints": [
+            65
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "invalid_continuation_reconsume",
+      "same": false,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "A",
+          "codepoints": [
+            65
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "fatal_without_tail_then_success",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "\u00a2",
+          "codepoints": [
+            162
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "\u00a2",
+          "codepoints": [
+            162
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "bom_before_fatal_then_bom",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "A",
+          "codepoints": [
+            65
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "A",
+          "codepoints": [
+            65
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "replacement_fd_ef",
+      "same": true,
+      "lume": [
+        {
+          "kind": "return",
+          "value": "\ufffd",
+          "codepoints": [
+            65533
+          ]
+        },
+        {
+          "kind": "return",
+          "value": "\ufffd",
+          "codepoints": [
+            65533
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "return",
+          "value": "\ufffd",
+          "codepoints": [
+            65533
+          ]
+        },
+        {
+          "kind": "return",
+          "value": "\ufffd",
+          "codepoints": [
+            65533
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "successful_scalar_continuation",
+      "same": true,
+      "lume": [
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "\u20ac",
+          "codepoints": [
+            8364
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "\u20ac",
+          "codepoints": [
+            8364
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "iso2022jp_roman_state",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "\u203e",
+          "codepoints": [
+            8254
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "\u203e",
+          "codepoints": [
+            8254
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "partial_e2_bad_then_valid_continuations",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "partial_e2_82_bad_then_last_continuation",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "restricted_e0_bad_then_valid_continuations",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "scope": "window",
+      "name": "prior_e2_then_bad_call_then_valid_continuations",
+      "same": true,
+      "lume": [
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "fd_ef_then_flush",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "fd_ascii_then_flush",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "B",
+          "codepoints": [
+            66
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "B",
+          "codepoints": [
+            66
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "fd_ef_then_bom_completion",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "fd_bom_then_fresh_bom",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "A",
+          "codepoints": [
+            65
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "A",
+          "codepoints": [
+            65
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "invalid_continuation_reconsume",
+      "same": false,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "A",
+          "codepoints": [
+            65
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "fatal_without_tail_then_success",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "\u00a2",
+          "codepoints": [
+            162
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "\u00a2",
+          "codepoints": [
+            162
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "bom_before_fatal_then_bom",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "A",
+          "codepoints": [
+            65
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "A",
+          "codepoints": [
+            65
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "replacement_fd_ef",
+      "same": true,
+      "lume": [
+        {
+          "kind": "return",
+          "value": "\ufffd",
+          "codepoints": [
+            65533
+          ]
+        },
+        {
+          "kind": "return",
+          "value": "\ufffd",
+          "codepoints": [
+            65533
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "return",
+          "value": "\ufffd",
+          "codepoints": [
+            65533
+          ]
+        },
+        {
+          "kind": "return",
+          "value": "\ufffd",
+          "codepoints": [
+            65533
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "successful_scalar_continuation",
+      "same": true,
+      "lume": [
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "\u20ac",
+          "codepoints": [
+            8364
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "return",
+          "value": "\u20ac",
+          "codepoints": [
+            8364
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "iso2022jp_roman_state",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "\u203e",
+          "codepoints": [
+            8254
+          ]
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "return",
+          "value": "\u203e",
+          "codepoints": [
+            8254
+          ]
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "partial_e2_bad_then_valid_continuations",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "partial_e2_82_bad_then_last_continuation",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "restricted_e0_bad_then_valid_continuations",
+      "same": true,
+      "lume": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ]
+    },
+    {
+      "scope": "worker",
+      "name": "prior_e2_then_bad_call_then_valid_continuations",
+      "same": true,
+      "lume": [
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ],
+      "chrome": [
+        {
+          "kind": "return",
+          "value": "",
+          "codepoints": []
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        },
+        {
+          "kind": "throw",
+          "name": "TypeError"
+        }
+      ]
+    }
+  ],
+  "scope": "Fourteen observational call sequences (four additional partial-scalar recovery controls) in window and worker for exact Chrome/Lume executables. This does not modify or replace pinned WPT assertions or award conformance.",
+  "spec": "https://encoding.spec.whatwg.org/#dom-textdecoder-decode",
+  "relatedUnsettledIssue": "https://github.com/whatwg/encoding/issues/359"
+}

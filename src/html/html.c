@@ -796,6 +796,30 @@ static bool response_is_json(const char *content_type) {
            (end - slash > 5 && str_ieqn(end - 5, "+json", 5));
 }
 
+/* XML MIME types retain their Unicode/XML declaration default independently
+ * of the locale's HTML/text-document fallback. Match the complete valid MIME
+ * essence, including structured +xml types, not a parameter value. */
+static bool response_is_xml(const char *content_type) {
+    if (!content_type) return false;
+    const char *start = content_type;
+    while (*start == ' ' || *start == '\t' || *start == '\r' || *start == '\n') ++start;
+    const char *end = strchr(start, ';');
+    if (!end) end = start + strlen(start);
+    while (end > start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\r' || end[-1] == '\n')) --end;
+    const char *slash = memchr(start, '/', (size_t)(end - start));
+    if (!slash || slash == start || slash + 1 == end) return false;
+    for (const char *p = start; p < end; ++p) {
+        if (p == slash) continue;
+        const unsigned char c = (unsigned char)*p;
+        if (!((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+              (c >= '0' && c <= '9') || strchr("!#$%&'*+-.^_`|~", c))) return false;
+    }
+    const size_t n = (size_t)(end - start);
+    return (n == 15 && str_ieqn(start, "application/xml", 15)) ||
+           (n == 8 && str_ieqn(start, "text/xml", 8)) ||
+           (end - slash > 4 && str_ieqn(end - 4, "+xml", 4));
+}
+
 static void html_parse_plaintext(Document *document, const char *text, size_t length) {
     HtmlParser *parser = html_parser_new(document, NULL);
     /* Text documents use no-quirks mode. Emitting the synthetic pre start tag
@@ -1003,17 +1027,27 @@ bool html_parse_bytes_with_fallback(Document *document, const char *bytes, size_
     else if (content_type)
         encoding = web_encoding_mime_n(content_type, strlen(content_type));
     const bool json = response_is_json(content_type);
+    const bool xml = response_is_xml(content_type);
     const bool plaintext = json || response_is_plaintext(content_type);
     /* JSON's default is UTF-8, independently of the embedding document.
      * BOM and an explicit supported transport charset have already won.
      * JSON data must never be inspected for HTML metadata or tokenized as
      * markup: the text-document path preserves it literally in a pre node. */
     if (encoding == WEB_ENC_UNKNOWN && json) encoding = WEB_ENC_UTF8;
+    if (encoding == WEB_ENC_UNKNOWN && xml) {
+        encoding = encoding_xml_fallback(input, length);
+        if (encoding == WEB_ENC_UNKNOWN) encoding = WEB_ENC_UTF8;
+    }
     if (encoding == WEB_ENC_UNKNOWN && !plaintext)
         encoding = html_prescan_encoding(input, length);
     if (encoding == WEB_ENC_UNKNOWN) {
+        /* Preserve the existing local-file UTF-8 behavior. The locale change
+         * is for network/default documents, not generated Unicode or files. */
+        const bool local_file = document->url && strlen(document->url) >= 5 &&
+            str_ieqn(document->url, "file:", 5);
+        const WebEncoding default_encoding = local_file ? WEB_ENC_UTF8 : WEB_ENC_WINDOWS_1252;
         encoding = fallback >= WEB_ENC_UTF8 && fallback < WEB_ENC_COUNT &&
-            fallback != WEB_ENC_UTF16LE && fallback != WEB_ENC_UTF16BE ? fallback : WEB_ENC_UTF8;
+            fallback != WEB_ENC_UTF16LE && fallback != WEB_ENC_UTF16BE ? fallback : default_encoding;
     }
 
     /* Three output bytes per input byte bounds even an all-error input. The
@@ -1032,9 +1066,11 @@ bool html_parse_bytes_with_fallback(Document *document, const char *bytes, size_
     return ok;
 }
 
-/* Ordinary top-level callers retain the existing UTF-8 default. A frame may
- * supply a different fallback only after its origin/sandbox policy permits it. */
+/* The browser currently exposes the en-US locale. Unlabelled network HTML
+ * and text documents use its Windows-1252 default; file URLs retain UTF-8; JSON/XML select their own
+ * Unicode defaults above. UNKNOWN means no eligible parent encoding, keeping
+ * explicit UTF-8 parents distinct from the implementation default. */
 bool html_parse_bytes(Document *document, const char *bytes, size_t length,
                       const char *content_type) {
-    return html_parse_bytes_with_fallback(document, bytes, length, content_type, WEB_ENC_UTF8);
+    return html_parse_bytes_with_fallback(document, bytes, length, content_type, WEB_ENC_UNKNOWN);
 }

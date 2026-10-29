@@ -1,0 +1,6 @@
+{
+  "accepted": true,
+  "reviewer": "root CTO visual review via get_image",
+  "screenshotSHA256": "2d17a2b683e4292d20d565914b4c54bcdcfea9f6faf68197122e39d01d4a19e3",
+  "scope": "1000\u00d7700 native browser window shows coherent browser chrome and aligned alternating fixture rows55\u201374, with no visible rendering corruption. This is a synthetic Mac scroll fixture, not public-site or mobile coverage."
+}

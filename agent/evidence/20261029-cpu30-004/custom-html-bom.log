@@ -1,0 +1,24 @@
+[js log] HTML_BOM_CHECK {"i":0,"name":"UTF-8 HTML consumes exactly one of 1 BOMs","ok":true}
+[js log] HTML_BOM_CHECK {"i":1,"name":"UTF-8 HTML consumes exactly one of 2 BOMs","ok":true}
+[js log] HTML_BOM_CHECK {"i":2,"name":"UTF-8 HTML consumes exactly one of 3 BOMs","ok":true}
+[js log] HTML_BOM_CHECK {"i":3,"name":"UTF-8 plaintext consumes only its signature","ok":true}
+[js log] HTML_BOM_CHECK {"i":4,"name":"UTF-16LE HTML consumes exactly one of 1 BOMs","ok":true}
+[js log] HTML_BOM_CHECK {"i":5,"name":"UTF-16LE HTML consumes exactly one of 2 BOMs","ok":true}
+[js log] HTML_BOM_CHECK {"i":6,"name":"UTF-16LE HTML consumes exactly one of 3 BOMs","ok":true}
+[js log] HTML_BOM_CHECK {"i":7,"name":"UTF-16LE plaintext consumes only its signature","ok":true}
+[js log] HTML_BOM_CHECK {"i":8,"name":"UTF-16BE HTML consumes exactly one of 1 BOMs","ok":true}
+[js log] HTML_BOM_CHECK {"i":9,"name":"UTF-16BE HTML consumes exactly one of 2 BOMs","ok":true}
+[js log] HTML_BOM_CHECK {"i":10,"name":"UTF-16BE HTML consumes exactly one of 3 BOMs","ok":true}
+[js log] HTML_BOM_CHECK {"i":11,"name":"UTF-16BE plaintext consumes only its signature","ok":true}
+[js log] HTML_BOM_CHECK {"i":12,"name":"JSON preserves the second UTF8 BOM as text","ok":true}
+[js log] HTML_BOM_CHECK {"i":13,"name":"DOMParser preserves 0 Unicode FEFF characters","ok":true}
+[js log] HTML_BOM_CHECK {"i":14,"name":"DOMParser preserves 1 Unicode FEFF characters","ok":true}
+[js log] HTML_BOM_CHECK {"i":15,"name":"DOMParser preserves 2 Unicode FEFF characters","ok":true}
+[js log] HTML_BOM_CHECK {"i":16,"name":"srcdoc preserves 0 Unicode FEFF characters","ok":true}
+[js log] HTML_BOM_CHECK {"i":17,"name":"srcdoc preserves 1 Unicode FEFF characters","ok":true}
+[js log] HTML_BOM_CHECK {"i":18,"name":"srcdoc preserves 2 Unicode FEFF characters","ok":true}
+[js log] HTML_BOM_CHECK {"i":19,"name":"HTML fragments preserve 1 Unicode FEFF characters","ok":true}
+[js log] HTML_BOM_CHECK {"i":20,"name":"HTML fragments preserve 2 Unicode FEFF characters","ok":true}
+[js log] HTML_BOM_RESULTS {"total":21,"passed":21,"failed":0}
+jsrun: context 17.2ms, 1 scripts 7.7ms, dom_version 124
+HTML_BOM_RECEIPT {"binarySHA256": "22e574acf9d0573923303abded07223f07143a5a745a1b39166416325f5ddfa8", "fixtureSHA256": "9025da241a3add95d7af5e0e3dc4dc081622471f685f479e7e6250149b843c7c", "htmlSHA256": "5e1211c79c776ba5c2478fa5ec8d3811a774cc2d1f29364782cd58654215236d", "caseSHA256": ["d2648564022ca4fd0d3915699cb040fc31bd2225e3efef12ec5c97d9151164a8", "511219fdf9a9c45a7d0d83178fd462554a584cf4a642599bae2f5e80b892eff7", "b17402259d6912b6eed93d6929ff870da434a39528422cb0ea2c095cb910263a", "09524311bf50e33c13fde3832a2ffbe80cdc01186f3fba68114f77144ff1eb89", "15c8bcc5a12452e421544cc711f751baf314daa9ccb7830fb11b08a20b5562f5", "6c4956370bac04fe21e5cc85c49c57086af05ee2cf5ea457f0ede3b5da330e8f", "35355717002f195daf7a26627874ff3b5a08a8cb381daff5a5999c027ff6d824", "e736d3181b29b7dbf5c702525637d8b575855d28853b6359724d286f7aec7f71", "06ca86c189cd91224bc5b07bfa787fa9f56e2744b76710f79587d497b0797330", "648070876835f0d75cd15570fc6b1996c88fee3dd9eb0e12a97bcfc97b484ac2", "d5f721c13f15bd48244d70207702fd80821594731aa52e9ec9b4051b57ba1211", "961a11224b8e4f8779b7bac440771fe71436f2c50344e20b372f02cf99850661", "4f9d81b2dff7fd7f64fecdfdc6d0292ed97f903d46a3fd2a51260eab4655eaa8"], "total": 21, "passed": 21, "failed": 0}

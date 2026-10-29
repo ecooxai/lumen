@@ -1,0 +1,56 @@
+{
+  "startedUTC": "2026-10-29T04:00:26.308638+00:00",
+  "scope": "Read-only identities of the three existing prebuilt V8 dylibs linked by the native candidate. No download, package update, or V8 build.",
+  "libraries": [
+    {
+      "linkedPath": "/opt/homebrew/opt/v8/libexec/libv8.dylib",
+      "resolvedPath": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8.dylib",
+      "bytes": 58725328,
+      "sha256": "0a29ecc47ab9bee167a024816dd22d949fb9b755b9e9606d2bc4a40214e55130",
+      "fileType": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8.dylib: Mach-O 64-bit dynamically linked shared library arm64",
+      "installedFormulaVersion": "15.6.75.16"
+    },
+    {
+      "linkedPath": "/opt/homebrew/opt/v8/libexec/libv8_libplatform.dylib",
+      "resolvedPath": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libplatform.dylib",
+      "bytes": 171776,
+      "sha256": "fdfcb079996d81353c65f5cba2ab4d85ad62e0b58f2d15302ff4dab8459120e7",
+      "fileType": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libplatform.dylib: Mach-O 64-bit dynamically linked shared library arm64",
+      "installedFormulaVersion": "15.6.75.16"
+    },
+    {
+      "linkedPath": "/opt/homebrew/opt/v8/libexec/libv8_libbase.dylib",
+      "resolvedPath": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libbase.dylib",
+      "bytes": 435216,
+      "sha256": "4d7a3756a942dc97d0f080864a7ad366c9e7de4a5c50093506146e424338edd4",
+      "fileType": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libbase.dylib: Mach-O 64-bit dynamically linked shared library arm64",
+      "installedFormulaVersion": "15.6.75.16"
+    }
+  ],
+  "versionHeaders": [
+    {
+      "path": "/opt/homebrew/opt/v8/include/v8-version.h",
+      "resolvedPath": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/include/v8-version.h",
+      "sha256": "23f0493b68d546917f294e53f89b1c34af8b89718229b38c01d39ea27a7cb1d2",
+      "macros": {
+        "V8_MAJOR_VERSION": "15",
+        "V8_MINOR_VERSION": "6",
+        "V8_BUILD_NUMBER": "75",
+        "V8_PATCH_LEVEL": "16"
+      }
+    },
+    {
+      "path": "/opt/homebrew/opt/v8/libexec/include/v8-version.h",
+      "resolvedPath": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/include/v8-version.h",
+      "sha256": "23f0493b68d546917f294e53f89b1c34af8b89718229b38c01d39ea27a7cb1d2",
+      "macros": {
+        "V8_MAJOR_VERSION": "15",
+        "V8_MINOR_VERSION": "6",
+        "V8_BUILD_NUMBER": "75",
+        "V8_PATCH_LEVEL": "16"
+      }
+    }
+  ],
+  "finishedUTC": "2026-10-29T04:00:26.365681+00:00",
+  "durationSeconds": 0.057
+}
