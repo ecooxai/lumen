@@ -666,7 +666,10 @@ class Collector:
 
 def run_lumen(binary, url, timeout, prefix, reporter):
     collector = Collector()
-    monitor_module()  # Resolve telemetry/cleanup dependencies before launching.
+    module = monitor_module()  # Resolve telemetry/cleanup dependencies before launching.
+    namespace_error = module.pid_namespace_error()
+    if namespace_error:
+        raise RuntimeError(namespace_error)
     env = os.environ.copy()
     # Inherited screenshot/no-JS switches would invalidate this run.
     for key in ('LUMEN_SHOT', 'LUMEN_SHOT_MS', 'LUMEN_NO_JS', 'LUMEN_PRE_FILE'):
@@ -835,7 +838,10 @@ def chromium_launch_arguments(binary, profile, extra_args, headless=True):
 
 class Chromium:
     def __init__(self, binary, directory, extra_args, *, headless=True):
-        monitor_module()
+        module = monitor_module()
+        namespace_error = module.pid_namespace_error()
+        if namespace_error:
+            raise RuntimeError(namespace_error)
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.metrics_reference = str(self.directory / 'chromium.metrics.jsonl')

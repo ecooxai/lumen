@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 from types import SimpleNamespace
+import tempfile
 import unittest
 from unittest import mock
 
@@ -98,6 +99,18 @@ class SamplerIntegrationTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             sampler._record_snapshot('10 1 0.0 1024 S 00:01 Thu Oct 22 09:00:00 2026\n', 0)
         self.assertFalse(sampler.rows)
+
+    def test_all_native_launchers_reject_namespace_mismatch_before_popen(self):
+        module = SimpleNamespace(pid_namespace_error=lambda: 'PID namespace mismatch')
+        with tempfile.TemporaryDirectory() as directory:
+            prefix = Path(directory) / 'uncreated' / 'case'
+            with mock.patch.object(runner, 'monitor_module', return_value=module), mock.patch.object(runner.subprocess, 'Popen') as launch:
+                with self.assertRaisesRegex(RuntimeError, 'PID namespace mismatch'):
+                    runner.run_lumen(Path('unused-browser'), 'http://localhost/', 1, prefix, '')
+                with self.assertRaisesRegex(RuntimeError, 'PID namespace mismatch'):
+                    runner.Chromium(Path('unused-chrome'), prefix, [])
+            launch.assert_not_called()
+            self.assertFalse(prefix.parent.exists())
 
 
 if __name__ == '__main__':

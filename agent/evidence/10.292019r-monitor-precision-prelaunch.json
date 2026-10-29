@@ -1,0 +1,11 @@
+{
+  "scope": "Reject mismatched observer PID namespace before launching native Lumen or Chromium; no browser passrate claim",
+  "sources": {
+    "tests/wpt/full_runner.py": "f279529ae78f58916a1d87170bc068ad34b15f175072a0a01f63695bc8e44a6b",
+    "tests/wpt/test_sampler_integration.py": "38c13d71a44940660342bc9e7194ef9ba712b9ed0b2d37d26fbeaa70a7be02f3"
+  },
+  "tests": 76,
+  "tests_passed": 76,
+  "evidence_prefix": "agent/evidence/10.292019r-monitor-precision-prelaunch/prelaunch-tests",
+  "prior_calibration": "agent/evidence/10.292019r-monitor-precision.json"
+}
