@@ -1,0 +1,39 @@
+#!/bin/bash
+DEVELOPER_USR_BIN_DIR=${0%/*}
+DEVELOPER_USR_BIN_DIR=${DEVELOPER_USR_BIN_DIR%/local/bin}
+DEVELOPER_USR_BIN_DIR=${DEVELOPER_USR_BIN_DIR%/bin}
+DEVELOPER_USR_BIN_DIR=${DEVELOPER_USR_BIN_DIR}/bin
+DEVELOPER_USR_DIR=${DEVELOPER_USR_BIN_DIR%/*}
+export DEVELOPER_DIR=${DEVELOPER_USR_DIR%/*}
+
+EXPECTED_VERSION="1171.7"
+CURRENT_VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/Info.plist" 2>/dev/null)"
+
+# Canonicalize version by stripping trailing .0 components (e.g., 1107.0 -> 1107)
+canonicalize_version() {
+    local v="$1"
+    while [[ "${v}" =~ \.0$ ]]; do
+        v="${v%.0}"
+    done
+    printf '%s' "${v}"
+}
+
+# Returns 0 (true) if first version is older than second version
+version_is_older() {
+    local v1="$(canonicalize_version "$1")"
+    local v2="$(canonicalize_version "$2")"
+    [[ "$(printf '%s\n%s\n' "${v1}" "${v2}" | sort --version-sort | head -n1)" == "${v1}" ]] && [[ "${v1}" != "${v2}" ]]
+}
+
+# Run FLE if current version is missing/empty or older than expected
+if [[ -z "${CURRENT_VERSION}" ]] || version_is_older "${CURRENT_VERSION}" "${EXPECTED_VERSION}"; then
+    "${DEVELOPER_DIR}/usr/bin/xcodebuild" -runFirstLaunch >&2
+fi
+exec "/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin/simctl" "${@}"
+
+exit_code: 0
+running: false
+terminal_id: 6408
+workspace_id: /Applications/Xcode-27.0-RC.app
+chars: 1358
+snapshot: c2e31d6db91a6771

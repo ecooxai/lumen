@@ -617,3 +617,11 @@ Actual Mac supplemental53 retry6378 ran15:59:29.774924–16:00:55.150250UTC,85.3
 
 - StartUTC2026-10-29T17:48:48.128895Z; candidate001frozenboundary13 actualMac12/13 in2.524184s, no infrastructureerrors. OnlytransferofSharedWorker.port intoDedicatedWorker failsbytimeout. QualifiedChrome13/13; frozenfixtureSHAae9398fdb1c16007efce49415b503058b89bc0ffff101ba921c5f81ef98e11cf unchanged. AllCSP/origin/queuecontrolsPASS.
 - Productfixplannedprivateentanglementbrokerwithsenderdetachment+nativeconnection/lifetimeownership. Candidate001notpromoted; prioracceptedtaskscore66.426948447154565/100retained. Full1515awaitsstablecandidate/dependencybeforeexpensivesweep.
+
+### Iteration 2 continuation — transferred SharedWorker ownership
+
+- Product fix frozen at `da6d6cffe7fd436b39efa713f1f7afc0edf6a792`; native execution pending. Main and worker prelude syntax checks passed. WPT and runtime leads independently reviewed private typed move/close transport, bridge collapse on return, opt-in lifecycle notifications, and native connection references.
+- Candidate001 remains explicitly unaccepted for release: frozen boundary suite12/13 in both jsrun and actual Mac GUI; the transferred connection endpoint is the sole failure. Independent Chrome-qualified9 transfer and2 returned-owner controls remain separate, frozen cohorts.
+- Focused unchanged upstream SharedWorker selection on candidate001 is30/30 fully passing with574 passing assertions,45.968seconds; this does not replace the complete1515 sweep. Native basic lifetime stress is100cycles/200isolates/1691checks, RSS growth1.140625MiB, threads13→13, FD5→5, final idle CPU p950.991% of one core.
+- Isolated official prebuilt ICU79.1 staging passed14/14 compatibility/security probes with Unicode18 and the host ICU78 alias unchanged in2.777seconds. The first1.419second attempt failed due mutually-exclusive Homebrew fetch flags; fixed tooling and a fresh output preserved the original failure. Product URL validation flags are unchanged; final URL77 acceptance remains pending.
+- Overall task score remains inherited66.426948447154565/100. New candidate WPT, resource, portable delivery and mobile acceptance are not credited prematurely. Broader cross-client SharedWorker remote-endpoint transfer remains outside this fix and is not represented as full MessagePort conformance.

@@ -1,0 +1,39 @@
+{
+  "scope": "CA certificate resource parser regression, not Apple runtime execution",
+  "behavior": "Malformed certificate PEM previously accepted and could fall back to host CA paths. RED10/11 then GREEN11/11; existing valid public CA accepted; no private-key material allowed.",
+  "oneSecondMonitor": "Subsecond tests yield no valid interval CPU performance sample",
+  "score": 66.42694844715456,
+  "scoreState": "inherited accepted baseline",
+  "files": [
+    {
+      "file": "mac-ca-parse-red.json",
+      "sha256": "c5051e4dfb1573239b11f53561ceca016d011abd03e0d5a52b2040b9dbb69008",
+      "bytes": 2193
+    },
+    {
+      "file": "mac-ca-parse-red.csv",
+      "sha256": "abf2c828497fb38f405170d5cbb99d78cb62400d86132aeac2c4656bef4097c6",
+      "bytes": 80
+    },
+    {
+      "file": "mac-ca-parse-red.log",
+      "sha256": "e77d2498376060bc6cad77adff41fa5d8a1197e2c3534686b7d8eb07c339fa40",
+      "bytes": 2672
+    },
+    {
+      "file": "mac-ca-parse-green.json",
+      "sha256": "d2c90823d93ae36fac1835b4b62b4cfb2d7b77a7b6299e3e571e83e8de94eee7",
+      "bytes": 2145
+    },
+    {
+      "file": "mac-ca-parse-green.csv",
+      "sha256": "a6beeaf9e915e80ba7b9b76fbe5d2e42d434c5c09e58f46e160315c406f0abeb",
+      "bytes": 80
+    },
+    {
+      "file": "mac-ca-parse-green.log",
+      "sha256": "dfd8664baa6a35d90d54820cf9ef14f5ad08bb8c93af3a30644a0a0532942d54",
+      "bytes": 1943
+    }
+  ]
+}

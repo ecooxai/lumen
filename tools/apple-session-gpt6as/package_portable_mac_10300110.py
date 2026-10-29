@@ -66,7 +66,8 @@ def main():
     report = {'startedUTC': datetime.now(timezone.utc).isoformat(), 'passed': False,
         'scope': 'Relocated self-contained native macOS development app on this Mac; no mobile IPA, notarization or another-Mac claim',
         'sourceBaseCommit': product['sourceBaseCommit'], 'reviewedProductSource': product.get('reviewedProductSource'),
-        'sourceManifestSHA256': sha(manifest), 'buildSummarySHA256': sha(product_path),
+        'sourceManifestSHA256': sha(manifest), 'buildSummary': str(product_path.relative_to(root)),
+        'buildSummarySHA256': sha(product_path),
         'productArtifact': artifact, 'reviewedToolHashes': tools, 'stages': [],
         'installedDependenciesModified': False, 'notarized': False,
         'olderMacOSRuntimeTested': False, 'sameDeviceIPAExecuted': False}

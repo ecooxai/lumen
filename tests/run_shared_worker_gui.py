@@ -26,6 +26,10 @@ SUITES = {
         'SHARED_WORKER_INFRA ', 'bfce5fed315f65f67087c6bf231b83217aec34c1efae9921566c16f84e4907d0'),
     'boundaries': ('test_shared_worker_boundaries.py', 'SHARED_BOUNDARY_CHECK ', 'SHARED_BOUNDARY_RESULTS ',
         'SHARED_BOUNDARY_INFRA ', 'ae9398fdb1c16007efce49415b503058b89bc0ffff101ba921c5f81ef98e11cf'),
+    'transfer': ('test_shared_worker_transfer_lifecycle.py', 'SHARED_TRANSFER_CHECK ', 'SHARED_TRANSFER_RESULTS ',
+        'SHARED_TRANSFER_INFRA ', '2c66901eb9a5a12bf8947c3ce5f217d88da45f2a7795295a5a6e88a58f020dae'),
+    'return-owner': ('test_shared_worker_return_owner.py', 'SHARED_RETURN_CHECK ', 'SHARED_RETURN_RESULTS ',
+        'SHARED_RETURN_INFRA ', 'b7e200f9077ef6bc5ec8b0f51689f374386fa5269d1f10f01c1c6d80a92b3f55'),
 }
 
 

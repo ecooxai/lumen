@@ -23,6 +23,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build-summary', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--kind', choices=('shared', 'transferred'), default='shared',
+                        help='Separate basic owner lifetime or transferred last-client lifetime oracle')
     args = parser.parse_args()
     root = Path.cwd().resolve()
     if sys.platform != 'darwin' or str(root) != '/Users/devin/repos/lumen':
@@ -48,8 +50,12 @@ def main():
     profile = out / 'profile'
     profile.mkdir()
     env['LUMEN_PROFILE_DIR'] = str(profile)
-    report = {'startedUTC': datetime.now(timezone.utc).isoformat(), 'passed': False,
+    transferred = args.kind == 'transferred'
+    target = 'test_shared_worker_transfer_stress' if transferred else 'test_shared_worker_lifetime_stress'
+    result_label = 'shared-worker-transfer-stress' if transferred else 'shared-worker-lifetime-stress'
+    report = {'startedUTC': datetime.now(timezone.utc).isoformat(), 'passed': False, 'kind': args.kind,
               'scope': 'Actual native SharedWorker isolate/owner/port lifecycle; not official WPT or GUI scrolling',
+              'carrierSHA256': sha(Path(__file__)),
               'buildSummary': str(product_path.relative_to(root)), 'buildSummarySHA256': sha(product_path),
               'sourceManifestSHA256': sha(manifest), 'stages': [], 'cyclesRequired': 100,
               'limits': {'threadDescriptorSettlingMilliseconds': 500, 'warmRSSGrowthMiB': 64,
@@ -80,7 +86,7 @@ def main():
         return value
 
     try:
-        fixture = root / 'tests/test_shared_worker_lifetime_stress.cc'
+        fixture = root / ('tests/' + target + '.cc')
         report['fixtureSHA256'] = sha(fixture)
         report['importedDedicatedFixtureSHA256'] = sha(root / 'tests/test_worker_async_lifecycle.cc')
         build = product['buildCache']
@@ -88,13 +94,13 @@ def main():
             raise ValueError('Invalid candidate build-cache path')
         fragment = out / 'shared-stress.mk'
         fragment.write_text(
-            '$(BUILD)/tests/test_shared_worker_lifetime_stress.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG -I$(BUILD)/src/js\n'
-            '$(BUILD)/tests/test_shared_worker_lifetime_stress.cc.o: $(BUILD)/tests/test_worker_async_lifecycle.cc.o\n'
-            '$(BUILD)/test_shared_worker_lifetime_stress: $(call OBJ,tests/test_shared_worker_lifetime_stress.cc $(CORE_SRC) $(filter-out src/js/worker.cc,$(JS_SRC))) $(V8LINK_RSP)\n'
+            f'$(BUILD)/tests/{target}.cc.o: CXXFLAGS += -fno-rtti -UNDEBUG -I$(BUILD)/src/js\n'
+            f'$(BUILD)/tests/{target}.cc.o: $(BUILD)/tests/test_worker_async_lifecycle.cc.o\n'
+            f'$(BUILD)/{target}: $(call OBJ,tests/{target}.cc $(CORE_SRC) $(filter-out src/js/worker.cc,$(JS_SRC))) $(V8LINK_RSP)\n'
             '\t$(CXX) $(OPT) $(filter %.o,$^) -o $@ $(LIBS) -lproc\n')
         measured('build', ['make', '-j1', '-f', 'Makefile', '-f', str(fragment), 'BUILD='+build,
-                          'MODE=release', 'RTC=1', 'WT=1', build+'/test_shared_worker_lifetime_stress'], 180)
-        source = root / build / 'test_shared_worker_lifetime_stress'
+                          'MODE=release', 'RTC=1', 'WT=1', build+'/'+target], 180)
+        source = root / build / target
         digest = sha(source)
         binary = out / ('shared-worker-stress-'+digest[:16])
         shutil.copy2(source, binary); binary.chmod(0o555)
@@ -103,13 +109,14 @@ def main():
         report['stressBinary'] = {'path': str(binary.relative_to(root)), 'sha256': digest}
         monitor = measured('run', [str(binary), '100', str(out / 'journal.jsonl')], 240)
         log = (out / 'run.log').read_text()
-        matches = re.findall(r'RESULTS shared-worker-lifetime-stress PASS \((\d+)/(\d+) checks\)', log)
+        matches = re.findall(r'RESULTS ' + result_label + r' PASS \((\d+)/(\d+) checks\)', log)
         journal = [json.loads(line) for line in (out / 'journal.jsonl').read_text().splitlines()]
         console = [json.loads(line.split(' ',1)[1]) for line in log.splitlines() if line.startswith('SHARED_RESOURCE_CHECKPOINT ')]
         if (len(matches) != 1 or matches[0][0] != matches[0][1]
                 or len(journal) != 101 or journal != console
                 or [row['cycle'] for row in journal] != list(range(1,102))
-                or any(row['failures'] or row['workers'] or row['clients'] or row['pending'] for row in journal)):
+                or any(row['failures'] or row['workers'] != (1 if transferred and row['cycle'] <= 100 else 0)
+                       or row['clients'] or row['pending'] for row in journal)):
             raise RuntimeError('Shared lifecycle journal, console, or result is incomplete')
         warm, final = journal[3], journal[-1]
         report['resources'] = {'warmCycle': 4, 'warmRSSMiB': warm['rss_kib']/1024,
@@ -136,9 +143,11 @@ def main():
             if sha(root / artifact['path']) != artifact['sha256']:
                 raise RuntimeError('A frozen candidate artifact changed')
         if (sha(fixture) != report['fixtureSHA256']
-                or sha(root / 'tests/test_worker_async_lifecycle.cc') != report['importedDedicatedFixtureSHA256']):
+                or sha(root / 'tests/test_worker_async_lifecycle.cc') != report['importedDedicatedFixtureSHA256']
+                or sha(Path(__file__)) != report['carrierSHA256']):
             raise RuntimeError('A lifecycle fixture changed during the measured run')
-        report.update(passed=True, cyclesCompleted=100, checksPassed=int(matches[0][0]), checksTotal=int(matches[0][1]))
+        report.update(passed=True, cyclesCompleted=100, realWorkerIsolatesCreated=201 if transferred else 200,
+                      checksPassed=int(matches[0][0]), checksTotal=int(matches[0][1]))
     except Exception as error:
         report['error'] = type(error).__name__+': '+str(error)
     finally:

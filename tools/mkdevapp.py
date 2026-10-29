@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 import plistlib
 import shutil
+import ssl
 import subprocess
 import sys
 
@@ -36,6 +37,15 @@ def portable_resources(closure, ca_bundle=None):
     content = ca_bundle.read_bytes()
     if b'-----BEGIN CERTIFICATE-----' not in content or b'PRIVATE KEY-----' in content:
         raise ValueError('The selected CA resource must contain certificates and no private keys')
+    # An invalid resource would cause net_init to fall back to host CA paths,
+    # concealing a missing self-contained trust store during local testing.
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    try:
+        context.load_verify_locations(cafile=str(ca_bundle))
+    except (ssl.SSLError, OSError) as error:
+        raise ValueError('The selected CA resource is not a readable certificate bundle') from error
+    if not context.get_ca_certs():
+        raise ValueError('The selected CA resource contains no CA certificates')
     return {'icudtl.dat': candidates.pop(), 'cacert.pem': ca_bundle}
 
 

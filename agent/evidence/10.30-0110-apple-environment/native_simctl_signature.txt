@@ -1,0 +1,21 @@
+simctl: Mach-O 64-bit executable arm64e
+Executable=/Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin/simctl
+Identifier=com.apple.CoreSimulator.simctl
+Format=Mach-O thin (arm64e)
+CodeDirectory v=20400 size=5698 flags=0x2000(library-validation) hashes=167+7 location=embedded
+Signature size=4442
+Authority=Software Signing
+Authority=Apple Code Signing Certification Authority
+Authority=Apple Root CA
+Signed Time=23 Aug 2026 at 6:49:36 PM
+Info.plist entries=18
+TeamIdentifier=59GAB85EFG
+Sealed Resources=none
+Internal requirements count=1 size=80
+exit_code: 0
+running: false
+terminal_id: 6407
+workspace_id: /Library/Developer/PrivateFrameworks/CoreSimulator.framework/Versions/A/Resources/bin
+chars: 580
+snapshot: 52cd8452095577f6
+stderr_chars: 540

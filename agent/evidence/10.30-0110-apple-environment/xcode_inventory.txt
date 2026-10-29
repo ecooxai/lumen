@@ -1,0 +1,11 @@
+{"bundle": "Xcode-27.0-RC.app", "developer_exists": true}
+Xcode-27.0-RC.app/Contents/Info.plist exists=True bytes=34501
+Xcode-27.0-RC.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs exists=True bytes=None
+Xcode-27.0-RC.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs exists=True bytes=None
+simctl ['Xcode-27.0-RC.app/Contents/Developer/usr/bin/simctl']
+exit_code: 0
+running: false
+terminal_id: 6403
+workspace_id: /Applications
+chars: 396
+snapshot: bfaaf6a03964ca55

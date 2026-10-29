@@ -1,5 +1,6 @@
 """Build/freeze a native SharedWorker candidate and preserve monitored gates."""
 from pathlib import Path
+import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -10,18 +11,32 @@ import sys
 import tempfile
 import time
 
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--reviewed-source', default='33c44c37f98d99fe9f748ba89be3018f61fb1e5d')
+parser.add_argument('--output', type=Path, default=Path('out/10300110-mac/native-shared-001'))
+parser.add_argument('--transfer-acceptance', action='store_true')
+parser.add_argument('--icu-prefix', type=Path)
+args = parser.parse_args()
 root = Path.cwd().resolve()
 branch = subprocess.check_output(['git', 'branch', '--show-current'], text=True).strip()
 if branch != 'gpt6-astra-pro_builtin-agents_lumen-10.30-0110-sharedworker':
     raise SystemExit('Unexpected task branch; preserve current state')
 if sys.platform != 'darwin':
     raise SystemExit('This carrier requires the actual native Mac host')
-source_base = '33c44c37f98d99fe9f748ba89be3018f61fb1e5d'
+source_base = subprocess.check_output(['git', 'rev-parse', args.reviewed_source + '^{commit}'], text=True).strip()
 subprocess.run(['git', 'diff', '--quiet', source_base, '--', 'src', 'Makefile', 'ios', 'tests/jsrun.c'], check=True)
 head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-out = root / 'out/10300110-mac/native-shared-001'
+out = (root / args.output).resolve()
+out.relative_to(root / 'out')
 out.mkdir(parents=True, exist_ok=False)
 build = 'build-apple-load-20261029'
+make_variables = {'BUILD': build, 'MODE': 'release', 'RTC': '1', 'WT': '1'}
+if args.icu_prefix:
+    prefix = args.icu_prefix.resolve()
+    prefix.relative_to(root / 'out')
+    if not (prefix / 'include/unicode/uidna.h').is_file():
+        raise SystemExit('The pinned ICU prefix has no UIDNA header')
+    make_variables['ICU_PREFIX'] = str(prefix)
 
 
 def sha(path):
@@ -40,7 +55,8 @@ summary = {
     'branch': branch, 'platform': 'Darwin arm64', 'buildCache': build,
     'sourceManifestSHA256': sha(out / 'compiled-source-sha256.json'),
     'prebuiltV8': 'Existing compatible /opt/homebrew/opt/v8; no V8 source build',
-    'rtc': True, 'webtransport': True, 'stages': [], 'artifacts': {}, 'passed': False,
+    'rtc': True, 'webtransport': True, 'buildMakeVariables': make_variables,
+    'icuPrefix': make_variables.get('ICU_PREFIX'), 'stages': [], 'artifacts': {}, 'passed': False,
     'scope': 'Candidate build and focused regressions; full WPT, resource soak and mobile acceptance remain separate.',
 }
 started = time.monotonic()
@@ -86,7 +102,7 @@ def measured(name, command, limit):
 save()
 try:
     targets = ['lumen', 'jsrun', 'test_worker_lifecycle', 'test_worker_async_lifecycle', 'test_worker_security']
-    if not measured('build', ['make', '-j3', 'BUILD=' + build, 'MODE=release', 'RTC=1', 'WT=1',
+    if not measured('build', ['make', '-j3', *[key + '=' + value for key, value in make_variables.items()],
                               *[build + '/' + target for target in targets]], 240):
         raise RuntimeError('Native candidate build failed; inspect preserved compiler log')
     for name in targets:
@@ -115,6 +131,13 @@ try:
     ]:
         if not measured(label, [sys.executable, driver, '--binary', jsrun, *options], 110):
             raise RuntimeError('Native regression failed: ' + label)
+    if args.transfer_acceptance:
+        for label, driver in [('shared-boundaries', 'tests/test_shared_worker_boundaries.py'),
+                              ('shared-transfer', 'tests/test_shared_worker_transfer_lifecycle.py'),
+                              ('shared-return-owner', 'tests/test_shared_worker_return_owner.py')]:
+            if not measured(label, [sys.executable, driver, '--binary', jsrun,
+                            '--output', str(out / (label + '-receipt.json'))], 110):
+                raise RuntimeError('Native transferred-port acceptance failed: ' + label)
     if not measured('parser-policy-gui', [sys.executable, 'tests/test_parser_handler_csp.py', '--binary', lumen,
                      '--native-gui', '--output', str(out / 'parser-policy-gui-receipt.json')], 110):
         raise RuntimeError('Actual Mac GUI parser-policy regression failed')

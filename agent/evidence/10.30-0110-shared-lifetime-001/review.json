@@ -1,0 +1,21 @@
+{
+  "scope": "Independent analysis of actual candidate001 SharedWorker lifecycle receipt; raw monitor/log/journal hashes are retained in summary",
+  "nativeCycles": 100,
+  "realIsolatesCreated": 200,
+  "checksPassed": 1691,
+  "checksTotal": 1691,
+  "warmToFinalRSSMiB": 1.140625,
+  "warmThreads": 13,
+  "finalThreads": 13,
+  "warmFDs": 5,
+  "finalFDs": 5,
+  "finalWorkerRegistry": 0,
+  "finalClientRoutes": 0,
+  "finalNetworkPending": 0,
+  "postWorkIdleP95OneCoreCPUPercent": 0.991,
+  "activeStressP95OneCoreCPUPercent": 97.394,
+  "activeStressScope": "Deliberate rapid isolate churn, not scrolling or idle acceptance",
+  "maxSamplingGapSeconds": 1.031,
+  "sourceScope": "Candidate001 only; production change requires fresh stress acceptance",
+  "goalScoreUnchanged": 66.42694844715456
+}

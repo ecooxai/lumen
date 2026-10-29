@@ -1,0 +1,70 @@
+{
+  "taskId": "10300110",
+  "scope": "Fresh read-only Apple runtime/toolchain and known Lumen app/dependency path inventory; not app execution proof",
+  "observedPlatform": "Darwin arm64",
+  "xcodeApplication": "/Applications/Xcode-27.0-RC.app",
+  "xcodeVersion": "Xcode 27.0 build 27A266a",
+  "selectedDeveloperDirectory": "/Library/Developer/CommandLineTools",
+  "sdkLookup": "Both iphoneos and iphonesimulator xcrun lookups abort while reading zero-byte DVTFoundation Built-in Syntax Types.xcsynspec; vendor bundle unchanged",
+  "simctl": "Xcode entry is a normal Bash shim; direct CoreSimulator resource binary has verified Apple certificate chain and successfully returns device/runtime JSON",
+  "targetDevice": {
+    "udid": "3DD498EB-4464-4ED7-9CD3-7667889DD1F6",
+    "name": "GPT6AstraPro-ChatGPT-devinmac3d-Lume-iPad",
+    "runtime": "iOS 27.0 (24A434)",
+    "architecture": "arm64",
+    "state": "Booted"
+  },
+  "targetAppContainerRPC": {
+    "command": "get_app_container <observed iPad UDID> com.ecooxai.lumen app",
+    "result": "No response past60seconds; exact owned terminal cancelled with Ctrl-C and confirmed exit130",
+    "appExecutionClaimed": false
+  },
+  "knownLumenAppFilesystemCandidates": 0,
+  "configuredMobileStaticLibrariesPresent": 0,
+  "configuredMobileStaticLibrariesRequiredPerPrefix": 22,
+  "configuredIOSV8ArtifactsPresent": 0,
+  "validSigningIdentities": 0,
+  "sameSignedDeviceIPAExecuted": false,
+  "iPadLumenExecuted": false,
+  "macNativeArtifactDistinctFromDeviceIPA": true,
+  "noSigningSecurityOrVendorBypass": true,
+  "score": 66.42694844715456,
+  "scoreState": "Inherited accepted baseline; mobile25points remain unearned",
+  "files": [
+    {
+      "file": "runtime_inventory.txt",
+      "bytes": 6080,
+      "sha256": "d0230364ac072b14cc0abbaa2faa2df0041338189c73c3b188bede9163d9b6b8"
+    },
+    {
+      "file": "xcode_inventory.txt",
+      "bytes": 508,
+      "sha256": "d228a4da82a21228a8c1b8936124d97e0aa8208631c1380ca6fa6839599cf0a5"
+    },
+    {
+      "file": "xcode_probe.txt",
+      "bytes": 16581,
+      "sha256": "62ecf00cdc1a5d603997c6fdf69ab2e4f553d965341bea955fce75d876cf2b69"
+    },
+    {
+      "file": "simctl_wrapper.txt",
+      "bytes": 1489,
+      "sha256": "aa6c54605b43d6b68e217170ec8a821dfcdbbe5275c8cf3a5bf21f4ba293f6b2"
+    },
+    {
+      "file": "native_simctl_signature.txt",
+      "bytes": 784,
+      "sha256": "3e9e84c1b9f477ca59a0a7339b23863994337e292b0795fc4e1d4b5b19f5ee64"
+    },
+    {
+      "file": "simulator_inventory.txt",
+      "bytes": 23919,
+      "sha256": "5363403fa57f758282299f6bc25971c2b9455614230fa0c67cdc23835610fd4b"
+    },
+    {
+      "file": "mobile_files_inventory.txt",
+      "bytes": 5710,
+      "sha256": "da930e8bf7a7a079b06da2757386c3f0071133a5f951e692072926bf9f3c0d72"
+    }
+  ]
+}

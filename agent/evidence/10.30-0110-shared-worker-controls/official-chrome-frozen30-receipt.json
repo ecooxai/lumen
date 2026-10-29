@@ -1,0 +1,195 @@
+{
+  "kind": "hash-verified30subsetofexistingofficialChrome1515",
+  "origin": "Read-only recovery of original qualifiedChrome1515 individual atomic result files; no browser rerun",
+  "referenceBinarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "manifestSHA256": "522d0cd4d30b6b0708d4be4e9dba2fea27612f75600e9e2f71ff8fb7d91f3482",
+  "verifiedOriginalFiles": [
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/schedule.json",
+      "sha256": "1db7998184521c0b6928d41468874a4c77db98c26feedc407ae7bcf8324e8a17",
+      "bytes": 21365
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/run.json",
+      "sha256": "12912e26243c6ac3b8be5106c92b4e5e60666a3e549fc7892dc066459422e5b5",
+      "bytes": 9780
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000002-54800e0931.result.json",
+      "sha256": "53e6ac76eadbab49b4f55c5e7c1413f65fcfa3c34f5e0a250eeea92b58af7669",
+      "bytes": 3847
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000006-010ee9f3e8.result.json",
+      "sha256": "f7f4e27d8509a48ddd6463ab69bfb76b8ebb5d80ced496b2d1e3d858e66a40e5",
+      "bytes": 842
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000010-210367650e.result.json",
+      "sha256": "7cdc2e23719ef8c5f697349a018ac5a5d279583fa2821e813072c2f194de8d24",
+      "bytes": 3754
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000014-35ef2eec34.result.json",
+      "sha256": "e364b1671e6289da24c3341de754e9c3ddecf8110dc7075f002d0b778a49409c",
+      "bytes": 1117
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000018-72f9a5689b.result.json",
+      "sha256": "a3ff6a90bae716b74b1c1075138903f02e8e50330b1c93fd8959681153745557",
+      "bytes": 3305
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000022-c1964ce535.result.json",
+      "sha256": "88ca01c1ea09c372c81b5a442e39a4a75cff7e561f568fd9728d03d493140ddb",
+      "bytes": 1209
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000026-168b03cbfd.result.json",
+      "sha256": "9f4d99e70987e440dcf7abe2767096e1d89929a47458a0052d06c0378499b853",
+      "bytes": 1419
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000030-6d191b8356.result.json",
+      "sha256": "59a42631708c41d421328422d243d49504be9bc0c4a3753f5bd84fe7637fa795",
+      "bytes": 3061
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000034-a3a3118cf7.result.json",
+      "sha256": "105cb3962d130e72bec5f3bd7940a12945e995c50cbb55b717b45860c01f30de",
+      "bytes": 12822
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000038-be1844924b.result.json",
+      "sha256": "a8cca7f961a8bd90cec3925851db5cdd0a1af6c469bd7555c207cae509ad0f94",
+      "bytes": 5931
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000042-34076c2ff9.result.json",
+      "sha256": "8c32b909ca382112f7150225c8e0620a1a864bc620f0b57ffd108d7a0b598f53",
+      "bytes": 1032
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000046-91833b9a61.result.json",
+      "sha256": "125f4120f7fef7118c8ac95332640ef42e2d69ae14b78ec2285d902110615fa4",
+      "bytes": 2291
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/headers/case-000050-4c3b1e55a1.result.json",
+      "sha256": "c0370a139cfef390f947b17294f9a192f4fd997552b6d5baf70d56bdf3ffe0e3",
+      "bytes": 1477
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/microtasks/schedule.json",
+      "sha256": "eda081ad150c45a430ade8649a55bf454eff67bac460df798efc90dd947c2177",
+      "bytes": 3593
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/microtasks/run.json",
+      "sha256": "b19c86e369fbe710eff199bb57e367444dc98ed6fb3e3b7cc76832b2f23c6828",
+      "bytes": 9778
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/microtasks/case-000003-77bf4134b8.result.json",
+      "sha256": "0f3e783027ba368778c4f2602cf9772e392796d17d469ba6d65feaf6b1741efd",
+      "bytes": 819
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/microtasks/case-000007-1963b37cdb.result.json",
+      "sha256": "03a521b70af1b91d3da49ba238861f3df328a71b2289823f68fc130313070636",
+      "bytes": 1250
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/schedule.json",
+      "sha256": "e6cbf1acb7726dd3f78a24eb1c2366c8d5fbfe0021df08fe07ccd992876d0b07",
+      "bytes": 379346
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/run.json",
+      "sha256": "6301cf1a6fa3b41996b4601f2bb10bcac603cb02ce08310d337187882b5d887a",
+      "bytes": 9826
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-000001-0a7c89f443.result.json",
+      "sha256": "0a305ca6be54c66517e6921526661acac520bba3f9779b305047bf8f36c876bb",
+      "bytes": 23118
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-000003-b779a4962c.result.json",
+      "sha256": "46535faa88ecac41e37383802d0b0d3bd85b54621ff8cc9e8795f48ff8dbfaf0",
+      "bytes": 9167
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001211-3f68a2b7e2.result.json",
+      "sha256": "01db39c044a8273dc02c476356adeb0ec796bb18657be1fb0d80d347740db4dc",
+      "bytes": 1311
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001213-316f4ffd78.result.json",
+      "sha256": "47cc8d4fa6e7bcbea0acd1a45a64258f06c9b4abc89244b7ab351940cad7c54d",
+      "bytes": 4479
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001215-ec5844640d.result.json",
+      "sha256": "40246264530aa4e887c860bce463ca9cd449ed3d529ddcc8a8a0af1801eb4f3e",
+      "bytes": 1295
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001217-c0096de0e8.result.json",
+      "sha256": "7db7584bbc19927960c3573b5630420e12dc28e2aa410ab0c6b793d116977af2",
+      "bytes": 2364
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001219-e12a2aee9e.result.json",
+      "sha256": "23247f3ae67d012f9966f3f7a63397151a73abc91d317dc323ed9fe7ec1f44c3",
+      "bytes": 991
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001221-d6d6d3db65.result.json",
+      "sha256": "edb48d4d5555c8be2b6a788e65c69bb06f5f72757c46994689382de2f6b611ec",
+      "bytes": 2515
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001223-30a7805ae8.result.json",
+      "sha256": "b95ab08647a5778f41e59be1605f64f9f503d5a77387c316a5f4fcb421ea95dc",
+      "bytes": 2608
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001225-87904b9762.result.json",
+      "sha256": "40ab1f629e49dcbf32699c2d067f5acd3bde4c064bc4472c83dc0a869100b60f",
+      "bytes": 2885
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001227-fd5d2f171f.result.json",
+      "sha256": "c3a28e165c65fb7e5204ef7e204c08bffabe39b60bf81c14cf34251685a113cd",
+      "bytes": 1503
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001229-5cd4addfe6.result.json",
+      "sha256": "608f80be28bd72b40419698b4456a2881ace5885982fb73d32c3a1a4b9b390a3",
+      "bytes": 3739
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001231-3d3ddefddb.result.json",
+      "sha256": "6c36096f007a268ac66a66ee22e1970f4d7b5ec4e82350c9ec246eba2f2ba237",
+      "bytes": 993
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001233-27abe8517d.result.json",
+      "sha256": "d061cd2cbc1f01e8cd844e8c033da9dba0683b1235fbdc070f7aea9fce7d9312",
+      "bytes": 991
+    },
+    {
+      "path": "out/lumen-10292019r/chromium-1515-atomic-005/encoding-rest/case-001235-55ff94a48e.result.json",
+      "sha256": "0eab20fcb2f19191dc1e974f67ef2d3e48bd025e60900021c8396d2f1a91a517",
+      "bytes": 6494
+    }
+  ],
+  "selectedVariantCount": 30,
+  "fullyPassing": 26,
+  "assertions": {
+    "PASS": 510,
+    "FAIL": 64
+  },
+  "derivedLedgerSHA256": "6222c80590c98bf90694767bce8f6855697c8a57100c581aedc8c0b7fc60c5b0"
+}

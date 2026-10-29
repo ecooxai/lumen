@@ -1,0 +1,4 @@
+SHARED_RETURN_CHECK {"i":0,"name":"returned connection survives termination of its former worker before retransfer","ok":true}
+SHARED_RETURN_CHECK {"i":1,"name":"an in-flight shared-worker reply follows the returned endpoint after former owner exits","ok":true}
+SHARED_RETURN_RESULTS {"total":2,"passed":2,"failed":0}
+CHROMIUM_CONTROL_CLEANUP {"gracefulRequested": true, "gracefulAcknowledged": true, "sent_sigterm": false, "sent_sigkill": false, "error": null, "processGroupGone": true, "rootExitCode": 0}

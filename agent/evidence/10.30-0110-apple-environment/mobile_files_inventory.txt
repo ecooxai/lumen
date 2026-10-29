@@ -1,0 +1,218 @@
+{
+  "startedUTC": "2026-10-29T17:42:07.321358+00:00",
+  "deviceUDID": "3DD498EB-4464-4ED7-9CD3-7667889DD1F6",
+  "scope": "Filesystem inventory only; no simulator RPC, app execution, signing or toolchain modification",
+  "targetBundleIdentifier": "com.ecooxai.lumen",
+  "installedAppCandidates": [],
+  "buildAppCandidates": [],
+  "dependencies": [
+    {
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/ios",
+      "platform": "ios",
+      "present": [],
+      "missing": [
+        "include/png.h",
+        "lib/libssl.a",
+        "lib/libcrypto.a",
+        "lib/libz.a",
+        "lib/libbrotlidec.a",
+        "lib/libbrotlicommon.a",
+        "lib/libzstd.a",
+        "lib/libfreetype.a",
+        "lib/libharfbuzz.a",
+        "lib/libSDL3.a",
+        "lib/libwgpu_native.a",
+        "lib/libavcodec.a",
+        "lib/libavformat.a",
+        "lib/libavutil.a",
+        "lib/libswscale.a",
+        "lib/libswresample.a",
+        "lib/libpng.a",
+        "lib/libjpeg.a",
+        "lib/libwebp.a",
+        "lib/libwebpdemux.a",
+        "lib/libsharpyuv.a",
+        "lib/libgif.a",
+        "lib/libdav1d.a"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/sim",
+      "platform": "sim",
+      "present": [],
+      "missing": [
+        "include/png.h",
+        "lib/libssl.a",
+        "lib/libcrypto.a",
+        "lib/libz.a",
+        "lib/libbrotlidec.a",
+        "lib/libbrotlicommon.a",
+        "lib/libzstd.a",
+        "lib/libfreetype.a",
+        "lib/libharfbuzz.a",
+        "lib/libSDL3.a",
+        "lib/libwgpu_native.a",
+        "lib/libavcodec.a",
+        "lib/libavformat.a",
+        "lib/libavutil.a",
+        "lib/libswscale.a",
+        "lib/libswresample.a",
+        "lib/libpng.a",
+        "lib/libjpeg.a",
+        "lib/libwebp.a",
+        "lib/libwebpdemux.a",
+        "lib/libsharpyuv.a",
+        "lib/libgif.a",
+        "lib/libdav1d.a"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/ios-deps/ios",
+      "platform": "ios",
+      "present": [],
+      "missing": [
+        "include/png.h",
+        "lib/libssl.a",
+        "lib/libcrypto.a",
+        "lib/libz.a",
+        "lib/libbrotlidec.a",
+        "lib/libbrotlicommon.a",
+        "lib/libzstd.a",
+        "lib/libfreetype.a",
+        "lib/libharfbuzz.a",
+        "lib/libSDL3.a",
+        "lib/libwgpu_native.a",
+        "lib/libavcodec.a",
+        "lib/libavformat.a",
+        "lib/libavutil.a",
+        "lib/libswscale.a",
+        "lib/libswresample.a",
+        "lib/libpng.a",
+        "lib/libjpeg.a",
+        "lib/libwebp.a",
+        "lib/libwebpdemux.a",
+        "lib/libsharpyuv.a",
+        "lib/libgif.a",
+        "lib/libdav1d.a"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/ios-deps/sim",
+      "platform": "sim",
+      "present": [],
+      "missing": [
+        "include/png.h",
+        "lib/libssl.a",
+        "lib/libcrypto.a",
+        "lib/libz.a",
+        "lib/libbrotlidec.a",
+        "lib/libbrotlicommon.a",
+        "lib/libzstd.a",
+        "lib/libfreetype.a",
+        "lib/libharfbuzz.a",
+        "lib/libSDL3.a",
+        "lib/libwgpu_native.a",
+        "lib/libavcodec.a",
+        "lib/libavformat.a",
+        "lib/libavutil.a",
+        "lib/libswscale.a",
+        "lib/libswresample.a",
+        "lib/libpng.a",
+        "lib/libjpeg.a",
+        "lib/libwebp.a",
+        "lib/libwebpdemux.a",
+        "lib/libsharpyuv.a",
+        "lib/libgif.a",
+        "lib/libdav1d.a"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/v8/out/ios-device",
+      "platform": "ios-device",
+      "present": [],
+      "missing": [
+        "obj/libv8_monolith.a",
+        "obj/v8_monolith.ninja",
+        "icudtl.dat"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/v8/out/ios-device-jit",
+      "platform": "ios-device-jit",
+      "present": [],
+      "missing": [
+        "obj/libv8_monolith.a",
+        "obj/v8_monolith.ninja",
+        "icudtl.dat"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/v8/out/ios-simulator",
+      "platform": "ios-simulator",
+      "present": [],
+      "missing": [
+        "obj/libv8_monolith.a",
+        "obj/v8_monolith.ninja",
+        "icudtl.dat"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/repos/lumen/build-apple-toolchain/v8/out/ios-simulator-jit",
+      "platform": "ios-simulator-jit",
+      "present": [],
+      "missing": [
+        "obj/libv8_monolith.a",
+        "obj/v8_monolith.ninja",
+        "icudtl.dat"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/src/v8ios/v8/out/ios-device",
+      "platform": "ios-device",
+      "present": [],
+      "missing": [
+        "obj/libv8_monolith.a",
+        "obj/v8_monolith.ninja",
+        "icudtl.dat"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/src/v8ios/v8/out/ios-device-jit",
+      "platform": "ios-device-jit",
+      "present": [],
+      "missing": [
+        "obj/libv8_monolith.a",
+        "obj/v8_monolith.ninja",
+        "icudtl.dat"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/src/v8ios/v8/out/ios-simulator",
+      "platform": "ios-simulator",
+      "present": [],
+      "missing": [
+        "obj/libv8_monolith.a",
+        "obj/v8_monolith.ninja",
+        "icudtl.dat"
+      ]
+    },
+    {
+      "prefix": "/Users/devin/src/v8ios/v8/out/ios-simulator-jit",
+      "platform": "ios-simulator-jit",
+      "present": [],
+      "missing": [
+        "obj/libv8_monolith.a",
+        "obj/v8_monolith.ninja",
+        "icudtl.dat"
+      ]
+    }
+  ],
+  "mobileBuildClosureVerified": false,
+  "finishedUTC": "2026-10-29T17:42:07.323697+00:00"
+}
+exit_code: 0
+running: false
+terminal_id: 6416
+workspace_id: /Users/devin/repos/lumen
+chars: 5586
+snapshot: 04b05fbe0959bb73

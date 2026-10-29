@@ -1,0 +1,114 @@
+Darwin ip-172-16-4-2.us-west-2.compute.internal 25.6.0 Darwin Kernel Version 25.6.0: Fri Jul 31 19:16:43 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_VMAPPLE arm64
+/Library/Developer/CommandLineTools
+xcode-select: error: tool 'xcodebuild' requires Xcode, but active developer directory '/Library/Developer/CommandLineTools' is a command line tools instance
+xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+xcrun: error: unable to find utility "simctl", not a developer tool or in PATH
+     0 valid identities found
+./src/app/iosui.m
+./CONTINUE-ios.md
+./tools/recover_ipad004_owned_app.py
+./tests/test_package_ipa.py
+./tests/wpt-ipad004/test_ipad_generation.py
+./tests/wpt-ipad004/ipad_adapter.py
+./tests/wpt-ipad004/launch_ipad_smoke.py
+./tests/wpt-ipad004/ipad_runner.py
+./tests/wpt-ipad004/ipad_generation.py
+./tests/wpt-ipad004/test_ipad_runner.py
+./tests/wpt-ipad004/install_verify_ipad.py
+./tests/wpt-ipad004/test_ipad_adapter.py
+./verification/simulator_quiet_window.py
+./verification/resource_monitor.py
+./verification/simulator_browser_case.py
+./verification/test_resource_monitor.py
+./verification/simulator_rtc_interop.py
+./verification/simulator_idle_case.py
+./tests/test_monitor_process.py
+./ios/jit-ios.entitlements
+./tests/wpt-ipad006/test_ipad_generation.py
+./tests/wpt-ipad006/test_build_current_ipad.py
+./tests/wpt-ipad006/ipad_adapter.py
+./tests/wpt-ipad006/test_ipad_relocation.py
+./tests/wpt-ipad006/test_ipad_lifecycle.py
+./tests/wpt-ipad006/launch_ipad_smoke.py
+./tests/wpt-ipad006/ipad_lifecycle.py
+./tests/wpt-ipad006/ipad_runner.py
+./tests/wpt-ipad006/ipad_generation.py
+./tests/wpt-ipad006/build_current_ipad.py
+./tests/wpt-ipad006/launch_ipad_smoke_relocated.py
+./tests/wpt-ipad006/test_ipad_runner.py
+./tests/wpt-ipad006/verify_ipad006_relocation.py
+./tests/wpt-ipad006/install_verify_ipad.py
+./tests/wpt-ipad006/test_ipad_adapter.py
+./tools/monitor_process.py
+./tests/wpt/ipad_adapter.py
+./tests/wpt/ipad_runner.py
+./tests/wpt/test_ipad_runner.py
+./tests/wpt/test_ipad_adapter.py
+./ios/package-ipa.py
+./agent/evidence/20261029-cpu30-001/wpt-encoding-streams-monitor.json
+./agent/evidence/20261029-cpu30-001/publication-red-monitor.json
+./agent/evidence/20261029-cpu30-001/wpt-original-six-monitor.json
+./agent/evidence/20261029-cpu30-001/wpt-prepare-monitor.json
+./agent/evidence/20261029-cpu30-001/build-test_gpu_present-monitor.json
+./agent/evidence/20261029-cpu30-001/build-test_render_overdraw-monitor.json
+./agent/evidence/20261029-cpu30-001/build-build-monitor.json
+./agent/evidence/20261029-cpu30-001/wpt-encoding-core-monitor.json
+./agent/evidence/20261029-cpu30-001/publication-green-monitor.json
+./agent/evidence/20261029-cpu30-001/build-test_app_wheel-monitor.json
+./agent/evidence/10.292019r-monitor-precision-prelaunch.json
+./tests/wpt-ipad005/test_ipad_generation.py
+./tests/wpt-ipad005/ipad_adapter.py
+./tests/wpt-ipad005/test_ipad_lifecycle.py
+./tests/wpt-ipad005/launch_ipad_smoke.py
+./tests/wpt-ipad005/ipad_lifecycle.py
+./tests/wpt-ipad005/ipad_runner.py
+./tests/wpt-ipad005/ipad_generation.py
+./tests/wpt-ipad005/test_ipad_runner.py
+./tests/wpt-ipad005/test_ipad_adapter.py
+./agent/evidence/10.292019r-monitor-namespace/monitor-namespace-positive.json
+./agent/evidence/10.292019r-monitor-namespace/monitor-namespace-positive.log
+./agent/evidence/10.292019r-monitor-namespace/monitor-namespace-positive.csv
+./agent/evidence/10.292019r-monitor-namespace/monitor-namespace-negative-result.json
+./agent/evidence/10.292019r-native-headers-003/monitor_process.frozen.py
+./agent/evidence/10.292019r-chromium1515-independent-readback/independent-readback-monitor.log
+./agent/evidence/10.292019r-chromium1515-independent-readback/independent-readback-monitor.csv
+./agent/evidence/10.292019r-apple-environment/mac-simulator-bundles-result.json
+./agent/evidence/10.292019r-chromium1515-independent-readback/independent-readback-monitor.json
+./tools/apple-session-gpt6as/apple_ipad_app_inventory.py
+./tools/apple-session-gpt6as/probe_existing_ipad.py
+./tools/apple-session-gpt6as/inspect_simulator_lume_bundles_10292019r.py
+./tools/apple-session-gpt6as/remote_ipad_diagnosis.py
+./tools/apple-session-gpt6as/remote_ipad_valid_retry_inventory.py
+./agent/evidence/10.292019r-monitor-namespace.json
+./agent/evidence/20261029-cpu30-005/build-html-bom-monitor.json
+./agent/evidence/20261029-cpu30-005/build-driver-parent-charset-monitor.json
+./agent/evidence/20261029-cpu30-005/build-legacy-frame-policy-monitor.json
+./agent/evidence/20261029-cpu30-005/lifetime-build-monitor.json
+./agent/evidence/20261029-cpu30-005/build-json-document-monitor.json
+./agent/evidence/20261029-cpu30-005/declarative-shadow-red-2-monitor.json
+./agent/evidence/20261029-cpu30-005/adoption-build-monitor.json
+./agent/evidence/20261029-cpu30-005/adoption-adoption-monitor.json
+./agent/evidence/20261029-cpu30-005/build-test_gpu_present-monitor.json
+./agent/evidence/20261029-cpu30-005/build-html-meta-monitor.json
+./agent/evidence/20261029-cpu30-005/build-test_render_overdraw-monitor.json
+./agent/evidence/20261029-cpu30-005/lifetime-lifetime-monitor.json
+./agent/evidence/20261029-cpu30-005/build-build-monitor.json
+./agent/evidence/20261029-cpu30-005/build-xhr-encoding-monitor.json
+./agent/evidence/20261029-cpu30-005/declarative-shadow-red-1-monitor.json
+./agent/evidence/20261029-cpu30-005/build-fatal-codec-monitor.json
+./agent/evidence/10.292019r-monitor-precision.json
+./agent/evidence/10.292019r-network-tsan/build-monitor.json
+./agent/evidence/10.292019r-network-tsan/build-linkfix-monitor.json
+./agent/evidence/10.292019r-network-tsan/control-monitor.json
+./agent/evidence/10.292019r-network-tsan/run-monitor.json
+./agent/evidence/10.292019r-network-tsan/build-linkfix-monitor.csv
+./agent/evidence/10.292019r-network-tsan/build-linkfix-monitor.log
+./agent/evidence/10.292019r-network-tsan/run-monitor.log
+exit_code: 0
+running: false
+terminal_id: 6401
+workspace_id: /Users/devin/repos/lumen
+chars: 5938
+snapshot: cd502674d7fada4f
+stderr_chars: 394

@@ -6,6 +6,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import ssl
 import sys
 import tempfile
 import unittest
@@ -121,7 +122,12 @@ class PortableResourceTests(unittest.TestCase):
         self.v8.mkdir()
         (self.v8 / 'icudtl.dat').write_bytes(b'fixture ICU data')
         self.ca = self.root / 'ca.pem'
-        self.ca.write_bytes(b'-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----\n')
+        # A public certificate from the local trust store supplies real ASN.1
+        # without fetching a resource or creating an unrelated private key.
+        certificates = ssl.create_default_context().get_ca_certs(binary_form=True)
+        if not certificates:
+            self.skipTest('The local test host has no public CA certificate fixture')
+        self.ca.write_text(ssl.DER_cert_to_PEM_cert(certificates[0]))
         self.closure = {'files': [{'path': str(self.v8 / 'libv8.dylib')}]}
 
     def test_icu_resource_comes_from_the_inspected_v8_directory(self):
@@ -146,6 +152,11 @@ class PortableResourceTests(unittest.TestCase):
                 self.ca.write_bytes(data)
                 with self.assertRaisesRegex(ValueError, 'certificates and no private keys'):
                     MODULE.portable_resources(self.closure, self.ca)
+
+    def test_malformed_certificate_markers_cannot_hide_a_host_trust_fallback(self):
+        self.ca.write_bytes(b'-----BEGIN CERTIFICATE-----\nnot-a-certificate\n-----END CERTIFICATE-----\n')
+        with self.assertRaisesRegex(ValueError, 'readable certificate bundle'):
+            MODULE.portable_resources(self.closure, self.ca)
 
 
 if __name__ == '__main__':
