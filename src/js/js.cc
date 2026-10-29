@@ -711,6 +711,9 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     c->node_tmpl.Reset(iso, tmpl);
     v8::Local<v8::Object> N = v8::Object::New(iso);
     js_install_native(c, N);
+    // Frame HTML is parsed eagerly, then replayed in parser order. Do not let
+    // the bootstrap checkpoint activate later body attributes before head CSP.
+    (void)N->Set(ctx, jstr(iso, "deferParsedHandlers"), v8::Boolean::New(iso, parent && frame));
     js_install_rtc(c, N);
     js_install_webtransport(c, N);
     v8::TryCatch tc(iso);

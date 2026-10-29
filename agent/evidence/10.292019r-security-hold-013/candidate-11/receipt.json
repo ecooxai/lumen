@@ -1,0 +1,210 @@
+{
+  "engine": "candidate-11",
+  "binarySHA256": "ff3601542440df092406d646e9f5051646af861b3ccd268e8e2de18766ed725a",
+  "fixtureSHA256": "c20ae4a5082eb6afb1053e986f03d081f04eefd087b266ccab46493b288e84e0",
+  "rows": [
+    {
+      "index": 0,
+      "name": "none / actual opaque data document loaded",
+      "ok": true,
+      "observed": [
+        "before",
+        "handler"
+      ]
+    },
+    {
+      "index": 1,
+      "name": "none / script before meta executed exactly once",
+      "ok": true,
+      "observed": [
+        "before",
+        "handler"
+      ]
+    },
+    {
+      "index": 2,
+      "name": "none / untrusted script after meta blocked",
+      "ok": true,
+      "observed": [
+        "before",
+        "handler"
+      ]
+    },
+    {
+      "index": 3,
+      "name": "none / later inline event handler blocked",
+      "ok": false,
+      "observed": [
+        "before",
+        "handler"
+      ]
+    },
+    {
+      "index": 4,
+      "name": "nonce / actual opaque data document loaded",
+      "ok": true,
+      "observed": [
+        "before",
+        "after-nonce",
+        "handler"
+      ]
+    },
+    {
+      "index": 5,
+      "name": "nonce / script before meta executed exactly once",
+      "ok": true,
+      "observed": [
+        "before",
+        "after-nonce",
+        "handler"
+      ]
+    },
+    {
+      "index": 6,
+      "name": "nonce / untrusted script after meta blocked",
+      "ok": true,
+      "observed": [
+        "before",
+        "after-nonce",
+        "handler"
+      ]
+    },
+    {
+      "index": 7,
+      "name": "nonce / later inline event handler blocked",
+      "ok": false,
+      "observed": [
+        "before",
+        "after-nonce",
+        "handler"
+      ]
+    },
+    {
+      "index": 8,
+      "name": "nonce / nonce-authorized script after meta executed",
+      "ok": true,
+      "observed": [
+        "before",
+        "after-nonce",
+        "handler"
+      ]
+    }
+  ],
+  "completed": true,
+  "passed": 7,
+  "total": 9,
+  "seconds": 0.39887494900176534,
+  "sourceCommit": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
+  "officialWPT": false,
+  "metrics": {
+    "samples": 1,
+    "steady_samples": 1,
+    "interval_cpu_samples": 0,
+    "steady_interval_cpu_samples": 0,
+    "max_sampling_gap_s": 0.006,
+    "cpu_mean_percent": 0.0,
+    "steady_cpu_mean_percent": 0.0,
+    "steady_cpu_median_percent": 0.0,
+    "steady_cpu_p95_percent": 0.0,
+    "cpu_peak_percent": 0.0,
+    "interval_cpu_mean_percent": null,
+    "steady_interval_cpu_mean_percent": null,
+    "steady_interval_cpu_median_percent": null,
+    "steady_interval_cpu_p95_percent": null,
+    "interval_cpu_peak_percent": null,
+    "rss_peak_mb": 0.461,
+    "rss_final_mb": 0.461,
+    "rss_steady_median_mb": 0.461,
+    "rss_steady_p95_mb": 0.461,
+    "rss_steady_growth_mb": 0.0,
+    "in_memory_sample_limit": 600,
+    "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+    "quantile_scope": "all recorded samples",
+    "errors": [],
+    "sample_interval_s": 1,
+    "stop_reason": "requested_stop",
+    "telemetry_status": "partial",
+    "interval_cpu_coverage": "unavailable",
+    "observed_span_s": 0,
+    "root_start_identity": "Thu Oct 29 07:53:46 2026",
+    "root_cpu_start_identity": 2949391,
+    "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+    "cpu_time_source": "Linux /proc/<pid>/stat user and system clock ticks",
+    "cpu_time_resolution_s": 0.01,
+    "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+    "memory_unit": "MiB (legacy field names retain mb)",
+    "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+    "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+    "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+  },
+  "cleanup": {
+    "sent_sigterm": true,
+    "sent_sigkill": false,
+    "error": null,
+    "post_signal_verification": {
+      "allowed_wait_s": 1,
+      "initial_live_members": {},
+      "duration_ms": 4
+    },
+    "process_group_gone": true,
+    "remaining_group_members": {},
+    "root_exit_code": -15
+  },
+  "result": {
+    "metrics": {
+      "samples": 1,
+      "steady_samples": 1,
+      "interval_cpu_samples": 0,
+      "steady_interval_cpu_samples": 0,
+      "max_sampling_gap_s": 0.006,
+      "cpu_mean_percent": 0.0,
+      "steady_cpu_mean_percent": 0.0,
+      "steady_cpu_median_percent": 0.0,
+      "steady_cpu_p95_percent": 0.0,
+      "cpu_peak_percent": 0.0,
+      "interval_cpu_mean_percent": null,
+      "steady_interval_cpu_mean_percent": null,
+      "steady_interval_cpu_median_percent": null,
+      "steady_interval_cpu_p95_percent": null,
+      "interval_cpu_peak_percent": null,
+      "rss_peak_mb": 0.461,
+      "rss_final_mb": 0.461,
+      "rss_steady_median_mb": 0.461,
+      "rss_steady_p95_mb": 0.461,
+      "rss_steady_growth_mb": 0.0,
+      "in_memory_sample_limit": 600,
+      "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+      "quantile_scope": "all recorded samples",
+      "errors": [],
+      "sample_interval_s": 1,
+      "stop_reason": "requested_stop",
+      "telemetry_status": "partial",
+      "interval_cpu_coverage": "unavailable",
+      "observed_span_s": 0,
+      "root_start_identity": "Thu Oct 29 07:53:46 2026",
+      "root_cpu_start_identity": 2949391,
+      "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+      "cpu_time_source": "Linux /proc/<pid>/stat user and system clock ticks",
+      "cpu_time_resolution_s": 0.01,
+      "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+      "memory_unit": "MiB (legacy field names retain mb)",
+      "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+      "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+      "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+    },
+    "cleanup": {
+      "sent_sigterm": true,
+      "sent_sigkill": false,
+      "error": null,
+      "post_signal_verification": {
+        "allowed_wait_s": 1,
+        "initial_live_members": {},
+        "duration_ms": 4
+      },
+      "process_group_gone": true,
+      "remaining_group_members": {},
+      "root_exit_code": -15
+    },
+    "naturalExitCode": null
+  }
+}

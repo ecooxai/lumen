@@ -1,0 +1,11 @@
+{"elapsed_s": 0.007, "cpu_percent": 0.0, "interval_cpu_percent": null, "rss_kb": 1316, "processes": 1}
+{"elapsed_s": 1.005, "cpu_percent": 11.8, "interval_cpu_percent": 12.023, "rss_kb": 70796, "processes": 1}
+{"elapsed_s": 2.005, "cpu_percent": 6.5, "interval_cpu_percent": 1.001, "rss_kb": 70796, "processes": 1}
+{"elapsed_s": 3.006, "cpu_percent": 4.3, "interval_cpu_percent": 0.0, "rss_kb": 70796, "processes": 1}
+{"elapsed_s": 4.005, "cpu_percent": 3.2, "interval_cpu_percent": 0.0, "rss_kb": 70796, "processes": 1}
+{"elapsed_s": 5.006, "cpu_percent": 2.9, "interval_cpu_percent": 1.998, "rss_kb": 70796, "processes": 1}
+{"elapsed_s": 6.006, "cpu_percent": 2.9, "interval_cpu_percent": 2.999, "rss_kb": 80316, "processes": 1}
+{"elapsed_s": 7.005, "cpu_percent": 2.7, "interval_cpu_percent": 1.001, "rss_kb": 80316, "processes": 1}
+{"elapsed_s": 8.005, "cpu_percent": 2.3, "interval_cpu_percent": 0.0, "rss_kb": 80316, "processes": 1}
+{"elapsed_s": 9.005, "cpu_percent": 2.2, "interval_cpu_percent": 1.0, "rss_kb": 80316, "processes": 1}
+{"elapsed_s": 10.006, "cpu_percent": 2.0, "interval_cpu_percent": 0.999, "rss_kb": 80316, "processes": 1}

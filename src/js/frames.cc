@@ -240,6 +240,17 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
         fprintf(stderr, "lumen: frame XML decoding or parsing exceeded its contract\n");
     for (Node *s = d->node.first; s && !k->dead && !k->sb_noscript; s = node_next_in_tree(s, &d->node)) {
         if (s->type != NODE_ELEMENT || s->ns != NS_HTML) continue;
+        if (s->tag == A_body || s->tag == A_frameset) {
+            // Attribute-change CSP checks and Window listener registration must
+            // occur at this parser position, never during realm bootstrap.
+            JS_ENTER(k);
+            v8::Local<v8::Value> hydrate;
+            if (!k->api.IsEmpty() && k->api.Get(iso)->Get(ctx, jstr(iso, "hydrateParsedHandlers")).ToLocal(&hydrate) && hydrate->IsFunction()) {
+                v8::Local<v8::Value> element = jwrap(k, s);
+                (void)jcall(k, hydrate.As<v8::Function>(), v8::Undefined(iso), 1, &element);
+            }
+            continue;
+        }
         if (s->tag == A_meta) {
             const char *equiv = node_attr(s, "http-equiv"), *content = node_attr(s, "content");
             bool in_head = false;

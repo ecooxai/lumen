@@ -1,0 +1,24 @@
+<!doctype html><meta charset=utf-8><body><script>
+const rows=[];
+async function scenario(nonce){
+ const id=nonce?'nonce':'none';const frame=document.createElement('iframe');frame.name='meta-order-'+id;document.body.appendChild(frame);
+ const seen=[];let handler;const result=await new Promise(resolve=>{
+  let finished=false;function finish(loaded){if(finished)return;finished=true;clearTimeout(timer);resolve({loaded,seen:[...seen]});}
+  handler=e=>{if(e.source===frame.contentWindow&&e.data&&e.data.case===id)seen.push(e.data.value)};addEventListener('message',handler);
+  frame.onload=()=>{try{void frame.contentWindow.document;return}catch(e){if(e.name!=='SecurityError')return}setTimeout(()=>finish(true),50)};
+  const timer=setTimeout(()=>finish(false),5000);
+  const say=value=>'parent.postMessage('+JSON.stringify({case:id,value})+',"*")';
+  const first='<script>'+say('before')+'</'+'script>';
+  const meta='<meta http-equiv="Content-Security-Policy" content="script-src '+(nonce?"&apos;nonce-allowed&apos;":"&apos;none&apos;")+'">';
+  const blocked='<script>'+say('after-untrusted')+'</'+'script>';
+  const allowed=nonce?'<script nonce="allowed">'+say('after-nonce')+'</'+'script>':'';
+  const body='<!doctype html><html><head>'+first+meta+blocked+allowed+'</head><body onload=\''+say('handler')+'\'>done</body></html>';
+  const form=document.createElement('form');form.target=frame.name;form.action='data:text/html,'+encodeURIComponent(body);document.body.appendChild(form);form.submit();
+ });
+ removeEventListener('message',handler);frame.remove();
+ const tests=[['actual opaque data document loaded',result.loaded],['script before meta executed exactly once',result.seen.filter(x=>x==='before').length===1],['untrusted script after meta blocked',!result.seen.includes('after-untrusted')],['later inline event handler blocked',!result.seen.includes('handler')]];
+ if(nonce)tests.push(['nonce-authorized script after meta executed',result.seen.filter(x=>x==='after-nonce').length===1]);
+ for(const [name,ok]of tests)rows.push({name:id+' / '+name,ok,observed:result.seen});
+}
+(async()=>{await scenario(false);await scenario(true);for(let i=0;i<rows.length;i++)console.log('PARSER_POLICY_CASE '+JSON.stringify({index:i,...rows[i]}));console.log('PARSER_POLICY_DONE '+JSON.stringify({count:rows.length}));})();
+</script>

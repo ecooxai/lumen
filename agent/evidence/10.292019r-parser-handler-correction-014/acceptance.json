@@ -1,0 +1,66 @@
+{
+  "iteration": 14,
+  "timestampUTC": "2026-10-29T15:04:49.749854+00:00",
+  "kind": "minimal frame parser handler CSP correction",
+  "sourceBaseline": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
+  "acceptedScope": "Linux candidate12 focused security and regression gates; native Mac004 and fresh priority WPT/resources pending",
+  "releaseStatus": "Mac003 remains held; this source is qualified for independent Mac004 validation",
+  "sourceChanges": [
+    "src/js/js.cc",
+    "src/js/frames.cc",
+    "src/js/prelude/08-window.js"
+  ],
+  "compiledSourceManifestSHA256": "9ba9e77edef14ac31195c312ce592c5df045a0d0bd666d945be4a3d4762d029b",
+  "compiledSourceInputs": 143,
+  "binarySHA256": "1a25fcdce95ce5c51c92f91c3cf3fdc225b1ec7bb5f778c5ee34dfa0a0158623",
+  "originalNine": {
+    "fixtureSHA256": "c20ae4a5082eb6afb1053e986f03d081f04eefd087b266ccab46493b288e84e0",
+    "chrome": 9,
+    "nativeBaseline": 7,
+    "candidate": 9,
+    "total": 9
+  },
+  "focusedControls": {
+    "fixtureSHA256": "351f5affe091d6d9508f8000746568f34a6e17e7692619bcdcdf5df497c6465f",
+    "chrome": 36,
+    "candidate": 36,
+    "total": 36,
+    "coverage": [
+      "body and frameset",
+      "unsafe-inline positive",
+      "nonce never authorizes handler",
+      "unsafe-hashes exact/mismatch/withoutflag",
+      "earlier IDL callback retained",
+      "getter before later meta",
+      "dynamic blocked update retains prior callback",
+      "head listener and parsed attribute registration order"
+    ]
+  },
+  "unchangedOtherGates": {
+    "CSPBinding": 245,
+    "policyOracle": 21,
+    "formNavigation": 67,
+    "formDataNavigation": 52,
+    "workerOwnership": 266,
+    "workerAsync": 118,
+    "bodyWindowHandlers": 45,
+    "borrowedWindowHandlers": 4
+  },
+  "reviewers": [
+    "lumen_delivery_audit",
+    "lumen_apple_performance"
+  ],
+  "fullOfficialWPTMeasured": false,
+  "score": 55,
+  "resourceNote": "All native tests monitored; short focused runs do not establish scrolling CPU acceptance",
+  "rawArchives": {
+    "focused36-evidence.tar.gz": {
+      "bytes": 4254,
+      "sha256": "03a04ad5acd6471e36d75ceb42294a01f271374a1ba01281d5931defbf80fb69"
+    },
+    "raw-candidate12.tar.gz": {
+      "bytes": 46145,
+      "sha256": "d455221d13177e569623c0a8ec15a9f6d9a4fbaf08b024b9bf9492a017aae211"
+    }
+  }
+}

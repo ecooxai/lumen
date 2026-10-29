@@ -552,13 +552,16 @@ for (const k of ['addEventListener', 'removeEventListener', 'dispatchEvent']) {
     const f = EventTarget.prototype[k];
     Object.defineProperty(G, k, { value: function (...a) { return f.apply(this ?? G, a); }, writable: true, configurable: true });
 }
-// Hydrate parsed content attributes at the initial realm checkpoint, after
-// native protoFor installation and before any author script executes.
-queueMicrotask(() => {
-    for (const element of N.query(document, 'body,frameset', true)) {
-        const attributes = N.attrs(element);
-        for (let i = 0; i < attributes.length; i += 2) bodyWindowAttributeChanged(element, attributes[i], attributes[i + 1]);
-    }
+// Eager frame documents activate parsed attributes when the native parser
+// replay reaches the element, after earlier head policies and author scripts.
+// A normal realm retains its bootstrap checkpoint for already parsed content.
+function hydrateParsedHandlers(element) {
+    if (!isBodyWindowElement(element)) return;
+    const attributes = N.attrs(element);
+    for (let i = 0; i < attributes.length; i += 2) bodyWindowAttributeChanged(element, attributes[i], attributes[i + 1]);
+}
+if (!N.deferParsedHandlers) queueMicrotask(() => {
+    for (const element of N.query(document, 'body,frameset', true)) hydrateParsedHandlers(element);
 });
 const CAPTURED_ = new Set(['pointermove', 'pointerup', 'pointercancel', 'mousemove', 'mouseup']);
 function fire(target, type, init, Ctor = Event) {
@@ -1004,5 +1007,5 @@ const windowCloneBlocked = Object.keys(globals)
     .map(name => Object.getOwnPropertyDescriptor(globals, name).value)
     .filter(value => typeof value === 'function' && value.prototype)
     .map(value => value.prototype);
-return { DOMException, parseXML, windowCloneBlocked, receiveWindowMessage, busDeliver, queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, controlSelectionChanged, mediaChanged, deviceChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { DOMException, parseXML, hydrateParsedHandlers, windowCloneBlocked, receiveWindowMessage, busDeliver, queueMessage, workerEvent, protoFor, dispatch, fire, fireAnim, report, controlSelectionChanged, mediaChanged, deviceChanged, viewportChanged, ceConnected, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

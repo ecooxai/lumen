@@ -1,0 +1,59 @@
+{
+  "kind": "Independent security release hold; focused real-browser oracle, not WPT",
+  "sourceCommit": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
+  "fixtureSHA256": "c20ae4a5082eb6afb1053e986f03d081f04eefd087b266ccab46493b288e84e0",
+  "candidatePassed": 7,
+  "chromePassed": 9,
+  "total": 9,
+  "releaseAccepted": false,
+  "failedAssertionNames": [
+    "none / later inline event handler blocked",
+    "nonce / later inline event handler blocked"
+  ],
+  "reason": "Both forbidden body onload handlers execute after restrictive head meta CSP. Same source and actual raw console matched unchanged9 assertion names. Current1515 results remain valid measurements but do not override this security failure.",
+  "baseline137Classification": {
+    "passed": 4,
+    "total": 9,
+    "childNavigationReached": false,
+    "handlerSafetyQualified": false,
+    "reason": "No data-form child document reached; absence of handler messages cannot certify safety."
+  },
+  "files": {
+    "fixture.html": {
+      "bytes": 2328,
+      "sha256": "c20ae4a5082eb6afb1053e986f03d081f04eefd087b266ccab46493b288e84e0"
+    },
+    "candidate-11/receipt.json": {
+      "bytes": 6678,
+      "sha256": "f5461caafbc1c3dbd3621076b9e6fc1d6421d84eaf5968f8fb4a318728c86fa3"
+    },
+    "candidate-11/case.stdout.log": {
+      "bytes": 1563,
+      "sha256": "f3fa66268abce18be41c92c9a1379e26ce0229b57d36ed095f868af5a8461987"
+    },
+    "candidate-11/case.metrics.jsonl": {
+      "bytes": 102,
+      "sha256": "524b150bebfd5aaf2b2fddc1fa54b104f04bca9540fce78acdf8352e799233ae"
+    },
+    "chromium/receipt.json": {
+      "bytes": 14628,
+      "sha256": "6b57091f670e9b368b162fd891469ca22f5958626c2ee4e976bed2645bf53f57"
+    },
+    "chromium/case.stdout.log": {
+      "bytes": 1155,
+      "sha256": "28986834149621d47521754c11c9d20e7f06a77115d5b8ccc4c19824b64603d7"
+    },
+    "independent-baseline137/receipt.json": {
+      "bytes": 4326,
+      "sha256": "cd7304a786a9ded67b68a65178d6fdc5b2421b444308a56edb4aebb5b895dd83"
+    },
+    "independent-baseline137/case.stdout.log": {
+      "bytes": 1108,
+      "sha256": "c6f84ca056bc4c42282895b52b628d5ea5ef4084655d7c309e8d4b16b6ec3687"
+    },
+    "independent-baseline137/case.metrics.jsonl": {
+      "bytes": 1148,
+      "sha256": "67e0b92b675203923d211697124add1cde094d8d209ec6cfa8816d751c66c750"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+[js log] PARSER_POLICY_CASE {"index":0,"name":"none / actual opaque data document loaded","ok":false,"observed":[]}
+[js log] PARSER_POLICY_CASE {"index":1,"name":"none / script before meta executed exactly once","ok":false,"observed":[]}
+[js log] PARSER_POLICY_CASE {"index":2,"name":"none / untrusted script after meta blocked","ok":true,"observed":[]}
+[js log] PARSER_POLICY_CASE {"index":3,"name":"none / later inline event handler blocked","ok":true,"observed":[]}
+[js log] PARSER_POLICY_CASE {"index":4,"name":"nonce / actual opaque data document loaded","ok":false,"observed":[]}
+[js log] PARSER_POLICY_CASE {"index":5,"name":"nonce / script before meta executed exactly once","ok":false,"observed":[]}
+[js log] PARSER_POLICY_CASE {"index":6,"name":"nonce / untrusted script after meta blocked","ok":true,"observed":[]}
+[js log] PARSER_POLICY_CASE {"index":7,"name":"nonce / later inline event handler blocked","ok":true,"observed":[]}
+[js log] PARSER_POLICY_CASE {"index":8,"name":"nonce / nonce-authorized script after meta executed","ok":false,"observed":[]}
+[js log] PARSER_POLICY_DONE {"count":9}
