@@ -340,3 +340,25 @@ Evidence: agent/evidence/20261029-cpu30-002-functional-checkpoint.json
 }
 
 Score55/100. Broad242/279 includes all15TIMEOUT/15ERROR; frozen1515 retains1236unrun. Qualified disjoint279 and named-assertion parity preserve missing contexts. Accepted f52 remains separate from4b measured WPT and9137 active candidate. Public source/UI/message/telemetry passed; current task continues. Evidence agent/evidence/20261029-cpu30-003-delivery-breadth.json
+
+
+## 20261029-cpu30-004 — exact final native acceptance
+
+{
+  "started_utc": "2026-10-29T04:49:12.692619+00:00",
+  "finished_utc": "2026-10-29T05:09:23.967673+00:00",
+  "started_Asia_Shanghai": "2026-10-29T12:49:12.692619+08:00",
+  "finished_Asia_Shanghai": "2026-10-29T13:09:23.967673+08:00",
+  "elapsed_seconds": 1211.275,
+  "total_session_seconds": 10238.968,
+  "timingsSeconds": {
+    "buildAndCustomChecks": 22.631,
+    "incrementalBuild": 3.107,
+    "originalAndFixed103": 73.376,
+    "priorityExpansion": 348.709,
+    "guiAndSoak": 282.535
+  },
+  "timingMethod": "Wall time from timestamps; overlapping stages/agents are not summed. Native worker-context timeouts explain the >5minute broader run; no timeout or failure was discarded."
+}
+
+Score55/100; fixed101/103 and broad245/279 are separate selections.718 current-policy checks pass; original15 legacy fixture retains10pass/5explicit policy deltas. All1236unrun/15TIMEOUT/15ERROR remain counted. Native source commit94feccb482c508a2461bb6b8a1a52c011829c883 is verified against every compiled Git blob; build-base7d remains separately recorded. Final source publication/reverification follows this documentation commit. Evidence agent/evidence/20261029-cpu30-004-native-acceptance.json

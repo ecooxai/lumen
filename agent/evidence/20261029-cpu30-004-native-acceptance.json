@@ -1,0 +1,2322 @@
+{
+  "iteration": "20261029-cpu30-004",
+  "accepted": true,
+  "started_utc": "2026-10-29T04:49:12.692619+00:00",
+  "finished_utc": "2026-10-29T05:09:23.967673+00:00",
+  "started_Asia_Shanghai": "2026-10-29T12:49:12.692619+08:00",
+  "finished_Asia_Shanghai": "2026-10-29T13:09:23.967673+08:00",
+  "elapsed_seconds": 1211.275,
+  "total_session_seconds": 10238.968,
+  "score": 55,
+  "scoreIsWptPercentage": false,
+  "fullOfficialWptPassPercent": null,
+  "status": "Final exact-artifact native source/WPT/resource acceptance; Apple execution and full frozen coverage remain incomplete",
+  "artifact": {
+    "sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+    "path": "out/lume-20261029-cpu30/native-default-1/lumen-3ad884713a4aa896",
+    "sourceCommit": "94feccb482c508a2461bb6b8a1a52c011829c883",
+    "buildSourceBaseCommit": "7d2f27c1bacfeec19915a2c8b0b417cfa84c0963",
+    "sourceManifestPath": "agent/evidence/20261029-cpu30-004/compiled-source-sha256.json",
+    "sourceManifestSHA256": "0cd15150cf85c9699ea847fd1859ab8a8097694e802ca2ca66e650262dc38ab7",
+    "compiledInputsVerified": 142
+  },
+  "broadWpt": {
+    "schema": 1,
+    "updatedUTC": "2026-10-29T04:58:57.873528+00:00",
+    "binarySHA256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+    "cohortSHA256": "17c9e5ae95f54d7aebb189dddd850584c8b49e9b0ddb0b27f52ca8a7f583eb5b",
+    "scope": "Native-only frozen priority cohort; never full WPT or Chrome parity",
+    "scheduled": 1515,
+    "run": 279,
+    "fullyPassing": 245,
+    "unrun": 1236,
+    "passingPercentOfRun": 87.814,
+    "verifiedPassingCoveragePercent": 16.172,
+    "harnessStatuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "assertions": {
+      "PASS": 38727,
+      "FAIL": 34
+    },
+    "categories": {
+      "dom": {
+        "scheduled": 14,
+        "run": 14,
+        "fullyPassing": 13,
+        "unrun": 0,
+        "passingPercentOfRun": 92.857
+      },
+      "events": {
+        "scheduled": 16,
+        "run": 16,
+        "fullyPassing": 16,
+        "unrun": 0,
+        "passingPercentOfRun": 100.0
+      },
+      "url": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 76,
+        "unrun": 0,
+        "passingPercentOfRun": 98.701
+      },
+      "encoding": {
+        "scheduled": 1339,
+        "run": 103,
+        "fullyPassing": 101,
+        "unrun": 1236,
+        "passingPercentOfRun": 98.058
+      },
+      "headers": {
+        "scheduled": 52,
+        "run": 52,
+        "fullyPassing": 26,
+        "unrun": 0,
+        "passingPercentOfRun": 50.0
+      },
+      "microtasks": {
+        "scheduled": 10,
+        "run": 10,
+        "fullyPassing": 6,
+        "unrun": 0,
+        "passingPercentOfRun": 60.0
+      },
+      "storage": {
+        "scheduled": 7,
+        "run": 7,
+        "fullyPassing": 7,
+        "unrun": 0,
+        "passingPercentOfRun": 100.0
+      }
+    },
+    "groups": {
+      "encoding-streams": {
+        "scheduled": 26,
+        "run": 26,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "dom": {
+        "scheduled": 14,
+        "run": 14,
+        "fullyPassing": 13,
+        "unrun": 0
+      },
+      "events": {
+        "scheduled": 16,
+        "run": 16,
+        "fullyPassing": 16,
+        "unrun": 0
+      },
+      "url": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 76,
+        "unrun": 0
+      },
+      "storage": {
+        "scheduled": 7,
+        "run": 7,
+        "fullyPassing": 7,
+        "unrun": 0
+      },
+      "microtasks": {
+        "scheduled": 10,
+        "run": 10,
+        "fullyPassing": 6,
+        "unrun": 0
+      },
+      "headers": {
+        "scheduled": 52,
+        "run": 52,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "encoding-core": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 75,
+        "unrun": 0
+      },
+      "encoding-rest": {
+        "scheduled": 1236,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 1236
+      }
+    },
+    "failures": [
+      {
+        "test": "/dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "cloneNode() and document's allow declarative shadow roots",
+            "status": "FAIL",
+            "message": "assert_true: expected true got false"
+          }
+        ]
+      },
+      {
+        "test": "/url/IdnaTestV2.any.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "ToASCII(\"\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u10be\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\ucbd95\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac.\u0729.\ucbd95\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          },
+          {
+            "name": "ToASCII(\"\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5\")",
+            "status": "FAIL",
+            "message": "Failed to construct 'URL': Invalid URL"
+          }
+        ]
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+        "status": "TIMEOUT",
+        "message": null,
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "evidenceError": null,
+        "assertions": []
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "csiso2022kr - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "hz-gb-2312 - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "iso-2022-kr - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "replacement - non-empty input decodes to one replacement character.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "replacement - empty input decodes to empty output.",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          }
+        ]
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "status": "OK",
+        "message": null,
+        "evidenceError": null,
+        "assertions": [
+          {
+            "name": "UTF-7 should not be supported",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-7 should not be supported",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32 with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32 with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32 with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32 with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32LE with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32LE with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32le with BOM should decode as UTF-16LE",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32le with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32be with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "UTF-32be with BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32be with no BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          },
+          {
+            "name": "utf-32be with BOM should decode as UTF-8",
+            "status": "FAIL",
+            "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+          }
+        ]
+      }
+    ],
+    "invocationWallSeconds": 400.775
+  },
+  "fixedEncodingWpt": {
+    "scheduled": 1515,
+    "run": 103,
+    "fullyPassing": 101,
+    "unrun": 1412,
+    "passingPercentOfRun": 98.058,
+    "assertions": {
+      "PASS": 23632,
+      "FAIL": 26
+    },
+    "harnessStatuses": {
+      "OK": 103
+    },
+    "groups": {
+      "encoding-streams": {
+        "scheduled": 26,
+        "run": 26,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "dom": {
+        "scheduled": 14,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 14
+      },
+      "events": {
+        "scheduled": 16,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 16
+      },
+      "url": {
+        "scheduled": 77,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 77
+      },
+      "storage": {
+        "scheduled": 7,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 7
+      },
+      "microtasks": {
+        "scheduled": 10,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 10
+      },
+      "headers": {
+        "scheduled": 52,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 52
+      },
+      "encoding-core": {
+        "scheduled": 77,
+        "run": 77,
+        "fullyPassing": 75,
+        "unrun": 0
+      },
+      "encoding-rest": {
+        "scheduled": 1236,
+        "run": 0,
+        "fullyPassing": 0,
+        "unrun": 1236
+      }
+    }
+  },
+  "originalSubset": {
+    "task": "20261029-cpu30",
+    "startedUTC": "2026-10-29T04:51:11.370129+00:00",
+    "binarySHA256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+    "command": [
+      "/opt/homebrew/opt/python@3.15/bin/python3.15",
+      "tools/apple-session-gpt6as/probe_native_wpt.py",
+      "--binary",
+      "build/lumen-task20261029-cpu30-compat-default-1-3ad884713a4aa896",
+      "--expected-sha256",
+      "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+      "--output",
+      "output/native-wpt-task20261029-cpu30-compat-default-1-3ad884713a4aa896",
+      "--seconds-per-test",
+      "25"
+    ],
+    "scope": "Unmodified original six-file upstream gate,1850 assertions; distinct from frozen1515-variant priority cohort.",
+    "passed": true,
+    "exitCode": 0,
+    "report": "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task20261029-cpu30-compat-default-1-3ad884713a4aa896/wpt-report.json",
+    "reportSHA256": "7de9b9b157a03fbce60250dc3be6aa9ab1d0ca844b26c7befa5c270cd82bf938",
+    "files": 6,
+    "fullyPassing": 6,
+    "assertions": {
+      "PASS": 1850
+    },
+    "finishedUTC": "2026-10-29T04:51:20.590202+00:00",
+    "durationSeconds": 9.22,
+    "binarySHA256After": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce"
+  },
+  "cohortPlanEvidence": "agent/evidence/20261029-cpu30-004/frozen-cohort-plan.json",
+  "nativeResources": {
+    "startedUTC": "2026-10-29T04:59:32.238098+00:00",
+    "artifact": {
+      "path": "out/lume-20261029-cpu30/native-default-1/lumen-3ad884713a4aa896",
+      "sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+      "bytes": 14055960
+    },
+    "buildSummary": "out/lume-20261029-cpu30/native-default-1/summary.json",
+    "buildSummarySHA256": "bee72ec9d7f65f482ed7b3a577e4d1362c21de7073f0cdef9814d5fa958e4128",
+    "runnerSHA256": "b957f810f6f49a9133b57165af9e369e12b7514da4fab3c8d8d921bb01f08f1a",
+    "userScrollCPUCeilingPercent": 30,
+    "cpuDefinition": "One-second cumulative process-tree CPU time deltas; 100% is one logical core. RSS sums resident process sets and can double-count shared pages.",
+    "scope": "Visible native Mac browser with synthetic SDL wheel events and actual page navigations; isolated profile. This does not claim OS-input, iPad, or IPA validation.",
+    "scenarios": [
+      {
+        "name": "scroll",
+        "startedUTC": "2026-10-29T04:59:32.238628+00:00",
+        "output": "out/lume-20261029-cpu30/native-resources-2/scroll",
+        "runnerPID": 41102,
+        "exitCode": 0,
+        "captureExitCode": 0,
+        "finishedUTC": "2026-10-29T05:01:28.539591+00:00",
+        "durationSeconds": 116.18,
+        "accepted": true,
+        "receipt": "out/lume-20261029-cpu30/native-resources-2/scroll/receipt.json",
+        "receiptSHA256": "db2bc7e18f3e358e7c6d5d8356cf9455faaf0a0fd132f701710ac7f897ab7947",
+        "issues": [],
+        "phaseMetrics": {
+          "startup": {
+            "samples": 16,
+            "observed_samples": 16,
+            "duration_seconds": 15.001,
+            "cpu_mean_percent": 2.604,
+            "cpu_median_percent": 1.003,
+            "cpu_p95_percent": 23.088,
+            "cpu_peak_percent": 23.088,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 19.078,
+            "rss_end_mib": 159.422,
+            "rss_peak_mib": 159.469,
+            "rss_change_mib": 140.344,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 1
+          },
+          "scrolling": {
+            "samples": 35,
+            "observed_samples": 35,
+            "duration_seconds": 33.996,
+            "cpu_mean_percent": 11.207,
+            "cpu_median_percent": 11.974,
+            "cpu_p95_percent": 15.823,
+            "cpu_peak_percent": 16.018,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 162.406,
+            "rss_end_mib": 153.969,
+            "rss_peak_mib": 164.469,
+            "rss_change_mib": -8.438,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          },
+          "settle:after": {
+            "samples": 15,
+            "observed_samples": 15,
+            "duration_seconds": 13.998,
+            "cpu_mean_percent": 0.0,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 153.406,
+            "rss_end_mib": 153.453,
+            "rss_peak_mib": 153.453,
+            "rss_change_mib": 0.047,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          },
+          "idle:after": {
+            "samples": 50,
+            "observed_samples": 50,
+            "duration_seconds": 49.002,
+            "cpu_mean_percent": 0.082,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 0.996,
+            "cpu_peak_percent": 1.012,
+            "samples_above_threshold": 0,
+            "cpu_threshold_percent": 3,
+            "cpu_status": "within_threshold",
+            "rss_start_mib": 153.453,
+            "rss_end_mib": 153.453,
+            "rss_peak_mib": 153.453,
+            "rss_change_mib": 0.0,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          }
+        },
+        "settledRSSComparison": null,
+        "nativeCounterComparison": null,
+        "visibleWindow": {
+          "captured": true,
+          "screenshot": "out/lume-20261029-cpu30/native-resources-2/scroll/native-window/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png",
+          "screenshotSHA256": "2d17a2b683e4292d20d565914b4c54bcdcfea9f6faf68197122e39d01d4a19e3",
+          "width": 1000,
+          "height": 700,
+          "issue": null
+        },
+        "gpuErrors": []
+      },
+      {
+        "name": "navigation",
+        "startedUTC": "2026-10-29T05:01:28.540186+00:00",
+        "output": "out/lume-20261029-cpu30/native-resources-2/navigation",
+        "runnerPID": 43393,
+        "exitCode": 0,
+        "finishedUTC": "2026-10-29T05:04:14.776400+00:00",
+        "durationSeconds": 166.126,
+        "accepted": true,
+        "receipt": "out/lume-20261029-cpu30/native-resources-2/navigation/receipt.json",
+        "receiptSHA256": "0291ff69baf2856727b712cbe581bdf05314058e445505ace1d5acdc9602bc2c",
+        "issues": [],
+        "phaseMetrics": {
+          "startup": {
+            "samples": 16,
+            "observed_samples": 16,
+            "duration_seconds": 14.997,
+            "cpu_mean_percent": 1.132,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 15.978,
+            "cpu_peak_percent": 15.978,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 19.078,
+            "rss_end_mib": 157.078,
+            "rss_peak_mib": 157.203,
+            "rss_change_mib": 138.0,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 1
+          },
+          "idle:before": {
+            "samples": 15,
+            "observed_samples": 15,
+            "duration_seconds": 13.995,
+            "cpu_mean_percent": 0.0,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "samples_above_threshold": 0,
+            "cpu_threshold_percent": 3,
+            "cpu_status": "within_threshold",
+            "rss_start_mib": 157.078,
+            "rss_end_mib": 157.078,
+            "rss_peak_mib": 157.078,
+            "rss_change_mib": 0.0,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          },
+          "navigation": {
+            "samples": 58,
+            "observed_samples": 58,
+            "duration_seconds": 57.011,
+            "cpu_mean_percent": 1.899,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 7.066,
+            "cpu_peak_percent": 8.0,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 157.984,
+            "rss_end_mib": 158.344,
+            "rss_peak_mib": 158.703,
+            "rss_change_mib": 0.359,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          },
+          "settle:after": {
+            "samples": 15,
+            "observed_samples": 15,
+            "duration_seconds": 14.007,
+            "cpu_mean_percent": 0.071,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 1.001,
+            "cpu_peak_percent": 1.001,
+            "samples_above_threshold": null,
+            "cpu_threshold_percent": null,
+            "cpu_status": "measured_no_threshold",
+            "rss_start_mib": 158.359,
+            "rss_end_mib": 158.297,
+            "rss_peak_mib": 158.359,
+            "rss_change_mib": -0.062,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          },
+          "idle:after": {
+            "samples": 62,
+            "observed_samples": 62,
+            "duration_seconds": 60.995,
+            "cpu_mean_percent": 0.049,
+            "cpu_median_percent": 0.0,
+            "cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 1.012,
+            "samples_above_threshold": 0,
+            "cpu_threshold_percent": 3,
+            "cpu_status": "within_threshold",
+            "rss_start_mib": 158.297,
+            "rss_end_mib": 146.469,
+            "rss_peak_mib": 158.297,
+            "rss_change_mib": -11.828,
+            "phase_boundary_samples_excluded_from_cpu_summary": 1,
+            "first_seen_process_events": 0
+          }
+        },
+        "settledRSSComparison": {
+          "initial_median_mib": 157.078125,
+          "final_median_mib": 146.46875,
+          "growth_mib": -10.609375,
+          "growth_fraction": -0.0675420272555456
+        },
+        "nativeCounterComparison": {
+          "initial": {
+            "malloc_in_use": 0.6,
+            "nodes": 1218.0,
+            "styles": 11.0,
+            "css_parsed": 0.0,
+            "workers": 0.0,
+            "heap": 0.0,
+            "ext": 0.0
+          },
+          "final": {
+            "malloc_in_use": 0.6,
+            "nodes": 1218.0,
+            "styles": 11.0,
+            "css_parsed": 0.1,
+            "workers": 0.0,
+            "heap": 0.0,
+            "ext": 0.0
+          }
+        },
+        "gpuErrors": []
+      }
+    ],
+    "accepted": true,
+    "finishedUTC": "2026-10-29T05:04:14.776948+00:00",
+    "durationSeconds": 282.535
+  },
+  "chromeComparison": {
+    "taskId": "20261029-cpu30",
+    "createdUTC": "2026-10-29T05:02:40.552211+00:00",
+    "nativeBinarySHA256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+    "chromeBinarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+    "scope": "Same frozen279 variants. QualifiedChrome103+176 are explicitly disjoint executions on one artifact/protocol. Native missing/failed contexts remain in the denominator; no overall engine ranking.",
+    "groups": {
+      "encoding-core": {
+        "variants": 77,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 23107,
+          "native_PASS__chrome_FAIL": 167,
+          "native_FAIL__chrome_PASS": 26
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 64,
+          "native_PASS__chrome_not_PASS": 11,
+          "native_not_PASS__chrome_PASS": 2
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 77
+        },
+        "nativeRawSHA256": "32553a3eb568a2a0febc47e0bb44c4b412ceb2355c636b28784720a71e740753",
+        "chromeRawSHA256": "4bbf1535b81a001f9b171206e3c8ae12628a1e09256180bc23be54c7350869ff",
+        "scheduleSHA256": "6ec47e6f74edcd585cad897c02a3b97079c264b65f6af4d8527fa8ef9cae9ba9"
+      },
+      "encoding-streams": {
+        "variants": 26,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 344,
+          "native_PASS__chrome_FAIL": 14
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 23,
+          "native_PASS__chrome_not_PASS": 3
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 26
+        },
+        "nativeRawSHA256": "f25a717605813f65387b394a0bfa636259b660beee89ad1f9e6e1d7e0ac75b07",
+        "chromeRawSHA256": "a2563dd5a73401fc47325ee7efca0257a25adc75e933b8c3a7425cc64a1c1de3",
+        "scheduleSHA256": "86c9bb4c01e0394b7052abab611088e7c68c7674cb083dd84ceefa6b063d594d"
+      },
+      "dom": {
+        "variants": 14,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 983,
+          "native_PASS__chrome_FAIL": 12,
+          "native_FAIL__chrome_PASS": 1
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 12,
+          "native_PASS__chrome_not_PASS": 1,
+          "native_not_PASS__chrome_PASS": 1
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 14
+        },
+        "nativeRawSHA256": "4dae4b9f0d4aee7fb7de3ae4ba09c20e0c2524c5f80f1441d01667c07c60bbf3",
+        "chromeRawSHA256": "0be317cac7683c41fab09a2f0e5f944093c800a236aa0f50320ba206233efa0d",
+        "scheduleSHA256": "6fe614abb37dc1d11f2ac087984cb5ac9bcc8f40d68ab70f596516ba80a80689"
+      },
+      "events": {
+        "variants": 16,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 78
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 16
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 16
+        },
+        "nativeRawSHA256": "542ed3a04541e6fcc05b54b6181a7e548d7ec3d514d2ba015e6a9a43b00bac02",
+        "chromeRawSHA256": "2e11537a5b0d890f52ad15440084fb8db7c45bad89c5c7f39f32181621dd85a8",
+        "scheduleSHA256": "86ab13dadb55d19bf875ca972fca9beb7c1560e717bfa1a5f2d36564f189f93e"
+      },
+      "url": {
+        "variants": 77,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 11621,
+          "native_PASS__chrome_FAIL": 695,
+          "native_FAIL__chrome_FAIL": 7
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 47,
+          "native_not_PASS__chrome_not_PASS": 1,
+          "native_PASS__chrome_not_PASS": 29
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 77
+        },
+        "nativeRawSHA256": "b2c029d45291ce7f13d2a92f33ebf68b28dd0769e486fd47ad24cc373e059c6d",
+        "chromeRawSHA256": "00a93f64b3c9eb3351689f001332e41446c2c7c8485b34d1bfda65329029b82d",
+        "scheduleSHA256": "b180a83552f49f36cf046e251ffa92dbfcc36467af2dc3a441fa7bc80dc6bb50"
+      },
+      "storage": {
+        "variants": 7,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 1152
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 7
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 7
+        },
+        "nativeRawSHA256": "811fdb84b000712f9deb8a4201b45ad6c0207f38e14ad0acb32818542718332d",
+        "chromeRawSHA256": "7e171c24462c5ca1894a9bd0ce1c4c31a5cd776132f705d9b934149aaddf3857",
+        "scheduleSHA256": "37ea6de0542117f1ac0600e5f87ac3b2bb95c7b04eb3c0cecf0147f127015e43"
+      },
+      "microtasks": {
+        "variants": 10,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 15,
+          "native_MISSING__chrome_PASS": 12
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 6,
+          "native_not_PASS__chrome_PASS": 4
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 6,
+          "native_TIMEOUT__chrome_OK": 2,
+          "native_ERROR__chrome_OK": 2
+        },
+        "nativeRawSHA256": "d605e0a8e755dea05bb9134b4e9b244333f8e24d453f385972faa9e876319d77",
+        "chromeRawSHA256": "19eed770e9dd4bf63d865feca95aab329444006ae972034480cb78854f54f24a",
+        "scheduleSHA256": "782b903f614382083dd961c9834743171bda5e757c3b7c2a8c73f4f32f42a0ba"
+      },
+      "headers": {
+        "variants": 52,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 539,
+          "native_MISSING__chrome_PASS": 504
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 26,
+          "native_not_PASS__chrome_PASS": 26
+        },
+        "harnessClasses": {
+          "native_OK__chrome_OK": 26,
+          "native_TIMEOUT__chrome_OK": 13,
+          "native_ERROR__chrome_OK": 13
+        },
+        "nativeRawSHA256": "f39c2eaf15e48d61845a246c5a7cd514842a763c6b208fdd38e52722b03e0318",
+        "chromeRawSHA256": "6f12f38b4f77f0290812dc50f7af26c0f5c168a82981aaad560f4571bb0bf7ee",
+        "scheduleSHA256": "f12a0f08d535d46a342b6d448eae918bbc834efd2daf7f5971977daec5f8bece"
+      }
+    },
+    "frozenVariants": 1515,
+    "recorded": 279,
+    "unrun": 1236,
+    "assertionClasses": {
+      "native_PASS__chrome_PASS": 37839,
+      "native_PASS__chrome_FAIL": 888,
+      "native_FAIL__chrome_PASS": 27,
+      "native_FAIL__chrome_FAIL": 7,
+      "native_MISSING__chrome_PASS": 516
+    },
+    "variantClasses": {
+      "native_PASS__chrome_PASS": 201,
+      "native_PASS__chrome_not_PASS": 44,
+      "native_not_PASS__chrome_PASS": 33,
+      "native_not_PASS__chrome_not_PASS": 1
+    },
+    "harnessClasses": {
+      "native_OK__chrome_OK": 249,
+      "native_TIMEOUT__chrome_OK": 15,
+      "native_ERROR__chrome_OK": 15
+    },
+    "missingNativeAssertions": [
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 1,
+        "chromeAssertions": 1
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 1,
+        "chromeAssertions": 1
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 5,
+        "chromeAssertions": 5
+      },
+      {
+        "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 5,
+        "chromeAssertions": 5
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 24,
+        "chromeAssertions": 24
+      },
+      {
+        "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 24,
+        "chromeAssertions": 24
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 1,
+        "chromeAssertions": 1
+      },
+      {
+        "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 1,
+        "chromeAssertions": 1
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 31,
+        "chromeAssertions": 31
+      },
+      {
+        "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 31,
+        "chromeAssertions": 31
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 4,
+        "chromeAssertions": 4
+      },
+      {
+        "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 4,
+        "chromeAssertions": 4
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 23,
+        "chromeAssertions": 23
+      },
+      {
+        "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 23,
+        "chromeAssertions": 23
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 4,
+        "chromeAssertions": 4
+      },
+      {
+        "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 4,
+        "chromeAssertions": 4
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 6,
+        "chromeAssertions": 6
+      },
+      {
+        "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 6,
+        "chromeAssertions": 6
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 18,
+        "chromeAssertions": 18
+      },
+      {
+        "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 18,
+        "chromeAssertions": 18
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 90,
+        "chromeAssertions": 90
+      },
+      {
+        "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 90,
+        "chromeAssertions": 90
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 27,
+        "chromeAssertions": 27
+      },
+      {
+        "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 27,
+        "chromeAssertions": 27
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 3,
+        "chromeAssertions": 3
+      },
+      {
+        "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 3,
+        "chromeAssertions": 3
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 13,
+        "chromeAssertions": 13
+      },
+      {
+        "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 13,
+        "chromeAssertions": 13
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+        "nativeHarness": "TIMEOUT",
+        "missing": 8,
+        "chromeAssertions": 8
+      },
+      {
+        "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+        "nativeHarness": "ERROR",
+        "missing": 8,
+        "chromeAssertions": 8
+      }
+    ],
+    "nativeFailedAssertionsOnChromePass": [
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-kr - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "hz-gb-2312 - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "replacement - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "replacement - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "csiso2022kr - empty input decodes to empty output.",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32be with BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32le with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32 with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32 with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32be with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32LE with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-7 should not be supported",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32be with BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32be with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32 with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-7 should not be supported",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32 with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32LE with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32le with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL"
+      },
+      {
+        "test": "/dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.html",
+        "name": "cloneNode() and document's allow declarative shadow roots",
+        "nativeStatus": "FAIL"
+      }
+    ],
+    "chromePassingAssertions": 38382,
+    "nativePassesAmongChromePassingAssertions": 37839,
+    "chromePassingVariants": 234,
+    "nativeFullyPassesAmongChromePassingVariants": 201,
+    "complete": true
+  },
+  "chromeComparison103": {
+    "taskId": "20261029-cpu30",
+    "createdUTC": "2026-10-29T04:57:09.519597+00:00",
+    "nativeBinarySHA256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+    "chromeBinarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+    "scope": "Named-assertion comparison of the same103 pinned upstream variants. Qualified Chrome has real failures, retained separately. This is not full WPT or an overall engine ranking.",
+    "groups": {
+      "encoding-core": {
+        "variants": 77,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 23107,
+          "native_PASS__chrome_FAIL": 167,
+          "native_FAIL__chrome_PASS": 26
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 64,
+          "native_PASS__chrome_not_PASS": 11,
+          "native_not_PASS__chrome_PASS": 2
+        },
+        "nativeRawSHA256": "32553a3eb568a2a0febc47e0bb44c4b412ceb2355c636b28784720a71e740753",
+        "chromeRawSHA256": "4bbf1535b81a001f9b171206e3c8ae12628a1e09256180bc23be54c7350869ff",
+        "scheduleSHA256": "6ec47e6f74edcd585cad897c02a3b97079c264b65f6af4d8527fa8ef9cae9ba9"
+      },
+      "encoding-streams": {
+        "variants": 26,
+        "assertionClasses": {
+          "native_PASS__chrome_PASS": 344,
+          "native_PASS__chrome_FAIL": 14
+        },
+        "variantClasses": {
+          "native_PASS__chrome_PASS": 23,
+          "native_PASS__chrome_not_PASS": 3
+        },
+        "nativeRawSHA256": "f25a717605813f65387b394a0bfa636259b660beee89ad1f9e6e1d7e0ac75b07",
+        "chromeRawSHA256": "a2563dd5a73401fc47325ee7efca0257a25adc75e933b8c3a7425cc64a1c1de3",
+        "scheduleSHA256": "86c9bb4c01e0394b7052abab611088e7c68c7674cb083dd84ceefa6b063d594d"
+      }
+    },
+    "fullFrozenVariants": 1515,
+    "unrun": 1412,
+    "harnessStatuses": {
+      "both_OK": 103
+    },
+    "assertionClasses": {
+      "native_PASS__chrome_PASS": 23451,
+      "native_PASS__chrome_FAIL": 181,
+      "native_FAIL__chrome_PASS": 26
+    },
+    "variantClasses": {
+      "native_PASS__chrome_PASS": 87,
+      "native_PASS__chrome_not_PASS": 14,
+      "native_not_PASS__chrome_PASS": 2
+    },
+    "nativeFailuresOnChromePassingAssertions": [
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "csiso2022kr - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "hz-gb-2312 - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "iso-2022-kr - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "replacement - non-empty input decodes to one replacement character.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/replacement-encodings.any.worker.html",
+        "name": "replacement - empty input decodes to empty output.",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-7 should not be supported",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-7 should not be supported",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32 with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32 with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32 with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32 with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32LE with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32LE with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32le with BOM should decode as UTF-16LE",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32le with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32be with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "UTF-32be with BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32be with no BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      },
+      {
+        "test": "/encoding/unsupported-encodings.any.worker.html",
+        "name": "utf-32be with BOM should decode as UTF-8",
+        "nativeStatus": "FAIL",
+        "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+      }
+    ],
+    "chromePassingAssertions": 23477,
+    "nativePassesAmongChromePassingAssertions": 23451,
+    "chromePassingVariants": 89,
+    "nativeFullyPassesAmongChromePassingVariants": 87,
+    "complete": true
+  },
+  "customChecks": {
+    "currentPolicyPassed": 718,
+    "currentPolicyTotal": 718,
+    "legacyUnchanged": {
+      "total": 15,
+      "passed": 10,
+      "intentionalDifferences": [
+        {
+          "i": 3,
+          "name": "UTF16LE parent encoding is not inherited",
+          "ok": false,
+          "error": "Error: expected \"UTF-8\", got \"windows-1252\""
+        },
+        {
+          "i": 7,
+          "name": "cross-origin child does not inherit",
+          "ok": false,
+          "error": "Error: expected \"UTF-8\", got \"windows-1252\""
+        },
+        {
+          "i": 8,
+          "name": "sandbox opaque-origin child does not inherit",
+          "ok": false,
+          "error": "Error: expected \"UTF-8\", got \"windows-1252\""
+        },
+        {
+          "i": 9,
+          "name": "CSP sandbox opaque-origin child does not inherit",
+          "ok": false,
+          "error": "Error: expected \"UTF-8\", got \"windows-1252\""
+        },
+        {
+          "i": 11,
+          "name": "UTF16BE parent encoding is not inherited",
+          "ok": false,
+          "error": "Error: expected \"UTF-8\", got \"windows-1252\""
+        }
+      ]
+    }
+  },
+  "independentIsolation": {
+    "cases": 6,
+    "passed": true,
+    "note": "Windows1251 parent differs from Windows1252 default, eliminating the prior isolation-control ambiguity; diagnostic is separate from WPT718/279 counts."
+  },
+  "timingsSeconds": {
+    "buildAndCustomChecks": 22.631,
+    "incrementalBuild": 3.107,
+    "originalAndFixed103": 73.376,
+    "priorityExpansion": 348.709,
+    "guiAndSoak": 282.535
+  },
+  "timingMethod": "Wall time from timestamps; overlapping stages/agents are not summed. Native worker-context timeouts explain the >5minute broader run; no timeout or failure was discarded.",
+  "evidence": [
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/20261029-cpu30-004/compiled-source-sha256.json",
+      "sha256": "0cd15150cf85c9699ea847fd1859ab8a8097694e802ca2ca66e650262dc38ab7",
+      "bytes": 13767
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/build-718-current-and-legacy-deltas.json",
+      "sha256": "bee72ec9d7f65f482ed7b3a577e4d1362c21de7073f0cdef9814d5fa958e4128",
+      "bytes": 38408
+    },
+    {
+      "source": "out/lume-20261029-cpu30/final-compatibility-source-audit.json",
+      "committed": "agent/evidence/20261029-cpu30-004/independent-functional-source-audit.json",
+      "sha256": "f000a640fffacb85838f8c4e1255f9625bd0c9a3bdde3a3a6df97886bc5b976d",
+      "bytes": 4745
+    },
+    {
+      "source": "out/lume-20261029-cpu30/v8-prebuilt-identity.json",
+      "committed": "agent/evidence/20261029-cpu30-004/prebuilt-v8-identity.json",
+      "sha256": "fd3cdbb701d65f4b30ee46cb27a39418a3f8b535519d07bc6e16db28f9d133cf",
+      "bytes": 2530
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/build.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-build-monitor.json",
+      "sha256": "61cf15d669c30ce027c53e1af19d772c9d632b592a268a8b399d42d2f48726a1",
+      "bytes": 2045
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/build.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-build.log",
+      "sha256": "34dc40ec3c9589444843277dd2da6daad193a493271c9d310e1ab82bf729c906",
+      "bytes": 23060
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/fatal-codec.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-fatal-codec-monitor.json",
+      "sha256": "78da52368cc855121d8c2d9a511d9624cc87df7e301eccd234fd94b547dec218",
+      "bytes": 2004
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/fatal-codec.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-fatal-codec.log",
+      "sha256": "3212c163c2deb0575fd231ec9f868756df869b8c2a3854df7a60cde7ac1ecd43",
+      "bytes": 28644
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/html-bom.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-html-bom-monitor.json",
+      "sha256": "fcedca372786117bdd2f6f05650114706e35ae3c00f37b403af039cdc4dff4ec",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/html-bom.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-html-bom.log",
+      "sha256": "88eec7777803475cf387527092386fc58413fe643ef5bdcb300ec6e37cdf08e9",
+      "bytes": 3353
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/json-document.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-json-document-monitor.json",
+      "sha256": "b2028affb18fa0f0a3c1c5ac63d7c4b2eb27400282191ebd8a86a80071dbb95b",
+      "bytes": 2016
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/json-document.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-json-document.log",
+      "sha256": "5f47819ad8b1d2f477412efc99d7c39a5accca252c9bed12c56343201f964b9d",
+      "bytes": 2982
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/driver-parent-charset.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-driver-parent-charset-monitor.json",
+      "sha256": "916e5ef84d39a9d871a1dd67cafd738a4915abdfcdfe020ad5305b9fe6b3366e",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/driver-parent-charset.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-driver-parent-charset.log",
+      "sha256": "f05daca613350f6152fc43d7fdaad0aeeda4f80a8cc5fad11a038d40381f3a0e",
+      "bytes": 2983
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/legacy-frame-policy.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-legacy-frame-policy-monitor.json",
+      "sha256": "7a8cc06ca4cfd31a0a86c912dc51cd3b91e57777f3c2e612bc9b235501dcd5d6",
+      "bytes": 2057
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/legacy-frame-policy.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-legacy-frame-policy.log",
+      "sha256": "08825c993629c366d5e88a5fbf56a7e7603617f39a3666b6aaaf623a432a7115",
+      "bytes": 2224
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/xhr-encoding.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-xhr-encoding-monitor.json",
+      "sha256": "1a3d060788b032ae0245c9208835902ca89172386ef8168b9710761f2fc63f6c",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/xhr-encoding.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-xhr-encoding.log",
+      "sha256": "e3402c9c0ebd045c1e1c414f4b8f9d6dd12059806da854b999032885f747a72a",
+      "bytes": 4590
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/html-meta.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-html-meta-monitor.json",
+      "sha256": "844d1fceae0e32fddd476311dc2f4b8983aa92dd4984fb31b9b29f083fdbe2cb",
+      "bytes": 2020
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/html-meta.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-html-meta.log",
+      "sha256": "7027b7a48b214cb0d67eea42b928de21f1386763d483dd962ab271606119cc65",
+      "bytes": 5036
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/document-encoding.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-document-encoding-monitor.json",
+      "sha256": "3ff16ba4e140b077a3669c6624e778fda51f4d2526ef601fb41debc50862dbc7",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/document-encoding.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-document-encoding.log",
+      "sha256": "951d1fad04152778fc17ce36777774b590d1b6c177ec1210452aacfad2c37db8",
+      "bytes": 5104
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/parser-input.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-parser-input-monitor.json",
+      "sha256": "bb14209e1e3fba367e3313c617b77b40012f5b713d73abb9fa7653213ed19b71",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/parser-input.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-parser-input.log",
+      "sha256": "223555e5612e9415a045db5b5dd6949ac34974a9b83f45dacfaa74f48edac2ae",
+      "bytes": 2466
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/test_render_overdraw.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-test_render_overdraw-monitor.json",
+      "sha256": "7a7cec362aa6ba65deb4c56042f69801c04cdd06c41964a5ce63f08d36c99eb0",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/test_render_overdraw.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-test_render_overdraw.log",
+      "sha256": "04341450e0dfb63e562ba0fd8d7701b0d8db8daf079fde4b9542ec3fab28d369",
+      "bytes": 46
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/test_gpu_present.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-test_gpu_present-monitor.json",
+      "sha256": "1b74a1d19ed0b22fc0e19e40d0afdf0977dc0dc4a404f0b97b6be167ed863b32",
+      "bytes": 2004
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/test_gpu_present.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-test_gpu_present.log",
+      "sha256": "a00302b05386e15ce22fabcdaffb8331c19f72fb11b2d838b8587d6dcec75433",
+      "bytes": 3236
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/test_app_wheel.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-test_app_wheel-monitor.json",
+      "sha256": "643b7ae0e50a1ccf99df01759638620c70e6aa89365d4d4df27caf9567a6accd",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/test_app_wheel.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-test_app_wheel.log",
+      "sha256": "f2255b4799d8fd5ac9250a44c65daaec47dab6aef1a3cb92ca76dd70a841e7bd",
+      "bytes": 38
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/html-default-boundary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-html-default-boundary-monitor.json",
+      "sha256": "3eaa983dbfa0f023d168ee35538586cac35e0f79444de9083696f56710aa4461",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/html-default-boundary.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-html-default-boundary.log",
+      "sha256": "910b4b27aa4aacfca38af5cd7114a209af55fe50cdea4a61258b17311c8b73a0",
+      "bytes": 1078
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/html-default-navigation.json",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-html-default-navigation-monitor.json",
+      "sha256": "d933e5e035a225e877903a59fdd3c3d2aa530758efa26be394a7ea8b0e6366cc",
+      "bytes": 2034
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-default-1/html-default-navigation.log",
+      "committed": "agent/evidence/20261029-cpu30-004/custom-html-default-navigation.log",
+      "sha256": "07ecb55eca81d4d5bce93949142637a214263a057a2ee283c41e7e6126efca4f",
+      "bytes": 9163
+    },
+    {
+      "source": "out/lume-20261029-cpu30/textcodec-fatal-red-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/textcodec-fatal-red-1-summary.json",
+      "sha256": "a25731bb44b87156ecdb8a7480e6fa9af1f600bfb0c5dfd7de80996f1e928839",
+      "bytes": 9453
+    },
+    {
+      "source": "out/lume-20261029-cpu30/textcodec-fatal-patch-1/receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-004/textcodec-fatal-patch-1-receipt.json",
+      "sha256": "78918a04dc157ab8ef418494b3cd7dd2fa15b69e19ac19546c393d9cefc9ae63",
+      "bytes": 1341
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-codec-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/native-codec-1-summary.json",
+      "sha256": "d2a626e9b21f3ac9f80af80d15f4fdef7d410232e8c34ee8697cee5f1c584c04",
+      "bytes": 32629
+    },
+    {
+      "source": "out/lume-20261029-cpu30/fatal-stream-interop-3/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/fatal-stream-interop-3-summary.json",
+      "sha256": "9c4aeadbcb4c2bd72f8566d828d10827245da1556fdea277c1ee91703264b7e9",
+      "bytes": 65886
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-default-policy-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/html-default-policy-1-summary.json",
+      "sha256": "6bcc9db7ae226036c4c0abfcf573c776a6ad490aecd97225bb18c6298a5ec75e",
+      "bytes": 26312
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-default-policy-utf16-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/html-default-policy-utf16-1-summary.json",
+      "sha256": "86d0d2986a40f1833ed3699b336a992fc355234b1273dd0fd13ea2517258b2f4",
+      "bytes": 8019
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-default-red-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/html-default-red-1-summary.json",
+      "sha256": "d7285521bdae430f451620e4ebc17182a8b35aabc2e52cac3ea1b51aa00b468e",
+      "bytes": 18687
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-default-boundary-red-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/html-default-boundary-red-1-summary.json",
+      "sha256": "589d99a842dbab0d067e9cd86b1299921cebb0e091b3dd50e6dce9a2bc132dbb",
+      "bytes": 1940
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-default-boundary-red-2/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/html-default-boundary-red-2-summary.json",
+      "sha256": "51971bd27d23e4031c6009c1e7f7099b36fcc5d50261814826c53194b81964bf",
+      "bytes": 1948
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-default-patch-1/receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-004/html-default-patch-1-receipt.json",
+      "sha256": "31e6aaa7ecdc24242a194d882254401b14c67c26b2b395bb0ac84e2709e7682c",
+      "bytes": 2513
+    },
+    {
+      "source": "out/lume-20261029-cpu30/html-default-isolation-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/independent1251-isolation.json",
+      "sha256": "cd89a688c2884e91d13d8add91557ff2aa6c0835cc8b245853a279b34f235b87",
+      "bytes": 9628
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/fixed103-summary.json",
+      "sha256": "5e62f98e4a1879466043443f95e327ab0c66c0ee1743b920c0f5b8afcc196a10",
+      "bytes": 12520
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-default-1/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/broad279-summary.json",
+      "sha256": "426b8689390455c148de5984464a9f10d54d39cce937224c86a75fb537d1e176",
+      "bytes": 31284
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-default-1/cohort-before.json",
+      "committed": "agent/evidence/20261029-cpu30-004/fixed103-before-expansion.json",
+      "sha256": "58f78aa0c92e080697417bc02dac718ec8ea4e064f6a8471f62bfcd2dbb01531",
+      "bytes": 9384
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/original-six-receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-004/original-six-receipt.json",
+      "sha256": "c277f9563c2365fed2f2d56a14926522bd98a46b29e9c13e008dfeee2587768a",
+      "bytes": 1275
+    },
+    {
+      "source": "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task20261029-cpu30-compat-default-1-3ad884713a4aa896/wpt-report.json",
+      "committed": "agent/evidence/20261029-cpu30-004/original-six-raw.json",
+      "sha256": "7de9b9b157a03fbce60250dc3be6aa9ab1d0ca844b26c7befa5c270cd82bf938",
+      "bytes": 299997
+    },
+    {
+      "source": "out/lume-20261029-cpu30/paired-chrome279-default-audit.json",
+      "committed": "agent/evidence/20261029-cpu30-004/paired-chrome279.json",
+      "sha256": "c6f68025a631288714fba8d241a1d315a6090652429764339d2515d572692206",
+      "bytes": 16600
+    },
+    {
+      "source": "out/lume-20261029-cpu30/paired-chrome103-default-audit.json",
+      "committed": "agent/evidence/20261029-cpu30-004/paired-chrome103.json",
+      "sha256": "ef81993ce5fc39b38bfeae3cccecc28fbdf4e3d1be688c3db151e7403706ebc1",
+      "bytes": 10184
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/cohort.json",
+      "committed": "agent/evidence/20261029-cpu30-004/frozen-cohort-plan.json",
+      "sha256": "17c9e5ae95f54d7aebb189dddd850584c8b49e9b0ddb0b27f52ca8a7f583eb5b",
+      "bytes": 1106602
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/encoding-core/run.json",
+      "committed": "agent/evidence/20261029-cpu30-004/encoding-core-run.json",
+      "sha256": "122b172e753171549f170c86bfdad00725d2b70ac9603a8e865ebc16c9208175",
+      "bytes": 14967
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/encoding-core/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-004/encoding-core-schedule.json",
+      "sha256": "67ac39bf9bfe7cc8a2a7a9316cbee264c6bf5782dd36d4af9a1e65611507084e",
+      "bytes": 44730
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/encoding-core/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-004/encoding-core-results.jsonl",
+      "sha256": "32553a3eb568a2a0febc47e0bb44c4b412ceb2355c636b28784720a71e740753",
+      "bytes": 2455027
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/encoding-core/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/encoding-core-summary.json",
+      "sha256": "9605e91422260f04ef51c30bfc2786e6cb0cc610ae24fb81ed0f59f6417f9aae",
+      "bytes": 2020
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/encoding-streams/run.json",
+      "committed": "agent/evidence/20261029-cpu30-004/encoding-streams-run.json",
+      "sha256": "fa9843d96b5c0c1509960722ee7040ea141a918b5393faf0241657de6c81104c",
+      "bytes": 11988
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/encoding-streams/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-004/encoding-streams-schedule.json",
+      "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "bytes": 10971
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/encoding-streams/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-004/encoding-streams-results.jsonl",
+      "sha256": "f25a717605813f65387b394a0bfa636259b660beee89ad1f9e6e1d7e0ac75b07",
+      "bytes": 101655
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/encoding-streams/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/encoding-streams-summary.json",
+      "sha256": "2f22b13c5ac3f958442a6d1a65aeec269ef6e0c0290807376fcab1707b902ee4",
+      "bytes": 1862
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/dom/run.json",
+      "committed": "agent/evidence/20261029-cpu30-004/dom-run.json",
+      "sha256": "f4f80245df82905598be9935616df5473fa22ce5c3dc46b59110eb860214a9de",
+      "bytes": 11298
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/dom/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-004/dom-schedule.json",
+      "sha256": "90a94ec5fea249cfa78a39b39fafaa83f0d076b56644924c5f72790665e270be",
+      "bytes": 3187
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/dom/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-004/dom-results.jsonl",
+      "sha256": "4dae4b9f0d4aee7fb7de3ae4ba09c20e0c2524c5f80f1441d01667c07c60bbf3",
+      "bytes": 143632
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/dom/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/dom-summary.json",
+      "sha256": "94dcfadc5d07be82b3b5f0aad922aa2bc63c59b4611ef0f6f76fb97fc1104ed5",
+      "bytes": 2014
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/events/run.json",
+      "committed": "agent/evidence/20261029-cpu30-004/events-run.json",
+      "sha256": "feaf39f76b42f565b5581af3f04974912b52fdbd9af3b77f21b25b7441c18730",
+      "bytes": 11457
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/events/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-004/events-schedule.json",
+      "sha256": "c9c1c2e46a30c6ef14a700bc76463ec2411f1771afda7681344fd7d5e65cb3b7",
+      "bytes": 4670
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/events/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-004/events-results.jsonl",
+      "sha256": "542ed3a04541e6fcc05b54b6181a7e548d7ec3d514d2ba015e6a9a43b00bac02",
+      "bytes": 44060
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/events/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/events-summary.json",
+      "sha256": "0e8c35ef5ae81628ffd18a3cf178c16c4a4265a154143ce57ef0d7d8b73b39ab",
+      "bytes": 1858
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/url/run.json",
+      "committed": "agent/evidence/20261029-cpu30-004/url-run.json",
+      "sha256": "475cbb15a8e626190b2b2f982a248bebed0f2969b8c9fec81d87f9be423e033f",
+      "bytes": 14463
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/url/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-004/url-schedule.json",
+      "sha256": "c4e44f2d5a5eaa7ed66c834f506ca484bd73ff6d3f7e77b27cf7f2337ef23132",
+      "bytes": 25515
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/url/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-004/url-results.jsonl",
+      "sha256": "b2c029d45291ce7f13d2a92f33ebf68b28dd0769e486fd47ad24cc373e059c6d",
+      "bytes": 1452236
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/url/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/url-summary.json",
+      "sha256": "1f184662b00d446a53f498c8360567f350a89db2c4c9c6088d29c43d48a789e1",
+      "bytes": 2016
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/storage/run.json",
+      "committed": "agent/evidence/20261029-cpu30-004/storage-run.json",
+      "sha256": "37dbde69f4e11efd922e4b530f84497304e698184252de9859538fc7b743af80",
+      "bytes": 10839
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/storage/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-004/storage-schedule.json",
+      "sha256": "723fca15a68d3d61c26604fb5c55f26615e639da5f7b888f6bd79f8fae403c9d",
+      "bytes": 1490
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/storage/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-004/storage-results.jsonl",
+      "sha256": "811fdb84b000712f9deb8a4201b45ad6c0207f38e14ad0acb32818542718332d",
+      "bytes": 101448
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/storage/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/storage-summary.json",
+      "sha256": "a63bd445f14a7b76bc2a03e5c8880e9a0415c4b9bc6ecccabd96776abb3ae8a6",
+      "bytes": 1854
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/microtasks/run.json",
+      "committed": "agent/evidence/20261029-cpu30-004/microtasks-run.json",
+      "sha256": "b52a41fac1b3fa5265da65705494d0455cb4311e00dfb81d84934d2e3f57e20b",
+      "bytes": 11340
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/microtasks/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-004/microtasks-schedule.json",
+      "sha256": "eda081ad150c45a430ade8649a55bf454eff67bac460df798efc90dd947c2177",
+      "bytes": 3593
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/microtasks/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-004/microtasks-results.jsonl",
+      "sha256": "d605e0a8e755dea05bb9134b4e9b244333f8e24d453f385972faa9e876319d77",
+      "bytes": 24512
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/microtasks/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/microtasks-summary.json",
+      "sha256": "596988fb40e03b64ac811f4b1e94a17c350e87716b8216b6ddd0a37921e001a0",
+      "bytes": 1986
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/headers/run.json",
+      "committed": "agent/evidence/20261029-cpu30-004/headers-run.json",
+      "sha256": "9cb34fafe597855d6dfeb9595d00df90138d55006e7f2dc016f749f81f0f3ac6",
+      "bytes": 13899
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/headers/schedule.json",
+      "committed": "agent/evidence/20261029-cpu30-004/headers-schedule.json",
+      "sha256": "1db7998184521c0b6928d41468874a4c77db98c26feedc407ae7bcf8324e8a17",
+      "bytes": 21365
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/headers/results.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-004/headers-results.jsonl",
+      "sha256": "f39c2eaf15e48d61845a246c5a7cd514842a763c6b208fdd38e52722b03e0318",
+      "bytes": 174137
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/cohort/headers/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/headers-summary.json",
+      "sha256": "450f9356f9ebc4127761f003aedbcc46feae5306ed4b86ff9f83a74ea4bda7c3",
+      "bytes": 2032
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/prepare.json",
+      "committed": "agent/evidence/20261029-cpu30-004/fixed103-prepare-monitor.json",
+      "sha256": "c2e33680a80dd6bdcf0a969e842ada6d3defe0d4a6fb4d41644c9f7f31aa0da7",
+      "bytes": 2005
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/original-six.json",
+      "committed": "agent/evidence/20261029-cpu30-004/fixed103-original-six-monitor.json",
+      "sha256": "04e97040fa2acc59785ca8e4ad183f69b18542f526385b196fc655d3716c0626",
+      "bytes": 2037
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/encoding-core.json",
+      "committed": "agent/evidence/20261029-cpu30-004/fixed103-encoding-core-monitor.json",
+      "sha256": "f1f212eca66c8b1485d585ceb9fc379a39f886fe4d94736904af869742672556",
+      "bytes": 2040
+    },
+    {
+      "source": "out/lume-20261029-cpu30/compat-default-1/encoding-streams.json",
+      "committed": "agent/evidence/20261029-cpu30-004/fixed103-encoding-streams-monitor.json",
+      "sha256": "362b9e1838bf599b5fdbebe69dceeb398b3c56720e6773dd4241af815ad0a6cf",
+      "bytes": 2035
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-default-1/dom-1.json",
+      "committed": "agent/evidence/20261029-cpu30-004/broad-dom-1-monitor.json",
+      "sha256": "e4928c27ab13b8cb63faea6e0d9683dc24b877f90bb8ec84c1ee78378ced36a8",
+      "bytes": 2026
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-default-1/events-1.json",
+      "committed": "agent/evidence/20261029-cpu30-004/broad-events-1-monitor.json",
+      "sha256": "0c1cb68c53a5300225fa3be6ecb2851b0ef5e9723e48fe48aaf8bdfdee439a87",
+      "bytes": 2030
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-default-1/url-1.json",
+      "committed": "agent/evidence/20261029-cpu30-004/broad-url-1-monitor.json",
+      "sha256": "387e0a7ec7539fc6ff4998de974d1e620b4fec1199ee80b670539c74bc780d47",
+      "bytes": 2040
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-default-1/storage-1.json",
+      "committed": "agent/evidence/20261029-cpu30-004/broad-storage-1-monitor.json",
+      "sha256": "1fdbd2b4b0cb31c7b6044e6ed9c88aa391b545c2737dd005a9e00047eb33d116",
+      "bytes": 2028
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-default-1/microtasks-1.json",
+      "committed": "agent/evidence/20261029-cpu30-004/broad-microtasks-1-monitor.json",
+      "sha256": "f209637fe502c443508bc2f7ef88d894f670cceae90dd2ffb6d9b39084157272",
+      "bytes": 2033
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-default-1/headers-1.json",
+      "committed": "agent/evidence/20261029-cpu30-004/broad-headers-1-monitor.json",
+      "sha256": "459d5bf0d27ed48440e5bd7ea0f9f95ce9b27b1f37abf47f2f6f5476c2e71469",
+      "bytes": 2036
+    },
+    {
+      "source": "out/lume-20261029-cpu30/priority-expansion-default-1/headers-2.json",
+      "committed": "agent/evidence/20261029-cpu30-004/broad-headers-2-monitor.json",
+      "sha256": "7884522ccde401d755308d4d8e59bd3aacbe2c7ec470debb60b6d140b97c8044",
+      "bytes": 2036
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-2/summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/native-resource-summary.json",
+      "sha256": "21bd42350a65b07b62243cbe93f32213a98cdfbaf9d6a4b79af7c9d80ad578d1",
+      "bytes": 9202
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-2/scroll/receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-004/scroll-receipt.json",
+      "sha256": "db2bc7e18f3e358e7c6d5d8356cf9455faaf0a0fd132f701710ac7f897ab7947",
+      "bytes": 13133
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-2/scroll/process-summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/scroll-process-summary.json",
+      "sha256": "d5b1d1d1a86e4ab2d8fd11e82afa9c8629323d0c4c6f7528da2b94f8251314ed",
+      "bytes": 3408
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-2/scroll/process-samples.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-004/scroll-process-samples.jsonl",
+      "sha256": "b8d4f3299fac888b90061404a69a28860c80629472e3a1457717d44ab7d63316",
+      "bytes": 72811
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-2/navigation/receipt.json",
+      "committed": "agent/evidence/20261029-cpu30-004/navigation-receipt.json",
+      "sha256": "0291ff69baf2856727b712cbe581bdf05314058e445505ace1d5acdc9602bc2c",
+      "bytes": 23814
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-2/navigation/process-summary.json",
+      "committed": "agent/evidence/20261029-cpu30-004/navigation-process-summary.json",
+      "sha256": "d27895e0b211cdaa7e237420a61f5e0666a99a1debccacef5abe030a69216e44",
+      "bytes": 4009
+    },
+    {
+      "source": "out/lume-20261029-cpu30/native-resources-2/navigation/process-samples.jsonl",
+      "committed": "agent/evidence/20261029-cpu30-004/navigation-process-samples.jsonl",
+      "sha256": "e8f394b13a844c6de6fcce75da1f51dc1800b8e239b44d18f33481b22f5daae0",
+      "bytes": 103868
+    }
+  ],
+  "archivedSupersededSources": [
+    {
+      "oldPath": "tests/test_html_default_policy.c",
+      "archive": "agent/evidence/20261029-cpu30-004/superseded21-byte-policy-red.c",
+      "sha256": "f55f5320f9d2069d7cec4d9b230e91e05dde91343de6bdc76a4ab447c68ea915"
+    },
+    {
+      "oldPath": "tools/apple-session-gpt6as/run_html_default_boundary_red_cpu30.py",
+      "archive": "agent/evidence/20261029-cpu30-004/superseded21-byte-policy-red-worker.py",
+      "sha256": "6ae18dc1223824e02416ae893db90895dc6e47575ddd70f932f33c7854cc1c8b"
+    },
+    {
+      "oldPath": "tools/apple-session-gpt6as/run_json_document_red_cpu30.py",
+      "archive": "agent/evidence/20261029-cpu30-004/rejected-json-red1-worker.py",
+      "sha256": "9bb948da254b089adfc15ed3d2b3f0ee439c4d10da5c3b2284ecaf7b2211880c"
+    }
+  ],
+  "publicFinalSourceRefreshRequired": true
+}
