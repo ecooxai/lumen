@@ -1,34 +1,60 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Final validation complete; source release and feedback recovery in progress",
+  "phase": "Session finished; verified candidate 200 source and showcase published",
   "iteration": 200,
   "score": null,
   "iteration_quality": null,
   "score_note": "Historical 19/100 was not a reproducible current assessment. Selected 640-case full-case pass rate is 59.38/100; no overall score is inferred.",
   "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
   "checkpoint": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
-  "updated_utc": "2026-10-29T20:59:59.447045+00:00",
+  "updated_utc": "2026-10-29T21:14:52.039463+00:00",
   "session_started_utc": "2026-10-29T17:25:47Z",
   "deadline_utc": "2026-10-29T21:25:47Z",
-  "current_evidence": "Final candidate 200: +23 full cases and +251 semantic assertion passes versus 176, zero losses or identity/completion changes. All 640 actual exits and profile cleanups verified. Final 21 performance trials each passed 9,395 checks; native timing ranges overlap.",
+  "current_evidence": [
+    [
+      "Accepted final candidate 200",
+      "380/640 full selected cases and 8,324/10,540 assertions. The same Chromium reference passes 544/640 and 9,516/10,549."
+    ],
+    [
+      "Measured gain from original candidate 176",
+      "23 more full cases and 251 more semantic assertion passes, with zero lost, missing or added identities and no completion/status changes."
+    ],
+    [
+      "Retained focused correctness",
+      "140/140 non-URL native tests; all 14 authored cohorts retained; network 317/317 and upstream forms 647/649."
+    ],
+    [
+      "Final performance qualification",
+      "All 21 trials passed 9,395 checks each. Native timing ranges overlap; no broad speedup is claimed. All owned profiles and processes were cleaned."
+    ],
+    [
+      "Published release provenance",
+      "Tested production a4c26feb maps to public export 3b9a6a5f. The final source archive, embedded Git bundle, report and native showcase are published and verified."
+    ]
+  ],
   "coverage": "Frozen selected 640 HTTP/window cases; URL conformance deferred. Chromium: 544/640 full cases and 9,516/10,549 assertions. This is not the complete WPT suite.",
-  "findings": "Accepted source remains a4c26feb. Remaining large gaps include CSS values, sizing, grid, DOM parsing, variables and flex. Actual Lumen hardware rendering and ordinary desktop-close behavior remain unverified.",
+  "findings": [
+    "The requested 98/100 whole-browser goal was not reached. The 59.38/100 full-case score applies only to the frozen selected 640-case cohort; URL conformance remains deferred.",
+    "The largest remaining Chromium-pass gaps are CSS values, sizing, grid, DOM parsing, variables and flex. Failed provisional candidates 193 and 197 remain documented, with separate verified repairs.",
+    "Actual Lumen hardware rendering and ordinary desktop-close behavior remain unverified. The verified build and media use CPU/offscreen rendering.",
+    "The earlier local feedback endpoint remains offline: no verified launch recipe was recovered, and reduced-privilege isolation for a safe help query was unavailable. Its authentication state was left unchanged. The current Ruby telemetry page remains live."
+  ],
   "active_iteration": 200,
   "accepted_binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
   "accepted_binary_scope": "Candidate 200, exact final CPU/offscreen Linux build; full selected-cohort and scoped regression validation complete.",
   "agent_session": "active",
-  "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
+  "showcase_url": "https://ecooxai.github.io/lumen/showcase.mp4",
   "candidate_binary_sha256": null,
   "publication_status": "Existing reviewed source and showcase belong to accepted historical build168; a new accepted checkpoint will be identified separately.",
-  "showcase_note": "The34-second4:3 walkthrough uses actual build168 native captures; it is not continuous recording. The live site previews progress, not an online replacement for native Lumen.",
+  "showcase_note": "Actual native candidate 200 CPU/offscreen frames; final published video and poster bytes were independently downloaded and verified.",
   "source_archive_url": "https://ecooxai.github.io/lumen/src.tar.gz",
-  "source_archive_sha256": "bddd9f93afca4d8fbbf036229c1bcbe2f8e20aaec53caf48c73d6f0457458277",
-  "source_archive_bytes": 4451575,
+  "source_archive_sha256": "cb396f9c3dc0a0b7cbb8a59dcaa073f5ce5bf902f54680c6cce317e23322989e",
+  "source_archive_bytes": 9316289,
   "measurement_units": "WPT numbers count reported testharness subtests, not individual assert_* calls. Native CTest entries and custom correctness checks are separate.",
   "clean_demo_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-clean.mp4",
-  "source_archive_scope": "Qualified historical candidate 168 engine-only source snapshot, already public and byte verified. Private task, handoff, runtime, validation payloads and development history are excluded. Its original sanitizer and history-sensitivity qualifications remain unchanged.",
+  "source_archive_scope": "Reviewed candidate 200 source and embedded public Git-history bundle; no portable executable claim.",
   "cloud_snapshot_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-engine-experimental-source-20261029",
-  "session_active": true,
+  "session_active": false,
   "session_id": "20261029-1725",
   "session_deadline_utc": "2026-10-29T21:25:47Z",
   "previous_session_evidence": [
@@ -112,9 +138,9 @@
     "conservative_task_score": 19,
     "readiness_estimate_note": "Historical estimate recorded before this session began at 2026-10-29 17:25:47 UTC; no reproducible formula was recovered. It is not the current assessment."
   },
-  "source_archive_iteration": 168,
-  "source_archive_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
-  "source_archive_note": "Historical candidate 168 download: this legacy route and its original SHA256 are unchanged. The independently reviewed candidate 186 checkpoint is complete and available separately. Neither download contains the later candidate 190 repairs.",
+  "source_archive_iteration": 200,
+  "source_archive_commit": "3b9a6a5fff8b925067a560367cccc00fb8098d67",
+  "source_archive_note": "The current download is audited candidate 200 from GitHub Pages, including its verified Git-history bundle. The older guarded /src.tar.gz on this progress server remains historical candidate 168; candidate 186 and 196 checkpoints are also historical.",
   "fresh_chromium4200": {
     "completed_utc": "2026-10-28T17:36:29Z",
     "fully_passing_variants": 3534,
@@ -125,7 +151,7 @@
     "freshness_note": "Historical previous-session comparator, not a new session 4 replay."
   },
   "source_archive_available": true,
-  "session_response_availability": "Agents check messages during this active work session; no unattended replies are promised after it ends. The verified owner inbox link was supplied privately in chat.",
+  "session_response_availability": "This work session has finished. Messages may remain queued, but replies require a new active session; there are no unattended replies.",
   "selected_wpt": {
     "selected_urls": 4200,
     "native162": {
@@ -379,8 +405,8 @@
     "iteration": 187,
     "state": "build sealed; independent runtime acceptance pending"
   },
-  "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
-  "session_iteration": null,
+  "public_report_url": "https://ecooxai.github.io/lumen/",
+  "session_iteration": 21,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
   "accepted_iteration": 200,
   "accepted_focused_results": {
@@ -964,7 +990,7 @@
       "qualification": "These selected outcomes do not establish that the entire API is absent."
     }
   ],
-  "feedback_polling_closed_utc": "2026-10-29T02:33:19.619605Z",
+  "feedback_polling_closed_utc": "2026-10-29T21:14:52.039463+00:00",
   "previous_session4_evidence": [
     [
       "Measured fixed selection",
@@ -1187,7 +1213,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-29T20:59:59.447045+00:00",
+  "updated_at": "2026-10-29T21:14:52.039463+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1297,7 +1323,7 @@
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   },
   "session6_current": "Candidate 200 is accepted: 380/640 full selected cases, 8,324/10,540 assertions, 251 new assertion passes and no losses versus candidate 176.",
-  "session6_current_summary": "All 140 non-URL native tests and all 14 final authored cohorts are retained. Source release and existing feedback service recovery are in progress.",
+  "session6_current_summary": "Session finished after 229.084 elapsed wall minutes and 21 recorded iterations. Candidate 200 is published; the 98/100 whole-browser goal remains unmet.",
   "overall_assessment": "The 98/100 whole-browser goal is not reached. Measured non-URL progress is reported by scope.",
   "accepted_scope_label": "Selected WPT assertions",
   "accepted_scope_pass": 8324,
@@ -1308,5 +1334,31 @@
     "sha256": "83eaef35f6913e08aed16c7df7756d2b1c6c1f3cf4f4109d08cd1d5de752bcc7",
     "private_site": "https://lumen-linux-gpt6astra-agents-rubywebterm.my-team-8435.chatgpt.site",
     "scope": "692 exact source files plus five metadata files; clean public-history bundle is separately downloadable; no private working history."
+  },
+  "overall_result_label": "98/100 goal unmet",
+  "selected_case_score": 59.375,
+  "source_archive_tested_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+  "final_release": {
+    "source_branch": "gpt-6-astra-release-ops-linux-nonurl-source-20261029",
+    "export_commit": "3b9a6a5fff8b925067a560367cccc00fb8098d67",
+    "pages_commit": "ceb2d0644a4f28bb2ce39bc8426e002d710264c9",
+    "manifest_url": "https://ecooxai.github.io/lumen/release-manifest200.json",
+    "embedded_bundle_sha256": "58197538ef39e7bb751c2db119672dbdd03210dc6ebeba834ffde7797231123b",
+    "video_sha256": "333027d638a26f2ed53eb45173ba59fe7d620c24b32515db7dd016549be71926",
+    "poster_sha256": "b4a1feee4412d0d1c5d1525faf1ce0aa96d0f8644b2f32bd5c947dc2120f21bf",
+    "offline_restore_verified_tracked_paths": 725,
+    "private_working_history_published": false
+  },
+  "session_completed_utc": "2026-10-29T21:14:52.039463+00:00",
+  "final_accounting": {
+    "completed_utc": "2026-10-29T21:14:52.039463+00:00",
+    "elapsed_minutes": 229.084,
+    "session_iterations": 21,
+    "candidate_identities": 20,
+    "failed_provisional_candidates": [
+      193,
+      197
+    ],
+    "tested_source": "a4c26febf736ef6334f05421e1c0d69b24e5a411"
   }
 }

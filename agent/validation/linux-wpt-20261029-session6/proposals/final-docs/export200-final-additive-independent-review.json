@@ -1,0 +1,14 @@
+{
+  "reviewed_utc": "2026-10-29T21:06:57.733936+00:00",
+  "tested_source": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+  "source_manifest_sha256": "a46f2f4f3be33835b63e82ead4721a596ebb84822108d44a2b7d95885ec84a4e",
+  "source_files_previously_verified": 710,
+  "source_set_entries_previously_verified": 642,
+  "additive_file_count": 15,
+  "hashes_and_sizes_match": true,
+  "allowlist_exact": true,
+  "credential_pattern_findings": [],
+  "scope_qualification_reviewed": true,
+  "failed_candidates_and_limits_preserved": true,
+  "approved_for_packaging_and_normal_public_branch_push": true
+}

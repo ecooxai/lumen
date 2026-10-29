@@ -1,0 +1,73 @@
+{
+  "recorded_utc": "2026-10-29T21:14:52.039463+00:00",
+  "session_started_utc": "2026-10-29T17:25:47+00:00",
+  "actual_completion_utc": "2026-10-29T21:14:52.039463+00:00",
+  "elapsed_wall_minutes": 229.083991,
+  "planned_hard_deadline_utc": "2026-10-29T21:25:47+00:00",
+  "actual_session_iterations": {
+    "first": 1,
+    "last": 21,
+    "count": 21,
+    "distinct_candidate_identities": 20,
+    "candidate_range": [
+      181,
+      200
+    ],
+    "recovered_input_candidate": 180,
+    "candidate184_iterations": [
+      4,
+      5
+    ],
+    "failed_provisional_candidates": [
+      193,
+      197
+    ],
+    "thousand_iterations_claimed": false
+  },
+  "agents": [
+    "/root \u2014 project management",
+    "/root/engine_lead \u2014 engine and Git integration",
+    "/root/conformance_qa \u2014 independent validation",
+    "/root/release_ops \u2014 performance and release"
+  ],
+  "model_and_tools": "GPT-6 Astra Pro; same-model built-in subagents; RubyWebterm; Chromium reference",
+  "tested_source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+  "prior_documentation_commit": "49ce4cff93d69286838231d5d30cbdc7589f8037",
+  "private_branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
+  "binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+  "immutable_binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i200",
+  "canonical_binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen",
+  "canonical_copy_same_bytes_different_inode": true,
+  "final_source_set_entries": 642,
+  "post_documentation_source_mismatches": 0,
+  "public_source_export_commit": "3b9a6a5fff8b925067a560367cccc00fb8098d67",
+  "pages_commit": "ceb2d0644a4f28bb2ce39bc8426e002d710264c9",
+  "public_report_url": "https://ecooxai.github.io/lumen/",
+  "source_url": "https://ecooxai.github.io/lumen/src.tar.gz",
+  "source_bytes": 9316289,
+  "source_sha256": "cb396f9c3dc0a0b7cbb8a59dcaa073f5ce5bf902f54680c6cce317e23322989e",
+  "embedded_bundle_sha256": "58197538ef39e7bb751c2db119672dbdd03210dc6ebeba834ffde7797231123b",
+  "offline_restore_verified_tracked_paths": 725,
+  "video_sha256": "333027d638a26f2ed53eb45173ba59fe7d620c24b32515db7dd016549be71926",
+  "poster_sha256": "b4a1feee4412d0d1c5d1525faf1ce0aa96d0f8644b2f32bd5c947dc2120f21bf",
+  "checkpoint_library_id": "libfile_83832d3596c88191a5bb3f681f64948b",
+  "checkpoint_sha256": "1b6b884a55871174501492379dcc4af538883c162bbf8392e0663da2f682422d",
+  "delivery_receipt_library_id": "libfile_74fcd2f86e20819198dc72e4e9fa52db",
+  "delivery_receipt_sha256": "acb4347121945eef9a670867b0535568a23d40f621ab5b2c6d4850985e9f26e3",
+  "final_selected_cases": [
+    380,
+    640
+  ],
+  "final_reported_assertions": [
+    8324,
+    10540
+  ],
+  "semantic_gains_vs176": 251,
+  "semantic_losses_vs176": 0,
+  "selected_case_score_100": 59.375,
+  "overall_goal_98_met": false,
+  "url_conformance_deferred": true,
+  "feedback_listener_restarted": false,
+  "desktop_instance_restarted": false,
+  "unattended_replies_promised": false
+}

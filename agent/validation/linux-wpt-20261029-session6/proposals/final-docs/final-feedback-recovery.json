@@ -1,0 +1,15 @@
+{
+  "recorded_utc": "2026-10-29T21:14:52.039463+00:00",
+  "listener": "Earlier local port 8080 feedback service",
+  "result": "Not restarted: no verified original launch recipe and reduced-privilege isolation unavailable",
+  "permission_metadata_checked": true,
+  "original_state_mode": "root-owned 0700",
+  "key_mode": "root-owned 0600",
+  "original_state_or_key_contents_read": false,
+  "auth_state_modified": false,
+  "public_help_entrypoint_executed": false,
+  "isolation_failure": "EINVAL assigning a new empty scratch directory to UID/GID 65534 in the user namespace",
+  "mixed_profile_restart": "Separately rejected by automatic approval review because it would activate unverified 8080 feedback alongside reviewed 8083 media; not executed",
+  "server_or_auth_implementation_read_or_changed": false,
+  "replacement_server_created": false
+}
