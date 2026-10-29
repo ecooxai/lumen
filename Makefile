@@ -17,9 +17,11 @@ ifeq ($(UNAME),Darwin)
   WGPU_LOCAL_PREFIX := $(CURDIR)/build-deps/wgpu/macos
   WGPU_PREFIX ?= $(if $(wildcard $(WGPU_LOCAL_PREFIX)/manifest.json),$(WGPU_LOCAL_PREFIX),$(BREW)/opt/wgpu-native)
   WGPU_LIBRARY := $(WGPU_PREFIX)/lib/libwgpu_native.dylib
-  DEPS := openssl@3 brotli zstd freetype harfbuzz sdl3 v8 ffmpeg libpng jpeg-turbo webp giflib icu4c
-  INC += -I$(WGPU_PREFIX)/include $(foreach d,$(DEPS),-I$(BREW)/opt/$(d)/include) -I$(BREW)/opt/freetype/include/freetype2 -I$(BREW)/opt/harfbuzz/include/harfbuzz -I$(BREW)/include
-  LIBDIRS := -L$(WGPU_PREFIX)/lib $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib)
+  ICU_PREFIX ?= $(BREW)/opt/icu4c
+  ICU_LIBRARY := $(ICU_PREFIX)/lib/libicuuc.dylib
+  DEPS := openssl@3 brotli zstd freetype harfbuzz sdl3 v8 ffmpeg libpng jpeg-turbo webp giflib
+  INC += -I$(ICU_PREFIX)/include -I$(WGPU_PREFIX)/include $(foreach d,$(DEPS),-I$(BREW)/opt/$(d)/include) -I$(BREW)/opt/freetype/include/freetype2 -I$(BREW)/opt/harfbuzz/include/harfbuzz -I$(BREW)/include
+  LIBDIRS := -L$(ICU_PREFIX)/lib -L$(WGPU_PREFIX)/lib $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib)
   PLATLIBS := -framework Cocoa -framework QuartzCore -framework Metal -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework ScreenCaptureKit
 else
   # Linux: every dependency comes from Homebrew (V8/SDL3/wgpu-native bottles need its glibc + gcc runtime)
@@ -27,9 +29,11 @@ else
   CC := $(BREW)/bin/gcc-16
   CXX := $(BREW)/bin/g++-16
   export PATH := $(BREW)/bin:$(PATH)
-  DEPS := openssl@3 brotli zstd freetype harfbuzz sdl3 v8 wgpu-native ffmpeg libpng jpeg-turbo webp giflib icu4c fontconfig libx11
-  INC += $(foreach d,$(DEPS),-I$(BREW)/opt/$(d)/include) -I$(BREW)/opt/freetype/include/freetype2 -I$(BREW)/opt/harfbuzz/include/harfbuzz -I$(BREW)/include
-  LIBDIRS := -L$(BREW)/opt/v8/libexec -Wl,-rpath,$(BREW)/opt/v8/libexec $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib -Wl,-rpath,$(BREW)/opt/$(d)/lib) -L$(BREW)/lib -Wl,-rpath,$(BREW)/lib
+  ICU_PREFIX ?= $(BREW)/opt/icu4c
+  ICU_LIBRARY := $(ICU_PREFIX)/lib/libicuuc.so
+  DEPS := openssl@3 brotli zstd freetype harfbuzz sdl3 v8 wgpu-native ffmpeg libpng jpeg-turbo webp giflib fontconfig libx11
+  INC += -I$(ICU_PREFIX)/include $(foreach d,$(DEPS),-I$(BREW)/opt/$(d)/include) -I$(BREW)/opt/freetype/include/freetype2 -I$(BREW)/opt/harfbuzz/include/harfbuzz -I$(BREW)/include
+  LIBDIRS := -L$(ICU_PREFIX)/lib -Wl,-rpath,$(ICU_PREFIX)/lib -L$(BREW)/opt/v8/libexec -Wl,-rpath,$(BREW)/opt/v8/libexec $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib -Wl,-rpath,$(BREW)/opt/$(d)/lib) -L$(BREW)/lib -Wl,-rpath,$(BREW)/lib
   PLATLIBS := -lfontconfig -lX11 -lpthread -ldl -lm
 endif
 # iOS / iPadOS (same engine, UIKit shell). PLAT=sim (Simulator), ios (device), cat (Mac Catalyst).
@@ -150,6 +154,20 @@ FORCE_WGPU_CONFIG:
 .PHONY: FORCE_WGPU_CONFIG
 $(BUILD)/src/gpu/gpu.c.o $(BUILD)/src/js/webgpu.cc.o $(BUILD)/tests/test_gpu_present.c.o: $(BUILD)/wgpu-config.txt $(WGPU_LIBRARY)
 endif
+endif
+
+# Native URL normalization may use a pinned ICU independently of V8's bundled
+# data. A prefix change must invalidate its cached object even when source files
+# are unchanged. The iOS toolchain continues to use its matched V8 ICU headers.
+ifeq ($(IOS),)
+$(BUILD)/icu-config.txt: FORCE_ICU_CONFIG
+	@mkdir -p $(dir $@)
+	@printf '%s\n' '$(ICU_PREFIX)' '$(realpath $(ICU_PREFIX))' '$(realpath $(ICU_LIBRARY))' > $@.tmp
+	@cmp -s $@.tmp $@ || mv $@.tmp $@
+	@rm -f $@.tmp
+FORCE_ICU_CONFIG:
+.PHONY: FORCE_ICU_CONFIG
+$(BUILD)/src/base/url.c.o: $(BUILD)/icu-config.txt $(ICU_PREFIX)/include/unicode/uidna.h $(ICU_LIBRARY)
 endif
 
 # Test assertions must remain active even in release builds.
