@@ -1,34 +1,34 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Building192 HTTP ByteString transport repair",
-  "iteration": 192,
+  "phase": "Building193 HTTP cache policy and persistence repair",
+  "iteration": 193,
   "score": null,
   "iteration_quality": null,
   "score_note": "19/100 is a historical estimate without a reproducible formula. Current overall assessment is pending; scoped checks are reported separately.",
   "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
-  "checkpoint": "c21d05e74ba371e168e63fbb6530613e12d0e6d4",
-  "updated_utc": "2026-10-29T19:31:58.500825+00:00",
+  "checkpoint": "169fa10ce64ce297753e7f8cd293744222c51e28",
+  "updated_utc": "2026-10-29T19:37:57.057772+00:00",
   "session_started_utc": "2026-10-29T17:25:47Z",
   "deadline_utc": "2026-10-29T21:25:47Z",
   "current_evidence": [
     [
-      "Candidate191 whole-file scope",
-      "68/68 assertions across3 window/worker clone+publictee files, +28 andzero losses."
+      "Candidate192 wire behavior",
+      "Last-Event-ID window/worker andXHRresponse-header bytes now preserve ByteString values."
     ],
     [
-      "Retained behavior",
-      "Public default tee26/26 still shares object identity; typed Fetch clone branches are independent."
+      "Frozen network scope",
+      "286/317 assertions across22files;31 cumulative gains vs190,zero lost identities;22harnesses andjoinedcleanup complete."
     ],
     [
-      "Authored clone controls",
-      "Separate Chromium API/cancellation fixture deadline remains under diagnosis; raw attempts retained."
+      "Retained controls",
+      "120/120 Headernegative andUTF8body controls;191clone114/114 plus5normative error fields."
     ],
     [
-      "Broad comparison",
-      "Immutable187:368/640 full cases vsChromium544/640;7632/9516 matching Chrome-pass identities retained."
+      "Overall scope",
+      "Broad640 remains immutable187; currentoverall assessment pending."
     ]
   ],
-  "coverage": "Candidate191 whole window/worker clone+tee68/68 (+28,0loss),3harnesses andjoinedcleanup complete. Authored clone reference cancellation diagnostic pending. Broad640 remains immutable187.",
+  "coverage": "Candidate192:286/317 frozen network assertions (+31 vs190:28clone+3wire),0losses;120/120 header/bodycontrols.191authored114/114+5normative retained; Chromiumfunction-chunkstall separately documented.",
   "findings": [
     "Whole-browser parity is not certified. The fixed 640-document non-URL cohort completed on immutable candidate 187 and Chromium; its profile-cleanup audit and the candidate 176 before/after baseline remain separate pending gates.",
     "Three focused upstream form assertions remain after candidate 190: two dynamic validity-selector checks and maxlength editing. Two Chromium validation-message nonpasses in the authored reference remain separately recorded.",
@@ -37,9 +37,9 @@
     "Chromium is faster in the measured CPU DOM, style/layout and grid phases. A separate diagnostic located CSSOM setter overhead; a narrow optimization is awaiting independent semantics and balanced performance checks.",
     "URL conformance remains deferred. Current whole-browser assessment is pending; focused scores are explicitly scoped."
   ],
-  "active_iteration": 192,
-  "accepted_binary_sha256": "504ff22288148d70e17ab3f4070dc2866ef0d99a721100065850fcefe24dcc53",
-  "accepted_binary_scope": "Ruby191 unchanged window/worker Response.clone and public default tee whole files",
+  "active_iteration": 193,
+  "accepted_binary_sha256": "4fd0023a0d2fe1b138de34cef743124a760d4ecbff3bb75d995984553e753714",
+  "accepted_binary_scope": "Ruby192 exact HTTP byte transport plus retained22-file network scope",
   "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
   "candidate_binary_sha256": null,
@@ -406,30 +406,25 @@
   "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "session_iteration": null,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 191,
+  "accepted_iteration": 192,
   "accepted_focused_results": {
-    "upstream_clone_tee": {
-      "pass": 68,
-      "total": 68,
-      "gains": 28,
+    "network_wholefiles": {
+      "pass": 286,
+      "total": 317,
+      "gains_vs190": 31,
       "losses": 0,
-      "files": 3
+      "files": 22
     },
-    "public_tee_retained": {
-      "pass": 26,
-      "total": 26
+    "wire_byte_gains": 3,
+    "header_controls": {
+      "pass": 120,
+      "total": 120
     },
-    "numeric_radio": {
-      "pass": 572,
-      "total": 588
-    },
-    "step_tolerance": {
-      "pass": 96,
-      "total": 96
-    },
-    "forms_upstream": {
-      "pass": 646,
-      "total": 649
+    "clone_controls": {
+      "pass": 114,
+      "total": 114,
+      "normative_pass": 5,
+      "normative_total": 5
     }
   },
   "rejected_session4_iterations": [
@@ -549,7 +544,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 192,
+  "current_candidate": 193,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1335,7 +1330,7 @@
     },
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   },
-  "session6_current": "Source integration complete; independent120 header controls andwholewirefiles pending.",
+  "session6_current": "Reviewed cache source andindependentloopbacktests integrated; frozen22networkgates pending.",
   "session6_current_summary": {
     "accepted_candidate": 184,
     "pending_candidate": 185,
@@ -1359,9 +1354,9 @@
     "updated_utc": "2026-10-29T18:32:11.478100+00:00"
   },
   "overall_assessment": "pending",
-  "accepted_scope_label": "Upstream clone/tee",
-  "accepted_scope_pass": 68,
-  "accepted_scope_total": 68,
+  "accepted_scope_label": "Network22-file assertions",
+  "accepted_scope_pass": 286,
+  "accepted_scope_total": 317,
   "reviewed_source_checkpoint186": {
     "candidate": 186,
     "source_url": "https://2b6886734b41e997.5x7aqstuceku.opentunnel.xyz/src.tar.gz",

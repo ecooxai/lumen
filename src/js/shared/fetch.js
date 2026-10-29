@@ -800,7 +800,7 @@ function fetchNetwork(R, url, ctl, preflight) {
         const finish = () => { if (ctl.cancel === stop) ctl.cancel = null; };
         const stop = () => { if (cancel) cancel(); cancel = null; if (sctl) { try { sctl.error(new TypeError('network error')); } catch (e) {} sctl = null; } finish(); };
         ctl.cancel = stop;
-        cancel = FETCH_NET({ method: preflight ? 'OPTIONS' : R.method, url: url.href.replace(/#.*$/s, ''), headers: headers.flat(), body: preflight ? null : R.body, cookies }, {
+        cancel = FETCH_NET({ method: preflight ? 'OPTIONS' : R.method, url: url.href.replace(/#.*$/s, ''), headers: headers.flat(), body: preflight ? null : R.body, cookies, cache: preflight ? 'no-store' : R.cache }, {
             head(status, statusText, u, hdrs) {
                 if (streamed) return;
                 streamed = true;

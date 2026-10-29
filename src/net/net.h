@@ -22,6 +22,10 @@ typedef struct NetResponse {
     double t_start, t_end;
 } NetResponse;
 
+typedef enum {
+    NET_CACHE_DEFAULT, NET_CACHE_NO_STORE, NET_CACHE_RELOAD, NET_CACHE_NO_CACHE,
+    NET_CACHE_FORCE, NET_CACHE_ONLY
+} NetCacheMode;
 typedef struct NetRequest NetRequest;
 typedef void (*NetDoneFn)(NetRequest *req, NetResponse *resp, void *ud);
 /* streaming callback; called on the main thread with sequential body chunks if set */
@@ -36,6 +40,7 @@ struct NetRequest {
     NetResponse *prepared_response; /* owned local response; uses the same asynchronous work/done queue */
     int max_redirects;     /* 0 = the default (20); -1 = none: a redirect is the response */
     bool no_cookies;
+    NetCacheMode cache_mode; /* private Fetch cache policy; zero is default */
     bool cancelled;
     bool paused;           /* streaming: script's stream is full; the fetching thread stops reading (net_pause) */
     size_t queued;         /* streaming: body bytes handed to net_poll but not yet delivered */
@@ -78,7 +83,8 @@ void net_request_set_fetch_metadata(NetRequest *req, const char *origin, const c
 void net_request_update_fetch_metadata(NetRequest *req, const URL *current_url);
 void net_request_free_fetch_metadata(NetRequest *req);
 /* fetch()'s control pseudo-headers from script, never sent: ":redirect: manual" returns a redirect as the response,
-   ":cookies: omit" neither sends nor stores cookies. Returns false for an ordinary header. */
+   ":cookies: omit" neither sends nor stores cookies; ":cache" selects Fetch cache policy.
+   Returns false for an ordinary header. */
 bool net_request_control(NetRequest *rq, const char *name, const char *value);
 /* Asynchronous: callbacks fire on the thread calling net_poll(). Ownership of req moves to net. */
 uint64_t net_fetch(NetRequest *req);

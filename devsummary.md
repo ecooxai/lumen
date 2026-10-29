@@ -1290,3 +1290,14 @@ Current overall assessment remains pending;19/100 is historical only.
 
 ### Iteration13 / candidate192 — header ByteString source checkpoint
 - Started approximately2026-10-29T19:20:00Z; integrated2026-10-29T19:31:58.500825+00:00. Four reviewed production files add explicit native byte-string helpers for HTTP header/status text. SharedFetch andXHR retain existing>255 andCR/LF/NUL rejection, forbidden-name filtering, joining andbodydecoding. Wire and120control acceptance pending; scoped score pending; overall pending. Agents: engine_lead, conformance_qa.
+
+- Candidate191 additional authored acceptance:114/114 stable freshChromium reference fields across17cases (+31 vs190,0loss), plus5/5 separately normative clone-error fields (+4). Chromium150 isolated function-chunk reference stalls despite bounded timers; preserved as a reference failure rather than changing semantics. All191 authored andwhole-file native cleanups complete.
+
+### Iteration13 / candidate192 — accepted wire and retention scope
+- Completed2026-10-29T19:37:57.057772+00:00; elapsed17.951min; cumulative task132.168min. Source169fa10ce64ce297753e7f8cd293744222c51e28; binary4fd0023a0d2fe1b138de34cef743124a760d4ecbff3bb75d995984553e753714. Build/startup0,61.09s from19:32:17.692803Z to19:33:18.786316Z; all632 recorded source-set entries unchanged, digestc9f2b0be5a352ed48e9a97d638231389a92c89a8c22304b05184b09e4c8f40b7.
+- Frozen22 upstream networkfiles286/317 assertions versus190255/317 (+31 cumulative:28 from191clone and3wire-byte gains),0loss/missing/added,22harnessOK. Chromium315/317 includes2 retained reference failures. Headernegative/bodyUTF8 controls120/120 unchanged. Wire gain identities: Last-Event-ID window+worker andXHRgetResponseHeader rawLatin1. Scoped network score90.22/100;120control score100/100; overall pending. Cohort guards joined cleanly, no owned processes.
+- Build61one-second samples: compiler-treeCPUmedian166.501%,max194.005%,RSSpeak731.795MB,PSSpeak558.046MB; this is compilation evidence underconcurrentwork, not a runtime performance comparison.
+- Candidate192 recorded source set included the already-frozen untracked canonical-size fixture; it is checkpointed now atSHAd9fcdc856283e51d205b336f3e01de1a85ca0ec029c031d9970631248e6f6eb4 without changing its bytes. This qualifies the source-set count separately from committed production inputs.
+
+### Iteration14 / candidate193 — cache policy source checkpoint
+- Prototype began approximately19:27UTC; integrated2026-10-29T19:37:57.057772+00:00. Seven production files andindependent tests/test_http_cache.c; alloldCHECKlines preserved. Adds cache-only hit/miss/stale behavior through privatepolicy, existing cache-mode paths, cachedredirectstatus/reason/body preservation andlegacy1read compatibility. Newlyextended nativehit-counter and frozen22upstream gates pending. Scoped scorepending; overallpending. Agents: engine_lead implementation/integration,conformance_qa independenttests/review.

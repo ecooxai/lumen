@@ -458,7 +458,7 @@ const FETCH_WASM = f => W.wasmResponse(f);
 const FORM_FIRE = () => {};
 const FORM_ENTRIES = () => { throw new TypeError("Failed to construct 'FormData': parameter 1 is not of type 'HTMLFormElement'."); };
 const FETCH_NET = (o, h) => {
-    const id = W.fetchAsync(o.method, o.url, o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit']), o.body,
+    const id = W.fetchAsync(o.method, o.url, o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit', ':cache', o.cache || 'default']), o.body,
         (status, statusText, url, hdrs) => h.head(status, statusText, url, hdrs), ab => h.chunk(ab),
         (status, statusText, url, hdrs, body, err) => h.done(err || null, status, statusText, url, hdrs, body));
     const cancel = () => W.fetchAbort(id);

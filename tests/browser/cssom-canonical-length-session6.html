@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8"><title>Canonical CSS length fast-path controls</title><body><script>
+(async()=>{
+const props=["width","height","block-size","inline-size","min-width","min-height","min-block-size","min-inline-size","max-width","max-height","max-block-size","max-inline-size"];
+const values=["0px","1px","12.5px","0.000001px","999999999.999999px","0.0000001px","1000000000px","01px","1.0px","1e2px","1E-2PX"," +1px ","-1px","-0px","0","5","NaN","Infinity","0PX","auto","initial","calc(1px + 1px)",0,5,NaN,Infinity];
+const rows=[];
+const fields=e=>({value:e.style.getPropertyValue(e.__property),priority:e.style.getPropertyPriority(e.__property),cssText:e.style.cssText,order:Array.from({length:e.style.length},(_,i)=>e.style.item(i)).join("|")});
+for(const prop of props)for(let i=0;i<values.length;i++)for(const api of ["property","setProperty"]){
+const e=document.createElement("div");e.__property=prop;e.style.setProperty("color","red");e.style.setProperty(prop,"7px","important");e.style.setProperty("margin-left","3px");
+let exception="";try{if(api==="property")e.style[prop]=values[i];else e.style.setProperty(prop,values[i]);}catch(x){exception=x.name}
+rows.push({name:prop+"/"+api+"/"+i,values:{...fields(e),exception}});
+}
+for(const prop of ["width","padding-left","margin-left","border-top-width","line-height","--custom"]){
+for(const value of [0,5,"-5px","5","0"]){
+const e=document.createElement("div");e.__property=prop;e.style.setProperty(prop,"7px");e.style.setProperty(prop,value);rows.push({name:"outside-fast-property/"+prop+"/"+typeof value+":"+value,values:fields(e)});
+}
+}
+for(const prop of ["width","min-inline-size","padding-left","--custom"]){
+const e=document.createElement("div");e.__property=prop;let calls=0;const value={toString(){calls++;return"12px"}};e.style.setProperty(prop,value);rows.push({name:"coercion/"+prop,values:{...fields(e),calls}});
+}
+{
+const e=document.createElement("div");e.style.cssText="color:red;width:7px!important;margin-left:3px;--raw: 001px";const observer=new MutationObserver(()=>{});observer.observe(e,{attributes:true});e.style.setProperty("width","7px","important");const same=observer.takeRecords().length;e.style.setProperty("width","12px","important");const changed=observer.takeRecords().length;e.style.setProperty("width","12px","bad-priority");const invalid=observer.takeRecords().length;rows.push({name:"priority-order-same-value",values:{sameRecords:same,changedRecords:changed,invalidPriorityRecords:invalid,width:e.style.width,priority:e.style.getPropertyPriority("width"),raw:e.style.getPropertyValue("--raw"),cssText:e.style.cssText,order:Array.from({length:e.style.length},(_,i)=>e.style.item(i)).join("|")}});observer.disconnect();
+}
+const total=rows.reduce((n,r)=>n+Object.keys(r.values).length,0);const raw=JSON.stringify({documentMode:document.compatMode,rows,total});const count=Math.ceil(raw.length/256);for(let i=0;i<count;i++)console.log("LUMEN_AUTHORED_CHUNK "+i+" "+JSON.stringify(raw.slice(i*256,(i+1)*256)));console.log("LUMEN_AUTHORED_DONE "+count);console.log("RESULTS CSSOM_CANONICAL_LENGTH_OBSERVATIONS:PASS");
+})().catch(e=>console.log("RESULTS CSSOM_CANONICAL_LENGTH_OBSERVATIONS:FAIL "+e.stack));
+</script></body>

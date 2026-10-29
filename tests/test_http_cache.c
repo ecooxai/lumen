@@ -74,6 +74,59 @@ static bool disk_free_of(const char *dir, const char *needle) {
     return clean;
 }
 
+
+/* Independent Fetch policy probes use the existing loopback hit counter.
+ * Returning the whole response also verifies persisted redirect metadata. */
+static NetResponse *policy_get(const char *path, NetCacheMode mode, const char *header,
+                               const char *response, int redirects, int *hits) {
+    char url[128]; snprintf(url, sizeof url, "%s%s", g_base, path);
+    g_response = response; g_request[0] = 0;
+    int before = __atomic_load_n(&g_hits, __ATOMIC_SEQ_CST);
+    NetRequest *request = net_request_new("GET", url);
+    request->no_cookies = true; request->cache_mode = mode; request->max_redirects = redirects;
+    if (header) {
+        const char *colon = strchr(header, ':'); char name[64]; CHECK(colon);
+        snprintf(name, sizeof name, "%.*s", (int)(colon - header), header);
+        headers_add(&request->headers, name, colon + 2);
+    }
+    NetResponse *r = net_fetch_sync(request); CHECK(r);
+    *hits = __atomic_load_n(&g_hits, __ATOMIC_SEQ_CST) - before;
+    return r;
+}
+static bool response_is(NetResponse *r, int status, const char *reason, const char *body) {
+    bool ok = r && !r->error && r->status == status && r->status_text &&
+              !strcmp(r->status_text, reason) && r->body && !strcmp(r->body, body);
+    net_response_free(r); return ok;
+}
+static bool cache_miss_is(NetResponse *r) {
+    bool ok = r && r->error && r->status == 0;
+    net_response_free(r); return ok;
+}
+/* Convert one newly written200 entry to the documented legacy1 layout.
+ * The URL hash and header/body data are preserved; no internal key is assumed. */
+static bool make_legacy_one(const char *dir, const char *body_marker) {
+    DIR *d = opendir(dir); CHECK(d); int rewritten = 0;
+    for (struct dirent *e; (e = readdir(d));) {
+        if (e->d_name[0] == '.') continue;
+        char path[512]; snprintf(path, sizeof path, "%s/%s", dir, e->d_name);
+        FILE *f = fopen(path, "rb"); CHECK(f);
+        char buf[65536]; size_t n = fread(buf, 1, sizeof buf - 1, f); fclose(f); buf[n] = 0;
+        size_t marker_len = strlen(body_marker);
+        if (n < marker_len || memcmp(buf + n - marker_len, body_marker, marker_len)) continue;
+        CHECK(!strncmp(buf, "LUMENCACHE 2\n", strlen("LUMENCACHE 2\n")));
+        char *stored = strchr(buf, '\n') + 1;
+        char *status = strchr(stored, '\n'); CHECK(status); ++status;
+        char *reason = strchr(status, '\n'); CHECK(reason); ++reason;
+        char *after_reason = strchr(reason, '\n'); CHECK(after_reason); ++after_reason;
+        size_t removed = (size_t)(after_reason - reason);
+        memmove(reason, after_reason, n - (size_t)(after_reason - buf));
+        n -= removed; *(strchr(buf, ' ') + 1) = '1';
+        f = fopen(path, "wb"); CHECK(f); CHECK(fwrite(buf, 1, n, f) == n); CHECK(fclose(f) == 0);
+        ++rewritten;
+    }
+    closedir(d); return rewritten == 1;
+}
+
 int main(void) {
     alarm(20);
     char dir[] = "/tmp/lumen-http-cache-XXXXXX";
@@ -123,9 +176,64 @@ int main(void) {
     CHECK(has(get("POST", "/post", NULL, OK() "\r\nP1", &hits), "P1") && hits == 1);
     CHECK(has(get("GET", "/post", NULL, fresh, &hits), "A1") && hits == 1);
 
-    /* without validators or freshness nothing is kept */
+    /* default mode does not reuse an entry without validators or freshness */
     CHECK(has(get("GET", "/plain", NULL, OK() "\r\nF1", &hits), "F1") && hits == 1);
     CHECK(has(get("GET", "/plain", NULL, OK() "\r\nF2", &hits), "F2") && hits == 1);
+
+
+    /* An only-if-cached miss must not contact even an available server. */
+    const char *offline = "HTTP/1.1 500 Must Not Reach Network\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+    CHECK(cache_miss_is(policy_get("/policy-miss", NET_CACHE_ONLY, NULL, offline, -1, &hits)) && hits == 0);
+
+    /* Explicit cache modes may reuse a stale entry without validators. */
+    const char *stale_plain = OK() "Cache-Control: max-age=0\r\n\r\nS1";
+    CHECK(response_is(policy_get("/policy-stale", NET_CACHE_DEFAULT, NULL, stale_plain, -1, &hits), 200, "OK", "S1") && hits == 1);
+    CHECK(response_is(policy_get("/policy-stale", NET_CACHE_ONLY, NULL, offline, -1, &hits), 200, "OK", "S1") && hits == 0);
+    CHECK(response_is(policy_get("/policy-stale", NET_CACHE_FORCE, NULL, offline, -1, &hits), 200, "OK", "S1") && hits == 0);
+    CHECK(response_is(policy_get("/policy-stale", NET_CACHE_DEFAULT, NULL, OK() "Cache-Control: max-age=0\r\n\r\nS2", -1, &hits), 200, "OK", "S2") && hits == 1);
+
+    /* no-store bypasses an old entry and leaves it intact; a new response is not stored. */
+    CHECK(response_is(policy_get("/policy-no-store-old", NET_CACHE_DEFAULT, NULL, fresh, -1, &hits), 200, "OK", "A1") && hits == 1);
+    CHECK(response_is(policy_get("/policy-no-store-old", NET_CACHE_NO_STORE, NULL, OK() "Cache-Control: max-age=600\r\n\r\nN1", -1, &hits), 200, "OK", "N1") && hits == 1);
+    CHECK(strstr(g_request, "Cache-Control: no-cache") && strstr(g_request, "Pragma: no-cache"));
+    CHECK(response_is(policy_get("/policy-no-store-old", NET_CACHE_ONLY, NULL, offline, -1, &hits), 200, "OK", "A1") && hits == 0);
+    CHECK(response_is(policy_get("/policy-no-store-new", NET_CACHE_NO_STORE, NULL, fresh, -1, &hits), 200, "OK", "A1") && hits == 1);
+    CHECK(cache_miss_is(policy_get("/policy-no-store-new", NET_CACHE_ONLY, NULL, offline, -1, &hits)) && hits == 0);
+
+    /* reload bypasses lookup but replaces the stored response. */
+    CHECK(response_is(policy_get("/policy-reload", NET_CACHE_DEFAULT, NULL, fresh, -1, &hits), 200, "OK", "A1") && hits == 1);
+    CHECK(response_is(policy_get("/policy-reload", NET_CACHE_RELOAD, NULL, OK() "Cache-Control: max-age=600\r\n\r\nR2", -1, &hits), 200, "OK", "R2") && hits == 1);
+    CHECK(response_is(policy_get("/policy-reload", NET_CACHE_ONLY, NULL, offline, -1, &hits), 200, "OK", "R2") && hits == 0);
+
+    /* no-cache validates even a fresh entry and returns the merged200 body. */
+    const char *fresh_etag = OK() "Cache-Control: max-age=600\r\nETag: \"policy-v1\"\r\n\r\nV1";
+    CHECK(response_is(policy_get("/policy-validate", NET_CACHE_DEFAULT, NULL, fresh_etag, -1, &hits), 200, "OK", "V1") && hits == 1);
+    CHECK(response_is(policy_get("/policy-validate", NET_CACHE_NO_CACHE, NULL, "HTTP/1.1 304 Not Modified\r\nCache-Control: max-age=600\r\nConnection: close\r\n\r\n", -1, &hits), 200, "OK", "V1") && hits == 1);
+    CHECK(strstr(g_request, "If-None-Match: \"policy-v1\"") && strstr(g_request, "Cache-Control: max-age=0"));
+    CHECK(response_is(policy_get("/policy-validate", NET_CACHE_ONLY, NULL, offline, -1, &hits), 200, "OK", "V1") && hits == 0);
+
+    /* Version1 files remain readable after the version2 writer is introduced. */
+    CHECK(response_is(policy_get("/policy-legacy", NET_CACHE_DEFAULT, NULL, "HTTP/1.1 200 OK\r\nContent-Length: 7\r\nCache-Control: max-age=600\r\nConnection: close\r\n\r\nLEGACY1", -1, &hits), 200, "OK", "LEGACY1") && hits == 1);
+    CHECK(make_legacy_one(dir, "LEGACY1"));
+    CHECK(response_is(policy_get("/policy-legacy", NET_CACHE_ONLY, NULL, offline, -1, &hits), 200, "OK", "LEGACY1") && hits == 0);
+
+    /* Version2 preserves a cached redirect's reason, Location and body. */
+    const char *redirect = "HTTP/1.1 302 QA Redirect\r\nContent-Length: 2\r\nCache-Control: max-age=600\r\nLocation: /policy-target\r\nConnection: close\r\n\r\nD2";
+    CHECK(response_is(policy_get("/policy-target", NET_CACHE_DEFAULT, NULL, OK() "Cache-Control: max-age=600\r\n\r\nT1", -1, &hits), 200, "OK", "T1") && hits == 1);
+    CHECK(response_is(policy_get("/policy-redirect", NET_CACHE_DEFAULT, NULL, redirect, -1, &hits), 302, "QA Redirect", "D2") && hits == 1);
+    NetResponse *cached_redirect = policy_get("/policy-redirect", NET_CACHE_ONLY, NULL, offline, -1, &hits);
+    CHECK(hits == 0 && headers_get(&cached_redirect->headers, "location") && !strcmp(headers_get(&cached_redirect->headers, "location"), "/policy-target"));
+    CHECK(response_is(cached_redirect, 302, "QA Redirect", "D2"));
+    CHECK(response_is(policy_get("/policy-redirect", NET_CACHE_ONLY, NULL, offline, 2, &hits), 200, "OK", "T1") && hits == 0);
+    const char *redirect_miss = "HTTP/1.1 302 QA Missing Target\r\nContent-Length: 2\r\nCache-Control: max-age=600\r\nLocation: /policy-never-cached\r\nConnection: close\r\n\r\nD3";
+    CHECK(response_is(policy_get("/policy-redirect-miss", NET_CACHE_DEFAULT, NULL, redirect_miss, -1, &hits), 302, "QA Missing Target", "D3") && hits == 1);
+    CHECK(cache_miss_is(policy_get("/policy-redirect-miss", NET_CACHE_ONLY, NULL, offline, 2, &hits)) && hits == 0);
+
+    /* Cache-only does not bypass the existing Authorization or Vary isolation. */
+    CHECK(cache_miss_is(policy_get("/asset.js?token=secret-query", NET_CACHE_ONLY, "Authorization: Bearer secret-token", offline, -1, &hits)) && hits == 0);
+    CHECK(cache_miss_is(policy_get("/vary", NET_CACHE_ONLY, "X-Secret: never-selected", offline, -1, &hits)) && hits == 0);
+    CHECK(disk_free_of(dir, "secret-query") && disk_free_of(dir, "secret-cookie") &&
+          disk_free_of(dir, "secret-token") && disk_free_of(dir, "vary-value"));
 
     puts("http cache: ok");
     return 0;

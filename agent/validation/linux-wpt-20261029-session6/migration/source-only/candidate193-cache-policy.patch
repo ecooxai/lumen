@@ -1,0 +1,425 @@
+diff --git a/src/js/prelude/07b-net.js b/src/js/prelude/07b-net.js
+index 935c2c0..2de639a 100644
+--- a/src/js/prelude/07b-net.js
++++ b/src/js/prelude/07b-net.js
+@@ -129,7 +129,7 @@ function fileFetchOk(url) {
+ }
+ const FETCH_NET = (o, h) => {
+     if (/^file:/i.test(o.url) && !fileFetchOk(o.url)) { setTimeout(() => h.done('blocked', 0, '', o.url, [], null)); return () => {}; }
+-    const flat = o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit']);
++    const flat = o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit', ':cache', o.cache || 'default']);
+     const id = N.fetch(o.method, o.url, flat, o.body, (status, statusText, url, hdrs, body, err) => h.done(err || null, status, statusText, url, hdrs, body),
+         (status, statusText, url, hdrs) => h.head(status, statusText, url, hdrs), ab => h.chunk(ab));
+     const cancel = () => N.abort(id);
+diff --git a/src/js/shared/fetch.js b/src/js/shared/fetch.js
+index d610a1d..46afb52 100644
+--- a/src/js/shared/fetch.js
++++ b/src/js/shared/fetch.js
+@@ -800,7 +800,7 @@ function fetchNetwork(R, url, ctl, preflight) {
+         const finish = () => { if (ctl.cancel === stop) ctl.cancel = null; };
+         const stop = () => { if (cancel) cancel(); cancel = null; if (sctl) { try { sctl.error(new TypeError('network error')); } catch (e) {} sctl = null; } finish(); };
+         ctl.cancel = stop;
+-        cancel = FETCH_NET({ method: preflight ? 'OPTIONS' : R.method, url: url.href.replace(/#.*$/s, ''), headers: headers.flat(), body: preflight ? null : R.body, cookies }, {
++        cancel = FETCH_NET({ method: preflight ? 'OPTIONS' : R.method, url: url.href.replace(/#.*$/s, ''), headers: headers.flat(), body: preflight ? null : R.body, cookies, cache: preflight ? 'no-store' : R.cache }, {
+             head(status, statusText, u, hdrs) {
+                 if (streamed) return;
+                 streamed = true;
+diff --git a/src/js/worker.cc b/src/js/worker.cc
+index 3afea2e..f00adc7 100644
+--- a/src/js/worker.cc
++++ b/src/js/worker.cc
+@@ -458,7 +458,7 @@ const FETCH_WASM = f => W.wasmResponse(f);
+ const FORM_FIRE = () => {};
+ const FORM_ENTRIES = () => { throw new TypeError("Failed to construct 'FormData': parameter 1 is not of type 'HTMLFormElement'."); };
+ const FETCH_NET = (o, h) => {
+-    const id = W.fetchAsync(o.method, o.url, o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit']), o.body,
++    const id = W.fetchAsync(o.method, o.url, o.headers.concat([':redirect', 'manual', ':cookies', o.cookies ? 'include' : 'omit', ':cache', o.cache || 'default']), o.body,
+         (status, statusText, url, hdrs) => h.head(status, statusText, url, hdrs), ab => h.chunk(ab),
+         (status, statusText, url, hdrs, body, err) => h.done(err || null, status, statusText, url, hdrs, body));
+     const cancel = () => W.fetchAbort(id);
+diff --git a/src/net/cache.c b/src/net/cache.c
+index 2dda4e8..ab84f39 100644
+--- a/src/net/cache.c
++++ b/src/net/cache.c
+@@ -127,7 +127,8 @@ static bool storable_header(const Header *h) {
+ }
+ 
+ /* ---- entry file: text head, then the body ----
+- * LUMENCACHE 1 / stored lifetime age / status / url check / vary lines / header lines / body length */
++ * LUMENCACHE 2 / stored lifetime age / status / status text / url check / vary / headers / body length.
++ * Version1 entries remain readable with their historical200/OK status text. */
+ typedef struct {
+     double stored, lifetime, age; int status;
+     Headers vary;    /* request header values this response was selected by */
+@@ -135,12 +136,13 @@ typedef struct {
+ } Entry;
+ 
+ static bool write_entry(const char *url, const Entry *e) {
++    if (e->r->status_text && strpbrk(e->r->status_text, "\r\n")) return false;
+     char path[1024], tmp[1100]; entry_path(path, sizeof path, url);
+     pthread_mutex_lock(&g_mu); unsigned seq = ++g_seq; pthread_mutex_unlock(&g_mu);
+     snprintf(tmp, sizeof tmp, "%s~%u.%u", path, (unsigned)getpid(), seq);
+     SB b; sb_init(&b);
+-    sb_printf(&b, "LUMENCACHE 1\n%.0f %.0f %.0f\n%d\n%016llx\n%d\n", e->stored, e->lifetime, e->age, e->status,
+-        (unsigned long long)url_check(url), e->vary.n);
++    sb_printf(&b, "LUMENCACHE 2\n%.0f %.0f %.0f\n%d\n%s\n%016llx\n%d\n", e->stored, e->lifetime, e->age, e->status,
++        e->r->status_text ? e->r->status_text : "", (unsigned long long)url_check(url), e->vary.n);
+     for (int i = 0; i < e->vary.n; i++) sb_printf(&b, "%s\t%s\n", e->vary.v[i].name, e->vary.v[i].value);
+     int nh = 0; for (int i = 0; i < e->r->headers.n; i++) nh += storable_header(&e->r->headers.v[i]);
+     sb_printf(&b, "%d\n", nh);
+@@ -191,17 +193,20 @@ static bool read_entry(const char *url, Entry *e) {
+     buf[n] = 0;
+     int nv = 0, nh = 0; size_t blen = 0;
+     char check[24]; snprintf(check, sizeof check, "%016llx", (unsigned long long)url_check(url));
+-    ok = ok && (s = line(&p, end)) && !strcmp(s, "LUMENCACHE 1") &&
++    bool version2 = false; char *status_text = NULL;
++    ok = ok && (s = line(&p, end)) &&
++        (!strcmp(s, "LUMENCACHE 1") || (version2 = !strcmp(s, "LUMENCACHE 2"))) &&
+         (s = line(&p, end)) && sscanf(s, "%lf %lf %lf", &e->stored, &e->lifetime, &e->age) == 3 &&
+-        (s = line(&p, end)) && sscanf(s, "%d", &e->status) == 1 &&
+-        (s = line(&p, end)) && !strcmp(s, check) &&
++        (s = line(&p, end)) && sscanf(s, "%d", &e->status) == 1;
++    if (ok && version2) ok = (status_text = line(&p, end)) != NULL;
++    ok = ok && (s = line(&p, end)) && !strcmp(s, check) &&
+         (s = line(&p, end)) && sscanf(s, "%d", &nv) == 1;
+     for (int i = 0; ok && i < nv; i++) ok = read_pair(&p, end, &e->vary);
+     if (ok) { e->r = xcalloc(1, sizeof *e->r); ok = (s = line(&p, end)) && sscanf(s, "%d", &nh) == 1; }
+     for (int i = 0; ok && i < nh; i++) ok = read_pair(&p, end, &e->r->headers);
+     ok = ok && (s = line(&p, end)) && sscanf(s, "%zu", &blen) == 1 && blen == (size_t)(end - p);
+     if (ok) {
+-        e->r->status = e->status; e->r->status_text = xstrdup("OK"); e->r->url = xstrdup(url);
++        e->r->status = e->status; e->r->status_text = xstrdup(status_text ? status_text : "OK"); e->r->url = xstrdup(url);
+         e->r->body = xmalloc(blen + 1); memcpy(e->r->body, p, blen); e->r->body[blen] = 0; e->r->body_len = blen;
+         e->r->t_start = e->r->t_end = now_ms();
+     }
+@@ -224,6 +229,11 @@ static bool vary_matches(const Headers *vary, const Headers *req) {
+ }
+ 
+ NetResponse *http_cache_lookup(const char *url, const Headers *req, bool *fresh, Headers *cond) {
++    return http_cache_lookup_mode(url, req, false, false, fresh, cond);
++}
++
++NetResponse *http_cache_lookup_mode(const char *url, const Headers *req, bool allow_stale,
++                                  bool force_validate, bool *fresh, Headers *cond) {
+     *fresh = false;
+     if (!g_dir || request_uncacheable(req)) return NULL;
+     Entry e;
+@@ -231,8 +241,8 @@ NetResponse *http_cache_lookup(const char *url, const Headers *req, bool *fresh,
+     if (!vary_matches(&e.vary, req)) { entry_free(&e); return NULL; }
+     double now = (double)time(NULL), age = e.age + fmax(0, now - e.stored);
+     CacheControl rc = cache_control(req);
+-    *fresh = !rc.no_cache && rc.max_age != 0 && age < e.lifetime;
+-    if (!*fresh) {
++    *fresh = !force_validate && !rc.no_cache && rc.max_age != 0 && age < e.lifetime;
++    if (!*fresh && !allow_stale) {
+         const char *etag = headers_get(&e.r->headers, "etag"), *modified = headers_get(&e.r->headers, "last-modified");
+         if (!etag && !modified) { entry_free(&e); return NULL; }
+         for (int i = 0; i < req->n; i++) headers_add(cond, req->v[i].name, req->v[i].value);
+@@ -252,7 +262,6 @@ static void store(const char *url, const Headers *req, const NetResponse *r, dou
+     if (vary && strchr(vary, '*')) return;
+     Entry e = { .stored = now, .status = r->status, .r = (NetResponse *)r };
+     freshness(&r->headers, now, &e.lifetime, &e.age);
+-    if (e.lifetime <= e.age && !headers_get(&r->headers, "etag") && !headers_get(&r->headers, "last-modified")) return;
+     for (const char *p = vary; p && *p;) {
+         while (*p == ' ' || *p == ',') p++;
+         size_t n = strcspn(p, ", ");
+@@ -264,7 +273,10 @@ static void store(const char *url, const Headers *req, const NetResponse *r, dou
+ }
+ 
+ void http_cache_store(const char *url, const Headers *req, const NetResponse *r) {
+-    if (!g_dir || r->status != 200 || r->error || r->body_len > CACHE_MAX_BODY || request_uncacheable(req)) return;
++    bool status_ok = r->status == 200 || r->status == 301 || r->status == 308;
++    if (r->status == 302 || r->status == 303 || r->status == 307)
++        status_ok = cache_control(&r->headers).max_age >= 0 || headers_get(&r->headers, "expires");
++    if (!g_dir || !status_ok || r->error || r->body_len > CACHE_MAX_BODY || request_uncacheable(req)) return;
+     store(url, req, r, (double)time(NULL));
+ }
+ 
+diff --git a/src/net/cache.h b/src/net/cache.h
+index 546e4a8..eacbcc2 100644
+--- a/src/net/cache.h
++++ b/src/net/cache.h
+@@ -1,4 +1,4 @@
+-/* Private HTTP cache on disk (RFC 9111 subset): complete 200 responses to GET,
++/* Private HTTP cache on disk (RFC 9111 subset): complete GET responses and cacheable redirects,
+  * one variant per URL, keyed by hashes (URLs are not stored), revalidated with
+  * ETag / Last-Modified when stale. */
+ #ifndef LUMEN_NET_CACHE_H
+@@ -9,6 +9,9 @@ bool http_cache_enabled(void);
+ /* Cached response for a GET, or NULL. *fresh: usable without contacting the server.
+  * When stale, cond receives a copy of req plus the validators to send. */
+ NetResponse *http_cache_lookup(const char *url, const Headers *req, bool *fresh, Headers *cond);
++/* Fetch modes can explicitly permit stale reuse or require validation. */
++NetResponse *http_cache_lookup_mode(const char *url, const Headers *req, bool allow_stale,
++                                  bool force_validate, bool *fresh, Headers *cond);
+ /* Stores a complete response if its headers allow it. */
+ void http_cache_store(const char *url, const Headers *req, const NetResponse *r);
+ /* Merges a 304 into the cached response (consumed) and returns it as the result. */
+diff --git a/src/net/http.c b/src/net/http.c
+index 3f9de79..1f5b253 100644
+--- a/src/net/http.c
++++ b/src/net/http.c
+@@ -663,7 +663,8 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
+ #endif
+     r->status = status;
+     bool redirect = status >= 300 && status < 400 && status != 304 && headers_get(&r->headers, "location");
+-    bool streaming = t_stream && !redirect;
++    /* A304 is merged with a stored response before it becomes observable. */
++    bool streaming = t_stream && !redirect && status != 304;
+     Dec dec = {0};
+     NetRequest *sinkreq = t_sink;
+     bool sinking = false;
+@@ -970,7 +971,7 @@ static NetResponse *net_fetch_impl(NetRequest *req) {
+     return net_fetch_impl2(req, &cs);
+ #endif
+ }
+-/* cache_state: F fresh hit, R revalidated, S stored, M miss not stored, - uncacheable */
++/* cache_state: F reused hit, R revalidated, S storage considered, M miss not stored, - uncacheable */
+ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
+     if (str_istarts(req->url, "data:")) return data_url(req->url);
+     char *url = xstrdup(req->url);
+@@ -978,6 +979,16 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
+     const char *body = req->body; size_t blen = req->body_len;
+     int redirects = req->max_redirects < 0 ? 0 : req->max_redirects ? req->max_redirects : 20;
+     NetResponse *r = NULL;
++    if (req->cache_mode == NET_CACHE_DEFAULT &&
++        (headers_get(&req->headers, "if-modified-since") || headers_get(&req->headers, "if-none-match") ||
++         headers_get(&req->headers, "if-unmodified-since") || headers_get(&req->headers, "if-match") ||
++         headers_get(&req->headers, "if-range"))) req->cache_mode = NET_CACHE_NO_STORE;
++    if (req->cache_mode == NET_CACHE_NO_CACHE && !headers_get(&req->headers, "cache-control"))
++        headers_add(&req->headers, "Cache-Control", "max-age=0");
++    if (req->cache_mode == NET_CACHE_NO_STORE || req->cache_mode == NET_CACHE_RELOAD) {
++        if (!headers_get(&req->headers, "pragma")) headers_add(&req->headers, "Pragma", "no-cache");
++        if (!headers_get(&req->headers, "cache-control")) headers_add(&req->headers, "Cache-Control", "no-cache");
++    }
+     for (;;) {
+         URL u;
+         if (!url_parse(url, &u)) { r = xcalloc(1, sizeof *r); r->error = xstrdup("invalid url"); break; }
+@@ -986,19 +997,24 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
+         net_request_update_fetch_metadata(req, &u);
+         /* Streamed fetches deliver the live response head and body to script as they arrive. */
+         bool get = !strcmp(method, "GET") && !body;
+-        bool cacheable = get && !req->on_head && http_cache_enabled() && !headers_get(&req->headers, "range");
++        bool cacheable = get && !req->on_head && http_cache_enabled() && !headers_get(&req->headers, "range") && req->cache_mode != NET_CACHE_NO_STORE;
++        bool allow_stale = req->cache_mode == NET_CACHE_FORCE || req->cache_mode == NET_CACHE_ONLY;
++        bool force_validate = req->cache_mode == NET_CACHE_NO_CACHE;
++        bool lookup = cacheable && req->cache_mode != NET_CACHE_RELOAD;
+         Headers cond = {0}; bool fresh = false;
+-        NetResponse *cached = cacheable ? http_cache_lookup(url, &req->headers, &fresh, &cond) : NULL;
+-        /* a streamed fetch uses only fresh entries: a 304 would reach script as its response head */
+-        if (cached && !fresh && t_stream) { net_response_free(cached); cached = NULL; headers_free(&cond); }
+-        if (cached && fresh) { r = cached; url_free(&u); *cache_state = 'F'; break; }
++        NetResponse *cached = lookup ? http_cache_lookup_mode(url, &req->headers, allow_stale, force_validate, &fresh, &cond) : NULL;
++        if (cached && (fresh || allow_stale)) { r = cached; headers_free(&cond); *cache_state = 'F'; goto response_ready; }
++        if (req->cache_mode == NET_CACHE_ONLY) {
++            headers_free(&cond); net_response_free(cached); url_free(&u);
++            r = xcalloc(1, sizeof *r); r->error = xstrdup("cache miss"); break;
++        }
+         uint64_t fly = 0;
+-        if (cacheable && !t_stream && !fly_begin(fly = fly_hash(url))) {   /* a stream may never end: nobody waits for it */
++        if (lookup && !t_stream && !fly_begin(fly = fly_hash(url))) {   /* a stream may never end: nobody waits for it */
+             /* another thread just fetched it: use what it stored, else fetch as usual */
+             fly = 0;
+             headers_free(&cond); net_response_free(cached);
+-            cached = http_cache_lookup(url, &req->headers, &fresh, &cond);
+-            if (cached && fresh) { r = cached; url_free(&u); *cache_state = 'F'; break; }
++            cached = http_cache_lookup_mode(url, &req->headers, allow_stale, force_validate, &fresh, &cond);
++            if (cached && (fresh || allow_stale)) { r = cached; headers_free(&cond); *cache_state = 'F'; goto response_ready; }
+             if (!fly_begin(fly = fly_hash(url))) fly = 0;
+         }
+         const Headers *hdrs = cached ? &cond : &req->headers;
+@@ -1013,12 +1029,16 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
+         else {
+             net_response_free(cached);
+             if (cacheable) *cache_state = 'M';
+-            if (cacheable && r->status == 200) { http_cache_store(url, &req->headers, r); *cache_state = 'S'; }
++            if (cacheable) { http_cache_store(url, &req->headers, r); *cache_state = 'S'; }
+             else if (!get && strcmp(method, "HEAD") && strcmp(method, "OPTIONS") && r->status >= 200 && r->status < 400) http_cache_invalidate(url);
+-            if (t_stream) { free(r->body); r->body = NULL; r->body_len = 0; }   /* script got the body as chunks */
++            if (t_stream && r->status != 304 &&
++                !(r->status >= 300 && r->status < 400 && headers_get(&r->headers, "location"))) {
++                free(r->body); r->body = NULL; r->body_len = 0; /* script got the body as chunks */
++            }
+         }
+         if (fly) fly_end(fly);
+         headers_free(&cond);
++response_ready: ;
+         const char *loc = headers_get(&r->headers, "location");
+         if (r->status >= 300 && r->status < 400 && r->status != 304 && loc && redirects-- > 0) {
+             char *nu = url_join(url, loc);
+@@ -1060,6 +1080,11 @@ bool net_request_control(NetRequest *rq, const char *name, const char *value) {
+     if (name[0] != ':') return false;
+     if (!strcmp(name, ":redirect")) rq->max_redirects = !strcmp(value, "manual") ? -1 : 0;
+     else if (!strcmp(name, ":cookies")) rq->no_cookies = !strcmp(value, "omit");
++    else if (!strcmp(name, ":cache")) {
++        static const char *const modes[] = { "default", "no-store", "reload", "no-cache", "force-cache", "only-if-cached" };
++        for (size_t i = 0; i < sizeof modes / sizeof *modes; ++i)
++            if (!strcmp(value, modes[i])) { rq->cache_mode = (NetCacheMode)i; break; }
++    }
+     return true;
+ }
+ 
+diff --git a/src/net/net.h b/src/net/net.h
+index 9de2b9c..25841c8 100644
+--- a/src/net/net.h
++++ b/src/net/net.h
+@@ -22,6 +22,10 @@ typedef struct NetResponse {
+     double t_start, t_end;
+ } NetResponse;
+ 
++typedef enum {
++    NET_CACHE_DEFAULT, NET_CACHE_NO_STORE, NET_CACHE_RELOAD, NET_CACHE_NO_CACHE,
++    NET_CACHE_FORCE, NET_CACHE_ONLY
++} NetCacheMode;
+ typedef struct NetRequest NetRequest;
+ typedef void (*NetDoneFn)(NetRequest *req, NetResponse *resp, void *ud);
+ /* streaming callback; called on the main thread with sequential body chunks if set */
+@@ -36,6 +40,7 @@ struct NetRequest {
+     NetResponse *prepared_response; /* owned local response; uses the same asynchronous work/done queue */
+     int max_redirects;     /* 0 = the default (20); -1 = none: a redirect is the response */
+     bool no_cookies;
++    NetCacheMode cache_mode; /* private Fetch cache policy; zero is default */
+     bool cancelled;
+     bool paused;           /* streaming: script's stream is full; the fetching thread stops reading (net_pause) */
+     size_t queued;         /* streaming: body bytes handed to net_poll but not yet delivered */
+@@ -78,7 +83,8 @@ void net_request_set_fetch_metadata(NetRequest *req, const char *origin, const c
+ void net_request_update_fetch_metadata(NetRequest *req, const URL *current_url);
+ void net_request_free_fetch_metadata(NetRequest *req);
+ /* fetch()'s control pseudo-headers from script, never sent: ":redirect: manual" returns a redirect as the response,
+-   ":cookies: omit" neither sends nor stores cookies. Returns false for an ordinary header. */
++   ":cookies: omit" neither sends nor stores cookies; ":cache" selects Fetch cache policy.
++   Returns false for an ordinary header. */
+ bool net_request_control(NetRequest *rq, const char *name, const char *value);
+ /* Asynchronous: callbacks fire on the thread calling net_poll(). Ownership of req moves to net. */
+ uint64_t net_fetch(NetRequest *req);
+diff --git a/tests/test_http_cache.c b/tests/test_http_cache.c
+index 765a75a..86370e9 100644
+--- a/tests/test_http_cache.c
++++ b/tests/test_http_cache.c
+@@ -74,6 +74,59 @@ static bool disk_free_of(const char *dir, const char *needle) {
+     return clean;
+ }
+ 
++
++/* Independent Fetch policy probes use the existing loopback hit counter.
++ * Returning the whole response also verifies persisted redirect metadata. */
++static NetResponse *policy_get(const char *path, NetCacheMode mode, const char *header,
++                               const char *response, int redirects, int *hits) {
++    char url[128]; snprintf(url, sizeof url, "%s%s", g_base, path);
++    g_response = response; g_request[0] = 0;
++    int before = __atomic_load_n(&g_hits, __ATOMIC_SEQ_CST);
++    NetRequest *request = net_request_new("GET", url);
++    request->no_cookies = true; request->cache_mode = mode; request->max_redirects = redirects;
++    if (header) {
++        const char *colon = strchr(header, ':'); char name[64]; CHECK(colon);
++        snprintf(name, sizeof name, "%.*s", (int)(colon - header), header);
++        headers_add(&request->headers, name, colon + 2);
++    }
++    NetResponse *r = net_fetch_sync(request); CHECK(r);
++    *hits = __atomic_load_n(&g_hits, __ATOMIC_SEQ_CST) - before;
++    return r;
++}
++static bool response_is(NetResponse *r, int status, const char *reason, const char *body) {
++    bool ok = r && !r->error && r->status == status && r->status_text &&
++              !strcmp(r->status_text, reason) && r->body && !strcmp(r->body, body);
++    net_response_free(r); return ok;
++}
++static bool cache_miss_is(NetResponse *r) {
++    bool ok = r && r->error && r->status == 0;
++    net_response_free(r); return ok;
++}
++/* Convert one newly written200 entry to the documented legacy1 layout.
++ * The URL hash and header/body data are preserved; no internal key is assumed. */
++static bool make_legacy_one(const char *dir, const char *body_marker) {
++    DIR *d = opendir(dir); CHECK(d); int rewritten = 0;
++    for (struct dirent *e; (e = readdir(d));) {
++        if (e->d_name[0] == '.') continue;
++        char path[512]; snprintf(path, sizeof path, "%s/%s", dir, e->d_name);
++        FILE *f = fopen(path, "rb"); CHECK(f);
++        char buf[65536]; size_t n = fread(buf, 1, sizeof buf - 1, f); fclose(f); buf[n] = 0;
++        size_t marker_len = strlen(body_marker);
++        if (n < marker_len || memcmp(buf + n - marker_len, body_marker, marker_len)) continue;
++        CHECK(!strncmp(buf, "LUMENCACHE 2\n", strlen("LUMENCACHE 2\n")));
++        char *stored = strchr(buf, '\n') + 1;
++        char *status = strchr(stored, '\n'); CHECK(status); ++status;
++        char *reason = strchr(status, '\n'); CHECK(reason); ++reason;
++        char *after_reason = strchr(reason, '\n'); CHECK(after_reason); ++after_reason;
++        size_t removed = (size_t)(after_reason - reason);
++        memmove(reason, after_reason, n - (size_t)(after_reason - buf));
++        n -= removed; *(strchr(buf, ' ') + 1) = '1';
++        f = fopen(path, "wb"); CHECK(f); CHECK(fwrite(buf, 1, n, f) == n); CHECK(fclose(f) == 0);
++        ++rewritten;
++    }
++    closedir(d); return rewritten == 1;
++}
++
+ int main(void) {
+     alarm(20);
+     char dir[] = "/tmp/lumen-http-cache-XXXXXX";
+@@ -123,10 +176,65 @@ int main(void) {
+     CHECK(has(get("POST", "/post", NULL, OK() "\r\nP1", &hits), "P1") && hits == 1);
+     CHECK(has(get("GET", "/post", NULL, fresh, &hits), "A1") && hits == 1);
+ 
+-    /* without validators or freshness nothing is kept */
++    /* default mode does not reuse an entry without validators or freshness */
+     CHECK(has(get("GET", "/plain", NULL, OK() "\r\nF1", &hits), "F1") && hits == 1);
+     CHECK(has(get("GET", "/plain", NULL, OK() "\r\nF2", &hits), "F2") && hits == 1);
+ 
++
++    /* An only-if-cached miss must not contact even an available server. */
++    const char *offline = "HTTP/1.1 500 Must Not Reach Network\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
++    CHECK(cache_miss_is(policy_get("/policy-miss", NET_CACHE_ONLY, NULL, offline, -1, &hits)) && hits == 0);
++
++    /* Explicit cache modes may reuse a stale entry without validators. */
++    const char *stale_plain = OK() "Cache-Control: max-age=0\r\n\r\nS1";
++    CHECK(response_is(policy_get("/policy-stale", NET_CACHE_DEFAULT, NULL, stale_plain, -1, &hits), 200, "OK", "S1") && hits == 1);
++    CHECK(response_is(policy_get("/policy-stale", NET_CACHE_ONLY, NULL, offline, -1, &hits), 200, "OK", "S1") && hits == 0);
++    CHECK(response_is(policy_get("/policy-stale", NET_CACHE_FORCE, NULL, offline, -1, &hits), 200, "OK", "S1") && hits == 0);
++    CHECK(response_is(policy_get("/policy-stale", NET_CACHE_DEFAULT, NULL, OK() "Cache-Control: max-age=0\r\n\r\nS2", -1, &hits), 200, "OK", "S2") && hits == 1);
++
++    /* no-store bypasses an old entry and leaves it intact; a new response is not stored. */
++    CHECK(response_is(policy_get("/policy-no-store-old", NET_CACHE_DEFAULT, NULL, fresh, -1, &hits), 200, "OK", "A1") && hits == 1);
++    CHECK(response_is(policy_get("/policy-no-store-old", NET_CACHE_NO_STORE, NULL, OK() "Cache-Control: max-age=600\r\n\r\nN1", -1, &hits), 200, "OK", "N1") && hits == 1);
++    CHECK(strstr(g_request, "Cache-Control: no-cache") && strstr(g_request, "Pragma: no-cache"));
++    CHECK(response_is(policy_get("/policy-no-store-old", NET_CACHE_ONLY, NULL, offline, -1, &hits), 200, "OK", "A1") && hits == 0);
++    CHECK(response_is(policy_get("/policy-no-store-new", NET_CACHE_NO_STORE, NULL, fresh, -1, &hits), 200, "OK", "A1") && hits == 1);
++    CHECK(cache_miss_is(policy_get("/policy-no-store-new", NET_CACHE_ONLY, NULL, offline, -1, &hits)) && hits == 0);
++
++    /* reload bypasses lookup but replaces the stored response. */
++    CHECK(response_is(policy_get("/policy-reload", NET_CACHE_DEFAULT, NULL, fresh, -1, &hits), 200, "OK", "A1") && hits == 1);
++    CHECK(response_is(policy_get("/policy-reload", NET_CACHE_RELOAD, NULL, OK() "Cache-Control: max-age=600\r\n\r\nR2", -1, &hits), 200, "OK", "R2") && hits == 1);
++    CHECK(response_is(policy_get("/policy-reload", NET_CACHE_ONLY, NULL, offline, -1, &hits), 200, "OK", "R2") && hits == 0);
++
++    /* no-cache validates even a fresh entry and returns the merged200 body. */
++    const char *fresh_etag = OK() "Cache-Control: max-age=600\r\nETag: \"policy-v1\"\r\n\r\nV1";
++    CHECK(response_is(policy_get("/policy-validate", NET_CACHE_DEFAULT, NULL, fresh_etag, -1, &hits), 200, "OK", "V1") && hits == 1);
++    CHECK(response_is(policy_get("/policy-validate", NET_CACHE_NO_CACHE, NULL, "HTTP/1.1 304 Not Modified\r\nCache-Control: max-age=600\r\nConnection: close\r\n\r\n", -1, &hits), 200, "OK", "V1") && hits == 1);
++    CHECK(strstr(g_request, "If-None-Match: \"policy-v1\"") && strstr(g_request, "Cache-Control: max-age=0"));
++    CHECK(response_is(policy_get("/policy-validate", NET_CACHE_ONLY, NULL, offline, -1, &hits), 200, "OK", "V1") && hits == 0);
++
++    /* Version1 files remain readable after the version2 writer is introduced. */
++    CHECK(response_is(policy_get("/policy-legacy", NET_CACHE_DEFAULT, NULL, "HTTP/1.1 200 OK\r\nContent-Length: 7\r\nCache-Control: max-age=600\r\nConnection: close\r\n\r\nLEGACY1", -1, &hits), 200, "OK", "LEGACY1") && hits == 1);
++    CHECK(make_legacy_one(dir, "LEGACY1"));
++    CHECK(response_is(policy_get("/policy-legacy", NET_CACHE_ONLY, NULL, offline, -1, &hits), 200, "OK", "LEGACY1") && hits == 0);
++
++    /* Version2 preserves a cached redirect's reason, Location and body. */
++    const char *redirect = "HTTP/1.1 302 QA Redirect\r\nContent-Length: 2\r\nCache-Control: max-age=600\r\nLocation: /policy-target\r\nConnection: close\r\n\r\nD2";
++    CHECK(response_is(policy_get("/policy-target", NET_CACHE_DEFAULT, NULL, OK() "Cache-Control: max-age=600\r\n\r\nT1", -1, &hits), 200, "OK", "T1") && hits == 1);
++    CHECK(response_is(policy_get("/policy-redirect", NET_CACHE_DEFAULT, NULL, redirect, -1, &hits), 302, "QA Redirect", "D2") && hits == 1);
++    NetResponse *cached_redirect = policy_get("/policy-redirect", NET_CACHE_ONLY, NULL, offline, -1, &hits);
++    CHECK(hits == 0 && headers_get(&cached_redirect->headers, "location") && !strcmp(headers_get(&cached_redirect->headers, "location"), "/policy-target"));
++    CHECK(response_is(cached_redirect, 302, "QA Redirect", "D2"));
++    CHECK(response_is(policy_get("/policy-redirect", NET_CACHE_ONLY, NULL, offline, 2, &hits), 200, "OK", "T1") && hits == 0);
++    const char *redirect_miss = "HTTP/1.1 302 QA Missing Target\r\nContent-Length: 2\r\nCache-Control: max-age=600\r\nLocation: /policy-never-cached\r\nConnection: close\r\n\r\nD3";
++    CHECK(response_is(policy_get("/policy-redirect-miss", NET_CACHE_DEFAULT, NULL, redirect_miss, -1, &hits), 302, "QA Missing Target", "D3") && hits == 1);
++    CHECK(cache_miss_is(policy_get("/policy-redirect-miss", NET_CACHE_ONLY, NULL, offline, 2, &hits)) && hits == 0);
++
++    /* Cache-only does not bypass the existing Authorization or Vary isolation. */
++    CHECK(cache_miss_is(policy_get("/asset.js?token=secret-query", NET_CACHE_ONLY, "Authorization: Bearer secret-token", offline, -1, &hits)) && hits == 0);
++    CHECK(cache_miss_is(policy_get("/vary", NET_CACHE_ONLY, "X-Secret: never-selected", offline, -1, &hits)) && hits == 0);
++    CHECK(disk_free_of(dir, "secret-query") && disk_free_of(dir, "secret-cookie") &&
++          disk_free_of(dir, "secret-token") && disk_free_of(dir, "vary-value"));
++
+     puts("http cache: ok");
+     return 0;
+ }

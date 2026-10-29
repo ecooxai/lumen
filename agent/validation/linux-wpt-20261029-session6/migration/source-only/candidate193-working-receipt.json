@@ -1,0 +1,29 @@
+{
+  "candidate": 193,
+  "prototype_started_utc": "2026-10-29T19:27:00+00:00",
+  "integration_utc": "2026-10-29T19:37:57.057772+00:00",
+  "base_head": "169fa10ce64ce297753e7f8cd293744222c51e28",
+  "before": {
+    "src/js/prelude/07b-net.js": "4d05e3349a8e226725e5a11f07f272adb8cb96cf3d228f4001394e2634c9722a",
+    "src/js/shared/fetch.js": "9dab9a6d5856280fd3f6022440d2c336e9485262c56edca4402871b464caf671",
+    "src/js/worker.cc": "6172f2a3e3aaec2e2f2206fb69cd58ac289a43f2fbf3d1784916a2713f7e5772",
+    "src/net/cache.c": "7ef28ad92814835351e268e03ed38ae511a5aa0c9f5f3ecebf653e96b85240a4",
+    "src/net/cache.h": "03c70a5a81ddc9718143fbb0e313e0bceb0b4c7b8a10b70441f5324fb06d433c",
+    "src/net/http.c": "a6c8215fa3988fd5c1a6b20b3e4c684b1f79813147d5de9d57d8dadcbdfec907",
+    "src/net/net.h": "355736caad159a762bf31241baef8d33b11274dbe079933494c07868030a8063",
+    "tests/test_http_cache.c": "02c34af66c32674de8b3c2619c82a02446aa1650c405f3de90de125afafb8c98"
+  },
+  "after": {
+    "src/js/prelude/07b-net.js": "54bdd1eb42bf285f049cb4adc4a00a51ac71e83946cdc9720d517140cd08af20",
+    "src/js/shared/fetch.js": "dcdbc049a1487b8cc1e8a06bed71bbf269243e4f1b65a020c8aadacdeb7928de",
+    "src/js/worker.cc": "37b904cef99a72e362086f5559a466b9ba8a623b9d4a52888b500fb51ca78f67",
+    "src/net/cache.c": "0bac5bb1fbeab4705cd4a2a317809d3c0f0d0aa80d40c32c45050a532b3d5936",
+    "src/net/cache.h": "e42f69af92bee5245ef0f18d94e600f256631be4e34fb882ff57b493b163b4f2",
+    "src/net/http.c": "9761b9d9cfd40180c0a65aa5b744bfc7e3ed9b7bab09e6a9a5fc2f795a31068b",
+    "src/net/net.h": "056013127e311faf1861ab581f91d830789102319e0928484cbb1f8a1091231e",
+    "tests/test_http_cache.c": "70cf69e6aef387f6d864eb5a6e5db61c6031a36f942718e0609fe089a67ef999"
+  },
+  "patch_sha256": "16cbd006ada97aff74627a9f4ceb9e82a21f67f5c5902984093ea277f32c7180",
+  "scope": "Carry Fetch cache policy into existing HTTP cache; stale/cache-only reuse, no-network cache miss, explicit default/no-cache/reload/no-store behavior,304 merge before streaming,cacheable redirects and backwards-compatible disk reason-text storage. Origin/credential/Vary andsize-limit logic retained.",
+  "independent_test_sha256": "70cf69e6aef387f6d864eb5a6e5db61c6031a36f942718e0609fe089a67ef999"
+}

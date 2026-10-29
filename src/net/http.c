@@ -663,7 +663,8 @@ static NetResponse *http_once(const char *method, const URL *u, const Headers *h
 #endif
     r->status = status;
     bool redirect = status >= 300 && status < 400 && status != 304 && headers_get(&r->headers, "location");
-    bool streaming = t_stream && !redirect;
+    /* A304 is merged with a stored response before it becomes observable. */
+    bool streaming = t_stream && !redirect && status != 304;
     Dec dec = {0};
     NetRequest *sinkreq = t_sink;
     bool sinking = false;
@@ -970,7 +971,7 @@ static NetResponse *net_fetch_impl(NetRequest *req) {
     return net_fetch_impl2(req, &cs);
 #endif
 }
-/* cache_state: F fresh hit, R revalidated, S stored, M miss not stored, - uncacheable */
+/* cache_state: F reused hit, R revalidated, S storage considered, M miss not stored, - uncacheable */
 static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
     if (str_istarts(req->url, "data:")) return data_url(req->url);
     char *url = xstrdup(req->url);
@@ -978,6 +979,16 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
     const char *body = req->body; size_t blen = req->body_len;
     int redirects = req->max_redirects < 0 ? 0 : req->max_redirects ? req->max_redirects : 20;
     NetResponse *r = NULL;
+    if (req->cache_mode == NET_CACHE_DEFAULT &&
+        (headers_get(&req->headers, "if-modified-since") || headers_get(&req->headers, "if-none-match") ||
+         headers_get(&req->headers, "if-unmodified-since") || headers_get(&req->headers, "if-match") ||
+         headers_get(&req->headers, "if-range"))) req->cache_mode = NET_CACHE_NO_STORE;
+    if (req->cache_mode == NET_CACHE_NO_CACHE && !headers_get(&req->headers, "cache-control"))
+        headers_add(&req->headers, "Cache-Control", "max-age=0");
+    if (req->cache_mode == NET_CACHE_NO_STORE || req->cache_mode == NET_CACHE_RELOAD) {
+        if (!headers_get(&req->headers, "pragma")) headers_add(&req->headers, "Pragma", "no-cache");
+        if (!headers_get(&req->headers, "cache-control")) headers_add(&req->headers, "Cache-Control", "no-cache");
+    }
     for (;;) {
         URL u;
         if (!url_parse(url, &u)) { r = xcalloc(1, sizeof *r); r->error = xstrdup("invalid url"); break; }
@@ -986,19 +997,24 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
         net_request_update_fetch_metadata(req, &u);
         /* Streamed fetches deliver the live response head and body to script as they arrive. */
         bool get = !strcmp(method, "GET") && !body;
-        bool cacheable = get && !req->on_head && http_cache_enabled() && !headers_get(&req->headers, "range");
+        bool cacheable = get && !req->on_head && http_cache_enabled() && !headers_get(&req->headers, "range") && req->cache_mode != NET_CACHE_NO_STORE;
+        bool allow_stale = req->cache_mode == NET_CACHE_FORCE || req->cache_mode == NET_CACHE_ONLY;
+        bool force_validate = req->cache_mode == NET_CACHE_NO_CACHE;
+        bool lookup = cacheable && req->cache_mode != NET_CACHE_RELOAD;
         Headers cond = {0}; bool fresh = false;
-        NetResponse *cached = cacheable ? http_cache_lookup(url, &req->headers, &fresh, &cond) : NULL;
-        /* a streamed fetch uses only fresh entries: a 304 would reach script as its response head */
-        if (cached && !fresh && t_stream) { net_response_free(cached); cached = NULL; headers_free(&cond); }
-        if (cached && fresh) { r = cached; url_free(&u); *cache_state = 'F'; break; }
+        NetResponse *cached = lookup ? http_cache_lookup_mode(url, &req->headers, allow_stale, force_validate, &fresh, &cond) : NULL;
+        if (cached && (fresh || allow_stale)) { r = cached; headers_free(&cond); *cache_state = 'F'; goto response_ready; }
+        if (req->cache_mode == NET_CACHE_ONLY) {
+            headers_free(&cond); net_response_free(cached); url_free(&u);
+            r = xcalloc(1, sizeof *r); r->error = xstrdup("cache miss"); break;
+        }
         uint64_t fly = 0;
-        if (cacheable && !t_stream && !fly_begin(fly = fly_hash(url))) {   /* a stream may never end: nobody waits for it */
+        if (lookup && !t_stream && !fly_begin(fly = fly_hash(url))) {   /* a stream may never end: nobody waits for it */
             /* another thread just fetched it: use what it stored, else fetch as usual */
             fly = 0;
             headers_free(&cond); net_response_free(cached);
-            cached = http_cache_lookup(url, &req->headers, &fresh, &cond);
-            if (cached && fresh) { r = cached; url_free(&u); *cache_state = 'F'; break; }
+            cached = http_cache_lookup_mode(url, &req->headers, allow_stale, force_validate, &fresh, &cond);
+            if (cached && (fresh || allow_stale)) { r = cached; headers_free(&cond); *cache_state = 'F'; goto response_ready; }
             if (!fly_begin(fly = fly_hash(url))) fly = 0;
         }
         const Headers *hdrs = cached ? &cond : &req->headers;
@@ -1013,12 +1029,16 @@ static NetResponse *net_fetch_impl2(NetRequest *req, char *cache_state) {
         else {
             net_response_free(cached);
             if (cacheable) *cache_state = 'M';
-            if (cacheable && r->status == 200) { http_cache_store(url, &req->headers, r); *cache_state = 'S'; }
+            if (cacheable) { http_cache_store(url, &req->headers, r); *cache_state = 'S'; }
             else if (!get && strcmp(method, "HEAD") && strcmp(method, "OPTIONS") && r->status >= 200 && r->status < 400) http_cache_invalidate(url);
-            if (t_stream) { free(r->body); r->body = NULL; r->body_len = 0; }   /* script got the body as chunks */
+            if (t_stream && r->status != 304 &&
+                !(r->status >= 300 && r->status < 400 && headers_get(&r->headers, "location"))) {
+                free(r->body); r->body = NULL; r->body_len = 0; /* script got the body as chunks */
+            }
         }
         if (fly) fly_end(fly);
         headers_free(&cond);
+response_ready: ;
         const char *loc = headers_get(&r->headers, "location");
         if (r->status >= 300 && r->status < 400 && r->status != 304 && loc && redirects-- > 0) {
             char *nu = url_join(url, loc);
@@ -1060,6 +1080,11 @@ bool net_request_control(NetRequest *rq, const char *name, const char *value) {
     if (name[0] != ':') return false;
     if (!strcmp(name, ":redirect")) rq->max_redirects = !strcmp(value, "manual") ? -1 : 0;
     else if (!strcmp(name, ":cookies")) rq->no_cookies = !strcmp(value, "omit");
+    else if (!strcmp(name, ":cache")) {
+        static const char *const modes[] = { "default", "no-store", "reload", "no-cache", "force-cache", "only-if-cached" };
+        for (size_t i = 0; i < sizeof modes / sizeof *modes; ++i)
+            if (!strcmp(value, modes[i])) { rq->cache_mode = (NetCacheMode)i; break; }
+    }
     return true;
 }
 
