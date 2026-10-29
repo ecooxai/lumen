@@ -1,0 +1,15 @@
+{
+  "candidate": 187,
+  "started_utc": "2026-10-29T18:46:15.797790+00:00",
+  "base_head": "3731a114676dc87ffe7bce27bff78235431bd6f5",
+  "before": {
+    "src/js/jsnative.cc": "96cd129690b7f7ebccbaeda77ea899c1b1cf1f6cef9e2da1e34bb355a6a233f0",
+    "src/js/prelude/02-node.js": "adff03116c450fb53d6600ae9ad0383d74db0b430ce1c6aa4daf2a7b6bc1bb8d"
+  },
+  "after": {
+    "src/js/jsnative.cc": "f4fcace5d435b791c47b0878c0b0980a7b51fb98d9b59f1d83023672bc0cc10d",
+    "src/js/prelude/02-node.js": "e6899227e62f3049459995392524e6062417404f9f33073e94d70e5980ca8ea3"
+  },
+  "patch_sha256": "9746c6e0d816e55985a80469110bcbed7089a1376d8999d17fe2915cfd1c12f5",
+  "scope": "Node.removeChild non-nullable argument conversion with private isolate-wide genuine Attr branding; native Node fast path unchanged; no global isNode behavior change; independent32+22 controls pending."
+}

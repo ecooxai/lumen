@@ -1,13 +1,13 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Ruby185 table repair accepted:960/960 fresh fields, retained browser checks unchanged,140/140 non-URL native. Candidate186 form-validity implementation is frozen for build and independent Chromium comparison.",
-  "iteration": 186,
+  "phase": "Ruby186 forms accepted:8127/8127 authored and644/649 upstream, zero losses. Candidate187 Node.removeChild conversion and genuine Attr branding is frozen for independent32+22 controls.",
+  "iteration": 187,
   "score": 19,
   "iteration_quality": 19,
-  "score_note": "19/100 is the inherited whole-browser readiness assessment, not a WPT pass percentage. Focused results below cover named tests only; Chromium parity and the 98/100 goal remain unverified.",
+  "score_note": "19/100 is historical and has no reproducible formula; current overall assessment is pending. Scoped conformance results are numeric.",
   "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
   "checkpoint": "e6b585f01ef5f46e2d4af2cefc180bfc06d1383f",
-  "updated_utc": "2026-10-29T18:36:38.527166+00:00",
+  "updated_utc": "2026-10-29T18:47:12.576675+00:00",
   "session_started_utc": "2026-10-29T17:25:47Z",
   "deadline_utc": "2026-10-29T21:25:47Z",
   "current_evidence": [
@@ -44,7 +44,7 @@
     "URL conformance remains deferred.",
     "Whole-browser goal score 98/100 is not established."
   ],
-  "active_iteration": 186,
+  "active_iteration": 187,
   "accepted_binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
   "accepted_binary_scope": "Immutable build168, qualified experimental acceptance at2026-10-29T02:03:24Z; full-browser sanitizer shutdown remains unproven.",
   "agent_session": "active",
@@ -455,7 +455,7 @@
   "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "session_iteration": 2,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 185,
+  "accepted_iteration": 186,
   "accepted_focused_results": {
     "iteration": 168,
     "normal_native_ctest": [
@@ -593,7 +593,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 186,
+  "current_candidate": 187,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1270,7 +1270,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-29T18:36:38.527166+00:00",
+  "updated_at": "2026-10-29T18:47:12.576675+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1380,23 +1380,26 @@
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   },
   "session6_current": {
-    "candidate": 186,
+    "candidate": 187,
     "state": "source frozen for build",
-    "accepted185": {
-      "table_pass": 960,
-      "table_total": 960,
-      "gained": 456,
-      "lost": 0,
-      "native_pass": 140,
-      "native_total": 140
+    "accepted186": {
+      "authored_pass": 8127,
+      "authored_total": 8127,
+      "authored_gained": 1099,
+      "upstream_pass": 644,
+      "upstream_total": 649,
+      "upstream_gained": 122,
+      "full_files": 19,
+      "total_files": 24,
+      "lost": 0
     },
     "pending": [
-      "186 full build/startup",
-      "312-row form validity fixture",
-      "pinned upstream forms24",
-      "retained browser/native regression gates"
+      "187 full build/startup",
+      "32 removal conversion/mutation checks",
+      "22 genuine/forged/cross-realm branding checks",
+      "broad non-URL WPT comparison"
     ],
-    "overall_score": "unverified; last estimate19/100"
+    "overall_assessment": "pending;19/100 historical only"
   },
   "session6_current_summary": {
     "accepted_candidate": 184,

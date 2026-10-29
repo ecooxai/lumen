@@ -1117,3 +1117,44 @@ is supported by the unchanged pinned upstream WPT and fresh Chromium, with
 ambiguity in current group prose explicitly retained.
 Fresh312-row8127-check oracle and pinned forms24 outcomes remain pending.
 This source checkpoint is not a conformance score. StartUTC:2026-10-29T18:36:38.527166+00:00
+
+
+### Iteration7 / Ruby candidate186 — accepted form-validity repair
+
+Start18:36:38UTC; follow-up fixed performance measurement ended18:45:24UTC;
+8.77minutes including the serial quiet measurement window. Independent
+authored forms oracle7028→8127/8127 (+1099;100/100 focused), and pinned
+upstream forms assertions522→644/649 (+122;99.2296/100),19/24 full files.
+Both joins preserve all identities/expectations with zero lost passes. Five
+upstream failures remain: two validity selectors, detached checked-radio group
+root omission, tiny numerical step precision, and InsertHTML/maxlength emoji.
+The Chromium authored reference has two documented reversed-time-message
+nonpasses; no expectations were changed to accommodate either browser.
+
+Source3731a114676dc87ffe7bce27bff78235431bd6f5; immutable browser
+SHA256124ebb8663e0293d4820de406c0e9d5f976477c2f4d52032526ea0b652232744.
+Build/startup25.10s,618 inputs unchanged digest9bd540cc6fb18cdc30d4e81392d37e4e45b95d0e417747be106a44004cf6441c;
+owned build/monitor drained. The prior185140-entry native result remains
+separately labeled;186's new JS behavior is covered by actual browser gates.
+Ops completed21 fixed performance-v2 trials in97.45s without source changes;
+correctness/resource interpretation is pending its independent review.
+Agents:engine_lead integration;release_ops implementation/performance;
+conformance_qa independent fixtures/upstream;root PM. Total wall time
+17:25:47→18:45:24=79.62minutes. Parallel work is not summed.
+
+Assessment correction:19/100 is a historical estimate without a reproducible
+formula, not the current overall score. Current overall assessment remains
+pending fresh broad, rendering and resource evidence; scoped scores stay numeric.
+
+### Iteration8 / candidate187 — DOM conversion source checkpoint
+
+Start18:46:15UTC. removeChild now separates non-nullable Node argument
+conversion(TypeError) from legitimate non-child membership(NotFoundError).
+Genuine Attr wrappers receive a private isolate-wide brand at creation, so
+cross-realm and prototype-altered attributes retain their Node identity while
+forged public fields/prototypes cannot acquire the brand. The common native
+Node path and globalN.isNode behavior are unchanged. Frozen32 baseline checks
+were24/32 and separate22 branding checks14/22; fresh Chromium passes all54.
+Candidate187 outcomes are pending. New43-case numeric/12-case radio and
+200-field CSSOM declarations are saved for subsequent separate candidates.
+Source checkpointUTC:2026-10-29T18:47:12.576675+00:00
