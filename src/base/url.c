@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <unicode/uidna.h>
 #include "url.h"
+#include "encoding.h"
 #include <ctype.h>
 #include <strings.h>
 
@@ -46,6 +47,7 @@ static bool in_set(unsigned char c, int set) {
 }
 static void pe(SB *b, unsigned char c, int set) { if (in_set(c, set)) sb_printf(b, "%%%02X", c); else sb_putc(b, (char)c); }
 static int hexv(int c) { if (c >= '0' && c <= '9') return c - '0'; c = lc(c); if (c >= 'a' && c <= 'f') return c - 'a' + 10; return -1; }
+static char *url_decode_length(const char *s, size_t n, size_t *length);
 
 static bool ipv6_parse(const char *s, size_t n, uint16_t a[8]) {
     memset(a, 0, 16);
@@ -202,9 +204,11 @@ static char *host_parse(const char *s, size_t n, bool opaque) {
         return sb_take(&o);
     }
     {
-        char *dec = url_decode(s, n); size_t dn = strlen(dec); bool simple = true;
+        size_t dn;
+        /* Percent-decoding may produce NUL. Keep its length until the domain
+         * validation below rejects forbidden bytes instead of accepting a prefix. */
+        char *dec = url_decode_length(s, n, &dn); bool simple = true;
         for (size_t i = 0; i < dn; i++) { unsigned char c = (unsigned char)dec[i]; if (c >= 0x80) simple = false; dec[i] = (char)(c >= 'A' && c <= 'Z' ? c + 32 : c); }
-        if (simple && strstr(dec, "xn--")) simple = false;
         bool ok = simple ? (sb_put(&o, dec, dn), true) : idna_to_ascii(dec, dn, &o);
         free(dec);
         if (!ok || !o.n) goto fail;
@@ -218,20 +222,35 @@ fail:
 }
 
 enum { S_SCHEME_START, S_SCHEME, S_NO_SCHEME, S_SPECIAL_REL_OR_AUTH, S_PATH_OR_AUTH, S_RELATIVE, S_REL_SLASH, S_SPECIAL_AUTH_SLASHES,
-       S_SPECIAL_AUTH_IGNORE, S_AUTHORITY, S_HOST, S_PORT, S_FILE, S_FILE_SLASH, S_FILE_HOST, S_PATH_START, S_PATH, S_OPAQUE, S_QUERY, S_FRAGMENT };
+       S_SPECIAL_AUTH_IGNORE, S_AUTHORITY, S_HOST, S_HOSTNAME, S_PORT, S_FILE, S_FILE_SLASH, S_FILE_HOST, S_PATH_START, S_PATH, S_OPAQUE, S_QUERY, S_FRAGMENT };
 
-static bool parse(const char *raw, const URL *base, URL *u) {
-    memset(u, 0, sizeof *u);
-    size_t a = 0, z = strlen(raw);
-    while (a < z && (unsigned char)raw[a] <= 0x20) a++;
-    while (z > a && (unsigned char)raw[z - 1] <= 0x20) z--;
+/* The URL standard's basic URL parser. ov < 0 parses raw[0..rawn) against base into u; otherwise u is an existing URL that a
+   setter modifies by parsing from state ov ("state override"). */
+static _Thread_local int query_enc;   /* the encoding a document's URLs encode their query in (url_parse_enc) */
+static bool squery_set(unsigned char c) { return in_set(c, PE_SQUERY); }
+
+static bool parse(const char *raw, size_t rawn, const URL *base, URL *u, int ov) {
+    size_t a = 0, z = rawn;
+    if (ov < 0) {
+        memset(u, 0, sizeof *u);
+        while (a < z && (unsigned char)raw[a] <= 0x20) a++;
+        while (z > a && (unsigned char)raw[z - 1] <= 0x20) z--;
+    }
     char *in = xmalloc(z - a + 1); size_t n = 0;
     for (size_t i = a; i < z; i++) if (raw[i] != '\t' && raw[i] != '\n' && raw[i] != '\r') in[n++] = raw[i];
     in[n] = 0;
     SB buf, user, pass, opath, q, f; sb_init(&buf); sb_init(&user); sb_init(&pass); sb_init(&opath); sb_init(&q); sb_init(&f);
-    char *scheme = NULL, *host = NULL; int port = -1; bool opq = false, hq = false, hf = false, at = false, pw = false, br = false, ok = false, sp = false;
+    char *scheme = NULL, *host = NULL; int port = -1; bool opq = false, hq = false, hf = false, at = false, pw = false, br = false, ok = false, fine = false, sp = false;
     Segs path = { 0 };
     int st = S_SCHEME_START;
+    if (ov >= 0) {
+        st = ov; scheme = xstrdup(u->scheme); sp = special(scheme);
+        if (u->userinfo) { const char *c = strchr(u->userinfo, ':'); sb_put(&user, u->userinfo, c ? (size_t)(c - u->userinfo) : strlen(u->userinfo)); if (c) sb_puts(&pass, c + 1); }
+        host = u->host ? xstrdup(u->host) : NULL; port = u->has_port ? u->port : -1;
+        if (u->opaque) { opq = true; sb_puts(&opath, u->path ? u->path : ""); } else segs_from(&path, u->path);
+        if ((hq = u->query != NULL)) sb_puts(&q, u->query);
+        if ((hf = u->fragment != NULL)) sb_puts(&f, u->fragment);
+    }
 #define REM1 (p + 1 < (long)n ? in[p + 1] : -1)
 #define COPY_AUTH() do { if (base->userinfo) { const char *c = strchr(base->userinfo, ':'); sb_put(&user, base->userinfo, c ? (size_t)(c - base->userinfo) : strlen(base->userinfo)); if (c) sb_puts(&pass, c + 1); } \
                          free(host); host = base->host ? xstrdup(base->host) : NULL; port = base->has_port ? base->port : -1; } while (0)
@@ -242,18 +261,27 @@ static bool parse(const char *raw, const URL *base, URL *u) {
         switch (st) {
         case S_SCHEME_START:
             if (c >= 0 && is_alpha(c)) { sb_putc(&buf, (char)lc(c)); st = S_SCHEME; }
-            else { st = S_NO_SCHEME; p--; }
+            else if (ov < 0) { st = S_NO_SCHEME; p--; }
+            else goto done;
             break;
         case S_SCHEME:
             if (c >= 0 && (isalnum(c) || c == '+' || c == '-' || c == '.')) sb_putc(&buf, (char)lc(c));
             else if (c == ':') {
+                if (ov >= 0) {
+                    char *ns = sdup(&buf);
+                    bool keep = special(ns) != sp || ((user.n || pass.n || port >= 0) && !strcmp(ns, "file")) || (!strcmp(scheme, "file") && host && !*host);
+                    if (keep) { free(ns); fine = true; goto done; }
+                    free(scheme); scheme = ns; if (port == url_default_port(scheme)) port = -1;
+                    goto good;
+                }
                 scheme = sdup(&buf); sb_clear(&buf); sp = special(scheme);
                 if (!strcmp(scheme, "file")) st = S_FILE;
                 else if (sp && base && base->scheme && !strcmp(base->scheme, scheme)) st = S_SPECIAL_REL_OR_AUTH;
                 else if (sp) st = S_SPECIAL_AUTH_SLASHES;
                 else if (REM1 == '/') { st = S_PATH_OR_AUTH; p++; }
                 else { opq = true; st = S_OPAQUE; }
-            } else { sb_clear(&buf); st = S_NO_SCHEME; p = -1; }
+            } else if (ov < 0) { sb_clear(&buf); st = S_NO_SCHEME; p = -1; }
+            else goto done;
             break;
         case S_NO_SCHEME:
             if (!base || (base->opaque && c != '#')) goto done;
@@ -304,23 +332,32 @@ static bool parse(const char *raw, const URL *base, URL *u) {
                 p -= (long)buf.n + 1; sb_clear(&buf); st = S_HOST;
             } else sb_putc(&buf, (char)c);
             break;
-        case S_HOST:
-            if (c == ':' && !br) {
-                if (!buf.n) goto done;
-                free(host); host = host_parse(buf.s, buf.n, !sp); if (!host) goto done;
+        case S_HOST: case S_HOSTNAME:
+            if (ov >= 0 && !strcmp(scheme, "file")) { p--; st = S_FILE_HOST; }
+            else if (c == ':' && !br) {
+                if (!buf.n || ov == S_HOSTNAME) goto done;
+                char *parsed_host = host_parse(buf.s, buf.n, !sp); if (!parsed_host) goto done;
+                free(host); host = parsed_host;
                 sb_clear(&buf); st = S_PORT;
             } else if (c == -1 || c == '/' || c == '?' || c == '#' || (sp && c == '\\')) {
                 p--;
                 if (sp && !buf.n) goto done;
-                if (!buf.n && (user.n || pass.n)) goto done;
-                free(host); host = host_parse(buf.s ? buf.s : "", buf.n, !sp); if (!host) goto done;
+                if (ov >= 0 && !buf.n && (user.n || pass.n || port >= 0)) { fine = true; goto done; }
+                char *parsed_host = host_parse(buf.s ? buf.s : "", buf.n, !sp); if (!parsed_host) goto done;
+                free(host); host = parsed_host;
                 sb_clear(&buf); st = S_PATH_START;
+                if (ov >= 0) goto good;
             } else { if (c == '[') br = true; if (c == ']') br = false; sb_putc(&buf, (char)c); }
             break;
         case S_PORT:
             if (c >= '0' && c <= '9') { sb_putc(&buf, (char)c); if (buf.n > 9) { size_t k = 0; while (k < buf.n - 1 && buf.s[k] == '0') k++; if (buf.n - k > 5) goto done; } }
-            else if (c == -1 || c == '/' || c == '?' || c == '#' || (sp && c == '\\')) {
-                if (buf.n) { long v = 0; for (size_t k = 0; k < buf.n; k++) { v = v * 10 + (buf.s[k] - '0'); if (v > 65535) goto done; } port = v == url_default_port(scheme) && sp ? -1 : (int)v; sb_clear(&buf); }
+            else if (c == -1 || c == '/' || c == '?' || c == '#' || (sp && c == '\\') || ov >= 0) {
+                if (buf.n) {
+                    long v = 0; for (size_t k = 0; k < buf.n; k++) { v = v * 10 + (buf.s[k] - '0'); if (v > 65535) goto done; }
+                    port = v == url_default_port(scheme) && sp ? -1 : (int)v; sb_clear(&buf);
+                    if (ov >= 0) goto good;
+                }
+                if (ov >= 0) goto done;
                 st = S_PATH_START; p--;
             } else goto done;
             break;
@@ -351,23 +388,26 @@ static bool parse(const char *raw, const URL *base, URL *u) {
         case S_FILE_HOST:
             if (c == -1 || c == '/' || c == '\\' || c == '?' || c == '#') {
                 p--;
-                if (drive_letter(buf.s ? buf.s : "", buf.n, false)) st = S_PATH;
-                else if (!buf.n) { free(host); host = xstrdup(""); st = S_PATH_START; }
+                if (ov < 0 && drive_letter(buf.s ? buf.s : "", buf.n, false)) st = S_PATH;
+                else if (!buf.n) { free(host); host = xstrdup(""); if (ov >= 0) goto good; st = S_PATH_START; }
                 else {
-                    free(host); host = host_parse(buf.s, buf.n, false); if (!host) goto done;
+                    char *parsed_host = host_parse(buf.s, buf.n, false); if (!parsed_host) goto done;
+                    free(host); host = parsed_host;
                     if (!strcmp(host, "localhost")) { free(host); host = xstrdup(""); }
+                    if (ov >= 0) goto good;
                     sb_clear(&buf); st = S_PATH_START;
                 }
             } else sb_putc(&buf, (char)c);
             break;
         case S_PATH_START:
             if (sp) { st = S_PATH; if (c != '/' && c != '\\') p--; }
-            else if (c == '?') { sb_clear(&q); hq = true; st = S_QUERY; }
-            else if (c == '#') { hf = true; st = S_FRAGMENT; }
+            else if (ov < 0 && c == '?') { sb_clear(&q); hq = true; st = S_QUERY; }
+            else if (ov < 0 && c == '#') { hf = true; st = S_FRAGMENT; }
             else if (c != -1) { st = S_PATH; if (c != '/') p--; }
+            else if (ov >= 0 && !host) segs_push(&path, xstrdup(""));
             break;
         case S_PATH:
-            if (c == -1 || c == '/' || (sp && c == '\\') || c == '?' || c == '#') {
+            if (c == -1 || c == '/' || (sp && c == '\\') || (ov < 0 && (c == '?' || c == '#'))) {
                 char *seg = sdup(&buf); bool slash = c == '/' || (sp && c == '\\');
                 bool dd = !strcmp(seg, "..") || !strcasecmp(seg, ".%2e") || !strcasecmp(seg, "%2e.") || !strcasecmp(seg, "%2e%2e");
                 bool sd = !strcmp(seg, ".") || !strcasecmp(seg, "%2e");
@@ -386,8 +426,9 @@ static bool parse(const char *raw, const URL *base, URL *u) {
             else if (c != -1) pe(&opath, (unsigned char)c, PE_C0);
             break;
         case S_QUERY:
-            if (c == '#' || c == -1) {
-                for (size_t k = 0; k < buf.n; k++) pe(&q, (unsigned char)buf.s[k], sp ? PE_SQUERY : PE_QUERY);
+            if ((ov < 0 && c == '#') || c == -1) {
+                if (query_enc && sp && strcmp(scheme, "ws") && strcmp(scheme, "wss")) enc_percent_encode(query_enc, buf.s, buf.n, squery_set, false, &q);
+                else for (size_t k = 0; k < buf.n; k++) pe(&q, (unsigned char)buf.s[k], sp ? PE_SQUERY : PE_QUERY);
                 sb_clear(&buf);
                 if (c == '#') { hf = true; st = S_FRAGMENT; }
             } else sb_putc(&buf, (char)c);
@@ -397,8 +438,12 @@ static bool parse(const char *raw, const URL *base, URL *u) {
             break;
         }
     }
-    ok = scheme != NULL;
+good:
+    ok = scheme != NULL; fine = true;
 done:
+    /* a setter keeps whatever it changed before it stopped, as the standard's in-place parser does, and returns
+       whether the parser stopped without failure */
+    if (ov >= 0) { ok = true; url_free(u); }
     if (ok) {
         u->scheme = scheme; scheme = NULL;
         u->host = host; host = NULL;
@@ -412,14 +457,74 @@ done:
     }
     free(scheme); free(host); free(in); segs_free(&path);
     sb_free(&buf); sb_free(&user); sb_free(&pass); sb_free(&opath); sb_free(&q); sb_free(&f);
-    return ok;
+    return ov >= 0 ? fine : ok;
 #undef REM1
 #undef COPY_AUTH
 #undef COPY_PATH
 #undef COPY_QUERY
 }
-bool url_parse(const char *in, URL *u) { return parse(in, NULL, u); }
-bool url_resolve(const URL *base, const char *rel, URL *o) { return parse(rel, base, o); }
+bool url_parse(const char *in, URL *u) { return parse(in, strlen(in), NULL, u, -1); }
+bool url_resolve(const URL *base, const char *rel, URL *o) { return parse(rel, strlen(rel), base, o, -1); }
+bool url_parse_n(const char *in, size_t n, const URL *base, URL *o) { return parse(in, n, base, o, -1); }
+bool url_parse_enc(const char *in, size_t n, const URL *base, URL *o, int enc) {
+    query_enc = enc_output(enc < 0 ? 0 : enc);
+    bool ok = parse(in, n, base, o, -1);
+    query_enc = 0;
+    return ok;
+}
+
+static bool cannot_have_credentials(const URL *u) { return !u->host || !*u->host || !strcmp(u->scheme, "file"); }
+static void set_userinfo(URL *u, const char *user, size_t un, const char *pass, size_t pn) {
+    SB b; sb_init(&b); sb_put(&b, user, un);
+    if (pn) { sb_putc(&b, ':'); sb_put(&b, pass, pn); }
+    free(u->userinfo); u->userinfo = b.n ? sb_take(&b) : (sb_free(&b), NULL);
+}
+bool url_set(URL *u, const char *key, const char *v, size_t n) {
+    if (!strcmp(key, "protocol")) {
+        char *s = xmalloc(n + 2); memcpy(s, v, n); s[n] = ':'; s[n + 1] = 0;
+        bool r = parse(s, n + 1, NULL, u, S_SCHEME_START); free(s); return r;
+    }
+    if (!strcmp(key, "username") || !strcmp(key, "password")) {
+        if (cannot_have_credentials(u)) return false;
+        const char *ui = u->userinfo ? u->userinfo : "", *c = strchr(ui, ':');
+        size_t un = c ? (size_t)(c - ui) : strlen(ui);
+        SB e; sb_init(&e); for (size_t i = 0; i < n; i++) pe(&e, (unsigned char)v[i], PE_USER);
+        char *es = sb_take(&e);
+        if (key[0] == 'u') set_userinfo(u, es, strlen(es), c ? c + 1 : "", c ? strlen(c + 1) : 0);
+        else { char *un_s = xstrndup(ui, un); set_userinfo(u, un_s, un, es, strlen(es)); free(un_s); }
+        free(es); return true;
+    }
+    if (!strcmp(key, "host") || !strcmp(key, "hostname")) return !u->opaque && parse(v, n, NULL, u, key[4] ? S_HOSTNAME : S_HOST);
+    if (!strcmp(key, "port")) {
+        if (cannot_have_credentials(u)) return false;
+        if (!n) { u->has_port = false; u->port = url_default_port(u->scheme); return true; }
+        return parse(v, n, NULL, u, S_PORT);
+    }
+    if (!strcmp(key, "pathname")) {
+        if (u->opaque) return false;
+        free(u->path); u->path = xstrdup("");
+        return parse(v, n, NULL, u, S_PATH_START);
+    }
+    if (!strcmp(key, "search") || !strcmp(key, "hash")) {
+        bool qs = key[0] == 's'; char **slot = qs ? &u->query : &u->fragment;
+        if (!n) { free(*slot); *slot = NULL; return true; }
+        if (*v == (qs ? '?' : '#')) { v++; n--; }
+        free(*slot); *slot = xstrdup("");
+        return parse(v, n, NULL, u, qs ? S_QUERY : S_FRAGMENT);
+    }
+    return false;
+}
+
+/* The URL standard's origin, serialized: a tuple origin for http(s)/ws(s)/ftp and blob: URLs wrapping http(s); "null" otherwise */
+char *url_origin_web(const URL *u) {
+    if (!strcmp(u->scheme, "blob")) {
+        URL in; char *r = NULL;
+        if (u->path && url_parse(u->path, &in)) { if (!strcmp(in.scheme, "http") || !strcmp(in.scheme, "https")) r = url_origin_web(&in); url_free(&in); }
+        return r ? r : xstrdup("null");
+    }
+    if (!url_default_port(u->scheme) || !u->host) return xstrdup("null");
+    return url_origin(u);
+}
 char *url_origin(const URL *u) {
     SB b; sb_init(&b);
     if (u->opaque || !u->host) { sb_puts(&b, "null"); return sb_take(&b); }
@@ -456,13 +561,17 @@ char *url_join(const char *base, const char *rel) {
     if (!url_resolve(hb ? &b : NULL, rel, &o)) { if (hb) url_free(&b); return NULL; }
     char *r = url_to_string(&o); url_free(&o); if (hb) url_free(&b); return r;
 }
-char *url_decode(const char *s, size_t n) {
+static char *url_decode_length(const char *s, size_t n, size_t *length) {
     SB b; sb_init(&b);
     for (size_t i = 0; i < n; i++) {
         if (s[i] == '%' && i + 2 < n && hexv((unsigned char)s[i + 1]) >= 0 && hexv((unsigned char)s[i + 2]) >= 0) { sb_putc(&b, (char)(hexv((unsigned char)s[i + 1]) * 16 + hexv((unsigned char)s[i + 2]))); i += 2; }
         else sb_putc(&b, s[i]);
     }
+    if (length) *length = b.n;
     return sb_take(&b);
+}
+char *url_decode(const char *s, size_t n) {
+    return url_decode_length(s, n, NULL);
 }
 char *url_encode_component(const char *s) {
     SB b; sb_init(&b);

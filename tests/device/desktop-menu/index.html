@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Desktop menus</title>
+<style>body{margin:20px;font:16px sans-serif} textarea{width:600px;height:120px;font:16px sans-serif} a{display:block;margin-top:24px}</style>
+<textarea id="t">some text to select</textarea>
+<a id="l" href="https://example.com/">a link</a>
+<p id="out"></p>
+<script>
+addEventListener('contextmenu', e => { document.getElementById('out').textContent = 'contextmenu on ' + e.target.id; });
+</script>

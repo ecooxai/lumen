@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "abi": "arm64-v8a",
+  "min_api": 29,
+  "version": "15.0.245.2",
+  "compiler_sha256": "deba9e19e8478f7ee8657c4754875aa04427a0dfad46dff7b4233b35a6542d23",
+  "files": {
+    "librusty_v8.a": "915b94d6c4022cc4f8a46dc1a61c96755f04a4d55b9d9c6f17e9e15cd5d0bfb3",
+    "libtemporal_support.a": "046af908427397a87e80699a4d59f607a58df6aa37674a3e9f1f02f2ae6cbb08"
+  },
+  "trees": {
+    "include": "51e89a76f00219fe7ce9d0285031eebb567d6502cf4f3173de7725d580c51bdc",
+    "libcxx/config": "c52bc0d5634be7c2db08f570e8f4934990167e6da7115ba1f54649617b4fd151",
+    "libcxx/include": "571eeb0697c8be19af74572a3851116696abf55f7deab448016e93f2a5ca6773",
+    "libcxxabi/include": "00f1eb41dc8cbf072c01baf05ad391ce7d9e2b71eb0100555dcddbd9e731111b",
+    "icu": "17ce5a3c69077369d694d3b8aad3b52ba5e648bf2b35575a58524494a9632e9c"
+  }
+}

@@ -1,0 +1,8 @@
+<!doctype html>
+<link rel="preload" as="style" href="preload-stylesheet.css" onload="this.rel='stylesheet'">
+<div id="target">Preloaded stylesheet becomes active after its load event.</div>
+<script>
+setTimeout(() => {
+  console.log('PRELOAD ' + (Math.round(target.getBoundingClientRect().height) === 73));
+}, 1000);
+</script>

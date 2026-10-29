@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "candidate": 186,
+  "source_commit": "3731a114676dc87ffe7bce27bff78235431bd6f5",
+  "already_public_parent": "73fdea3e4e7fe09dd87d1b849f85c634f320f7c5",
+  "proposed_public_branch": "gpt-6-astra-release-ops-linux-nonurl-source-20261029",
+  "scope": "Reviewed Linux source checkpoint; no whole-browser conformance or portable binary claim",
+  "source_file_count": 692,
+  "all_recorded_inputs_included_and_exact": true,
+  "original_binary_sha256": "124ebb8663e0293d4820de406c0e9d5f976477c2f4d52032526ea0b652232744",
+  "export_rebuild_performed": false,
+  "whole_browser_assessment": "pending",
+  "additive_metadata": [
+    "SOURCE-MANIFEST.json",
+    "EXPORT-QUALIFICATION.json",
+    "docs/Linux-candidate186.md",
+    "docs/build-dependencies186.json",
+    "docs/performance186-summary.json"
+  ],
+  "excluded": [
+    "agent/",
+    "agents/",
+    "AGENTS.md",
+    "devsummary.md",
+    "historical docs/",
+    "tools/promo/",
+    "private validation outputs",
+    "guard/auth implementations",
+    "profiles/inbox/capabilities",
+    "build artifacts and dependency caches"
+  ],
+  "recorded_source_set_manifest_sha256": "9bd540cc6fb18cdc30d4e81392d37e4e45b95d0e417747be106a44004cf6441c",
+  "recorded_source_set_entries": 624,
+  "source_set_count_erratum": {
+    "176": 617,
+    "182": 618,
+    "183": 618,
+    "184": 622,
+    "185": 624,
+    "186": 624,
+    "187": 627,
+    "188": 627,
+    "explanation": "Earlier narrative references to 618 entries for candidate 186 were stale. Original receipts and hashes are preserved; the exact candidate 186 set has 624 entries, including tracked fixtures."
+  }
+}

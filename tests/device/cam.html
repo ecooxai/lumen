@@ -1,0 +1,70 @@
+<!doctype html><meta name=viewport content="width=device-width">
+<title>cam</title>
+<style>body{font:18px sans-serif;margin:10px} button{font-size:26px;width:46%;height:110px;margin:4px 1%;background:#c8e0f8} video{width:96px;height:72px;border:1px solid #888} #out{white-space:pre-wrap;font:16px monospace}</style>
+<button id=bc>Camera</button><button id=bs>Screen</button>
+<div><video id=v muted playsinline autoplay></video></div>
+<div id=out>idle</div>
+<script>
+/* camera (getUserMedia video) and screen (getDisplayMedia) checks. Only numbers are reported: frame size, mean luma of a
+   WebGL readback of the frame and how often it changed, MediaRecorder output size. ?auto=cam|screen starts one at load */
+const out = document.getElementById('out'), lines = [], v = document.getElementById('v');
+const log = m => { lines.push(m); out.textContent = lines.join('\n'); console.log('CAM ' + m); };
+const tag = new URLSearchParams(location.search).get('tag') || 'cam';
+const report = () => fetch('/r?n=' + tag, { method: 'POST', mode: 'no-cors', body: lines.join('\n') }).catch(() => {});
+const wait = ms => new Promise(r => setTimeout(r, ms));
+let gl = null, prog = null;
+function glSetup() {
+  const c = document.createElement('canvas'); c.width = 16; c.height = 16;
+  gl = c.getContext('webgl');
+  if (!gl) return;
+  const sh = (t, s) => { const x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); return x; };
+  prog = gl.createProgram();
+  gl.attachShader(prog, sh(gl.VERTEX_SHADER, 'attribute vec2 p; varying vec2 uv; void main(){ uv=p*.5+.5; gl_Position=vec4(p,0.,1.); }'));
+  gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, 'precision mediump float; varying vec2 uv; uniform sampler2D t; void main(){ gl_FragColor=texture2D(t,uv); }'));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  for (const [k, val] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, val);
+}
+/* mean luma of the current video frame through WebGL, or -1 */
+function luma() {
+  if (!gl) return -1;
+  try { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v); } catch (e) { return -2; }
+  gl.viewport(0, 0, 16, 16); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  const px = new Uint8Array(16 * 16 * 4); gl.readPixels(0, 0, 16, 16, gl.RGBA, gl.UNSIGNED_BYTE, px);
+  let s = 0; for (let i = 0; i < px.length; i += 4) s += 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+  return s / 256;
+}
+async function check(name, s) {
+  const t = s.getVideoTracks()[0];
+  log(name + ' tracks=' + s.getTracks().length + ' state=' + t.readyState + ' settings=' + JSON.stringify(Object.fromEntries(Object.entries(t.getSettings()).filter(([, x]) => typeof x === 'number'))));
+  v.srcObject = s;
+  try { await v.play(); } catch (e) { log(name + ' play ' + e.name); }
+  await wait(1500);
+  log(name + ' video ' + v.videoWidth + 'x' + v.videoHeight + ' rs=' + v.readyState);
+  let prev = null, changes = 0; const ls = [];
+  for (let i = 0; i < 8; i++) { const l = luma(); ls.push(l.toFixed(1)); if (prev !== null && Math.abs(l - prev) > 0.05) changes++; prev = l; await wait(400); }
+  log(name + ' luma ' + ls.join(' ') + ' changes=' + changes + '/7');
+  const parts = [], r = new MediaRecorder(s);
+  r.ondataavailable = e => parts.push(e.data);
+  const t0 = performance.now();
+  await new Promise(res => { r.onstop = res; r.start(1000); setTimeout(() => r.stop(), 4000); });
+  const b = new Blob(parts, { type: r.mimeType });
+  log(name + ' rec mime=' + r.mimeType + ' chunks=' + parts.length + ' bytes=' + b.size + ' ms=' + Math.round(performance.now() - t0));
+  for (const x of s.getTracks()) x.stop();
+  v.srcObject = null;
+  log(name + ' stopped state=' + t.readyState);
+}
+let busy = false;
+const run = async (name, open) => {
+  if (busy) return; busy = true;
+  try { if (!gl) glSetup(); await check(name, await open()); } catch (e) { log(name + ' FAIL ' + e.name + ': ' + e.message); }
+  busy = false; log(name + ' done'); await report(); lines.length = 0;
+};
+document.getElementById('bc').onclick = () => run('cam', () => navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }));
+document.getElementById('bs').onclick = () => run('screen', () => navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 } }));
+const auto = new URLSearchParams(location.search).get('auto');
+if (auto === 'cam') document.getElementById('bc').click();
+if (auto === 'screen') document.getElementById('bs').click();
+</script>

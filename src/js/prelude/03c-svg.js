@@ -50,11 +50,12 @@ SVGRect.prototype._get = function () { if (!this._el) return this._v.slice(); co
 function mkRect(el, attr, ro) { const r = Object.create(SVGRect.prototype); def(r, '_el', el); def(r, '_attr', attr); def(r, '_ro', ro); def(r, '_v', [0, 0, 0, 0]); return r; }
 class SVGAnimatedRect { constructor() { illegal(); } get baseVal() { return this._b; } get animVal() { return this._a; } }
 const SVGUnitTypes = { SVG_UNIT_TYPE_UNKNOWN: 0, SVG_UNIT_TYPE_USERSPACEONUSE: 1, SVG_UNIT_TYPE_OBJECTBOUNDINGBOX: 2 };
-function svgCache(el, k, f) { let c = el.__svg; if (!c) { c = new Map(); def(el, '__svg', c); } let v = c.get(k); if (!v) { v = f(); c.set(k, v); } return v; }
+function svgCache(el, k, f) { let c = el.__svg; if (!c) { c = new SMap(); def(el, '__svg', c); } let v = c.get(k); if (!v) { v = f(); c.set(k, v); } return v; }
 function svgMk(C, props) { const o = Object.create(C.prototype); for (const k in props) def(o, k, props[k]); return o; }
 function svgProps(C, spec) {
     for (const [prop, kind, attr = prop, d = 0, map] of spec) Object.defineProperty(C.prototype, prop, {
         get() {
+            if (!N.isNode(this)) throw new TypeError('Illegal invocation');
             return svgCache(this, prop, () => {
                 switch (kind) {
                 case 'len': return svgMk(SVGAnimatedLength, { _b: mkLen(this, attr, false, d), _a: mkLen(this, attr, true, d) });
@@ -160,3 +161,150 @@ const SVGFEFuncGElement = svgClass('SVGFEFuncGElement', SVGComponentTransferFunc
 const SVGFEFuncBElement = svgClass('SVGFEFuncBElement', SVGComponentTransferFunctionElement, ['feFuncB']);
 const SVGFEFuncAElement = svgClass('SVGFEFuncAElement', SVGComponentTransferFunctionElement, ['feFuncA']);
 const svgProto = (tag) => (svgClasses[tag.toLowerCase()] || (/^(g|path|rect|circle|ellipse|line|polyline|polygon|use|text|image)$/.test(tag) ? SVGGraphicsElement : SVGElement)).prototype;
+/* ---- lists, transforms, angles, preserveAspectRatio, SVGTests and the animation elements ---- */
+const svgIdx = () => { throw new DOMException('The index provided is larger than the maximum index.', 'IndexSizeError'); };
+function svgAcc(C, name, f) { Object.defineProperty(C.prototype, name, { get() { if (!N.isNode(this)) throw new TypeError('Illegal invocation'); return svgCache(this, name, () => f(this)); }, enumerable: true, configurable: true }); }
+function svgListClass(name) {
+    const C = { [name]: class {
+        constructor() { illegal(); }
+        _items() { return this._el ? this._parse(N.attr(this._el, this._attr) || '') : this._v; }
+        _set(a) { if (this._ro) svgRO(); if (this._el) this._el.setAttribute(this._attr, a.map(this._ser).join(this._sep)); else this._v = a; }
+        get length() { return this._items().length; } get numberOfItems() { return this._items().length; }
+        clear() { this._set([]); }
+        initialize(it) { this._set([it]); return it; }
+        getItem(i) { const a = this._items(); i >>>= 0; if (i >= a.length) svgIdx(); return a[i]; }
+        insertItemBefore(it, i) { const a = this._items(); a.splice(Math.min(i >>> 0, a.length), 0, it); this._set(a); return it; }
+        replaceItem(it, i) { const a = this._items(); i >>>= 0; if (i >= a.length) svgIdx(); a[i] = it; this._set(a); return it; }
+        removeItem(i) { const a = this._items(); i >>>= 0; if (i >= a.length) svgIdx(); const [r] = a.splice(i, 1); this._set(a); return r; }
+        appendItem(it) { const a = this._items(); a.push(it); this._set(a); return it; }
+    } }[name];
+    Object.defineProperty(C.prototype, Symbol.iterator, { value: function* () { yield* this._items(); }, configurable: true, writable: true });
+    return C;
+}
+const mkList = (C, el, attr, ro, parse, ser, sep = ' ') => svgMk(C, { _el: el, _attr: attr, _ro: ro, _parse: parse, _ser: ser, _sep: sep, _v: [] });
+const svgNums = s => (s.match(new RegExp(SVG_NUM, 'g')) || []).map(Number);
+const SVGStringList = svgListClass('SVGStringList'), SVGNumberList = svgListClass('SVGNumberList'), SVGLengthList = svgListClass('SVGLengthList');
+const SVGPointList = svgListClass('SVGPointList'), SVGTransformList = svgListClass('SVGTransformList');
+const numItem = v => { const n = mkNum(null, null, 0, false); n._v = v; return n; };
+const lenItem = s => { const l = mkLen(null, null, false); l._v = svgParseLen(s) || [1, 0]; return l; };
+const strList = (el, attr) => mkList(SVGStringList, el, attr, false, s => s.trim() ? s.trim().split(/\s+/) : [], String);
+const numList = (el, attr, ro) => mkList(SVGNumberList, el, attr, ro, s => svgNums(s).map(numItem), n => String(n.value));
+const lenList = (el, attr, ro) => mkList(SVGLengthList, el, attr, ro, s => (s.trim() ? s.trim().split(/[\s,]+/) : []).map(lenItem), l => l.valueAsString);
+const ptList = (el, attr, ro) => mkList(SVGPointList, el, attr, ro, s => { const n = svgNums(s), r = []; for (let i = 0; i + 1 < n.length; i += 2) r.push(new DOMPoint(n[i], n[i + 1])); return r; }, p => p.x + ',' + p.y);
+class SVGTransform {
+    constructor() { illegal(); }
+    get type() { return this._t; } get angle() { return this._a; } get matrix() { return this._m; }
+    _s(t, m, a = 0) { if (this._ro) svgRO(); this._t = t; this._m = m; this._a = a; if (this._list) this._list._sync(); }
+    setMatrix(m) { this._s(1, Object.assign(new DOMMatrix(), { a: m.a, b: m.b, c: m.c, d: m.d, e: m.e, f: m.f })); }
+    setTranslate(x, y) { this._s(2, Object.assign(new DOMMatrix(), { e: +x, f: +y })); }
+    setScale(x, y) { this._s(3, Object.assign(new DOMMatrix(), { a: +x, d: +y })); }
+    setRotate(a, cx, cy) { const r = a * Math.PI / 180; this._s(4, Object.assign(new DOMMatrix(), { a: Math.cos(r), b: Math.sin(r), c: -Math.sin(r), d: Math.cos(r) }), +a); }
+    setSkewX(a) { this._s(5, Object.assign(new DOMMatrix(), { c: Math.tan(a * Math.PI / 180) }), +a); }
+    setSkewY(a) { this._s(6, Object.assign(new DOMMatrix(), { b: Math.tan(a * Math.PI / 180) }), +a); }
+}
+svgConsts(SVGTransform, { SVG_TRANSFORM_UNKNOWN: 0, SVG_TRANSFORM_MATRIX: 1, SVG_TRANSFORM_TRANSLATE: 2, SVG_TRANSFORM_SCALE: 3, SVG_TRANSFORM_ROTATE: 4, SVG_TRANSFORM_SKEWX: 5, SVG_TRANSFORM_SKEWY: 6 });
+const mkTransform = () => svgMk(SVGTransform, { _t: 1, _a: 0, _m: new DOMMatrix(), _ro: false, _list: null });
+function parseTransforms(s) {
+    const out = [], re = /(matrix|translate|scale|rotate|skewX|skewY)\s*\(([^)]*)\)/g; let m;
+    while ((m = re.exec(s))) {
+        const t = mkTransform(), n = svgNums(m[2]);
+        if (m[1] === 'matrix' && n.length === 6) t.setMatrix({ a: n[0], b: n[1], c: n[2], d: n[3], e: n[4], f: n[5] });
+        else if (m[1] === 'translate') t.setTranslate(n[0] || 0, n[1] || 0);
+        else if (m[1] === 'scale') t.setScale(n[0] ?? 1, n[1] ?? n[0] ?? 1);
+        else if (m[1] === 'rotate') t.setRotate(n[0] || 0, n[1] || 0, n[2] || 0);
+        else if (m[1] === 'skewX') t.setSkewX(n[0] || 0); else if (m[1] === 'skewY') t.setSkewY(n[0] || 0);
+        out.push(t);
+    }
+    return out;
+}
+const serTransform = t => { const m = t.matrix; return t.type === 2 ? `translate(${m.e} ${m.f})` : t.type === 3 ? `scale(${m.a} ${m.d})` : t.type === 4 ? `rotate(${t.angle})` : t.type === 5 ? `skewX(${t.angle})` : t.type === 6 ? `skewY(${t.angle})` : `matrix(${m.a} ${m.b} ${m.c} ${m.d} ${m.e} ${m.f})`; };
+Object.assign(SVGTransformList.prototype, {
+    createSVGTransformFromMatrix(m) { const t = mkTransform(); t.setMatrix(m); return t; },
+    consolidate() { const a = this._items(); if (!a.length) return null; const t = mkTransform(); t.setMatrix(a.reduce((acc, x) => acc.multiply ? acc : x.matrix, a[0].matrix)); this._set([t]); return t; },
+});
+const tList = (el, attr, ro) => mkList(SVGTransformList, el, attr, ro, parseTransforms, serTransform);
+class SVGAnimatedTransformList { constructor() { illegal(); } get baseVal() { return this._b; } get animVal() { return this._a; } }
+class SVGAnimatedNumberList { constructor() { illegal(); } get baseVal() { return this._b; } get animVal() { return this._a; } }
+class SVGAnimatedLengthList { constructor() { illegal(); } get baseVal() { return this._b; } get animVal() { return this._a; } }
+const PAR_ALIGN = ['', 'none', 'xMinYMin', 'xMidYMin', 'xMaxYMin', 'xMinYMid', 'xMidYMid', 'xMaxYMid', 'xMinYMax', 'xMidYMax', 'xMaxYMax'];
+class SVGPreserveAspectRatio {
+    constructor() { illegal(); }
+    _p() { const s = (this._el && N.attr(this._el, this._attr) || '').trim().split(/\s+/); const a = PAR_ALIGN.indexOf(s[0]); return [a > 0 ? a : 6, s[1] === 'slice' ? 2 : 1]; }
+    _w(a, m) { if (this._ro) svgRO(); this._el.setAttribute(this._attr, PAR_ALIGN[a] + (m === 2 ? ' slice' : '')); }
+    get align() { return this._p()[0]; } set align(v) { v = +v; if (!(v >= 1 && v <= 10)) throw new TypeError('Invalid align'); this._w(v, this._p()[1]); }
+    get meetOrSlice() { return this._p()[1]; } set meetOrSlice(v) { v = +v; if (v !== 1 && v !== 2) throw new TypeError('Invalid meetOrSlice'); this._w(this._p()[0], v); }
+}
+svgConsts(SVGPreserveAspectRatio, { SVG_PRESERVEASPECTRATIO_UNKNOWN: 0, SVG_PRESERVEASPECTRATIO_NONE: 1, SVG_PRESERVEASPECTRATIO_XMINYMIN: 2, SVG_PRESERVEASPECTRATIO_XMIDYMIN: 3, SVG_PRESERVEASPECTRATIO_XMAXYMIN: 4, SVG_PRESERVEASPECTRATIO_XMINYMID: 5, SVG_PRESERVEASPECTRATIO_XMIDYMID: 6, SVG_PRESERVEASPECTRATIO_XMAXYMID: 7, SVG_PRESERVEASPECTRATIO_XMINYMAX: 8, SVG_PRESERVEASPECTRATIO_XMIDYMAX: 9, SVG_PRESERVEASPECTRATIO_XMAXYMAX: 10, SVG_MEETORSLICE_UNKNOWN: 0, SVG_MEETORSLICE_MEET: 1, SVG_MEETORSLICE_SLICE: 2 });
+class SVGAnimatedPreserveAspectRatio { constructor() { illegal(); } get baseVal() { return this._b; } get animVal() { return this._a; } }
+const ANG_UNITS = ['', '', 'deg', 'rad', 'grad'], ANG_DEG = [0, 1, 1, 180 / Math.PI, 0.9];
+class SVGAngle {
+    constructor() { illegal(); }
+    _g() { if (!this._el) return this._v; const m = /^\s*([-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)(deg|rad|grad)?\s*$/i.exec(N.attr(this._el, this._attr) || ''); return m ? [m[2] ? ANG_UNITS.indexOf(m[2].toLowerCase()) : 1, +m[1]] : [1, 0]; }
+    _s(t, v) { if (this._ro) svgRO(); if (this._el) this._el.setAttribute(this._attr, v + ANG_UNITS[t]); else this._v = [t, v]; }
+    get unitType() { return this._g()[0]; }
+    get value() { const [t, v] = this._g(); return v * ANG_DEG[t]; } set value(v) { const t = this.unitType; this._s(t, +v / ANG_DEG[t]); }
+    get valueInSpecifiedUnits() { return this._g()[1]; } set valueInSpecifiedUnits(v) { this._s(this.unitType, +v); }
+    get valueAsString() { const [t, v] = this._g(); return v + ANG_UNITS[t]; }
+    set valueAsString(s) { const m = /^\s*([-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)(deg|rad|grad)?\s*$/i.exec(String(s)); if (!m) throw new DOMException('The value provided is invalid.', 'SyntaxError'); this._s(m[2] ? ANG_UNITS.indexOf(m[2].toLowerCase()) : 1, +m[1]); }
+    newValueSpecifiedUnits(t, v) { t = +t; if (!(t >= 1 && t <= 4)) throw new DOMException('Invalid unit type.', 'NotSupportedError'); this._s(t, +v); }
+    convertToSpecifiedUnits(t) { t = +t; if (!(t >= 1 && t <= 4)) throw new DOMException('Invalid unit type.', 'NotSupportedError'); this._s(t, this.value / ANG_DEG[t]); }
+}
+svgConsts(SVGAngle, { SVG_ANGLETYPE_UNKNOWN: 0, SVG_ANGLETYPE_UNSPECIFIED: 1, SVG_ANGLETYPE_DEG: 2, SVG_ANGLETYPE_RAD: 3, SVG_ANGLETYPE_GRAD: 4 });
+class SVGAnimatedAngle { constructor() { illegal(); } get baseVal() { return this._b; } get animVal() { return this._a; } }
+const mkAngle = (el, attr, ro) => svgMk(SVGAngle, { _el: el, _attr: attr, _ro: ro, _v: [1, 0] });
+const parAcc = (C) => svgAcc(C, 'preserveAspectRatio', el => svgMk(SVGAnimatedPreserveAspectRatio, { _b: svgMk(SVGPreserveAspectRatio, { _el: el, _attr: 'preserveAspectRatio', _ro: false }), _a: svgMk(SVGPreserveAspectRatio, { _el: el, _attr: 'preserveAspectRatio', _ro: true }) }));
+const tAcc = (C, name, attr = name) => svgAcc(C, name, el => svgMk(SVGAnimatedTransformList, { _b: tList(el, attr, false), _a: tList(el, attr, true) }));
+const testsAcc = (C) => { svgAcc(C, 'requiredExtensions', el => strList(el, 'requiredExtensions')); svgAcc(C, 'systemLanguage', el => strList(el, 'systemLanguage')); };
+const svgCTM = (el) => { const r = N.rect(el); const m = new DOMMatrix(); if (r) { m.e = r[0]; m.f = r[1]; } return m; };
+
+Object.defineProperty(SVGElement.prototype, 'viewportElement', { get() { if (!N.isNode(this)) throw new TypeError('Illegal invocation'); for (let p = N.parent(this); p && N.type(p) === 1; p = N.parent(p)) if (N.name(p) === 'svg' || N.name(p) === 'symbol') return p; return null; }, enumerable: true, configurable: true });
+delete SVGElement.prototype.getBBox;
+tAcc(SVGGraphicsElement, 'transform'); testsAcc(SVGGraphicsElement);
+methods(SVGGraphicsElement.prototype, {
+    getBBox() { const r = N.rect(this), o = this.ownerSVGElement && N.rect(this.ownerSVGElement); return new DOMRect(r && o ? r[0] - o[0] : 0, r && o ? r[1] - o[1] : 0, r ? r[2] : 0, r ? r[3] : 0); },
+    getCTM() { return svgCTM(this); }, getScreenCTM() { return svgCTM(this); },
+});
+parAcc(SVGSVGElement); svgConsts(SVGSVGElement, { SVG_ZOOMANDPAN_UNKNOWN: 0, SVG_ZOOMANDPAN_DISABLE: 1, SVG_ZOOMANDPAN_MAGNIFY: 2 });
+methods(SVGSVGElement.prototype, {
+    get currentScale() { return this.__cs ?? 1; }, set currentScale(v) { def(this, '__cs', +v); },
+    get currentTranslate() { if (!this.__ct) def(this, '__ct', new DOMPoint(0, 0)); return this.__ct; },
+    getIntersectionList() { return nodeList([]); }, getEnclosureList() { return nodeList([]); }, checkIntersection() { return false; }, checkEnclosure() { return false; }, deselectAll() { selection.removeAllRanges(); },
+    createSVGAngle() { return mkAngle(null, null, false); }, createSVGTransform() { return mkTransform(); }, createSVGTransformFromMatrix(m) { const t = mkTransform(); t.setMatrix(m); return t; },
+    getElementById(id) { return this.querySelector('#' + CSS.escape(String(id))); },
+    suspendRedraw() { return 1; }, unsuspendRedraw() {}, unsuspendRedrawAll() {}, forceRedraw() {},
+    pauseAnimations() {}, unpauseAnimations() {}, animationsPaused() { return false; }, getCurrentTime() { return 0; }, setCurrentTime() {},
+});
+methods(SVGTextContentElement.prototype, {
+    getSubStringLength(c, n) { return 0; }, getStartPositionOfChar() { return new DOMPoint(); }, getEndPositionOfChar() { return new DOMPoint(); },
+    getExtentOfChar() { return new DOMRect(); }, getRotationOfChar() { return 0; }, getCharNumAtPosition() { return -1; }, selectSubString() {},
+});
+for (const k of ['x', 'y', 'dx', 'dy']) svgAcc(SVGTextPositioningElement, k, el => svgMk(SVGAnimatedLengthList, { _b: lenList(el, k, false), _a: lenList(el, k, true) }));
+svgAcc(SVGTextPositioningElement, 'rotate', el => svgMk(SVGAnimatedNumberList, { _b: numList(el, 'rotate', false), _a: numList(el, 'rotate', true) }));
+for (const C of [SVGPolylineElement, SVGPolygonElement]) { svgAcc(C, 'points', el => ptList(el, 'points', false)); svgAcc(C, 'animatedPoints', el => ptList(el, 'points', true)); }
+tAcc(SVGGradientElement, 'gradientTransform'); tAcc(SVGPatternElement, 'patternTransform'); parAcc(SVGPatternElement); testsAcc(SVGPatternElement);
+parAcc(SVGImageElement); parAcc(SVGMarkerElement); parAcc(SVGSymbolElement); parAcc(SVGFEImageElement);
+svgAcc(SVGMarkerElement, 'orientType', el => svgMk(SVGAnimatedEnumeration, { _el: el, _attr: 'orient', _d: 2, _map: ['', 'auto', ''] }));
+svgAcc(SVGMarkerElement, 'orientAngle', el => svgMk(SVGAnimatedAngle, { _b: mkAngle(el, 'orient', false), _a: mkAngle(el, 'orient', true) }));
+methods(SVGMarkerElement.prototype, { get orient() { return N.attr(this, 'orient') || '0'; }, set orient(v) { this.setAttribute('orient', String(v)); }, setOrientToAuto() { this.setAttribute('orient', 'auto'); }, setOrientToAngle(a) { this.setAttribute('orient', a.valueAsString); } });
+methods(SVGImageElement.prototype, { get crossOrigin() { return N.attr(this, 'crossorigin'); }, set crossOrigin(v) { if (v === null) this.removeAttribute('crossorigin'); else this.setAttribute('crossorigin', String(v)); }, decode() { return Promise.resolve(); } });
+methods(SVGScriptElement.prototype, { get type() { return N.attr(this, 'type') || ''; }, set type(v) { this.setAttribute('type', String(v)); }, get crossOrigin() { return N.attr(this, 'crossorigin'); }, set crossOrigin(v) { if (v === null) this.removeAttribute('crossorigin'); else this.setAttribute('crossorigin', String(v)); } });
+methods(SVGStyleElement.prototype, { get type() { return N.attr(this, 'type') || ''; }, set type(v) { this.setAttribute('type', String(v)); }, get media() { return N.attr(this, 'media') || ''; }, set media(v) { this.setAttribute('media', String(v)); }, get title() { return N.attr(this, 'title') || ''; }, set title(v) { this.setAttribute('title', String(v)); }, get disabled() { return !!this.__dis; }, set disabled(v) { def(this, '__dis', !!v); } });
+const SVGViewElement = svgClass('SVGViewElement', SVGElement, ['view'], [['viewBox', 'rect']]); parAcc(SVGViewElement);
+const SVGMPathElement = svgClass('SVGMPathElement', SVGElement, ['mpath'], [['href', 'str']]);
+const SVGAnimationElement = svgClass('SVGAnimationElement', SVGElement, []); testsAcc(SVGAnimationElement);
+methods(SVGAnimationElement.prototype, {
+    get targetElement() { const h = N.attr(this, 'href') || this.getAttributeNS('http://www.w3.org/1999/xlink', 'href'); return h && h[0] === '#' ? (N.doc(this).getElementById(h.slice(1))) : this.parentElement; },
+    getStartTime() { throw new DOMException('No current interval.', 'InvalidStateError'); }, getCurrentTime() { return 0; },
+    getSimpleDuration() { const d = parseFloat(N.attr(this, 'dur')); if (!(d >= 0)) throw new DOMException('No simple duration.', 'NotSupportedError'); return d; },
+    beginElement() {}, beginElementAt() {}, endElement() {}, endElementAt() {},
+});
+for (const k of ['onbegin', 'onend', 'onrepeat']) Object.defineProperty(SVGAnimationElement.prototype, k, { get() { return this['__' + k] ?? null; }, set(v) { if (this['__' + k]) this.removeEventListener(k.slice(2), this['__' + k]); def(this, '__' + k, typeof v === 'function' ? v : null); if (typeof v === 'function') this.addEventListener(k.slice(2), v); }, enumerable: true, configurable: true });
+const SVGAnimateElement = svgClass('SVGAnimateElement', SVGAnimationElement, ['animate']);
+const SVGSetElement = svgClass('SVGSetElement', SVGAnimationElement, ['set']);
+const SVGAnimateMotionElement = svgClass('SVGAnimateMotionElement', SVGAnimationElement, ['animateMotion']);
+const SVGAnimateTransformElement = svgClass('SVGAnimateTransformElement', SVGAnimationElement, ['animateTransform']);
+class TimeEvent extends Event {
+    constructor() { illegal(); }
+    get view() { return this._view ?? null; } get detail() { return this._detail ?? 0; }
+    initTimeEvent(type, view, detail) { this.initEvent(type, false, false); def(this, '_view', view); def(this, '_detail', detail | 0); }
+}

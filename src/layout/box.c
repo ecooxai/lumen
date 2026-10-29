@@ -1,6 +1,7 @@
 /* Box tree construction, text preparation, intrinsic sizes */
 #include "layout.h"
 #include <math.h>
+#include <pthread.h>
 
 struct ArenaChunk { ArenaChunk *next; size_t cap, used; char data[]; };
 void *arena_alloc(Arena *a, size_t n) {
@@ -31,23 +32,25 @@ static Box *new_box(Layout *L, uint8_t kind, Node *n, ComputedStyle *st) {
 }
 static void append(Box *p, Box *c) { c->parent = p; c->prev = p->last; if (p->last) p->last->next = c; else p->first = c; p->last = c; }
 
-static char *prep_text(BState *bs, const char *s, size_t n, const ComputedStyle *st, int *outlen) {
+static char *prep_text(BState *bs, const char *s, size_t n, const ComputedStyle *st, int *outlen, int **srcmap) {
     char *o = arena_alloc(&bs->L->arena, n * 3 + 8); int k = 0;
+    int *map = srcmap ? arena_alloc(&bs->L->arena, (n * 3 + 9) * sizeof(int)) : NULL;   /* output byte -> source byte */
     int ws = st->white_space;
     bool collapse_sp = ws == WS_NORMAL || ws == WS_NOWRAP || ws == WS_PRE_LINE;
     bool keep_nl = ws == WS_PRE || ws == WS_PRE_WRAP || ws == WS_PRE_LINE || ws == WS_BREAK_SPACES;
     bool cap_next = true;
     for (size_t i = 0; i < n; i++) {
+#define PUT(ch) (map ? (void)(map[k] = (int)i) : (void)0, o[k++] = (ch))
         unsigned char c = (unsigned char)s[i];
         if (c == '\r') continue;
         if (c == '\n' && keep_nl) {
             if (ws == WS_PRE_LINE) while (k && o[k - 1] == ' ') k--;
-            o[k++] = '\n'; bs->last_space = true; continue;
+            PUT('\n'); bs->last_space = true; continue;
         }
         if (c == ' ' || c == '\t' || c == '\n' || c == '\f') {
-            if (collapse_sp) { if (!bs->last_space) o[k++] = ' '; bs->last_space = true; }
-            else if (c == '\t') { for (int t = 0; t < 4; t++) o[k++] = ' '; }
-            else o[k++] = ' ';
+            if (collapse_sp) { if (!bs->last_space) PUT(' '); bs->last_space = true; }
+            else if (c == '\t') { for (int t = 0; t < 4; t++) PUT(' '); }
+            else PUT(' ');
             cap_next = true;
             continue;
         }
@@ -56,9 +59,11 @@ static char *prep_text(BState *bs, const char *s, size_t n, const ComputedStyle 
         else if (st->text_transform == TT_LOWER && c >= 'A' && c <= 'Z') c = (unsigned char)(c + 32);
         else if (st->text_transform == TT_CAPITALIZE && cap_next && c >= 'a' && c <= 'z') c = (unsigned char)(c - 32);
         cap_next = false;
-        o[k++] = (char)c;
+        PUT((char)c);
     }
     if (!collapse_sp) bs->last_space = false;
+#undef PUT
+    if (map) { map[k] = (int)n; *srcmap = map; }
     o[k] = 0; *outlen = k; return o;
 }
 
@@ -66,19 +71,31 @@ static bool is_ws_text(const Box *b) { if (b->kind != BX_TEXT) return false; for
 static bool block_level(const Box *b) { return b->kind == BX_BLOCK && in_flow(b); }
 static bool inline_level(const Box *b) { return b->kind == BX_INLINE || b->kind == BX_TEXT || b->kind == BX_ATOMIC || b->kind == BX_BR; }
 
+/* an anonymous block wrapping an inline run shares its parent's style, but not its size: a
+   height: 100% parent would otherwise give each wrapper the parent's whole height */
+static ComputedStyle *anon_block_style(Layout *L, ComputedStyle *p) {
+    if (p->width.kind == LK_AUTO && p->height.kind == LK_AUTO && p->min_width.kind == LK_AUTO && p->min_height.kind == LK_AUTO &&
+        p->max_width.kind == LK_NONE && p->max_height.kind == LK_NONE && p->aspect_ratio <= 0) return p;
+    ComputedStyle *s = arena_alloc(&L->arena, sizeof *s);
+    *s = *p; s->refs = 1 << 20;
+    s->width = s->height = s->min_width = s->min_height = L_auto();
+    s->max_width.kind = s->max_height.kind = LK_NONE; s->aspect_ratio = 0;
+    return s;
+}
 static void fixup_block(Layout *L, Box *b) {
     bool has_block = false;
     for (Box *c = b->first; c; c = c->next) { if (block_level(c)) has_block = true; }
     if (!has_block) { b->fmt = b->fmt == FMT_FLOW ? FMT_INLINE : b->fmt; return; }
     /* wrap runs of inline-level content in anonymous blocks */
-    Box *c = b->first; b->first = b->last = NULL;
+    Box *c = b->first; b->first = b->last = NULL; ComputedStyle *ast = NULL;
     while (c) {
         Box *next = c->next;
         if (block_level(c)) { c->next = c->prev = NULL; append(b, c); c = next; continue; }
         Box *run = c, *end = c; bool real = false;
         while (end && !block_level(end)) { if (inline_level(end) && !is_ws_text(end)) real = true; end = end->next; }
         if (real) {
-            Box *a = new_box(L, BX_BLOCK, NULL, b->st); a->anon = true; a->fmt = FMT_INLINE;
+            if (!ast) ast = anon_block_style(L, b->st);
+            Box *a = new_box(L, BX_BLOCK, NULL, ast); a->anon = true; a->fmt = FMT_INLINE;
             for (Box *x = run; x != end;) { Box *nx = x->next; x->next = x->prev = NULL; append(a, x); x = nx; }
             append(b, a);
         } else {
@@ -145,12 +162,12 @@ static void build(BState *bs, Box *parent, Node *n, int *li_counter);
 static void build_pseudo(BState *bs, Box *parent, Node *el, ComputedStyle *ps) {
     if (!ps || !ps->content || ps->display == D_NONE) return;
     bool blockify = ps->position == P_ABSOLUTE || ps->position == P_FIXED || ps->float_ != F_NONE;
-    uint8_t kind = blockify ? BX_BLOCK : ps->display == D_INLINE ? BX_INLINE : (ps->display == D_INLINE_BLOCK || ps->display == D_INLINE_FLEX) ? BX_ATOMIC : BX_BLOCK;
+    uint8_t kind = blockify ? BX_BLOCK : ps->display == D_INLINE ? BX_INLINE : (ps->display == D_INLINE_BLOCK || ps->display == D_INLINE_FLEX || ps->display == D_INLINE_GRID) ? BX_ATOMIC : BX_BLOCK;
     Box *b = new_box(bs->L, kind, el, ps); b->anon = true;
-    b->fmt = ps->display == D_FLEX || ps->display == D_INLINE_FLEX ? FMT_FLEX : ps->display == D_GRID ? FMT_GRID : FMT_FLOW;
+    b->fmt = ps->display == D_FLEX || ps->display == D_INLINE_FLEX ? FMT_FLEX : ps->display == D_GRID || ps->display == D_INLINE_GRID ? FMT_GRID : FMT_FLOW;
     b->abs = ps->position == P_ABSOLUTE || ps->position == P_FIXED; b->fixed = ps->position == P_FIXED; b->floated = ps->float_ != F_NONE;
     if (b->abs || b->floated || kind == BX_ATOMIC) b->bfc = true;
-    if (*ps->content) { Box *t = new_box(bs->L, BX_TEXT, NULL, ps); t->text = prep_text(bs, ps->content, strlen(ps->content), ps, &t->text_len); append(b, t); }
+    if (*ps->content) { Box *t = new_box(bs->L, BX_TEXT, NULL, ps); t->text = prep_text(bs, ps->content, strlen(ps->content), ps, &t->text_len, NULL); append(b, t); }
     if (kind != BX_INLINE) fixup_block(bs->L, b);
     append(parent, b);
 }
@@ -172,7 +189,7 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
         ComputedStyle *st = style_for_text(n);
         if (!st || st->display == D_NONE) return;
         Box *t = new_box(L, BX_TEXT, n, st);
-        t->text = prep_text(bs, n->text, n->text_len, st, &t->text_len);
+        t->text = prep_text(bs, n->text, n->text_len, st, &t->text_len, &t->tsrc);
         if (!t->text_len) return;
         append(parent, t); n->box = t;
         return;
@@ -217,7 +234,7 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
             const char *tt = ct;
             char *masked = NULL;
             if (ctl == CTL_TEXT && !ph) { const char *ty = node_attr(n, "type"); if (ty && str_ieq(ty, "password")) { size_t k = strlen(ct); masked = xmalloc(k * 3 + 1); size_t o = 0; for (size_t i = 0; i < k; i++) if (((unsigned char)ct[i] & 0xC0) != 0x80) { memcpy(masked + o, "\xe2\x80\xa2", 3); o += 3; } masked[o] = 0; tt = masked; } }
-            t->text = prep_text(&s2, tt, strlen(tt), st, &t->text_len);
+            t->text = prep_text(&s2, tt, strlen(tt), st, &t->text_len, NULL);
             free(masked);
             append(b, t);
         }
@@ -250,13 +267,98 @@ Box *build_box_tree(Layout *L, Document *d) {
     return root;
 }
 
-/* ---------------- text shaping ---------------- */
+/* ---------------- text shaping ----------------
+   Every layout pass rebuilds the box tree, so without reuse all text of the document is shaped
+   by HarfBuzz again whenever a script reads geometry after a mutation. Shaped runs are immutable
+   once built and shared by refcount, keyed by font, spacing, font generation and the exact text.
+   Runs no box references are kept for a few layout passes so the next pass finds them. */
+typedef struct ShapeEntry {
+    struct ShapeEntry *next;
+    uint64_t hash; Font *font; float ls, ws; unsigned gen, stamp; int len, refs;
+    ShapedRun run; char text[];
+} ShapeEntry;
+static struct {
+    ShapeEntry **slot; size_t nslot, count, idle_bytes; unsigned stamp, hits, misses;
+    pthread_mutex_t mu;
+} shape_cache = { .mu = PTHREAD_MUTEX_INITIALIZER };
+enum { SHAPE_KEEP_PASSES = 4 };
+static const size_t SHAPE_IDLE_LIMIT = (size_t)4 << 20;   /* unreferenced bytes kept for reuse */
+
+static size_t shape_bytes(const ShapeEntry *e) { return sizeof *e + (size_t)e->len + 1 + (size_t)e->run.n * sizeof *e->run.g; }
+static uint64_t shape_hash(const Font *f, float ls, float ws, unsigned gen, const char *s, int len) {
+    uint64_t h = 1469598103934665603ull ^ (uint64_t)(uintptr_t)f;
+    uint32_t bits[3]; memcpy(&bits[0], &ls, 4); memcpy(&bits[1], &ws, 4); bits[2] = gen;
+    for (int i = 0; i < 3; i++) h = (h ^ bits[i]) * 1099511628211ull;
+    for (int i = 0; i < len; i++) h = (h ^ (uint8_t)s[i]) * 1099511628211ull;
+    return h ^ h >> 29;
+}
+static void shape_cache_grow(void) {
+    size_t n = shape_cache.nslot ? shape_cache.nslot * 2 : 1024;
+    ShapeEntry **slot = xcalloc(n, sizeof *slot);
+    for (size_t i = 0; i < shape_cache.nslot; i++)
+        for (ShapeEntry *e = shape_cache.slot[i], *next; e; e = next) { next = e->next; ShapeEntry **b = &slot[e->hash & (n - 1)]; e->next = *b; *b = e; }
+    free(shape_cache.slot); shape_cache.slot = slot; shape_cache.nslot = n;
+}
+
 void text_ensure_shaped(Box *t) {
     if (t->shaped) return;
     t->font = style_font(t->st);
-    text_shape(t->font, t->text, (size_t)t->text_len, t->st->letter_spacing, &t->sh);
-    if (t->st->word_spacing) for (int i = 0; i < t->sh.n; i++) if (t->text[t->sh.g[i].cluster] == ' ') t->sh.g[i].adv += t->st->word_spacing;
-    t->shaped = true;
+    float ls = t->st->letter_spacing, ws = t->st->word_spacing;
+    unsigned gen = font_generation();
+    uint64_t h = shape_hash(t->font, ls, ws, gen, t->text, t->text_len);
+    pthread_mutex_lock(&shape_cache.mu);
+    ShapeEntry *e = NULL;
+    if (shape_cache.nslot)
+        for (e = shape_cache.slot[h & (shape_cache.nslot - 1)]; e; e = e->next)
+            if (e->hash == h && e->font == t->font && e->len == t->text_len && e->ls == ls && e->ws == ws &&
+                    e->gen == gen && !memcmp(e->text, t->text, (size_t)t->text_len)) break;
+    if (!e) {
+        shape_cache.misses++;
+        pthread_mutex_unlock(&shape_cache.mu);
+        ShapedRun run; text_shape(t->font, t->text, (size_t)t->text_len, ls, &run);
+        if (ws) for (int i = 0; i < run.n; i++) if (t->text[run.g[i].cluster] == ' ') run.g[i].adv += ws;
+        e = xmalloc(sizeof *e + (size_t)t->text_len + 1);
+        *e = (ShapeEntry){ .hash = h, .font = t->font, .ls = ls, .ws = ws, .gen = gen, .len = t->text_len, .run = run };
+        memcpy(e->text, t->text, (size_t)t->text_len); e->text[t->text_len] = 0;
+        pthread_mutex_lock(&shape_cache.mu);
+        if (shape_cache.count >= shape_cache.nslot) shape_cache_grow();
+        ShapeEntry **b = &shape_cache.slot[h & (shape_cache.nslot - 1)]; e->next = *b; *b = e; shape_cache.count++;
+    } else { shape_cache.hits++; if (!e->refs) shape_cache.idle_bytes -= shape_bytes(e); }
+    e->refs++; e->stamp = shape_cache.stamp;
+    pthread_mutex_unlock(&shape_cache.mu);
+    t->sh = e->run; t->shape_ref = e; t->shaped = true;
+}
+
+void text_release_shaped(Box *t) {
+    if (!t->shaped) return;
+    ShapeEntry *e = t->shape_ref;
+    if (e) {
+        pthread_mutex_lock(&shape_cache.mu);
+        if (!--e->refs) { shape_cache.idle_bytes += shape_bytes(e); e->stamp = shape_cache.stamp; }
+        pthread_mutex_unlock(&shape_cache.mu);
+    } else shaped_free(&t->sh);
+    t->sh = (ShapedRun){0}; t->shape_ref = NULL; t->shaped = false;
+}
+
+void text_shape_cache_stats(unsigned *hits, unsigned *misses, size_t *entries) {
+    pthread_mutex_lock(&shape_cache.mu);
+    *hits = shape_cache.hits; *misses = shape_cache.misses; *entries = shape_cache.count;
+    shape_cache.hits = shape_cache.misses = 0;
+    pthread_mutex_unlock(&shape_cache.mu);
+}
+
+void text_shape_cache_sweep(void) {
+    pthread_mutex_lock(&shape_cache.mu);
+    unsigned now = ++shape_cache.stamp;
+    /* over the idle budget, also drop runs released during the pass that just finished */
+    unsigned keep = shape_cache.idle_bytes > SHAPE_IDLE_LIMIT ? 0 : SHAPE_KEEP_PASSES;
+    for (size_t i = 0; i < shape_cache.nslot; i++)
+        for (ShapeEntry **p = &shape_cache.slot[i], *e; (e = *p);) {
+            if (e->refs || now - e->stamp <= keep) { p = &e->next; continue; }
+            *p = e->next; shape_cache.count--; shape_cache.idle_bytes -= shape_bytes(e);
+            shaped_free(&e->run); free(e);
+        }
+    pthread_mutex_unlock(&shape_cache.mu);
 }
 
 /* ---------------- intrinsic sizes ---------------- */
@@ -304,15 +406,15 @@ void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx) {
     *mn += m; *mx += m;
 }
 
-void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
-    if (b->intr_ok) { *omn = b->imin; *omx = b->imax; return; }
-    compute_mbp(b, 0);
+static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, float *omn, float *omx) {
+    if (!resolve_own && b->intr_ok) { *omn = b->imin; *omx = b->imax; return; }
+    compute_mbp(b, resolve_own ? cbw : 0);
     const ComputedStyle *st = b->st;
     float bp = hbp(b), mn = 0, mx = 0;
-    if (st->width.kind == LK_LEN && st->width.pct == 0 && b->fmt != FMT_TABLE) {
-        mn = mx = st->width.px - (st->box_sizing == BOX_BORDER ? bp : 0);
+    if (st->width.kind == LK_LEN && (resolve_own ? len_def(st->width, cbw) : st->width.pct == 0) && b->fmt != FMT_TABLE) {
+        mn = mx = (resolve_own ? res(st->width, cbw) : st->width.px) - (st->box_sizing == BOX_BORDER ? bp : 0);
     } else if (b->fmt == FMT_REPLACED) {
-        float w, h; replaced_size(L, b, -1, &w, &h); mn = mx = w;
+        float w, h; replaced_size(L, b, -1, -1, -1, -1, &w, &h); mn = mx = w;
         if (st->width.kind == LK_LEN && st->width.pct) mn = 0;
     } else if (b->fmt == FMT_INLINE) {
         IState s = {0}; inline_intrinsic(L, b, &s);
@@ -331,7 +433,13 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
     } else if (b->fmt == FMT_GRID) {
         int nc = LMAX(1, st->grid_ncols); bool fixed = st->grid_ncols > 0;
         float fsum = 0;
-        for (int i = 0; i < st->grid_ncols; i++) { if (st->grid_cols[i].size.kind == LK_LEN && !st->grid_cols[i].size.pct && !st->grid_cols[i].fr) fsum += st->grid_cols[i].size.px; else fixed = false; }
+        for (int i = 0; i < st->grid_ncols; i++) {
+            const GridTrack *t = &st->grid_cols[i];
+            if (t->size.kind != LK_LEN || t->size.pct || t->fr) { fixed = false; continue; }
+            float w = t->size.px;
+            if (t->min.kind == LK_MIN_CONTENT && st->grid_ncols == 1) for (Box *c = b->first; c; c = c->next) if (in_flow(c)) w = LMAX(w, grid_item_auto_min(L, c, t->size.px));   /* minmax(auto, len); which items land in which of several columns is not known here */
+            fsum += w;
+        }
         if (fixed) mn = mx = fsum + st->column_gap * (nc - 1);
         else {
             float cmx = 0, cmn = 0;
@@ -349,46 +457,109 @@ void intrinsic(Layout *L, Box *b, float *omn, float *omx) {
             mn = LMAX(mn, a); mx = LMAX(mx, z);
         }
     }
-    if (st->max_width.kind == LK_LEN && !st->max_width.pct) { float v = st->max_width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
-    if (st->min_width.kind == LK_LEN && !st->min_width.pct) { float v = st->min_width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
+    if (st->max_width.kind == LK_LEN && (resolve_own ? len_def(st->max_width, cbw) : !st->max_width.pct)) { float v = (resolve_own ? res(st->max_width, cbw) : st->max_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
+    if (st->min_width.kind == LK_LEN && (resolve_own ? len_def(st->min_width, cbw) : !st->min_width.pct)) { float v = (resolve_own ? res(st->min_width, cbw) : st->min_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
+    if (resolve_own) { mn = LMAX(0, mn); mx = LMAX(0, mx); }
     if (mn > mx) mx = mn;
-    b->imin = mn + bp; b->imax = mx + bp; b->intr_ok = true;
-    *omn = b->imin; *omx = b->imax;
+    *omn = mn + bp; *omx = mx + bp;
+    if (!resolve_own) { b->imin = *omn; b->imax = *omx; b->intr_ok = true; }
 }
 
-void replaced_size(Layout *L, Box *b, float cbw, float *ow, float *oh) {
+void intrinsic(Layout *L, Box *b, float *mn, float *mx) {
+    intrinsic_measure(L, b, 0, false, mn, mx);
+}
+
+/* A positioned box has a definite percentage containing block even when its
+   width is shrink-to-fit. Resolve its own edges and constraints there; child
+   percentages still participate in the ordinary cyclic intrinsic algorithm.
+   Keep this result out of the zero-basis intrinsic cache used by its parent. */
+void intrinsic_with_basis(Layout *L, Box *b, float cbw, float *mn, float *mx) {
+    intrinsic_measure(L, b, cbw, true, mn, mx);
+}
+
+/* CSS Sizing 4: transfer only definite constraints, then clamp each axis
+ * independently. A destination's own preferred/min/max size always wins over
+ * a transferred constraint. Coordinates below use the ratio's sizing box. */
+static float replaced_bound(Length value, float reference, float subtract, float add, float fallback) {
+    return len_def(value, reference) ? LMAX(0, res(value, reference) - subtract) + add : fallback;
+}
+static bool replaced_auto_ratio(const char *value) {
+    if (!value || !*value) return true;
+    for (const char *p = value; *p;) {
+        while (is_ws((unsigned char)*p)) p++;
+        if (str_istarts(p, "auto") && (!p[4] || is_ws((unsigned char)p[4]))) return true;
+        while (*p && !is_ws((unsigned char)*p)) p++;
+    }
+    return false;
+}
+void replaced_size(Layout *L, Box *b, float cbw, float cbh, float fw, float fh, float *ow, float *oh) {
     Node *n = b->node; const ComputedStyle *st = b->st;
-    float nw = 300, nh = 150, ratio = 0; bool have = false;
-    if (b->ctl == CTL_CHECK || b->ctl == CTL_RADIO) { nw = nh = 13; have = true; }
-    else if (b->ctl == CTL_RANGE) { nw = 129; nh = 16; have = true; }
+    float nw = 300, nh = 150, ratio = 0, natural_ratio = 0;
+    bool contained = false, have_width = true;
+    if (b->ctl == CTL_CHECK || b->ctl == CTL_RADIO) nw = nh = 13;
+    else if (b->ctl == CTL_RANGE) { nw = 129; nh = 16; }
     else if (n && n->tag == A_img) {
         float w, h;
-        if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) { nw = w; nh = h; have = true; }
-        else { nw = nh = 0; const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height"); if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah); have = aw || ah; }
+        if (css_img_sizes_auto(n)) contained = true; /* UA size containment has no natural ratio. */
+        else if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) {
+            nw = w; nh = h; if (h > 0) natural_ratio = w / h;
+        } else {
+            nw = nh = 0; const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height");
+            if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah); have_width = aw != NULL;
+        }
     } else if (n && n->ns == NS_SVG) {
-        const char *vb = node_attr(n, "viewBox");
-        float v[4]; int nv = 0;
-        for (const char *q = vb; q && *q && nv < 4;) { char *e; float f = strtof(q, &e); if (e == q) break; v[nv++] = f; q = e; while (*q == ' ' || *q == ',' || *q == '\t' || *q == '\n') q++; }
-        if (nv == 4 && v[3] > 0) { ratio = v[2] / v[3]; nw = v[2]; nh = v[3]; }
-        /* An outer <svg> without width is 100% wide; the viewBox ratio gives its height */
+        const char *viewbox = node_attr(n, "viewBox"); float v[4]; int nv = 0;
+        for (const char *q = viewbox; q && *q && nv < 4;) { char *e; float f = strtof(q, &e); if (e == q) break; v[nv++] = f; q = e; while (*q == ' ' || *q == ',' || *q == '\t' || *q == '\n') q++; }
+        if (nv == 4 && v[3] > 0) { ratio = natural_ratio = v[2] / v[3]; nw = v[2]; nh = v[3]; }
+        /* Preserve the existing SVG intrinsic-size path; viewBox-only flex
+           sizing is a separate issue from preferred ratio/constraint transfer. */
         bool outer = !n->parent || n->parent->type != NODE_ELEMENT || n->parent->ns != NS_SVG;
         if (outer && ratio > 0 && cbw > 0 && !node_attr(n, "width") && !node_attr(n, "height")) { nw = cbw; nh = cbw / ratio; }
     } else if (n && n->tag == A_video) {
-        float w, h; if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) { nw = w; nh = h; }
+        float w, h;
+        if (layout_image_size_hook && layout_image_size_hook(n, &w, &h) && w > 0) { nw = w; nh = h; if (h > 0) natural_ratio = w / h; }
     } else if (n && n->tag == A_canvas) {
-        const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height"); if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah);
+        const char *aw = node_attr(n, "width"), *ah = node_attr(n, "height");
+        if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah);
+        if (nh > 0) natural_ratio = nw / nh;
     } else if (n && n->tag == A_audio) { nw = 300; nh = 54; }
-    if (!ratio && nh > 0) ratio = nw / nh;
-    if (st->aspect_ratio > 0) ratio = st->aspect_ratio;
-    bool bs = st->box_sizing == BOX_BORDER; float hb = hbp(b), vb2 = vbp(b);
-    float w = -1, h = -1;
-    if (len_def(st->width, cbw)) w = res(st->width, cbw) - (bs ? hb : 0);
-    if (st->height.kind == LK_LEN && st->height.pct == 0) h = st->height.px - (bs ? vb2 : 0);
-    if (w >= 0 && h < 0) h = ratio > 0 ? w / ratio : nh;
-    else if (h >= 0 && w < 0) w = ratio > 0 ? h * ratio : nw;
-    else if (w < 0 && h < 0) { w = nw; h = nh; (void)have; }
-    if (st->max_width.kind == LK_LEN && cbw >= 0) { float mxw = res(st->max_width, cbw) - (bs ? hb : 0); if (w > mxw) { w = mxw; if (ratio > 0 && st->height.kind != LK_LEN) h = w / ratio; } }
-    if (st->min_width.kind == LK_LEN) { float mnw = res(st->min_width, cbw) - (bs ? hb : 0); if (w < mnw) w = mnw; }
-    if (st->max_height.kind == LK_LEN && !st->max_height.pct) { float mxh = st->max_height.px - (bs ? vb2 : 0); if (h > mxh) { h = mxh; if (ratio > 0 && st->width.kind != LK_LEN) w = h * ratio; } }
-    *ow = LMAX(0, w); *oh = LMAX(0, h);
+    /* A default object size (for example iframe300x150) is not a natural ratio. */
+    if (!contained && natural_ratio > 0) ratio = natural_ratio;
+    bool auto_ratio = replaced_auto_ratio(custom_get(st->gen_n, "aspect-ratio"));
+    bool authored_ratio = st->aspect_ratio > 0 && isfinite(st->aspect_ratio);
+    if (authored_ratio && (!auto_ratio || natural_ratio <= 0)) ratio = st->aspect_ratio;
+    else if (auto_ratio && natural_ratio > 0) ratio = natural_ratio;
+    if (!isfinite(ratio) || ratio <= 0) ratio = 0;
+    bool bs = st->box_sizing == BOX_BORDER;
+    float hb = hbp(b), vb = vbp(b), subtract_w = bs ? hb : 0, subtract_h = bs ? vb : 0;
+    /* auto && <ratio> always uses content dimensions; a bare CSS ratio uses
+       the box selected by box-sizing. Natural sizes themselves are content sizes. */
+    bool border_ratio = authored_ratio && !auto_ratio && bs;
+    float rw = border_ratio ? hb : 0, rh = border_ratio ? vb : 0;
+    /* Flex/grid may already have chosen a border-box size. It determines the
+       dependent automatic axis, and must not be clamped a second time here. */
+    bool wdef = fw >= 0 || len_def(st->width, cbw), hdef = fh >= 0 || len_def(st->height, cbh);
+    float w = fw >= 0 ? LMAX(0, fw - hb) + rw : wdef ? LMAX(0, res(st->width, cbw) - subtract_w) + rw : -1;
+    float h = fh >= 0 ? LMAX(0, fh - vb) + rh : hdef ? LMAX(0, res(st->height, cbh) - subtract_h) + rh : -1;
+    if (wdef && !hdef) h = ratio > 0 ? w / ratio : nh + rh;
+    else if (hdef && !wdef) w = ratio > 0 ? h * ratio : nw + rw;
+    else if (!wdef && !hdef) {
+        if (ratio > 0 && !have_width && nh > 0) { h = nh + rh; w = h * ratio; }
+        else { w = nw + rw; h = ratio > 0 ? w / ratio : nh + rh; }
+    }
+    float minw = replaced_bound(st->min_width, cbw, subtract_w, rw, rw);
+    float minh = replaced_bound(st->min_height, cbh, subtract_h, rh, rh);
+    float maxw = LMAX(minw, replaced_bound(st->max_width, cbw, subtract_w, rw, INFINITY));
+    float maxh = LMAX(minh, replaced_bound(st->max_height, cbh, subtract_h, rh, INFINITY));
+    if (ratio > 0) {
+        float transferred_minw = LMIN(minh * ratio, LMIN(maxw, wdef ? w : INFINITY));
+        float transferred_minh = LMIN(minw / ratio, LMIN(maxh, hdef ? h : INFINITY));
+        float transferred_maxw = LMAX(maxh * ratio, LMAX(minw, LMAX(wdef ? w : rw, transferred_minw)));
+        float transferred_maxh = LMAX(maxw / ratio, LMAX(minh, LMAX(hdef ? h : rh, transferred_minh)));
+        minw = LMAX(minw, transferred_minw); minh = LMAX(minh, transferred_minh);
+        maxw = LMIN(maxw, transferred_maxw); maxh = LMIN(maxh, transferred_maxh);
+    }
+    w = LMAX(minw, LMIN(maxw, w)); h = LMAX(minh, LMIN(maxh, h));
+    *ow = fw >= 0 ? LMAX(0, fw - hb) : LMAX(0, w - rw);
+    *oh = fh >= 0 ? LMAX(0, fh - vb) : LMAX(0, h - rh);
 }

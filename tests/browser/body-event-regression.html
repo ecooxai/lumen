@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><title>Document body mutation and handler dispatch</title><pre id="results">Running</pre>
+<script>
+(async () => {
+ const results = [], eq = (a, b) => { if (a !== b) throw Error(String(a) + ' !== ' + String(b)); };
+ const check = async (name, fn) => { try { await fn(); results.push({ name, status: 'PASS' }); } catch (e) { results.push({ name, status: 'FAIL', message: String(e.message || e) }); } };
+ const throws = (name, fn) => { let error; try { fn(); } catch (e) { error = e; } eq(error && error.name, name); };
+ const doc = () => document.implementation.createHTMLDocument('');
+ await check('null and undefined body values reject with HierarchyRequestError', () => { const d = doc(); throws('HierarchyRequestError', () => d.body = null); throws('HierarchyRequestError', () => d.body = undefined); });
+ await check('non-HTML element body values reject during interface conversion', () => { const d = doc(); throws('TypeError', () => d.body = d.createElementNS('http://www.w3.org/2000/svg', 'body')); throws('TypeError', () => d.body = {}); });
+ await check('body descriptor validates its receiver', () => { const d = Object.getOwnPropertyDescriptor(Document.prototype, 'body'); throws('TypeError', () => d.get.call({})); throws('TypeError', () => d.set.call({}, document.createElement('body'))); });
+ await check('setting the same body does not mutate the tree', () => { const d = doc(), body = d.body, mo = new MutationObserver(() => {}); mo.observe(d.documentElement, { childList: true }); d.body = body; eq(d.body, body); eq(mo.takeRecords().length, 0); mo.disconnect(); });
+ await check('replacement adopts a foreign body and its descendants', () => { const a = doc(), b = doc(), old = a.body, body = b.body, child = b.createElement('div'); body.append(child); a.body = body; eq(a.body, body); eq(old.parentNode, null); eq(b.body, null); eq(body.ownerDocument, a); eq(child.ownerDocument, a); });
+ await check('body replacement creates one combined target mutation record', () => { const d = doc(), old = d.body, body = d.createElement('frameset'), mo = new MutationObserver(() => {}); mo.observe(d.documentElement, { childList: true }); d.body = body; const records = mo.takeRecords(); eq(records.length, 1); eq(records[0].addedNodes[0], body); eq(records[0].removedNodes[0], old); mo.disconnect(); });
+ await check('body replacement ignores author overrides of public mutation methods', () => { const d = doc(), root = d.documentElement, body = d.createElement('body'); root.replaceChild = () => { throw Error('author replaceChild called'); }; d.body = body; eq(d.body, body); body.remove(); root.appendChild = () => { throw Error('author appendChild called'); }; d.body = body; eq(d.body, body); });
+ await check('non-HTML root accepts an HTML body while getter remains null', () => { const d = document.implementation.createDocument('urn:body-test', 'root'), body = document.createElement('body'); d.body = body; eq(d.documentElement.firstChild, body); eq(body.ownerDocument, d); eq(d.body, null); });
+ await check('body replacement adopts nodes from a different Window realm', async () => { const frame = document.createElement('iframe'); frame.srcdoc = '<!doctype html><body><div></div>'; let timer; const loaded = new Promise((resolve, reject) => { frame.onload = resolve; timer = setTimeout(() => reject(Error('iframe load timed out')), 5000); }); document.body.append(frame); try { await loaded; const foreign = frame.contentDocument, body = foreign.body, child = body.firstChild, target = doc(); target.body = body; eq(target.body, body); eq(foreign.body, null); eq(body.ownerDocument, target); eq(child.ownerDocument, target); } finally { clearTimeout(timer); frame.remove(); } });
+ await check('standard global handler properties dispatch real Event objects', () => { const names = ['beforematch','command','contextlost','contextrestored','cuechange','formdata','scrollend','securitypolicyviolation','slotchange']; for (const name of names) { const targets = [window, document, document.createElement('div')]; for (const target of targets) { let seen = 0; const prior = target['on' + name]; eq(prior, null); target['on' + name] = event => { eq(event.type, name); eq(event.currentTarget, target); seen++; }; target.dispatchEvent(new Event(name)); eq(seen, 1); target['on' + name] = prior; } } });
+ window.__bodyEventRegression = results;
+ for (const row of results) console.log('BODY-EVENT-CASE ' + JSON.stringify(row));
+ const pass = results.filter(x => x.status === 'PASS').length;
+ const marker = 'RESULTS browser-body-event:' + (pass === results.length ? 'PASS' : 'FAIL') + ' ' + pass + '/' + results.length + ' ' + JSON.stringify(results);
+ document.getElementById('results').textContent = marker; console.log(marker);
+})();
+</script>

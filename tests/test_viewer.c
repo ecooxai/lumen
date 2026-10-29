@@ -1,0 +1,44 @@
+#include "../src/app/local_viewer.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define CHECK(condition) do { if (!(condition)) { fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #condition); return 1; } } while (0)
+
+int main(int argc, char **argv) {
+    CHECK(local_viewer_html("https://example.com/image.png", "image/png", false) == NULL);
+    CHECK(local_viewer_html("file:///a.mp3", "audio/mpeg", true) == NULL);
+    CHECK(local_viewer_html("https://example.com/icon.svg", "image/svg+xml", true) == NULL);
+    { char *html = local_viewer_html("https://example.com/a/song<1>.mp3?x=1", "audio/mpeg", true); CHECK(html && strstr(html, "<audio ") && strstr(html, "<strong>song&lt;1>.mp3</strong>")); free(html); }
+    CHECK(local_viewer_html("file:///index.html", "text/html", false) == NULL);
+    CHECK(local_viewer_html("file:///file.bin", "application/octet-stream", false) == NULL);
+    CHECK(local_viewer_html("file:///a.png", NULL, false) == NULL);
+    const char *types[] = {"image/png", "video/mp4", "audio/mpeg"};
+    const char *elements[] = {"<img ", "<video ", "<audio "};
+    for (size_t index = 0; index < 3; index++) {
+        char *html = local_viewer_html("file:///media\"<&.png", types[index], false);
+        CHECK(html != NULL);
+        CHECK(strstr(html, elements[index]));
+        CHECK(strstr(html, "file:///media&quot;&lt;&amp;.png"));
+        CHECK(!strstr(html, "src=\"file:///media\"<"));
+        CHECK(!strstr(html, "setInterval"));
+        if (index != 2) {
+            CHECK(strstr(html, "[10,25,50,75,100,150,200,300]"));
+            CHECK(strstr(html, "devicePixelRatio"));
+            CHECK(strstr(html, "aria-label=\"Media zoom\""));
+            CHECK(strstr(html, "<button type=\"button\" data-zoom=\"100\" aria-pressed=\"true\""));
+            CHECK(!strstr(html, "<select"));
+        }
+        free(html);
+    }
+    if (argc == 2) {
+        char *html = local_viewer_html("file:///test.png", "image/png", false);
+        FILE *fixture = fopen(argv[1], "wb");
+        CHECK(fixture != NULL);
+        CHECK(fwrite(html, 1, strlen(html), fixture) == strlen(html));
+        CHECK(fclose(fixture) == 0);
+        free(html);
+    }
+    puts("local viewer tests ok");
+    return 0;
+}

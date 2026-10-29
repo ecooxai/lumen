@@ -1,0 +1,433 @@
+{
+  "created_utc": "2026-10-29T18:47:04.926898+00:00",
+  "scope": "Fixed CPU DOM/layout/grid microbenchmark; no whole-browser speed claim",
+  "source_commit": "3731a114676dc87ffe7bce27bff78235431bd6f5",
+  "baseline_source_commit": "b4d8147c7b7945f5eddc11cfc444a80dd5a9ff13",
+  "source_receipt": "agent/validation/iteration-176/build-state.json",
+  "baseline_binary_sha256": "648145f52b7c11b0a95c2c4aa99f0527879a757969998fade4de15773ce70f01",
+  "final_binary_sha256": "124ebb8663e0293d4820de406c0e9d5f976477c2f4d52032526ea0b652232744",
+  "chromium_elf_sha256": "2d4adea820c95eee0c24dcc5eb729043df570838b8693fa3449df15040b0460f",
+  "chromium_launcher_sha256": "d176751de81c10df1a96052f897155b2b055a8426cddd102f5a1ad102832d5d9",
+  "legacy_raw_label_mapping": {
+    "baseline128": "Lumen 176",
+    "final": "Lumen 186",
+    "chromium": "Chromium 150.0.7871.114"
+  },
+  "trials": 21,
+  "trial_sequence": [
+    "Lumen 176",
+    "Lumen 186",
+    "Chromium 150.0.7871.114",
+    "Lumen 186",
+    "Chromium 150.0.7871.114",
+    "Lumen 176",
+    "Chromium 150.0.7871.114",
+    "Lumen 176",
+    "Lumen 186",
+    "Lumen 176",
+    "Chromium 150.0.7871.114",
+    "Lumen 186",
+    "Chromium 150.0.7871.114",
+    "Lumen 186",
+    "Lumen 176",
+    "Lumen 186",
+    "Lumen 176",
+    "Chromium 150.0.7871.114",
+    "Lumen 176",
+    "Lumen 186",
+    "Chromium 150.0.7871.114"
+  ],
+  "checks_per_trial": [
+    9395
+  ],
+  "all_trials_pass": true,
+  "environments": [
+    "{\"dpr\": 1, \"height\": 596, \"width\": 748}"
+  ],
+  "protocol_sources_unchanged": true,
+  "protocol_binaries_unchanged": true,
+  "host_clock_scope": "Host launch/readiness differs between guarded native and WebDriver; excluded from speed comparison.",
+  "engines": {
+    "Lumen 176": {
+      "trials": 7,
+      "timings_ms": {
+        "dom_create_remove": {
+          "median": 45.22251399978995,
+          "minimum": 41.76590900123119,
+          "maximum": 62.845408000051975,
+          "all_trials": [
+            43.95328199863434,
+            41.76590900123119,
+            46.72796400077641,
+            45.22251399978995,
+            44.389514999464154,
+            62.845408000051975,
+            48.902627998963
+          ]
+        },
+        "style_layout": {
+          "median": 420.91249400004745,
+          "minimum": 352.2908180002123,
+          "maximum": 474.0125169996172,
+          "all_trials": [
+            359.1823180001229,
+            352.2908180002123,
+            450.59351000003517,
+            399.3692090008408,
+            425.84372399933636,
+            474.0125169996172,
+            420.91249400004745
+          ]
+        },
+        "grid_cache_rebuild": {
+          "median": 165.68316600099206,
+          "minimum": 141.32133499905467,
+          "maximum": 199.53255400061607,
+          "all_trials": [
+            141.32133499905467,
+            143.45592599920928,
+            165.68316600099206,
+            161.9886259995401,
+            199.48695299960673,
+            182.8526029996574,
+            199.53255400061607
+          ]
+        }
+      },
+      "sampled_browser_tree_resources": {
+        "cpu_pct": {
+          "median_of_trial_sample_medians": 25.999,
+          "minimum_observed_sample": 11.0,
+          "maximum_observed_sample": 64.0,
+          "sample_counts_by_trial": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "rss_mb": {
+          "median_of_trial_sample_medians": 162.351,
+          "minimum_observed_sample": 87.192,
+          "maximum_observed_sample": 179.233,
+          "sample_counts_by_trial": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        "pss_mb": {
+          "median_of_trial_sample_medians": 136.876,
+          "minimum_observed_sample": 63.052,
+          "maximum_observed_sample": 153.552,
+          "sample_counts_by_trial": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        }
+      },
+      "resource_scope": {
+        "units": "decimal MB; CPU percent summed across browser process tree",
+        "sample_interval_seconds": 1,
+        "limits": "Short trial samples cover startup/work/cleanup rather than steady idle. RSS sums shared mappings more than once; PSS is sampled. These are browser-tree samples, not whole task/host RAM."
+      },
+      "cleanup": {
+        "remaining_owned_processes": 0,
+        "remaining_guard_workers": 0,
+        "profiles_removed": true
+      }
+    },
+    "Lumen 186": {
+      "trials": 7,
+      "timings_ms": {
+        "dom_create_remove": {
+          "median": 50.66275400109589,
+          "minimum": 40.50678199902177,
+          "maximum": 60.74544200114906,
+          "all_trials": [
+            50.66275400109589,
+            60.74544200114906,
+            58.529006000608206,
+            49.80080699920654,
+            40.50678199902177,
+            48.15881500020623,
+            56.050527000799775
+          ]
+        },
+        "style_layout": {
+          "median": 416.54727300070226,
+          "minimum": 383.9271460007876,
+          "maximum": 516.5636930000037,
+          "all_trials": [
+            450.89288800023496,
+            516.5636930000037,
+            416.54727300070226,
+            477.9860110003501,
+            393.6330159995705,
+            411.68356000073254,
+            383.9271460007876
+          ]
+        },
+        "grid_cache_rebuild": {
+          "median": 171.87465300038457,
+          "minimum": 142.19818400032818,
+          "maximum": 287.1559720002115,
+          "all_trials": [
+            142.19818400032818,
+            287.1559720002115,
+            169.4896940011531,
+            186.43348699994385,
+            173.32018600031734,
+            171.87465300038457,
+            151.37509000115097
+          ]
+        }
+      },
+      "sampled_browser_tree_resources": {
+        "cpu_pct": {
+          "median_of_trial_sample_medians": 27.0,
+          "minimum_observed_sample": 21.001,
+          "maximum_observed_sample": 61.0,
+          "sample_counts_by_trial": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "rss_mb": {
+          "median_of_trial_sample_medians": 162.298,
+          "minimum_observed_sample": 87.11,
+          "maximum_observed_sample": 180.773,
+          "sample_counts_by_trial": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        },
+        "pss_mb": {
+          "median_of_trial_sample_medians": 136.60899999999998,
+          "minimum_observed_sample": 63.019,
+          "maximum_observed_sample": 155.039,
+          "sample_counts_by_trial": [
+            4,
+            4,
+            4,
+            4,
+            4,
+            4,
+            4
+          ]
+        }
+      },
+      "resource_scope": {
+        "units": "decimal MB; CPU percent summed across browser process tree",
+        "sample_interval_seconds": 1,
+        "limits": "Short trial samples cover startup/work/cleanup rather than steady idle. RSS sums shared mappings more than once; PSS is sampled. These are browser-tree samples, not whole task/host RAM."
+      },
+      "cleanup": {
+        "remaining_owned_processes": 0,
+        "remaining_guard_workers": 0,
+        "profiles_removed": true
+      }
+    },
+    "Chromium 150.0.7871.114": {
+      "trials": 7,
+      "timings_ms": {
+        "dom_create_remove": {
+          "median": 11.900000000372529,
+          "minimum": 10.300000000745058,
+          "maximum": 14.099999999627471,
+          "all_trials": [
+            11.900000000372529,
+            10.300000000745058,
+            10.699999999254942,
+            14,
+            11.300000000745058,
+            14.099999999627471,
+            13.199999999254942
+          ]
+        },
+        "style_layout": {
+          "median": 65.30000000074506,
+          "minimum": 54.40000000037253,
+          "maximum": 79.29999999888241,
+          "all_trials": [
+            70.80000000074506,
+            54.40000000037253,
+            65.30000000074506,
+            67.20000000111759,
+            79.29999999888241,
+            63.5,
+            65
+          ]
+        },
+        "grid_cache_rebuild": {
+          "median": 53,
+          "minimum": 48.40000000037253,
+          "maximum": 73.09999999962747,
+          "all_trials": [
+            73.09999999962747,
+            52.90000000037253,
+            53.29999999888241,
+            53.90000000037253,
+            51.70000000111759,
+            48.40000000037253,
+            53
+          ]
+        }
+      },
+      "sampled_browser_tree_resources": {
+        "cpu_pct": {
+          "median_of_trial_sample_medians": 20.5015,
+          "minimum_observed_sample": 17.002,
+          "maximum_observed_sample": 24.998,
+          "sample_counts_by_trial": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ]
+        },
+        "rss_mb": {
+          "median_of_trial_sample_medians": 936.526,
+          "minimum_observed_sample": 898.4,
+          "maximum_observed_sample": 974.143,
+          "sample_counts_by_trial": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        },
+        "pss_mb": {
+          "median_of_trial_sample_medians": 418.823,
+          "minimum_observed_sample": 360.262,
+          "maximum_observed_sample": 439.868,
+          "sample_counts_by_trial": [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        }
+      },
+      "resource_scope": {
+        "units": "decimal MB; CPU percent summed across browser process tree",
+        "sample_interval_seconds": 1,
+        "limits": "Short trial samples cover startup/work/cleanup rather than steady idle. RSS sums shared mappings more than once; PSS is sampled. These are browser-tree samples, not whole task/host RAM."
+      },
+      "cleanup": {
+        "remaining_owned_processes": 0,
+        "remaining_guard_workers": 0,
+        "profiles_removed": true
+      }
+    }
+  },
+  "native_exit_receipts": [
+    {
+      "trial": "01-baseline128",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "02-final",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "04-final",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "06-baseline128",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "08-baseline128",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "09-final",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "10-baseline128",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "12-final",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "14-final",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "15-baseline128",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "16-final",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "17-baseline128",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "19-baseline128",
+      "exit_code": 0,
+      "profile_removed": true
+    },
+    {
+      "trial": "20-final",
+      "exit_code": 0,
+      "profile_removed": true
+    }
+  ],
+  "notes": [
+    "All 21 trials are retained; no outliers were removed.",
+    "Reference identity/backend was queried in a separate unmeasured owned-browser run; it reported software compositing/rasterization and disabled Vulkan/WebGL/WebGPU.",
+    "Intel UHD620 Vulkan adapter enumeration is separate; actual Lumen Intel rendering remains unverified.",
+    "Correctness checks are repeated workload assertions, not WPT counts."
+  ]
+}

@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><title>Module graph error identity regression</title>
+<pre id="status">running</pre>
+<script type="module">
+import {runGraphChecks,caseNames} from './module-graph-identity/checks.js';
+const results=[];
+const append=(realm,items)=>{for(const item of items){const row={...item,name:realm+': '+item.name};results.push(row);console.log('CASE browser-module-graph-identity '+JSON.stringify(row));}};
+const failure=error=>caseNames.map(name=>({name,status:1,message:String(error)}));
+try{append('window',await runGraphChecks(new URL('./module-graph-identity/',location.href).href));}catch(error){append('window',failure(error));}
+try{
+ const items=await new Promise((resolve,reject)=>{
+  const worker=new Worker('./module-graph-identity/worker.js',{type:'module'});
+  const timer=setTimeout(()=>{worker.terminate();reject(new Error('module worker timeout'));},10000);
+  worker.onmessage=e=>{clearTimeout(timer);worker.terminate();resolve(e.data.results);};
+  worker.onerror=e=>{clearTimeout(timer);worker.terminate();reject(new Error(e.message||'module worker error'));};
+ });append('worker',items);
+}catch(error){append('worker',failure(error));}
+window.moduleGraphIdentityResults=results;
+const passed=results.filter(x=>x.status===0).length;
+document.getElementById('status').textContent=JSON.stringify(results,null,2);
+console.log('RESULTS browser-module-graph-identity:'+(passed===42&&results.length===42?'PASS':'FAIL')+' '+passed+'/'+results.length);
+</script>

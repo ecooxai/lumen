@@ -1,0 +1,11 @@
+{
+  "source": "https://publicsuffix.org/list/public_suffix_list.dat",
+  "license_source": "https://raw.githubusercontent.com/publicsuffix/list/master/LICENSE",
+  "license": "MPL-2.0",
+  "retrieved_utc": "2026-10-28T04:44:50.260886+00:00",
+  "sha256": "0232f4df0831911356e8ee1f4d5c3b6b12c0ed3f6bd66b0f81c8ab5d3d49e9ca",
+  "license_sha256": "66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172",
+  "bytes": 338012,
+  "version": "2026-10-22_08-36-41_UTC",
+  "upstream_commit": "8437e5262f13305f94087abe699b4fe2be1d1de8"
+}

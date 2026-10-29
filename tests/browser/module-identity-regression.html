@@ -1,0 +1,78 @@
+<!doctype html><meta charset="utf-8"><title>Module error value identity</title>
+<script>
+(async () => {
+const results=[],check=(name,ok,detail='')=>results.push({name,status:ok?'PASS':'FAIL',detail:String(detail)});
+const data=(source,type='text/javascript')=>'data:'+type+','+encodeURIComponent(source);
+const errorOf=async(url,options)=>{try{await import(url,options);return null;}catch(error){return error;}};
+const pair=async(url,options)=>[await errorOf(url,options),await errorOf(url,options)];
+const same=v=>!!v[0]&&v[0]===v[1],different=v=>!!v[0]&&!!v[1]&&v[0]!==v[1];
+try{
+ const bad=data('export const = 1; /* root parse */'),parsed=await pair(bad);
+ check('JavaScript parse failure retains the error object',same(parsed));
+ check('JavaScript parse failure remains a SyntaxError',parsed.every(error=>error instanceof SyntaxError));
+ parsed[0].identityMarker=147;
+ check('Retained parse error preserves author-added properties',(await errorOf(bad)).identityMarker===147);
+ check('Different module URLs retain different parse error values',parsed[0]!==await errorOf(data('export const = 1; /* distinct URL */')));
+ const staticBad=data('import "not-a-resolvable-module";');
+ check('Static dependency resolution error is retained with its module script',same(await pair(staticBad)));
+ const parent=data('import '+JSON.stringify(bad)+';');
+ check('Parent graph reuses its dependency parse error',(await errorOf(parent))===parsed[0]&&same(await pair(parent)));
+ const parent2=data('import '+JSON.stringify(bad)+'; /* second parent */');
+ check('Two parent graphs share the same failing dependency error',(await errorOf(parent2))===parsed[0]);
+ const json=data('{"unclosed":','application/json'),jsonErrors=await pair(json,{with:{type:'json'}});
+ check('JSON parse failure retains its error object',same(jsonErrors)&&jsonErrors[0] instanceof SyntaxError);
+ const wrongType=await errorOf(json);
+ check('Typed module keys keep JavaScript MIME and JSON parse failures separate',wrongType instanceof TypeError&&wrongType!==jsonErrors[0]&&(await errorOf(json,{with:{type:'json'}}))===jsonErrors[0]);
+ check('Direct dynamic import resolution creates separate errors',different(await pair('not-a-resolvable-module')));
+ const link=data('import {missing} from '+JSON.stringify(data('export const present = 1;'))+';');
+ check('Instantiation failures keep their separate error values',different(await pair(link)));
+ check('MIME load failures create separate errors',different(await pair(data('export default 1;','text/plain'))));
+ check('HTTP fetch failures create separate errors',different(await pair('./missing-module-identity-147.js')));
+ check('Evaluation failures preserve existing module error identity',same(await pair(data('throw new Error("retained evaluation");'))));
+ const valid=data('export const value = 147;'),validA=await import(valid),validB=await import(valid);
+ check('Successful module evaluation still reuses its namespace',validA===validB&&validA.value===147);
+ let reported=null;const listener=event=>{if(event.target===window){reported=event.error;event.preventDefault();}};
+ window.addEventListener('error',listener);
+ await new Promise(resolve=>{
+  const script=document.createElement('script');script.type='module';script.src=bad;
+  const timer=setTimeout(()=>{script.remove();resolve();},1500);
+  script.onload=script.onerror=()=>{clearTimeout(timer);script.remove();resolve();};
+  document.head.appendChild(script);
+ });
+ window.removeEventListener('error',listener);
+ check('Script error reporting exposes the same retained module error value',reported===parsed[0]);
+ const frame=document.createElement('iframe');
+ await new Promise(resolve=>{frame.onload=resolve;frame.src='about:blank';document.body.appendChild(frame);});
+ const childImport=frame.contentWindow.Function('url','return import(url).then(() => null, error => error)');
+ const childA=await childImport(bad),childB=await childImport(bad);
+ check('A second document retains its own module error value',childA===childB&&childA!==parsed[0]);
+ check('Module error prototypes belong to their document realm',childA instanceof frame.contentWindow.SyntaxError&&!(childA instanceof SyntaxError));
+ frame.remove();
+ const workerBody='('+(async function(){
+  const data=(source,type='text/javascript')=>'data:'+type+','+encodeURIComponent(source);
+  const get=async(url,options)=>{try{await import(url,options);return null;}catch(error){return error;}};
+  const rows=[];
+  async function test(name,url,expectedSame,options){const a=await get(url,options),b=await get(url,options);rows.push({name,status:a&&b&&(expectedSame?a===b:a!==b)?'PASS':'FAIL',detail:(a&&a.name)+'/'+(b&&b.name)});}
+  await test('Worker JavaScript parse errors retain identity',data('export const = 1;'),true);
+  await test('Worker static dependency resolution errors retain identity',data('import "bad-worker-specifier";'),true);
+  await test('Worker JSON parse errors retain identity',data('{"bad":','application/json'),true,{with:{type:'json'}});
+  await test('Worker direct import resolution errors remain separate','bad-worker-specifier',false);
+  await test('Worker MIME failures remain separate',data('export default 1;','text/plain'),false);
+  await test('Worker evaluation errors preserve existing identity',data('throw new Error("worker evaluation");'),true);
+  const good=await import(data('export default 147;'));rows.push({name:'Worker successful imports still evaluate',status:good.default===147?'PASS':'FAIL',detail:''});
+  postMessage(rows);
+ }).toString()+')().catch(error => postMessage([{name:"Worker fixture completion",status:"FAIL",detail:String(error)}]));';
+ const workerURL=URL.createObjectURL(new Blob([workerBody],{type:'text/javascript'}));
+ const workerRows=await new Promise(resolve=>{
+  const worker=new Worker(workerURL,{type:'module'});
+  const timer=setTimeout(()=>{worker.terminate();resolve([{name:'Worker fixture completion',status:'FAIL',detail:'timeout'}]);},4000);
+  worker.onmessage=event=>{clearTimeout(timer);worker.terminate();resolve(event.data);};
+  worker.onerror=event=>{event.preventDefault();clearTimeout(timer);worker.terminate();resolve([{name:'Worker fixture completion',status:'FAIL',detail:'error'}]);};
+ });
+ URL.revokeObjectURL(workerURL);results.push(...workerRows);
+}catch(error){check('Fixture completion',false,String(error));}
+window.moduleIdentityResults=results;
+for(const row of results)console.log('CASE browser-module-identity '+JSON.stringify(row));
+console.log('RESULTS browser-module-identity:'+(results.every(row=>row.status==='PASS')?'PASS':'FAIL')+' '+results.filter(row=>row.status==='PASS').length+'/'+results.length);
+})()
+</script><body></body>

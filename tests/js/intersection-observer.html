@@ -1,0 +1,72 @@
+<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intersection observer scheduling</title>
+<style>
+body{margin:0;font:18px sans-serif}#target{position:absolute;left:20px;top:2200px;width:60px;height:40px;background:green}
+#scroller{position:absolute;top:150px;left:120px;width:100px;height:100px;overflow:auto}
+#child{margin-top:2000px;width:50px;height:40px;background:blue}#space{height:7000px}
+.item{position:absolute;left:5px;width:10px;height:2px}
+</style>
+<div id="target"></div><div id="scroller"><div id="child"></div><div style="height:200px"></div></div><div id="space"></div>
+<script>
+(async()=>{
+ const results=[],wait=ms=>new Promise(r=>setTimeout(r,ms));
+ const check=(name,pass,detail)=>results.push({name,pass:!!pass,detail});
+ const send=payload=>fetch('/report',{method:'POST',body:JSON.stringify(payload)});
+ const target=document.getElementById('target'),scroller=document.getElementById('scroller'),child=document.getElementById('child');
+ const seen=new Map();let calls=0,reads=0;
+ const original=Element.prototype.getBoundingClientRect;
+ Element.prototype.getBoundingClientRect=function(){reads++;return original.call(this)};
+ const io=new IntersectionObserver(es=>{calls++;for(const e of es)seen.set(e.target,e.isIntersecting)});
+ async function expect(name,el,value,change){seen.delete(el);change();for(let i=0;i<100&&!seen.has(el);i++)await wait(20);check(name,seen.get(el)===value,seen.get(el));}
+ try{
+  io.observe(target);check('initial-asynchronous',calls===0);
+  for(let i=0;i<100&&!seen.has(target);i++)await wait(20);
+  check('initial-offscreen',seen.get(target)===false);
+  await expect('page-scroll-enters',target,true,()=>scrollTo(0,2000));
+  await expect('page-scroll-exits',target,false,()=>scrollTo(0,0));
+  await expect('style-position-enters',target,true,()=>target.style.top='40px');
+  await expect('paint-transform-exits',target,false,()=>target.style.transform='translateY(2200px)');
+  await expect('paint-transform-enters',target,true,()=>target.style.transform='none');
+  await expect('detach',target,false,()=>target.remove());
+  await expect('reattach',target,true,()=>document.body.appendChild(target));
+  await expect('element-initial-offscreen',child,false,()=>io.observe(child));
+  await expect('element-scroll-enters',child,true,()=>scroller.scrollTop=2000);
+  await expect('element-scroll-exits',child,false,()=>scroller.scrollTop=0);
+  io.unobserve(target);const before=calls;target.style.top='2200px';await wait(400);check('unobserve',calls===before);
+  await expect('reobserve',target,false,()=>io.observe(target));io.disconnect();
+  const many=new IntersectionObserver(()=>{});
+  for(let i=0;i<500;i++){const el=document.createElement('div');el.className='item';el.style.top=(3000+i*4)+'px';document.body.appendChild(el);many.observe(el)}
+  await wait(1000);const idleReads=reads;
+  await send({fixture:'intersection-observer',phase:'idle-start',results,reads});
+  await wait(location.hash === '#extra' ? 1000 : 35000);
+  await send({fixture:'intersection-observer',phase:'idle-end',reads:reads-idleReads});
+  if(location.hash !== '#extra')return;
+  many.disconnect();
+  const transitions=[];
+  const reentrant=new IntersectionObserver(es=>{
+   transitions.push(es[0].isIntersecting);
+   if(transitions.length===1)target.style.top='40px';
+  });
+  reentrant.observe(target);
+  for(let i=0;i<100&&transitions.length<2;i++)await wait(20);
+  check('callback-mutation',transitions.length===2&&!transitions[0]&&transitions[1],transitions);
+  reentrant.disconnect();
+  const frame=document.createElement('iframe');frame.srcdoc='<div id="foreign" style="position:absolute;top:2200px;width:20px;height:20px"></div>';
+  document.body.appendChild(frame);
+  let foreign;for(let i=0;i<100&&!foreign;i++){await wait(20);foreign=frame.contentDocument?.getElementById('foreign')}
+  if(!foreign)throw Error('iframe not ready');
+  await expect('iframe-initial',foreign,false,()=>io.observe(foreign));
+  await expect('iframe-style-change',foreign,true,()=>foreign.style.top='10px');
+  io.disconnect();frame.remove();
+  await send({fixture:'intersection-observer',phase:'extra-results',results:results.slice(14)});
+  // The harness swipes this container after native-scroll-ready. No scripted
+  // scrolling occurs between readiness and the visibility notification.
+  scroller.style.cssText='position:fixed;left:20px;top:100px;width:400px;height:500px;overflow:auto;background:#eee';
+  const physical=new IntersectionObserver(es=>{
+   for(const e of es)send({fixture:'intersection-observer',phase:'native-scroll',visible:e.isIntersecting,scrollTop:scroller.scrollTop});
+  });
+  physical.observe(child);await wait(200);
+  await send({fixture:'intersection-observer',phase:'native-scroll-ready'});
+ }catch(e){check('unexpected-error',false,String(e));await send({fixture:'intersection-observer',results})}
+})();
+</script>

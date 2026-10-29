@@ -45,6 +45,7 @@ typedef struct { HMEntry *e; int cap, n; } HMap;
 uint32_t hash_str(const char *s, size_t n);
 void *hm_get(HMap *m, const char *key);
 void *hm_getn(HMap *m, const char *key, size_t n);
+void *hm_geth(HMap *m, const char *key, size_t n, uint32_t hash); /* hash: hash_str(key, n) */
 void hm_put(HMap *m, const char *key, void *val);
 void hm_free(HMap *m, void (*freeval)(void *));
 #define hm_foreach(m, ent) for (HMEntry *ent = (m)->e; (m)->e && ent < (m)->e + (m)->cap; ent++) if (ent->key)

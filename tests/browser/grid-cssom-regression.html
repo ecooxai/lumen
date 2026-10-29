@@ -1,0 +1,38 @@
+<!doctype html><meta charset="utf-8"><title>Grid CSSOM validation and shorthand regression</title><pre id="results">Running</pre>
+<script>
+(() => {
+ const results=[];const eq=(a,b)=>{if(a!==b)throw Error('expected '+JSON.stringify(b)+', got '+JSON.stringify(a))};
+ const test=(name,fn)=>{try{fn();results.push({name,status:'PASS'})}catch(e){results.push({name,status:'FAIL',message:String(e.message||e)})}};
+ const style=()=>document.createElement('div').style;
+ test('invalid track assignment preserves previous valid declaration',()=>{const s=style();s.gridTemplateColumns='40px 60px';s.gridTemplateColumns='minmax(1fr, 20px)';eq(s.gridTemplateColumns,'40px 60px')});
+ test('invalid auto-flow does not replace a valid value',()=>{const s=style();s.gridAutoFlow='column';s.gridAutoFlow='dense row dense';eq(s.gridAutoFlow,'column')});
+ test('track grammar agrees with two-argument CSS.supports',()=>{eq(CSS.supports('grid-auto-rows','fit-content(-3px)'),false);eq(CSS.supports('grid-template-columns','repeat(auto-fit,minmax(30px,1fr))'),true)});
+ test('area shorthand expands custom identifiers across all four lines',()=>{const s=style();s.gridArea='--area';for(const p of ['grid-row-start','grid-column-start','grid-row-end','grid-column-end'])eq(s.getPropertyValue(p),'--area')});
+ test('line shorthand serializes an omitted auto end',()=>{const s=style();s.gridRow='2 / auto';eq(s.gridRow,'2');eq(s.gridRowStart,'2');eq(s.gridRowEnd,'auto')});
+ test('span line order and redundant one canonicalization',()=>{const s=style();s.gridColumn='span 1 first / last 3 span';eq(s.gridColumnStart,'span first');eq(s.gridColumnEnd,'span 3 last')});
+ test('invalid span token ordering preserves the declaration',()=>{const s=style();s.gridRow='2 / 4';s.gridRow='2 span first / last';eq(s.gridRow,'2 / 4')});
+ test('escaped identifier equivalence permits shortest serialization',()=>{const s=style();s.gridColumn='\\31st / \\31 st';eq(s.gridColumn,'\\31 st')});
+ test('template areas expand to longhand rows columns and areas',()=>{const s=style();s.gridTemplate='[top] "a" 10px [mid] "b" / 20px';eq(s.gridTemplateRows,'[top] 10px [mid] auto');eq(s.gridTemplateColumns,'20px');eq(s.gridTemplateAreas,'"a" "b"')});
+ test('template row boundary names merge and trailing empty lists disappear',()=>{const s=style();s.gridTemplate='"a" [one] [two] "b" auto [] / 0';eq(s.gridTemplate,'"a" [one two] "b" / 0px')});
+ test('nonrectangular named areas are rejected',()=>{const s=style();s.gridTemplateAreas='"a a" "b b"';s.gridTemplateAreas='"a a" "a ."';eq(s.gridTemplateAreas,'"a a" "b b"')});
+ test('grid shorthand resets implicit properties',()=>{const s=style();s.gridAutoFlow='column dense';s.gridAutoRows='30px';s.grid='20px / 40px';eq(s.gridAutoFlow,'row');eq(s.gridAutoRows,'auto');eq(s.gridAutoColumns,'auto');eq(s.gridTemplateAreas,'none')});
+ test('important longhand survives a later normal shorthand declaration',()=>{const s=style();s.cssText='grid-template-rows:10px!important;grid-template:20px / 30px';eq(s.gridTemplateRows,'10px');eq(s.getPropertyPriority('grid-template-rows'),'important');eq(s.gridTemplate,'')});
+ test('explicit setProperty replaces important shorthand with normal value',()=>{const s=style();s.setProperty('grid-row','2 / 5','important');s.setProperty('grid-row','3');eq(s.gridRow,'3');eq(s.getPropertyPriority('grid-row'),'')});
+ test('invalid priority leaves grid declaration unchanged',()=>{const s=style();s.gridAutoRows='20px';s.setProperty('grid-auto-rows','30px','urgent');eq(s.gridAutoRows,'20px')});
+ test('removeProperty removes expanded shorthand longhands',()=>{const s=style();s.gridArea='1 / 2 / 3 / 4';eq(s.removeProperty('grid-area'),'1 / 2 / 3 / 4');eq(s.gridArea,'');eq(s.gridRowStart,'');eq(s.length,0)});
+ test('pending custom property token stream remains intact',()=>{const s=style();s.gridTemplateColumns='var(--Tracks)';eq(s.gridTemplateColumns,'var(--Tracks)')});
+ test('stylesheet CSSOM setter validates and expands the same grammar',()=>{const sheet=new CSSStyleSheet();sheet.replaceSync('div { grid-row: 2 / 4; }');const s=sheet.cssRules[0].style;eq(s.gridRowStart,'2');s.setProperty('grid-row','2 span first / last');eq(s.gridRow,'2 / 4');s.setProperty('grid-row','3');eq(s.gridRowStart,'3');eq(s.gridRowEnd,'auto')});
+ test('calculated span range is deferred and number sums canonicalize',()=>{const s=style();s.gridColumnStart='span min(-1, 6)';eq(s.gridColumnStart,'span calc(-1)');s.gridColumnStart='span calc(sibling-index() - 2)';eq(s.gridColumnStart,'span calc(-2 + sibling-index())')});
+ test('valid geometry remains unchanged after invalid CSSOM assignment',()=>{const e=document.createElement('div');e.style.cssText='display:grid;width:200px;grid-template-columns:40px 60px';e.innerHTML='<div style="height:10px"></div><div style="height:10px"></div>';document.body.append(e);try{const before=[...e.children].map(x=>x.getBoundingClientRect().width).join(',');e.style.gridTemplateColumns='repeat(auto-fill,-10px)';eq([...e.children].map(x=>x.getBoundingClientRect().width).join(','),before);eq(before,'40,60')}finally{e.remove()}});
+ test('pending grid shorthand replaced by concrete longhands',()=>{const s=style();s.grid='var(--g)';s.grid='10px / 20px';eq(s.grid,'10px / 20px');eq(s.gridTemplateRows,'10px');eq(s.gridTemplateColumns,'20px')});
+ test('pending shorthand replaces previous concrete longhand values',()=>{const s=style();s.grid='10px / 20px';s.grid='var(--g)';eq(s.grid,'var(--g)');eq(s.gridTemplateRows,'');eq(s.gridTemplateColumns,'');eq(s.gridAutoFlow,'')});
+ test('important pending shorthand survives a later normal shorthand',()=>{const s=style();s.cssText='grid-row:var(--lines)!important;grid-row:2 / 4';eq(s.gridRow,'var(--lines)');eq(s.getPropertyPriority('grid-row'),'important');eq(s.gridRowStart,'')});
+ test('concrete important shorthand replaces pending normal shorthand',()=>{const s=style();s.cssText='grid-row:var(--lines);grid-row:2 / 4!important';eq(s.gridRow,'2 / 4');eq(s.getPropertyPriority('grid-row'),'important')});
+ test('invalid assignment preserves pending shorthand',()=>{const s=style();s.gridRow='var(--lines)';s.gridRow='2 span first / last';eq(s.gridRow,'var(--lines)')});
+ test('stylesheet pending shorthand replacement expands concrete longhands',()=>{const sheet=new CSSStyleSheet();sheet.replaceSync('div { grid-row: var(--lines); }');const s=sheet.cssRules[0].style;s.gridRow='2 / 4';eq(s.gridRow,'2 / 4');eq(s.gridRowStart,'2');eq(s.gridRowEnd,'4')});
+ test('live computed declaration becomes empty after disconnect',()=>{const e=document.createElement('div');e.style.cssText='grid-template:10px / 10px;width:20px';document.body.append(e);const computed=getComputedStyle(e);eq(computed.gridTemplate,'10px / 10px');e.remove();eq(computed.gridTemplate,'');eq(computed.width,'')});
+ test('initially disconnected computed Grid declaration is empty',()=>{const e=document.createElement('div');e.style.gridTemplate='10px / 20px';eq(getComputedStyle(e).gridTemplate,'')});
+ for(const row of results)console.log('GRID-CSSOM-CASE '+JSON.stringify(row));
+ window.__gridCssomRegression=results;const pass=results.filter(r=>r.status==='PASS').length;const marker='RESULTS browser-grid-cssom:'+(pass===results.length?'PASS':'FAIL')+' '+pass+'/'+results.length+' '+JSON.stringify(results);document.querySelector('#results').textContent=marker;console.log(marker);
+})();
+</script>

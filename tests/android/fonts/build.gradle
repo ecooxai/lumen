@@ -1,0 +1,40 @@
+plugins {
+    id 'com.android.application' version '8.13.0'
+}
+
+def dependenciesDirectory = providers.gradleProperty('lumenDepsDir').orElse(providers.environmentVariable('LUMEN_DEPS_DIR'))
+if (!dependenciesDirectory.isPresent()) throw new GradleException('Set lumenDepsDir to the Android native dependency prefix.')
+layout.buildDirectory = file('../../../build/codex-android-font-apk')
+
+android {
+    namespace 'org.lumen.codex.fonttest'
+    compileSdk 36
+    ndkVersion '28.2.13676358'
+    defaultConfig {
+        applicationId 'org.lumen.codex.fonttest'
+        minSdk 29
+        targetSdk 36
+        versionCode 1
+        versionName '1.0-test'
+        ndk { abiFilters 'arm64-v8a' }
+        externalNativeBuild {
+            cmake {
+                arguments "-DLUMEN_DEPS_DIR=${file(dependenciesDirectory.get()).absolutePath}", '-DANDROID_STL=c++_shared'
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path 'CMakeLists.txt'
+            version '3.22.1'
+            buildStagingDirectory file('../../../build/codex-android-font-apk-cxx')
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets {
+        main.java.srcDir '../../../android/platform/src/main/java'
+    }
+}

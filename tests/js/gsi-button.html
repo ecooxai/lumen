@@ -1,0 +1,24 @@
+<!doctype html><style>body{margin:0;font-size:16px}
+.B{border-radius:20px;box-sizing:border-box;background-color:#fff;border:1px solid #dadce0;color:#3c4043;font-family:arial,sans-serif;font-size:.875rem;height:40px;letter-spacing:.25px;overflow:hidden;padding:0 12px;position:relative;text-align:center;vertical-align:middle;white-space:nowrap;width:auto}
+.W{display:-webkit-box;display:-webkit-flex;display:flex;align-items:center;flex-direction:row;justify-content:space-between;flex-wrap:nowrap;height:100%;position:relative;width:100%}
+.C{justify-content:center}.C .T{flex-grow:0}
+.I{height:18px;margin-right:8px;min-width:18px;width:18px}
+.T{flex-grow:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;vertical-align:top}
+.S{display:block}.L{display:none}
+.M{bottom:0;left:0;position:absolute;right:0;top:0}</style>
+<div id=b class=B style="width:355px; max-width:400px; min-width:min-content;"><div class=M></div><div class="W C"><div id=i class=I><svg id=g version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class=S><g><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/></g></svg></div><span id=t class=T>Continue with Google</span><span class=L id=button-label>Continue with Google</span></div></div>
+<script>
+// Google's standard sign-in button (accounts.google.com/gsi/button; x.com lays it invisibly over its own): an 18px icon box with a
+// 48x48-viewBox <svg> that has no width/height, then the label 8px to its right, both centred.
+const r = id => document.getElementById(id).getBoundingClientRect(), fail = [];
+const ok = (c, m) => { if (!c) fail.push(m); };
+const b = r('b'), i = r('i'), g = r('g'), t = r('t');
+const s = x => `${x.x.toFixed(1)},${x.y.toFixed(1)} ${x.width.toFixed(1)}x${x.height.toFixed(1)}`;
+console.log('gsi b=' + s(b) + ' i=' + s(i) + ' g=' + s(g) + ' t=' + s(t));
+ok(b.width === 355, 'button width ' + b.width);
+ok(i.width === 18 && i.height === 18, 'icon box ' + s(i));
+ok(g.width === 18 && g.height === 18 && g.x === i.x && g.y === i.y, 'svg fills its box ' + s(g));
+ok(Math.abs(t.x - (i.x + 26)) < 0.5, 'label after icon + 8px ' + (t.x - i.x));
+ok(Math.abs((i.x - b.x) - (b.x + b.width - (t.x + t.width))) < 1, 'centred ' + (i.x - b.x) + ' ' + (b.x + b.width - t.x - t.width));
+console.log('RESULTS gsi-button:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS'));
+</script>

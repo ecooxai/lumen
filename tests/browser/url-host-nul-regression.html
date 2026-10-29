@@ -1,0 +1,47 @@
+<!doctype html><meta charset="utf-8"><title>URL host NUL controls</title>
+<h1>URL host and byte-boundary controls</h1><pre id="result">Running…</pre><script>
+(function () {
+  let passed=0,total=0;const failures=[];
+  function check(name,fn){total++;try{if(!fn())throw Error('wrong outcome');passed++;}catch(e){failures.push(name+': '+e);}}
+  const badHosts=['host%00','ho%00st','%00host','host%00.example','127.0.0.1%00','ho\0st'];
+  for(const scheme of ['http','https','ws','wss','ftp','file']) for(const host of badHosts){
+    const value=scheme+'://'+host+'/path';
+    check('constructor rejects '+JSON.stringify(value),()=>{try{new URL(value);return false;}catch(e){return e instanceof TypeError;}});
+    check('anchor rejects host '+JSON.stringify(value),()=>{const a=document.createElement('a');a.href=value;return a.hostname==='';});
+  }
+  const valid=[['http://example.com/a%00b','http://example.com/a%00b'],['http://example.com/?q=a%00b','http://example.com/?q=a%00b'],['http://example.com/#a%00b','http://example.com/#a%00b'],['http://a%00b:p%00q@example.com/','http://a%00b:p%00q@example.com/'],['custom://a%00b/path','custom://a%00b/path'],['custom://%00/path','custom://%00/path'],['custom://host%2500/path','custom://host%2500/path'],['data:text/plain,a%00b','data:text/plain,a%00b'],['mailto:a%00b@example.com','mailto:a%00b@example.com'],['https://b%C3%BCcher.example/','https://xn--bcher-kva.example/'],['http://%65xample.com/','http://example.com/'],['file:///a%00b','file:///a%00b'],['https://example.com/a\0b','https://example.com/a%00b']];
+  for(const [input,expected] of valid){
+    check('valid constructor '+JSON.stringify(input),()=>new URL(input).href===expected);
+    check('valid anchor '+JSON.stringify(input),()=>{const a=document.createElement('a');a.href=input;return a.href===expected;});
+  }
+  for(const property of ['host','hostname']) for(const host of badHosts){
+    check('URL '+property+' setter preserves old URL '+JSON.stringify(host),()=>{const u=new URL('https://old.example:8443/path?q=1#x');u[property]=host;return u.href==='https://old.example:8443/path?q=1#x';});
+    check('anchor '+property+' setter preserves old URL '+JSON.stringify(host),()=>{const a=document.createElement('a');a.href='https://old.example:8443/path?q=1#x';a[property]=host;return a.href==='https://old.example:8443/path?q=1#x';});
+  }
+  check('opaque host setter keeps percent escape',()=>{const u=new URL('custom://old/path');u.hostname='a%00b';return u.href==='custom://a%00b/path';});
+  check('URLSearchParams NUL data retained',()=>new URLSearchParams('x=a%00b').get('x')==='a\0b');
+  const setterCases=[
+    ['http://old.example:8080/p?q=1#x','host','host%00','http://old.example:8080/p?q=1#x'],
+    ['http://old.example:8080/p?q=1#x','hostname','host%00','http://old.example:8080/p?q=1#x'],
+    ['file://old.example/p?q=1#x','host','host%00','file://old.example/p?q=1#x'],
+    ['file://old.example/p?q=1#x','hostname','host%00','file://old.example/p?q=1#x'],
+    ['custom://old.example:8080/p?q=1#x','host','host%00','custom://host%00:8080/p?q=1#x'],
+    ['custom://old.example:8080/p?q=1#x','hostname','host%00','custom://host%00:8080/p?q=1#x'],
+    ['https://old.example:8443/path?q=1#x','host','new.example:70000','https://new.example:8443/path?q=1#x'],
+    ['https://old.example:8443/path?q=1#x','host','new.example:abc','https://new.example:8443/path?q=1#x'],
+    ['https://old.example:8443/path?q=1#x','host','new.example:','https://new.example:8443/path?q=1#x'],
+    ['https://old.example:8443/path?q=1#x','hostname','new.example:123','https://old.example:8443/path?q=1#x'],
+    ['https://old.example:8443/path?q=1#x','host','bad%00:123','https://old.example:8443/path?q=1#x'],
+    ['https://old.example:8443/path?q=1#x','port','70000','https://old.example:8443/path?q=1#x'],
+    ['https://old.example:8443/path?q=1#x','port','123abc','https://old.example:123/path?q=1#x'],
+    ['https://old.example:8443/path?q=1#x','port','','https://old.example/path?q=1#x'],
+    ['file://old.example/path','host','localhost','file:///path'],
+    ['file://old.example/path','hostname','localhost:80','file://old.example/path'],
+    ['custom://old.example:8080/path','host','new%00host:70000','custom://new%00host:8080/path']
+  ];
+  for(const base of ['http://old.example:8080/p?q=1#x','file://old.example/p?q=1#x','custom://old.example:8080/p?q=1#x'])for(const property of ['host','hostname'])setterCases.push([base,property,'ho\0st',base]);
+  for(const [base,property,value,expected] of setterCases)for(const anchor of [false,true])check((anchor?'anchor ':'URL ')+property+' boundary '+JSON.stringify([base,value]),()=>{const u=anchor?document.createElement('a'):new URL(base);if(anchor)u.href=base;u[property]=value;return u.href===expected;});
+  const summary='RESULTS browser-url-host-nul:'+(passed===total?'PASS ':'FAIL ')+passed+'/'+total;
+  document.getElementById('result').textContent=summary+'\n'+failures.join('\n');console.log(summary);if(failures.length)console.log(JSON.stringify(failures));
+})();
+</script>

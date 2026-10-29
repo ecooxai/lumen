@@ -1,0 +1,25 @@
+<!doctype html>
+<script>
+// A rAF loop that repaints nothing (no shell paints or input in jsrun) runs at the full rate for its first
+// second, then at about 15 frames a second; a one-off frame request after the loop stopped is not delayed.
+const fail = [], ok = (c, m) => { if (!c) fail.push(m); };
+const times = [];
+let run = true;
+const t0 = performance.now();
+const loop = t => { times.push(performance.now() - t0); if (run) requestAnimationFrame(loop); };
+requestAnimationFrame(loop);
+setTimeout(() => {
+  run = false;
+  const first = times.filter(t => t < 900).length, late = times.filter(t => t >= 1600 && t < 2600).length;
+  ok(first >= 40, 'first second ' + first);
+  ok(late >= 10 && late <= 20, 'throttled second ' + late);
+  setTimeout(() => {
+    const asked = performance.now();
+    requestAnimationFrame(() => {
+      const d = performance.now() - asked;
+      ok(d < 30, 'one-off frame waited ' + d.toFixed(0) + ' ms');
+      console.log('RESULTS raf-throttle:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS'));
+    });
+  }, 300);
+}, 2600);
+</script>

@@ -1,6 +1,5 @@
 const timeRanges = (r) => ({ length: r.length, start(i) { return r[i][0]; }, end(i) { return r[i][1]; } });
-const mediaEls = new Set();
-let mediaPumpId = 0;
+const mediaEls = new SSet();
 const mediaFire = (el, t) => el.dispatchEvent(new Event(t));
 const mediaLater = (el, t) => setTimeout(() => mediaFire(el, t), 0);
 const mediaRanges = (flat) => { const r = []; for (let i = 0; i + 1 < flat.length; i += 2) r.push([flat[i], flat[i + 1]]); return new TimeRanges(r); };
@@ -29,28 +28,39 @@ function mediaPoll() {
             def(el, '__paused', true); mediaFire(el, 'timeupdate'); mediaFire(el, 'pause'); mediaFire(el, 'ended');
         }
     }
-    if (!mediaEls.size && mediaPumpId) { clearInterval(mediaPumpId); mediaPumpId = 0; }
+    if (!mediaEls.size) N.mediaPump(null);
+    for (const el of mediaEls) if (el.__paused === false) return true;
+    return false;
 }
 function mediaDetach(el) {
+    const frames = videoFrameStates.get(el);
+    if (frames && el.__mp) { const q = N.videoQuality(el); frames.offset += q[0] - q[1]; }
     if (el.__mp) { N.mediaFree(el.__mp); def(el, '__mp', 0); }
     mediaEls.delete(el);
+    if (!mediaEls.size) N.mediaPump(null);
     def(el, '__st', null); def(el, '__err', null); def(el, '__src', '');
 }
 function mediaAttach(el, src) {
     const id = N.mediaNew(el); def(el, '__mp', id);
-    mediaEls.add(el); if (!mediaPumpId) mediaPumpId = setInterval(mediaPoll, 50);
+    mediaEls.add(el); N.mediaPump(mediaPoll);
     N.mediaVolume(id, el.volume, el.muted);
     if (src instanceof MediaSource) { def(el, '__src', ''); src._attach(el, id); }
     else {
         const ms = objectURLs.get(src);
         def(el, '__src', src);
-        if (ms instanceof MediaSource) ms._attach(el, id); else N.mediaOpen(id, src);
+        /* local files only for Lumen's own pages and file: pages, as in Chrome */
+        if (ms instanceof MediaSource) ms._attach(el, id);
+        else if (ms instanceof Blob) N.mediaOpenBytes(id, ms._buf);   /* the native side cannot fetch a Blob's URL */
+        else if (/^file:/i.test(src) && !/^(file|lumen):$/.test(location.protocol)) N.mediaOpen(id, 'about:blank');
+        else N.mediaOpen(id, src);
     }
     mediaLater(el, 'loadstart');
 }
 mk('HTMLMediaElement', HTMLElement, [], p => {
     reflectStr(p, 'crossOrigin', 'preload'); reflectBool(p, 'autoplay', 'loop', 'controls', 'playsInline', 'defaultMuted');
     const st = (el) => el.__mp ? N.mediaState(el.__mp) : null;
+    /* a MediaStream (getUserMedia, WebRTC) plays live: its audio tracks go to the output while the element plays (07s-rtc-native.js) */
+    const live = (el) => el.__so instanceof MediaStream;
     methods(p, {
         get src() { const v = N.attr(this, 'src'); return v == null ? '' : new URL(v, document.baseURI).href; },
         set src(v) { N.setAttr(this, 'src', String(v)); this.load(); },
@@ -58,10 +68,10 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         get paused() { return this.__paused !== false; },
         get ended() { const s = st(this); return !!(s && s[2]); },
         get seeking() { const s = st(this); return !!(s && s[3]); },
-        get readyState() { const s = st(this); return s ? s[0] : 0; },
+        get readyState() { const s = st(this); if (live(this) && !s) return 4; return s ? s[0] : 0; },
         get networkState() { const s = st(this); return s ? (s[0] >= 4 ? 1 : 2) : (N.attr(this, 'src') != null ? 3 : 0); },
         get error() { return this.__err || null; },
-        get duration() { const s = st(this); return s ? s[7] : NaN; },
+        get duration() { if (live(this)) return Infinity; const s = st(this); return s ? s[7] : NaN; },
         get currentTime() { const s = st(this); return s ? s[6] : (this.__ct || 0); },
         set currentTime(v) {
             v = +v || 0;
@@ -71,9 +81,9 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         },
         fastSeek(t) { this.currentTime = t; },
         get volume() { return this.__vol ?? 1; },
-        set volume(v) { v = +v; if (!(v >= 0 && v <= 1)) throw new DOMException('volume out of range', 'IndexSizeError'); def(this, '__vol', v); if (this.__mp) N.mediaVolume(this.__mp, v, this.muted); mediaLater(this, 'volumechange'); },
+        set volume(v) { v = +v; if (!(v >= 0 && v <= 1)) throw new DOMException('volume out of range', 'IndexSizeError'); def(this, '__vol', v); if (this.__mp) N.mediaVolume(this.__mp, v, this.muted); if (live(this)) mediaStreamPlay(this, this.__paused === false); mediaLater(this, 'volumechange'); },
         get muted() { return this.__muted ?? N.attr(this, 'muted') != null; },
-        set muted(v) { def(this, '__muted', !!v); if (this.__mp) N.mediaVolume(this.__mp, this.volume, !!v); mediaLater(this, 'volumechange'); },
+        set muted(v) { def(this, '__muted', !!v); if (this.__mp) N.mediaVolume(this.__mp, this.volume, !!v); if (live(this)) mediaStreamPlay(this, this.__paused === false); mediaLater(this, 'volumechange'); },
         get playbackRate() { return this.__rate ?? 1; }, set playbackRate(v) { def(this, '__rate', +v); mediaLater(this, 'ratechange'); },
         get defaultPlaybackRate() { return 1; }, set defaultPlaybackRate(v) {}, get preservesPitch() { return true; }, set preservesPitch(v) {},
         get buffered() { return this.__mp ? mediaRanges(N.mediaBuffered(this.__mp, -1)) : new TimeRanges([]); },
@@ -83,7 +93,20 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         get audioTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
         get videoTracks() { return Object.assign([], { addEventListener() {}, removeEventListener() {}, getTrackById() { return null; } }); },
         get srcObject() { return this.__so ?? null; },
-        set srcObject(v) { def(this, '__so', v ?? null); mediaDetach(this); def(this, '__paused', true); if (v instanceof MediaSource) mediaAttach(this, v); },
+        set srcObject(v) {
+            if (live(this)) mediaStreamPlay(this, false);
+            def(this, '__so', v ?? null); mediaDetach(this); def(this, '__paused', true);
+            if (v instanceof MediaSource) mediaAttach(this, v);
+            else if (live(this)) {
+                /* a native live source (camera, screen) is shown by a live player, whose state fires the load events */
+                const vt = this.localName === 'video' && v.getVideoTracks().find(t => t._.hub && t._.hub.src > 0);
+                if (vt) {
+                    const id = N.mediaNew(this); def(this, '__mp', id); mediaEls.add(this); N.mediaPump(mediaPoll);
+                    N.mediaLive(id, vt._.hub.src); mediaLater(this, 'loadstart');
+                } else for (const t of ['loadstart', 'durationchange', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough']) mediaLater(this, t);
+                if (this.autoplay) this.play();
+            }
+        },
         load() {
             const was = !!this.__mp;
             mediaDetach(this);
@@ -95,6 +118,12 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
             if (this.__ct) { N.mediaSeek(this.__mp, this.__ct); def(this, '__ct', 0); }
         },
         play() {
+            if (live(this)) {
+                if (this.__paused !== false) { def(this, '__paused', false); mediaLater(this, 'play'); if (!this.__mp || this.readyState >= 3) mediaLater(this, 'playing'); }
+                if (this.__mp) N.mediaPlay(this.__mp);
+                mediaStreamPlay(this, true);
+                return Promise.resolve();
+            }
             if (!this.__mp) this.load();
             if (!this.__mp) return Promise.reject(new DOMException('The element has no supported sources.', 'NotSupportedError'));
             if (this.__err) return Promise.reject(new DOMException(this.__err.message || 'playback error', 'NotSupportedError'));
@@ -104,6 +133,7 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
         },
         pause() {
             if (this.__mp) N.mediaPause(this.__mp);
+            if (live(this)) mediaStreamPlay(this, false);
             if (this.__paused === false) { def(this, '__paused', true); mediaLater(this, 'timeupdate'); mediaLater(this, 'pause'); }
         },
         canPlayType(t) { return ['', 'maybe', 'probably'][N.mediaCanPlay(String(t), false)] || ''; },
@@ -111,7 +141,60 @@ mk('HTMLMediaElement', HTMLElement, [], p => {
     });
 });
 Object.assign(H.HTMLMediaElement, { NETWORK_EMPTY: 0, NETWORK_IDLE: 1, NETWORK_LOADING: 2, NETWORK_NO_SOURCE: 3, HAVE_NOTHING: 0, HAVE_METADATA: 1, HAVE_CURRENT_DATA: 2, HAVE_FUTURE_DATA: 3, HAVE_ENOUGH_DATA: 4 });
-mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => { reflectUrl(p, 'poster'); reflectInt(p, 0, 'width', 'height'); methods(p, { get videoWidth() { return this.__mp ? N.mediaState(this.__mp)[8] : 0; }, get videoHeight() { return this.__mp ? N.mediaState(this.__mp)[9] : 0; }, getVideoPlaybackQuality() { return { totalVideoFrames: 0, droppedVideoFrames: 0, corruptedVideoFrames: 0, creationTime: N.now() }; }, requestVideoFrameCallback() { return 0; }, cancelVideoFrameCallback() {} }); });
+// A pending callback keeps its element alive, but completed registrations do
+// not. The native pump runs before RAF, only after a new presentation (or arm).
+const videoFrameStates = new WeakMap(), videoFramePending = new SSet();
+let videoFrameId = 0;
+function videoFramePoll(now) {
+    const frames = [];
+    for (const el of videoFramePending) {
+        const state = videoFrameStates.get(el), frame = N.videoFrameInfo(el, state.last);
+        if (!frame) continue;
+        state.last = frame[0];
+        frames.push({el, state, frame, callbacks:Array.from(state.callbacks)});
+    }
+    for (const {el, state, frame, callbacks} of frames) {
+        const metadata = {presentationTime:frame[2], expectedDisplayTime:Math.max(now,frame[2]),
+            width:frame[3], height:frame[4], mediaTime:frame[1], presentedFrames:state.offset+frame[5]};
+        for (const [id, fn] of callbacks) {
+            if (!state.callbacks.delete(id)) continue; // canceled by an earlier callback
+            try { fn(now, metadata); } catch (e) { report(e); }
+        }
+        if (!state.callbacks.size) videoFramePending.delete(el);
+    }
+    if (!videoFramePending.size) N.videoFramePump(null);
+}
+mk('HTMLVideoElement', H.HTMLMediaElement, ['video'], p => {
+    reflectUrl(p, 'poster'); reflectInt(p, 0, 'width', 'height');
+    methods(p, {
+        get videoWidth() { return this.__mp ? N.mediaState(this.__mp)[8] : 0; },
+        get videoHeight() { return this.__mp ? N.mediaState(this.__mp)[9] : 0; },
+        getVideoPlaybackQuality() {
+            const q = N.videoQuality(this), result = {};
+            for (const [key,value] of [['totalVideoFrames',q[0]],['droppedVideoFrames',q[1]],['creationTime',N.now()]])
+                Object.defineProperty(result, key, {value,enumerable:true});
+            return result;
+        },
+        requestVideoFrameCallback(fn) {
+            const current = N.videoFrameInfo(this, 0); // native video-element brand check
+            if (typeof fn !== 'function') throw new TypeError('Callback must be a function');
+            let state = videoFrameStates.get(this);
+            if (!state) { state = {last:0, offset:0, callbacks:new SMap()}; videoFrameStates.set(this,state); }
+            // A registration after an idle gap must not receive an old frame.
+            if (!state.callbacks.size && current) state.last = current[0];
+            const id = videoFrameId = ((videoFrameId + 1) >>> 0) || 1;
+            state.callbacks.set(id,fn); videoFramePending.add(this);
+            N.videoFramePump(videoFramePoll);
+            return id;
+        },
+        cancelVideoFrameCallback(id) {
+            N.videoFrameInfo(this, 0);
+            const state = videoFrameStates.get(this);
+            if (state) { state.callbacks.delete(Number(id) >>> 0); if (!state.callbacks.size) videoFramePending.delete(this); }
+            if (!videoFramePending.size) N.videoFramePump(null);
+        }
+    });
+});
 mk('HTMLAudioElement', H.HTMLMediaElement, ['audio']);
 function Image(w, h) { const e = document.createElement('img'); if (w !== undefined) e.width = w; if (h !== undefined) e.height = h; return e; }
 Image.prototype = H.HTMLImageElement.prototype;
@@ -120,13 +203,14 @@ Audio.prototype = H.HTMLAudioElement.prototype;
 function Option(text = '', value, ds, sel) { const o = document.createElement('option'); o.text = text; if (value !== undefined) o.value = value; if (ds) o.setAttribute('selected', ''); if (sel) o.selected = true; return o; }
 Option.prototype = H.HTMLOptionElement.prototype;
 function urlParts(p, attr) {
-    const get = (el) => { const v = N.attr(el, attr); if (v == null) return null; try { return new URL(v, document.baseURI); } catch (e) { return null; } };
+    const get = (el) => { const v = N.attr(el, attr); if (v == null) return null; const r = N.urlParse(v, document.baseURI, docEnc(el)); return r ? new URL(r[0]) : null; };
     acc(p, attr, function () { const u = get(this); return u ? u.href : (N.attr(this, attr) ?? ''); }, function (v) { this.setAttribute(attr, v); });
-    for (const k of ['protocol', 'host', 'hostname', 'port', 'pathname', 'search', 'hash', 'username', 'password']) acc(p, k, function () { const u = get(this); return u ? u[k] : ''; }, function (v) { const u = get(this); if (u) { u[k] = v; this.setAttribute(attr, u.href); } });
+    // HTMLHyperlinkElementUtils: an unparsable URL reads as protocol ':' and '' elsewhere, and its setters do nothing
+    for (const k of ['protocol', 'host', 'hostname', 'port', 'pathname', 'search', 'hash', 'username', 'password']) acc(p, k, function () { const u = get(this); return u ? u[k] : k === 'protocol' ? ':' : ''; }, function (v) { const u = get(this); if (u) { u[k] = v; this.setAttribute(attr, u.href); } });
     acc(p, 'origin', function () { const u = get(this); return u ? u.origin : ''; });
     def(p, 'toString', function () { return this[attr]; });
 }
-const PLAIN = new Set('abbr address article aside b bdi bdo cite code dd dfn dt em figcaption figure footer header hgroup i kbd main mark nav noscript rp rt ruby s samp search section small strong sub summary sup u var wbr center nobr big tt acronym strike font marquee'.split(' '));
+const PLAIN = new SSet('abbr address article aside b bdi bdo cite code dd dfn dt em figcaption figure footer header hgroup i kbd main mark nav noscript rp rt ruby s samp search section small strong sub summary sup u var wbr center nobr big tt acronym strike font marquee'.split(' '));
 function protoFor(type, tag, ns) {
     switch (type) {
     case 1:
@@ -141,13 +225,13 @@ function protoFor(type, tag, ns) {
     case 7: return ProcessingInstruction.prototype;
     case 9: return ns === 3 ? XMLDocument.prototype : HTMLDocument.prototype;
     case 10: return DocumentType.prototype;
-    case 11: return DocumentFragment.prototype;
+    case 11: return tag === '#shadow' ? ShadowRoot.prototype : DocumentFragment.prototype;
     }
     return Node.prototype;
 }
 
-const registry = { byName: new Map(), byCtor: new Map(), waiting: new Map(), upgrading: [] };
-const validCEName = (n) => /^[a-z][.0-9_a-z\u00b7\u00c0-\uffff-]*-[.0-9_a-z\u00b7\u00c0-\uffff-]*$/.test(n) && !/^(annotation-xml|color-profile|font-face|font-face-src|font-face-uri|font-face-format|font-face-name|missing-glyph)$/.test(n);
+const registry = { byName: new SMap(), byCtor: new SMap(), waiting: new SMap(), upgrading: [] };
+const validCEName = (n) => /^[a-z][^\0\t\n\f\r />A-Z]*$/.test(n) && n.includes('-') && !/^(annotation-xml|color-profile|font-face|font-face-src|font-face-uri|font-face-format|font-face-name|missing-glyph)$/.test(n);
 function ceConstruct(nt) {
     if (registry.upgrading.length) { const el = registry.upgrading.pop(); Object.setPrototypeOf(el, nt.prototype); return el; }
     const d = registry.byCtor.get(nt);
@@ -186,9 +270,21 @@ function ceConnected(root, connected, moved) {
         if (typeof cb === 'function') { try { cb.call(el); } catch (e) { report(e); } }
     }
 }
-function ceAttr(el, name, old, v) {
+function ceMoved(root) {
+    if (!registry.byName.size) return;
+    const t = N.type(root); if (t !== 1 && t !== 11) return;
+    for (const el of N.ceScan(root)) {
+        if (!el.__ce) continue;
+        const run = cb => { if (typeof cb === 'function') { try { cb.call(el); } catch (e) { report(e); } } };
+        if (typeof el.connectedMoveCallback === 'function') run(el.connectedMoveCallback);
+        else { run(el.disconnectedCallback); run(el.connectedCallback); }
+    }
+}
+function ceAttr(el, name, old, v, ns = null) {
+    if (name === 'type' && ns === null && old !== v && oprOf.has(el)) oprDisconnectAll(el);
+    if (ns === null && N.ns(el) === 0) { formAttr(el, name, old, v); if (name === 'popover') popAttrChanged(el, old, v); }
     const d = el.__ce; if (!d || !d.observed.includes(name) || typeof el.attributeChangedCallback !== 'function') return;
-    try { el.attributeChangedCallback(name, old, v, null); } catch (e) { report(e); }
+    try { el.attributeChangedCallback(name, old, v, ns); } catch (e) { report(e); }
 }
 class CustomElementRegistry {
     define(name, ctor, opts) {
@@ -207,6 +303,7 @@ class CustomElementRegistry {
     getName(ctor) { const d = registry.byCtor.get(ctor); return d ? d.name : null; }
     whenDefined(name) {
         name = String(name);
+        if (!validCEName(name)) return Promise.reject(new DOMException(`"${name}" is not a valid custom element name`, 'SyntaxError'));
         if (registry.byName.has(name)) return Promise.resolve(registry.byName.get(name).ctor);
         let w = registry.waiting.get(name);
         if (!w) { let resolve; const promise = new Promise(r => resolve = r); w = { promise, resolve }; registry.waiting.set(name, w); }

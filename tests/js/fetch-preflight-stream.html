@@ -1,0 +1,41 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width">
+<title>Fetch streaming regression</title>
+<h1>Fetch streaming regression</h1>
+<pre id="result">Running delayed responses…</pre>
+<script>
+(async () => {
+    const results = [];
+    const cross = 'http://127.0.0.1:18766';
+    for (const [name, origin, headers, credentials] of [
+        ['same-origin', location.origin, {'X-Stream': '1'}, 'same-origin'],
+        ['cross-simple', cross, {}, 'omit'],
+        ['cross-preflight', cross, {'X-Stream': '1'}, 'omit'],
+        ['cross-credentials', cross, {'X-Stream': '1'}, 'include']
+    ]) {
+        const t = performance.now();
+        try {
+            const response = await fetch(origin + '/stream', {method: 'POST', body: 'probe', headers, credentials});
+            const headMs = performance.now() - t, reader = response.body.getReader();
+            let firstMs, text = '';
+            for (;;) {
+                const chunk = await reader.read();
+                if (chunk.done) break;
+                if (firstMs === undefined) firstMs = performance.now() - t;
+                text += new TextDecoder().decode(chunk.value);
+            }
+            const endMs = performance.now() - t;
+            results.push({name, headMs, firstMs, endMs, text,
+                pass: text === 'first\nlast\n' && endMs - firstMs > 2000 && endMs - headMs > 2000});
+        } catch (e) { results.push({name, pass: false, error: String(e)}); }
+    }
+    for (const path of ['/deny-preflight', '/deny-response']) {
+        try {
+            await fetch(cross + path, {method: 'POST', headers: {'X-Stream': '1'}, body: 'probe'});
+            results.push({name: path, pass: false});
+        } catch (e) { results.push({name: path, pass: e instanceof TypeError}); }
+    }
+    document.getElementById('result').textContent = JSON.stringify(results, null, 2);
+    await fetch('/report', {method: 'POST', body: JSON.stringify(results)});
+})().catch(e => { document.getElementById('result').textContent = String(e); });
+</script>

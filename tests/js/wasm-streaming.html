@@ -1,0 +1,52 @@
+<!doctype html><meta name="viewport" content="width=device-width"><title>Wasm streaming</title>
+<h2>Wasm streaming</h2><pre id="results"></pre>
+<script>
+(async()=>{
+ const add=new Uint8Array([0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,3,2,1,0,7,7,1,3,97,100,100,0,0,10,9,1,7,0,32,0,32,1,106,11]);
+ const results=[], headers={'Content-Type':'application/wasm'}, make=(b=add,init={})=>new Response(b,{headers,...init});
+ const assert=(v,m='assertion failed')=>{if(!v)throw Error(m)};
+ const value=m=>new WebAssembly.Instance(m).exports.add(20,22);
+ const reject=async(p,type)=>{try{await p}catch(e){assert(e instanceof type,'wrong error: '+e);return e}throw Error('unexpected fulfillment')};
+ async function check(name,fn){let timer;try{const detail=await Promise.race([Promise.resolve().then(fn),new Promise((_,r)=>{timer=setTimeout(()=>r(Error('timeout')),6000)})]);results.push({name,pass:true,detail})}
+  catch(e){results.push({name,pass:false,error:String(e)})}finally{clearTimeout(timer)}document.getElementById('results').textContent=JSON.stringify(results,null,2)}
+ await check('compileStreaming fetch',async()=>assert(value(await WebAssembly.compileStreaming(fetch('/add.wasm')))===42));
+ await check('instantiateStreaming fetch',async()=>assert((await WebAssembly.instantiateStreaming(fetch('/add.wasm'))).instance.exports.add(20,22)===42));
+ await check('imports passed to instantiateStreaming',async()=>{
+  const bytes=new Uint8Array([0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,2,7,1,1,109,1,102,0,0,7,7,1,3,97,100,100,0,0]);
+  const {instance}=await WebAssembly.instantiateStreaming(make(bytes),{m:{f:(a,b)=>a+b}});assert(instance.exports.add(20,22)===42);
+ });
+ await check('invalid binary rejects CompileError',()=>reject(WebAssembly.compileStreaming(make(new Uint8Array([0,1,2]))),WebAssembly.CompileError));
+ await check('MIME validation does not consume body',async()=>{const r=make(add,{headers:{'Content-Type':'text/plain'}});await reject(WebAssembly.compileStreaming(r),TypeError);assert(!r.bodyUsed&&!r.body.locked)});
+ await check('MIME parameters rejected',()=>reject(WebAssembly.compileStreaming(make(add,{headers:{'Content-Type':'application/wasm; charset=utf-8'}})),TypeError));
+ await check('MIME case and whitespace',async()=>assert(value(await WebAssembly.compileStreaming(make(add,{headers:{'Content-Type':' APPLICATION/WASM '}})))===42));
+ await check('HTTP error rejected before body use',async()=>{const r=make(add,{status:404});await reject(WebAssembly.compileStreaming(r),TypeError);assert(!r.bodyUsed)});
+ await check('rejected source promise preserves reason',async()=>{const reason={test:42};try{await WebAssembly.compileStreaming(Promise.reject(reason));throw Error('fulfilled')}catch(e){assert(e===reason)}});
+ await check('forged Response rejected',()=>reject(WebAssembly.compileStreaming(Object.create(Response.prototype)),TypeError));
+ await check('Proxy of Response rejected',()=>reject(WebAssembly.compileStreaming(new Proxy(make(),{})),TypeError));
+ await check('public Response overrides ignored',async()=>{const r=make();for(const k of ['status','ok','type','headers','body','bodyUsed','url','_b'])Object.defineProperty(r,k,{get(){throw Error('read public '+k)}});assert(value(await WebAssembly.compileStreaming(r))===42)});
+ await check('locked body rejects, unlocked unread body succeeds',async()=>{const r=make(),rd=r.body.getReader();await reject(WebAssembly.compileStreaming(r),TypeError);assert(!r.bodyUsed);rd.releaseLock();assert(value(await WebAssembly.compileStreaming(r))===42)});
+ await check('manually read body becomes disturbed',async()=>{const r=make(),rd=r.body.getReader();await rd.read();rd.releaseLock();assert(r.bodyUsed);await reject(WebAssembly.compileStreaming(r),TypeError)});
+ await check('streaming marks body used and prevents reuse',async()=>{const r=make();assert(r.body===r.body);await WebAssembly.compileStreaming(r);assert(r.bodyUsed&&!r.body.locked);await reject(r.arrayBuffer(),TypeError);await reject(WebAssembly.compileStreaming(r),TypeError)});
+ await check('empty body is CompileError',()=>reject(WebAssembly.compileStreaming(make(null)),WebAssembly.CompileError));
+ await check('response clone branches compile independently',async()=>{const r=make(),c=r.clone();const ms=await Promise.all([WebAssembly.compileStreaming(r),WebAssembly.compileStreaming(c)]);assert(ms.every(m=>value(m)===42))});
+ await check('delayed chunks with byte offsets',async()=>{let i=0,pulls=0;const r=make(new ReadableStream({async pull(c){pulls++;await new Promise(r=>setTimeout(r,3));if(i===add.length){c.close();return}const chunk=new Uint8Array(5);chunk[2]=add[i++];c.enqueue(chunk.subarray(2,3))}}));assert(value(await WebAssembly.compileStreaming(r))===42);return {pulls}});
+ await check('stream failure preserves rejection reason',async()=>{const reason={failure:42};const r=make(new ReadableStream({start(c){c.enqueue(add.slice(0,10));c.error(reason)}}));try{await WebAssembly.compileStreaming(r);throw Error('fulfilled')}catch(e){assert(e===reason)}});
+ await check('invalid chunk rejects and cancels source',async()=>{let canceled=false;const r=make(new ReadableStream({start(c){c.enqueue('bad')},cancel(){canceled=true}}));await reject(WebAssembly.compileStreaming(r),TypeError);await Promise.resolve();assert(canceled)});
+ await check('network chunks consumed before final bytes',async()=>{const start=performance.now(),r=await fetch('/slow.wasm'),head=performance.now()-start;let done=false;const p=WebAssembly.compileStreaming(r).then(m=>{done=true;return m});await new Promise(r=>setTimeout(r,100));assert(r.bodyUsed&&!done,'not consuming pending response');assert(value(await p)===42);return {headersMs:head,totalMs:performance.now()-start}});
+ await check('abort during download rejects',async()=>{const c=new AbortController(),r=await fetch('/slow.wasm',{signal:c.signal});const p=WebAssembly.compileStreaming(r);setTimeout(()=>c.abort(),50);await reject(p,DOMException)});
+ await check('truncated download rejects',()=>reject(WebAssembly.compileStreaming(fetch('/truncated.wasm')),TypeError));
+ await check('truncated Fetch body rejects',async()=>{const r=await fetch('/truncated.wasm');await reject(r.arrayBuffer(),TypeError)});
+ await check('same-origin frame Response',async()=>{
+  const f=document.createElement('iframe');
+  try{await new Promise((resolve,reject)=>{f.onload=resolve;f.onerror=reject;f.srcdoc='<!doctype html><p>Response realm</p>';document.body.appendChild(f)});
+   const r=new f.contentWindow.Response(add,{headers});assert(value(await WebAssembly.compileStreaming(r))===42);
+  }finally{f.remove()}
+ });
+ await check('opaque cross-origin response rejected',async()=>{await reject(WebAssembly.compileStreaming(fetch('http://127.0.0.1:18766/add.wasm',{mode:'no-cors'})),TypeError)});
+ await check('worker streaming APIs',async()=>{
+  const url=URL.createObjectURL(new Blob([`(async()=>{try{const r=await fetch('http://127.0.0.1:18765/add.wasm');let truncated=false;try{await fetch('http://127.0.0.1:18765/truncated.wasm')}catch(e){truncated=e instanceof TypeError}const m=await WebAssembly.compileStreaming(r);const i=await WebAssembly.instantiate(m);const j=await WebAssembly.instantiateStreaming(new Response(new Uint8Array(${JSON.stringify(Array.from(add))}),{headers:{'Content-Type':'application/wasm'}}));postMessage({a:i.exports.add(20,22),b:j.instance.exports.add(20,22),used:r.bodyUsed,truncated})}catch(e){postMessage({error:String(e)})}})()`],{type:'text/javascript'}));let w;
+  try{w=new Worker(url);await new Promise((resolve,reject)=>{w.onmessage=e=>{const d=e.data;d.a===42&&d.b===42&&d.used&&d.truncated?resolve():reject(Error(JSON.stringify(d)))};w.onerror=e=>reject(Error(e.message))})}finally{if(w)w.terminate();URL.revokeObjectURL(url)}
+ });
+ await fetch('/report',{method:'POST',body:JSON.stringify({fixture:'wasm-streaming',complete:true,results})});
+})();
+</script>

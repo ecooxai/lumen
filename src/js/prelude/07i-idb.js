@@ -1,0 +1,1 @@
+/*@shared idb.js*/

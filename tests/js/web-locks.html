@@ -1,0 +1,40 @@
+<!doctype html>
+<script>
+// Web Locks: Lock objects carry name and mode, exclusive requests wait in order, shared ones overlap,
+// ifAvailable gets null while held, steal rejects the old holder, abort signals drop queued requests.
+const fail = [], ok = (c, m) => { if (!c) fail.push(m); };
+const later = () => new Promise(r => setTimeout(r, 5));
+(async () => {
+  const L = navigator.locks, log = [];
+  let release; const held = new Promise(r => release = r);
+  const a = L.request('j', lock => { ok(lock.name === 'j' && lock.mode === 'exclusive', 'lock ' + (lock && lock.mode)); log.push('a'); return held; });
+  const b = L.request('j', { mode: 'exclusive' }, () => { log.push('b'); return 7; });
+  await later();
+  ok(log.join() === 'a', 'b waits ' + log);
+  ok(await L.request('j', { ifAvailable: true }, l => l) === null, 'ifAvailable null');
+  const q = await L.query();
+  ok(q.held.length === 1 && q.pending.length === 1 && q.held[0].mode === 'exclusive', 'query');
+  release(5);
+  ok(await a === 5 && await b === 7 && log.join() === 'a,b', 'order ' + log);
+  let n = 0, max = 0;
+  const sh = () => L.request('s', { mode: 'shared' }, async l => { ok(l.mode === 'shared', 'shared mode'); max = Math.max(max, ++n); await later(); n--; });
+  await Promise.all([sh(), sh(), sh()]);
+  ok(max === 3, 'shared overlap ' + max);
+  let stolen = '';
+  const old = L.request('t', () => new Promise(() => {})).catch(e => stolen = e.name);
+  await later();
+  ok(await L.request('t', { steal: true }, l => l.name) === 't', 'steal grant');
+  await old;
+  ok(stolen === 'AbortError', 'stolen ' + stolen);
+  const ac = new AbortController();
+  let rel2; const h2 = L.request('u', () => new Promise(r => rel2 = r));
+  const w = L.request('u', { signal: ac.signal }, () => 'no').catch(e => e.name);
+  await later(); ac.abort(new DOMException('x', 'AbortError'));
+  ok(await w === 'AbortError', 'abort queued');
+  rel2(); await h2;
+  ok((await L.query()).held.length === 0, 'all released');
+  let bad = ''; try { await L.request('-x', () => {}); } catch (e) { bad = e.name; }
+  ok(bad === 'NotSupportedError', 'dash name ' + bad);
+  ok(await navigator.storage.persisted() === false, 'persisted');
+})().catch(e => fail.push('threw ' + e)).then(() => console.log('RESULTS web-locks:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS')));
+</script>

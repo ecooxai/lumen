@@ -1,0 +1,22 @@
+<!doctype html>
+<script>
+// unhandledrejection: fires once per rejection still unhandled after the task's microtasks, with the
+// promise and reason; a handler attached in the same task (Promise.reject().then().catch()) suppresses it.
+const fail = [], ok = (c, m) => { if (!c) fail.push(m); };
+const seen = [];
+addEventListener('unhandledrejection', e => { seen.push(e.reason && e.reason.message); if (e.reason && e.reason.message === 'quiet') e.preventDefault(); });
+let onprop = 0; window.onunhandledrejection = () => onprop++;
+Promise.reject(new Error('handled')).then(() => {}).catch(() => {});
+const late = Promise.reject(new Error('late-ok')); queueMicrotask(() => late.catch(() => {}));
+const loud = Promise.reject(new Error('loud'));
+Promise.reject(new Error('quiet'));
+setTimeout(() => {
+  ok(seen.indexOf('handled') < 0, 'handled chain reported');
+  ok(seen.indexOf('late-ok') < 0, 'handler in microtask reported');
+  ok(seen.indexOf('loud') >= 0 && seen.indexOf('quiet') >= 0, 'unhandled not fired ' + seen);
+  ok(seen.filter(m => m === 'loud').length === 1, 'fired twice');
+  ok(onprop === 2, 'onunhandledrejection ' + onprop);
+  loud.catch(() => {});
+  console.log('RESULTS unhandled-rejection:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS'));
+}, 50);
+</script>

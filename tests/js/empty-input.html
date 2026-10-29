@@ -1,0 +1,21 @@
+<!doctype html><style>body{margin:0;font:16px sans-serif}
+#lb{display:flex;flex-direction:column;padding:8px 0;width:300px}#wr{display:flex;flex-direction:column;position:relative}
+#lb input{display:block;font-size:17px;line-height:20px;padding:0;border:0;box-sizing:border-box}
+#row input{font-size:16px;line-height:20px;padding:0;border:0}</style>
+<label id=lb><div id=wr><input id=e autocomplete=username></div></label>
+<div id=row><input id=a><input id=b value=x></div>
+<script>
+// An empty text input (no value, no placeholder) is one line tall and keeps its baseline, as in Chrome
+// (x.com's login field: an empty display:block input in a flex column was 0 tall and drew its caret
+// below the box); document.fonts is iterable (pages spread it).
+const r = id => document.getElementById(id).getBoundingClientRect(), fail = [];
+const ok = (c, m) => { if (!c) fail.push(m); };
+ok(r('e').height === 20 && r('wr').height === 20, 'flex column input ' + r('e').height + ' ' + r('wr').height);
+ok(r('a').height === r('b').height && r('a').height === 20, 'inline heights ' + r('a').height + ' ' + r('b').height);
+ok(r('a').top === r('b').top, 'baselines ' + r('a').top + ' ' + r('b').top);
+const ff = new FontFace('T', 'url(x.woff2)'); document.fonts.add(ff);
+ok([...document.fonts].includes(ff) && document.fonts.size === 1 && document.fonts.has(ff), 'fonts iterable');
+document.fonts.delete(ff);
+ok(Array.from(document.fonts).length === 0 && document.fonts.size === 0, 'fonts delete');
+console.log('RESULTS empty-input:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS'));
+</script>

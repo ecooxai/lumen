@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><title>Computed aspect state minimum controls</title><pre id="results"></pre><script>
+(()=>{const rows=[];for(const mode of ['block','hidden','flex'])for(const aspectRatio of ['auto','2','auto 2','0 / 1','1 / 0','initial','unset','inherit'])for(const property of ['min-width','min-height','min-inline-size','min-block-size']){
+const parent=document.createElement('div'),child=document.createElement('div');parent.style.cssText='display:'+(mode==='flex'?'flex':'block')+';aspect-ratio:3';child.style.cssText='display:'+(mode==='hidden'?'none':'block')+';aspect-ratio:'+aspectRatio;child.style.setProperty(property,'auto');parent.append(child);document.body.append(parent);
+const noninitial=!['auto','initial','unset'].includes(aspectRatio),expected=mode!=='hidden'&&(mode==='flex'||noninitial)?'auto':'0px',actual=getComputedStyle(child).getPropertyValue(property),name=[mode,aspectRatio,property].join(' ');rows.push({name,expected,actual,status:actual===expected?'PASS':'FAIL'});parent.remove();}
+for(const row of rows)console.log('SIZING_ASPECT_STATE_RESULT '+JSON.stringify(row));const pass=rows.filter(r=>r.status==='PASS').length,marker='RESULTS browser-sizing-aspect-state:'+(pass===rows.length?'PASS':'FAIL')+' '+pass+'/'+rows.length;console.log(marker);document.getElementById('results').textContent=marker;})();
+</script>

@@ -1,0 +1,21 @@
+<!doctype html><meta charset="utf-8"><title>React controlled message replacement</title><script src="react.production.min.js"></script><script src="react-dom.production.min.js"></script><style>body{font:16px sans-serif;background:#eef4fa;color:#123;margin:20px}textarea{display:block;width:360px;height:65px;font:18px monospace}button{padding:12px;margin:8px}#message{padding:16px;background:white;border:1px solid #789;font-size:24px}</style><h1>Controlled React16 edit and Save</h1><div id="app"></div><script>const checks=[];
+function test(fn,name){try{fn();checks.push([name,true])}catch(e){checks.push([name,false,String(e.message||e)])}}
+function assert_equals(actual,expected,message){if(actual!==expected)throw new Error((message?message+': ':'')+'expected '+JSON.stringify(expected)+' got '+JSON.stringify(actual))}
+function assert_true(value,message){if(value!==true)throw new Error(message||'expected true')}
+function done(){const failures=checks.filter(x=>!x[1]);const result='RESULTS react-message-replacement:'+(failures.length?'FAIL '+failures.map(x=>x[0]+': '+x[2]).join('; '):'PASS '+checks.length+'/'+checks.length);console.log(result);const report=document.createElement('pre');report.textContent=result;document.body.append(report)}
+let seq=0,pending;const logs=[];window.__astraNativeRequest=null;
+window.__astraInputDone=function(id){if(pending&&pending.id===id){window.__astraNativeRequest=null;const done=pending.resolve;pending=null;done()}};
+function native(ops){if(typeof window.__lumenTd==='function')return window.__lumenTd(ops);return new Promise((resolve,reject)=>{const id=++seq;pending={id,resolve};window.__astraNativeRequest={id,ops};setTimeout(()=>{if(pending&&pending.id===id){pending=null;reject(new Error('Native controller deadline'))}},10000)})}
+const type=text=>native(Array.from(text,c=>'key '+c.codePointAt(0)).join('\n'));
+async function click(el){const r=el.getBoundingClientRect();await native('move '+Math.round(r.left+r.width/2)+' '+Math.round(r.top+r.height/2)+'\ndown 0\nup 0')}
+const frame=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+let app;const h=React.createElement;
+class Message extends React.Component {
+ constructor(p){super(p);this.state={text:'OLDMESSAGE',editing:false};app=this}
+ componentDidUpdate(p,old){if(this.state.editing&&!old.editing){this.editor.setSelectionRange(0,this.editor.value.length);this.editor.focus()}}
+ render(){return this.state.editing?h('div',null,h('textarea',{id:'message-editor',ref:e=>this.editor=e,value:this.state.text,onChange:e=>this.setState({text:e.target.value})}),h('button',{id:'save-message',onClick:()=>this.setState({editing:false})},'Save')):h('div',null,h('div',{id:'message'},this.state.text),h('button',{id:'edit-message',onClick:()=>this.setState({editing:true})},'Edit'))}
+}
+ReactDOM.render(h(Message),document.getElementById('app'));
+(async()=>{await frame();test(()=>assert_equals(document.getElementById('message').textContent,'OLDMESSAGE'),'React renders original message');await click(document.getElementById('edit-message'));await frame();test(()=>{assert_equals(app.editor.selectionStart,0);assert_equals(app.editor.selectionEnd,10)},'React edit lifecycle selects old value before focus');await type('NEWMESSAGE');test(()=>{assert_equals(app.editor.value,'NEWMESSAGE');assert_equals(app.state.text,'NEWMESSAGE')},'Native input updates controlled React state to replacement only');await click(document.getElementById('save-message'));await frame();test(()=>{assert_equals(document.getElementById('message').textContent,'NEWMESSAGE');assert_equals(document.querySelectorAll('#message').length,1);assert_equals(document.querySelectorAll('textarea').length,0)},'React Save reconciles to one replacement message');done()})().catch(e=>{test(()=>{throw e},'React edit scenario completes');done()});
+</script>

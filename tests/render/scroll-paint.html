@@ -1,0 +1,9 @@
+<!doctype html>
+<meta charset="utf-8">
+<style>body{margin:0}#s{width:160px;height:80px;overflow:auto}.before{height:240px;background:red}.after{height:80px;background:#00ff00}iframe{display:block;width:160px;height:80px;border:0;margin-top:20px}</style>
+<div id="s"><div class="before"></div><div class="after"></div></div>
+<iframe src="scroll-paint-frame.html"></iframe>
+<iframe src="scroll-paint-nested.html"></iframe>
+<script>
+setTimeout(() => { const s=document.getElementById('s'); s.scrollTop=240; console.error('SCROLL_PAINT_PARENT '+(s.scrollTop===240)); },1500);
+</script>

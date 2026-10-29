@@ -17,14 +17,16 @@ ifeq ($(UNAME),Darwin)
   INC += $(foreach d,$(DEPS),-I$(BREW)/opt/$(d)/include) -I$(BREW)/opt/freetype/include/freetype2 -I$(BREW)/opt/harfbuzz/include/harfbuzz -I$(BREW)/include
   LIBDIRS := $(foreach d,$(DEPS),-L$(BREW)/opt/$(d)/lib)
   PLATLIBS := -framework Cocoa -framework QuartzCore -framework Metal -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework ScreenCaptureKit
+  FONTLIBS := -lfreetype -lharfbuzz
 else
-  INC += -I/usr/include/freetype2 -I/usr/include/harfbuzz -I/usr/include/SDL3
+  INC += $(shell pkg-config --cflags freetype2 harfbuzz sdl3 fontconfig)
   LIBDIRS :=
   PLATLIBS := -lpthread -ldl -lm
+  FONTLIBS := $(shell pkg-config --libs freetype2 harfbuzz fontconfig)
 endif
 CFLAGS := -std=c11 $(OPT) $(WARN) $(INC) -D_GNU_SOURCE -D_DARWIN_C_SOURCE
 CXXFLAGS := -std=c++20 $(OPT) $(WARN) $(INC) -DV8_COMPRESS_POINTERS
-BASELIBS := $(LIBDIRS) -licuuc
+BASELIBS := $(LIBDIRS) -licuuc $(PLATLIBS)
 NETLIBS := $(BASELIBS) -lssl -lcrypto -lz -lbrotlidec -lzstd
 
 BASE_SRC := $(wildcard src/base/*.c)
@@ -49,7 +51,9 @@ $(BUILD)/%.cc.o: %.cc
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -MMD -c $< -o $@
 
-LIBS := $(NETLIBS) -lfreetype -lharfbuzz -lSDL3 -lv8 -lv8_libplatform -lv8_libbase -lwgpu_native \
+$(BUILD)/src/js/clone.cc.o: CXXFLAGS += -fno-rtti
+
+LIBS := $(NETLIBS) $(FONTLIBS) -lSDL3 -lv8 -lv8_libplatform -lv8_libbase -lwgpu_native \
         -lavcodec -lavformat -lavutil -lswscale -lswresample -lpng -ljpeg -lwebp -lwebpdemux -lgif $(PLATLIBS)
 
 $(BUILD)/lumen: $(call OBJ,$(CORE_SRC) $(APP_SRC) $(JS_SRC))
@@ -60,8 +64,33 @@ $(BUILD)/fetch: $(call OBJ,tests/fetch.c $(BASE_SRC) $(NET_SRC))
 $(BUILD)/test_url: $(call OBJ,tests/test_url.c $(BASE_SRC))
 	$(CC) $(OPT) $^ -o $@ $(BASELIBS)
 
-test: $(BUILD)/test_url
+$(BUILD)/test_platform: $(call OBJ,tests/test_platform.c $(BASE_SRC))
+	$(CC) $(OPT) $^ -o $@ $(BASELIBS)
+
+$(BUILD)/test_file: $(call OBJ,tests/test_file.c $(BASE_SRC) $(NET_SRC))
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS) $(PLATLIBS)
+
+$(BUILD)/test_net_redirect: $(call OBJ,tests/test_net_redirect.c $(BASE_SRC) $(NET_SRC))
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS) $(PLATLIBS)
+
+$(BUILD)/test_workspace: $(call OBJ,tests/test_workspace.c src/app/workspace.c)
+	$(CC) $(OPT) $^ -o $@
+
+$(BUILD)/test_media_icon: $(call OBJ,tests/test_media_icon.c src/app/media_icon.c)
+	$(CC) $(OPT) $^ -o $@
+
+$(BUILD)/test_viewer: $(call OBJ,tests/test_viewer.c src/app/local_viewer.c $(BASE_SRC))
+	$(CC) $(OPT) $^ -o $@ $(BASELIBS)
+
+test: $(BUILD)/test_url $(BUILD)/test_platform $(BUILD)/test_file $(BUILD)/test_net_redirect $(BUILD)/test_workspace $(BUILD)/test_media_icon $(BUILD)/test_viewer
 	$(BUILD)/test_url
+	$(BUILD)/test_platform
+	$(BUILD)/test_file
+	$(BUILD)/test_net_redirect
+	$(BUILD)/test_workspace
+	$(BUILD)/test_media_icon
+	$(BUILD)/test_viewer $(BUILD)/viewer-test.html
+	@if command -v node >/dev/null 2>&1; then node tests/test_viewer.js $(BUILD)/viewer-test.html; else echo "SKIP viewer script test: Node not installed"; fi
 
 clean:
 	rm -rf $(BUILD)
@@ -74,13 +103,15 @@ CSS_TEST_SRC := $(BASE_SRC) $(NET_SRC) src/dom/dom.c src/html/html.c src/html/en
 $(BUILD)/style: $(call OBJ,tests/style.c $(CSS_TEST_SRC))
 	$(CC) $(OPT) $^ -o $@ $(NETLIBS)
 $(BUILD)/text: $(call OBJ,tests/text.c $(BASE_SRC) src/text/font.c)
-	$(CC) $(OPT) $^ -o $@ $(BASELIBS) -lfreetype -lharfbuzz
+	$(CC) $(OPT) $^ -o $@ $(BASELIBS) $(FONTLIBS)
+$(BUILD)/test_font_fallback: $(call OBJ,tests/test_font_fallback.c $(BASE_SRC) src/text/font.c)
+	$(CC) $(OPT) $^ -o $@ $(BASELIBS) $(FONTLIBS)
 LAYOUT_TEST_SRC := $(CSS_TEST_SRC) src/text/font.c $(wildcard src/layout/*.c)
 $(BUILD)/layout: $(call OBJ,tests/layout.c $(LAYOUT_TEST_SRC))
-	$(CC) $(OPT) $^ -o $@ $(NETLIBS) -lfreetype -lharfbuzz
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS) $(FONTLIBS)
 RENDER_TEST_SRC := $(LAYOUT_TEST_SRC) $(wildcard src/paint/*.c)
 $(BUILD)/render: $(call OBJ,tests/render.c $(RENDER_TEST_SRC))
-	$(CC) $(OPT) $^ -o $@ $(NETLIBS) -lfreetype -lharfbuzz -lpng -ljpeg -lwebp -lgif
+	$(CC) $(OPT) $^ -o $@ $(NETLIBS) $(FONTLIBS) -lpng -ljpeg -lwebp -lgif
 
 $(BUILD)/src/app/icon.inc: assets/icon/lumen-256.png
 	@mkdir -p $(dir $@)

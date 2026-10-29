@@ -1,0 +1,46 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width">
+<title>Event wait regression</title>
+<h1>Event wait regression</h1>
+<p id="status">Checking timer delivery…</p>
+<button id="button">Tap to check input</button>
+<pre id="result"></pre>
+<script>
+(async () => {
+    const results = [], counts = [0, 0, 0];
+    const intervals = [25, 100, 250].map((ms, i) => setInterval(() => counts[i]++, ms));
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const report = value => fetch('/report', {method:'POST',body:JSON.stringify(value)});
+    let clicks = 0;
+    document.getElementById('button').onclick = async () => {
+        document.getElementById('status').textContent = 'Input received ' + ++clicks;
+        await report({fixture:'event-wait',phase:'input',clicks});
+    };
+    await sleep(5000);
+    counts.fill(0);
+    const start = performance.now();
+    await report({fixture:'event-wait',phase:'idle-start'});
+    await sleep(30000);
+    const duration = performance.now() - start;
+    intervals.forEach(clearInterval);
+    [25,100,250].forEach((ms,i) => results.push({name:'timer-'+ms, count:counts[i], duration,
+        pass:counts[i] >= duration / ms * .85 && counts[i] <= duration / ms + 2}));
+    const animationStart = performance.now();
+    let frames = 0;
+    await new Promise(resolve => {
+        function frame() { if (++frames < 10) requestAnimationFrame(frame); else resolve(); }
+        requestAnimationFrame(frame);
+    });
+    results.push({name:'animation-delivery',frames,pass:frames === 10 && performance.now()-animationStart < 1000});
+    const channel = new MessageChannel();
+    const message = await new Promise(resolve => {
+        channel.port1.onmessage = event => resolve(event.data);
+        channel.port2.postMessage('delivered');
+    });
+    channel.port1.close();channel.port2.close();
+    results.push({name:'message-delivery',pass:message === 'delivered'});
+    document.getElementById('result').textContent = JSON.stringify(results,null,2);
+    document.getElementById('status').textContent = results.every(r=>r.pass) ? 'PASS; tap button' : 'FAIL';
+    await report({fixture:'event-wait',phase:'complete',results});
+})().catch(error => { document.getElementById('status').textContent = String(error); });
+</script>

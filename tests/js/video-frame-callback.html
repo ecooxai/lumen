@@ -1,0 +1,38 @@
+<!doctype html><meta charset="utf-8"><title>Video frame callbacks</title>
+<video id="v" width="640" height="360" muted controls></video><pre id="out">Running…</pre>
+<script>
+(async()=>{
+ const v=document.getElementById('v'), results=[], wait=ms=>new Promise(r=>setTimeout(r,ms));
+ const check=(name,pass,detail)=>results.push({name,pass:!!pass,detail});
+ const next=()=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('frame callback timeout')),5000);v.requestVideoFrameCallback((now,meta)=>{clearTimeout(timer);resolve({now,meta})})});
+ try {
+  let canceled=false;const id=v.requestVideoFrameCallback(()=>canceled=true);v.cancelVideoFrameCallback(id);
+  await wait(300);check('no-frames-before-load',!canceled && v.getVideoPlaybackQuality().totalVideoFrames===0);
+  const first=next();v.src='/video.mp4';await v.play();const f=await first;
+  check('real-metadata',f.meta.width===640 && f.meta.height===360 && f.meta.presentedFrames>0 && f.meta.mediaTime>=0 && f.meta.presentationTime<=f.now+2 && f.meta.expectedDisplayTime>=f.meta.presentationTime,f);
+  const g=await next();check('next-frame',g.meta.presentedFrames>f.meta.presentedFrames && g.meta.mediaTime>f.meta.mediaTime && !canceled,g);
+  let second=false,secondId;const cancellation=new Promise(resolve=>{
+   v.requestVideoFrameCallback(()=>{v.cancelVideoFrameCallback(secondId);resolve()});secondId=v.requestVideoFrameCallback(()=>second=true);
+  });await cancellation;await wait(50);check('cancel-during-dispatch',!second);
+  const order=[];await new Promise(resolve=>v.requestVideoFrameCallback(()=>{order.push('video');requestAnimationFrame(()=>{order.push('raf');resolve()})}));check('video-before-raf',order.join(',')==='video,raf');
+  v.pause();await wait(200);const q=v.getVideoPlaybackQuality();let pausedFired=false;
+  const pending=v.requestVideoFrameCallback(()=>pausedFired=true);await wait(600);
+  check('paused-no-callbacks',!pausedFired && v.getVideoPlaybackQuality().totalVideoFrames===q.totalVideoFrames,q);v.cancelVideoFrameCallback(pending);
+  // This element has never registered a callback, but already has a frame.
+  const fresh=document.createElement('video');fresh.muted=true;fresh.src='/video.mp4';document.body.appendChild(fresh);
+  await fresh.play();await wait(500);fresh.pause();await wait(200);let stale=false;
+  const freshId=fresh.requestVideoFrameCallback(()=>stale=true);await wait(500);
+  check('first-paused-registration-waits',!stale && fresh.getVideoPlaybackQuality().totalVideoFrames>0);
+  fresh.cancelVideoFrameCallback(freshId);fresh.removeAttribute('src');fresh.load();fresh.remove();
+  const sought=next();v.currentTime=2;const h=await sought;const after=v.getVideoPlaybackQuality();
+  check('paused-seek',v.paused && h.meta.mediaTime>=1.9 && after.totalVideoFrames>q.totalVideoFrames,h);
+  check('quality-snapshot',q.totalVideoFrames>=q.droppedVideoFrames && !Reflect.set(q,'totalVideoFrames',0) && q!==after);
+  v.removeAttribute('src');v.load();check('reload-resets-quality',v.getVideoPlaybackQuality().totalVideoFrames===0);
+  // Leave a real paused player with a pending callback for idle CPU sampling.
+  const reloaded=next();v.src='/video.mp4';await v.play();const again=await reloaded;check('callback-count-survives-reload',again.meta.presentedFrames>h.meta.presentedFrames);v.pause();await wait(200);
+  v.requestVideoFrameCallback(()=>fetch('/report',{method:'POST',body:JSON.stringify([{name:'unexpected-idle-callback',pass:false}])}));
+ } catch(e){check('unexpected-error',false,String(e))}
+ document.getElementById('out').textContent=JSON.stringify(results,null,2);
+ await fetch('/report',{method:'POST',body:JSON.stringify(results)});
+})();
+</script>

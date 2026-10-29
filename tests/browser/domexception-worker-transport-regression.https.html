@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>DOMException transport, identity and legacy host records</title><script src="/resources/testharness.js"></script><script src="/resources/testharnessreport.js"></script><body><script>
+let messages={},resolve;const all=new Promise(r=>resolve=r);
+const workerCode=`
+const e=new DOMException('worker clone payload','InvalidStateError');const originalStack=e.stack;e.uncloneable=()=>{};const graph=structuredClone({value:e,alias:e,map:new Map([[e,e]])});const c=graph.value;postMessage({kind:'clone',message:c.message,name:c.name,code:c.code,tag:Object.prototype.toString.call(c),isError:Error.isError(c),stack:typeof c.stack,stackEqual:c.stack===originalStack,shared:c===graph.alias&&graph.map.get(c)===c,extra:Object.hasOwn(c,'uncloneable')});
+const outbound=new DOMException('worker post payload','AbortError');postMessage({kind:'outbound',value:outbound,alias:outbound,map:new Map([[outbound,outbound]]),stack:outbound.stack});
+onmessage=event=>{const graph=event.data,v=graph.value;postMessage({kind:'inbound',message:v.message,name:v.name,code:v.code,tag:Object.prototype.toString.call(v),isError:Error.isError(v),shared:v===graph.alias&&graph.map.get(v)===v,stackEqual:v.stack===graph.stack});};
+(async()=>{try{const key=await crypto.subtle.importKey('raw',new Uint8Array([1,2,3,4]),{name:'HMAC',hash:'SHA-256'},true,['sign']);const keyOnly=structuredClone(key);const combo=structuredClone({key:key,error:e});const data=new Uint8Array([3,2,1]);const a=await crypto.subtle.sign('HMAC',key,data),b=await crypto.subtle.sign('HMAC',keyOnly,data),c=await crypto.subtle.sign('HMAC',combo.key,data);postMessage({kind:'crypto',ok:true,key:combo.key instanceof CryptoKey,keyOnly:keyOnly instanceof CryptoKey,algorithm:combo.key.algorithm.name,same:Array.from(new Uint8Array(a)).join(',')===Array.from(new Uint8Array(b)).join(',')&&Array.from(new Uint8Array(a)).join(',')===Array.from(new Uint8Array(c)).join(','),exception:combo.error instanceof DOMException&&combo.error.message==='worker clone payload'});}catch(err){postMessage({kind:'crypto',ok:false,error:String(err)});}})();
+const module=new WebAssembly.Module(new Uint8Array([0,97,115,109,1,0,0,0]));const mixed=structuredClone({module,error:e});postMessage({kind:'wasm',module:mixed.module instanceof WebAssembly.Module,exception:mixed.error instanceof DOMException});
+const bad=[];for(const value of [()=>{},Symbol('uncloneable'),new Proxy({},{})]){try{structuredClone(value);bad.push('NO_THROW');}catch(err){bad.push([err instanceof DOMException,err.name,err.code]);}}postMessage({kind:'unsupported',results:bad});
+`;
+const blob=URL.createObjectURL(new Blob([workerCode],{type:'text/javascript'}));const w=new Worker(blob);w.onmessage=e=>{messages[e.data.kind]=e.data;if(Object.keys(messages).length===6){w.terminate();URL.revokeObjectURL(blob);resolve(messages);}};w.onerror=e=>{messages.error=String(e.message);w.terminate();resolve(messages);};const sent=new DOMException('page post payload','SyntaxError');w.postMessage({value:sent,alias:sent,map:new Map([[sent,sent]]),stack:sent.stack});
+function check(name,fn){promise_test(async()=>{const m=await all;assert_false('error' in m,m.error);fn(m);},name);}
+check('Worker clone retains message',m=>assert_equals(m.clone.message,'worker clone payload'));
+check('Worker clone retains name, code and brand',m=>{assert_equals(m.clone.name,'InvalidStateError');assert_equals(m.clone.code,11);assert_equals(m.clone.tag,'[object DOMException]');});
+check('Worker clone remains a native error',m=>assert_true(m.clone.isError));
+check('Worker clone preserves repeated references and Map keys',m=>assert_true(m.clone.shared));
+check('Worker clone preserves exact captured stack',m=>assert_true(m.clone.stackEqual));
+check('Worker clone excludes arbitrary author properties',m=>assert_false(m.clone.extra));
+check('Worker to page retains message',m=>assert_equals(m.outbound.value.message,'worker post payload'));
+check('Worker to page retains name, code and brand',m=>{assert_true(m.outbound.value instanceof DOMException);assert_equals(m.outbound.value.name,'AbortError');assert_equals(m.outbound.value.code,20);});
+check('Worker to page remains a native error',m=>assert_true(Error.isError(m.outbound.value)));
+check('Worker to page preserves repeated references and Map keys',m=>{assert_equals(m.outbound.value,m.outbound.alias);assert_equals(m.outbound.map.get(m.outbound.value),m.outbound.value);});
+check('Worker to page preserves exact captured stack',m=>assert_equals(m.outbound.value.stack,m.outbound.stack));
+check('Page to worker retains message',m=>assert_equals(m.inbound.message,'page post payload'));
+check('Page to worker retains name, code and brand',m=>{assert_equals(m.inbound.name,'SyntaxError');assert_equals(m.inbound.code,12);assert_equals(m.inbound.tag,'[object DOMException]');});
+check('Page to worker remains a native error',m=>assert_true(m.inbound.isError));
+check('Page to worker preserves repeated references and Map keys',m=>assert_true(m.inbound.shared));
+check('Page to worker preserves exact captured stack',m=>assert_true(m.inbound.stackEqual));
+check('Legacy CryptoKey host records still round-trip',m=>{assert_true(m.crypto.ok,m.crypto.error);assert_true(m.crypto.keyOnly);assert_true(m.crypto.same);});
+check('CryptoKey and DOMException records coexist in one graph',m=>{assert_true(m.crypto.ok,m.crypto.error);assert_true(m.crypto.key);assert_equals(m.crypto.algorithm,'HMAC');assert_true(m.crypto.exception);});
+check('WebAssembly modules and DOMException records coexist',m=>{assert_true(m.wasm.module);assert_true(m.wasm.exception);});
+check('Unsupported values still throw branded DataCloneError',m=>{assert_equals(m.unsupported.results.length,3);for(const result of m.unsupported.results){assert_array_equals(result,[true,'DataCloneError',25]);}});
+</script>

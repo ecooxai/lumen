@@ -3,14 +3,27 @@
 #include "../dom/dom.h"
 
 /* ---------------- values ---------------- */
-enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT };
-typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm; float px2, pct2; } Length;  /* pctu: written with % (so 0% != 0px); mm 1/2: min/max(px+pct, px2+pct2), px/pct alone is a best guess */
+enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT, LK_CONTENT };
+typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm, math_pct_mask; float px2, pct2, px3, pct3; } Length;
+/* pctu: written with % (so 0% != 0px). mm1/2 are two-arm min/max.
+   mm3 is max(arm2,min(arm1,arm3)); mm4 is its min/max dual after
+   negative scaling. math_pct_mask retains each arm's written percentage
+   type for serialization without using additional structure padding. */
 /* Length value = px + pct/100 * reference */  /* value = px + pct/100 * reference */
 static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
 static inline Length L_auto(void) { Length l = { 0, 0, LK_AUTO }; return l; }
-static inline float len_resolve(Length l, float ref) { return l.px + l.pct * ref / 100.f; }
+static inline float len_resolve(Length l, float ref) {
+    float a = l.px + l.pct * ref / 100.f;
+    if (!l.mm) return a;
+    float b = l.px2 + l.pct2 * ref / 100.f;
+    if (l.mm == 1) return LMIN(a, b);
+    if (l.mm == 2) return LMAX(a, b);
+    float c = l.px3 + l.pct3 * ref / 100.f;
+    return l.mm == 3 ? LMAX(b, LMIN(a, c)) : LMIN(b, LMAX(a, c));
+}
+static inline uint8_t len_math_flip(uint8_t mm) { return mm ? (uint8_t)((mm <= 2 ? 3 : 7) - mm) : 0; }
 static inline bool len_is_auto(Length l) { return l.kind == LK_AUTO; }
-static inline bool len_has_pct(Length l) { return l.kind == LK_LEN && l.pct != 0; }
+static inline bool len_has_pct(Length l) { return l.kind == LK_LEN && (l.pct != 0 || (l.mm && l.pct2 != 0) || (l.mm >= 3 && l.pct3 != 0)); }
 
 typedef uint32_t Color; /* 0xAARRGGBB */
 #define COLOR_A(c) (((c) >> 24) & 0xff)
@@ -32,10 +45,14 @@ enum FlexDir { FD_ROW, FD_ROW_REVERSE, FD_COLUMN, FD_COLUMN_REVERSE };
 enum Align { AL_AUTO, AL_NORMAL, AL_STRETCH, AL_FLEX_START, AL_FLEX_END, AL_CENTER, AL_BASELINE, AL_SPACE_BETWEEN, AL_SPACE_AROUND, AL_SPACE_EVENLY, AL_START, AL_END };
 enum VAlign { VA_BASELINE, VA_TOP, VA_MIDDLE, VA_BOTTOM, VA_TEXT_TOP, VA_TEXT_BOTTOM, VA_SUB, VA_SUPER, VA_LENGTH };
 enum { TT_NONE, TT_UPPER, TT_LOWER, TT_CAPITALIZE };
+enum { TOUCH_NO_X = 1, TOUCH_NO_Y = 2 };
 enum { TD_UNDERLINE = 1, TD_OVERLINE = 2, TD_LINE_THROUGH = 4 };
 enum { BOX_CONTENT, BOX_BORDER };
 enum { VIS_VISIBLE, VIS_HIDDEN, VIS_COLLAPSE };
-enum { BG_REPEAT = 0, BG_NO_REPEAT = 1, BG_REPEAT_X = 2, BG_REPEAT_Y = 3 };
+/* Two repeat modes packed into bg_repeat: horizontal in bits0..1, vertical in bits2..3. */
+enum { BGR_REPEAT = 0, BGR_NO_REPEAT = 1, BGR_ROUND = 2, BGR_SPACE = 3 };
+enum { BG_REPEAT = 0, BG_NO_REPEAT = 5, BG_REPEAT_X = 4, BG_REPEAT_Y = 1 };
+enum { BG_BORDER_BOX = 0, BG_PADDING_BOX = 1, BG_CONTENT_BOX = 2 };
 enum { BGS_AUTO, BGS_COVER, BGS_CONTAIN, BGS_LEN };
 enum { OF_FILL, OF_CONTAIN, OF_COVER, OF_NONE, OF_SCALE_DOWN };
 enum { LST_NONE, LST_DISC, LST_CIRCLE, LST_SQUARE, LST_DECIMAL, LST_LOWER_ALPHA, LST_UPPER_ALPHA, LST_LOWER_ROMAN, LST_UPPER_ROMAN };
@@ -43,26 +60,40 @@ enum { CUR_DEFAULT, CUR_POINTER, CUR_TEXT, CUR_MOVE, CUR_NOT_ALLOWED, CUR_GRAB }
 enum { TO_CLIP, TO_ELLIPSIS };
 
 typedef struct { float pos; Color color; } GradStop;
-typedef struct Gradient { uint8_t type; /* 0 linear 1 radial */ float angle; int nstops; GradStop stops[8]; bool repeating; } Gradient;
+typedef struct Gradient { uint8_t type; /* 0 linear 1 radial */ float angle; int nstops; GradStop stops[8]; bool repeating; const char *ser; /* computed value text, in the same allocation (or NULL) */ } Gradient;
 
 typedef struct { float x, y, blur, spread; Color color; bool inset; } Shadow;
 
+typedef struct { uint64_t w[4]; } CustomMask; /* 256-bit bloom of custom property names */
 typedef struct CustomProps { int refs, depth; HMap map; struct CustomProps *parent; } CustomProps; /* own name -> char* value, then parent's */
 const char *custom_get(const CustomProps *c, const char *name);
 /* @property registrations: initial-value used when a custom property is unset */
 void css_register_property(const char *name, const char *initial);
+/* @position-try rules: a fallback's style is the box's style with the rule's (allowed) declarations applied */
+void css_register_position_try(const char *name, const char *body);
+struct ComputedStyle *css_position_try_style(const struct ComputedStyle *s, const char *name, Node *el);
+void css_position_try_free(struct ComputedStyle *t);
 const char *css_property_initial(const char *name);
 
 typedef struct GridTrack { Length size; float fr; Length min; } GridTrack;
+/* Preserve authored edges independently until layout knows the explicit grid.
+   Deriving a start/span during cascading loses start-side spans and order. */
+typedef struct GridLine { int number, span; } GridLine; /* both zero: auto */
+typedef struct GridAxis { GridLine start, end; } GridAxis;
 
 typedef struct ComputedStyle {
     int refs;
     uint8_t display, position, float_, clear, overflow_x, overflow_y, visibility, box_sizing;
+    const char *display_text;   /* atom: canonical display when it is not one of the Display keywords (e.g. "inline list-item") */
     uint8_t text_align, white_space, text_transform, text_decoration, font_style, list_style, cursor, pointer_events;
     uint8_t flex_direction, flex_wrap, justify_content, align_items, align_self, align_content, justify_items, justify_self;
     uint8_t vertical_align, bg_repeat, bg_size_kind, object_fit, text_overflow, word_break, overflow_wrap, direction;
+    uint8_t bg_origin, bg_clip, bg_color_clip;
+    uint32_t bg_layers;             /* includes none layers; color uses the last layer clip */
     uint8_t border_style[4];
-    uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, container_type, resize, writing_mode;
+    uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, container_type, resize, writing_mode, pos_try_order;   /* pos_try_order: 0 normal, 1 most-width, 2 most-height */
+    uint8_t inert;   /* inside an inert subtree: never hit, focused or selected, whatever pointer-events the page sets */
+    uint8_t touch_block;   /* touch-action as the panning it forbids: TOUCH_NO_X | TOUCH_NO_Y (0: auto) */
     const char *container_name; /* atom: space-separated names, or NULL */
     int16_t font_weight;
     int z_index; bool z_auto;
@@ -77,11 +108,19 @@ typedef struct ComputedStyle {
     Length width, height, min_width, min_height, max_width, max_height;
     Length margin[4], padding[4], inset[4]; /* top right bottom left */
     float border_width[4];
+    float border_spacing[2]; /* computed absolute horizontal and vertical gaps; inherited */
     Color border_color[4];
     Length border_radius[4]; /* tl tr br bl */
     float outline_width, outline_offset; Color outline_color;
     Color color, bg_color;
+    const char *color_ser, *bg_ser;  /* atoms: computed values of colours that 8-bit sRGB can't express, else NULL */
     char *bg_image;         /* url (owned) */
+    char *anchor_name;      /* anchor-name list (owned), NULL for none */
+    char *pos_anchor;       /* position-anchor name (owned), NULL for auto */
+    char *pos_area;         /* position-area value (owned), NULL for none */
+    char *pos_try;          /* position-try-fallbacks list (owned), NULL for none */
+    char *anchor_sz[2];     /* width/height written with anchor-size(), resolved at layout (owned) */
+    char *anchor_ins[4];    /* an inset (top right bottom left) written with anchor(), resolved at layout (owned) */
     Gradient *bg_gradient;  /* owned */
     char *mask_image;       /* url (owned) */
     uint8_t mask_fit;       /* 0 auto, 1 contain, 2 cover */
@@ -94,7 +133,7 @@ typedef struct ComputedStyle {
     float aspect_ratio;
     char *content;          /* for ::before/::after */
     int grid_ncols; GridTrack *grid_cols; int grid_nrows; GridTrack *grid_rows; Length grid_auto_rows;
-    int grid_col_start, grid_col_span, grid_row_start, grid_row_span;
+    GridAxis grid_column, grid_row;
     char *grid_areas;       /* template areas: cells space-separated, rows '/'-separated */
     char *grid_area;        /* named grid-area of an item */
     float filter_blur; float filter_brightness; float backdrop_blur;
@@ -103,6 +142,12 @@ typedef struct ComputedStyle {
     const char *anim_name; float anim_dur, anim_delay, anim_iter; /* first animation layer; name is an atom */
     const char *tr_prop; float tr_dur, tr_delay;                 /* transition-property list atom (NULL = all), max times */
     CustomProps *custom;
+    CustomProps *gen_i, *gen_n;   /* properties without a native field: cascaded value strings (inherited ones / the rest); "" = initial */
+    CustomMask custom_dependencies; /* bloom filter of var() names actually consulted */
+    uint64_t attribute_dependencies; /* attr() names consulted, including pseudos */
+    bool parent_sensitive, inherited_dynamic; /* explicit inherit, container/style-attribute rules */
+    bool uses_vh; /* resolved a viewport-height unit (vh, vmin, vmax, viewport cq*), here or in a pseudo */
+    uint8_t indep_set; /* independent inherited properties the cascade set (style.c INDEP_*) */
     struct ComputedStyle *before, *after, *marker; /* pseudo element styles */
 } ComputedStyle;
 
@@ -113,21 +158,25 @@ extern void (*css_style_change_hook)(Node *n, const ComputedStyle *old, const Co
 typedef struct Decl { const char *prop; char *value; bool important; } Decl;
 typedef VEC(Decl) DeclList;
 
-enum SelKind { SK_TYPE, SK_UNIVERSAL, SK_ID, SK_CLASS, SK_ATTR, SK_PSEUDO, SK_PSEUDO_EL };
+enum SelKind { SK_TYPE, SK_UNIVERSAL, SK_ID, SK_CLASS, SK_ATTR, SK_PSEUDO, SK_PSEUDO_EL,
+    SK_TREE_RELATED, SK_CHANGED_KEY /* invalidation-only; never emitted by the CSS parser */ };
 enum Combinator { CB_NONE, CB_DESC, CB_CHILD, CB_ADJ, CB_SIB };
 typedef struct SelList SelList;
 typedef struct SimpleSel {
     uint8_t kind, op, ci; /* attr op: 0 exists, '=', '~', '|', '^', '$', '*' */
+    uint8_t nsk;          /* type/universal: 1 = elements in no namespace (|name); attr: 1 = [|name], 2 = any namespace [*|name] */
     const char *name;     /* atom: tag/id/class/attr/pseudo */
+    const char *raw;      /* attr: the name as written (atom), matched case-sensitively outside HTML elements in HTML documents */
     char *value;
     int a, b;             /* nth */
     SelList *sub;         /* :not/:is/:where/:has/nth-of */
 } SimpleSel;
 typedef struct Compound { SimpleSel *s; int n; uint8_t comb; /* combinator to the LEFT (towards previous compound) */ } Compound;
-typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other */ } Selector;
+typedef struct Selector { Compound *c; int n; uint32_t spec; uint8_t pseudo_el; /* 0 none 1 before 2 after 3 other */ bool reads_style_attribute; /* tests the style attribute's value, which inline-style edits change without selector invalidation */ uint16_t required_class_filter; /* encoded bloom bit + 1, 0 = none */ } Selector;
 struct SelList { Selector *v; int n; };
 
 typedef struct ContainerCond { char *name, *query; struct ContainerCond *outer; } ContainerCond;
+typedef struct MediaCond { char *query; struct MediaCond *outer; bool matches; } MediaCond;
 /* container query environment: the container's content size and its custom properties (style()) */
 typedef struct CQEnv { float w, h; bool size, block; const char *(*var)(const void *ud, const char *name); const void *ud; } CQEnv;
 bool css_container_eval(const char *q, const CQEnv *env);
@@ -135,10 +184,21 @@ bool css_container_eval(const char *q, const CQEnv *env);
 typedef struct Rule {
     Selector sel; /* single selector (selector lists are split) */
     DeclList *decls; /* shared between split selectors */
-    uint32_t order;
+    uint64_t order; /* cascade position once indexed: sheet rank << 32 | rule index << 8 */
     uint8_t origin; /* 0 UA, 1 author */
     uint8_t layer;
     const ContainerCond *cq; /* innermost @container, or NULL */
+    Node *scope; /* shadow root containing the stylesheet; NULL for document */
+    const MediaCond *mq;
+    uint16_t ancestor_class_filter2; /* additional necessary ancestor class */
+    uint16_t ancestor_class_filter; /* 0..1023 bloom bit, 1024 = no necessary class */
+    bool multi_key; /* indexed under each :is()/:where() subject alternative */
+    bool filters_ready; /* class filters above depend only on the selector; computed once */
+    bool dead; /* its sheet was removed; still indexed (never matched) until the next index rebuild */
+    uint64_t collect_stamp; /* last matched_decls call that collected a multi-key rule */
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    uint32_t dbg_tests, dbg_hits; /* debug: selector tests per style pass */
+#endif
 } Rule;
 
 typedef struct MediaCtx { float vw, vh, dpr; bool dark; } MediaCtx;
@@ -148,30 +208,120 @@ typedef struct StyleSheet {
     VEC(DeclList *) decl_lists;
     VEC(char *) imports;
     VEC(ContainerCond *) conds;
+    VEC(MediaCond *) media_conds;
     VEC(char *) font_faces; /* raw @font-face src urls, family pairs */
     char *base_url;
     bool disabled;
+    bool media_off;   /* its <style>/<link> media attribute doesn't match */
     Node *owner;
     int origin;
+    uint32_t rank; /* cascade order among the engine's sheets; gaps let a sheet be indexed between two others */
 } StyleSheet;
 
+/* mode 0: test every element (keyed by the subject); 1: compound dep tests a
+ * changed element's :empty directly; 2: compound dep tests it through :has, so
+ * it is an ancestor (sib: or an ancestor's preceding sibling) of the change. */
+typedef struct EmptyDependency { Selector candidate; Node *scope; int dep; uint8_t mode; bool sib; } EmptyDependency;
+typedef struct TreeDependency {
+    Selector candidate; Node *scope; bool global;
+    const char *subject; uint8_t subject_kind;
+    const Selector *source; /* borrowed, for bounded selector-shape diagnostics */
+    bool witness_filter, focus_tree_filter; uint64_t witness_keys[16];
+    uint64_t selector_keys[16]; /* class/ID dependencies anywhere in the source selector */
+    Selector changed_candidate; /* lazily widened for coalesced class/ID changes */
+    bool selector_changed;
+    const char *parent_names[4]; uint8_t parent_kinds[4], nparent; /* the subject's parent carries one of these */
+} TreeDependency;
 typedef struct RuleIndex {
     HMap by_id, by_class, by_tag; /* -> RuleVec* */
+    HMap empty_ids, empty_classes, empty_tags;
+    HMap attribute_subjects; /* attribute name -> conservative rule subject keys */
+    HMap attribute_candidates; /* attribute name -> widened selectors retaining independent constraints */
+    HMap self_attributes;   /* attribute selectors that only depend on their subject */
+    HMap attribute_bearers; /* attribute name -> keys of the compounds testing it (HovDesc) */
+    bool empty_universal;
+    VEC(EmptyDependency) empty_candidates; /* shallow selectors with emptiness-dependent tests removed */
+    VEC(TreeDependency) tree_candidates; /* structural tests removed; payloads borrowed from sheets */
+    VEC(SelList *) tree_candidate_lists; /* owned nested positive alternatives; leaf payloads borrowed */
+    HMap by_attr, by_parent_tag, by_parent_class, by_parent_attr; /* unkeyed subjects: a required attribute; a required parent type, class or attribute (a > *) */
+    VEC(Rule *) root_rules; /* :root subjects */
     VEC(Rule *) universal;
+    void *ancestor_buckets[1024]; /* RuleVecs, indexed by necessary class bloom bit */
+    uint64_t ancestor_bucket_bits[16];
     uint32_t count;
+    /* Compounds left of + / ~: keys whose change can alter a following sibling's
+     * match. sib_state: a keyless compound tests element state; sib_desc: a
+     * descendant follows the sibling relation, so sibling subtrees reselect;
+     * sib_style: such a compound reads the style attribute. */
+    uint64_t sib_keys[16]; bool sib_any, sib_state, sib_desc, sib_style;
+    uint64_t sib_general_keys[16]; bool sib_general_state, sib_general_style; /* the same, reaching past the next element */
+    uint64_t reselect_keys[16]; /* class/ID/attribute keys tested left of a rule's subject compound */
+    VEC(uint16_t) reselect_subjects[1024]; /* per reselect key bit: subject key bits of its rules, 1024 = any element */
+    uint64_t has_keys[16]; /* class/ID keys inside :has() arguments: their change can restyle distant subjects */
+    /* Rules testing :focus-within left of the subject, with their subject keys (NULL: unkeyed).
+       fw_far: those that also need siblings or :has, so their subjects lie anywhere;
+       fw_complex: one is shadow-scoped or too many far ones are unkeyed. */
+    VEC(Rule *) fw_rules; VEC(const char *) fw_keys; VEC(Rule *) fw_far; VEC(const char *) fw_far_keys; int fw_far_unkeyed; bool fw_complex;
     HMap hov_desc, anc_desc; void *hov_desc_u, *anc_desc_u; /* key of a non-subject :hover compound -> subject keys it can affect */
-    HMap hov, hov_anc, hov_ach; /* hov_ach: like hov_anc but keyed by the subject's parent (`.k > :has(...)`) */ uint8_t hov_univ; bool hov_has, hov_sib; /* hov_anc: keys of compounds with :has(...:hover...), | 16 for :has(+ ...), 32 for :has(~ ...) */ /* :hover invalidation: id/class/tag -> 1 self, 2 subtree, 4 parent subtree */
+    HMap hov, hov_anc, hov_ach; /* hov_ach: like hov_anc but keyed by the subject's parent (`.k > :has(...)`) */ uint8_t hov_univ; bool hov_has, hov_sib, focus_within, style_values; /* style_values: a selector tests the style attribute's value */ /* hov_anc: keys of compounds with :has(...:hover...), | 16 for :has(+ ...), 32 for :has(~ ...) */ /* :hover invalidation: id/class/tag -> 1 self, 2 subtree, 4 parent subtree */
 } RuleIndex;
+
+typedef struct CssMatchCache CssMatchCache;
+/* Bounded memoization, active during synchronous style passes. Generation
+ * checks allow reuse across selector-neutral inline CSS and text edits. */
+CssMatchCache *css_match_cache_begin(CssMatchCache **cache);
+CssMatchCache *css_match_cache_suspend(void);   /* match uncached until css_match_cache_end(returned) */
+CssMatchCache *css_match_cache_begin_style(CssMatchCache **cache, Document *doc,
+    uint64_t generation, bool force);
+void css_match_cache_subject(Node *subject, const uint64_t ancestor_classes[16]);
+void css_match_cache_end(CssMatchCache *previous);
+void css_match_cache_free(CssMatchCache *cache);
 
 typedef struct StyleEngine {
     VEC(StyleSheet *) sheets;   /* document order */
-    RuleIndex idx; bool idx_dirty;
+    RuleIndex idx; bool idx_dirty, idx_changed; /* changed: rebuilt or extended since the last pass */
+    VEC(StyleSheet *) dead_sheets; /* removed, but their rules stay in the index until it is rebuilt */
+    /* Subjects of rules in sheets added/removed since the last pass, so a sheet
+     * change restyles only elements those rules can match. */
+    HMap delta_ids, delta_classes, delta_tags, delta_attrs, delta_parent_tags, delta_parent_classes, delta_parent_attrs; uint64_t delta_ancestors[16];
+    HMap delta_adj_classes, delta_sib_classes; /* a new rule's subject follows a sibling with this class */
+    bool delta_any, delta_all, delta_root; uint64_t seen_regprop_version;
+    const Rule *dbg_delta_all_rule; /* debug: the added or removed rule that forced a full restyle */
     MediaCtx media;
+    MediaCtx styled_media;
+    bool media_valid;
+    bool uses_font_units; unsigned styled_font_generation;
     uint32_t order_counter;
     Document *doc;
     uint64_t generation;
-    int stats_matched, stats_paint;
+    uint64_t seen_text_emptiness;
+    uint64_t seen_tree_version;
+    uint64_t seen_sheet_version;
+    uint64_t seen_inheritance_version;
+    bool reuse_inherited, collect_dynamic, keyed_reselect;
+    bool collect_style_value;   /* the element's match read a style attribute value: no memo, its own value edits change it */
+    bool keyed_whole; uint64_t keyed_subjects[16]; /* descendants a keyed change can rematch */
+    int stats_matched, stats_paint, stats_reused, stats_memo_hits;
+    uint64_t stats_rule_iter, stats_rule_tests, stats_rule_hits; /* debug: collect() work per pass */
+    int stats_roots, stats_big_root, stats_big_reselect, stats_big_inh; const char *stats_big_tag; /* debug: dirty subtree roots */
+    uint64_t stats_anc_iter;
+    int stats_rebase_why[5]; /* debug: parent_sensitive, dynamic, custom deps, custom chain, pseudo */
+    int stats_indep_block, stats_rebase_block; const char *stats_inh_field; /* debug: why inherited-only children rematched */
+    uint64_t stats_tree_tests; /* structural dependency candidates examined */
+    uint64_t stats_tree_selector_tests; /* of those, matched against the selector */
+    const char *pending_attrs[16]; int npending_attrs;
+    uint64_t pending_bearers[16][16]; /* per pending attribute: key bits of the elements that changed it */ /* changed selector-only attributes whose distant subjects the next pass marks */
+    int debug_style_passes; /* debug-only device profiling, armed by F8 */
     bool layout_dirty;          /* a recalc changed something other than paint-only properties */
+    /* With allow_moves set, an element whose style changed only in inset is
+     * recorded here (with its old insets) instead of setting layout_dirty; the
+     * caller must apply each with layout_move or run layout, then clear nmoves. */
+    bool allow_moves;
+    struct StyleMove { Node *node; Length old[4]; } *moves;
+    int nmoves, cmoves, stats_moved;
+    Node *el_scope; /* tree scope of the element being matched */
+    const uint64_t *ancestor_classes;
+    CssMatchCache *match_cache;
 } StyleEngine;
 
 StyleSheet *css_parse_sheet(const char *src, size_t n, const char *base_url, int origin, const MediaCtx *mc);
@@ -179,14 +329,27 @@ void css_sheet_free(StyleSheet *s);
 DeclList *css_parse_decls(const char *src, size_t n);
 void css_decls_free(DeclList *d);
 bool css_parse_selector_list(const char *src, SelList *out);
+bool css_parse_query_selector_list(const char *src, SelList *out);   /* querySelector's stricter grammar */
 void css_sellist_free(SelList *l);
 char *css_selector_text(const char *src); /* canonical CSSOM serialization; NULL if invalid */
+/* Syntax only: matching always observes live DOM/state. Caller frees scratch. */
+const SelList *css_query_syntax(Document *d, const char *text, SelList *scratch);
+extern uint64_t css_has_stats[2];
+extern bool css_has_unfiltered;
+void css_has_debug_dump(bool log);   /* debug Android: log (if asked) and reset the costliest :has() arguments */   /* test hook: :has() walks every subtree, the reference for its name filter */   /* statistics: :has() tests, nodes their descendant walks visited */
 bool css_match_selector_list(const SelList *l, Node *el);
+bool css_match_selector_list_scoped(const SelList *l, Node *el, Node *scope);   /* scope: what :scope matches (NULL: the root) */
 bool css_match_selector(const Selector *s, Node *el, Node *scope);
 typedef VEC(Node *) NodeVec;
 Node *css_query(Node *root, const char *sel, bool all, NodeVec *out);
 bool css_media_matches(const char *q, const MediaCtx *mc);
+bool css_media_valid(const char *q);
 bool css_supports(const char *cond);
+bool css_flex_valid(const char *prop, const char *value);
+/* Grid1/2 automatic-repeat constraint; not a complete property grammar validator. */
+bool css_grid_repeat_valid(const char *property, const char *value);
+/* Caller owns *out. Used for implicit grid track-size patterns. */
+int css_parse_grid_tracks(const char *value, float em, float rem, const MediaCtx *media, GridTrack **out);
 
 StyleEngine *style_engine_new(Document *d);
 void style_engine_free(StyleEngine *e);
@@ -195,6 +358,8 @@ extern void (*css_sheet_added_hook)(StyleSheet *s);
 void style_engine_remove_owner(StyleEngine *e, Node *owner);
 void style_engine_invalidate(StyleEngine *e);
 void style_recalc(StyleEngine *e, Node *root, bool force);
+/* True only for a document that resolved font-relative metrics before a font load. */
+bool style_font_metrics_dirty(const StyleEngine *e);
 int style_hover_affects(StyleEngine *e, Node *el); 
 int style_hover_has(StyleEngine *e, Node *el, bool child);
 void style_hover_desc(StyleEngine *e, Document *d, Node *key, Node *root, int which); /* restyle root's descendants that rules keyed on key's :hover (which 0) or :has(:hover) (1) can affect */ /* flags of :has(...:hover...) rules whose subject could be el */ /* restyle scope when el's :hover state flips: 0 none, 1 self, 2 subtree, 4 parent subtree */
@@ -206,8 +371,16 @@ void style_ref(ComputedStyle *s);
 void style_free(ComputedStyle *s);
 bool css_parse_color(const char *s, Color *out, Color current);
 bool css_parse_length(const char *s, Length *out, float em, float rem, const MediaCtx *mc);
+/* an <img>'s source by srcset/sizes and its <picture>'s <source>s (HTML "select an image source"): the chosen URL
+   (unresolved) into buf and its pixel density; false when there is none. Without srcset or <picture>: src at 1x */
+bool css_img_source(const Node *img, char *buf, size_t bn, float *dens);
+bool css_img_sizes_auto(const Node *img);   /* lazy with sizes="auto": 300x150 intrinsic size */
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *parent, const char *prop, const char *value, StyleEngine *e, Node *el);
 char *css_get_computed_value(Node *el, const char *prop);
+char *css_get_computed_pseudo(Node *el, int which, const char *prop);
+char *css_get_animation_value(Node *el, const char *prop); /* computed, not CSSOM used values */
+void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s, void (*cb)(Node *, const char *, const char *, const char *));
+void css_set_anim_style(Node *n, const char *css);   /* Web Animations declaration layer; "" clears it */
 extern const char *css_ua_sheet;
 
 /* tokenizer (exposed for value parsing) */

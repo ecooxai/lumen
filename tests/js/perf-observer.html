@@ -1,0 +1,24 @@
+<!doctype html>
+<title>PerformanceObserver</title>
+<script>
+const log = (...a) => console.log('PO', ...a);
+log('types', PerformanceObserver.supportedEntryTypes.join(','));
+const got = [];
+new PerformanceObserver((list, o) => { for (const e of list.getEntries()) got.push(e.entryType + ':' + e.name); }).observe({ entryTypes: ['mark', 'measure'] });
+performance.mark('a'); performance.mark('b'); performance.measure('ab', 'a', 'b');
+queueMicrotask(() => queueMicrotask(() => log('marks', got.join(' '))));
+// a mark awaited by name and then an idle callback (how chatgpt.com releases its deferred UI)
+const late = new PerformanceObserver(list => {
+    if (list.getEntriesByName('composer.ttfi').length) { late.disconnect(); requestIdleCallback(() => log('awaited', performance.getEntriesByName('composer.ttfi', 'mark').length), { timeout: 1000 }); }
+});
+late.observe({ entryTypes: ['mark'] });
+setTimeout(() => performance.mark('composer.ttfi'), 5);
+addEventListener('load', () => setTimeout(() => {
+    new PerformanceObserver(list => {
+        const n = list.getEntries()[0];
+        log('nav', n.entryType, n.startTime === 0, n.duration > 0, n.domContentLoadedEventEnd > 0 && n.domContentLoadedEventEnd <= n.loadEventEnd);
+    }).observe({ type: 'navigation', buffered: true });
+    log('byType', performance.getEntriesByType('navigation').length, performance.getEntriesByType('mark').length);
+    performance.clearMarks('a'); log('cleared', performance.getEntriesByType('mark').map(m => m.name).join(','));
+}, 10));
+</script>

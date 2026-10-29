@@ -3,6 +3,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <ctype.h>
+#include <strings.h>
 
 typedef struct { char *name, *value, *domain, *path; bool host_only, secure, http_only; double expires; } Cookie;
 static VEC(Cookie) g_jar;
@@ -34,6 +35,8 @@ static double parse_http_date(const char *s) {
 }
 
 static void set_cookie(const char *host, const char *rpath, const char *sc, bool from_http) {
+    /* RFC 6265bis: a cookie string with a control character other than tab is ignored */
+    for (const unsigned char *p = (const unsigned char *)sc; *p; p++) if ((*p < 0x20 && *p != '\t') || *p == 0x7f) return;
     char *s = xstrdup(sc);
     char *semi = strchr(s, ';'); if (semi) *semi = 0;
     char *eq = strchr(s, '=');
@@ -99,6 +102,47 @@ char *cookies_get(const URL *u, bool for_http) {
 }
 void cookies_set_document(const char *url, const char *str) { URL u; if (!url_parse(url, &u)) return; set_cookie(u.host ? u.host : "", u.path ? u.path : "/", str, false); url_free(&u); }
 char *cookies_get_document(const char *url) { URL u; if (!url_parse(url, &u) || !u.host) return xstrdup(""); char *r = cookies_get(&u, false); url_free(&u); return r ? r : xstrdup(""); }
+
+/* A host's site, as "Delete data" in site info sees it: its registrable domain, approximated without a
+   public suffix list by the last two labels, or three under a common second level of a country code
+   (example.co.uk); an IP address or a single label is its own site. */
+void net_site_of(const char *host, char *out, size_t n) {
+    size_t len = strlen(host ? host : "");
+    if (!len || strchr(host, ':') || strspn(host, "0123456789.") == len) { snprintf(out, n, "%s", host ? host : ""); return; }
+    const char *d1 = strrchr(host, '.'), *d2 = NULL, *d3 = NULL;
+    for (const char *p = d1 ? d1 - 1 : NULL; p && p >= host; p--) if (*p == '.') { if (!d2) d2 = p; else { d3 = p; break; } }
+    const char *start = d2 ? d2 + 1 : host;
+    if (d2 && strlen(d1 + 1) == 2) {
+        static const char *const second[] = { "ac", "co", "com", "edu", "gob", "gov", "go", "ltd", "mil", "ne", "net", "nic", "or", "org", "plc", "sch" };
+        size_t sl = (size_t)(d1 - d2 - 1);
+        for (size_t i = 0; i < sizeof second / sizeof *second; i++)
+            if (strlen(second[i]) == sl && !strncasecmp(d2 + 1, second[i], sl)) { start = d3 ? d3 + 1 : host; break; }
+    }
+    snprintf(out, n, "%s", start);
+    for (char *q = out; *q; q++) *q = (char)tolower((unsigned char)*q);
+}
+void cookies_clear(void) {
+    pthread_mutex_lock(&g_mu);
+    for (int i = 0; i < g_jar.n; i++) cookie_free(&g_jar.v[i]);
+    if (g_jar.n) g_dirty = true;
+    g_jar.n = 0;
+    pthread_mutex_unlock(&g_mu);
+}
+int cookies_site(const char *site, bool remove) {
+    if (!site || !*site) return 0;
+    size_t sl = strlen(site); int count = 0; double now = (double)time(NULL);
+    pthread_mutex_lock(&g_mu);
+    for (int i = 0; i < g_jar.n; i++) {
+        Cookie *c = &g_jar.v[i];
+        size_t dl = strlen(c->domain);
+        bool match = dl == sl ? !strcasecmp(c->domain, site) : dl > sl && c->domain[dl - sl - 1] == '.' && !strcasecmp(c->domain + dl - sl, site);
+        if (!match) continue;
+        if (!remove) { count += c->expires < 0 || c->expires >= now; continue; }
+        cookie_free(c); g_jar.v[i--] = g_jar.v[--g_jar.n]; count++; g_dirty = true;
+    }
+    pthread_mutex_unlock(&g_mu);
+    return count;
+}
 
 /* Persistence: one tab-separated cookie per line (domain host_only path secure http_only expires name value). */
 void cookies_load(const char *path) {

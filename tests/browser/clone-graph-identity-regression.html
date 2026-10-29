@@ -1,0 +1,116 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Structured clone graph identity regression controls</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<pre id="results">Running clone graph controls</pre>
+<script>
+(function () {
+  'use strict';
+  const results = [];
+  function same(a, b, message) { if (!Object.is(a, b)) throw new Error(message || 'values must be identical'); }
+  function truth(value, message) { if (!value) throw new Error(message || 'condition must hold'); }
+  function run(name, body) {
+    let failure = null;
+    try { body(); } catch (e) { failure = String(e && e.message || e); }
+    results.push({ name, status: failure ? 'FAIL' : 'PASS', message: failure });
+    if (typeof test === 'function') test(function () { if (failure) throw new Error(failure); }, name);
+  }
+  const scalarTypes = [
+    ['Boolean false', () => new Boolean(false), x => Boolean.prototype.valueOf.call(x), false],
+    ['Boolean true', () => new Boolean(true), x => Boolean.prototype.valueOf.call(x), true],
+    ['Number NaN', () => new Number(NaN), x => Number.prototype.valueOf.call(x), NaN],
+    ['Number negative zero', () => new Number(-0), x => Number.prototype.valueOf.call(x), -0],
+    ['String Unicode', () => new String('lumen \u03bb \ud83d\ude80'), x => String.prototype.valueOf.call(x), 'lumen \u03bb \ud83d\ude80'],
+    ['BigInt', () => Object(9007199254740993n), x => BigInt.prototype.valueOf.call(x), 9007199254740993n],
+    ['Date finite', () => new Date(1234567890), x => Date.prototype.getTime.call(x), 1234567890],
+    ['Date invalid', () => new Date(NaN), x => Date.prototype.getTime.call(x), NaN],
+    ['RegExp', () => { const r = /a+b/gi; r.lastIndex = 4; return r; }, x => x.source + '/' + x.flags + '/' + x.lastIndex, 'a+b/gi/0']
+  ];
+  for (const [name, make, read, expected] of scalarTypes) {
+    run(name + ': repeated array reference keeps one cloned object', function () {
+      const source = make();
+      const copy = structuredClone([source, source]);
+      same(copy[0], copy[1], 'duplicate references diverged');
+      truth(copy[0] !== source, 'clone reused original object');
+      same(Object.getPrototypeOf(copy[0]), Object.getPrototypeOf(source), 'clone has wrong prototype');
+      same(read(copy[0]), expected, 'internal value changed');
+    });
+    run(name + ': object, Map key and Set preserve the same identity', function () {
+      const source = make();
+      source.ignored = source;
+      const graph = { value: source, map: new Map([[source, source]]), set: new Set([source]) };
+      graph.self = graph;
+      const copy = structuredClone(graph);
+      same(copy.self, copy, 'ordinary graph cycle changed');
+      same(copy.map.get(copy.value), copy.value, 'Map key or value identity diverged');
+      truth(copy.set.has(copy.value), 'Set identity diverged');
+      same(read(copy.value), expected, 'internal value changed');
+      truth(!Object.prototype.hasOwnProperty.call(copy.value, 'ignored'), 'built-in expando was cloned');
+    });
+  }
+  const views = ['Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'BigInt64Array', 'BigUint64Array', 'DataView'];
+  function createView(name, buffer) { return name === 'DataView' ? new DataView(buffer, 8, 16) : new globalThis[name](buffer, 8, 4); }
+  function fill(buffer) { const bytes = new Uint8Array(buffer); for (let i = 0; i < bytes.length; i++) bytes[i] = (i * 7 + 3) % 256; }
+  function compareBytes(a, b) { const x = new Uint8Array(a), y = new Uint8Array(b); same(x.length, y.length, 'buffer length changed'); for (let i = 0; i < x.length; i++) same(x[i], y[i], 'buffer byte changed at ' + i); }
+  for (const name of views) {
+    run(name + ': repeated view keeps identity, offset and contents', function () {
+      const buffer = new ArrayBuffer(96); fill(buffer);
+      const view = createView(name, buffer);
+      const copy = structuredClone([view, view]);
+      same(copy[0], copy[1], 'duplicate view references diverged');
+      truth(copy[0] !== view, 'clone reused original view');
+      truth(copy[0].buffer !== buffer, 'clone reused original buffer');
+      same(Object.getPrototypeOf(copy[0]), Object.getPrototypeOf(view), 'view prototype changed');
+      same(copy[0].byteOffset, view.byteOffset, 'view offset changed');
+      same(copy[0].byteLength, view.byteLength, 'view byteLength changed');
+      compareBytes(copy[0].buffer, buffer);
+    });
+    run(name + ': Map and Set share cloned view and backing buffer', function () {
+      const buffer = new ArrayBuffer(96); fill(buffer);
+      const view = createView(name, buffer);
+      const graph = { view, buffer, map: new Map([[view, buffer]]), set: new Set([view]) };
+      const copy = structuredClone(graph);
+      same(copy.view.buffer, copy.buffer, 'view and explicit buffer diverged');
+      same(copy.map.get(copy.view), copy.buffer, 'Map did not reuse cloned view key');
+      truth(copy.set.has(copy.view), 'Set did not reuse cloned view');
+      compareBytes(copy.buffer, buffer);
+    });
+  }
+  run('ArrayBuffer: repeated direct references remain one separate copy', function () {
+    const buffer = new ArrayBuffer(32); fill(buffer);
+    const copy = structuredClone({ a: buffer, b: buffer });
+    same(copy.a, copy.b, 'buffer identity diverged');
+    truth(copy.a !== buffer, 'original buffer reused');
+    compareBytes(copy.a, buffer);
+  });
+  run('Distinct views share one cloned buffer and preserve overlapping writes', function () {
+    const buffer = new ArrayBuffer(32); fill(buffer);
+    const graph = { a: new Uint8Array(buffer, 4, 12), b: new DataView(buffer, 8, 8), buffer };
+    const copy = structuredClone(graph);
+    truth(copy.a !== copy.b, 'distinct views collapsed');
+    same(copy.a.buffer, copy.b.buffer, 'view buffers diverged');
+    same(copy.a.buffer, copy.buffer, 'explicit buffer diverged');
+    copy.a[4] = 91;
+    same(copy.b.getUint8(0), 91, 'overlapping view write was not visible');
+    truth(new Uint8Array(buffer)[8] !== 91, 'clone mutation affected source');
+  });
+  run('Map and Set cycles retain ordinary graph identity', function () {
+    const graph = { map: new Map(), set: new Set() };
+    graph.map.set(graph, graph.set); graph.set.add(graph.map);
+    const copy = structuredClone(graph);
+    same(copy.map.get(copy), copy.set, 'Map cycle changed');
+    truth(copy.set.has(copy.map), 'Set cycle changed');
+  });
+  run('Clone ignores built-in author expando getters', function () {
+    const value = new Date(7); let calls = 0;
+    Object.defineProperty(value, 'ignored', { enumerable: true, get() { calls++; throw new Error('must not run'); } });
+    const copy = structuredClone(value);
+    same(calls, 0, 'expando getter executed'); same(copy.getTime(), 7, 'Date value changed');
+  });
+  const passed = results.filter(x => x.status === 'PASS').length;
+  const report = { total: results.length, passed, failed: results.length - passed, results };
+  document.getElementById('results').textContent = 'RESULTS LUMEN_CLONE_GRAPH_RESULT:' + (passed === results.length ? 'PASS ' : 'FAIL ') + passed + '/' + results.length + '\n' + JSON.stringify(report);
+  console.log('LUMEN_CLONE_GRAPH_JSON ' + JSON.stringify(report));
+})();
+</script>

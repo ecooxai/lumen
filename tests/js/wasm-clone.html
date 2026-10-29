@@ -1,0 +1,41 @@
+<!doctype html><meta name="viewport" content="width=device-width">
+<title>Wasm module cloning</title><h2>Wasm module cloning</h2><pre id="results">Running…</pre>
+<script>
+(async()=>{
+ const bytes=new Uint8Array([0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,3,2,1,0,7,7,1,3,97,100,100,0,0,10,9,1,7,0,32,0,32,1,106,11,0,5,1,120,1,2,3]);
+ const results=[],module=new WebAssembly.Module(bytes),workers=new Set();
+ const assert=(v,m='assertion failed')=>{if(!v)throw Error(m)},value=m=>new WebAssembly.Instance(m).exports.add(20,22);
+ function cloneError(fn){let caught=false;try{fn()}catch(e){assert(e instanceof DOMException&&e.name==='DataCloneError','wrong error: '+e);caught=true}assert(caught,'accepted invalid clone')}
+ async function check(name,fn){let timer;try{const detail=await Promise.race([Promise.resolve().then(fn),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('timeout')),6000)})]);results.push({name,pass:true,detail})}catch(e){results.push({name,pass:false,error:String(e)})}finally{clearTimeout(timer)}document.getElementById('results').textContent=JSON.stringify(results,null,2)}
+ await check('page module clone is distinct and executable',()=>{const c=structuredClone(module);assert(c!==module&&c instanceof WebAssembly.Module&&value(c)===42&&value(module)===42)});
+ await check('module metadata and custom sections survive',()=>{const c=structuredClone(module);assert(WebAssembly.Module.exports(c)[0].name==='add');assert(WebAssembly.Module.imports(c).length===0);assert(Array.from(new Uint8Array(WebAssembly.Module.customSections(c,'x')[0])).join() === '1,2,3')});
+ await check('module aliases, cycles, Map and Set',()=>{const graph={a:module,b:module,map:new Map([[module,module]]),set:new Set([module])};graph.self=graph;const c=structuredClone(graph);assert(c.self===c&&c.a===c.b&&c.map.get(c.a)===c.a&&c.set.has(c.a)&&c.a!==module&&value(c.a)===42)});
+ await check('native module brand ignores toStringTag and own properties',()=>{const m=new WebAssembly.Module(bytes);Object.defineProperty(m,Symbol.toStringTag,{get(){throw Error('read tag')}});Object.defineProperty(m,'extra',{enumerable:true,get(){throw Error('read property')}});assert(value(structuredClone(m))===42)});
+ await check('forged module tag does not create module',()=>{const fake={answer:42,[Symbol.toStringTag]:'WebAssembly.Module'},c=structuredClone(fake);assert(!(c instanceof WebAssembly.Module)&&c.answer===42)});
+ await check('module transfer lists rejected on page',()=>{cloneError(()=>structuredClone(module,{transfer:[module]}));cloneError(()=>structuredClone(42,{transfer:[module]}));assert(value(module)===42)});
+ const source=`onmessage=async e=>{const d=e.data;try{
+  if(d.kind==='echo'){const c=structuredClone(d.value);if(c.a!==c.b||c.self!==c||c.map.get(c.a)!==c.a)throw Error('worker alias/cycle');postMessage({id:d.id,value:c,result:new WebAssembly.Instance(c.a).exports.add(20,22)});}
+  else if(d.kind==='compile'){const m=await WebAssembly.compile(d.value);postMessage({id:d.id,value:{a:m,b:m}});}
+  else if(d.kind==='errors'){let n=0;for(const f of [()=>structuredClone(d.value,{transfer:[d.value]}),()=>postMessage(d.value,[d.value]),()=>postMessage({m:d.value,bad:()=>{}})]){try{f()}catch(e){if(e instanceof DOMException&&e.name==='DataCloneError')n++}}postMessage({id:d.id,n,value:d.value});}
+  else postMessage({id:d.id,value:d.value});
+ }catch(e){postMessage({id:d.id,error:String(e)})}}`;
+ function spawn(){const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'})),w=new Worker(url);URL.revokeObjectURL(url);workers.add(w);return w}
+ function stop(w){w.terminate();workers.delete(w)}
+ let seq=0;
+ function request(w,kind,v){return new Promise((resolve,reject)=>{const id=++seq;let timer;function cleanup(){clearTimeout(timer);w.removeEventListener('message',message);w.removeEventListener('error',error)}function message(e){if(e.data.id!==id)return;cleanup();e.data.error?reject(Error(e.data.error)):resolve(e.data)}function error(e){cleanup();reject(Error(e.message))}w.addEventListener('message',message);w.addEventListener('error',error);timer=setTimeout(()=>{cleanup();reject(Error('worker response timeout'))},4000);try{w.postMessage({id,kind,value:v})}catch(e){cleanup();reject(e)}})}
+ const w=spawn();
+ try{
+  await check('page-worker-page preserves module graph',async()=>{const graph={a:module,b:module,map:new Map([[module,module]])};graph.self=graph;const r=await request(w,'echo',graph),c=r.value;assert(r.result===42&&c.a===c.b&&c.self===c&&c.map.get(c.a)===c.a&&value(c.a)===42)});
+  await check('worker-compiled module returns to page',async()=>{const {value:c}=await request(w,'compile',bytes);assert(c.a===c.b&&value(c.a)===42)});
+  await check('serialization failure releases message and recovers',async()=>{cloneError(()=>w.postMessage({m:module,bad:()=>{}}));const {value:c}=await request(w,'copy',module);assert(value(c)===42)});
+  await check('module transfer rejected by Worker.postMessage',()=>{cloneError(()=>w.postMessage(module,[module]));cloneError(()=>w.postMessage(42,{transfer:[module]}))});
+  await check('worker clone errors and transfer rejection',async()=>{const r=await request(w,'errors',module);assert(r.n===3&&value(r.value)===42)});
+  await check('four workers share compiled code with distinct wrappers',async()=>{const ws=Array.from({length:4},spawn);try{const rs=await Promise.all(ws.map(x=>request(x,'copy',module)));assert(rs.every(r=>r.value!==module&&value(r.value)===42));assert(new Set(rs.map(r=>r.value)).size===4)}finally{ws.forEach(stop)}});
+  await check('cloned code survives sender worker termination',async()=>{const sender=spawn();let c;try{c=(await request(sender,'compile',bytes)).value.a}finally{stop(sender)}await new Promise(r=>setTimeout(r,30));assert(value(c)===42);assert(value((await request(w,'copy',c)).value)===42)});
+  await check('queued module messages tolerate worker termination',async()=>{for(let i=0;i<12;i++){const x=spawn();for(let j=0;j<12;j++)x.postMessage({kind:'copy',value:module});stop(x)}assert(value((await request(w,'copy',module)).value)===42)});
+  await check('message getter may terminate destination during serialization',async()=>{const x=spawn();x.postMessage({m:module,get closeDuringClone(){stop(x);return 42}});assert(value((await request(w,'copy',module)).value)===42)});
+ }finally{for(const x of workers)stop(x)}
+ console.log('WASM_CLONE_RESULTS '+JSON.stringify(results));
+ try{if(location.protocol==='http:')await fetch('/report',{method:'POST',body:JSON.stringify({fixture:'wasm-clone',complete:true,results})})}finally{document.documentElement.setAttribute('data-wasm-clone-done',results.every(r=>r.pass)?'pass':'fail')}
+})();
+</script>

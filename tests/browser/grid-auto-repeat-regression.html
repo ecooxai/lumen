@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>Grid automatic repetition validation</title><pre id="results">Running</pre><script>
+(() => {
+ const results=[],observations=[];let serial=0;
+ const eq=(a,b)=>{if(a!==b)throw Error('expected '+JSON.stringify(b)+', got '+JSON.stringify(a))};
+ const test=(name,fn)=>{try{fn();results.push({name,status:'PASS'})}catch(e){results.push({name,status:'FAIL',message:String(e.message||e)})}};
+ const fallback=(value,property='grid-template-columns',important=false,sheet=false)=>{const e=document.createElement('div');e.id='repeat-probe-'+(++serial);const text='display:grid;width:200px;height:100px;'+property+':25px;'+property+':'+value+(important?'!important':'');let rule;if(sheet){rule=document.createElement('style');rule.textContent='#'+e.id+'{'+text+'}';document.head.append(rule)}else e.setAttribute('style',text);document.body.append(e);try{return getComputedStyle(e).getPropertyValue(property)}finally{e.remove();if(rule)rule.remove()}};
+ const condition=(value)=>{const e=document.createElement('div');e.id='repeat-support-'+(++serial);const rule=document.createElement('style');rule.textContent='#'+e.id+'{width:25px}@supports(grid-template-columns:'+value+'){#'+e.id+'{width:80px}}';document.head.append(rule);document.body.append(e);try{return getComputedStyle(e).width}finally{e.remove();rule.remove()}};
+ // Intrinsic cases are valid Grid3 syntax beyond this Grid1/2 support profile.
+ const unsupported=['repeat(auto-fill,min-content)','repeat(auto-fill,fit-content(20px))','repeat(auto-fit,minmax(auto,auto))','1fr repeat(auto-fill,20px)','repeat(auto-fill,20px) repeat(auto-fit,30px)','repeat(auto-fill,repeat(2,20px))','repeat(auto-fill,-10px)','repeat(auto-fill,20deg)'];
+ for(const value of unsupported){
+  test('two-argument supports rejects unsupported repetition: '+value,()=>eq(CSS.supports('grid-template-columns',value),false));
+  test('condition supports rejects unsupported repetition: '+value,()=>eq(CSS.supports('(grid-template-columns:'+value+')'),false));
+  test('inline columns retain fallback: '+value,()=>eq(fallback(value),'25px'));
+  test('inline rows retain fallback: '+value,()=>eq(fallback(value,'grid-template-rows'),'25px'));
+  test('stylesheet retains fallback: '+value,()=>eq(fallback(value,'grid-template-columns',false,true),'25px'));
+  test('supports rule keeps fallback: '+value,()=>eq(condition(value),'25px'));
+ }
+ const valid=['repeat(auto-fill,40px)','repeat(auto-fit,minmax(20px,1fr))','repeat(auto-fill,minmax(auto,30px))','10px repeat(auto-fill,20px) 30px','repeat(2,minmax(10px,auto)) 30px repeat(auto-fill,10px)','[one two] repeat(auto-fill,[a b] minmax(20px,1fr) [c d]) [end]','repeat(/*comment*/auto-fill,minmax(20px,1fr))','repeat(auto-fill,minmax(min(10px,20px),1fr))'];
+ for(const value of valid){
+  test('two-argument supports accepts fixed repetition: '+value,()=>eq(CSS.supports('grid-template-columns',value),true));
+  test('condition supports accepts fixed repetition: '+value,()=>eq(CSS.supports('(grid-template-columns:'+value+')'),true));
+  test('supports rule accepts fixed repetition: '+value,()=>eq(condition(value),'80px'));
+  test('native declaration accepts fixed repetition: '+value,()=>{const computed=fallback(value);observations.push({value,computed});if(computed==='25px')throw Error('valid declaration was ignored')});
+ }
+ test('unsupported important value does not consume prior normal fallback',()=>eq(fallback('repeat(auto-fill,min-content)','grid-template-columns',true),'25px'));
+ test('unsupported important stylesheet value retains fallback',()=>eq(fallback('repeat(auto-fill,min-content)','grid-template-columns',true,true),'25px'));
+ test('unsupported template shorthand changes neither rows nor columns',()=>{const e=document.createElement('div');e.style.cssText='display:grid;grid-template-rows:25px;grid-template-columns:30px;grid-template:repeat(auto-fill,min-content) / 50px';document.body.append(e);try{const c=getComputedStyle(e);eq(c.gridTemplateRows,'25px');eq(c.gridTemplateColumns,'30px')}finally{e.remove()}});
+ test('pending variable repeat remains supported before substitution',()=>{eq(CSS.supports('grid-template-columns','repeat(auto-fill,var(--size))'),true);eq(CSS.supports('(grid-template-columns:repeat(auto-fill,var(--size)))'),true)});
+ window.__gridRepeatRegression=results;window.__gridRepeatObservations=observations;
+ for(const row of results)console.log('GRID-REPEAT-CASE '+JSON.stringify(row));for(const row of observations)console.log('GRID-REPEAT-OBS '+JSON.stringify(row));
+ const pass=results.filter(x=>x.status==='PASS').length;const marker='RESULTS browser-grid-repeat:'+(pass===results.length?'PASS':'FAIL')+' '+pass+'/'+results.length;document.querySelector('#results').textContent=marker;console.log(marker);
+})();
+</script>

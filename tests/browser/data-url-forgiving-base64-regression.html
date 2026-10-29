@@ -1,0 +1,49 @@
+<!doctype html><meta charset="utf-8">
+<title>Native data URL regression controls</title>
+<h1>Native data URL navigation controls</h1><pre id="result">Running…</pre>
+<script>
+(async function () {
+  const results = [];
+  const cases = [
+    ['plain encoded HTML', (html, b64) => 'data:text/html,' + encodeURIComponent(html), true],
+    ['standard padded base64', (html, b64) => 'data:text/html;base64,' + b64, true],
+    ['omitted base64 padding', (html, b64) => 'data:text/html;base64,' + b64.replace(/=+$/, ''), true],
+    ['mixed case marker', (html, b64) => 'data:TEXT/HTML;BaSe64,' + b64, true],
+    ['spaces around marker', (html, b64) => 'data: text/html ;  base64   ,' + b64, true],
+    ['ASCII whitespace in body', (html, b64) => 'data:text/html;base64,%09%0A%0C%0D%20' + b64.slice(0, 8) + '%0C' + b64.slice(8), true],
+    ['fragment omitted from body', (html, b64) => 'data:text/html;base64,' + b64 + '#not-base64!', true],
+    ['quoted charset metadata', (html, b64) => 'data:TEXT/HTML;Charset="UTF-8";BASE64,' + b64, true],
+    ['first MIME parameter retained', (html, b64) => 'data:text/html;charset=UTF-8;CHARSET=bogus;base64,' + b64, true],
+    ['plain body with NUL before script', (html, b64) => 'data:text/html,%00' + encodeURIComponent(html), true],
+    ['extra final padding rejected', (html, b64) => 'data:text/html;base64,' + b64 + '=', false],
+    ['internal padding rejected', (html, b64) => 'data:text/html;base64,' + b64.slice(0, 8) + '=' + b64.slice(8), false],
+    ['URL-safe alphabet rejected', (html, b64) => 'data:text/html;base64,' + b64.replace(/\+/g, '-').replace(/\//g, '_'), false],
+    ['vertical tab rejected', (html, b64) => 'data:text/html;base64,%0B' + b64, false],
+    ['percent-decoded NUL rejected', (html, b64) => 'data:text/html;base64,%00' + b64, false],
+    ['punctuation rejected', (html, b64) => 'data:text/html;base64,' + b64.slice(0, 8) + '!' + b64.slice(8), false],
+    ['marker must be trailing', (html, b64) => 'data:text/html;base64;x=y,' + b64, false],
+    ['marker prefix not accepted', (html, b64) => 'data:text/html;base64x,' + b64, false]
+  ];
+  for (let i = 0; i < cases.length; i++) {
+    const [name, url, expected] = cases[i], token = 'native-data-url-control-' + i;
+    const html = '<!doctype html><meta charset="utf-8"><script>parent.postMessage(' + JSON.stringify(token) + ', "*")<\/script>\xff\xff';
+    const b64 = btoa(html);
+    if (name === 'URL-safe alphabet rejected' && !/[+/]/.test(b64)) throw Error('fixture lacks URL-safe differing digits');
+    const frame = document.createElement('iframe'); frame.width = 32; frame.height = 24;
+    const observed = await new Promise(resolve => {
+      let timer;
+      const finish = value => { clearTimeout(timer); window.removeEventListener('message', onMessage); frame.remove(); resolve(value); };
+      const onMessage = event => { if (event.data === token) finish(true); };
+      window.addEventListener('message', onMessage);
+      timer = setTimeout(() => finish(false), expected ? 1500 : 500);
+      frame.src = url(html, b64); document.body.appendChild(frame);
+    });
+    results.push({name, pass:observed === expected, expected_execution:expected, observed_execution:observed});
+  }
+  const passed = results.filter(x => x.pass).length;
+  const summary = 'RESULTS browser-data-url-forgiving-base64:' + (passed === results.length ? 'PASS ' : 'FAIL ') + passed + '/' + results.length;
+  document.getElementById('result').textContent = summary + '\n' + JSON.stringify(results, null, 2);
+  console.log(summary);
+  console.log('DATA_URL_CONTROLS ' + JSON.stringify(results));
+})().catch(error => { console.log('RESULTS browser-data-url-forgiving-base64:FAIL ' + error); document.getElementById('result').textContent = String(error); });
+</script>

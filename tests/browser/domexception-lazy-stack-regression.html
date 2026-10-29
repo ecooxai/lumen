@@ -1,0 +1,73 @@
+<!doctype html><meta charset="utf-8"><title>DOMException lazy private stack controls</title>
+<script src="/resources/testharness.js"></script><script src="/resources/testharnessreport.js"></script>
+<pre id="results">Running DOMException private stack holdouts</pre><script>
+(function () {
+  const kinds = ['original stack snapshot', 'cached public headers', 'cached formatter object', 'inherited formatter getter'];
+  function probe(kind) {
+    let calls = 0;
+    const own = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace');
+    const inherited = Object.getOwnPropertyDescriptor(Function.prototype, 'prepareStackTrace');
+    const result = { kind, error: null };
+    function constructionSite() { return new DOMException('private message', 'InvalidStateError'); }
+    const value = constructionSite();
+    let original;
+    try {
+      if (kind === 'original stack snapshot') {
+        original = value.stack;
+        for (const name of ['name', 'message', 'stack']) Object.defineProperty(value, name, { configurable: true, get() { calls++; throw new Error('author getter must not run'); } });
+      } else if (kind === 'cached public headers') {
+        for (const name of ['name', 'message']) Object.defineProperty(value, name, { configurable: true, get() { calls++; return 'AUTHOR ' + name; } });
+        void value.stack;
+      } else if (kind === 'cached formatter object') {
+        Object.defineProperty(Error, 'prepareStackTrace', { configurable: true, value() { return { get authorField() { calls++; return 'AUTHOR FIELD'; } }; } });
+        void value.stack;
+        delete Error.prepareStackTrace;
+      } else {
+        delete Error.prepareStackTrace;
+        Object.defineProperty(Function.prototype, 'prepareStackTrace', { configurable: true, get() { calls++; throw new Error('inherited formatter must not run'); } });
+      }
+      calls = 0;
+      const copy = structuredClone({ first: value, second: value, map: new Map([[value, 17]]) });
+      const item = copy.first;
+      result.calls = calls;
+      result.identity = item === copy.second && copy.map.get(item) === 17;
+      result.brand = item instanceof DOMException && Error.isError(item) && Object.getPrototypeOf(item) === DOMException.prototype;
+      result.fields = item.name === 'InvalidStateError' && item.message === 'private message' && item.code === 11;
+      result.stackType = typeof item.stack;
+      result.originalStack = typeof item.stack !== 'string' || kind !== 'original stack snapshot' || item.stack === original;
+      result.authorStack = typeof item.stack === 'string' && item.stack.includes('AUTHOR');
+    } catch (error) { result.error = String(error); result.calls = calls; }
+    finally {
+      if (own) Object.defineProperty(Error, 'prepareStackTrace', own); else delete Error.prepareStackTrace;
+      if (inherited) Object.defineProperty(Function.prototype, 'prepareStackTrace', inherited); else delete Function.prototype.prepareStackTrace;
+    }
+    return result;
+  }
+  function verify(result) {
+    if (result.error || result.calls || !result.identity || !result.brand || !result.fields || !result.originalStack || result.authorStack || !['string', 'undefined'].includes(result.stackType)) throw new Error(JSON.stringify(result));
+  }
+  const results = [];
+  function record(name, result) {
+    let message = null; try { verify(result); } catch (error) { message = String(error).slice(0, 280); }
+    results.push({ name, status: message ? 'FAIL' : 'PASS', message });
+    return result;
+  }
+  for (const kind of kinds) {
+    const value = record('Page ' + kind, probe(kind));
+    if (typeof test === 'function') test(() => verify(value), 'Page ' + kind);
+  }
+  const source = probe.toString() + ';postMessage(' + JSON.stringify(kinds) + '.map(probe));';
+  const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+  const worker = new Worker(url);
+  const reply = new Promise((resolve, reject) => { worker.onmessage = event => { worker.terminate(); URL.revokeObjectURL(url); resolve(event.data); }; worker.onerror = event => reject(new Error(event.message)); });
+  for (let i = 0; i < kinds.length; i++) if (typeof promise_test === 'function') promise_test(async () => verify((await reply)[i]), 'Worker ' + kinds[i]);
+  reply.then(values => {
+    values.forEach((value, i) => record('Worker ' + kinds[i], value));
+    const passed = results.filter(x => x.status === 'PASS').length;
+    const report = { passed, total: results.length, failed: results.length - passed, results };
+    document.getElementById('results').textContent = 'RESULTS LUMEN_LAZY_STACK_RESULT:' + (passed === results.length ? 'PASS ' : 'FAIL ') + passed + '/' + results.length + '\n' + JSON.stringify(report);
+    console.log(document.getElementById('results').textContent.split('\n')[0]);
+    console.log('LUMEN_LAZY_STACK_JSON ' + JSON.stringify(report));
+  });
+})();
+</script>

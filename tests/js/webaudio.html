@@ -26,6 +26,79 @@ ctx.startRendering().then(b => {
   return ctx.decodeAudioData(new Uint8Array([1, 2, 3]).buffer).then(() => false, e => e.name === 'EncodingError');
 }).then(v => {
   R.decodeError = v;
+  /* a script processor over the rendered graph */
+  const oc = new OfflineAudioContext(1, 4096, 48000), cs = oc.createConstantSource(), sp = oc.createScriptProcessor(1024, 1, 1);
+  let calls = 0, seen = 0;
+  sp.onaudioprocess = e => { calls++; seen = Math.max(seen, e.inputBuffer.getChannelData(0)[100]); e.outputBuffer.getChannelData(0).fill(0.25); };
+  cs.offset.value = 0.5; cs.connect(sp); sp.connect(oc.destination); cs.start();
+  R.processorSize = sp.bufferSize === 1024 && oc.createScriptProcessor().bufferSize > 0 && (() => { try { oc.createScriptProcessor(1000); return false; } catch (e) { return e.name === 'IndexSizeError'; } })();
+  return oc.startRendering().then(b => { R.processorGraph = calls >= 3 && seen === 0.5 && b.getChannelData(0)[3000] === 0.25; });
+}).then(() => {
+  /* microphone-style PCM pushed through a stream: source -> gain -> processor, and into a recorder's stream destination */
+  const ac = new AudioContext(), dst = ac.createMediaStreamDestination(), src = ac.createMediaStreamSource(dst.stream), g = ac.createGain(), sp = ac.createScriptProcessor(1024, 1, 1);
+  const out = ac.createMediaStreamDestination(), an = ac.createAnalyser();
+  const got = [];
+  sp.onaudioprocess = e => got.push(e.inputBuffer.getChannelData(0)[0]);
+  src.connect(g); g.connect(sp); sp.connect(ac.destination); src.connect(an); an.connect(out);
+  let relayed = 0; out.stream.getAudioTracks()[0]._.hub.subs.add(p => { relayed += p.length; });
+  for (let k = 0; k < 3; k++) dst._feed(new Float32Array(960).fill(0.125 * (k + 1)));
+  R.processorMic = got.length === 2 && got[0] === 0.125 && got[1] === 0.25;
+  R.streamDestination = dst.stream instanceof MediaStream && dst.stream.getAudioTracks().length === 1 && relayed === 2880;
+  const f = new Float32Array(1024); an.getFloatTimeDomainData(f); R.analyserMic = f[1023] === 0.375;
+  ac.close();
+  /* resampling through an OfflineAudioContext at another rate */
+  const src48 = new AudioBuffer({ length: 4800, sampleRate: 48000, numberOfChannels: 1 }); src48.getChannelData(0).fill(0.5);
+  const oc = new OfflineAudioContext(1, 1600, 16000), bs = oc.createBufferSource(); bs.buffer = src48; bs.connect(oc.destination); bs.start(0);
+  return oc.startRendering().then(b => { const d = b.getChannelData(0); R.resample = b.sampleRate === 16000 && d[0] === 0.5 && d[1599] === 0.5; });
+}).then(() => {
+  /* an analyser's spectrum peaks at the tone's bin (1500 Hz, fftSize 1024 at 48 kHz: bin 32) */
+  const oc = new OfflineAudioContext(1, 2048, 48000), os = oc.createOscillator(), an = oc.createAnalyser();
+  an.fftSize = 1024; an.smoothingTimeConstant = 0; os.frequency.value = 1500; os.connect(an); an.connect(oc.destination); os.start();
+  R.fftSize = (() => { try { an.fftSize = 1000; return false; } catch (e) { return e.name === 'IndexSizeError' && an.fftSize === 1024; } })();
+  return oc.startRendering().then(() => {
+    const f = new Float32Array(an.frequencyBinCount); an.getFloatFrequencyData(f);
+    let peak = 0; for (let i = 1; i < f.length; i++) if (f[i] > f[peak]) peak = i;
+    const b = new Uint8Array(an.frequencyBinCount); an.getByteFrequencyData(b);
+    R.fftPeak = peak === 32 && f[32] > f[100] + 40 && b[32] > 200 && b[300] === 0;
+  });
+}).then(() => {
+  /* AudioWorklet: a module from a blob URL, a processor with a parameter and a port */
+  const mod = `class Half extends AudioWorkletProcessor {
+    static get parameterDescriptors() { return [{ name: 'gain', defaultValue: 0.5, minValue: 0, maxValue: 1 }]; }
+    constructor(o) { super(); this.n = 0; this.tag = o.processorOptions.tag; this.port.onmessage = e => this.port.postMessage({ echo: e.data, rate: sampleRate, tag: this.tag }); }
+    process(inputs, outputs, p) {
+      const i = inputs[0], o = outputs[0];
+      for (let c = 0; c < o.length; c++) for (let k = 0; k < 128; k++) o[c][k] = (i[c] || i[0] || [])[k] * p.gain[0] || 0;
+      if (++this.n === 3) this.port.postMessage({ frames: currentFrame >= 0, chans: i.length });
+      return true;
+    }
+  }
+  registerProcessor('half', Half);`;
+  const url = URL.createObjectURL(new Blob([mod], { type: 'text/javascript' }));
+  const oc = new OfflineAudioContext(1, 1024, 48000);
+  return oc.audioWorklet.addModule(url).then(() => oc.audioWorklet.addModule('blob:nope').then(() => false, e => e.name === 'AbortError')).then(bad => {
+    R.workletBadModule = bad;
+    R.workletUnknown = (() => { try { new AudioWorkletNode(oc, 'nope'); return false; } catch (e) { return e.name === 'InvalidStateError'; } })();
+    const cs = oc.createConstantSource(), w = new AudioWorkletNode(oc, 'half', { processorOptions: { tag: 7 } });
+    R.workletParams = w.parameters.get('gain').value === 0.5 && w.parameters.size === 1 && [...w.parameters.keys()][0] === 'gain';
+    cs.offset.value = 0.5; cs.connect(w); w.connect(oc.destination); cs.start();
+    const msgs = []; w.port.onmessage = e => msgs.push(e.data); w.port.postMessage('hi');
+    return oc.startRendering().then(b => new Promise(r => setTimeout(r, 20)).then(() => {
+      R.workletGraph = Math.abs(b.getChannelData(0)[500] - 0.25) < 1e-6;
+      R.workletPort = msgs.some(m => m.echo === 'hi' && m.rate === 48000 && m.tag === 7) && msgs.some(m => m.frames && m.chans === 2);
+      /* microphone-style PCM into a worklet, processed as it arrives and relayed to a stream destination */
+      const ac = new AudioContext(), dst = ac.createMediaStreamDestination(), src = ac.createMediaStreamSource(dst.stream), out = ac.createMediaStreamDestination();
+      return ac.audioWorklet.addModule(url).then(() => {
+        const w2 = new AudioWorkletNode(ac, 'half', { processorOptions: { tag: 1 } });
+        let relayed = 0, last = 0; out.stream.getAudioTracks()[0]._.hub.subs.add(p => { relayed += p.length; last = p[p.length - 1]; });
+        src.connect(w2); w2.connect(out);
+        dst._feed(new Float32Array(960).fill(0.5));
+        R.workletMic = relayed === 896 && last === 0.25;
+        ac.close();
+      });
+    }));
+  });
+}).then(() => {
   console.log('RESULTS webaudio ' + Object.entries(R).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
 });
 </script>

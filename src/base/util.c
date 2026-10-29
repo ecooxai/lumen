@@ -50,6 +50,10 @@ void *hm_getn(HMap *m, const char *key, size_t n) {
     return e && e->key ? e->val : NULL;
 }
 void *hm_get(HMap *m, const char *key) { return hm_getn(m, key, strlen(key)); }
+void *hm_geth(HMap *m, const char *key, size_t n, uint32_t hash) {
+    HMEntry *e = hm_find(m, key, n, hash);
+    return e && e->key ? e->val : NULL;
+}
 void hm_put(HMap *m, const char *key, void *val) {
     if ((m->n + 1) * 4 >= m->cap * 3) {
         int oc = m->cap; HMEntry *oe = m->e;

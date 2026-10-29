@@ -1,0 +1,211 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Grid absolute containing-block controls</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<style>body{margin:0}.grid{display:grid;position:relative;width:400px;height:300px;border-style:solid;border-width:11px 13px 17px 7px;padding:20px 30px 40px 10px;grid-template-columns:100px 120px;grid-template-rows:60px 80px;column-gap:15px;row-gap:10px;margin:0}.abs{position:absolute;left:0;top:0;right:0;bottom:0}</style>
+<body>
+<div class="grid" id="cb-ordinary" style=""><div id="ordinary" class="abs" style="grid-column:2 / 3;grid-row:2 / 3"></div></div>
+<div class="grid" id="cb-nested" style=""><div><div id="nested" class="abs" style="grid-column:2 / 3;grid-row:2 / 3"></div></div></div>
+<div class="grid" id="cb-all-auto" style=""><div id="all-auto" class="abs" style="grid-column:auto;grid-row:auto"></div></div>
+<div class="grid" id="cb-first-track" style=""><div id="first-track" class="abs" style="grid-column:1 / 2;grid-row:1 / 2"></div></div>
+<div class="grid" id="cb-auto-start" style=""><div id="auto-start" class="abs" style="grid-column:auto / 2;grid-row:auto / 2"></div></div>
+<div class="grid" id="cb-auto-end" style=""><div id="auto-end" class="abs" style="grid-column:2 / auto;grid-row:2 / auto"></div></div>
+<div class="grid" id="cb-missing-line" style=""><div id="missing-line" class="abs" style="grid-column:10 / auto;grid-row:10 / auto"></div></div>
+<div class="grid" id="cb-reversed" style=""><div id="reversed" class="abs" style="grid-column:3 / 1;grid-row:3 / 1"></div></div>
+<div class="grid" id="cb-equal" style=""><div id="equal" class="abs" style="grid-column:2 / 2;grid-row:2 / 2"></div></div>
+<div class="grid" id="cb-negative" style=""><div id="negative" class="abs" style="grid-column:-3 / -1;grid-row:-3 / -1"></div></div>
+<div class="grid" id="cb-start-span" style=""><div id="start-span" class="abs" style="grid-column:span 2 / 3;grid-row:span 2 / 3"></div></div>
+<div class="grid" id="cb-end-span" style=""><div id="end-span" class="abs" style="grid-column:1 / span 2;grid-row:1 / span 2"></div></div>
+<div class="grid" id="cb-span-outside" style=""><div id="span-outside" class="abs" style="grid-column:2 / span 2;grid-row:2 / span 2"></div></div>
+<div class="grid" id="cb-lone-span" style=""><div id="lone-span" class="abs" style="grid-column:span 2 / auto;grid-row:span 2 / auto"></div></div>
+<div class="grid" id="cb-missing-span" style=""><div id="missing-span" class="abs" style="grid-column:span 2 / 10;grid-row:span 2 / 10"></div></div>
+<div class="grid" id="cb-reversed-missing" style=""><div id="reversed-missing" class="abs" style="grid-column:10 / 2;grid-row:10 / 2"></div></div>
+<div class="grid" id="cb-rtl" style="direction:rtl;"><div id="rtl" class="abs" style="grid-column:2 / 3;grid-row:2 / 3"></div></div>
+<div class="grid" id="cb-rtl-auto-start" style="direction:rtl;"><div id="rtl-auto-start" class="abs" style="grid-column:auto / 2;grid-row:auto / 2"></div></div>
+<div class="grid" id="cb-center-end" style="justify-content:center;align-content:end;"><div id="center-end" class="abs" style="grid-column:2 / 3;grid-row:2 / 3"></div></div>
+<div class="grid" id="cb-distributed" style="justify-content:space-between;align-content:space-around;"><div id="distributed" class="abs" style="grid-column:2 / 3;grid-row:2 / 3"></div></div>
+<div class="grid" id="cb-implicit-after" style="grid-auto-columns:50px;grid-auto-rows:30px;"><i style="grid-column:4;grid-row:4"></i><div id="implicit-after" class="abs" style="grid-column:3 / 4;grid-row:3 / 4"></div></div>
+<div class="grid" id="cb-implicit-before" style="grid-auto-columns:50px;grid-auto-rows:30px;"><i style="grid-column:-4;grid-row:-4"></i><div id="implicit-before" class="abs" style="grid-column:1 / -1;grid-row:1 / -1"></div></div>
+<div class="grid" id="cb-overflow-auto" style="grid-template-columns:350px 250px;grid-template-rows:250px 200px;"><div id="overflow-auto" class="abs" style="grid-column:3 / auto;grid-row:3 / auto"></div></div>
+<div class="grid" id="cb-non-grid" style="display:block;"><div id="non-grid" class="abs" style="grid-column:2 / 3;grid-row:2 / 3"></div></div>
+<script>
+const expected = [
+  {
+    "name": "ordinary",
+    "x": 132,
+    "y": 101,
+    "width": 120,
+    "height": 80
+  },
+  {
+    "name": "nested",
+    "x": 132,
+    "y": 101,
+    "width": 120,
+    "height": 80
+  },
+  {
+    "name": "all-auto",
+    "x": 7,
+    "y": 11,
+    "width": 440,
+    "height": 360
+  },
+  {
+    "name": "first-track",
+    "x": 17,
+    "y": 31,
+    "width": 100,
+    "height": 60
+  },
+  {
+    "name": "auto-start",
+    "x": 7,
+    "y": 11,
+    "width": 110,
+    "height": 80
+  },
+  {
+    "name": "auto-end",
+    "x": 132,
+    "y": 101,
+    "width": 315,
+    "height": 270
+  },
+  {
+    "name": "missing-line",
+    "x": 7,
+    "y": 11,
+    "width": 440,
+    "height": 360
+  },
+  {
+    "name": "reversed",
+    "x": 17,
+    "y": 31,
+    "width": 235,
+    "height": 150
+  },
+  {
+    "name": "equal",
+    "x": 132,
+    "y": 101,
+    "width": 120,
+    "height": 80
+  },
+  {
+    "name": "negative",
+    "x": 17,
+    "y": 31,
+    "width": 235,
+    "height": 150
+  },
+  {
+    "name": "start-span",
+    "x": 17,
+    "y": 31,
+    "width": 235,
+    "height": 150
+  },
+  {
+    "name": "end-span",
+    "x": 17,
+    "y": 31,
+    "width": 235,
+    "height": 150
+  },
+  {
+    "name": "span-outside",
+    "x": 132,
+    "y": 101,
+    "width": 315,
+    "height": 270
+  },
+  {
+    "name": "lone-span",
+    "x": 7,
+    "y": 11,
+    "width": 440,
+    "height": 360
+  },
+  {
+    "name": "missing-span",
+    "x": 7,
+    "y": 11,
+    "width": 440,
+    "height": 360
+  },
+  {
+    "name": "reversed-missing",
+    "x": 132,
+    "y": 101,
+    "width": 315,
+    "height": 270
+  },
+  {
+    "name": "rtl",
+    "x": 182,
+    "y": 101,
+    "width": 120,
+    "height": 80
+  },
+  {
+    "name": "rtl-auto-start",
+    "x": 317,
+    "y": 11,
+    "width": 130,
+    "height": 80
+  },
+  {
+    "name": "center-end",
+    "x": 214.5,
+    "y": 251,
+    "width": 120,
+    "height": 80
+  },
+  {
+    "name": "distributed",
+    "x": 297,
+    "y": 213.5,
+    "width": 120,
+    "height": 80
+  },
+  {
+    "name": "implicit-after",
+    "x": 267,
+    "y": 191,
+    "width": 50,
+    "height": 30
+  },
+  {
+    "name": "implicit-before",
+    "x": 82,
+    "y": 71,
+    "width": 235,
+    "height": 150
+  },
+  {
+    "name": "overflow-auto",
+    "x": 632,
+    "y": 491,
+    "width": 0,
+    "height": 0
+  },
+  {
+    "name": "non-grid",
+    "x": 7,
+    "y": 11,
+    "width": 440,
+    "height": 360
+  }
+];
+for (const e of expected) test(() => {
+  const cb = document.getElementById('cb-' + e.name).getBoundingClientRect();
+  const box = document.getElementById(e.name).getBoundingClientRect();
+  assert_approx_equals(box.x - cb.x, e.x, .05, 'x');
+  assert_approx_equals(box.y - cb.y, e.y, .05, 'y');
+  assert_approx_equals(box.width, e.width, .05, 'width');
+  assert_approx_equals(box.height, e.height, .05, 'height');
+}, e.name);
+</script>

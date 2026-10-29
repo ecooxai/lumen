@@ -1,6 +1,7 @@
 /* Headless JS harness: load a page, run its classic scripts and event loop for N ms */
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include "../src/paint/paint.h"
 #include "../src/net/net.h"
@@ -13,11 +14,84 @@ static void vp(void *ud, float *w, float *h, float *sx, float *sy, float *dpr) {
     (void)ud; *w = 1280; *h = 800; *sx = *sy = 0; *dpr = 1;
 }
 
+static JsCtx *g_js;
+static void jsrun_navigate(void *ud, const char *url) {   /* report navigations and the script that asked */
+    (void)ud;
+    fprintf(stderr, "jsrun: navigate %s\n", url);
+    if (g_js) js_eval(g_js, "console.error('jsrun: navigated by ' + new Error().stack)", "jsrun:nav");
+}
+static void jsrun_navigate_post(void *ud, const char *url, const char *body, size_t len, const char *ctype) {
+    (void)body; (void)len; (void)ctype; jsrun_navigate(ud, url);
+}
+static void jsrun_frame_open(void *ud, Node *f, Document *d, JsHost *child) {
+    (void)ud; (void)f; fprintf(stderr, "jsrun: frame %s\n", d->url ? d->url : "-");
+    child->navigate = jsrun_navigate; child->navigate_post = jsrun_navigate_post; child->frame_open = jsrun_frame_open;
+}
+static void jsrun_fullscreen(void *ud, bool on) { (void)ud; fprintf(stderr, "jsrun: fullscreen %d\n", on); }
+static int run_scripts(JsCtx *js, Document *d) {
+    int nscripts = 0;
+    for (int pass = 0; pass < 2; pass++) for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {   /* modules are deferred */
+        if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML || (n->flags & NF_SCRIPT_STARTED)) continue;
+        bool mod = jsg_module_script(n);
+        if (mod != (pass == 1) || (!mod && !jsg_classic_script(n))) continue;
+        nscripts++;
+        const char *src = node_attr(n, "src");
+        if (mod) {
+            char *t = src ? NULL : node_text_content(n), *u = src ? url_join(d->url, src) : NULL;
+            js_run_module(js, n, t ? t : (src ? NULL : ""), t ? strlen(t) : 0, u ? u : d->url);
+            free(t); free(u);
+        } else if (src) {
+            char *u = url_join(d->url, src);
+            NetResponse *sr = u ? net_fetch_sync(net_request_new("GET", u)) : NULL;
+            if (sr && sr->status >= 200 && sr->status < 300) js_run_script(js, n, sr->body ? sr->body : "", sr->body_len, u);
+            else { n->flags |= NF_SCRIPT_STARTED; js_dispatch(js, n, "error", "Event", false, false, 0, 0, 0, NULL); }
+            if (sr) net_response_free(sr);
+            free(u);
+        } else {
+            char *t = node_text_content(n);
+            js_run_script(js, n, t, strlen(t), d->url);
+            free(t);
+        }
+    }
+    js_set_ready_state(js, 1);
+    js_dispatch(js, &d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    js_fire_load(js);   /* now, or once the page's iframes have loaded */
+    return nscripts;
+}
+/* window.open: one more window (window id 2) in its own context, without styles, loaded from the event loop
+   like a tab's page; later opens get none */
+static JsCtx *g_win2; static Document *g_doc2; static char *g_open_url; static uint32_t g_opener;
+static uint32_t jsrun_open_window(void *ud, const char *u, const char *name, uint32_t opener) {
+    (void)ud; (void)name;
+    if (g_win2 || g_open_url || !u || !*u) return 0;
+    g_open_url = strdup(u); g_opener = opener;
+    return 2;
+}
+static void jsrun_load_window(void) {
+    char *u = g_open_url; g_open_url = NULL;
+    NetResponse *r = net_fetch_sync(net_request_new("GET", u));
+    if (r && r->status != 0) {
+        g_doc2 = doc_new(r->url ? r->url : u);
+        html_parse(g_doc2, r->body ? r->body : "", r->body ? r->body_len : 0);
+        static JsHost h2; h2.viewport = vp; h2.navigate = jsrun_navigate; h2.navigate_post = jsrun_navigate_post; h2.frame_open = jsrun_frame_open;
+        g_win2 = js_new(g_doc2, &h2);
+        js_set_window(g_win2, 2, g_opener);
+        run_scripts(g_win2, g_doc2);
+    }
+    if (r) net_response_free(r);
+    free(u);
+}
+static int jsrun_window_op(void *ud, uint32_t wid, int op, const char *arg) { (void)ud; (void)arg; return op == 0 ? !(wid == 2 && g_win2) : 0; }
 static StyleEngine *g_se;
-static uint64_t g_seen;
+static uint64_t g_seen, g_laid;
+static Layout *g_layout;   /* JSRUN_LAYOUT=1: geometry (getBoundingClientRect, observers) sees a 1280x800 layout */
 static void jsrun_sync(void *ud, Document *d, bool layout) {
-    (void)ud; (void)layout;
-    if (!g_se || g_se->doc != d || d->dom_version == g_seen) return;
+    (void)ud;
+    if (!g_se || g_se->doc != d) return;
+    if (d->dom_version == g_seen) {
+        if (layout && g_layout && g_laid != g_seen) { g_laid = g_seen; layout_run(g_layout, d, 1280, 800); }
+        return;
+    }
     g_seen = d->dom_version;
     for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_style) continue;
@@ -25,6 +99,7 @@ static void jsrun_sync(void *ud, Document *d, bool layout) {
         char *t = node_text_content(n); StyleSheet *s = css_parse_sheet(t, strlen(t), d->url, 1, &g_se->media); s->owner = n; style_engine_add_sheet(g_se, s); free(t);
     }
     style_recalc(g_se, &d->node, true);
+    if (layout && g_layout) { g_laid = g_seen; layout_run(g_layout, d, 1280, 800); }
 }
 int main(int argc, char **argv) {
     if (argc < 2) { fprintf(stderr, "usage: jsrun URL|FILE [ms]\n"); return 2; }
@@ -59,38 +134,15 @@ int main(int argc, char **argv) {
     JsHost h = {0};
     h.viewport = vp;
     g_se = se; g_seen = d->dom_version; h.sync = jsrun_sync;
+    if (getenv("JSRUN_LAYOUT")) { g_layout = layout_new(); g_laid = 0; }
     double t0 = now_ms();
-    JsCtx *js = js_new(d, &h);
+    h.navigate = jsrun_navigate; h.navigate_post = jsrun_navigate_post; h.frame_open = jsrun_frame_open; h.fullscreen = jsrun_fullscreen;
+    h.open_window = jsrun_open_window; h.window_op = jsrun_window_op;
+    JsCtx *js = js_new(d, &h); g_js = js;
+    js_set_window(js, 1, 0);
     double t1 = now_ms();
     if (getenv("JSRUN_PRE")) js_eval(js, getenv("JSRUN_PRE"), "jsrun:pre");
-    int nscripts = 0;
-    for (int pass = 0; pass < 2; pass++) for (Node *n = d->node.first; n; n = node_next_in_tree(n, &d->node)) {   /* modules are deferred */
-        if (n->type != NODE_ELEMENT || n->tag != A_script || n->ns != NS_HTML || (n->flags & NF_SCRIPT_STARTED)) continue;
-        bool mod = jsg_module_script(n);
-        if (mod != (pass == 1) || (!mod && !jsg_classic_script(n))) continue;
-        nscripts++;
-        const char *src = node_attr(n, "src");
-        if (mod) {
-            char *t = src ? NULL : node_text_content(n), *u = src ? url_join(d->url, src) : NULL;
-            js_run_module(js, n, t ? t : (src ? NULL : ""), t ? strlen(t) : 0, u ? u : d->url);
-            free(t); free(u);
-        } else if (src) {
-            char *u = url_join(d->url, src);
-            NetResponse *sr = u ? net_fetch_sync(net_request_new("GET", u)) : NULL;
-            if (sr && sr->status >= 200 && sr->status < 300) js_run_script(js, n, sr->body ? sr->body : "", sr->body_len, u);
-            else { n->flags |= NF_SCRIPT_STARTED; js_dispatch(js, n, "error", "Event", false, false, 0, 0, 0, NULL); }
-            if (sr) net_response_free(sr);
-            free(u);
-        } else {
-            char *t = node_text_content(n);
-            js_run_script(js, n, t, strlen(t), d->url);
-            free(t);
-        }
-    }
-    js_set_ready_state(js, 1);
-    js_dispatch(js, &d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
-    js_set_ready_state(js, 2);
-    js_dispatch_window(js, "load");
+    int nscripts = run_scripts(js, d);
     double t2 = now_ms();
     double end = t2 + ms;
     const char *until = getenv("JSRUN_UNTIL_ATTR");   /* stop early once <html> carries this attribute */
@@ -99,15 +151,18 @@ int main(int argc, char **argv) {
         net_poll();
         media_tick();
         js_tick(js);
+        if (g_open_url) jsrun_load_window();
+        if (g_win2) js_tick(g_win2);
         if (d->dom_version != seen_ver) { seen_ver = d->dom_version; style_recalc(se, &d->node, false); }
         double dl = js_next_deadline(js) - now_ms();
-        if (dl > 5) dl = 5;
+        if (g_win2 && js_next_deadline(g_win2) - now_ms() < dl) dl = js_next_deadline(g_win2) - now_ms();
         if (dl > 5) dl = 5;
         if (dl > 0) usleep((useconds_t)(dl * 1000));
     }
     fprintf(stderr, "jsrun: context %.1fms, %d scripts %.1fms, dom_version %llu\n", t1 - t0, nscripts, t2 - t1, (unsigned long long)d->dom_version);
     if (getenv("JSRUN_DUMP") && d->body) { char *s = node_serialize(d->body, true); puts(s); free(s); }
     if (getenv("JSRUN_POST")) js_eval(js, getenv("JSRUN_POST"), "jsrun:post");
+    if (g_win2) { js_free(g_win2); doc_free(g_doc2); }
     js_free(js);
     style_engine_free(se);
     doc_free(d);

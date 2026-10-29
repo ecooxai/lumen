@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lumen Android engine smoke</title>
+<style>
+  body { margin: 16px; font: 16px sans-serif; color: #172f46; background: #e7f3ff; }
+  h1 { font-size: 23px; margin: 0 0 12px; }
+  li { padding: 5px 0; overflow-wrap: anywhere; }
+  canvas { border: 1px solid #172f46; max-width: 100%; }
+  input { font: inherit; padding: 8px; width: 80%; }
+  .pass { color: #176a37; }
+  .fail { color: #a51925; }
+</style>
+<h1>Lumen Android engine smoke</h1>
+<p>Offline fixture — no accounts, permissions or external requests.</p>
+<p id="dom">DOM pending</p>
+<p>System fonts: Hello • العربية • 中文 • 😀 • 1️⃣</p>
+<label for="typing">Keyboard test</label>
+<p><input id="typing" placeholder="Type here, then dismiss the keyboard"></p>
+<canvas id="drawing" width="240" height="64"></canvas>
+<ul id="results"></ul>
+<p id="summary">Running checks…</p>
+<script>
+(async function () {
+    const results = [];
+    async function check(name, operation) {
+        const result = {name: name, passed: false};
+        try {
+            await operation();
+            result.passed = true;
+        } catch (error) {
+            result.error = String(error && error.message || error);
+        }
+        results.push(result);
+        const item = document.createElement('li');
+        item.className = result.passed ? 'pass' : 'fail';
+        item.textContent = (result.passed ? 'PASS ' : 'FAIL ') + name +
+            (result.error ? ': ' + result.error : '');
+        document.getElementById('results').appendChild(item);
+    }
+    function requireValue(condition, message) {
+        if (!condition) throw new Error(message);
+    }
+    await check('DOM mutation', function () {
+        document.getElementById('dom').textContent = 'DOM update passed';
+        requireValue(document.getElementById('dom').textContent === 'DOM update passed', 'textContent mismatch');
+    });
+    await check('Intl date and number', function () {
+        requireValue(new Intl.DateTimeFormat('en', {timeZone: 'UTC', year: 'numeric'}).format(new Date(0)) === '1970', 'date mismatch');
+        requireValue(new Intl.NumberFormat('en-US').format(1234.5) === '1,234.5', 'number mismatch');
+    });
+    await check('BigInt arithmetic', function () {
+        requireValue(12345678901234567890n + 1n === 12345678901234567891n, 'BigInt mismatch');
+    });
+    await check('Promise microtask', async function () {
+        let count = 0;
+        await Promise.resolve().then(function () { count++; });
+        requireValue(count === 1, 'microtask mismatch');
+    });
+    await check('WebAssembly execution', function () {
+        const bytes = new Uint8Array([
+            0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,
+            3,2,1,0,7,7,1,3,97,100,100,0,0,10,9,1,7,0,32,0,32,1,106,11
+        ]);
+        const instance = new WebAssembly.Instance(new WebAssembly.Module(bytes));
+        requireValue(instance.exports.add(20, 22) === 42, 'Wasm mismatch');
+    });
+    await check('Canvas 2D pixels', function () {
+        const context = document.getElementById('drawing').getContext('2d');
+        requireValue(context, '2D context unavailable');
+        context.fillStyle = '#00ff00';
+        context.fillRect(0, 0, 240, 64);
+        const pixel = context.getImageData(12, 12, 1, 1).data;
+        requireValue(pixel[0] === 0 && pixel[1] === 255 && pixel[2] === 0 && pixel[3] === 255, 'pixel mismatch');
+    });
+    for (const kind of ['webgl', 'webgl2']) {
+        await check(kind + ' clear/readPixels', function () {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 16;
+            const context = canvas.getContext(kind);
+            requireValue(context, kind + ' context unavailable');
+            context.clearColor(0, 1, 0, 1);
+            context.clear(context.COLOR_BUFFER_BIT);
+            const pixels = new Uint8Array(4);
+            context.readPixels(0, 0, 1, 1, context.RGBA, context.UNSIGNED_BYTE, pixels);
+            requireValue(context.getError() === context.NO_ERROR, 'GL error');
+            requireValue(pixels[0] === 0 && pixels[1] === 255 && pixels[2] === 0 && pixels[3] === 255, 'GPU pixel mismatch');
+            const cleanup = context.getExtension('WEBGL_lose_context');
+            if (cleanup) cleanup.loseContext();
+        });
+    }
+    await check('WebGPU compute/readback', async function () {
+        requireValue(navigator.gpu, 'WebGPU unavailable');
+        const adapter = await navigator.gpu.requestAdapter();
+        requireValue(adapter, 'GPU adapter unavailable');
+        const device = await adapter.requestDevice();
+        let output;
+        let readback;
+        try {
+            output = device.createBuffer({size: 16, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC});
+            readback = device.createBuffer({size: 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST});
+            const shader = device.createShaderModule({code:
+                '@group(0) @binding(0) var<storage, read_write> output: array<u32>; ' +
+                '@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) index: vec3<u32>) { ' +
+                'output[index.x] = (index.x + 1u) * 7u; }'});
+            const pipeline = device.createComputePipeline({layout: 'auto',
+                compute: {module: shader, entryPoint: 'main'}});
+            const group = device.createBindGroup({layout: pipeline.getBindGroupLayout(0),
+                entries: [{binding: 0, resource: {buffer: output}}]});
+            const encoder = device.createCommandEncoder();
+            const pass = encoder.beginComputePass();
+            pass.setPipeline(pipeline);
+            pass.setBindGroup(0, group);
+            pass.dispatchWorkgroups(4);
+            pass.end();
+            encoder.copyBufferToBuffer(output, 0, readback, 0, 16);
+            device.queue.submit([encoder.finish()]);
+            await readback.mapAsync(GPUMapMode.READ);
+            const values = new Uint32Array(readback.getMappedRange());
+            requireValue(values[0] === 7 && values[1] === 14 && values[2] === 21 && values[3] === 28, 'compute mismatch');
+            readback.unmap();
+        } finally {
+            if (output) output.destroy();
+            if (readback) readback.destroy();
+            device.destroy();
+        }
+    });
+    await check('Origin storage roundtrip', function () {
+        const key = 'codex-android-smoke-only';
+        const previous = localStorage.getItem(key);
+        try {
+            localStorage.setItem(key, 'android-engine');
+            requireValue(localStorage.getItem(key) === 'android-engine', 'storage mismatch');
+        } finally {
+            if (previous === null) localStorage.removeItem(key);
+            else localStorage.setItem(key, previous);
+        }
+    });
+    await check('Same-origin fetch', async function () {
+        const response = await fetch('/fixture-data.json');
+        requireValue(response.ok, 'HTTP status ' + response.status);
+        const data = await response.json();
+        requireValue(data.marker === 'codex-android-engine', 'response mismatch');
+    });
+    const capabilities = {
+        webgpu_api_present: !!navigator.gpu,
+        camera_mic_api_present: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+        screen_recording_api_present: !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia),
+        geolocation_api_present: !!navigator.geolocation
+    };
+    window.codexAndroidSmoke = {results: results, capabilities: capabilities};
+    document.getElementById('summary').textContent = results.filter(function (result) {
+        return result.passed;
+    }).length + '/' + results.length + ' execution checks passed. API presence is not functional verification.';
+    try {
+        await fetch('/report', {method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(window.codexAndroidSmoke)});
+    } catch (error) {
+        document.getElementById('summary').textContent += ' Report upload failed: ' + String(error);
+    }
+})();
+</script>
+</html>
