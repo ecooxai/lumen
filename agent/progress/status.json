@@ -1,45 +1,21 @@
 {
   "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Building candidate 200: header conversion and combination",
+  "phase": "Final validation complete; source release and feedback recovery in progress",
   "iteration": 200,
   "score": null,
   "iteration_quality": null,
-  "score_note": "19/100 is a historical estimate without a reproducible formula. Current overall assessment is pending; scoped checks are reported separately.",
+  "score_note": "Historical 19/100 was not a reproducible current assessment. Selected 640-case full-case pass rate is 59.38/100; no overall score is inferred.",
   "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
-  "checkpoint": "cd742d5c2f447dfd5eb1b20606ae64f936b6888b",
-  "updated_utc": "2026-10-29T20:04:08.142376+00:00",
+  "checkpoint": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+  "updated_utc": "2026-10-29T20:59:59.447045+00:00",
   "session_started_utc": "2026-10-29T17:25:47Z",
   "deadline_utc": "2026-10-29T21:25:47Z",
-  "current_evidence": [
-    [
-      "Accepted candidate 199",
-      "1,021/1,034 insertion fields; 160/160 coercion/event fields; 64/64 Symbol fields."
-    ],
-    [
-      "Forms retained",
-      "8,127/8,127 eligibility checks and 647/649 upstream assertions, with two selector holdouts."
-    ],
-    [
-      "Next candidate",
-      "Header semantics are being tested against the frozen network cohort and independent conversion/clone controls."
-    ],
-    [
-      "Final validation",
-      "Exact-final native, broad 640-case and unchanged performance comparisons remain scheduled."
-    ]
-  ],
-  "coverage": "Editing, coercion, Symbol and form-retention gates are complete. Header conversion, duplicate combination and private clone behavior are being checked independently.",
-  "findings": [
-    "Whole-browser parity is not certified. The matched 640-document non-URL comparison and cleanup audit are complete: candidate 176 \u2192 187 gains 11 fully passing cases and 133 assertions, with zero losses. All owned processes are gone. The original 638/640 native exit-receipt result remains recorded as a historical harness teardown defect; its two inactive profiles were removed.",
-    "Three focused upstream form assertions remain after candidate 190: two dynamic validity-selector checks and maxlength editing. Two Chromium validation-message nonpasses in the authored reference remain separately recorded.",
-    "Actual Lumen hardware rendering and ordinary desktop-close behavior remain unverified. The fixed CPU performance trials had clean owned-process teardown; that evidence does not certify every shutdown path.",
-    "The legacy source download remains historical candidate 168. The independently reviewed candidate 186 source checkpoint is now saved and available through the private source page and its separate reviewed-source HTTPS route.",
-    "Chromium is faster in the measured CPU DOM, style/layout and grid phases. A separate diagnostic located CSSOM setter overhead; a narrow optimization is awaiting independent semantics and balanced performance checks.",
-    "URL conformance remains deferred. Current whole-browser assessment is pending; focused scores are explicitly scoped."
-  ],
+  "current_evidence": "Final candidate 200: +23 full cases and +251 semantic assertion passes versus 176, zero losses or identity/completion changes. All 640 actual exits and profile cleanups verified. Final 21 performance trials each passed 9,395 checks; native timing ranges overlap.",
+  "coverage": "Frozen selected 640 HTTP/window cases; URL conformance deferred. Chromium: 544/640 full cases and 9,516/10,549 assertions. This is not the complete WPT suite.",
+  "findings": "Accepted source remains a4c26feb. Remaining large gaps include CSS values, sizing, grid, DOM parsing, variables and flex. Actual Lumen hardware rendering and ordinary desktop-close behavior remain unverified.",
   "active_iteration": 200,
-  "accepted_binary_sha256": "67db9c75117c59576fa1aa0ea2a13dea4a87bc410feb67665cbdc3dcf7d8635e",
-  "accepted_binary_scope": "Candidate 195: canonical pixel-size setter optimization with unchanged semantics; broad timing remains inconclusive.",
+  "accepted_binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+  "accepted_binary_scope": "Candidate 200, exact final CPU/offscreen Linux build; full selected-cohort and scoped regression validation complete.",
   "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
   "candidate_binary_sha256": null,
@@ -406,36 +382,16 @@
   "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "session_iteration": null,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 199,
+  "accepted_iteration": 200,
   "accepted_focused_results": {
-    "editing": {
-      "pass": 1021,
-      "total": 1034,
-      "gains": 303,
-      "lost": 0
-    },
-    "coercion": {
-      "pass": 160,
-      "total": 160,
-      "gains": 64,
-      "lost": 0
-    },
-    "symbols": {
-      "pass": 64,
-      "total": 64,
-      "gains": 14,
-      "lost": 0
-    },
-    "forms": {
-      "pass": 647,
-      "total": 649,
-      "gains": 1,
-      "lost": 0
-    },
-    "eligibility": {
-      "pass": 8127,
-      "total": 8127
-    }
+    "native": "140/140",
+    "network": "317/317",
+    "header_neighbors": "11/11",
+    "forms": "647/649",
+    "table": "960/960",
+    "intrinsic": "76/148",
+    "angle": "89/184",
+    "authored_scopes_retained": 14
   },
   "rejected_session4_iterations": [
     {
@@ -574,7 +530,7 @@
     },
     "interpretation": "Fresh current-session comparison reference. Differences from historical 162 are replay variability, not source gains."
   },
-  "accepted_iteration_classification": "Qualified EXPERIMENTAL checkpoint only; not regression-free or production-ready",
+  "accepted_iteration_classification": "Accepted final candidate; global parity goal not reached",
   "retained_accepted_focused163": {
     "iteration": 163,
     "native_ctest": [
@@ -1231,7 +1187,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-29T20:04:08.142376+00:00",
+  "updated_at": "2026-10-29T20:59:59.447045+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1340,12 +1296,12 @@
     },
     "notes": "Local restored source is separate evidence. Existing176 remote binary and reviewed168 public source archive retain their original identifiers."
   },
-  "session6_current": "Candidate 199 is accepted with 303 insertion-field gains and the upstream maxlength emoji repair, with no lost prior passes. Candidate 200 is the final planned feature scope before frozen regression and performance runs.",
-  "session6_current_summary": "Accepted candidate 195; angle candidate 196 is being built.",
-  "overall_assessment": "pending",
-  "accepted_scope_label": "Text insertion fields",
-  "accepted_scope_pass": 1021,
-  "accepted_scope_total": 1034,
+  "session6_current": "Candidate 200 is accepted: 380/640 full selected cases, 8,324/10,540 assertions, 251 new assertion passes and no losses versus candidate 176.",
+  "session6_current_summary": "All 140 non-URL native tests and all 14 final authored cohorts are retained. Source release and existing feedback service recovery are in progress.",
+  "overall_assessment": "The 98/100 whole-browser goal is not reached. Measured non-URL progress is reported by scope.",
+  "accepted_scope_label": "Selected WPT assertions",
+  "accepted_scope_pass": 8324,
+  "accepted_scope_total": 10540,
   "reviewed_source_checkpoint186": {
     "candidate": 186,
     "source_url": "https://2b6886734b41e997.5x7aqstuceku.opentunnel.xyz/src.tar.gz",

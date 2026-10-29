@@ -1,0 +1,28 @@
+{
+  "verified_utc": "2026-10-29T20:52:36.271911+00:00",
+  "files": [
+    {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen",
+      "resolved_path": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen",
+      "bytes": 7127360,
+      "sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+      "device": 48,
+      "inode": 18683244,
+      "executable": true,
+      "is_symlink": false
+    },
+    {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i200",
+      "resolved_path": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i200",
+      "bytes": 7127360,
+      "sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+      "device": 48,
+      "inode": 18683391,
+      "executable": true,
+      "is_symlink": false
+    }
+  ],
+  "same_bytes": true,
+  "same_inode": false,
+  "expected_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927"
+}

@@ -1,0 +1,15 @@
+{
+  "recorded_utc": "2026-10-29T20:59:59.447045+00:00",
+  "tested_source": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+  "production_unchanged": true,
+  "policy_prefix_bytes": 7062,
+  "policy_prefix_unchanged": true,
+  "historical_handoff_bytes": 15004,
+  "elapsed_minutes": 214.207,
+  "files": {
+    "AGENTS.md": "b945b1c6b9d621f1f5484b96dca938ac1f0d9a45cb8ae9075c02b0a916d80e53",
+    "devsummary.md": "12c95b885e7bf8321c244522b3cc7251bdd4397a3108a8cdeef6f6b314e3ceb8",
+    "agent/progress/status.json": "640365f9297f6d8fec60f56fc916feab7ad683e000945b48670dadea8af2011b",
+    "agent/handoffs/linux-session4-20261029.md": "557c61a61a596e00f626f194217cb7aefeb2fc5266cca8406fe69455ccbf6512"
+  }
+}
