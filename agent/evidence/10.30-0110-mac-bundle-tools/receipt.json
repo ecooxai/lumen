@@ -1,0 +1,54 @@
+{
+  "scope": "Local host packaging or browser-state regression tests; not native Apple runtime or official WPT acceptance",
+  "files": [
+    {
+      "file": "mac-bundle-plan-red.log",
+      "sha256": "72c0ec89d4597361d1dba1e8969bd92ae7e47c6c9ca3831f69692e3ffda44836",
+      "bytes": 1183
+    },
+    {
+      "file": "mac-bundle-plan-red.json",
+      "sha256": "46996a3b69431682f8d6660b24832103e330b6fd285e61816fba115bd0866048",
+      "bytes": 2191
+    },
+    {
+      "file": "mac-bundle-plan-red.csv",
+      "sha256": "39a00030e006daf735f6926589c87a252eddf88045a37095f913023d28edb89d",
+      "bytes": 80
+    },
+    {
+      "file": "mac-bundle-plan-green.log",
+      "sha256": "1186f091e336fd9a80cde35afa6793bda2d6fae9de296e8df91cf7f22eb8c099",
+      "bytes": 1080
+    },
+    {
+      "file": "mac-bundle-plan-green.json",
+      "sha256": "b2c0a6c609880b6ea84ea158d9cff3ab194c4bf3f3f6b2a70e6bc41c45d09182",
+      "bytes": 2148
+    },
+    {
+      "file": "mac-bundle-plan-green.csv",
+      "sha256": "0771476346735dbbb98bc751cd228281dda29f836f34617d64537979f5a4e5d1",
+      "bytes": 80
+    },
+    {
+      "file": "mac-bundle-resources-green.log",
+      "sha256": "10fa3900beb4302a5eb3f6bf64b61461fefe97d1256b39669685a5506f984997",
+      "bytes": 1760
+    },
+    {
+      "file": "mac-bundle-resources-green.json",
+      "sha256": "1fd9c5e23ce5ee50078511af30f21b8dd1ee43d091ef0bed31127750b80870a1",
+      "bytes": 2150
+    },
+    {
+      "file": "mac-bundle-resources-green.csv",
+      "sha256": "a24f54699f6f4ee252d3c9cebc4e25ca99cc69b53d799475127f91431c5fc2a8",
+      "bytes": 80
+    }
+  ],
+  "monitoring": "One-second collectors; subsecond tests yield no valid interval CPU measurement",
+  "score": 66.42694844715456,
+  "scoreState": "inherited accepted baseline; no candidate credit",
+  "behavior": "Closure plan six tests and package/resource ten tests passed; initial missing-module RED is setup evidence, not six behavioral failures"
+}

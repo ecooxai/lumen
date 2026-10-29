@@ -1,0 +1,13 @@
+✔ new active task displays its own inherited score on the reused route (11.927602ms)
+✔ explicit task identity rejects a stale nested score and transport score (1.683156ms)
+✔ matching active task score may arrive from the snapshot scorecard (1.716637ms)
+✔ previous published task remains readable before explicit handoff (1.483865ms)
+✔ unmatched snapshot cannot create a score when no nested task exists (1.491747ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 73.851497

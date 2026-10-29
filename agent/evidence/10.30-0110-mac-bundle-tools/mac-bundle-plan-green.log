@@ -1,0 +1,11 @@
+test_every_non_system_edge_uses_bundle_relative_target (test_macos_bundle_dependencies.BundlePlanTests.test_every_non_system_edge_uses_bundle_relative_target) ... ok
+test_incomplete_closure_is_rejected (test_macos_bundle_dependencies.BundlePlanTests.test_incomplete_closure_is_rejected) ... ok
+test_missing_transitive_dependency_is_never_silently_skipped (test_macos_bundle_dependencies.BundlePlanTests.test_missing_transitive_dependency_is_never_silently_skipped) ... ok
+test_outside_bundle_dependency_invalidates_final_audit (test_macos_bundle_dependencies.BundlePlanTests.test_outside_bundle_dependency_invalidates_final_audit) ... ok
+test_relative_unsafe_or_falsely_system_paths_are_rejected (test_macos_bundle_dependencies.BundlePlanTests.test_relative_unsafe_or_falsely_system_paths_are_rejected) ... ok
+test_same_install_basename_from_two_libraries_is_rejected (test_macos_bundle_dependencies.BundlePlanTests.test_same_install_basename_from_two_libraries_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.004s
+
+OK

@@ -1,0 +1,15 @@
+test_default_remains_supported_and_has_explicit_provenance (test_mkdevapp.ImmutableExecutableTests.test_default_remains_supported_and_has_explicit_provenance) ... ok
+test_executable_changed_during_dependency_inspection_is_not_packaged (test_mkdevapp.ImmutableExecutableTests.test_executable_changed_during_dependency_inspection_is_not_packaged) ... ok
+test_explicit_candidate_is_copied_and_reported_instead_of_mutable_default (test_mkdevapp.ImmutableExecutableTests.test_explicit_candidate_is_copied_and_reported_instead_of_mutable_default) ... ok
+test_external_executable_is_rejected_even_with_matching_hash (test_mkdevapp.ImmutableExecutableTests.test_external_executable_is_rejected_even_with_matching_hash) ... ok
+test_malformed_expected_hash_is_rejected_before_output (test_mkdevapp.ImmutableExecutableTests.test_malformed_expected_hash_is_rejected_before_output) ... ok
+test_mismatched_tested_hash_rejected_before_output_or_dependency_inspection (test_mkdevapp.ImmutableExecutableTests.test_mismatched_tested_hash_rejected_before_output_or_dependency_inspection) ... ok
+test_symlink_cannot_escape_the_project (test_mkdevapp.ImmutableExecutableTests.test_symlink_cannot_escape_the_project) ... ok
+test_ca_bundle_must_not_accidentally_publish_a_private_key (test_mkdevapp.PortableResourceTests.test_ca_bundle_must_not_accidentally_publish_a_private_key) ... ok
+test_icu_resource_comes_from_the_inspected_v8_directory (test_mkdevapp.PortableResourceTests.test_icu_resource_comes_from_the_inspected_v8_directory) ... ok
+test_missing_or_ambiguous_icu_data_is_rejected (test_mkdevapp.PortableResourceTests.test_missing_or_ambiguous_icu_data_is_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.023s
+
+OK

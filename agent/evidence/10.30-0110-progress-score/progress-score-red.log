@@ -1,0 +1,74 @@
+✖ new active task displays its own inherited score on the reused route (13.23965ms)
+✖ explicit task identity rejects a stale nested score and transport score (4.487629ms)
+✔ matching active task score may arrive from the snapshot scorecard (2.528625ms)
+✔ previous published task remains readable before explicit handoff (2.113483ms)
+✖ unmatched snapshot cannot create a score when no nested task exists (1.58654ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 2
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 82.250121
+
+✖ failing tests:
+
+test at tools/lume-progress-10290244/tests/browser_task_score.test.mjs:29:1
+✖ new active task displays its own inherited score on the reused route (13.23965ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'Iteration 2 · 55.00/100 task gates'
+  - 'Iteration 2 · 66.43/100 inherited task gates'
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/4aa97518bdcd/project/lumen/tools/lume-progress-10290244/tests/browser_task_score.test.mjs:34:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Iteration 2 · 55.00/100 task gates',
+    expected: 'Iteration 2 · 66.43/100 inherited task gates',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tools/lume-progress-10290244/tests/browser_task_score.test.mjs:37:1
+✖ explicit task identity rejects a stale nested score and transport score (4.487629ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'Iteration 3 · 98.00/100 task gates'
+  - 'Iteration 3 · —/100 task gates'
+                   ^
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/4aa97518bdcd/project/lumen/tools/lume-progress-10290244/tests/browser_task_score.test.mjs:42:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Iteration 3 · 98.00/100 task gates',
+    expected: 'Iteration 3 · —/100 task gates',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tools/lume-progress-10290244/tests/browser_task_score.test.mjs:61:1
+✖ unmatched snapshot cannot create a score when no nested task exists (1.58654ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'Iteration 5 · 98.00/100 task gates'
+  - 'Iteration 5 · —/100 task gates'
+                   ^
+  
+      at TestContext.<anonymous> (file:///workspace/scratch/4aa97518bdcd/project/lumen/tools/lume-progress-10290244/tests/browser_task_score.test.mjs:65:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'Iteration 5 · 98.00/100 task gates',
+    expected: 'Iteration 5 · —/100 task gates',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

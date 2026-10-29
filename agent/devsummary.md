@@ -612,3 +612,8 @@ Actual Mac supplemental53 retry6378 ran15:59:29.774924–16:00:55.150250UTC,85.3
 - Taskwalltimefrom17:11:00Ztofirstcandidateverification:1952.950593s(32m32.951s). Includes789.9sblockedchildtransportoverhead; parallelagenttimeisnotaddedtoelapsed. Eachbuild/teststageUTC andduration inagent/evidence/10.30-0110-native-shared-001/summary-structured-copy.json.
 - Prioracceptedscore66.426948447154565/100remainsbaseline; thisfocusedcandidateisnotacceptedreleaseanddoesnotreplace1515WPTpassrate. FullWPT/resource/deliverygatespending. Candidate sourcecheckpointb541Librarylibfile_396ffd6db92081919fb5f06aa6a3e60fverifiedpersisted.
 - Independentboundary13controlnowqualifiedChrome13/13; includestransferofSharedWorkerconnectionintoDedicatedWorker. Candidate001boundaryrunpending; sourceinspectionpredictsaroutinggap. PreserveREDandrepairbeforepromotion.
+
+## Iteration2: transferable SharedWorker connection defect (in progress)
+
+- StartUTC2026-10-29T17:48:48.128895Z; candidate001frozenboundary13 actualMac12/13 in2.524184s, no infrastructureerrors. OnlytransferofSharedWorker.port intoDedicatedWorker failsbytimeout. QualifiedChrome13/13; frozenfixtureSHAae9398fdb1c16007efce49415b503058b89bc0ffff101ba921c5f81ef98e11cf unchanged. AllCSP/origin/queuecontrolsPASS.
+- Productfixplannedprivateentanglementbrokerwithsenderdetachment+nativeconnection/lifetimeownership. Candidate001notpromoted; prioracceptedtaskscore66.426948447154565/100retained. Full1515awaitsstablecandidate/dependencybeforeexpensivesweep.

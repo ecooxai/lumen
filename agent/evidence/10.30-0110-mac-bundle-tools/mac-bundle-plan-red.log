@@ -1,0 +1,21 @@
+test_macos_bundle_dependencies (unittest.loader._FailedTest.test_macos_bundle_dependencies) ... ERROR
+
+======================================================================
+ERROR: test_macos_bundle_dependencies (unittest.loader._FailedTest.test_macos_bundle_dependencies)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_macos_bundle_dependencies
+Traceback (most recent call last):
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+  File "/workspace/scratch/4aa97518bdcd/project/lumen/tests/test_macos_bundle_dependencies.py", line 9, in <module>
+    import macos_bundle_dependencies as bundle
+ModuleNotFoundError: No module named 'macos_bundle_dependencies'
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)

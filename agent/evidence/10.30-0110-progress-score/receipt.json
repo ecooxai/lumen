@@ -1,0 +1,39 @@
+{
+  "scope": "Local host packaging or browser-state regression tests; not native Apple runtime or official WPT acceptance",
+  "files": [
+    {
+      "file": "progress-score-red.log",
+      "sha256": "bfcec18e9e394a2074cb6b4d1b1729f5f2d791f918c146222b2d53d68c62ab65",
+      "bytes": 3204
+    },
+    {
+      "file": "progress-score-red.json",
+      "sha256": "ff8b741b8e2f91f948d27eadc8ff6e54a3278a40415d31f6a22fc808f7070406",
+      "bytes": 2193
+    },
+    {
+      "file": "progress-score-red.csv",
+      "sha256": "cd71af83f93618c1500b73d69022d6b7208d0b6dbb32af1f4f630f158a672fa0",
+      "bytes": 80
+    },
+    {
+      "file": "progress-score-green.log",
+      "sha256": "669ed3abe489e0b7abe4530258c2d9f3dddc293e5201f90b2e8105c845c72ef8",
+      "bytes": 540
+    },
+    {
+      "file": "progress-score-green.json",
+      "sha256": "bc7611a8e545d4c9da52a791343df66b092b996084fb168d08a49cfa09dfe61e",
+      "bytes": 2152
+    },
+    {
+      "file": "progress-score-green.csv",
+      "sha256": "162c34f8309cc3622f983fd413fa5d30010bfdf4d24893b61fd9e043c6b2a5c6",
+      "bytes": 80
+    }
+  ],
+  "monitoring": "One-second collectors; subsecond tests yield no valid interval CPU measurement",
+  "score": 66.42694844715456,
+  "scoreState": "inherited accepted baseline; no candidate credit",
+  "behavior": "Shipped browser module score attribution: RED 2/5 then GREEN 5/5; stale task scores now rejected"
+}
