@@ -1,0 +1,130 @@
+{
+  "task": "10.292019r",
+  "createdUTC": "2026-10-29T14:42:03.883189+00:00",
+  "sourceCandidate": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
+  "wptRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "scope": "Bounded read-only upstream review specific to the data iframe/policy change. All identified variants retained; no score or full-WPT claim.",
+  "sources": [
+    {
+      "source": "content-security-policy/inheritance/iframe-all-local-schemes-inherit-self.sub.html",
+      "sha256": "e476617ac5a6fb3f82b531d7379f3653fc01b73496cc6d6a6a49b86ae7f88cff",
+      "purpose": "Inherited self still allows original-origin subresources across local schemes."
+    },
+    {
+      "source": "content-security-policy/inheritance/iframe-all-local-schemes.sub.html",
+      "sha256": "5701934645cd566de4c6b722195c8094f953401bd2f8c22697ea96d9bc9b5414",
+      "purpose": "Inherited none blocks subresources across all local schemes and popup forms."
+    },
+    {
+      "source": "content-security-policy/inheritance/inherited-csp-list-modifications-are-local.html",
+      "sha256": "731d6ad7b3646584d621ce55d41ab6fe35f18b1795085d153886d66dd59ce675",
+      "purpose": "A child policy copy cannot change the parent policy list; violation event target matters."
+    },
+    {
+      "source": "content-security-policy/inheritance/inheritance-from-initiator.sub.html",
+      "sha256": "b9904ad0ef0f225a7d4033eb19de0c2dc0dc24d93b3464101d7ceba1fefccad9",
+      "purpose": "Policy owner differs for src/location/window.open/anchor/form initiators; data POST remains unsupported in Lumen."
+    },
+    {
+      "source": "content-security-policy/inheritance/document-write-iframe.html",
+      "sha256": "bead9085a17e5a067329ea2ce60050aea7a5032617f0b36fc50049bc79c92b43",
+      "purpose": "Document.open/write retains the existing policy container."
+    },
+    {
+      "source": "permissions-policy/policy-extends-to-data-url-all.html",
+      "sha256": "237afc0334c508e87ed2abb47be173beccafac1ece9198a43dede8f126d00759",
+      "purpose": "Wildcard delegation to opaque data origin and public allowsFeature behavior."
+    }
+  ],
+  "nextSchedule": [
+    {
+      "test": "/content-security-policy/inheritance/iframe-all-local-schemes-inherit-self.sub.html",
+      "source": "content-security-policy/inheritance/iframe-all-local-schemes-inherit-self.sub.html",
+      "state": "unrun",
+      "reason": "Requires real image loader, CSP violation/report events and/or navigation/popups; Linux jsrun is not a faithful renderer for these unchanged tests."
+    },
+    {
+      "test": "/content-security-policy/inheritance/iframe-all-local-schemes.sub.html",
+      "source": "content-security-policy/inheritance/iframe-all-local-schemes.sub.html",
+      "state": "unrun",
+      "reason": "Requires real image loader, CSP violation/report events and/or navigation/popups; Linux jsrun is not a faithful renderer for these unchanged tests."
+    },
+    {
+      "test": "/content-security-policy/inheritance/inherited-csp-list-modifications-are-local.html",
+      "source": "content-security-policy/inheritance/inherited-csp-list-modifications-are-local.html",
+      "state": "unrun",
+      "reason": "Requires real image loader, CSP violation/report events and/or navigation/popups; Linux jsrun is not a faithful renderer for these unchanged tests."
+    },
+    {
+      "test": "/content-security-policy/inheritance/inheritance-from-initiator.sub.html?scheme=data",
+      "source": "content-security-policy/inheritance/inheritance-from-initiator.sub.html",
+      "state": "unrun",
+      "reason": "Requires real image loader, CSP violation/report events and/or navigation/popups; Linux jsrun is not a faithful renderer for these unchanged tests."
+    },
+    {
+      "test": "/content-security-policy/inheritance/inheritance-from-initiator.sub.html?scheme=javascript",
+      "source": "content-security-policy/inheritance/inheritance-from-initiator.sub.html",
+      "state": "unrun",
+      "reason": "Requires real image loader, CSP violation/report events and/or navigation/popups; Linux jsrun is not a faithful renderer for these unchanged tests."
+    },
+    {
+      "test": "/content-security-policy/inheritance/inheritance-from-initiator.sub.html?scheme=blob",
+      "source": "content-security-policy/inheritance/inheritance-from-initiator.sub.html",
+      "state": "unrun",
+      "reason": "Requires real image loader, CSP violation/report events and/or navigation/popups; Linux jsrun is not a faithful renderer for these unchanged tests."
+    },
+    {
+      "test": "/content-security-policy/inheritance/document-write-iframe.html",
+      "source": "content-security-policy/inheritance/document-write-iframe.html",
+      "state": "unrun",
+      "reason": "Requires real image loader, CSP violation/report events and/or navigation/popups; Linux jsrun is not a faithful renderer for these unchanged tests."
+    },
+    {
+      "test": "/permissions-policy/policy-extends-to-data-url-all.html",
+      "source": "permissions-policy/policy-extends-to-data-url-all.html",
+      "state": "diagnostic-completed",
+      "reason": null
+    }
+  ],
+  "diagnosticResults": {
+    "chromium": {
+      "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+      "sourceSHA256": "237afc0334c508e87ed2abb47be173beccafac1ece9198a43dede8f126d00759",
+      "status": "TIMEOUT",
+      "subtests": [
+        {
+          "name": "Permissions Policy with wildcard '*' extends to data: URL iframe with opaque origin",
+          "status": "TIMEOUT",
+          "message": "Test timed out"
+        }
+      ],
+      "seconds": 11.299342804002663,
+      "receiptSHA256": "577cba0bfe1014341bba863d1b1d4383e1c0d301ce6d19051a00931a1f95e238"
+    },
+    "candidate-11": {
+      "binarySHA256": "ff3601542440df092406d646e9f5051646af861b3ccd268e8e2de18766ed725a",
+      "sourceSHA256": "237afc0334c508e87ed2abb47be173beccafac1ece9198a43dede8f126d00759",
+      "status": "TIMEOUT",
+      "subtests": [
+        {
+          "name": "Permissions Policy with wildcard '*' extends to data: URL iframe with opaque origin",
+          "status": "TIMEOUT",
+          "message": "Test timed out"
+        }
+      ],
+      "seconds": 10.169530300001497,
+      "receiptSHA256": "681602a4364b3e87b52afe1f8ff1a49a2549197d34a4758ef2a84565d9ba2352"
+    }
+  },
+  "finding": "The unchanged Permissions-Policy data-url test times out in both actual Chrome and native headless execution. Native stderr identifies missing document.permissionsPolicy.allowsFeature; no new policy bypass is established.",
+  "limitations": [
+    "No passing security acceptance is inferred from matching timeouts.",
+    "Image loading and securitypolicyviolation/report delivery are outside the headless harness; those7 planned variants remain explicitly unrun.",
+    "New code covers child GET data form navigation and captured source policy; POST data navigation remains an explicit product limitation.",
+    "Other local schemes, non-form location/window.open initiator semantics, dynamic meta policy processing and originalPolicy reporting remain separate unverified work.",
+    "Current source-expression CSP binding is tested for canonical HTTP(S)/FTP origins and opaque denial; it is not a claim of complete CSP implementation."
+  ],
+  "requiredNextEnvironment": "Use exact native Mac artifact with a separate pinned official WPT fixture; all selected files/variants unchanged; run Chrome control separately; retain every timeout/error and report unsupported browser API separately.",
+  "rawArchiveSHA256": "f01591c0f5d1bda39330eba4024f155d88c29535dcd3cf0877ddb55344aff529",
+  "rawManifestSHA256": "a7a6f97fffee2158c9f479026a8e85660901f5be89ed1f8fd46b16f0163c820d"
+}

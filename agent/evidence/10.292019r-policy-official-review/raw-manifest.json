@@ -1,0 +1,46 @@
+{
+  "out/10292019r-policy-official/server-requests.json": {
+    "sha256": "077e3279f4a64327ea20b88f197b7c96ab3a38e19e479834e67b22cb9e70dc9e",
+    "bytes": 538
+  },
+  "out/10292019r-policy-official/permissions-policy/policy-extends-to-data-url-all.html": {
+    "sha256": "237afc0334c508e87ed2abb47be173beccafac1ece9198a43dede8f126d00759",
+    "bytes": 1192
+  },
+  "out/10292019r-policy-official/chromium/case.console.log": {
+    "sha256": "d118a766699770d39a820509313e41e112a2295af9829555a232a1bc7344bd98",
+    "bytes": 259
+  },
+  "out/10292019r-policy-official/chromium/receipt.json": {
+    "sha256": "577cba0bfe1014341bba863d1b1d4383e1c0d301ce6d19051a00931a1f95e238",
+    "bytes": 5653
+  },
+  "out/10292019r-policy-official/candidate-11/case.console.log": {
+    "sha256": "15ee2766ca2be285f71f776e66a28b5bdbb9e0320f3ed06f0e18786658d05c08",
+    "bytes": 522
+  },
+  "out/10292019r-policy-official/candidate-11/receipt.json": {
+    "sha256": "681602a4364b3e87b52afe1f8ff1a49a2549197d34a4758ef2a84565d9ba2352",
+    "bytes": 3607
+  },
+  "out/10292019r-policy-official/candidate-11/case.metrics.jsonl": {
+    "sha256": "fb9ba6ab4fcd5204a177d99b8a995607616ea75f3d24be19161f8d5402f3bfb2",
+    "bytes": 1143
+  },
+  "out/10292019r-policy-official/chromium/browser/chromium-process.log": {
+    "sha256": "eb2c0b88502e5ec8c52f3767d081e27303d5e79d3e1746c54c9c52cd515187de",
+    "bytes": 7466
+  },
+  "out/10292019r-policy-official/chromium/browser/chromium.metrics-summary.json": {
+    "sha256": "dcacf0feaf5069b2cfca3268f4374f163bf8fc5e2d2f75622b428a5ff4eeca28",
+    "bytes": 2060
+  },
+  "out/10292019r-policy-official/chromium/browser/chromium.cleanup.json": {
+    "sha256": "56d694e778f10b4c994a876204d910904667547c648398eab51c8f8512f8e746",
+    "bytes": 3600
+  },
+  "out/10292019r-policy-official/chromium/browser/chromium.metrics.jsonl": {
+    "sha256": "4b38210a6546eda3f7f652f446fde0a51a8a4457971be42c2d6f5c67bbb7ba34",
+    "bytes": 1294
+  }
+}
