@@ -1049,3 +1049,41 @@ clamp behavior. Evidence:agent/validation/linux-wpt-20261029-session6/style-memo
 Agents:engine_lead implementation/integration;conformance_qa independent
 reference/testing;release_ops build/runtime and isolated forms implementation;
 root project management. Current source checkpoint UTC:2026-10-29T18:24:40.591859+00:00
+
+
+### Iteration5 / Ruby candidate184 — accepted bounded repair
+
+Start17:56:41UTC; final build/native gate end18:27:10UTC;30.48minutes.
+Independent unchanged-identity browser joins against183: clamp83→109/111
+(+26;98.1982/100), comments22→30/30 (+8;100/100), direct strings24→26/27
+(+2;96.2963/100). All joins have zero lost passes, missing/added identities,
+or changed expectations. Fresh rebuilt non-URL native suite140/140 PASS,
+zero skipped/disabled/failed entries; URL/url_host_nul/data_url excluded.
+The two percentage-translate computed-matrix failures and one escaped-quote
+CSSOM custom-property getter failure are unchanged holdouts.
+
+Source21e9bb4418774e00467df3ec11f38193ddd84ba6; immutable browser
+SHA25675ce583b899b75f855f250846d110adc2f6893a88023021c9c4982257529e491.
+618 compiled inputs unchanged, digest11662c593d0fb33af192e1eae997cb153d29b69e6c3e747c7290313a40905ff2.
+Monitored app build/startup19.06s,19 one-second samples; CPU median35.0%,
+maximum188.14%; peak summedRSS330.879MB, four PSS samples max167.492MB.
+These describe this build process tree, not browser workload performance.
+Build and monitor exited; guarded browser cleanup completed without residual
+PIDs. Evidence:iteration-184,iteration-184-ops,session6/qa-native184 and
+independent session6 browser reports. Agents:engine_lead,conformance_qa,
+release_ops;root PM. Overall parity remains unverified(last estimate19/100).
+Total wall time17:25:47→18:27:10=61.38minutes; parallel work is not summed.
+
+### Iteration6 / candidate185 — table source checkpoint, gates pending
+
+Start18:30:34UTC. Clean four-file three-way merge of reviewed table prototype
+97c5428 over accepted184, preserving math/declaration repairs. Inherited
+computed horizontal/vertical border spacing replaces the hardcoded2px gap.
+HTML UA2px, CSS table initial0, author overrides, collapsed and empty-table
+behavior remain distinct. Added property-specific typed validation rejecting
+nonzero unitless, percentage and incompatible dimensions; literal0 is valid.
+Fresh independent960 observations were declared before browser capture,
+including colspan/rowspan and resize; capture completion is not conformance.
+No fresh185 score is claimed yet. Agents:engine_lead andconformance_qa;
+release_ops forms prototype in an isolated worktree;root PM.
+Source checkpointUTC:2026-10-29T18:33:04.144936+00:00

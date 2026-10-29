@@ -1,0 +1,11 @@
+{
+  "local_commit": "97c5428baab79e493e6a3344a98bd0ef79837aad",
+  "base": "21b32d77bc906a4afd06dc424251514e7c01e5ac",
+  "sha256": "94fbf14165b2ffb3298c276b9c21e7348ac49c7ab42ab43afbb087873a7e4bb2",
+  "paths": [
+    "src/css/css.h",
+    "src/css/props_generated.inc",
+    "src/css/style.c",
+    "src/layout/grid.c"
+  ]
+}

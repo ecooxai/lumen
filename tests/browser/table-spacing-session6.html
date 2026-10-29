@@ -1,0 +1,61 @@
+<!doctype html><meta charset="utf-8"><title>Independent table spacing and declaration controls</title>
+<div id="host"></div><pre id="results"></pre>
+<script>
+const cases=[
+ ['html-ua','html','',''],['css-initial','css','',''],
+ ['author-zero','html','border-spacing:0',''],
+ ['single-axis','html','border-spacing:8px',''],
+ ['two-axes','html','border-spacing:3px 7px',''],
+ ['inherit-css','css','','border-spacing:8px 6px'],
+ ['inherit-explicit','html','border-spacing:inherit','border-spacing:8px 6px'],
+ ['reset-initial','html','border-spacing:initial','border-spacing:8px 6px'],
+ ['reset-unset','html','border-spacing:unset','border-spacing:8px 6px'],
+ ['negative-literal','html','border-spacing:5px 6px;border-spacing:-1px',''],
+ ['percentage-invalid','html','border-spacing:5px 6px;border-spacing:10%',''],
+ ['unitless-invalid','html','border-spacing:5px 6px;border-spacing:7',''],
+ ['third-component-invalid','html','border-spacing:5px 6px;border-spacing:2px 3px 4px',''],
+ ['angle-invalid','html','border-spacing:5px 6px;border-spacing:3deg',''],
+ ['negative-calc-clamps','html','border-spacing:calc(5px - 10px)',''],
+ ['empty-table','empty','border-spacing:9px 11px',''],
+ ['collapsed-table','html','border-collapse:collapse;border-spacing:9px 11px',''],
+ ['colspan-table','colspan','border-spacing:3px 7px',''],
+ ['rowspan-table','rowspan','border-spacing:3px 7px',''],
+ ['percentage-width-resize','html','width:100%;border-spacing:3px 7px','']
+];
+const fields=['tableWidth','tableHeight','spacingX','spacingY','firstX','firstY','firstWidth','firstHeight','secondX','secondY','secondWidth','secondHeight','lastX','lastY','lastWidth','lastHeight'];
+const rows=[];
+function round(n){return Math.round(n*10000)/10000;}
+function build(kind){
+ const css=kind==='css',table=document.createElement(css?'div':'table');table.style.cssText='display:table;border:0;padding:0;margin:0;font-size:0;';
+ if(kind==='empty')return table;
+ const body=document.createElement(css?'div':'tbody');body.style.display='table-row-group';table.appendChild(body);
+ for(let r=0;r<2;r++){
+  const row=document.createElement(css?'div':'tr');row.style.display='table-row';body.appendChild(row);
+  for(let c=0;c<2;c++){
+   if(kind==='colspan'&&r===0&&c===1||kind==='rowspan'&&r===1&&c===0)continue;
+   const cell=document.createElement(css?'div':'td');cell.setAttribute('data-qa-cell','');cell.style.cssText='display:table-cell;width:10px;height:10px;border:0;padding:0;margin:0;';
+   if(kind==='colspan'&&r===0)cell.colSpan=2;if(kind==='rowspan'&&r===0&&c===0)cell.rowSpan=2;
+   row.appendChild(cell);
+  }
+ }
+ return table;
+}
+for(const [name,kind,style,parentStyle]of cases){
+ const parent=document.createElement('div');parent.style.cssText='width:80px;'+parentStyle;document.getElementById('host').appendChild(parent);
+ const table=build(kind);table.style.cssText+=';'+style+';';parent.appendChild(table);
+ for(const [stage,width]of [['narrow',80],['wide',140],['back',80]]){
+  parent.style.width=width+'px';const tr=table.getBoundingClientRect(),s=getComputedStyle(table),sp=(s.borderSpacing||'').trim().split(/\s+/).map(parseFloat);
+  const cells=Array.from(table.querySelectorAll('[data-qa-cell]'));
+  const values={tableWidth:round(tr.width),tableHeight:round(tr.height),spacingX:Number.isFinite(sp[0])?sp[0]:null,spacingY:Number.isFinite(sp[1])?sp[1]:(Number.isFinite(sp[0])?sp[0]:null)};
+  for(const [prefix,cell]of [['first',cells[0]],['second',cells[1]],['last',cells[cells.length-1]]]){
+   const r=cell&&cell.getBoundingClientRect();values[prefix+'X']=r?round(r.x-tr.x):null;values[prefix+'Y']=r?round(r.y-tr.y):null;values[prefix+'Width']=r?round(r.width):null;values[prefix+'Height']=r?round(r.height):null;
+  }
+  rows.push({name,stage,width,values});
+ }
+ parent.remove();
+}
+const result={cases:cases.length,rows,fields,total:rows.length*fields.length},serialized=JSON.stringify(result);document.getElementById('results').textContent=serialized;
+for(let i=0;i<Math.ceil(serialized.length/256);i++)console.log('LUMEN_AUTHORED_CHUNK '+i+' '+JSON.stringify(serialized.slice(i*256,(i+1)*256)));
+console.log('LUMEN_AUTHORED_DONE '+Math.ceil(serialized.length/256));console.log('RESULTS TABLE_SPACING_OBSERVATIONS:PASS '+rows.length+' rows '+result.total+' fields');
+</script>
+

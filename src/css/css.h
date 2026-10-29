@@ -108,6 +108,7 @@ typedef struct ComputedStyle {
     Length width, height, min_width, min_height, max_width, max_height;
     Length margin[4], padding[4], inset[4]; /* top right bottom left */
     float border_width[4];
+    float border_spacing[2]; /* computed absolute horizontal and vertical gaps; inherited */
     Color border_color[4];
     Length border_radius[4]; /* tl tr br bl */
     float outline_width, outline_offset; Color outline_color;

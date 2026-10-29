@@ -105,6 +105,7 @@ ComputedStyle *style_inherit(const ComputedStyle *p) {
     s->cursor = p->cursor; s->pointer_events = p->pointer_events; s->word_break = p->word_break; s->overflow_wrap = p->overflow_wrap; s->direction = p->direction;
     s->has_text_shadow = p->has_text_shadow; s->text_shadow = p->text_shadow; s->caret_color = p->caret_color; s->fill = p->fill; s->stroke = p->stroke; s->stroke_width = p->stroke_width;
     s->user_select = p->user_select; s->border_collapse = p->border_collapse; s->writing_mode = p->writing_mode; s->inert = p->inert;
+    memcpy(s->border_spacing, p->border_spacing, sizeof s->border_spacing);
     s->custom = custom_ref(p->custom); s->gen_i = custom_ref(p->gen_i);
     for (int i = 0; i < 4; i++) s->border_color[i] = s->color;
     s->outline_color = s->color;
@@ -1986,6 +1987,10 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         }
         else if (!strcmp(P, "margin")) memcpy(st->margin, src->margin, sizeof st->margin);
         else if (!strcmp(P, "padding")) memcpy(st->padding, src->padding, sizeof st->padding);
+        else if (!strcmp(P, "border-spacing")) {
+            const ComputedStyle *from = unset && par ? par : src;
+            memcpy(st->border_spacing, from->border_spacing, sizeof st->border_spacing);
+        }
         else if (!strcmp(P, "inset")) memcpy(st->inset, src->inset, sizeof st->inset);
         else if (!strncmp(P, "margin-", 7) || !strncmp(P, "padding-", 8) || !strncmp(P, "inset-", 6) ||
                  !strcmp(P, "top") || !strcmp(P, "right") || !strcmp(P, "bottom") || !strcmp(P, "left")) {
@@ -2100,6 +2105,25 @@ apply:
         else if (!strcmp(P, "border-style")) { char *t[4]; int n = split_ws(val, t, 4); int s[4]; for (int i = 0; i < n; i++) { s[i] = kw(t[i], bstyles); if (s[i] < 0) s[i] = 0; } if (n == 1) s[1] = s[2] = s[3] = s[0]; else if (n == 2) { s[2] = s[0]; s[3] = s[1]; } else if (n == 3) s[3] = s[1]; for (int i = 0; i < 4 && n; i++) st->border_style[i] = (uint8_t)s[i]; free_toks(t, n); }
         else if (!strcmp(P, "border-color")) { char *t[4]; int n = split_ws(val, t, 4); Color cc[4] = {0}; for (int i = 0; i < n; i++) css_parse_color(t[i], &cc[i], st->color); if (n == 1) cc[1] = cc[2] = cc[3] = cc[0]; else if (n == 2) { cc[2] = cc[0]; cc[3] = cc[1]; } else if (n == 3) cc[3] = cc[1]; if (n) memcpy(st->border_color, cc, sizeof cc); free_toks(t, n); }
         else if (!strcmp(P, "border-radius")) { char *sl = strchr(val, '/'); if (sl) *sl = 0; set4(st->border_radius, &c, val); }
+        else if (!strcmp(P, "border-spacing")) {
+            char *t[3]; int n = split_ws(val, t, 3); float gaps[2] = {0};
+            bool ok = n == 1 || n == 2;
+            for (int i = 0; i < n && ok; i++) {
+                Length length = L_px(0); CssNumber number;
+                bool math = strchr(t[i], '(') != NULL;
+                ok = css_number_parse(t[i], c.em, c.rem, c.mc, &number);
+                bool length_type = ok && number.power[CN_LENGTH] == 1;
+                if (ok) for (int j = 1; j < CN_DIMS; j++) if (number.power[j]) length_type = false;
+                /* Only a literal zero may omit its length unit. Percentages and
+                   incompatible dimensions are invalid before range clamping. */
+                ok = ok && (length_type || (!math && css_number_scalar(&number) && number.value == 0));
+                ok = ok && alen_size(&c, t[i], &length) &&
+                     length.kind == LK_LEN && !length.pctu && !len_has_pct(length);
+                if (ok) { gaps[i] = LMAX(0, len_resolve(length, 0)); ok = isfinite(gaps[i]); }
+            }
+            if (ok) { if (n == 1) gaps[1] = gaps[0]; memcpy(st->border_spacing, gaps, sizeof gaps); }
+            free_toks(t, n);
+        }
         else if (!strncmp(P, "border-", 7)) {
             static const char *const sides[] = { "top", "right", "bottom", "left" };
             static const char *const corners[] = { "top-left", "top-right", "bottom-right", "bottom-left" };
@@ -4410,7 +4434,7 @@ static unsigned inherited_diff(const ComputedStyle *a, const ComputedStyle *b) {
     INHERITED_EQ(letter_spacing); INHERITED_EQ(word_spacing); INHERITED_EQ(text_indent); INHERITED_EQ(list_style);
     INHERITED_EQ(direction);
     INHERITED_EQ(has_text_shadow); INHERITED_EQ(text_shadow); INHERITED_EQ(caret_color); INHERITED_EQ(fill); INHERITED_EQ(stroke); INHERITED_EQ(stroke_width);
-    INHERITED_EQ(border_collapse); INHERITED_EQ(writing_mode); INHERITED_EQ(inert);
+    INHERITED_EQ(border_collapse); INHERITED_EQ(border_spacing); INHERITED_EQ(writing_mode); INHERITED_EQ(inert);
     /* The generic inherited orientation is a dependency of logical edge
        mapping. Keep the ordinary identical-map case free of hash lookups. */
     if (a->gen_i != b->gen_i) {
@@ -5565,6 +5589,10 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     else if (!strcmp(prop, "direction")) sb_puts(&b, s->direction ? "rtl" : "ltr");
     else if (!strcmp(prop, "pointer-events")) sb_puts(&b, s->pointer_events ? "auto" : "none");
     else if (!strcmp(prop, "box-sizing")) sb_puts(&b, s->box_sizing ? "border-box" : "content-box");
+    else if (!strcmp(prop, "border-spacing")) {
+        sb_printf(&b, "%gpx", s->border_spacing[0]);
+        if (s->border_spacing[0] != s->border_spacing[1]) sb_printf(&b, " %gpx", s->border_spacing[1]);
+    }
     else if (!strcmp(prop, "transform")) { if (s->has_transform) sb_printf(&b, "matrix(%g, %g, %g, %g, %g, %g)", s->transform[0], s->transform[1], s->transform[2], s->transform[3], s->transform[4], s->transform[5]); else sb_puts(&b, "none"); }
     else if (!strncmp(prop, "margin-", 7) || !strncmp(prop, "padding-", 8)) {
         bool m = prop[0] == 'm'; const char *side = prop + (m ? 7 : 8);

@@ -1,0 +1,20 @@
+{
+  "candidate": 185,
+  "started_utc": "2026-10-29T18:30:34.919225+00:00",
+  "base_head": "21e9bb4418774e00467df3ec11f38193ddd84ba6",
+  "prototype_source_commit": "97c5428baab79e493e6a3344a98bd0ef79837aad",
+  "prototype_patch_sha256": "94fbf14165b2ffb3298c276b9c21e7348ac49c7ab42ab43afbb087873a7e4bb2",
+  "before": {
+    "src/css/css.h": "3619748fe0f5fa3ece0d4b1a69ab4f4f5f4439e13525376c44c77076e0d5fc9e",
+    "src/css/props_generated.inc": "a6d9d790fcc985de9a96fb7967b524d25626a500bd3f955733d980af55cc6459",
+    "src/css/style.c": "359016494e28d7bcbf9c5fcf0e60b994211027873e2f1016b913604707cdf588",
+    "src/layout/grid.c": "fa662c4b5d9071abf77933ff304665de906a853c55abac2e7da77b29d596ac40"
+  },
+  "after": {
+    "src/css/css.h": "97a9746e5c709ce86d0b40cff2af7b3dabc165b9932951e09729708bed45edd9",
+    "src/css/props_generated.inc": "f96ac096d5572a5ade7bb142d2fd6dbf408f1081d9db77d0ddba2acb24f195bd",
+    "src/css/style.c": "b9440a1078e51fb0175bbafc92d16fb38346795599b42e631e595c59f8db07aa",
+    "src/layout/grid.c": "2f21bb15590c20ba95e833cb6306fc137a7296cbbc1b35ad098de8920a180ef7"
+  },
+  "qualification": "Clean three-way merge over184; adds strict length/zero grammar for border-spacing, preserving scalar dimension cancellation; fresh remote gates pending."
+}

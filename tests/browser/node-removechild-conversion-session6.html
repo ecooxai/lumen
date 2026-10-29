@@ -1,0 +1,30 @@
+<!doctype html><meta charset="utf-8"><title>Node removeChild conversion and mutation controls</title><pre id="results"></pre><script>
+/* Fresh session6 controls for https://dom.spec.whatwg.org/#dom-node-removechild.
+   Non-nullable Node conversion precedes pre-removal's direct-child check. */
+const checks=[];let passed=0;
+function check(name,actual,expected){const pass=Object.is(actual,expected);checks.push({name,actual,expected,pass});if(pass)passed++;}
+function errorName(fn){try{fn();return 'no exception';}catch(e){return e.name;}}
+const parent=document.createElement('div'),a=document.createElement('i'),b=document.createElement('b'),c=document.createTextNode('tail');parent.append(a,b,c);document.body.appendChild(parent);
+const invalid=[['undefined',undefined],['null',null],['boolean',false],['number',0],['string','node'],['plain-object',{}],['array',[]],['unbranded-prototype',Object.create(Node.prototype)]];
+for(const[name,value]of invalid)check('conversion/'+name,errorName(()=>parent.removeChild(value)),'TypeError');
+check('conversion/missing',errorName(()=>parent.removeChild()),'TypeError');
+check('conversion/invalid-receiver',errorName(()=>Node.prototype.removeChild.call({},b)),'TypeError');
+check('conversion/no-mutation',parent.childNodes.length,3);
+const outsider=document.createElement('u'),descendant=document.createElement('span');a.appendChild(descendant);
+for(const[name,node]of [['element',outsider],['text',document.createTextNode('outside')],['fragment',document.createDocumentFragment()],['document',document],['self',parent],['descendant',descendant]])check('pre-remove/'+name,errorName(()=>parent.removeChild(node)),'NotFoundError');
+check('pre-remove/no-mutation',parent.childNodes.length,3);
+const observer=new MutationObserver(()=>{});observer.observe(parent,{childList:true});
+check('success/identity',parent.removeChild(b)===b,true);
+check('success/detached',b.parentNode===null,true);
+check('success/count',parent.childNodes.length,2);
+check('success/previous-next',a.nextSibling===c,true);
+check('success/next-previous',c.previousSibling===a,true);
+const records=observer.takeRecords();check('mutation/one-record',records.length,1);
+const r=records[0];check('mutation/type',r&&r.type,'childList');check('mutation/target',!!r&&r.target===parent,true);check('mutation/removed',!!r&&r.removedNodes.length===1&&r.removedNodes[0]===b,true);check('mutation/added-empty',r&&r.addedNodes.length,0);check('mutation/previous',!!r&&r.previousSibling===a,true);check('mutation/next',!!r&&r.nextSibling===c,true);
+check('success/repeated-not-found',errorName(()=>parent.removeChild(b)),'NotFoundError');
+observer.disconnect();const inserted=document.createElement('em');check('nullable-reference/insertBefore-null',parent.insertBefore(inserted,null)===inserted&&parent.lastChild===inserted,true);
+parent.remove();
+const result={passed,failed:checks.length-passed,total:checks.length,checks},serialized=JSON.stringify(result);document.getElementById('results').textContent='LUMEN_NODE_REMOVECHILD_RESULT:'+serialized;
+for(let i=0;i<Math.ceil(serialized.length/256);i++)console.log('LUMEN_AUTHORED_CHUNK '+i+' '+JSON.stringify(serialized.slice(i*256,(i+1)*256)));
+console.log('LUMEN_AUTHORED_DONE '+Math.ceil(serialized.length/256));console.log('RESULTS NODE_REMOVECHILD:'+(result.failed?'FAIL':'PASS')+' '+passed+'/'+checks.length);
+</script>

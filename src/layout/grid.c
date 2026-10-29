@@ -498,7 +498,7 @@ static void build_grid(Box *t, TGrid *g) {
         else { /* stray cell: implicit row = the cell's parent table */ TCell tc = { c, g->rows.n, 0, 1, 1 }; vec_push(g->cells, tc); if (!g->ncols) g->ncols = 1; vec_push(g->rows, c); }
     }
 }
-static float spacing(const Box *t) { return t->st->border_collapse ? 0 : 2; }
+static float spacing(const Box *t, int axis) { return t->st->border_collapse ? 0 : t->st->border_spacing[axis]; }
 static void col_widths(Layout *L, TGrid *g, float *mn, float *mx) {
     for (int i = 0; i < g->cells.n; i++) { TCell *c = &g->cells.v[i]; if (c->cs != 1) continue; float a, z; intrinsic(L, c->cell, &a, &z); mn[c->c] = LMAX(mn[c->c], a); mx[c->c] = LMAX(mx[c->c], z); }
     for (int i = 0; i < g->cells.n; i++) { TCell *c = &g->cells.v[i]; if (c->cs == 1) continue; float a, z; intrinsic(L, c->cell, &a, &z); float sa = 0, sz = 0; for (int k = c->c; k < c->c + c->cs && k < g->ncols; k++) { sa += mn[k]; sz += mx[k]; } if (a > sa) for (int k = c->c; k < c->c + c->cs && k < g->ncols; k++) mn[k] += (a - sa) / c->cs; if (z > sz) for (int k = c->c; k < c->c + c->cs && k < g->ncols; k++) mx[k] += (z - sz) / c->cs; }
@@ -508,7 +508,7 @@ void table_intrinsic(Layout *L, Box *b, float *omn, float *omx) {
     TGrid g; build_grid(b, &g);
     float *mn = xcalloc((size_t)g.ncols + 1, sizeof(float)), *mx = xcalloc((size_t)g.ncols + 1, sizeof(float));
     col_widths(L, &g, mn, mx);
-    float sp = spacing(b), a = sp * (g.ncols + 1), z = a;
+    float sp = spacing(b, 0), a = g.ncols ? sp * (g.ncols + 1) : 0, z = a;
     for (int k = 0; k < g.ncols; k++) { a += mn[k]; z += mx[k]; }
     *omn = a + hbp(b); *omx = z + hbp(b);
     free(mn); free(mx); vec_free(g.cells); vec_free(g.rows); vec_free(g.captions);
@@ -516,11 +516,11 @@ void table_intrinsic(Layout *L, Box *b, float *omn, float *omx) {
 float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     TGrid g; build_grid(b, &g);
     int nc = g.ncols, nr = g.rows.n;
-    float sp = spacing(b);
+    float spx = nc ? spacing(b, 0) : 0, spy = nr ? spacing(b, 1) : 0;
     float *mn = xcalloc((size_t)nc + 1, sizeof(float)), *mx = xcalloc((size_t)nc + 1, sizeof(float));
     col_widths(L, &g, mn, mx);
     float smn = 0, smx = 0; for (int k = 0; k < nc; k++) { smn += mn[k]; smx += mx[k]; }
-    float avail = cw - sp * (nc + 1);
+    float avail = cw - spx * (nc + 1);
     bool specified = b->st->width.kind == LK_LEN;
     bool has_min = b->st->min_width.kind == LK_LEN && (b->st->min_width.px > 0 || b->st->min_width.pct > 0);   /* box width already honours min-width */
     float target = specified || has_min ? avail : LMIN(avail, smx);
@@ -531,7 +531,7 @@ float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef)
         else w[k] = mn[k] + (smx > smn ? (target - smn) * (mx[k] - mn[k]) / (smx - smn) : 0);
     }
     float *x0 = xcalloc((size_t)nc + 2, sizeof(float));
-    x0[0] = sp; for (int k = 0; k < nc; k++) x0[k + 1] = x0[k] + w[k] + sp;
+    x0[0] = spx; for (int k = 0; k < nc; k++) x0[k + 1] = x0[k] + w[k] + spx;
     float tw = x0[nc];
     /* captions */
     float y = 0;
@@ -539,19 +539,19 @@ float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef)
     float *rh = xcalloc((size_t)nr + 1, sizeof(float));
     for (int i = 0; i < g.cells.n; i++) {
         TCell *c = &g.cells.v[i];
-        float cwid = x0[LMIN(c->c + c->cs, nc)] - x0[c->c] - sp;
+        float cwid = x0[LMIN(c->c + c->cs, nc)] - x0[c->c] - spx;
         layout_box(L, c->cell, cx + x0[c->c], cy, cwid, -1, NULL, SZ_FORCED, cwid, -1);
         float need = c->cell->h;
         if (c->rs == 1 && c->r < nr) rh[c->r] = LMAX(rh[c->r], need);
     }
     for (int r = 0; r < nr; r++) { Box *row = g.rows.v[r]; if (row->st->height.kind == LK_LEN && !row->st->height.pct) rh[r] = LMAX(rh[r], row->st->height.px); }
     float *ry = xcalloc((size_t)nr + 2, sizeof(float));
-    ry[0] = y + sp; for (int r = 0; r < nr; r++) ry[r + 1] = ry[r] + rh[r] + sp;
-    if (chdef > ry[nr] && nr) { float extra = (chdef - ry[nr]) / nr; for (int r = 0; r < nr; r++) rh[r] += extra; for (int r = 0; r < nr; r++) ry[r + 1] = ry[r] + rh[r] + sp; }
+    ry[0] = y + spy; for (int r = 0; r < nr; r++) ry[r + 1] = ry[r] + rh[r] + spy;
+    if (chdef > ry[nr] && nr) { float extra = (chdef - ry[nr]) / nr; for (int r = 0; r < nr; r++) rh[r] += extra; for (int r = 0; r < nr; r++) ry[r + 1] = ry[r] + rh[r] + spy; }
     for (int i = 0; i < g.cells.n; i++) {
         TCell *c = &g.cells.v[i]; Box *cell = c->cell;
         int re = LMIN(c->r + c->rs, nr);
-        float h = ry[re] - ry[c->r] - sp;
+        float h = ry[re] - ry[c->r] - spy;
         float content = cell->st->height.kind == LK_LEN ? LMIN(cell->h, cell->scroll_h + vbp(cell)) : cell->h;   /* specified height only sets the row minimum; align the real content */
         cell->h = LMAX(cell->h, h);
         float off = 0; int va = cell->st->vertical_align;

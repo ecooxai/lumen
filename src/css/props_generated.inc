@@ -89,7 +89,7 @@
 { "border-right-style", 0, 0, "none" },
 { "border-right-width", 0, 0, "3px" },
 { "border-shape", 0, 0, NULL },
-{ "border-spacing", 1, 0, "0px" },
+{ "border-spacing", 1, 1, "0px" },
 { "border-start-end-radius", 0, 0, "0px" },
 { "border-start-start-radius", 0, 0, "0px" },
 { "border-style", 0, 0, NULL },
