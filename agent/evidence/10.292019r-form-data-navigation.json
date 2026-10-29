@@ -1,0 +1,193 @@
+{
+  "schemaVersion": 1,
+  "status": "accepted Linux native engine regression and real-browser controls; Apple acceptance recorded separately",
+  "createdUTC": "2026-10-29T14:31:00.339128+00:00",
+  "sourceCommit": "b816d32",
+  "platform": "Linux x86_64 native Lumen C/V8 with official prebuilt V815.7.112.12; RTC0/WT0",
+  "candidateSourceManifestSHA256": "8f223f36c48b32535662c6fe691d4d405b7517c64d6056ab3f53ebd676c7fd8c",
+  "candidateSourceEntriesVerified": 143,
+  "candidateBinaries": {
+    "stage": "native-linux-worker-candidate-11",
+    "sourceManifest": "candidate-11-source-manifest.json",
+    "buildCommand": "candidate-11-command.json",
+    "v8": "15.7.112.12",
+    "platform": "linux-x86_64",
+    "rtc": false,
+    "webtransport": false,
+    "files": {
+      "out/10292019r-linux-worker/build-candidate-11/jsrun": {
+        "bytes": 3186568,
+        "sha256": "ff3601542440df092406d646e9f5051646af861b3ccd268e8e2de18766ed725a",
+        "executable": true
+      },
+      "out/10292019r-linux-worker/build-candidate-11/test_worker_lifecycle": {
+        "bytes": 3226120,
+        "sha256": "ec88be639f0c050dd022b660c2334b927641ff75e78092da8e6404ed5b0302d6",
+        "executable": true
+      },
+      "out/10292019r-linux-worker/build-candidate-11/test_worker_async_lifecycle": {
+        "bytes": 3236592,
+        "sha256": "2cd69f97c6b8685c41caf02eba043e7580967dc7912ff572ed7dcae2437bc985",
+        "executable": true
+      },
+      "out/10292019r-linux-worker/build-candidate-11/test_form_navigation": {
+        "bytes": 3340816,
+        "sha256": "4071c3ef0b11891dd38115d684d7eedfc4420a231a050304b2e40f5cebd27e9f",
+        "executable": true
+      },
+      "out/10292019r-linux-worker/build-candidate-11/test_form_data_navigation": {
+        "bytes": 3300112,
+        "sha256": "ca324dcdf85968efe98373958c5e4310fbc23db7bd7beffde6fa70cd7293c0a5",
+        "executable": true
+      },
+      "out/10292019r-linux-worker/build-candidate-11/test_csp_inherit": {
+        "bytes": 659280,
+        "sha256": "41de125702b8766d5708de8f9111ae892d02ea36fc05518f446e196e1028aedc",
+        "executable": true
+      },
+      "out/10292019r-linux-worker/build-candidate-11/icudtl.dat": {
+        "bytes": 10824432,
+        "sha256": "02a01b3188b6a41a756f7322fdb5e6b5ca6573b327b01dfc8ed662d571a6f769"
+      }
+    }
+  },
+  "problem": "Valid GET form submission into an existing named data: iframe was rejected before target navigation, timing out the upstream ISO-2022-JP form test. Opening that path required preserving local-document policy restrictions and an opaque DOM principal.",
+  "changes": [
+    "Permit existing child-frame data GET through native ownership/epoch/sandbox/CSP navigation checks; top-level/new-target and POST data restrictions retained",
+    "Snapshot initiating CSP list self-origin and Permissions-Policy before queuing; free owned document policy metadata with the document",
+    "Process ordered head meta policies before subsequent child scripts and check classic external-script CSP before fetching",
+    "Headless jsrun copies actual repeated CSP and Permissions-Policy response headers before decoding/js_new, matching native browser transport behavior"
+  ],
+  "frozenFixtures": {
+    "nativeData52": {
+      "path": "tests/test_form_data_navigation.cc",
+      "sha256": "031191035493c9627f9fa300ce4673c49969de94586e05f9e47a46a27969ac14"
+    },
+    "unchangedOldAssertions67": {
+      "path": "tests/test_form_navigation.cc",
+      "sha256": "a8963d8d022b7e7f9c85ef7100c5602d9560055fadac682e259c36500eb0916e",
+      "portabilityOnly": "Mac RTLD_MAIN_ONLY/SO_NOSIGPIPE preserved; Linux verified executable dlsym and MSG_NOSIGNAL"
+    },
+    "policyOracle21": {
+      "path": "tests/test_data_form_csp.py",
+      "sha256": "74b8b67c2d5c8015da5e7524fbf873012000496c0dbcfac1ec0f1427d5b56749"
+    },
+    "realHeaderHarness": {
+      "path": "tests/jsrun.c",
+      "sha256": "d0d12f80aea6e49008cee674c90c164a4e3b5207b7152a2f6f2066d344ad63c1"
+    }
+  },
+  "nativeRedGreen": {
+    "baselineV6": {
+      "passed": 28,
+      "total": 52,
+      "naturalExit": 1,
+      "oldControlsPassed": 67,
+      "oldControlsTotal": 67,
+      "sourceObjects": 45,
+      "sourceObjectsFrozen": true,
+      "scope": "Only unchanged test fixtures relinked; no baseline engine recompilation"
+    },
+    "rejectedV8": {
+      "passed": 51,
+      "total": 52,
+      "remainingFailure": "restrictive child meta script-src none was not enforced",
+      "accepted": false
+    },
+    "candidate11": {
+      "passed": 52,
+      "total": 52,
+      "naturalExit": 0,
+      "oldControlsPassed": 67,
+      "oldControlsTotal": 67
+    },
+    "earlierFixture45": {
+      "passed": 28,
+      "total": 45,
+      "sha256": "e88d1b0ca65bac8167f4d965d7b455434c707ab9a7eeb7b5085c62e10bed8589",
+      "scope": "Preserved earlier45-check fixture, not mixed into final52 denominator"
+    }
+  },
+  "otherNativeGates": [
+    {
+      "name": "test_csp_inherit",
+      "naturalExit": 0,
+      "seconds": 0.05222909399890341,
+      "collectorError": null,
+      "lines": [
+        "RESULTS 245/245 checks passed"
+      ]
+    },
+    {
+      "name": "test_form_navigation",
+      "naturalExit": 0,
+      "seconds": 5.05650487299863,
+      "collectorError": null,
+      "lines": [
+        "RESULTS form-navigation PASS (67/67 checks)"
+      ]
+    },
+    {
+      "name": "test_form_data_navigation",
+      "naturalExit": 0,
+      "seconds": 3.066209599001013,
+      "collectorError": null,
+      "lines": [
+        "RESULTS form-data-navigation PASS (52/52 checks)"
+      ]
+    },
+    {
+      "name": "test_worker_lifecycle",
+      "naturalExit": 0,
+      "seconds": 1.0519375999974727,
+      "collectorError": null,
+      "lines": [
+        "RESULTS worker-lifecycle PASS (266/266 checks)"
+      ]
+    },
+    {
+      "name": "test_worker_async_lifecycle",
+      "naturalExit": 0,
+      "seconds": 2.054658492997987,
+      "collectorError": null,
+      "lines": [
+        "RESULTS worker-async-lifecycle PASS (118/118 checks)"
+      ]
+    }
+  ],
+  "policyOracle": {
+    "candidate": {
+      "passed": 21,
+      "total": 21,
+      "binarySHA256": "ff3601542440df092406d646e9f5051646af861b3ccd268e8e2de18766ed725a",
+      "fixtureSHA256": "74b8b67c2d5c8015da5e7524fbf873012000496c0dbcfac1ec0f1427d5b56749"
+    },
+    "chromium": {
+      "passed": 21,
+      "total": 21,
+      "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+      "fixtureSHA256": "74b8b67c2d5c8015da5e7524fbf873012000496c0dbcfac1ec0f1427d5b56749"
+    },
+    "initialAssumptionRejected": "Earlier14-case fixture incorrectly expected new data meta self to use the opaque DOM origin. Real Chrome12/14 and current CSP3 list self-origin semantics corrected the oracle; preserved as a rejected diagnostic, not a weakened gate. Final21 includes inherited self, additional meta self, restrictive nonce-only/script and connect-none intersection, opaque origin/SOP, and foreign-origin denials.",
+    "harnessQualification": "Prior v8 andv10 policy13/21 and19/21 receipts omitted real initiating response CSP because old jsrun discarded headers; do not treat those as production-browser inheritance results. Corrected V6 policy run initially timed out before all21 rows, so no0/21 failure/gain claim is made. Native52 baseline supplies the genuine product RED evidence."
+  },
+  "upstreamWPT": {
+    "case": "encoding/legacy-mb-japanese/iso-2022-jp/iso2022jp-encode-form-errors-stateful.html",
+    "revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+    "sourceSHA256": "c8f6f3110c328e7f059c966e5be3d1eea875cfa8c6b6534f9a150fb253b2e46b",
+    "baselineV6": "TIMEOUT",
+    "candidate11": "OK;1PASS",
+    "Chromium": "OK;1PASS",
+    "scope": "One original upstream test, separate from focused native regression assertions; subsecond startup-only telemetry cannot establish performance"
+  },
+  "specification": "https://www.w3.org/TR/2026/WD-CSP3-20261027/#framework-policy",
+  "resourceMonitoring": "All build/test invocations retained1Hz raw monitoring. Short tests are functional gates, not complete-duration CPU/RSS performance acceptance.",
+  "metadataCorrection": "baseline-v2-inputs.corrected.json fixes a carried-forward v1 fixtures-map hash; original receipt is retained. Its explicit fixtureSHA256, immutable compiled source, commands and actual v2 run already held the correct031191 fixture.",
+  "rawArchive": {
+    "path": "agent/evidence/10.292019r-form-data-navigation/raw-evidence.tar.gz",
+    "bytes": 2607469,
+    "sha256": "a591e47c536220ba44388fd76cbdbdeddaf693affea30ab80a25a446c613a567",
+    "files": 452,
+    "manifest": "agent/evidence/10.292019r-form-data-navigation/raw-manifest.json"
+  }
+}

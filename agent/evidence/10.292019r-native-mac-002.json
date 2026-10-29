@@ -1,0 +1,205 @@
+{
+  "schemaVersion": 1,
+  "status": "accepted for exact native002 Mac artifact",
+  "platform": "native macOS arm64, custom C/V8 Lumen engine",
+  "model": "GPT-6 Astra Pro",
+  "agent": "built-in lumen_apple_performance",
+  "transport": "root devinmac3d relay",
+  "sourceBaseCommit": "13742445c8b62a020ed8d3ed5c23a0b1008caafc",
+  "sourceManifestSHA256": "69c58891db2b5b0ba2b25d68ff73f6b83cd5bfd77550f266096d0bb453e10171",
+  "buildSummarySHA256": "8bf3ed5c34df0d1f3420d5f6c9df151e68d09797d8f0466bd46f30ca077e0934",
+  "artifact": {
+    "path": "out/10292019r-mac/native-worker-002/lumen-f8ba8d5250699377",
+    "sha256": "f8ba8d525069937793fc4a903f329c89f41c72462aa7a186f01ece1c1dee9df1",
+    "bytes": 14111368
+  },
+  "prebuiltV8Version": "15.6.75.16",
+  "scope": [
+    "Visible native Mac application with synthetic SDL wheel input",
+    "20 real top-level navigations across21 pages with80 clone/attribute checks per page",
+    "100 cycles of actual native worker lifecycle controls in one process,12094 checks",
+    "New task-owned profiles and ownership-scoped cleanup"
+  ],
+  "notEstablished": [
+    "iOS/iPad simulator execution of this candidate",
+    "Same signed IPA on Mac/iOS/iPad",
+    "Physical scroll input or broad real-world browsing workload",
+    "Resource acceptance of any later product binary"
+  ],
+  "sampling": {
+    "intervalSeconds": 1,
+    "cpuConvention": "Cumulative process CPU seconds / elapsed seconds *100;100% is one logical core",
+    "memoryUnit": "MiB",
+    "rssMetric": "Summed resident process memory; shared pages can be counted more than once",
+    "cpuIntervalCrosschecks": 273,
+    "disagreements": 0
+  },
+  "scroll": {
+    "cumulativeCPUIntervalsCrosschecked": 112,
+    "CPUDisagreements": [],
+    "phases": {
+      "scrolling": {
+        "samples": 35,
+        "CPUIntervals": 34,
+        "durationSeconds": 34.017,
+        "maximumGapSeconds": 1.037,
+        "CPUMeanPercent": 11.207,
+        "CPUMedianPercent": 11.995,
+        "CPU_P95Percent": 15.986,
+        "CPUPeakPercent": 16.085,
+        "RSSStartMiB": 164.78125,
+        "RSSEndMiB": 155.84375,
+        "RSSPeakMiB": 166.3125
+      },
+      "idle:after": {
+        "samples": 50,
+        "CPUIntervals": 49,
+        "durationSeconds": 48.987,
+        "maximumGapSeconds": 1.039,
+        "CPUMeanPercent": 0.041,
+        "CPUMedianPercent": 0.0,
+        "CPU_P95Percent": 0.0,
+        "CPUPeakPercent": 1.001,
+        "RSSStartMiB": 155.9375,
+        "RSSEndMiB": 155.90625,
+        "RSSPeakMiB": 155.9375
+      }
+    },
+    "scrollMovement": [
+      {
+        "kind": "scroll-complete",
+        "events": 3062,
+        "lastEventMs": 46289.3560000062,
+        "maxY": 6000.07177734375,
+        "finalY": 6000.07177734375,
+        "url": "http://127.0.0.1:64483/page/0?nonce=4124fd704da0eb5d385d209299c6a1cd",
+        "step": 0
+      }
+    ],
+    "ownedWindowCapture": {
+      "screenshot": "out/10292019r-mac/native-resources-worker-002/scroll/native-window/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png",
+      "screenshotSHA256": "4844d63fe3fd1d8c284a28dbf0003e148e800aa39811d79f8e8d6a78d78625f9",
+      "width": 1000,
+      "height": 700
+    }
+  },
+  "navigation": {
+    "cumulativeCPUIntervalsCrosschecked": 161,
+    "CPUDisagreements": [],
+    "phases": {
+      "idle:before": {
+        "samples": 15,
+        "CPUIntervals": 14,
+        "durationSeconds": 13.986,
+        "maximumGapSeconds": 1.022,
+        "CPUMeanPercent": 0.0,
+        "CPUMedianPercent": 0.0,
+        "CPU_P95Percent": 0.0,
+        "CPUPeakPercent": 0.0,
+        "RSSStartMiB": 158.9375,
+        "RSSEndMiB": 158.9375,
+        "RSSPeakMiB": 158.9375
+      },
+      "navigation": {
+        "samples": 58,
+        "CPUIntervals": 57,
+        "durationSeconds": 56.985,
+        "maximumGapSeconds": 1.041,
+        "CPUMeanPercent": 2.003,
+        "CPUMedianPercent": 0.0,
+        "CPU_P95Percent": 7.992,
+        "CPUPeakPercent": 8.017,
+        "RSSStartMiB": 159.953125,
+        "RSSEndMiB": 160.453125,
+        "RSSPeakMiB": 160.59375
+      },
+      "idle:after": {
+        "samples": 62,
+        "CPUIntervals": 61,
+        "durationSeconds": 60.993,
+        "maximumGapSeconds": 1.041,
+        "CPUMeanPercent": 0.065,
+        "CPUMedianPercent": 0.0,
+        "CPU_P95Percent": 0.989,
+        "CPUPeakPercent": 0.999,
+        "RSSStartMiB": 160.15625,
+        "RSSEndMiB": 148.375,
+        "RSSPeakMiB": 160.15625
+      }
+    },
+    "settledRSS": {
+      "initial_median_mib": 158.9375,
+      "final_median_mib": 148.375,
+      "growth_mib": -10.5625,
+      "growth_fraction": -0.06645694062131341
+    },
+    "nativeCounters": {
+      "initial": {
+        "malloc_in_use": 0.6,
+        "nodes": 1218.0,
+        "styles": 11.0,
+        "css_parsed": 0.0,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      },
+      "final": {
+        "malloc_in_use": 0.6,
+        "nodes": 1218.0,
+        "styles": 11.0,
+        "css_parsed": 0.1,
+        "workers": 0.0,
+        "heap": 0.0,
+        "ext": 0.0
+      }
+    }
+  },
+  "workerStress": {
+    "cycles": 100,
+    "checks": 12094,
+    "journalRecords": 2003,
+    "checkpoints": 101,
+    "durationSeconds": 105.053,
+    "CPU_P95Percent": 40.164,
+    "CPUPeakPercent": 42.869,
+    "RSSPeakMiB": 80.828125,
+    "warmRSSMiB": 76.984375,
+    "finalRSSMiB": 61.40625,
+    "warmThreads": 12,
+    "finalThreads": 12,
+    "warmFDs": 4,
+    "finalFDs": 4,
+    "maximumGapSeconds": 1.029,
+    "boundedSettlingObservations": []
+  },
+  "resourceVerdict": "No sustained abnormal idle CPU, accumulation of native document/style/worker counts, thread/FD growth, or settled RSS growth was observed in these fixed workloads. Scrolling p95 and peak are below30% of one logical core. Intensive worker-soak CPU is a separate workload.",
+  "performancePolicy": {
+    "scrollCPUP95CeilingPercent": 30,
+    "idleCPUP95CeilingPercent": 3,
+    "maxSamplingGapSeconds": 1.5,
+    "settledRSSGrowthCeilingMiB": 32,
+    "settledRSSGrowthCeilingFraction": 0.2
+  },
+  "independentAudit": {
+    "path": "agent/evidence/10.292019r-native-mac-002/independent-audit.json",
+    "sha256": "58f70c0da213b2ec88c38b89394bc966660439109a27a5b6dab0a815812ef585",
+    "carrier": "tools/apple-session-gpt6as/audit_native_acceptance_10292019r.py",
+    "carrierSHA256": "389c4615a146bea723e32d696cf342362c7b5953706e71af6f7ae78a3eb0710a",
+    "passed": true,
+    "issues": []
+  },
+  "rawArchive": {
+    "path": "out/10292019r-mac/native-audit-002/GPT6-Astra-Pro_builtin-agents_devinmac3d-native-acceptance-raw.tar.gz",
+    "sha256": "da1a7ad6a3dd0b9003c30082dbdafa1112d73d233a3bf05b89b4bb92119b5b33",
+    "bytes": 229947,
+    "files": 35
+  },
+  "rawArchiveDurableTransfer": "Requested from delivery agent; exact remote archive and hash bound above. Do not infer local presence until verified.",
+  "priorAnomaly": "The earlier Linux100-requested run ended after77cycles and remains unexplained/rejected in10.292019r-worker-lifetime.json; this actual Mac100cycle natural-exit evidence does not erase that failed receipt.",
+  "times": {
+    "guiAndNavigationSeconds": 282.651,
+    "workerSoakAndBuildSeconds": 108.241,
+    "workerRuntimeSeconds": 105.053,
+    "independentAuditSeconds": 0.052
+  }
+}

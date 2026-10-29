@@ -1,0 +1,308 @@
+{
+  "task": "10.292019r",
+  "sourceCommit": "b816d32f2a486e28fa2cb6846c603a40e7e8ca02",
+  "createdUTC": "2026-10-29T14:31:31.183434+00:00",
+  "iterations": [
+    {
+      "iteration": 7,
+      "startUTC": "2026-10-29T14:02:48.390200+00:00",
+      "endUTC": "2026-10-29T14:03:12.401525+00:00",
+      "buildSeconds": 24.011,
+      "buildExitCode": 2,
+      "score": 55,
+      "scoreBasis": "Overall project score retained; focused checks do not establish Apple mobile/full-WPT completion.",
+      "assessment": "Rejected: build hit Mac-only fixture constants on Linux. Existing fixture assertions retained; platform-specific socket/symbol lookup made portable."
+    },
+    {
+      "iteration": 8,
+      "startUTC": "2026-10-29T14:17:04.175645+00:00",
+      "endUTC": "2026-10-29T14:17:37.186533+00:00",
+      "buildSeconds": 33.01,
+      "buildExitCode": 0,
+      "score": 55,
+      "scoreBasis": "Overall project score retained; focused checks do not establish Apple mobile/full-WPT completion.",
+      "assessment": "Rejected: 51/52 new form controls; parsed frame meta CSP was not enforced. Core67/266/118 and direct244 controls passed.",
+      "tests": [
+        {
+          "name": "test_csp_inherit",
+          "naturalExit": 0,
+          "seconds": 0.0634062429999176,
+          "collectorError": null,
+          "lines": [
+            "RESULTS 244/244 checks passed"
+          ]
+        },
+        {
+          "name": "test_form_navigation",
+          "naturalExit": 0,
+          "seconds": 5.0650128179986496,
+          "collectorError": null,
+          "lines": [
+            "RESULTS form-navigation PASS (67/67 checks)"
+          ]
+        },
+        {
+          "name": "test_form_data_navigation",
+          "naturalExit": 1,
+          "seconds": 4.071914129002835,
+          "collectorError": null,
+          "lines": [
+            "FAIL data meta script policy intersects and cannot be overridden by inherited allowance",
+            "RESULTS form-data-navigation FAIL (51/52 checks)"
+          ]
+        },
+        {
+          "name": "test_worker_lifecycle",
+          "naturalExit": 0,
+          "seconds": 1.0895706020019134,
+          "collectorError": null,
+          "lines": [
+            "RESULTS worker-lifecycle PASS (266/266 checks)"
+          ]
+        },
+        {
+          "name": "test_worker_async_lifecycle",
+          "naturalExit": 0,
+          "seconds": 2.1177428679984587,
+          "collectorError": null,
+          "lines": [
+            "RESULTS worker-async-lifecycle PASS (118/118 checks)"
+          ]
+        }
+      ],
+      "testSeconds": 12.407646660001774
+    },
+    {
+      "iteration": 9,
+      "startUTC": "2026-10-29T14:19:09.121636+00:00",
+      "endUTC": "2026-10-29T14:19:43.133897+00:00",
+      "buildSeconds": 34.012,
+      "buildExitCode": 0,
+      "score": 55,
+      "scoreBasis": "Overall project score retained; focused checks do not establish Apple mobile/full-WPT completion.",
+      "assessment": "Build-only intermediate; policy-oracle assumption was corrected against current CSP3 and actual Chromium. No acceptance credit."
+    },
+    {
+      "iteration": 10,
+      "startUTC": "2026-10-29T14:20:32.886451+00:00",
+      "endUTC": "2026-10-29T14:21:04.898548+00:00",
+      "buildSeconds": 32.011,
+      "buildExitCode": 0,
+      "score": 55,
+      "scoreBasis": "Overall project score retained; focused checks do not establish Apple mobile/full-WPT completion.",
+      "assessment": "Native product controls52/67/245/266/118 and official ISO pass. Headless21 oracle19/21 was unqualified because jsrun discarded real top-level response policy headers.",
+      "tests": [
+        {
+          "name": "test_csp_inherit",
+          "naturalExit": 0,
+          "seconds": 0.05803510199984885,
+          "collectorError": null,
+          "lines": [
+            "RESULTS 245/245 checks passed"
+          ]
+        },
+        {
+          "name": "test_form_navigation",
+          "naturalExit": 0,
+          "seconds": 4.066465727002651,
+          "collectorError": null,
+          "lines": [
+            "RESULTS form-navigation PASS (67/67 checks)"
+          ]
+        },
+        {
+          "name": "test_form_data_navigation",
+          "naturalExit": 0,
+          "seconds": 3.0607709719988634,
+          "collectorError": null,
+          "lines": [
+            "RESULTS form-data-navigation PASS (52/52 checks)"
+          ]
+        },
+        {
+          "name": "test_worker_lifecycle",
+          "naturalExit": 0,
+          "seconds": 1.0577491850017395,
+          "collectorError": null,
+          "lines": [
+            "RESULTS worker-lifecycle PASS (266/266 checks)"
+          ]
+        },
+        {
+          "name": "test_worker_async_lifecycle",
+          "naturalExit": 0,
+          "seconds": 2.054158662998816,
+          "collectorError": null,
+          "lines": [
+            "RESULTS worker-async-lifecycle PASS (118/118 checks)"
+          ]
+        }
+      ],
+      "testSeconds": 10.297179649001919
+    },
+    {
+      "iteration": 11,
+      "startUTC": "2026-10-29T14:23:49.544878+00:00",
+      "endUTC": "2026-10-29T14:24:22.556841+00:00",
+      "buildSeconds": 33.011,
+      "buildExitCode": 0,
+      "score": 55,
+      "scoreBasis": "Overall project score retained; focused checks do not establish Apple mobile/full-WPT completion.",
+      "assessment": "Qualified targeted source candidate b816d32. Identical corrected actual-header harness,52/67/245/266/118 checks and native/Chrome21 policy controls pass. Full priority Mac validation remains separate.",
+      "tests": [
+        {
+          "name": "test_csp_inherit",
+          "naturalExit": 0,
+          "seconds": 0.05222909399890341,
+          "collectorError": null,
+          "lines": [
+            "RESULTS 245/245 checks passed"
+          ]
+        },
+        {
+          "name": "test_form_navigation",
+          "naturalExit": 0,
+          "seconds": 5.05650487299863,
+          "collectorError": null,
+          "lines": [
+            "RESULTS form-navigation PASS (67/67 checks)"
+          ]
+        },
+        {
+          "name": "test_form_data_navigation",
+          "naturalExit": 0,
+          "seconds": 3.066209599001013,
+          "collectorError": null,
+          "lines": [
+            "RESULTS form-data-navigation PASS (52/52 checks)"
+          ]
+        },
+        {
+          "name": "test_worker_lifecycle",
+          "naturalExit": 0,
+          "seconds": 1.0519375999974727,
+          "collectorError": null,
+          "lines": [
+            "RESULTS worker-lifecycle PASS (266/266 checks)"
+          ]
+        },
+        {
+          "name": "test_worker_async_lifecycle",
+          "naturalExit": 0,
+          "seconds": 2.054658492997987,
+          "collectorError": null,
+          "lines": [
+            "RESULTS worker-async-lifecycle PASS (118/118 checks)"
+          ]
+        }
+      ],
+      "testSeconds": 11.281539658994006
+    }
+  ],
+  "officialPinnedISOCase": {
+    "candidate-6": {
+      "binarySHA256": "61821bcae30b9e143b518e029581641f2fc3b84a1181c96884ac72209adeacc8",
+      "sourceSHA256": "c8f6f3110c328e7f059c966e5be3d1eea875cfa8c6b6534f9a150fb253b2e46b",
+      "status": "TIMEOUT",
+      "subtests": [
+        {
+          "name": "Form submission using ISO-2022-JP correctly replaces unencodables",
+          "status": "TIMEOUT",
+          "message": "Test timed out"
+        }
+      ],
+      "receiptSHA256": "bd6787a1015c4a39d3e9809aa065eea5b3714ecb4ea6ee5416aef1f8c03faa9b"
+    },
+    "chromium": {
+      "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+      "sourceSHA256": "c8f6f3110c328e7f059c966e5be3d1eea875cfa8c6b6534f9a150fb253b2e46b",
+      "status": "OK",
+      "subtests": [
+        {
+          "name": "Form submission using ISO-2022-JP correctly replaces unencodables",
+          "status": "PASS",
+          "message": null
+        }
+      ],
+      "receiptSHA256": "fb7094042aa5dbd62c70da766cb920b5db4a5a846e12931a572748861e102a54"
+    },
+    "candidate-8": {
+      "binarySHA256": "76196a1d91dc6afc52f85a69a4df40ceef2e33843a331c08796b9d39da2619a4",
+      "sourceSHA256": "c8f6f3110c328e7f059c966e5be3d1eea875cfa8c6b6534f9a150fb253b2e46b",
+      "status": "OK",
+      "subtests": [
+        {
+          "name": "Form submission using ISO-2022-JP correctly replaces unencodables",
+          "status": "PASS",
+          "message": null
+        }
+      ],
+      "receiptSHA256": "64f59781d0f449c42ea9e9719ce5721772290d871b9145911995e8c95ab1f3c8"
+    },
+    "candidate-10": {
+      "binarySHA256": "03ab9bb52d35f5fa34d406a8f14fa753ebdd4ae7425e0e17a22436d56465fe40",
+      "sourceSHA256": "c8f6f3110c328e7f059c966e5be3d1eea875cfa8c6b6534f9a150fb253b2e46b",
+      "status": "OK",
+      "subtests": [
+        {
+          "name": "Form submission using ISO-2022-JP correctly replaces unencodables",
+          "status": "PASS",
+          "message": null
+        }
+      ],
+      "receiptSHA256": "7ee07689b0f7493c4a54bb3d680ffef083d0a4ee2ab6bbcaf442d5dc33af16a2"
+    },
+    "candidate-11": {
+      "binarySHA256": "ff3601542440df092406d646e9f5051646af861b3ccd268e8e2de18766ed725a",
+      "sourceSHA256": "c8f6f3110c328e7f059c966e5be3d1eea875cfa8c6b6534f9a150fb253b2e46b",
+      "status": "OK",
+      "subtests": [
+        {
+          "name": "Form submission using ISO-2022-JP correctly replaces unencodables",
+          "status": "PASS",
+          "message": null
+        }
+      ],
+      "receiptSHA256": "7c688799dde8a196bec174316ce9d0a2007abdf6d565eff0271374812cb3a82a"
+    }
+  },
+  "sourceRevision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "notFullWPT": true,
+  "local133Attempt": {
+    "accepted": false,
+    "declaredRows": 133,
+    "retainedRows": 130,
+    "groups": [
+      {
+        "group": "encoding-streams",
+        "retainedRows": 26,
+        "resultsSHA256": "73a8e1d79509d942824eb153e795dededa794f1c25158739118fdc52e5c5af69"
+      },
+      {
+        "group": "dom",
+        "retainedRows": 14,
+        "resultsSHA256": "4ed3de4a970c3a586346fe2bd163fdc8941beb30b97459f73d92656863c19999"
+      },
+      {
+        "group": "events",
+        "retainedRows": 13,
+        "resultsSHA256": "6377cf63198606ec47bd9d84b6ab7118480dcf53c782127ea242e48c6c6dad4f"
+      },
+      {
+        "group": "encoding-core",
+        "retainedRows": 77,
+        "resultsSHA256": "a438a21583933a80e2b3f502e539592edeb77202f116fdb117cfbc5a1a42d63b"
+      }
+    ],
+    "reason": "Append-only local results diverged from completed in-memory summary; cause unproven. Preserve and exclude; no reconstructed rows or pass-rate claim. Remote Mac evidence is separate."
+  },
+  "normativePolicyReference": {
+    "url": "https://www.w3.org/TR/2026/WD-CSP3-20261027/#framework-policy",
+    "rule": "CSP list has one shared self-origin; local-scheme inheritance does not grant a nonopaque DOM principal."
+  },
+  "rawArchiveSHA256": "9eaf11e5482c1b5613bf4f209211b2be05767916862043fc5e2b6a6c8e67a185",
+  "rawManifestSHA256": "6421395d0bb618a1c034be8dc2a6709d7e1bd8f73419f4eaff9c229350b90192",
+  "rawFileCount": 377,
+  "taskStartedUTC": "2026-10-29T12:20:07+00:00",
+  "standardCutoffUTC": "2026-10-29T15:20:07+00:00"
+}

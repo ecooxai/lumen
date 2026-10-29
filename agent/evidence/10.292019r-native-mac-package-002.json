@@ -1,0 +1,363 @@
+{
+  "schemaVersion": 1,
+  "status": "accepted local-development Mac bundle for exact native002",
+  "sourceBaseCommit": "13742445c8b62a020ed8d3ed5c23a0b1008caafc",
+  "compiledSourceManifestSHA256": "69c58891db2b5b0ba2b25d68ff73f6b83cd5bfd77550f266096d0bb453e10171",
+  "sourceExecutable": {
+    "path": "out/10292019r-mac/native-worker-002/lumen-f8ba8d5250699377",
+    "sha256": "f8ba8d525069937793fc4a903f329c89f41c72462aa7a186f01ece1c1dee9df1",
+    "bytes": 14111368
+  },
+  "signedExecutableSHA256": "5f9169e136dd9fcaa62d67da34d9dc09a048daea0ffa3f82f75c1d80fab771db",
+  "sourceCopyHashVerifiedBeforeSigning": true,
+  "adHocSigning": true,
+  "strictSignatureVerificationPassed": true,
+  "priorBundlePreserved": {
+    "path": "out/GPT6-Astra-Pro-browser-engine-devinmac3d-Lumen-37447be5593f.app",
+    "exists": true,
+    "modified": false,
+    "bundleIdentifier": "ai.ecoox.lumen.gpt6as.wasm",
+    "minimumSystemVersion": "26.0",
+    "executableSHA256": "9392c988ad72070a5fce2d1f901a1268d74ec5e704858f7b085bb69f93107c4c",
+    "signatureVerificationExitCode": 0
+  },
+  "platform": "macOS arm64",
+  "actualTestOS": "macOS26.6.2",
+  "declaredMinimumMacOS": "26.0",
+  "minimumDerivedFromActualDependencies": true,
+  "olderMacOSRuntimeTested": false,
+  "selfContained": false,
+  "notarized": false,
+  "iOS_IPA": false,
+  "closure": {
+    "fullyResolved": true,
+    "imagesIncludingApp": 46,
+    "externalNonSystemLibraries": 45,
+    "systemSharedCacheDependencies": 29,
+    "totalImageBytes": 166861856
+  },
+  "prebuiltV8": {
+    "version": "15.6.75.16",
+    "sourceCompiledInThisTask": false,
+    "libraries": [
+      {
+        "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8.dylib",
+        "bytes": 58725328,
+        "sha256": "0a29ecc47ab9bee167a024816dd22d949fb9b755b9e9606d2bc4a40214e55130",
+        "minimumMacOSVersion": "13.0",
+        "dependencies": [
+          {
+            "installName": "@rpath/libv8_libplatform.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libplatform.dylib"
+          },
+          {
+            "installName": "@rpath/libv8_libbase.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libbase.dylib"
+          },
+          {
+            "installName": "@rpath/libthird_party_abseil-cpp_absl.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_abseil-cpp_absl.dylib"
+          },
+          {
+            "installName": "@rpath/libthird_party_icu_icui18n.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_icu_icui18n.dylib"
+          },
+          {
+            "installName": "@rpath/libicuuc.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libicuuc.dylib"
+          },
+          {
+            "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib"
+          },
+          {
+            "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib"
+          },
+          {
+            "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_shim.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_shim.dylib"
+          },
+          {
+            "installName": "@rpath/libchrome_zlib.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libchrome_zlib.dylib"
+          },
+          {
+            "installName": "/usr/lib/libc++.1.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libSystem.B.dylib",
+            "systemSharedCache": true
+          }
+        ]
+      },
+      {
+        "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libplatform.dylib",
+        "bytes": 171776,
+        "sha256": "fdfcb079996d81353c65f5cba2ab4d85ad62e0b58f2d15302ff4dab8459120e7",
+        "minimumMacOSVersion": "13.0",
+        "dependencies": [
+          {
+            "installName": "@rpath/libv8_libbase.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libbase.dylib"
+          },
+          {
+            "installName": "@rpath/libthird_party_abseil-cpp_absl.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_abseil-cpp_absl.dylib"
+          },
+          {
+            "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib"
+          },
+          {
+            "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib"
+          },
+          {
+            "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_shim.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_shim.dylib"
+          },
+          {
+            "installName": "/usr/lib/libc++.1.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libSystem.B.dylib",
+            "systemSharedCache": true
+          }
+        ]
+      },
+      {
+        "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libv8_libbase.dylib",
+        "bytes": 435216,
+        "sha256": "4d7a3756a942dc97d0f080864a7ad366c9e7de4a5c50093506146e424338edd4",
+        "minimumMacOSVersion": "13.0",
+        "dependencies": [
+          {
+            "installName": "@rpath/libthird_party_abseil-cpp_absl.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_abseil-cpp_absl.dylib"
+          },
+          {
+            "installName": "/usr/lib/libc++.1.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libSystem.B.dylib",
+            "systemSharedCache": true
+          }
+        ]
+      },
+      {
+        "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_abseil-cpp_absl.dylib",
+        "bytes": 1232320,
+        "sha256": "abd6aac37103b2164465b3fd25b0e3d5e9bddcbdc5830761922ccc146ccc8ef1",
+        "minimumMacOSVersion": "13.0",
+        "dependencies": [
+          {
+            "installName": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libc++.1.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libSystem.B.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+            "systemSharedCache": true
+          }
+        ]
+      },
+      {
+        "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_icu_icui18n.dylib",
+        "bytes": 3690512,
+        "sha256": "d1f9b79eb9200e6dbea866bcf79a4ecee50bb824b8076a51e380c94d8c4a336a",
+        "minimumMacOSVersion": "13.0",
+        "dependencies": [
+          {
+            "installName": "@rpath/libicuuc.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libicuuc.dylib"
+          },
+          {
+            "installName": "/usr/lib/libc++.1.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libSystem.B.dylib",
+            "systemSharedCache": true
+          }
+        ]
+      },
+      {
+        "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libicuuc.dylib",
+        "bytes": 2186624,
+        "sha256": "ef50ad15259c312d6b4591320f05511ee89d9e748bde4f33bfcebdeb9ad6918c",
+        "minimumMacOSVersion": "13.0",
+        "dependencies": [
+          {
+            "installName": "/usr/lib/libc++.1.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libSystem.B.dylib",
+            "systemSharedCache": true
+          }
+        ]
+      },
+      {
+        "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib",
+        "bytes": 114512,
+        "sha256": "344e16405017e32cea1773e64ffa340dbde5b063f87dd7b6b46511ed81209e44",
+        "minimumMacOSVersion": "13.0",
+        "dependencies": [
+          {
+            "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libc++.1.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libSystem.B.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libobjc.A.dylib",
+            "systemSharedCache": true
+          }
+        ]
+      },
+      {
+        "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib",
+        "bytes": 449632,
+        "sha256": "e220c81cce4c309fbc004fad1331bf53cb4353f3681c829b5458a71631795cdc",
+        "minimumMacOSVersion": "13.0",
+        "dependencies": [
+          {
+            "installName": "/System/Library/Frameworks/Security.framework/Versions/A/Security",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib"
+          },
+          {
+            "installName": "/usr/lib/libc++.1.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libSystem.B.dylib",
+            "systemSharedCache": true
+          }
+        ]
+      },
+      {
+        "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_shim.dylib",
+        "bytes": 130320,
+        "sha256": "47a8f4fdb186a55c1b02ad8f4636ce72fea333797b9a3803e274340b0518f8ac",
+        "minimumMacOSVersion": "13.0",
+        "dependencies": [
+          {
+            "installName": "/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_base.dylib"
+          },
+          {
+            "installName": "@rpath/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib",
+            "resolved": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libthird_party_partition_alloc_src_partition_alloc_allocator_core.dylib"
+          },
+          {
+            "installName": "/usr/lib/libc++.1.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libSystem.B.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libobjc.A.dylib",
+            "systemSharedCache": true
+          }
+        ]
+      },
+      {
+        "path": "/opt/homebrew/Cellar/v8/15.6.75.16/libexec/libchrome_zlib.dylib",
+        "bytes": 154480,
+        "sha256": "17abd786cf6838e30eeb2897cb8d015b11e839b2c3db05e0ab22451565e845ca",
+        "minimumMacOSVersion": "13.0",
+        "dependencies": [
+          {
+            "installName": "/usr/lib/libc++.1.dylib",
+            "systemSharedCache": true
+          },
+          {
+            "installName": "/usr/lib/libSystem.B.dylib",
+            "systemSharedCache": true
+          }
+        ]
+      }
+    ]
+  },
+  "launch": {
+    "mode": "Direct owned .app executable; not Finder/LaunchServices automation",
+    "durationRequestedSeconds": 15,
+    "runtimeMarkerObserved": true,
+    "renderCapture": "out/10292019r-mac/native-package-002/gpt6-astra-pro_builtin-agents_devinmac3d_mac-app.png",
+    "renderCaptureSHA256": "e6cebc7060246eaef5299e776970e9a14a920432237bfbb2d4a47d78b2e844c9",
+    "width": 1000,
+    "height": 700,
+    "renderCaptureIsOSWindowScreenshot": false
+  },
+  "launchMeasurement": {
+    "name": "launch",
+    "passed": true,
+    "command": [
+      "/Users/devin/repos/lumen/out/10292019r-mac/native-package-002/delivery/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r.app/Contents/MacOS/lumen",
+      "file:///Users/devin/repos/lumen/out/10292019r-mac/native-package-002/package-launch.html"
+    ],
+    "durationSeconds": 16.047,
+    "monitor": "out/10292019r-mac/native-package-002/launch.json",
+    "monitorSHA256": "28e8c37ada51f42b56d1168a808fdca7014b6d877a0fec3bd0246b607291fecf",
+    "logSHA256": "a9bf873f0c81d8191a016688b6b6f87ba9a9f0355b74d5d32611820bbfbe350a",
+    "maxSamplingGapSeconds": 1.031,
+    "intervalCPU_P95Percent": 38.08,
+    "intervalCPU_PeakPercent": 38.08,
+    "cpuUnit": "percent of one logical CPU; may exceed 100",
+    "rssPeakMiB": 164.484
+  },
+  "archive": {
+    "path": "out/10292019r-mac/native-package-002/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac-development.zip",
+    "bytes": 10812794,
+    "sha256": "6fbfab18db0ca5bd6df61049d7d6503a2ab11f8a8e377f6edc33b6bb147a931d"
+  },
+  "fullPackageSummary": {
+    "path": "agent/evidence/10.292019r-native-mac-002/package-summary.json",
+    "sha256": "4160df4530fb64bcd0e63a393da224fdfb6628cab6bdbf3dfa467e747dd9a219"
+  },
+  "carrier": {
+    "path": "tools/apple-session-gpt6as/package_native_mac_10292019r.py",
+    "sha256": "efd943a165782c7b57d20c5150b220a5e8b0331c2ec89737240c27d8646d146c"
+  },
+  "durationSeconds": 19.435,
+  "deliveryStatus": "Actual ZIP exists on Mac with recorded hash; delivery agent owns durable artifact transfer. Do not claim portable standalone installation."
+}
