@@ -1,0 +1,449 @@
+{
+  "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "scheduled_files": 26,
+  "lumen": {
+    "scheduled_files": 26,
+    "recorded_files": 26,
+    "remaining_files": 0,
+    "file_outcomes": {
+      "OK": 25,
+      "TIMEOUT": 1
+    },
+    "files_passing_all_assertions": 23,
+    "valid_completed_files": 25,
+    "attempted_files": 26,
+    "attempted_file_pass_rate": 0.8846153846153846,
+    "zero_assertion_testharness_files": 1,
+    "zero_assertion_files_by_type": {
+      "testharness": 1
+    },
+    "all_assertions_pass_file_rate": 0.92,
+    "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+    "scheduled_file_pass_fraction": 0.8846153846153846,
+    "subtest_outcomes": {
+      "FAIL": 8,
+      "PASS": 338
+    },
+    "executed_subtests_excluding_notrun": 346,
+    "subtest_pass_rate": 0.976878612716763,
+    "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes.",
+    "by_type": {
+      "testharness": {
+        "scheduled_files": 26,
+        "recorded_files": 26,
+        "remaining_files": 0,
+        "file_outcomes": {
+          "OK": 25,
+          "TIMEOUT": 1
+        },
+        "files_passing_all_assertions": 23,
+        "valid_completed_files": 25,
+        "attempted_files": 26,
+        "attempted_file_pass_rate": 0.8846153846153846,
+        "zero_assertion_testharness_files": 1,
+        "zero_assertion_files_by_type": {
+          "testharness": 1
+        },
+        "all_assertions_pass_file_rate": 0.92,
+        "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+        "scheduled_file_pass_fraction": 0.8846153846153846,
+        "subtest_outcomes": {
+          "FAIL": 8,
+          "PASS": 338
+        },
+        "executed_subtests_excluding_notrun": 346,
+        "subtest_pass_rate": 0.976878612716763,
+        "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes."
+      }
+    },
+    "headline_metric_note": "Report testharness and test262 separately; the combined counters are coverage bookkeeping, not a web-platform pass-rate headline."
+  },
+  "chromium": {
+    "scheduled_files": 26,
+    "recorded_files": 26,
+    "remaining_files": 0,
+    "file_outcomes": {
+      "OK": 26
+    },
+    "files_passing_all_assertions": 23,
+    "valid_completed_files": 26,
+    "attempted_files": 26,
+    "attempted_file_pass_rate": 0.8846153846153846,
+    "zero_assertion_testharness_files": 0,
+    "zero_assertion_files_by_type": {},
+    "all_assertions_pass_file_rate": 0.8846153846153846,
+    "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+    "scheduled_file_pass_fraction": 0.8846153846153846,
+    "subtest_outcomes": {
+      "FAIL": 14,
+      "PASS": 344
+    },
+    "executed_subtests_excluding_notrun": 358,
+    "subtest_pass_rate": 0.9608938547486033,
+    "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes.",
+    "by_type": {
+      "testharness": {
+        "scheduled_files": 26,
+        "recorded_files": 26,
+        "remaining_files": 0,
+        "file_outcomes": {
+          "OK": 26
+        },
+        "files_passing_all_assertions": 23,
+        "valid_completed_files": 26,
+        "attempted_files": 26,
+        "attempted_file_pass_rate": 0.8846153846153846,
+        "zero_assertion_testharness_files": 0,
+        "zero_assertion_files_by_type": {},
+        "all_assertions_pass_file_rate": 0.8846153846153846,
+        "completed_only_metric_note": "all_assertions_pass_file_rate excludes timeouts/crashes/infrastructure errors; use attempted_file_pass_rate as headline.",
+        "scheduled_file_pass_fraction": 0.8846153846153846,
+        "subtest_outcomes": {
+          "FAIL": 14,
+          "PASS": 344
+        },
+        "executed_subtests_excluding_notrun": 358,
+        "subtest_pass_rate": 0.9608938547486033,
+        "note": "Timeouts, crashes, infrastructure errors and unrun files are explicit; they never count as passes."
+      }
+    },
+    "headline_metric_note": "Report testharness and test262 separately; the combined counters are coverage bookkeeping, not a web-platform pass-rate headline."
+  },
+  "parity": {
+    "counts": {
+      "chromium_passing_assertions": 344,
+      "also_passed_by_lumen": 324,
+      "lumen_fail": 8,
+      "lumen_missing": 12
+    },
+    "chromium_pass_retention": 0.9418604651162791,
+    "first_200_gaps": [
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/decode-non-utf8.any.html",
+        "subtest": "TextDecoderStream should be able to decode Shift_JIS",
+        "lumen_status": "FAIL"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/decode-non-utf8.any.html",
+        "subtest": "TextDecoderStream should be able to decode invalid sequences in Shift_JIS",
+        "lumen_status": "FAIL"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/decode-non-utf8.any.html",
+        "subtest": "TextDecoderStream should be able to decode ISO-2022-JP",
+        "lumen_status": "FAIL"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/decode-non-utf8.any.html",
+        "subtest": "TextDecoderStream should be able to decode invalid sequences in ISO-2022-JP",
+        "lumen_status": "FAIL"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+        "subtest": "TextDecoderStream should be able to decode Shift_JIS",
+        "lumen_status": "FAIL"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+        "subtest": "TextDecoderStream should be able to decode invalid sequences in Shift_JIS",
+        "lumen_status": "FAIL"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+        "subtest": "TextDecoderStream should be able to decode ISO-2022-JP",
+        "lumen_status": "FAIL"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+        "subtest": "TextDecoderStream should be able to decode invalid sequences in ISO-2022-JP",
+        "lumen_status": "FAIL"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "a TextEncoderStream object should be associated with the realm the constructor came from",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "TextEncoderStream's readable and writable attributes should come from the same realm as the constructor definition",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "the output chunks when read is called after write should come from the same realm as the constructor of TextEncoderStream",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "the output chunks when write is called with a pending read should come from the same realm as the constructor of TextEncoderStream",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "TypeError for unconvertable chunk should come from constructor realm of TextEncoderStream",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "a TextDecoderStream object should be associated with the realm the constructor came from",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "TextDecoderStream's readable and writable attributes should come from the same realm as the constructor definition",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "the result object when read is called after write should come from the same realm as the constructor of TextDecoderStream",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "the result object when write is called with a pending read should come from the same realm as the constructor of TextDecoderStream",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "TypeError for chunk with the wrong type should come from constructor realm of TextDecoderStream",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "TypeError for invalid chunk should come from constructor realm of TextDecoderStream",
+        "lumen_status": "MISSING"
+      },
+      {
+        "type": "testharness",
+        "test": "/encoding/streams/realms.window.html",
+        "subtest": "TypeError for incomplete input should come from constructor realm of TextDecoderStream",
+        "lumen_status": "MISSING"
+      }
+    ],
+    "note": "Missing Lumen assertions count against parity; Chromium-unrun files remain explicit and cannot establish full-suite parity.",
+    "by_type": {
+      "testharness": {
+        "counts": {
+          "chromium_passing_assertions": 344,
+          "also_passed_by_lumen": 324,
+          "lumen_fail": 8,
+          "lumen_missing": 12
+        },
+        "chromium_pass_retention": 0.9418604651162791,
+        "first_200_gaps": [
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/decode-non-utf8.any.html",
+            "subtest": "TextDecoderStream should be able to decode Shift_JIS",
+            "lumen_status": "FAIL"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/decode-non-utf8.any.html",
+            "subtest": "TextDecoderStream should be able to decode invalid sequences in Shift_JIS",
+            "lumen_status": "FAIL"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/decode-non-utf8.any.html",
+            "subtest": "TextDecoderStream should be able to decode ISO-2022-JP",
+            "lumen_status": "FAIL"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/decode-non-utf8.any.html",
+            "subtest": "TextDecoderStream should be able to decode invalid sequences in ISO-2022-JP",
+            "lumen_status": "FAIL"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+            "subtest": "TextDecoderStream should be able to decode Shift_JIS",
+            "lumen_status": "FAIL"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+            "subtest": "TextDecoderStream should be able to decode invalid sequences in Shift_JIS",
+            "lumen_status": "FAIL"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+            "subtest": "TextDecoderStream should be able to decode ISO-2022-JP",
+            "lumen_status": "FAIL"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+            "subtest": "TextDecoderStream should be able to decode invalid sequences in ISO-2022-JP",
+            "lumen_status": "FAIL"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "a TextEncoderStream object should be associated with the realm the constructor came from",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "TextEncoderStream's readable and writable attributes should come from the same realm as the constructor definition",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "the output chunks when read is called after write should come from the same realm as the constructor of TextEncoderStream",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "the output chunks when write is called with a pending read should come from the same realm as the constructor of TextEncoderStream",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "TypeError for unconvertable chunk should come from constructor realm of TextEncoderStream",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "a TextDecoderStream object should be associated with the realm the constructor came from",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "TextDecoderStream's readable and writable attributes should come from the same realm as the constructor definition",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "the result object when read is called after write should come from the same realm as the constructor of TextDecoderStream",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "the result object when write is called with a pending read should come from the same realm as the constructor of TextDecoderStream",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "TypeError for chunk with the wrong type should come from constructor realm of TextDecoderStream",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "TypeError for invalid chunk should come from constructor realm of TextDecoderStream",
+            "lumen_status": "MISSING"
+          },
+          {
+            "type": "testharness",
+            "test": "/encoding/streams/realms.window.html",
+            "subtest": "TypeError for incomplete input should come from constructor realm of TextDecoderStream",
+            "lumen_status": "MISSING"
+          }
+        ],
+        "note": "Missing Lumen assertions count against parity; Chromium-unrun files remain explicit and cannot establish full-suite parity."
+      }
+    },
+    "headline_metric_note": "Use per-type Chromium-pass retention; combining test262 with testharness can hide web-platform gaps."
+  },
+  "full_inventory_counts": {
+    "crashtest": 28,
+    "manual": 2,
+    "reftest": 7,
+    "testharness": 2155
+  },
+  "inventory_coverage_by_type": {
+    "crashtest": {
+      "inventory_variants": 28,
+      "selected_variants": 0,
+      "outside_selection_variants": 28,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "manual": {
+      "inventory_variants": 2,
+      "selected_variants": 0,
+      "outside_selection_variants": 2,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "reftest": {
+      "inventory_variants": 7,
+      "selected_variants": 0,
+      "outside_selection_variants": 7,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "testharness": {
+      "inventory_variants": 2155,
+      "selected_variants": 26,
+      "outside_selection_variants": 2129,
+      "executor_available": true,
+      "execution_plan": "SCHEDULED",
+      "reason": "Official server wrapper and synchronous reporter"
+    }
+  },
+  "is_full_suite_schedule": false,
+  "lumen_binary_sha256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+  "chromium_binary_sha256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "chromium_version": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.74",
+    "revision": "@d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.25"
+  },
+  "lumen_fixture": {
+    "host_map": "not-web-platform.test=127.0.0.1,web-platform.test=127.0.0.1,www.not-web-platform.test=127.0.0.1,www.web-platform.test=127.0.0.1,www.www.not-web-platform.test=127.0.0.1,www.www.web-platform.test=127.0.0.1,www.www1.not-web-platform.test=127.0.0.1,www.www1.web-platform.test=127.0.0.1,www.www2.not-web-platform.test=127.0.0.1,www.www2.web-platform.test=127.0.0.1,www.xn--lve-6lad.not-web-platform.test=127.0.0.1,www.xn--lve-6lad.web-platform.test=127.0.0.1,www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,www1.not-web-platform.test=127.0.0.1,www1.web-platform.test=127.0.0.1,www1.www.not-web-platform.test=127.0.0.1,www1.www.web-platform.test=127.0.0.1,www1.www1.not-web-platform.test=127.0.0.1,www1.www1.web-platform.test=127.0.0.1,www1.www2.not-web-platform.test=127.0.0.1,www1.www2.web-platform.test=127.0.0.1,www1.xn--lve-6lad.not-web-platform.test=127.0.0.1,www1.xn--lve-6lad.web-platform.test=127.0.0.1,www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,www2.not-web-platform.test=127.0.0.1,www2.web-platform.test=127.0.0.1,www2.www.not-web-platform.test=127.0.0.1,www2.www.web-platform.test=127.0.0.1,www2.www1.not-web-platform.test=127.0.0.1,www2.www1.web-platform.test=127.0.0.1,www2.www2.not-web-platform.test=127.0.0.1,www2.www2.web-platform.test=127.0.0.1,www2.xn--lve-6lad.not-web-platform.test=127.0.0.1,www2.xn--lve-6lad.web-platform.test=127.0.0.1,www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--lve-6lad.web-platform.test=127.0.0.1,xn--lve-6lad.www.not-web-platform.test=127.0.0.1,xn--lve-6lad.www.web-platform.test=127.0.0.1,xn--lve-6lad.www1.not-web-platform.test=127.0.0.1,xn--lve-6lad.www1.web-platform.test=127.0.0.1,xn--lve-6lad.www2.not-web-platform.test=127.0.0.1,xn--lve-6lad.www2.web-platform.test=127.0.0.1,xn--lve-6lad.xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--lve-6lad.xn--lve-6lad.web-platform.test=127.0.0.1,xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1",
+    "host_map_mode": "exact",
+    "ssl_cert_sha256": "6760c932218bfe2703b10f2ea89a54b409f04d94dc5a1c9cf0f1fe7da8b30b52"
+  },
+  "chromium_args": [
+    "--host-resolver-rules=MAP not-web-platform.test 127.0.0.1, MAP web-platform.test 127.0.0.1, MAP www.not-web-platform.test 127.0.0.1, MAP www.web-platform.test 127.0.0.1, MAP www.www.not-web-platform.test 127.0.0.1, MAP www.www.web-platform.test 127.0.0.1, MAP www.www1.not-web-platform.test 127.0.0.1, MAP www.www1.web-platform.test 127.0.0.1, MAP www.www2.not-web-platform.test 127.0.0.1, MAP www.www2.web-platform.test 127.0.0.1, MAP www.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP www1.not-web-platform.test 127.0.0.1, MAP www1.web-platform.test 127.0.0.1, MAP www1.www.not-web-platform.test 127.0.0.1, MAP www1.www.web-platform.test 127.0.0.1, MAP www1.www1.not-web-platform.test 127.0.0.1, MAP www1.www1.web-platform.test 127.0.0.1, MAP www1.www2.not-web-platform.test 127.0.0.1, MAP www1.www2.web-platform.test 127.0.0.1, MAP www1.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www1.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP www2.not-web-platform.test 127.0.0.1, MAP www2.web-platform.test 127.0.0.1, MAP www2.www.not-web-platform.test 127.0.0.1, MAP www2.www.web-platform.test 127.0.0.1, MAP www2.www1.not-web-platform.test 127.0.0.1, MAP www2.www1.web-platform.test 127.0.0.1, MAP www2.www2.not-web-platform.test 127.0.0.1, MAP www2.www2.web-platform.test 127.0.0.1, MAP www2.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www2.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www1.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www1.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www2.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www2.web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1",
+    "--ignore-certificate-errors-spki-list=WXjEgm6G9rSgRQQVGbD5q+zOszPmv3ZBSfaIAMv+bY8="
+  ],
+  "chromium_headless": false,
+  "run_state": {
+    "lumen": {
+      "finished_schedule": true,
+      "stops": {}
+    },
+    "chromium": {
+      "finished_schedule": true,
+      "stops": {}
+    }
+  }
+}

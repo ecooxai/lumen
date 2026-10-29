@@ -82,3 +82,7 @@ Candidate `0d84262c11de64f17f4e0ed2c72a475ce5ef024dac121152c1de11bc85cbbd38`: Pr
 ## Checkpoint015 — Apply eligible same-origin parent encoding fallback
 
 Candidate `07cca318e49e830d25280b9a8b5e345fe9ea7bf57b6515e80d12946f767068e8`: Frozen real-HTTP parent-encoding fixture11/15 RED→15/15 GREEN. Fourteen native build/test stages pass in27.620s (build9.105s), including metadata29, frame7, legacy178, streams74, transfer68, codec170, document78 and native frame/window lifecycle. The compiled source includes the prior EOF correction; no new current-artifact GUI performance or full-WPT result is inferred. Accepted733/score45 unchanged; later working-tree candidates preserved by exact historical index staging. See `agent/evidence/102900614-015-frame-encoding.json`.
+
+## Checkpoint016 — progress catalog
+
+The updater now verifies and displays separate artifact-specific native WPT cohorts, keeps all1515 scheduled variants and real unrun/failures, and shows qualified Chrome23/26 with344PASS/14FAIL. Frame4d retains344/344 Chrome-passing assertions on the same26 cases only. Public rate is a measured cohort rate; full official WPT remains unknown. Run LUME_TASK_ID=102900614 update_priority_progress_10290244.py after each group/checkpoint. Accepted733/score45 unchanged. Evidence `agent/evidence/102900614-016-progress-catalog.json`.

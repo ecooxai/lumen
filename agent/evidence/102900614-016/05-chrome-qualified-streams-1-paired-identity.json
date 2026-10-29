@@ -1,0 +1,13 @@
+{
+  "taskId": "102900614",
+  "nativeCohort": "output/session-102900614/wpt-streams-native-1/cohort.json",
+  "nativeCohortSHA256": "d0d291fa40b558686622c990e6587dec0d0a88276e962c01773ce48e380b5963",
+  "nativeBinarySHA256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+  "referenceBinarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "referenceQualificationSHA256": "1e34a36c89d61da6314e975fb8fe8296e0bd2e07ac73cc3836861785fcac5452",
+  "group": "encoding-streams",
+  "groupScheduleSHA256": "86c9bb4c01e0394b7052abab611088e7c68c7674cb083dd84ceefa6b063d594d",
+  "frozenScheduledVariants": 1515,
+  "helperSHA256": "604b2753e27f8ccf40fa360cbc5c78b74d0a16261b29e2c0822701096857711f",
+  "scope": "Exact pinned group comparison; all failed and unrun cases remain visible. No full WPT or performance claim."
+}

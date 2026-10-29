@@ -1,0 +1,431 @@
+{
+  "schema": 1,
+  "frozenScheduledVariants": 1515,
+  "fullOfficialWptPassRate": null,
+  "acceptedNativeBinarySha256": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "latestMeasuredCohort": {
+    "cohort": "wpt-combined-native-1",
+    "binarySha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+    "acceptedArtifact": false,
+    "updatedUTC": "2026-10-29T00:07:44.306909+00:00",
+    "scheduled": 1515,
+    "recorded": 103,
+    "fullyPassing": 96,
+    "unrun": 1412,
+    "passingPercentOfRun": 93.2039,
+    "passingCoveragePercent": 6.3366,
+    "assertions": {
+      "PASS": 23623,
+      "FAIL": 35
+    },
+    "harnessStatuses": {
+      "OK": 103
+    },
+    "groups": {
+      "encoding-streams": {
+        "scheduled": 26,
+        "recorded": 26,
+        "fullyPassing": 26,
+        "unrun": 0
+      },
+      "dom": {
+        "scheduled": 14,
+        "recorded": 0,
+        "fullyPassing": 0,
+        "unrun": 14
+      },
+      "events": {
+        "scheduled": 16,
+        "recorded": 0,
+        "fullyPassing": 0,
+        "unrun": 16
+      },
+      "url": {
+        "scheduled": 77,
+        "recorded": 0,
+        "fullyPassing": 0,
+        "unrun": 77
+      },
+      "storage": {
+        "scheduled": 7,
+        "recorded": 0,
+        "fullyPassing": 0,
+        "unrun": 7
+      },
+      "microtasks": {
+        "scheduled": 10,
+        "recorded": 0,
+        "fullyPassing": 0,
+        "unrun": 10
+      },
+      "headers": {
+        "scheduled": 52,
+        "recorded": 0,
+        "fullyPassing": 0,
+        "unrun": 52
+      },
+      "encoding-core": {
+        "scheduled": 77,
+        "recorded": 77,
+        "fullyPassing": 70,
+        "unrun": 0
+      },
+      "encoding-rest": {
+        "scheduled": 1236,
+        "recorded": 0,
+        "fullyPassing": 0,
+        "unrun": 1236
+      }
+    },
+    "source": "output/session-102900614/wpt-combined-native-1/priority-summary.json",
+    "sourceSHA256": "77b8397ef779a5bc1488b0b4c50564ff134ceca18e5c41afd651cddd48b78e27",
+    "cohortSHA256": "4392f43edb3d79621f51ec7d26a59a2573bfb68290ec6144a42da67dff28f4a9",
+    "measurementQualified": true,
+    "scope": "One native artifact only; missing variants stay scheduled. Full official WPT rate is unknown."
+  },
+  "cohorts": [
+    {
+      "cohort": "wpt-combined-native-1",
+      "binarySha256": "f52a08ca9a1bc6cd79eb082d8bedd7b5851e23341ee7427ff01cddfb038a8a9c",
+      "acceptedArtifact": false,
+      "updatedUTC": "2026-10-29T00:07:44.306909+00:00",
+      "scheduled": 1515,
+      "recorded": 103,
+      "fullyPassing": 96,
+      "unrun": 1412,
+      "passingPercentOfRun": 93.2039,
+      "passingCoveragePercent": 6.3366,
+      "assertions": {
+        "PASS": 23623,
+        "FAIL": 35
+      },
+      "harnessStatuses": {
+        "OK": 103
+      },
+      "groups": {
+        "encoding-streams": {
+          "scheduled": 26,
+          "recorded": 26,
+          "fullyPassing": 26,
+          "unrun": 0
+        },
+        "dom": {
+          "scheduled": 14,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 14
+        },
+        "events": {
+          "scheduled": 16,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 16
+        },
+        "url": {
+          "scheduled": 77,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 77
+        },
+        "storage": {
+          "scheduled": 7,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 7
+        },
+        "microtasks": {
+          "scheduled": 10,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 10
+        },
+        "headers": {
+          "scheduled": 52,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 52
+        },
+        "encoding-core": {
+          "scheduled": 77,
+          "recorded": 77,
+          "fullyPassing": 70,
+          "unrun": 0
+        },
+        "encoding-rest": {
+          "scheduled": 1236,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 1236
+        }
+      },
+      "source": "output/session-102900614/wpt-combined-native-1/priority-summary.json",
+      "sourceSHA256": "77b8397ef779a5bc1488b0b4c50564ff134ceca18e5c41afd651cddd48b78e27",
+      "cohortSHA256": "4392f43edb3d79621f51ec7d26a59a2573bfb68290ec6144a42da67dff28f4a9",
+      "measurementQualified": true,
+      "scope": "One native artifact only; missing variants stay scheduled. Full official WPT rate is unknown."
+    },
+    {
+      "cohort": "wpt-frame-native-1",
+      "binarySha256": "4d81029fec2383cdb1e25bfe7b91fba65640f244e4564c19a344686f7ee5b5c5",
+      "acceptedArtifact": false,
+      "updatedUTC": "2026-10-28T23:50:43.293118+00:00",
+      "scheduled": 1515,
+      "recorded": 176,
+      "fullyPassing": 157,
+      "unrun": 1339,
+      "passingPercentOfRun": 89.2045,
+      "passingCoveragePercent": 10.363,
+      "assertions": {
+        "PASS": 15129,
+        "FAIL": 8
+      },
+      "harnessStatuses": {
+        "OK": 159,
+        "TIMEOUT": 9,
+        "ERROR": 8
+      },
+      "groups": {
+        "encoding-streams": {
+          "scheduled": 26,
+          "recorded": 26,
+          "fullyPassing": 26,
+          "unrun": 0
+        },
+        "dom": {
+          "scheduled": 14,
+          "recorded": 14,
+          "fullyPassing": 13,
+          "unrun": 0
+        },
+        "events": {
+          "scheduled": 16,
+          "recorded": 16,
+          "fullyPassing": 16,
+          "unrun": 0
+        },
+        "url": {
+          "scheduled": 77,
+          "recorded": 77,
+          "fullyPassing": 76,
+          "unrun": 0
+        },
+        "storage": {
+          "scheduled": 7,
+          "recorded": 7,
+          "fullyPassing": 7,
+          "unrun": 0
+        },
+        "microtasks": {
+          "scheduled": 10,
+          "recorded": 10,
+          "fullyPassing": 6,
+          "unrun": 0
+        },
+        "headers": {
+          "scheduled": 52,
+          "recorded": 26,
+          "fullyPassing": 13,
+          "unrun": 26
+        },
+        "encoding-core": {
+          "scheduled": 77,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 77
+        },
+        "encoding-rest": {
+          "scheduled": 1236,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 1236
+        }
+      },
+      "source": "output/session-102900614/wpt-frame-native-1/priority-summary.json",
+      "sourceSHA256": "b50bf0045d177fe0792c6afda9e28ba8d96031dd91f2d7f5e3b082b965aae266",
+      "cohortSHA256": "debff73b6a8ebb70857189f2bf9c8b8a6ad4bdacdc6e795b0707553ff16aefa9",
+      "measurementQualified": true,
+      "scope": "One native artifact only; missing variants stay scheduled. Full official WPT rate is unknown."
+    },
+    {
+      "cohort": "wpt-legacy-native-1",
+      "binarySha256": "050b0160e0869c4ac9e840a1835403c7dbb678c90a49c3619e0acf3275d007b6",
+      "acceptedArtifact": false,
+      "updatedUTC": "2026-10-28T23:41:03.695766+00:00",
+      "scheduled": 1515,
+      "recorded": 103,
+      "fullyPassing": 90,
+      "unrun": 1412,
+      "passingPercentOfRun": 87.3786,
+      "passingCoveragePercent": 5.9406,
+      "assertions": {
+        "PASS": 23408,
+        "FAIL": 235
+      },
+      "harnessStatuses": {
+        "OK": 101,
+        "TIMEOUT": 2
+      },
+      "groups": {
+        "encoding-streams": {
+          "scheduled": 26,
+          "recorded": 26,
+          "fullyPassing": 25,
+          "unrun": 0
+        },
+        "dom": {
+          "scheduled": 14,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 14
+        },
+        "events": {
+          "scheduled": 16,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 16
+        },
+        "url": {
+          "scheduled": 77,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 77
+        },
+        "storage": {
+          "scheduled": 7,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 7
+        },
+        "microtasks": {
+          "scheduled": 10,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 10
+        },
+        "headers": {
+          "scheduled": 52,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 52
+        },
+        "encoding-core": {
+          "scheduled": 77,
+          "recorded": 77,
+          "fullyPassing": 65,
+          "unrun": 0
+        },
+        "encoding-rest": {
+          "scheduled": 1236,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 1236
+        }
+      },
+      "source": "output/session-102900614/wpt-legacy-native-1/priority-summary.json",
+      "sourceSHA256": "686e59f230bf991e55442d8fd3ab319345dac49cdeaac65a329438f504cdd976",
+      "cohortSHA256": "6d8123c4521ec7112d3e3ba7d0950cdfebe6eacc63880dcddc1dd683c37cf94f",
+      "measurementQualified": true,
+      "scope": "One native artifact only; missing variants stay scheduled. Full official WPT rate is unknown."
+    },
+    {
+      "cohort": "wpt-streams-native-1",
+      "binarySha256": "80a60752a025a3b1c0bfda4485c9e37c9da2e203eaab63b5cc884ccaec218129",
+      "acceptedArtifact": false,
+      "updatedUTC": "2026-10-28T23:17:34.993865+00:00",
+      "scheduled": 1515,
+      "recorded": 103,
+      "fullyPassing": 84,
+      "unrun": 1412,
+      "passingPercentOfRun": 81.5534,
+      "passingCoveragePercent": 5.5446,
+      "assertions": {
+        "PASS": 23340,
+        "FAIL": 303
+      },
+      "harnessStatuses": {
+        "OK": 101,
+        "TIMEOUT": 2
+      },
+      "groups": {
+        "encoding-streams": {
+          "scheduled": 26,
+          "recorded": 26,
+          "fullyPassing": 23,
+          "unrun": 0
+        },
+        "dom": {
+          "scheduled": 14,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 14
+        },
+        "events": {
+          "scheduled": 16,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 16
+        },
+        "url": {
+          "scheduled": 77,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 77
+        },
+        "storage": {
+          "scheduled": 7,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 7
+        },
+        "microtasks": {
+          "scheduled": 10,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 10
+        },
+        "headers": {
+          "scheduled": 52,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 52
+        },
+        "encoding-core": {
+          "scheduled": 77,
+          "recorded": 77,
+          "fullyPassing": 61,
+          "unrun": 0
+        },
+        "encoding-rest": {
+          "scheduled": 1236,
+          "recorded": 0,
+          "fullyPassing": 0,
+          "unrun": 1236
+        }
+      },
+      "source": "output/session-102900614/wpt-streams-native-1/priority-summary.json",
+      "sourceSHA256": "a596e62998774dc49232c387ee6d5d9d47f94544e30b8e3e36500b32ad8443cb",
+      "cohortSHA256": "d0d291fa40b558686622c990e6587dec0d0a88276e962c01773ce48e380b5963",
+      "measurementQualified": true,
+      "scope": "One native artifact only; missing variants stay scheduled. Full official WPT rate is unknown."
+    }
+  ],
+  "qualifiedChrome": {
+    "binarySha256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+    "group": "encoding-streams",
+    "recorded": 26,
+    "scheduled": 26,
+    "fullyPassing": 23,
+    "assertions": {
+      "PASS": 344,
+      "FAIL": 14
+    },
+    "harnessStatuses": {
+      "OK": 26
+    },
+    "source": "output/session-102900614/chrome-qualified-streams-1",
+    "measurementQualified": true,
+    "scope": "Qualified signed Chrome on this exact group; actual reference failures remain failures. This is not a full-WPT result."
+  },
+  "validationErrors": [],
+  "policy": "Never combine variants or assertions across native artifact hashes. Raw errors, timeouts and unrun variants retain their status."
+}

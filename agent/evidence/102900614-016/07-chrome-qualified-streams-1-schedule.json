@@ -1,0 +1,498 @@
+[
+  {
+    "test": "/encoding/idlharness.any.html",
+    "type": "testharness",
+    "source": "encoding/idlharness.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "/resources/WebIDLParser.js"
+        ],
+        [
+          "script",
+          "/resources/idlharness.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/idlharness.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/idlharness.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "/resources/WebIDLParser.js"
+        ],
+        [
+          "script",
+          "/resources/idlharness.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/backpressure.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/backpressure.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/backpressure.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/backpressure.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-attributes.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-attributes.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-attributes.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-attributes.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-bad-chunks.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-bad-chunks.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-bad-chunks.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-bad-chunks.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-ignore-bom.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-ignore-bom.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-ignore-bom.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-ignore-bom.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-incomplete-input.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-incomplete-input.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-incomplete-input.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-incomplete-input.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-non-utf8.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-non-utf8.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-non-utf8.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-non-utf8.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-split-character.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-split-character.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-split-character.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-split-character.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-utf8.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-utf8.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ],
+        [
+          "script",
+          "/common/sab.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/decode-utf8.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/decode-utf8.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ],
+        [
+          "script",
+          "/common/sab.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/encode-bad-chunks.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/encode-bad-chunks.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/encode-bad-chunks.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/encode-bad-chunks.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/encode-utf8.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/encode-utf8.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/encode-utf8.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/encode-utf8.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ],
+        [
+          "script",
+          "resources/readable-stream-from-array.js"
+        ],
+        [
+          "script",
+          "resources/readable-stream-to-array.js"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/invalid-realm.window.html",
+    "type": "testharness",
+    "source": "encoding/streams/invalid-realm.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/readable-writable-properties.any.html",
+    "type": "testharness",
+    "source": "encoding/streams/readable-writable-properties.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/readable-writable-properties.any.worker.html",
+    "type": "testharness",
+    "source": "encoding/streams/readable-writable-properties.any.js",
+    "timeout": "normal",
+    "metadata": {
+      "script_metadata": [
+        [
+          "global",
+          "window,worker"
+        ]
+      ]
+    },
+    "references": []
+  },
+  {
+    "test": "/encoding/streams/realms.window.html",
+    "type": "testharness",
+    "source": "encoding/streams/realms.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  }
+]

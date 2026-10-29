@@ -263,3 +263,10 @@ Checkpoint007 commit infrastructure follow-up `2026-10-28T23:29:47.289388+00:00`
 - Frozen real-HTTP parent-encoding fixture11/15 RED→15/15 GREEN. Fourteen native build/test stages pass in27.620s (build9.105s), including metadata29, frame7, legacy178, streams74, transfer68, codec170, document78 and native frame/window lifecycle. The compiled source includes the prior EOF correction; no new current-artifact GUI performance or full-WPT result is inferred.
 - Reuse one document sandbox-policy helper and permit parent fallback only for the active owner document, eligible non-UTF16 parent encoding and matching canonical tuple origins. BOM, transport charset and metadata retain priority; opaque/cross-origin cases remain excluded. The applied v2 installer is distinguished from the unused earlier proposal.
 - All raw failed/green receipts remain preserved. Source and evidence `agent/evidence/102900614-015-frame-encoding.json`; current GUI/resource and complete upstream acceptance remain separate. Existing prebuilt V8 reused.
+
+## 102900614-016 — verified live candidate catalog
+
+- Start `2026-10-29T00:02:06.771954+00:00`; end `2026-10-29T00:08:44.870723+00:00`; checkpoint `398.099s`; total session `6843.412s`. Accepted **45/100**, artifact733 unchanged.
+- Six synthetic integrity tests pass. Real local refresh independently checks raw ledgers against each cohort and frozen1515 schedule, with no validation errors. The hero shows latest measured results; separate rows retain other artifact identities, unrun variants and historical207.
+- Qualified Chrome actually passes **23/26** Encoding Streams variants, **344 PASS/14 FAIL** assertions. Exact paired frame4d streams pass26/26 and retain344/344 Chrome-passing assertions. This is one26-case subset, not full browser parity; all Chrome failures remain raw failures.
+- Existing2-second CPU/RAM/disk/latency telemetry and private message path remain intact. Evidence `agent/evidence/102900614-016-progress-catalog.json`.

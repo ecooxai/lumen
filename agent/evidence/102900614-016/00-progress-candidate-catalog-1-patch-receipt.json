@@ -1,0 +1,16 @@
+{
+  "taskId": "102900614",
+  "applied": true,
+  "before": {
+    "tools/apple-session-gpt6as/update_priority_progress_10290244.py": "7b050ddfc938555c0d0b95471152853fb5f78e7096baf90ea423b5db1b894083",
+    "tools/lume-progress-10290244/public/app.js": "b084eba2ace597d2daa6a7670de4aafd474754f94039cadfdc2e451e5e7ce0f1"
+  },
+  "after": {
+    "tools/apple-session-gpt6as/update_priority_progress_10290244.py": "3f38c3dbd69d701f638a946f2cca6790461a89b9cebdd9d7d2e18732cd6adea1",
+    "tools/lume-progress-10290244/public/app.js": "88462246a89a448d812c8bf1374dae4bd0e83ba234e084d51d9139dfe81bceea",
+    "tools/apple-session-gpt6as/candidate_catalog_102900614.py": "518af88ecb25b8e1baa696e95ab55ea8762728fa1f303166c28585289d6d3f81",
+    "tests/test_candidate_catalog_102900614.py": "7fe9de31f3bb37f17f05b31f9405148c571fcb6dc244618ec36b52a35e40c97c"
+  },
+  "updatedUTC": "2026-10-28T23:57:22.195475+00:00",
+  "scope": "Artifact-specific raw WPT reporting only. Accepted native and score unchanged; existing telemetry and message access unchanged."
+}

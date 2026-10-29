@@ -2,6 +2,7 @@
 import argparse
 from datetime import datetime, timezone
 import hashlib, json, os, pathlib, re
+from candidate_catalog_102900614 import build_candidate_catalog
 
 ROOT=pathlib.Path.cwd();BASE=ROOT/'output/wpt-10290244'
 TASK=os.environ.get('LUME_TASK_ID','10290244')
@@ -148,6 +149,11 @@ if candidate:
         'scheduledFrozenVariants':candidate_wpt['frozenScheduledVariants'],'assertions':candidate_wpt['assertions'],
         'scope':candidate_wpt['scope'],'evidence':candidate['stream_wpt']}
 else:status.pop('functionalCandidate',None)
+qualified_identity = {'binarySHA256': qualified_reference['binarySHA256'], 'evidenceSHA256': score['reference_qualification']['sha256']} if qualified_reference else None
+status['candidateCatalog'] = build_candidate_catalog(ROOT, TASK, native, qualified_identity)
+latest_measured = status['candidateCatalog']['latestMeasuredCohort']
+if latest_measured:
+    status['phase'] = f"Fresh measured cohort {latest_measured['binarySha256'][:12]}: {latest_measured['fullyPassing']}/{latest_measured['recorded']} variants fully pass; {latest_measured['unrun']} of {latest_measured['scheduled']} remain unrun. " + status['phase']
 status['expandedWpt']=value;status['updatedUTC']=datetime.now(timezone.utc).isoformat()
 recorded=sum(row['lumenRecorded'] for row in value['categories'].values())
 passed=sum(row['lumenFullyPassing'] for row in value['categories'].values())
@@ -164,4 +170,7 @@ temporary=STATE/'status.tmp';temporary.write_text(json.dumps(status,indent=2)+'\
 print(json.dumps({'updatedUTC':status['updatedUTC'],'selectedVariants':value['selectedVariants'],
                   'lumenRecorded':sum(row['lumenRecorded']for row in value['categories'].values()),
                   'chromeRecorded':sum(row['chromeRecorded']for row in value['categories'].values()),
+                  'freshCandidateCohorts':[{key:row[key] for key in ('binarySha256','recorded','fullyPassing','scheduled','unrun')} for row in status['candidateCatalog']['cohorts']],
+                  'qualifiedChrome':status['candidateCatalog']['qualifiedChrome'],
+                  'candidateValidationErrors':status['candidateCatalog']['validationErrors'],
                   'originalSubsetRefreshedFromAcceptedEvidence':True,'acceptanceScoreUnchanged':True},indent=2))

@@ -1,0 +1,127 @@
+{
+  "iteration": "102900614-016",
+  "started_utc": "2026-10-29T00:02:06.771954+00:00",
+  "updated_utc": "2026-10-29T00:08:44.870723+00:00",
+  "elapsed_seconds": 398.099,
+  "total_session_seconds": 6843.412,
+  "score": 45,
+  "status": "Live progress reports verified separate native cohorts and raw qualified Chrome outcomes",
+  "native_artifact_promoted": false,
+  "accepted_native_unchanged": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "tests": {
+    "passed": 6,
+    "total": 6,
+    "scope": "Synthetic ledger integrity, not browser assertions; subsecond execution is not performance evidence."
+  },
+  "catalog": "agent/evidence/102900614-016/candidate-catalog.json",
+  "catalogSHA256": "90f19e9e8887bdd4592af5b0010e2a79e4c5cdd585528f69c633e2235586ad79",
+  "qualified_chrome": {
+    "binarySha256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+    "group": "encoding-streams",
+    "recorded": 26,
+    "scheduled": 26,
+    "fullyPassing": 23,
+    "assertions": {
+      "PASS": 344,
+      "FAIL": 14
+    },
+    "harnessStatuses": {
+      "OK": 26
+    },
+    "source": "output/session-102900614/chrome-qualified-streams-1",
+    "measurementQualified": true,
+    "scope": "Qualified signed Chrome on this exact group; actual reference failures remain failures. This is not a full-WPT result."
+  },
+  "paired_frame_streams": {
+    "variants": 26,
+    "lumen_fully_passing": 26,
+    "chrome_fully_passing": 23,
+    "chrome_assertions": {
+      "PASS": 344,
+      "FAIL": 14
+    },
+    "chrome_passing_assertions_retained": 344,
+    "retention": 1.0,
+    "full_platform_parity_claimed": false
+  },
+  "evidence": [
+    {
+      "source": "output/session-102900614/progress-candidate-catalog-1/patch-receipt.json",
+      "committed": "agent/evidence/102900614-016/00-progress-candidate-catalog-1-patch-receipt.json",
+      "sha256": "ada175f14b5dc6b8ececaed6180adc0e5af3e10b4b7c69229d3f55eca62cdaef",
+      "bytes": 1040
+    },
+    {
+      "source": "output/session-102900614/progress-catalog-tests-1.json",
+      "committed": "agent/evidence/102900614-016/01-session-102900614-progress-catalog-tests-1.json",
+      "sha256": "601ccdb3f47a06347c0c0a217ccea107230907515aeb0f0466e7ce9b426a943c",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/progress-catalog-tests-1.log",
+      "committed": "agent/evidence/102900614-016/02-session-102900614-progress-catalog-tests-1.log",
+      "sha256": "8750d4b5acdce1e4d680a3a27eb5d68370ed8b7d37b619aa32e9e0049f881dae",
+      "bytes": 104
+    },
+    {
+      "source": "output/session-102900614/progress-catalog-tests-1.csv",
+      "committed": "agent/evidence/102900614-016/03-session-102900614-progress-catalog-tests-1.csv",
+      "sha256": "9ff75135b25f0adbb7cd60ea38815afc6ed569c56c9fad212423e8f04aedadad",
+      "bytes": 80
+    },
+    {
+      "source": "output/session-102900614/chrome-qualified-streams-1/frame-paired-comparison.json",
+      "committed": "agent/evidence/102900614-016/04-chrome-qualified-streams-1-frame-paired-comparison.json",
+      "sha256": "eb8c0e2965928be8d4ad17b3f23048da277c9bfd05e43c574e098910b0baae4f",
+      "bytes": 13605
+    },
+    {
+      "source": "output/session-102900614/chrome-qualified-streams-1/paired-identity.json",
+      "committed": "agent/evidence/102900614-016/05-chrome-qualified-streams-1-paired-identity.json",
+      "sha256": "a2d9ffb59daa37f1151747f43d10c5705bd338fd493e83560e09296950a15bf2",
+      "bytes": 855
+    },
+    {
+      "source": "output/session-102900614/chrome-qualified-streams-1/run.json",
+      "committed": "agent/evidence/102900614-016/06-chrome-qualified-streams-1-run.json",
+      "sha256": "6b4d1da50a4e58353f748c0f334f2416e65e87c461387eac106297c253304368",
+      "bytes": 11806
+    },
+    {
+      "source": "output/session-102900614/chrome-qualified-streams-1/schedule.json",
+      "committed": "agent/evidence/102900614-016/07-chrome-qualified-streams-1-schedule.json",
+      "sha256": "4eb5134ee561a6c86181f72d8d821557965d0c89d421f9ef6d6b1a1b3b59a08a",
+      "bytes": 10971
+    },
+    {
+      "source": "output/session-102900614/chrome-qualified-streams-1/results.jsonl",
+      "committed": "agent/evidence/102900614-016/08-chrome-qualified-streams-1-results.jsonl",
+      "sha256": "52634e86f44064f15c11a6b33c426c39fc5f1fac5599168ac0f2ef86fbf0486b",
+      "bytes": 61088
+    },
+    {
+      "source": "output/session-102900614/chrome-qualified-streams-1/summary.json",
+      "committed": "agent/evidence/102900614-016/09-chrome-qualified-streams-1-summary.json",
+      "sha256": "48d3e3095636b6b342fa66a79e84f2557191e9ec4129228bb0a903804ddd5848",
+      "bytes": 2018
+    },
+    {
+      "source": "output/session-102900614/chrome-qualified-streams-1/paired-comparison.json",
+      "committed": "agent/evidence/102900614-016/10-chrome-qualified-streams-1-paired-comparison.json",
+      "sha256": "6578c79d1bcbad03f2975c5a1963f30436b85f11a4e91af71ef0baa8703d1a29",
+      "bytes": 24549
+    },
+    {
+      "source": "output/session-102900614/chrome-qualified-streams-1/paired-invocation-1793231094681729000.json",
+      "committed": "agent/evidence/102900614-016/11-chrome-qualified-streams-1-paired-invocation-1793231094681729000.json",
+      "sha256": "ce6f25ffd49ddd8ecf2715f8280a10ffeb4c8246815835c85a40555d019e0a08",
+      "bytes": 3983
+    }
+  ],
+  "raw_byte_preservation": [
+    "agent/evidence/102900614-016/02-session-102900614-progress-catalog-tests-1.log",
+    "agent/evidence/102900614-016/03-session-102900614-progress-catalog-tests-1.csv"
+  ],
+  "implementation": "Validate frozen1515 denominators, artifact/cohort hashes and raw stable-prefix ledgers. Display latest measured cohort prominently; keep accepted artifact, each candidate, historical207 and actual reference failures distinct. Existing2-second telemetry and private inbox remain unchanged.",
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed"
+}
