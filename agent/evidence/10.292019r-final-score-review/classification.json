@@ -1,0 +1,228 @@
+{
+  "schema": 1,
+  "createdUTC": "2026-10-29T15:52:36.097161+00:00",
+  "sourceCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "nativeBinary": {
+    "path": "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/lumen-f906769431c7a25b",
+    "sha256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95"
+  },
+  "comparisonSHA256": "617e57189152927e5198501f3d408da4a5eb5ae4455e470a399d116e26e3aac1",
+  "nativeAuditSHA256": "cfa433719bb3855c04bc0455ff1382012d59bd5b503b10d259165b4a6b1fbdaf",
+  "allMissingChromePASSInUnsupportedContexts": true,
+  "missingChromePASS": 1020,
+  "missingChromePASSByContext": {
+    "serviceworker": 510,
+    "sharedworker": 510
+  },
+  "missingChromePASSByNativeHarness": {
+    "TIMEOUT": 510,
+    "ERROR": 510
+  },
+  "affectedVariantsByContext": {
+    "serviceworker": 30,
+    "sharedworker": 30
+  },
+  "unexpectedMissing": [],
+  "variantContingency": {
+    "bothFullyPassing": 1410,
+    "onlyNativeFullyPassing": 44,
+    "onlyChromeFullyPassing": 52,
+    "neitherFullyPassing": 9
+  },
+  "categories": {
+    "dom": {
+      "scheduled": 14,
+      "lumenRecorded": 14,
+      "lumenFullyPassing": 14,
+      "chromeRecorded": 14,
+      "chromeFullyPassing": 13,
+      "lumenSubtestOutcomes": {
+        "PASS": 996
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 984,
+        "FAIL": 12
+      },
+      "lumenHarnessStatuses": {
+        "OK": 14
+      },
+      "chromeHarnessStatuses": {
+        "OK": 14
+      },
+      "chromePassingAssertionsRetained": 984,
+      "chromePassingAssertionsTotal": 984,
+      "chromePassingAssertionsMissing": 0,
+      "unionAssertionIdentities": 996,
+      "candidateQualifiedPassInUnion": 996,
+      "proportionalPassRatio": 1.0,
+      "eligibleForExpandedScoreReview": true
+    },
+    "events": {
+      "scheduled": 16,
+      "lumenRecorded": 16,
+      "lumenFullyPassing": 16,
+      "chromeRecorded": 16,
+      "chromeFullyPassing": 16,
+      "lumenSubtestOutcomes": {
+        "PASS": 78
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 78
+      },
+      "lumenHarnessStatuses": {
+        "OK": 16
+      },
+      "chromeHarnessStatuses": {
+        "OK": 16
+      },
+      "chromePassingAssertionsRetained": 78,
+      "chromePassingAssertionsTotal": 78,
+      "chromePassingAssertionsMissing": 0,
+      "unionAssertionIdentities": 78,
+      "candidateQualifiedPassInUnion": 78,
+      "proportionalPassRatio": 1.0,
+      "eligibleForExpandedScoreReview": true
+    },
+    "url": {
+      "scheduled": 77,
+      "lumenRecorded": 77,
+      "lumenFullyPassing": 76,
+      "chromeRecorded": 77,
+      "chromeFullyPassing": 47,
+      "lumenSubtestOutcomes": {
+        "PASS": 12316,
+        "FAIL": 7
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 11621,
+        "FAIL": 702
+      },
+      "lumenHarnessStatuses": {
+        "OK": 77
+      },
+      "chromeHarnessStatuses": {
+        "OK": 77
+      },
+      "chromePassingAssertionsRetained": 11621,
+      "chromePassingAssertionsTotal": 11621,
+      "chromePassingAssertionsMissing": 0,
+      "unionAssertionIdentities": 12323,
+      "candidateQualifiedPassInUnion": 12316,
+      "proportionalPassRatio": 0.999431956504098,
+      "eligibleForExpandedScoreReview": true
+    },
+    "encoding": {
+      "scheduled": 1339,
+      "lumenRecorded": 1339,
+      "lumenFullyPassing": 1309,
+      "chromeRecorded": 1339,
+      "chromeFullyPassing": 1317,
+      "lumenSubtestOutcomes": {
+        "PASS": 1151762
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 1152085,
+        "FAIL": 309
+      },
+      "lumenHarnessStatuses": {
+        "OK": 1309,
+        "TIMEOUT": 15,
+        "ERROR": 15
+      },
+      "chromeHarnessStatuses": {
+        "OK": 1339
+      },
+      "chromePassingAssertionsRetained": 1151581,
+      "chromePassingAssertionsTotal": 1152085,
+      "chromePassingAssertionsMissing": 504,
+      "unionAssertionIdentities": 1152394,
+      "candidateQualifiedPassInUnion": 1151762,
+      "proportionalPassRatio": 0.9994515764573575,
+      "eligibleForExpandedScoreReview": false
+    },
+    "headers": {
+      "scheduled": 52,
+      "lumenRecorded": 52,
+      "lumenFullyPassing": 26,
+      "chromeRecorded": 52,
+      "chromeFullyPassing": 52,
+      "lumenSubtestOutcomes": {
+        "PASS": 539
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 1043
+      },
+      "lumenHarnessStatuses": {
+        "OK": 26,
+        "TIMEOUT": 13,
+        "ERROR": 13
+      },
+      "chromeHarnessStatuses": {
+        "OK": 52
+      },
+      "chromePassingAssertionsRetained": 539,
+      "chromePassingAssertionsTotal": 1043,
+      "chromePassingAssertionsMissing": 504,
+      "unionAssertionIdentities": 1043,
+      "candidateQualifiedPassInUnion": 539,
+      "proportionalPassRatio": 0.5167785234899329,
+      "eligibleForExpandedScoreReview": false
+    },
+    "microtasks": {
+      "scheduled": 10,
+      "lumenRecorded": 10,
+      "lumenFullyPassing": 6,
+      "chromeRecorded": 10,
+      "chromeFullyPassing": 10,
+      "lumenSubtestOutcomes": {
+        "PASS": 15
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 27
+      },
+      "lumenHarnessStatuses": {
+        "OK": 6,
+        "TIMEOUT": 2,
+        "ERROR": 2
+      },
+      "chromeHarnessStatuses": {
+        "OK": 10
+      },
+      "chromePassingAssertionsRetained": 15,
+      "chromePassingAssertionsTotal": 27,
+      "chromePassingAssertionsMissing": 12,
+      "unionAssertionIdentities": 27,
+      "candidateQualifiedPassInUnion": 15,
+      "proportionalPassRatio": 0.5555555555555556,
+      "eligibleForExpandedScoreReview": false
+    },
+    "storage": {
+      "scheduled": 7,
+      "lumenRecorded": 7,
+      "lumenFullyPassing": 7,
+      "chromeRecorded": 7,
+      "chromeFullyPassing": 7,
+      "lumenSubtestOutcomes": {
+        "PASS": 1152
+      },
+      "chromeSubtestOutcomes": {
+        "PASS": 1152
+      },
+      "lumenHarnessStatuses": {
+        "OK": 7
+      },
+      "chromeHarnessStatuses": {
+        "OK": 7
+      },
+      "chromePassingAssertionsRetained": 1152,
+      "chromePassingAssertionsTotal": 1152,
+      "chromePassingAssertionsMissing": 0,
+      "unionAssertionIdentities": 1152,
+      "candidateQualifiedPassInUnion": 1152,
+      "proportionalPassRatio": 1.0,
+      "eligibleForExpandedScoreReview": true
+    }
+  },
+  "scoreAssigned": null,
+  "scope": "Same complete frozen1515 schedule. All unsupported rows and every missing assertion stay counted. Exact available Chrome156 binary comparison, not full officialWPT or general Chrome parity."
+}

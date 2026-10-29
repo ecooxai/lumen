@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T15:54:37.732434+00:00",
+  "acceptedExpandedCategoryCalculation": true,
+  "productSource": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "nativeBinary": {
+    "path": "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/lumen-f906769431c7a25b",
+    "sha256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95"
+  },
+  "classificationSHA256": "1755a96c510b60d3889103087f361c27e597fc54fb725316d19321977ee5c9a9",
+  "establishedRubrics": [
+    "agent/scorecard-rubric-10290244.md",
+    "agent/scorecard-rubric-20261029-cpu30.md"
+  ],
+  "method": "Seven fixed categories each receive20/7 potential points. Unsupported/incomplete categories remain entirely unearned. Complete healthy categories receive candidate qualified PASS divided by the union of assertion identities.",
+  "expandedPoints": 11.426948447154565,
+  "expandedExactFraction": "985700/86261",
+  "eligibleCategories": [
+    "dom",
+    "events",
+    "url",
+    "storage"
+  ],
+  "unearnedUnsupportedCategories": [
+    "encoding",
+    "headers",
+    "microtasks"
+  ],
+  "crossChecks": {
+    "scheduled": 1515,
+    "nativeFullyPassing": 1454,
+    "referenceFullyPassing": 1462,
+    "missingReferencePasses": 1020,
+    "serviceWorkerMissing": 510,
+    "sharedWorkerMissing": 510,
+    "unexpectedMissing": [],
+    "allCategoryDenominatorsAndHarnessStatusesReconcile": true
+  },
+  "overallScoreConditions": {
+    "otherNonmobilePointsWhenFreshlyAccepted": 55,
+    "potentialCurrentTaskScore": 66.42694844715457,
+    "notWPTPercent": true,
+    "deviceIPAPoints": 0,
+    "ipadSimulatorPoints": 0,
+    "publicCorrectedSourceDeliveryPoints": 5,
+    "publicSourceGateStateAtReview": "pending final reviewed checkpoint archive publication and full-byte verification",
+    "scoreBeforeThatDeliveryGate": 61.426948447154565,
+    "noInheritedBinaryGateCredit": "Every other gate must cite the exact final dc7/f906 artifact or a source/tooling scope that remains valid. This review does not independently replace native resource/package/publication audits."
+  },
+  "scope": "Existing requested-task checklist only; no generic Chrome parity, full official WPT pass rate, same-IPA execution or98/100 goal achievement is claimed. Reference is independently retrieved official Google Chrome for Testing156.0.8078.47 on Linux, with platform/version differences explicit.",
+  "referenceProvenanceEvidence": "agent/evidence/10.292019r-official-chrome-provenance/acceptance.json"
+}

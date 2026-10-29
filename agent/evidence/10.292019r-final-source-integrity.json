@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T15:53:10.669719+00:00",
+  "acceptedSourceIntegrity": true,
+  "productSourceCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "reviewedEvidenceCommit": "55b6f3268047373bda99f7938e3e4edfa3e0d6ee",
+  "compiledInputs": 143,
+  "compiledInputManifestSHA256": "9ba9e77edef14ac31195c312ce592c5df045a0d0bd666d945be4a3d4762d029b",
+  "compiledInputMismatches": [],
+  "productMakefileTestsDiffSinceProductCommit": [],
+  "userTask": {
+    "path": "agent/task.md",
+    "bytes": 8607,
+    "sha256": "648a931f9e314ba60f1eb10496b5cebd1ef183438646fdca503e64b358501c6e"
+  },
+  "scope": "Read-only final local source/task integrity. Actual Mac executable, WPT, security, performance and package acceptance require their separately bound receipts. No test or source change follows from this check.",
+  "hardDeadlineUTC": "2026-10-29T16:20:07Z",
+  "criticalBugExtension": "The original three-hour deadline was extended within the user-authorized one hour to fix an actual CSP handler activation ordering bypass; the rejected b816 evidence remains preserved."
+}
