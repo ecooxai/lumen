@@ -1,0 +1,28 @@
+{
+  "recordedUTC": "2026-10-29T15:19:08.647638+00:00",
+  "task": "10.292019r",
+  "status": "Git push remains blocked",
+  "initialBlock": {
+    "source": "automatic approval review, reported by root",
+    "reason": "Write authorization for the specific ecooxai/lumen destination was not established",
+    "action": "Git push",
+    "bypassAttempted": false
+  },
+  "metadataProbe": {
+    "remoteTerminal": 6345,
+    "remoteReceipt": "out/10292019r-mac/git-permission-metadata.json",
+    "receiptScope": "Compact result relayed by root; full remote receipt not copied into this record",
+    "configuredDestinationMatches": false,
+    "ghAvailable": null,
+    "authenticatedLogin": null,
+    "repositoryPushPermission": false,
+    "seconds": 0.018,
+    "conclusion": "No new push permission established",
+    "rawURLRetained": false,
+    "reasonForDestinationMismatch": "Unknown; do not infer mirror, missing origin, or other cause",
+    "ghQueriesExecuted": false,
+    "writesAttempted": false,
+    "originOrCredentialChanges": false
+  },
+  "nextAction": "Keep the prepared task branch and portable Git bundle; a future push requires verified destination/write access through the normal approval flow. No alternate write route was attempted."
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T15:18:17.179832+00:00",
+  "scope": "Read-only, project-named Lumen/Lume artifacts in the authenticated user's native Library; no unrelated files or external connectors searched",
+  "purpose": "Look for a previously saved signed IPA that could satisfy the user's existing shared-IPA workflow without manufacturing a new artifact or treating a native Mac executable as iOS",
+  "personalContext": {
+    "attempted": true,
+    "result": "Personal context is unavailable for this conversation."
+  },
+  "metadataSearch": {
+    "projectTitleMatches": 40,
+    "projectTitlePaginationComplete": true,
+    "ipaNamedFilesInReturnedProjectMatches": 0,
+    "narrowMobileArtifactSearch": "No direct IPA result; one auxiliary project report title was returned and inspected only for the requested mobile-artifact references",
+    "externalConnectorsAccessed": false,
+    "downloadedHistoricalIPA": false
+  },
+  "relevantPriorProjectReceipts": [
+    {
+      "libraryFileId": "libfile_b1e4e50e765c819199e5527416c8de5e",
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lume-milestone-20261029-cpu30.json",
+      "observation": "The prior milestone explicitly says a shared signed device IPA had not been produced or validated, with compatible mobile dependency and signing/export prerequisites missing. Native Mac app and Simulator OS availability were recorded separately."
+    },
+    {
+      "libraryFileId": "libfile_0ae00fc33e4c819181a7108245860ecb",
+      "name": "GPT-6-Astra-Pro_release-integrator_builtin-subagents_devinmac3d_Lume-10290244_delivery-receipt.json",
+      "observation": "The prior delivery receipt labels identical IPA execution on Mac and iOS/iPad as unverified."
+    },
+    {
+      "libraryFileId": "libfile_32dc0279201c81918fd7eb42cd42f1af",
+      "name": "gpt6-astra-pro-subagents-web-lumen-report.html",
+      "observation": "The prior report contains no identical signed IPA identity/install/launch proof and distinguishes historical Simulator evidence from shared-device-IPA acceptance."
+    }
+  ],
+  "conclusion": "No reusable signed IPA was identified in this bounded project-title metadata search or the targeted prior project receipt excerpts. Current mobile gates remain those independently inventoried on the Mac.",
+  "limitations": [
+    "A title search does not establish absence from every location or from the interiors of unrelated or differently named archives.",
+    "Prior receipt references are continuity evidence, not a fresh mobile execution or signature verification.",
+    "The current native Mac development application is not an IPA and has not been relabeled as one."
+  ],
+  "currentEnvironmentEvidence": "agent/evidence/10.292019r-apple-environment.json",
+  "resolvedReceiptReadEvidence": {
+    "path": "agent/evidence/10.292019r-mobile-prior-artifact-lookup/read-windows.json",
+    "sha256": "53cebbc4680ea65663e324d93c750a277b3dfe26b3a47f18b037f7ea4fbd923f",
+    "bytes": 5215,
+    "readWindows": 3,
+    "scope": "Relevant mobile-IPA passages were read from all three resolved project receipts, after title search and exact find; not inferred solely from search snippets."
+  }
+}

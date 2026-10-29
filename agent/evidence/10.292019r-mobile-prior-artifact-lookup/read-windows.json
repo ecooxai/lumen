@@ -1,0 +1,36 @@
+{
+  "scope": "Only three project-artifact mobile-IPA passages, read after resolving the native Library files",
+  "externalConnectorsAccessed": false,
+  "reads": [
+    {
+      "libraryFileId": "libfile_b1e4e50e765c819199e5527416c8de5e",
+      "versionId": "3",
+      "name": "GPT6-Astra-Pro_builtin-agents_devinmac3d_Lume-milestone-20261029-cpu30.json",
+      "startLine": 544,
+      "endLine": 549,
+      "content": [
+        "  \"apple\": {\n    \"macNative\": \"Final native Mac app built, visibly ran, passed selected WPT and controlled resource gates. This is not proof of running a signed iOS IPA on Mac.\",\n    \"ipadSimulator\": \"Simulator OS is available and responds, but current Lume application execution is unverified.\",\n    \"sharedSignedDeviceIPAOnMac\": \"Not produced or validated. Compatible mobile V8/dependency closure and signing/profile/export material are absent.\",\n    \"compilerRecovery\": \"The selected Xcode bundle has a damaged compiler resource/header resolution. An existing matching CLT compiler with explicit SDK paths successfully compiled and linked tiny UIKit/Foundation probes for device and simulator. No global Xcode or SDK change was made. This removes the narrow compile-resource obstacle, not the remaining app dependency/signing gates.\",\n    \"newIphoneExecutionGateAdded\": false"
+      ]
+    },
+    {
+      "libraryFileId": "libfile_0ae00fc33e4c819181a7108245860ecb",
+      "versionId": "2",
+      "name": "GPT-6-Astra-Pro_release-integrator_builtin-subagents_devinmac3d_Lume-10290244_delivery-receipt.json",
+      "startLine": 1403,
+      "endLine": 1403,
+      "content": [
+        "                \"Identical IPA on Mac / iPad / iPhoneUnverified on Mac, iPad and iPhone\","
+      ]
+    },
+    {
+      "libraryFileId": "libfile_32dc0279201c81918fd7eb42cd42f1af",
+      "versionId": null,
+      "name": "gpt6-astra-pro-subagents-web-lumen-report.html",
+      "startLine": 11,
+      "endLine": 11,
+      "content": [
+        "<section id=\"gates\"><h2>Independent acceptance gates</h2><p>Each gate needs its own platform-correct evidence. Partial, blocked or unverified behavior is not certified as passed. There is no completed new qualified Apple iteration to score and no new weighted software-quality score.</p><div class=\"table-scroll\"><table><thead><tr><th>Gate</th><th>Current assessment</th></tr></thead><tbody><tr><th>Camera, microphone, location and delegated iframes</th><td><strong>Unverified on current Apple targets</strong><p>Synthetic Chromium fixtures and cancellation checks pass. Physical/native permission and cross-origin media/location behavior remain unverified.</p></td></tr><tr><th>WebRTC, WebSocket and WebTransport/QUIC</th><td><strong>Local controls verified; native scope incomplete</strong><p>Exact text/binary WebSocket echoes and observed close; local RTC peer exercise; real HTTP/3 stream/datagram checks 5/5. Native cross-browser/media/QUIC proof remains pending.</p></td></tr><tr><th>DOM and WebAssembly</th><td><strong>Native partial result; timeout retained</strong><p>Six-file native summary 1,695/1,850; 3/6 files fully pass. WASM harness TIMEOUT. Complete native assertion report remains unrecovered.</p></td></tr><tr><th>WebGL, WebGPU and visible rendering</th><td><strong>Local controls verified; Apple presentation pending</strong><p>Two real Chromium WebGL captures; explicit software offscreen WebGPU at 3 resolutions. Default WebGPU had no adapter. No new native retained-canvas or matched Safari/Chrome visual proof.</p></td></tr><tr><th>Google/Apple mocks and real service workflows</th><td><strong>Real authentication and sites unverified</strong><p>Mock popups are labeled simulations. Actual authorized Google/Apple login and Lume workflows on Google, ChatGPT, X and YouTube remain unverified.</p></td></tr><tr><th>Six new Mac Release/restart/iPad iterations</th><td><strong>0/6 qualified cycles</strong><p>Six native test files are not six Release iterations. No new Mac/iPad Release build or complete launch/restart cycle was verified in this continuation.</p></td></tr><tr><th>Same signed IPA and signing prerequisites</th><td><strong>Unverified</strong><p>No identical signed IPA hash/install/launch proof. Earlier recovery reported no valid signing identities; signing was not rechecked here. Native/Catalyst/simulator binaries do not prove identical IPA bytes.</p></td></tr><tr><th>CPU, memory and matched resource comparison</th><td><strong>Strict local idle gate failed; native comparison pending</strong><p>Full Chromium idle mean 2.185%, p95 9.0%, budget p95 ≤3%. Blank controls also missed. No matched same-Mac Lume/Chrome resource verdict.</p></td></tr><tr><th>Delivery and publication</th><td><strong>Checkpoint only</strong><p>Task text, scoped Git history, source/evidence, report and labeled showcase are prepared. No post-goal push/deployment is represented.</p></td></tr></tbody></table></div><p class=\"small\">The historical 100-point rubric is preserved unchanged. Historical 17/100 coverage remains historical. Prepared patches, API existence, mocks, synthetic devices, a build or a local test percentage cannot substitute for the 98/100 Apple goal.</p></section>"
+      ]
+    }
+  ]
+}
