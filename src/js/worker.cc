@@ -1429,7 +1429,13 @@ return {
         for (const ch of [...bcAll]) if (!ch._closed && ch.name === name && !(same && ch._id === id)) { ch.dispatchEvent(new MessageEvent('message', { data: first ? data : W.clone(data), origin: location.origin })); first = false; }
     },
     onmsg(data, connection, kind) {
-        if (kind === 3) { const port = wports.get(workerPortKey(connection, data)); if (port) port.close(); return; }
+        if (kind === 3) {
+            const key = workerPortKey(connection, data), port = wports.get(key);
+            // Peer closure does not close this receiver or discard messages
+            // already waiting for its port task queue to become enabled.
+            if (port) { wports.delete(key); port._remote = false; }
+            return;
+        }
         if (W.shared && kind === 1) {
             const port = incomingPort(connection, 0);
             const event = new MessageEvent('connect', {data: '', ports: [port], source: port});

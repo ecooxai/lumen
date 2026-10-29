@@ -846,6 +846,14 @@ function unlinkBridge(bridge, close = false) {
 function closeWorkerBridges(worker) {
     for (const bridge of [...(endpointBridges.get(worker) || [])]) unlinkBridge(bridge, true);
 }
+function disconnectWorkerPeer(port) {
+    // A peer's close only disentangles the endpoints. Messages already queued
+    // on this receiving port still belong to it and must retain FIFO delivery.
+    if (port._wk) remotePorts.delete(remotePortKey(port._wk[0], port._wk[1]));
+    port._wk = null;
+    const state = portState(port);
+    if (state.sharedConnection) { releaseSharedConnection(state.sharedConnection); state.sharedConnection = 0; }
+}
 function movedWorkerPort(worker, source) {
     const key = remotePortKey(worker, source), old = remotePorts.get(key), port = new MessagePort();
     if (old?._bridge) {
@@ -954,7 +962,7 @@ function workerEvent(id, kind, data, message, filename, lineno, colno, moves, qu
     if (kind === 5) {
         const port = remotePorts.get(remotePortKey(id, data));
         if (port?._bridge) unlinkBridge(port._bridge, true);
-        else if (port instanceof MessagePort) port.close();
+        else if (port instanceof MessagePort) disconnectWorkerPeer(port);
         return;
     }
     if (kind === 0) {
