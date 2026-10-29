@@ -197,7 +197,7 @@ function urlParts(p, attr, expectedTag) {
     defineProperty(p, 'toString', {value: toString, writable: true, enumerable: true, configurable: true});
 }
 const PLAIN = new Set('abbr address article aside b bdi bdo cite code dd dfn dt em figcaption figure footer header hgroup i kbd main mark nav noscript rp rt ruby s samp search section small strong sub summary sup u var wbr center nobr big tt acronym strike font marquee'.split(' '));
-function protoFor(type, tag, ns) {
+function protoFor(type, tag, ns, shadow) {
     switch (type) {
     case 1:
         if (ns === 3) return Element.prototype;
@@ -211,7 +211,7 @@ function protoFor(type, tag, ns) {
     case 7: return ProcessingInstruction.prototype;
     case 9: return ns === 3 ? XMLDocument.prototype : HTMLDocument.prototype;
     case 10: return DocumentType.prototype;
-    case 11: return DocumentFragment.prototype;
+    case 11: return shadow ? ShadowRoot.prototype : DocumentFragment.prototype;
     }
     return Node.prototype;
 }

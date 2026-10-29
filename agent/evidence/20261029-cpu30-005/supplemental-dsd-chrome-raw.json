@@ -1,0 +1,273 @@
+[
+  {
+    "status": "OK",
+    "message": null,
+    "subtest_count": 22,
+    "subtests": [
+      {
+        "name": "Declarative Shadow DOM: Basic test",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: Feature detection",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Shadowrootmode reflection",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Shadowrootmode reflection, setter",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Shadowrootdelegatesfocus reflection",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Shadowrootdelegatesfocus reflection, setter",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Shadowrootclonable reflection",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Shadowrootclonable reflection, setter",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: Fragment parser basic test",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: Invalid shadow root attribute",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: Closed shadow root attribute",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: Missing closing tag",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: delegates focus attribute",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: clonable attribute",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: Multiple roots",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: template containing declarative shadow root (with shadowrootclonable)",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: template containing (deeply nested) declarative shadow root",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: template containing a template containing declarative shadow root",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: template containing declarative shadow root and UA shadow root",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: template containing closed declarative shadow root and UA shadow root",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: declarative shadow roots are not supported by the template element",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Declarative Shadow DOM: explicit test that exceptions are not thrown",
+        "status": "PASS",
+        "message": null
+      }
+    ],
+    "reporter_state": {
+      "status": "ATTACHED"
+    },
+    "duration_ms": 337,
+    "cleanup": {
+      "context_id": "AEE9122FA6D417CD2930D90626AB3D35",
+      "errors": []
+    },
+    "browser_pid": 3144,
+    "telemetry_errors": [],
+    "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+    "test": "shadow-dom/declarative/declarative-shadow-dom-basic.html",
+    "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-basic.html",
+    "startedUTC": "2026-10-29T05:50:01.170234+00:00"
+  },
+  {
+    "status": "OK",
+    "message": null,
+    "subtest_count": 1,
+    "subtests": [
+      {
+        "name": "Declarative Shadow DOM: declarative shadow should fail if attachShadow() already called",
+        "status": "PASS",
+        "message": null
+      }
+    ],
+    "reporter_state": {
+      "status": "ATTACHED"
+    },
+    "duration_ms": 788,
+    "cleanup": {
+      "context_id": "6C100F7C0EE1261F0AA0AAFEC273C209",
+      "errors": []
+    },
+    "browser_pid": 3144,
+    "telemetry_errors": [],
+    "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+    "test": "shadow-dom/declarative/declarative-after-attachshadow.html",
+    "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-after-attachshadow.html",
+    "startedUTC": "2026-10-29T05:50:01.509184+00:00"
+  },
+  {
+    "status": "OK",
+    "message": null,
+    "subtest_count": 1,
+    "subtests": [
+      {
+        "name": "Declarative Shadow DOM: innerHTML should work on <template shadowroot> that is left over",
+        "status": "PASS",
+        "message": null
+      }
+    ],
+    "reporter_state": {
+      "status": "ATTACHED"
+    },
+    "duration_ms": 246,
+    "cleanup": {
+      "context_id": "7D4A01F5596145A67581EB82E9D8B21B",
+      "errors": []
+    },
+    "browser_pid": 3144,
+    "telemetry_errors": [],
+    "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+    "test": "shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+    "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+    "startedUTC": "2026-10-29T05:50:02.297818+00:00"
+  },
+  {
+    "status": "OK",
+    "message": null,
+    "subtest_count": 3,
+    "subtests": [
+      {
+        "name": "Repeated declarative shadow roots keep only the first",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Calling attachShadow() on declarative shadow root must match mode",
+        "status": "PASS",
+        "message": null
+      },
+      {
+        "name": "Calling attachShadow() on declarative shadow root must match all parameters",
+        "status": "PASS",
+        "message": null
+      }
+    ],
+    "reporter_state": {
+      "status": "ATTACHED"
+    },
+    "duration_ms": 206,
+    "cleanup": {
+      "context_id": "F790FE0322961E84E306C47A6D9A0FF6",
+      "errors": []
+    },
+    "browser_pid": 3144,
+    "telemetry_errors": [],
+    "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+    "test": "shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+    "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+    "startedUTC": "2026-10-29T05:50:02.544366+00:00"
+  },
+  {
+    "status": "OK",
+    "message": null,
+    "subtest_count": 1,
+    "subtests": [
+      {
+        "name": "`document.write` on inner iframe handles declarative shadow DOM",
+        "status": "PASS",
+        "message": null
+      }
+    ],
+    "reporter_state": {
+      "status": "ATTACHED"
+    },
+    "duration_ms": 161,
+    "cleanup": {
+      "context_id": "A578ABEFB254E5E2726FDF01E9F5AAA7",
+      "errors": []
+    },
+    "browser_pid": 3144,
+    "telemetry_errors": [],
+    "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+    "test": "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+    "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+    "startedUTC": "2026-10-29T05:50:02.751035+00:00"
+  },
+  {
+    "status": "OK",
+    "message": null,
+    "subtest_count": 1,
+    "subtests": [
+      {
+        "name": "Declarative Shadow DOM: Test for crashes and improper parsing",
+        "status": "PASS",
+        "message": null
+      }
+    ],
+    "reporter_state": {
+      "status": "ATTACHED"
+    },
+    "duration_ms": 200,
+    "cleanup": {
+      "context_id": "BFEDD353DDE22BA656177238A63D4556",
+      "errors": []
+    },
+    "browser_pid": 3144,
+    "telemetry_errors": [],
+    "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+    "test": "shadow-dom/declarative/declarative-parser-interaction.html",
+    "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-parser-interaction.html",
+    "startedUTC": "2026-10-29T05:50:02.912366+00:00"
+  }
+]

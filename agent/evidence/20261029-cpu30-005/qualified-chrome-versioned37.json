@@ -1,0 +1,368 @@
+{
+  "taskId": "20261029-cpu30",
+  "startedUTC": "2026-10-29T05:36:55.036451+00:00",
+  "scope": "Exact unchanged37 project regression cases in fresh qualified Chrome; not upstream WPT or a native acceptance gate. No Web API injection.",
+  "fixture": "tests/test_declarative_shadow_documents_v2.py",
+  "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+  "htmlSHA256": "f8aba6403961ca1c4e0f20baa217ff3f540f1e81e63fefbb31b60235c506224e",
+  "chromeBinarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "qualificationSHA256": "1e34a36c89d61da6314e975fb8fe8296e0bd2e07ac73cc3836861785fcac5452",
+  "complete": true,
+  "allPassed": false,
+  "checks": [
+    {
+      "i": 0,
+      "name": "network open root content and native ShadowRoot brand",
+      "ok": true
+    },
+    {
+      "i": 1,
+      "name": "declarative template is absent from light DOM",
+      "ok": true
+    },
+    {
+      "i": 2,
+      "name": "shadow descendants retain owner document and connectivity",
+      "ok": true
+    },
+    {
+      "i": 3,
+      "name": "closed root rejects a conflicting imperative mode",
+      "ok": true
+    },
+    {
+      "i": 4,
+      "name": "invalid mode remains ordinary inert template",
+      "ok": true
+    },
+    {
+      "i": 5,
+      "name": "invalid host remains ordinary inert template",
+      "ok": true
+    },
+    {
+      "i": 6,
+      "name": "second declarative template remains light template",
+      "ok": true
+    },
+    {
+      "i": 7,
+      "name": "nested declarative shadow roots use separate hosts",
+      "ok": true
+    },
+    {
+      "i": 8,
+      "name": "enumerated shadow mode is ASCII case insensitive",
+      "ok": true
+    },
+    {
+      "i": 9,
+      "name": "shadow mode whitespace is not stripped",
+      "ok": true
+    },
+    {
+      "i": 10,
+      "name": "ordinary template stays inert with a separate owner",
+      "ok": true
+    },
+    {
+      "i": 11,
+      "name": "DOMParser keeps declarative shadow parsing disabled",
+      "ok": true
+    },
+    {
+      "i": 12,
+      "name": "innerHTML keeps declarative shadow parsing disabled",
+      "ok": true
+    },
+    {
+      "i": 13,
+      "name": "fragment parsing does not attach a root to context",
+      "ok": true
+    },
+    {
+      "i": 14,
+      "name": "shallow document clone preserves allow-declarative policy",
+      "ok": true
+    },
+    {
+      "i": 15,
+      "name": "deep document clone preserves allow-declarative policy",
+      "ok": true
+    },
+    {
+      "i": 16,
+      "name": "cloned detached document keeps copied policy again",
+      "ok": true
+    },
+    {
+      "i": 17,
+      "name": "new HTML document write keeps declarative parsing disabled",
+      "ok": true
+    },
+    {
+      "i": 18,
+      "name": "DOMParser document clone preserves disabled policy",
+      "ok": false,
+      "error": "Error: expected null, got {}"
+    },
+    {
+      "i": 19,
+      "name": "detached writes do not insert into active document",
+      "ok": true
+    },
+    {
+      "i": 20,
+      "name": "split writes retain tokenizer state across tags",
+      "ok": true
+    },
+    {
+      "i": 21,
+      "name": "two detached parsers can interleave independently",
+      "ok": true
+    },
+    {
+      "i": 22,
+      "name": "open detaches old nodes without invalidating held wrappers",
+      "ok": true
+    },
+    {
+      "i": 23,
+      "name": "open disposes an unfinished parser before replacement",
+      "ok": true
+    },
+    {
+      "i": 24,
+      "name": "intervening DOM removal leaves parser state alive",
+      "ok": true
+    },
+    {
+      "i": 25,
+      "name": "detached Unicode writes preserve leading FEFF",
+      "ok": true
+    },
+    {
+      "i": 26,
+      "name": "detached scripts do not execute in the active realm",
+      "ok": true
+    },
+    {
+      "i": 27,
+      "name": "close handles an unclosed declarative template",
+      "ok": true
+    },
+    {
+      "i": 28,
+      "name": "declarative attachment options are native state",
+      "ok": true
+    },
+    {
+      "i": 29,
+      "name": "clonable root children copy even on shallow host clone",
+      "ok": true
+    },
+    {
+      "i": 30,
+      "name": "matching imperative mode reuses and clears declarative root",
+      "ok": true
+    },
+    {
+      "i": 31,
+      "name": "conflicting imperative mode leaves declarative content intact",
+      "ok": true
+    },
+    {
+      "i": 32,
+      "name": "ordinary imperative open and closed roots remain supported",
+      "ok": true
+    },
+    {
+      "i": 33,
+      "name": "imperative attachment rejects missing or invalid mode",
+      "ok": true
+    },
+    {
+      "i": 34,
+      "name": "imperative attachment rejects invalid HTML and foreign hosts",
+      "ok": true
+    },
+    {
+      "i": 35,
+      "name": "unfinished detached parser remains owned until realm teardown",
+      "ok": true
+    },
+    {
+      "i": 36,
+      "name": "held descendant retains detached subtree ancestry after open",
+      "ok": true
+    }
+  ],
+  "summaryMarkers": [
+    {
+      "total": 37,
+      "passed": 36,
+      "failed": 1
+    }
+  ],
+  "uncaughtExceptions": [],
+  "cleanupErrors": [],
+  "browserVersion": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.74",
+    "revision": "@d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.25"
+  },
+  "actualURL": "http://127.0.0.1:49400/",
+  "total": 37,
+  "passed": 36,
+  "failed": 1,
+  "browserCleanup": {
+    "process": {
+      "sent_sigterm": false,
+      "sent_sigkill": false,
+      "error": null,
+      "post_signal_verification": {
+        "allowed_wait_s": 10,
+        "initial_live_members": {},
+        "duration_ms": 16
+      },
+      "process_group_gone": true,
+      "remaining_group_members": {},
+      "root_exit_code": 0,
+      "root_exit_before_signal_cleanup": 0,
+      "root_exit_observation_verified": true
+    },
+    "errors": [],
+    "graceful_close": {
+      "method": "Browser.close",
+      "attempted": true,
+      "acknowledged": true,
+      "allowed_drain_s": 20,
+      "exit_requirement": "All live owned-group members must disappear; an exiting process state is not ignored.",
+      "initial_process_state": {
+        "observed_unix_ms": 1793252216826,
+        "members": [
+          {
+            "pid": 85911,
+            "ppid": 85905,
+            "pgid": 85911,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "Rs",
+            "start_identity": "Wed Oct 28 22:36:55 2026",
+            "executable": "output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome"
+          },
+          {
+            "pid": 85938,
+            "ppid": 85911,
+            "pgid": 85911,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "U",
+            "start_identity": "Wed Oct 28 22:36:55 2026",
+            "executable": "/Users/devin/repos/lumen/output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.74/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+          },
+          {
+            "pid": 85939,
+            "ppid": 85911,
+            "pgid": 85911,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "S",
+            "start_identity": "Wed Oct 28 22:36:55 2026",
+            "executable": "/Users/devin/repos/lumen/output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.74/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+          },
+          {
+            "pid": 85940,
+            "ppid": 85911,
+            "pgid": 85911,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "S",
+            "start_identity": "Wed Oct 28 22:36:55 2026",
+            "executable": "/Users/devin/repos/lumen/output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.74/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper"
+          },
+          {
+            "pid": 85948,
+            "ppid": 85911,
+            "pgid": 85911,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "S",
+            "start_identity": "Wed Oct 28 22:36:55 2026",
+            "executable": "/Users/devin/repos/lumen/output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.74/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)"
+          },
+          {
+            "pid": 85950,
+            "ppid": 85911,
+            "pgid": 85911,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "?E",
+            "start_identity": "Wed Oct 28 22:36:55 2026",
+            "executable": "(Google Chrome He)"
+          },
+          {
+            "pid": 85970,
+            "ppid": 85911,
+            "pgid": 85911,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "S",
+            "start_identity": "Wed Oct 28 22:36:56 2026",
+            "executable": "/Users/devin/repos/lumen/output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.74/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)"
+          }
+        ]
+      },
+      "process_group_gone": true,
+      "drain_duration_ms": 571
+    }
+  },
+  "resources": {
+    "path": "out/lume-20261029-cpu30/dsd-chrome-control-2/browser/chromium.metrics-summary.json",
+    "sha256": "787513f84c742ec15b3b3f075a6ab8b12e92cca6320d00757b9af51b6066cd42",
+    "summary": {
+      "samples": 3,
+      "steady_samples": 3,
+      "interval_cpu_samples": 2,
+      "steady_interval_cpu_samples": 2,
+      "max_sampling_gap_s": 1.034,
+      "cpu_mean_percent": 64.3,
+      "steady_cpu_mean_percent": 64.3,
+      "steady_cpu_median_percent": 47.3,
+      "steady_cpu_p95_percent": 145.6,
+      "cpu_peak_percent": 145.6,
+      "interval_cpu_mean_percent": 91.434,
+      "steady_interval_cpu_mean_percent": 91.434,
+      "steady_interval_cpu_median_percent": 91.434,
+      "steady_interval_cpu_p95_percent": 100.614,
+      "interval_cpu_peak_percent": 100.614,
+      "rss_peak_mb": 871.547,
+      "rss_final_mb": 563.594,
+      "rss_steady_median_mb": 563.594,
+      "rss_steady_p95_mb": 871.547,
+      "rss_steady_growth_mb": 561.938,
+      "in_memory_sample_limit": 600,
+      "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+      "quantile_scope": "all recorded samples",
+      "errors": [],
+      "sample_interval_s": 1,
+      "stop_reason": "requested_stop",
+      "telemetry_status": "captured",
+      "interval_cpu_coverage": "available",
+      "observed_span_s": 2.019,
+      "root_start_identity": "Wed Oct 28 22:36:55 2026",
+      "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+      "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+      "memory_unit": "MiB (legacy field names retain mb)",
+      "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+      "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+      "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved",
+      "session_scope": "Owned Chromium process tree while the root exists, including startup, workload and graceful teardown. Helper-only drain after root exit is not sampled; not an idle baseline."
+    }
+  },
+  "normalCleanup": true,
+  "finishedUTC": "2026-10-29T05:36:57.463273+00:00",
+  "durationSeconds": 2.427
+}

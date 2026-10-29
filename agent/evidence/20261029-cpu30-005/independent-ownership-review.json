@@ -1,0 +1,158 @@
+{
+  "taskId": "20261029-cpu30",
+  "iteration": "20261029-cpu30-005",
+  "createdUTC": "2026-10-29T05:23:35.690107+00:00",
+  "kind": "Independent pre-patch source and ownership review",
+  "status": "conditional_go_pending_actual_patch_and_genuine_regression_controls",
+  "reviewer": "integration subagent; GPT-6 Astra Pro, inherited root reasoning level",
+  "sourcePreimages": {
+    "src/dom/dom.h": "485176ebeb62c46a2875c6ab2ec567ccc40b178cdd5d3b13e7b2de4d495be612",
+    "src/dom/dom.c": "cb8f23b39814ac5ed527b4f2090cf14dd4d4793660564ed1dc9ee071a1c2d740",
+    "src/html/html.c": "5cbeceeb402b0cf79bd46cc9af63b2dcf05dea3f0199c27b200d3e3611ba2db6",
+    "src/js/jsnative.cc": "4d3b3e9106451873c8d1fe29823966edbc5e4e81fb453efe2a3412a646fdb220",
+    "src/js/prelude/03-element.js": "48b7ac01190fcb2c732560fc7705d3d1d793228ad508a62ba1313b469dd1e7dd",
+    "src/js/prelude/06c-traversal.js": "42fbad0c2fb99cc7f68a56bb359873e552bb6873855cb7ee727efa7f72506b0b"
+  },
+  "acceptedNativeUnchanged": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+  "findings": [
+    {
+      "id": "parser-pointer-lifetime",
+      "finding": "Open-element, formatting and head/form pointers are borrowed. New detached incremental writes permit script-driven DOM removal between feed calls, which can free unwrapped elements still referenced by the parser.",
+      "requirement": "Keep explicit parser-owned holds through parser_free for every element used across feeds, including formatting reconstructions. Test removal between split writes."
+    },
+    {
+      "id": "template-owner-alias",
+      "finding": "template_content is an owning pointer whose fragment adopts an inert owner document; an attached shadow root is owned by a host in its own document.",
+      "requirement": "Use a distinct nonowning insertion redirect and explicitly retained host/root; do not alias template_content to a root under current free/adopt rules."
+    },
+    {
+      "id": "release-order",
+      "finding": "node_free_tree(host) resets shadow_root refcount to zero. Holding only the root does not preserve its host and can be invalidated by host release.",
+      "requirement": "Release parser holds in a proven safe order, clearing redirects and releasing root before host, or correct ownership accounting consistently. Test removed/unclosed nested hosts at parser and document teardown."
+    },
+    {
+      "id": "document-reset",
+      "finding": "Document.open must not destroy the Document allocation or force clear refcounts/js on reachable old nodes.",
+      "requirement": "Free old write_parser first; detach old children with normal node_remove/node_free_tree semantics; safely reset retained target/selection/focus and html/head/body pointers."
+    },
+    {
+      "id": "clone-policy",
+      "finding": "Document cloning must copy declarative permission but never share an active owned parser.",
+      "requirement": "New clone parser starts null. Distinct documents may receive interleaved split writes without cross-contamination."
+    },
+    {
+      "id": "script-context",
+      "finding": "Detached Document.write parser feeds reach a global html_script_hook path.",
+      "requirement": "Verify the existing hook rejects inactive/detached documents or suppress it per parser. Do not execute detached scripts in the active page realm."
+    },
+    {
+      "id": "unicode-boundary",
+      "finding": "Document.write receives Unicode strings and must remain outside byte-response/BOM decoding.",
+      "requirement": "Preserve the accepted encoding policy and active-page behavior; validate relevant prior frame/JSON/BOM regressions."
+    }
+  ],
+  "normativeControls": [
+    {
+      "source": "https://dom.spec.whatwg.org/#concept-node-clone",
+      "facts": "Document cloning retains its declarative permission. A clonable shadow root and its descendants are copied even when the host clone is shallow. Existing declarative roots permit matching-mode attachShadow reuse with content clearing; other reattachments fail."
+    },
+    {
+      "source": "https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead",
+      "facts": "Invalid or duplicate declarative hosts retain ordinary template behavior. The parser uses the current host and root mode/flags. Legacy innerHTML fragment parsing must not acquire permission from its document implicitly."
+    }
+  ],
+  "minimumFocusedControls": [
+    "split tokens across successive writes",
+    "two detached documents interleaved",
+    "open clears while previously wrapped nodes remain safe",
+    "DOM removal between feeds",
+    "unclosed nested DSD parser/document teardown",
+    "native live-node balance after repeated close/free",
+    "invalid host and mode retain template",
+    "duplicate root retains second template",
+    "open versus closed root access",
+    "matching-mode declarative reattachment and mismatched rejection",
+    "shallow/deep clone with and without clonable flag",
+    "ordinary innerHTML/DOMParser/createHTMLDocument remain non-opted-in",
+    "document clone permission and independent stream state"
+  ],
+  "requiredAcceptance": "Actual guarded source review, genuine unchanged RED/GREEN, fresh immutable candidate build and all accepted source/WPT/resource gates; no new pass or broad DSD-completeness claim yet.",
+  "finalSourceReview": {
+    "reviewedUTC": "2026-10-29T05:35:57.757250+00:00",
+    "patchSHA256": "8707716ba6ef08f1facb85c8ca4d3313304614feb33a81c390dcad3a677b7912",
+    "patchBytes": 22830,
+    "sourceReviewApproved": true,
+    "candidateAccepted": false,
+    "invariants": [
+      "All four parser element creation paths retain borrowed stack entries until parser destruction.",
+      "Declarative templates use parser-private borrowed redirects, not template_content ownership aliases.",
+      "document.open retains the top-level ancestry of removed trees with any JS wrapper.",
+      "Adoption transfers matching retired-root list entries without changing retain counts.",
+      "All owned document write states are released before any document destructor; cleanup is idempotent.",
+      "js_free collects only zero-refcount parentless non-host roots, so cleanup of retained or parented trees does not invalidate that later roots vector."
+    ],
+    "requiredAcceptance": "Fresh frozen37 functional GREEN, independent lifetime teardown, same-artifact existing755/custom controls, upstream WPT cohort and isolated resources.",
+    "limits": "Source review does not establish full declarative shadow DOM, all cross-realm generic adoption lifetime behavior, or final artifact acceptance."
+  },
+  "finalScopeDecision": {
+    "acceptedScope": "Detached HTML document streams and cloned document policy only; exact final candidate c259 remains subject to downstream gates.",
+    "rejectedCandidateSHA256": "6528f5de82184891a39f024ee5559afbd604c1d0e6eb137f067df3ea4ab621c4",
+    "reason": "Whole unmodified upstream ordinary-template fixture acquired a harness ERROR because eager native parsing precedes script/MutationObserver checkpoints.",
+    "repair": "Remove initial network/frame parser permission globally; retain actual HTML browsing-document clone policy at JsCtx creation. No test/host/URL exceptions.",
+    "full37": {
+      "passed": 26,
+      "failed": 11,
+      "total": 37,
+      "fixtureUnchanged": true
+    },
+    "supportedTargets": [
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      33,
+      34,
+      35,
+      36
+    ],
+    "baselineControls": [
+      4,
+      5,
+      9,
+      10,
+      11,
+      12,
+      13,
+      32
+    ],
+    "wholeUpstreamSix": {
+      "baselineAssertions": {
+        "PASS": 3,
+        "FAIL": 26
+      },
+      "candidateAssertions": {
+        "PASS": 3,
+        "FAIL": 26
+      },
+      "qualifiedChromeAssertions": {
+        "PASS": 29
+      },
+      "nativeHarnessesBoth": {
+        "OK": 6
+      },
+      "newHarnessErrorResolved": true,
+      "notIncludedIn279": true
+    },
+    "activeDocumentLimitation": "jwrap assigns an owning frame realm prototype where owner_ctx exists; ordinary child-document writes keep their own realm historical active path. Borrowed foreign-realm methods are not generally solved."
+  }
+}

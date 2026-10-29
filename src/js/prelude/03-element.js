@@ -152,12 +152,19 @@ methods(Element.prototype, {
     },
     scrollIntoViewIfNeeded(c) { this.scrollIntoView(c === false ? { block: 'nearest' } : { block: 'center' }); },
     attachShadow(init) {
-        if (this.__shadow) throw new DOMException('Shadow root cannot be created on a host which already hosts a shadow tree.', 'NotSupportedError');
-        const sr = N.attachShadow(this); Object.setPrototypeOf(sr, ShadowRoot.prototype);
-        def(sr, '__mode', (init && init.mode) || 'open'); def(this, '__shadow', sr);
-        return sr;
+        if (init == null || (typeof init !== 'object' && typeof init !== 'function')) throw new TypeError('ShadowRootInit requires a mode');
+        const mode = String(init.mode);
+        if (mode !== 'open' && mode !== 'closed') throw new TypeError('Invalid ShadowRootMode');
+        const assignment = init.slotAssignment === undefined ? 'named' : String(init.slotAssignment);
+        if (assignment !== 'named' && assignment !== 'manual') throw new TypeError('Invalid SlotAssignmentMode');
+        let flags = mode === 'closed' ? 1 << 21 : 0;
+        if (init.delegatesFocus) flags |= 1 << 22;
+        if (init.clonable) flags |= 1 << 24;
+        if (init.serializable) flags |= 1 << 25;
+        if (assignment === 'manual') flags |= 1 << 26;
+        return N.attachShadow(this, flags);
     },
-    get shadowRoot() { return this.__shadow && this.__shadow.__mode === 'open' ? this.__shadow : null; },
+    get shadowRoot() { const root = N.shadowRoot(this); return root && !(N.shadowFlags(root) & (1 << 21)) ? root : null; },
     get assignedSlot() { return null; },
     requestFullscreen() { return Promise.reject(new DOMException('Fullscreen is not supported yet', 'NotSupportedError')); },
     requestPointerLock() {}, setPointerCapture() { if (pointerCapture_ !== this) { pointerCapture_ = this; dispatch(this, new PointerEvent('gotpointercapture', { bubbles: true, pointerId: 1 })); } }, releasePointerCapture() { if (pointerCapture_ === this) releaseCapture_(); }, hasPointerCapture() { return pointerCapture_ === this; },

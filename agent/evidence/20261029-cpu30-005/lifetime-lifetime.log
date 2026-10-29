@@ -1,0 +1,147 @@
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":0,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":68.890625,"rssAfterTeardownMiB":67.062500,"durationMs":19.672}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":1,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.640625,"rssAfterTeardownMiB":67.640625,"durationMs":16.259}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":2,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.671875,"rssAfterTeardownMiB":67.671875,"durationMs":16.930}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":3,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.318}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":4,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.571}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":5,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":20.255}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":6,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.323}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":7,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.569}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":8,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.061}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":9,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.518}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":10,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.666}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":11,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.902}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":12,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.207}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":13,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.855}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":14,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":15.860}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":15,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":17.427}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":16,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":19.039}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":17,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.730}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":18,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.010}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":19,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.773}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":20,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.223}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":21,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":17.107}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":22,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.041}
+PASS native HTML byte document parses
+PASS a fresh real V8 realm initializes
+PASS repeated open and split writes preserve held subtree wrappers
+PASS interleaved unfinished parsers retain their own receiver and insertion targets
+PASS all native nodes return to the exact pre-realm baseline
+DSD_LIFETIME_CYCLE {"cycle":23,"baselineNodes":0,"liveNodesBeforeTeardown":218,"liveNodesAfterTeardown":0,"rssBeforeTeardownMiB":69.921875,"rssAfterTeardownMiB":67.921875,"durationMs":16.939}
+PASS no native network requests remain at teardown
+PASS no worker ownership remains at teardown
+DSD_LIFETIME_RESULTS {"cycles":24,"checks":122,"passed":122,"failed":0,"baselineNodes":0,"finalNodes":0,"durationMs":406.679}

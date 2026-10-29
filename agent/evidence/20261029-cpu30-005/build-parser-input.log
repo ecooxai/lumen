@@ -1,0 +1,49 @@
+PASS full document collapses raw CRLF
+PASS full document converts lone CR
+PASS full document preserves existing LF
+PASS full document normalizes consecutive and mixed newlines
+PASS quoted attribute collapses raw CRLF
+PASS quoted attribute converts lone CR
+PASS raw CRLF separates unquoted attributes
+PASS comment input collapses raw CRLF
+PASS script data collapses raw CRLF
+PASS style raw text collapses raw CRLF
+PASS textarea RCDATA collapses raw CRLF
+PASS title RCDATA collapses raw CRLF
+PASS pre ignores one normalized initial newline
+PASS textarea ignores one normalized initial newline
+PASS plaintext element normalizes input without interpreting markup
+PASS fragment input collapses raw CRLF
+PASS fragment input converts lone CR
+PASS RCDATA fragment separates raw CRLF from a character reference
+PASS decimal character reference retains CR
+PASS hexadecimal character reference retains CR
+PASS attribute character reference retains CR
+PASS character-reference CR followed by raw LF stays two characters
+PASS direct DOM text mutation preserves CRLF
+PASS direct DOM attribute mutation preserves CRLF
+PASS stream collapses CRLF across feeds
+PASS empty feed does not break a pending CRLF pair
+PASS stream converts terminal CR before EOF
+PASS stream keeps consecutive CRs as separate newlines
+PASS attribute CRLF collapses across feeds
+PASS script data CRLF collapses across feeds
+PASS NUL between CR and LF keeps both normalized line breaks
+PASS NUL replacement and CRLF normalization preserve following bytes
+PASS text/plain creates html head body and one pre element
+PASS text/plain preserves markup literally
+PASS text/plain preserves entity spellings literally
+PASS text/plain normalizes mixed raw newlines
+PASS text/plain preserves the response initial newline
+PASS text/plain remains no-quirks despite doctype-shaped text
+PASS MIME essence matching is case insensitive and parameter aware
+PASS a text/plain prefix does not select plaintext parsing
+PASS text/plain uses the transport decoder before newline normalization
+PASS text/plain BOM overrides the transport charset
+PASS text/plain normalizes CRLF after UTF16LE decoding
+PASS text/plain normalizes CRLF after UTF16BE decoding
+PASS empty text/plain creates an empty pre document
+PASS text/plain never invokes the parser script hook
+PASS text/html still parses elements with normalized input and encoding metadata
+PASS all parser fixture native nodes are released
+RESULTS parser-input PASS (48/48 checks)

@@ -1,0 +1,40 @@
+[js log] DSD_CHECK {"i":0,"name":"network open root content and native ShadowRoot brand","ok":false,"error":"Error: expected truthy value"}
+[js log] DSD_CHECK {"i":1,"name":"declarative template is absent from light DOM","ok":false,"error":"Error: expected null, got {}"}
+[js log] DSD_CHECK {"i":2,"name":"shadow descendants retain owner document and connectivity","ok":false,"error":"TypeError: Cannot read properties of null (reading 'firstChild')"}
+[js log] DSD_CHECK {"i":3,"name":"closed root rejects a conflicting imperative mode","ok":false,"error":"Error: expected NotSupportedError"}
+[js log] DSD_CHECK {"i":4,"name":"invalid mode remains ordinary inert template","ok":true}
+[js log] DSD_CHECK {"i":5,"name":"invalid host remains ordinary inert template","ok":true}
+[js log] DSD_CHECK {"i":6,"name":"second declarative template remains light template","ok":false,"error":"TypeError: Cannot read properties of null (reading 'textContent')"}
+[js log] DSD_CHECK {"i":7,"name":"nested declarative shadow roots use separate hosts","ok":false,"error":"TypeError: Cannot read properties of null (reading 'firstChild')"}
+[js log] DSD_CHECK {"i":8,"name":"enumerated shadow mode is ASCII case insensitive","ok":false,"error":"TypeError: Cannot read properties of null (reading 'textContent')"}
+[js log] DSD_CHECK {"i":9,"name":"shadow mode whitespace is not stripped","ok":true}
+[js log] DSD_CHECK {"i":10,"name":"ordinary template stays inert with a separate owner","ok":true}
+[js log] DSD_CHECK {"i":11,"name":"DOMParser keeps declarative shadow parsing disabled","ok":true}
+[js log] DSD_CHECK {"i":12,"name":"innerHTML keeps declarative shadow parsing disabled","ok":true}
+[js log] DSD_CHECK {"i":13,"name":"fragment parsing does not attach a root to context","ok":true}
+[js log] DSD_CHECK {"i":14,"name":"shallow document clone preserves allow-declarative policy","ok":true}
+[js log] DSD_CHECK {"i":15,"name":"deep document clone preserves allow-declarative policy","ok":true}
+[js log] DSD_CHECK {"i":16,"name":"cloned detached document keeps copied policy again","ok":true}
+[js log] DSD_CHECK {"i":17,"name":"new HTML document write keeps declarative parsing disabled","ok":true}
+[js log] DSD_CHECK {"i":18,"name":"DOMParser document clone preserves disabled policy","ok":true}
+[js log] DSD_CHECK {"i":19,"name":"detached writes do not insert into active document","ok":true}
+[js log] DSD_CHECK {"i":20,"name":"split writes retain tokenizer state across tags","ok":true}
+[js log] DSD_CHECK {"i":21,"name":"two detached parsers can interleave independently","ok":true}
+[js log] DSD_CHECK {"i":22,"name":"open detaches old nodes without invalidating held wrappers","ok":true}
+[js log] DSD_CHECK {"i":23,"name":"open disposes an unfinished parser before replacement","ok":true}
+[js log] DSD_CHECK {"i":24,"name":"intervening DOM removal leaves parser state alive","ok":true}
+[js log] DSD_CHECK {"i":25,"name":"detached Unicode writes preserve leading FEFF","ok":true}
+[js log] DSD_CHECK {"i":26,"name":"detached scripts do not execute in the active realm","ok":true}
+[js log] DSD_CHECK {"i":27,"name":"close handles an unclosed declarative template","ok":true}
+[js log] DSD_CHECK {"i":28,"name":"declarative attachment options are native state","ok":false,"error":"TypeError: Cannot read properties of null (reading 'delegatesFocus')"}
+[js log] DSD_CHECK {"i":29,"name":"clonable root children copy even on shallow host clone","ok":false,"error":"TypeError: Cannot read properties of null (reading 'textContent')"}
+[js log] DSD_CHECK {"i":30,"name":"matching imperative mode reuses and clears declarative root","ok":false,"error":"Error: expected null, got {}"}
+[js log] DSD_CHECK {"i":31,"name":"conflicting imperative mode leaves declarative content intact","ok":false,"error":"Error: expected NotSupportedError"}
+[js log] DSD_CHECK {"i":32,"name":"ordinary imperative open and closed roots remain supported","ok":true}
+[js log] DSD_CHECK {"i":33,"name":"imperative attachment rejects missing or invalid mode","ok":true}
+[js log] DSD_CHECK {"i":34,"name":"imperative attachment rejects invalid HTML and foreign hosts","ok":true}
+[js log] DSD_CHECK {"i":35,"name":"unfinished detached parser remains owned until realm teardown","ok":true}
+[js log] DSD_CHECK {"i":36,"name":"held descendant retains detached subtree ancestry after open","ok":true}
+[js log] DSD_RESULTS {"total":37,"passed":26,"failed":11}
+jsrun: context 18.4ms, 1 scripts 2.1ms, dom_version 143
+DSD_RECEIPT {"binarySHA256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2", "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332", "htmlSHA256": "f8aba6403961ca1c4e0f20baa217ff3f540f1e81e63fefbb31b60235c506224e", "total": 37, "passed": 26, "failed": 11}

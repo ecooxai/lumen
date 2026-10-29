@@ -1,0 +1,52 @@
+[
+  {
+    "path": "tests/test_declarative_shadow_lifetime.cc",
+    "sha256": "a55595727b1b52b59795b61205dae974e2abc8cb35da8755d203ae033db46aab",
+    "bytes": 8604
+  },
+  {
+    "path": "tools/apple-session-gpt6as/dsd_lifetime_cpu30.mk",
+    "sha256": "4463286d5204cb9f7730212ed36368dbbb83ca68be93af27e323d30dc86a3037",
+    "bytes": 341
+  },
+  {
+    "path": "tools/apple-session-gpt6as/run_dsd_lifetime_cpu30.py",
+    "sha256": "bd30a3f3bdd863038937b9b34ffed12eb68d777c1ae22c926d7741cb1dee948e",
+    "bytes": 9102
+  },
+  {
+    "path": "tests/test_declarative_shadow_adoption_lifetime.cc",
+    "sha256": "5f8d947e6592742b472560017c2a08959551151fb69c3d1aa23934f6ce9b7b8e",
+    "bytes": 5929
+  },
+  {
+    "path": "tools/apple-session-gpt6as/dsd_adoption_lifetime_cpu30.mk",
+    "sha256": "3abcdc51721c698fe896ce5bc162c6f470371c42ea2eb2b60f5ee43feea3efe7",
+    "bytes": 371
+  },
+  {
+    "path": "tools/apple-session-gpt6as/run_dsd_adoption_lifetime_cpu30.py",
+    "sha256": "91d72bfecbb08d2defea3d8ea2eb9063ef219a2b4aa7a267ee04291ebf927d59",
+    "bytes": 6759
+  },
+  {
+    "path": "tests/test_declarative_shadow_lifetime_v2.cc",
+    "sha256": "65de63021f681862ae6d2ee1bddcb8729cfeb398b1660a252cb2e3e0f6e00438",
+    "bytes": 8694
+  },
+  {
+    "path": "tools/apple-session-gpt6as/dsd_lifetime_v2_cpu30.mk",
+    "sha256": "170cdf5ce224242eb603b842ed2ca5849f913365a3477ea199b578c082bad619",
+    "bytes": 350
+  },
+  {
+    "path": "tools/apple-session-gpt6as/run_dsd_lifetime_v2_cpu30.py",
+    "sha256": "1682a7de88939aed4411454505187aa86df97e4780caf3a60e53eaa487043d80",
+    "bytes": 9303
+  },
+  {
+    "path": "tools/apple-session-gpt6as/run_dsd_adoption_lifetime_v2_cpu30.py",
+    "sha256": "277e5fc88dc8310a191bce74c3989e8dc57a9c4279022591b6b822e7b05e2179",
+    "bytes": 6759
+  }
+]

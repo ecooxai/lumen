@@ -11,6 +11,7 @@ enum Mode { M_INITIAL, M_BEFORE_HTML, M_BEFORE_HEAD, M_IN_HEAD, M_AFTER_HEAD, M_
 
 typedef struct { const char *name; char *value; } TAttr;
 
+typedef struct { Node *placeholder, *host, *root; } ParserShadowRedirect;
 struct HtmlParser {
     Document *doc;
     SB in; size_t pos;          /* buffered input */
@@ -29,22 +30,31 @@ struct HtmlParser {
     Node *frag_ctx; Node *frag_root;
     bool frameset_ok, ignore_lf;
     VEC(int) template_modes;
+    bool allow_declarative_shadow_roots, inert_scripts;
+    VEC(Node *) owned_elements; /* keep borrowed open/fmt/head/form pointers alive between feeds */
+    VEC(ParserShadowRedirect) shadow_redirects;
 };
 
 static Node *cur(HtmlParser *p) { return p->open.n ? p->open.v[p->open.n - 1] : (p->frag_root ? p->frag_root : &p->doc->node); }
 static Node *insertion_parent(HtmlParser *p) {
     Node *c = cur(p);
+    if (c->tag == A_template) for (int i = p->shadow_redirects.n - 1; i >= 0; --i)
+        if (p->shadow_redirects.v[i].placeholder == c) return p->shadow_redirects.v[i].root;
     if (c->template_content) return c->template_content;
     return c;
 }
 
+static Node *parser_hold_element(HtmlParser *p, Node *element) {
+    node_retain(element); vec_push(p->owned_elements, element); return element;
+}
 HtmlParser *html_parser_new(Document *d, Node *ctx) {
     HtmlParser *p = xcalloc(1, sizeof *p);
     p->doc = d; p->mode = M_INITIAL; p->frameset_ok = true;
+    p->allow_declarative_shadow_roots = !ctx && d->allow_declarative_shadow_roots;
     if (ctx) {
         p->frag_ctx = ctx; p->frag_root = node_new_fragment(d);
         p->mode = M_IN_BODY;
-        Node *h = node_new_element(d, "html", NS_HTML); node_append(p->frag_root, h); vec_push(p->open, h);
+        Node *h = parser_hold_element(p, node_new_element(d, "html", NS_HTML)); node_append(p->frag_root, h); vec_push(p->open, h);
         const char *t = ctx->tag;
         if (t == A_title || t == A_textarea) { p->state = S_RCDATA; p->raw_end_tag = t; }
         else if (t == A_style || t == A_xmp || t == A_iframe || t == A_noscript) { p->state = S_RAWTEXT; p->raw_end_tag = t; }
@@ -58,6 +68,11 @@ void html_parser_free(HtmlParser *p) {
     sb_free(&p->in); sb_free(&p->tag); sb_free(&p->text); sb_free(&p->chars);
     for (int i = 0; i < p->attrs.n; i++) free(p->attrs.v[i].value);
     vec_free(p->attrs); vec_free(p->open); vec_free(p->fmt); vec_free(p->template_modes);
+    /* Redirects borrow roots. Their retained hosts outlive every parser pointer. */
+    for (int i = p->shadow_redirects.n - 1; i >= 0; --i) node_release(p->shadow_redirects.v[i].host);
+    vec_free(p->shadow_redirects);
+    for (int i = p->owned_elements.n - 1; i >= 0; --i) node_release(p->owned_elements.v[i]);
+    vec_free(p->owned_elements);
     free(p);
 }
 
@@ -81,7 +96,7 @@ static const char *foreign_attribute_namespace(const char *name) {
 }
 
 static Node *insert_el(HtmlParser *p, const char *tag, int ns) {
-    Node *e = node_new_element(p->doc, tag, ns);
+    Node *e = parser_hold_element(p, node_new_element(p->doc, tag, ns));
     for (int i = 0; i < p->attrs.n; i++) if (!node_has_attr(e, p->attrs.v[i].name)) {
         const char *name = p->attrs.v[i].name;
         node_set_attr(e, name, p->attrs.v[i].value);
@@ -91,8 +106,32 @@ static Node *insert_el(HtmlParser *p, const char *tag, int ns) {
         }
     }
     e->flags |= NF_PARSER_INSERTED;
-    node_append(insertion_parent(p), e);
-    if (tag == A_template && ns == NS_HTML) node_template_content(e);
+    if (p->inert_scripts && tag == A_script) e->flags |= NF_SCRIPT_STARTED;
+    bool declarative = false;
+    if (tag == A_template && ns == NS_HTML && p->allow_declarative_shadow_roots && p->open.n > 1) {
+        const char *mode = node_attr(e, "shadowrootmode");
+        if (mode && (str_ieq(mode, "open") || str_ieq(mode, "closed"))) {
+            Node *host = cur(p);
+            uint32_t options = NF_SHADOW_DECLARATIVE;
+            if (str_ieq(mode, "closed")) options |= NF_SHADOW_CLOSED;
+            if (node_has_attr(e, "shadowrootdelegatesfocus")) options |= NF_SHADOW_DELEGATES_FOCUS;
+            if (node_has_attr(e, "shadowrootclonable")) options |= NF_SHADOW_CLONABLE;
+            if (node_has_attr(e, "shadowrootserializable")) options |= NF_SHADOW_SERIALIZABLE;
+            const char *assignment = node_attr(e, "shadowrootslotassignment");
+            if (assignment && str_ieq(assignment, "manual")) options |= NF_SHADOW_MANUAL;
+            Node *root = node_attach_shadow(host, options, false);
+            if (root) {
+                node_retain(host);
+                ParserShadowRedirect redirect = { e, host, root };
+                vec_push(p->shadow_redirects, redirect);
+                declarative = true;
+            }
+        }
+    }
+    if (!declarative) {
+        node_append(insertion_parent(p), e);
+        if (tag == A_template && ns == NS_HTML) node_template_content(e);
+    }
     vec_push(p->open, e);
     return e;
 }
@@ -131,7 +170,7 @@ static void reconstruct_fmt(HtmlParser *p) {
     }
     for (int i = start; i < p->fmt.n; i++) {
         Node *f = p->fmt.v[i]; if (!f) continue;
-        Node *e = node_new_element(p->doc, f->tag, NS_HTML);
+        Node *e = parser_hold_element(p, node_new_element(p->doc, f->tag, NS_HTML));
         for (int k = 0; k < f->nattrs; k++) node_set_attr(e, f->attrs[k].name, f->attrs[k].value);
         node_append(insertion_parent(p), e); vec_push(p->open, e);
         p->fmt.v[i] = e;
@@ -158,7 +197,7 @@ static void adoption(HtmlParser *p, const char *tag) {
     if (fb < 0) { p->open.n = oi; fmt_remove(p, f); return; }
     /* move furthest block's subtree: create clone of f, move children of furthest block into it */
     Node *block = p->open.v[fb];
-    Node *clone = node_new_element(p->doc, f->tag, NS_HTML);
+    Node *clone = parser_hold_element(p, node_new_element(p->doc, f->tag, NS_HTML));
     for (int k = 0; k < f->nattrs; k++) node_set_attr(clone, f->attrs[k].name, f->attrs[k].value);
     while (block->first) node_append(clone, block->first);
     node_append(block, clone);
@@ -438,7 +477,7 @@ static void tree_token(HtmlParser *p) {
         const char *t = atom_lower(p->tag.s, p->tag.n);
         if (p->mode == M_TEXT) {
             Node *c = cur(p); pop(p); p->mode = p->orig_mode;
-            if (c && c->tag == A_script && c->ns == NS_HTML && html_script_hook && !p->frag_root) html_script_hook(p->doc, c, html_script_hook_ud);
+            if (c && c->tag == A_script && c->ns == NS_HTML && html_script_hook && !p->frag_root && !p->inert_scripts) html_script_hook(p->doc, c, html_script_hook_ud);
             if (c && c->tag == A_title && !p->doc->title) { p->doc->title = node_text_content(c); }
             return;
         }
@@ -734,6 +773,56 @@ void html_parser_finish(HtmlParser *p) {
     flush_chars(p);
     if (!p->frag_root) { ensure_body(p); }
     p->tt = T_EOF; tree_token(p);
+}
+
+
+/* Detached HTML documents own their Unicode input stream. This path must not
+ * call the response byte decoder or execute scripts in the active realm. */
+void html_document_dispose_write_state(Document *d) {
+    if (!d) return;
+    if (d->write_parser) { HtmlParser *parser = d->write_parser; d->write_parser = NULL; html_parser_free(parser); }
+    for (int i = d->retired_write_roots.n - 1; i >= 0; --i) node_release(d->retired_write_roots.v[i]);
+    vec_free(d->retired_write_roots);
+}
+
+static bool written_tree_has_wrapper(const Node *node) {
+    if (node->js) return true;
+    for (const Node *child = node->first; child; child = child->next)
+        if (written_tree_has_wrapper(child)) return true;
+    return (node->shadow_root && written_tree_has_wrapper(node->shadow_root)) ||
+           (node->template_content && written_tree_has_wrapper(node->template_content));
+}
+bool html_document_open(Document *d) {
+    if (!d || d->node.ns != NS_HTML) return false;
+    if (d->write_parser) { HtmlParser *old = d->write_parser; d->write_parser = NULL; html_parser_free(old); }
+    if (d->target_element) { node_release(d->target_element); d->target_element = NULL; }
+    for (int i = 0; i < 2; ++i) if (d->sel[i]) { node_release(d->sel[i]); d->sel[i] = NULL; }
+    d->focus = NULL; d->selo[0] = d->selo[1] = 0; d->sel_back = false; ++d->sel_ver;
+    while (d->node.first) {
+        Node *child = d->node.first; node_remove(child);
+        if (written_tree_has_wrapper(child)) { node_retain(child); vec_push(d->retired_write_roots, child); }
+        else node_free_tree(child);
+    }
+    d->html = d->head = d->body = NULL;
+    free(d->title); d->title = NULL; d->quirks = false; d->ready_state = 0;
+    hm_free(&d->id_cache, NULL); memset(&d->id_cache, 0, sizeof d->id_cache); d->id_cache_ok = false;
+    d->write_parser = html_parser_new(d, NULL);
+    d->write_parser->inert_scripts = true;
+    doc_mark_dirty(d, &d->node);
+    return true;
+}
+bool html_document_write(Document *d, const char *src, size_t len) {
+    if (!d || d->node.ns != NS_HTML || (!src && len)) return false;
+    if (!d->write_parser && !html_document_open(d)) return false;
+    html_parser_feed(d->write_parser, src ? src : "", len);
+    return true;
+}
+void html_document_close(Document *d) {
+    if (!d || !d->write_parser) return;
+    HtmlParser *parser = d->write_parser;
+    d->write_parser = NULL;
+    html_parser_finish(parser); html_parser_free(parser);
+    d->ready_state = 2;
 }
 
 void html_parse(Document *d, const char *src, size_t len) {
@@ -1057,6 +1146,9 @@ bool html_parse_bytes_with_fallback(Document *document, const char *bytes, size_
     bool ok = web_encoding_decode_n(&decoded, encoding, bytes, length, true, length * 3);
     if (ok) {
         document->encoding = encoding;
+        /* Eager initial parsing retains ordinary templates until parser/script
+         * checkpoints are integrated. JsCtx creation later establishes the HTML
+         * document policy inherited by detached document.write streams. */
         if (plaintext)
             html_parse_plaintext(document, decoded.s ? decoded.s : "", decoded.n);
         else

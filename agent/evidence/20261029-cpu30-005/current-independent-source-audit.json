@@ -1,0 +1,394 @@
+{
+  "auditedUTC": "2026-10-29T05:49:55.261106+00:00",
+  "passed": true,
+  "scope": "Source/functional audit of narrowed detached HTML writer candidate. Initial network/frame DSD is deferred; rejected6528 evidence is preserved. WPT, independent DSD diagnostic, lifetime and GUI gates remain separately required.",
+  "native": {
+    "path": "out/lume-20261029-cpu30/native-dsd-2/lumen-c259da2597a6e064",
+    "sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+    "bytes": 14057768
+  },
+  "jsrun": {
+    "path": "out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366",
+    "sha256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2",
+    "bytes": 13846520
+  },
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-dsd-2/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+  "compiledInputCount": 142,
+  "sourcesUnchangedSinceBuild": true,
+  "runtimeSourceAllowlistSHA256": {
+    "src/dom/dom.h": "eceaac84049260e7596fd72a9103965d3fc45f019b228e21d184d4f3abf68f23",
+    "src/dom/dom.c": "f75bdc9fd65fdd00df8150f9c03c4d70d597ce65a3adaee89a2af8f478193d74",
+    "src/html/html.c": "199162994dda0b431647d0b80bf763bbda9dced35dfa65dff01cd9fa5805453c",
+    "src/js/jsnative.cc": "cd4359264b42329a87558e09a671b3a153fd34f70d9a56a96417fc965feb4746",
+    "src/js/js.cc": "d9a3f2b9461e750e3ae057783ac90225c9818e61e69f6238c1e732231516f7e3",
+    "src/js/frames.cc": "638fbb25c26fb22bc0b8aa4a9d789c049d2262d0b867e1bd2adebee0fabac7cf",
+    "src/js/prelude/02-node.js": "9a8df983ac4b39c294ed459cb8763824d5611359df08a467e6675978c44bb90f",
+    "src/js/prelude/03-element.js": "675e1c130e23225bd4f4bb7b0eb5f6af9079c22d03781ff7431c9497d5e6bf53",
+    "src/js/prelude/05-ce.js": "e1618c710c98ad5169f6eb36b66f7709bb1b6bc2bbca3e2ebf6b9c427ada71bd",
+    "src/js/prelude/06-document.js": "98c43b850f2fda2f007aa56885d90f369c38832449604675fbc3e92eb1c2bde6"
+  },
+  "executedCurrentHelperSHA256": {
+    "tests/test_declarative_shadow_documents_v2.py": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+    "tools/apple-session-gpt6as/run_detached_writer_green_cpu30.py": "db4f8c983ff94563797704855e3e839e0ccd75259f1fcffa7685b9e16dff3365",
+    "tools/apple-session-gpt6as/run_compat_wpt_cpu30.py": "f0700385d7c92cb0065be21bc61dc8fa196611129727d5235a716bbecba2933c",
+    "tools/apple-session-gpt6as/run_frozen_original_wpt_cpu30.py": "03ed953a56f5f9b9ab8e4506eca4a7c447e541ed3c3cc6348731898bf8ba451e"
+  },
+  "prior718ChecksPassed": true,
+  "full37": {
+    "total": 37,
+    "passed": 26,
+    "failed": 11,
+    "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+    "allPassed": false,
+    "checks": [
+      {
+        "i": 0,
+        "name": "network open root content and native ShadowRoot brand",
+        "ok": false,
+        "error": "Error: expected truthy value"
+      },
+      {
+        "i": 1,
+        "name": "declarative template is absent from light DOM",
+        "ok": false,
+        "error": "Error: expected null, got {}"
+      },
+      {
+        "i": 2,
+        "name": "shadow descendants retain owner document and connectivity",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+      },
+      {
+        "i": 3,
+        "name": "closed root rejects a conflicting imperative mode",
+        "ok": false,
+        "error": "Error: expected NotSupportedError"
+      },
+      {
+        "i": 4,
+        "name": "invalid mode remains ordinary inert template",
+        "ok": true
+      },
+      {
+        "i": 5,
+        "name": "invalid host remains ordinary inert template",
+        "ok": true
+      },
+      {
+        "i": 6,
+        "name": "second declarative template remains light template",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+      },
+      {
+        "i": 7,
+        "name": "nested declarative shadow roots use separate hosts",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+      },
+      {
+        "i": 8,
+        "name": "enumerated shadow mode is ASCII case insensitive",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+      },
+      {
+        "i": 9,
+        "name": "shadow mode whitespace is not stripped",
+        "ok": true
+      },
+      {
+        "i": 10,
+        "name": "ordinary template stays inert with a separate owner",
+        "ok": true
+      },
+      {
+        "i": 11,
+        "name": "DOMParser keeps declarative shadow parsing disabled",
+        "ok": true
+      },
+      {
+        "i": 12,
+        "name": "innerHTML keeps declarative shadow parsing disabled",
+        "ok": true
+      },
+      {
+        "i": 13,
+        "name": "fragment parsing does not attach a root to context",
+        "ok": true
+      },
+      {
+        "i": 14,
+        "name": "shallow document clone preserves allow-declarative policy",
+        "ok": true
+      },
+      {
+        "i": 15,
+        "name": "deep document clone preserves allow-declarative policy",
+        "ok": true
+      },
+      {
+        "i": 16,
+        "name": "cloned detached document keeps copied policy again",
+        "ok": true
+      },
+      {
+        "i": 17,
+        "name": "new HTML document write keeps declarative parsing disabled",
+        "ok": true
+      },
+      {
+        "i": 18,
+        "name": "DOMParser document clone preserves disabled policy",
+        "ok": true
+      },
+      {
+        "i": 19,
+        "name": "detached writes do not insert into active document",
+        "ok": true
+      },
+      {
+        "i": 20,
+        "name": "split writes retain tokenizer state across tags",
+        "ok": true
+      },
+      {
+        "i": 21,
+        "name": "two detached parsers can interleave independently",
+        "ok": true
+      },
+      {
+        "i": 22,
+        "name": "open detaches old nodes without invalidating held wrappers",
+        "ok": true
+      },
+      {
+        "i": 23,
+        "name": "open disposes an unfinished parser before replacement",
+        "ok": true
+      },
+      {
+        "i": 24,
+        "name": "intervening DOM removal leaves parser state alive",
+        "ok": true
+      },
+      {
+        "i": 25,
+        "name": "detached Unicode writes preserve leading FEFF",
+        "ok": true
+      },
+      {
+        "i": 26,
+        "name": "detached scripts do not execute in the active realm",
+        "ok": true
+      },
+      {
+        "i": 27,
+        "name": "close handles an unclosed declarative template",
+        "ok": true
+      },
+      {
+        "i": 28,
+        "name": "declarative attachment options are native state",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'delegatesFocus')"
+      },
+      {
+        "i": 29,
+        "name": "clonable root children copy even on shallow host clone",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+      },
+      {
+        "i": 30,
+        "name": "matching imperative mode reuses and clears declarative root",
+        "ok": false,
+        "error": "Error: expected null, got {}"
+      },
+      {
+        "i": 31,
+        "name": "conflicting imperative mode leaves declarative content intact",
+        "ok": false,
+        "error": "Error: expected NotSupportedError"
+      },
+      {
+        "i": 32,
+        "name": "ordinary imperative open and closed roots remain supported",
+        "ok": true
+      },
+      {
+        "i": 33,
+        "name": "imperative attachment rejects missing or invalid mode",
+        "ok": true
+      },
+      {
+        "i": 34,
+        "name": "imperative attachment rejects invalid HTML and foreign hosts",
+        "ok": true
+      },
+      {
+        "i": 35,
+        "name": "unfinished detached parser remains owned until realm teardown",
+        "ok": true
+      },
+      {
+        "i": 36,
+        "name": "held descendant retains detached subtree ancestry after open",
+        "ok": true
+      }
+    ]
+  },
+  "scopeSelection": {
+    "originalEightControls": [
+      {
+        "i": 4,
+        "name": "invalid mode remains ordinary inert template"
+      },
+      {
+        "i": 5,
+        "name": "invalid host remains ordinary inert template"
+      },
+      {
+        "i": 9,
+        "name": "shadow mode whitespace is not stripped"
+      },
+      {
+        "i": 10,
+        "name": "ordinary template stays inert with a separate owner"
+      },
+      {
+        "i": 11,
+        "name": "DOMParser keeps declarative shadow parsing disabled"
+      },
+      {
+        "i": 12,
+        "name": "innerHTML keeps declarative shadow parsing disabled"
+      },
+      {
+        "i": 13,
+        "name": "fragment parsing does not attach a root to context"
+      },
+      {
+        "i": 32,
+        "name": "ordinary imperative open and closed roots remain supported"
+      }
+    ],
+    "supportedTargets": [
+      {
+        "i": 14,
+        "name": "shallow document clone preserves allow-declarative policy"
+      },
+      {
+        "i": 15,
+        "name": "deep document clone preserves allow-declarative policy"
+      },
+      {
+        "i": 16,
+        "name": "cloned detached document keeps copied policy again"
+      },
+      {
+        "i": 17,
+        "name": "new HTML document write keeps declarative parsing disabled"
+      },
+      {
+        "i": 18,
+        "name": "DOMParser document clone preserves disabled policy"
+      },
+      {
+        "i": 19,
+        "name": "detached writes do not insert into active document"
+      },
+      {
+        "i": 20,
+        "name": "split writes retain tokenizer state across tags"
+      },
+      {
+        "i": 21,
+        "name": "two detached parsers can interleave independently"
+      },
+      {
+        "i": 22,
+        "name": "open detaches old nodes without invalidating held wrappers"
+      },
+      {
+        "i": 23,
+        "name": "open disposes an unfinished parser before replacement"
+      },
+      {
+        "i": 24,
+        "name": "intervening DOM removal leaves parser state alive"
+      },
+      {
+        "i": 25,
+        "name": "detached Unicode writes preserve leading FEFF"
+      },
+      {
+        "i": 26,
+        "name": "detached scripts do not execute in the active realm"
+      },
+      {
+        "i": 27,
+        "name": "close handles an unclosed declarative template"
+      },
+      {
+        "i": 33,
+        "name": "imperative attachment rejects missing or invalid mode"
+      },
+      {
+        "i": 34,
+        "name": "imperative attachment rejects invalid HTML and foreign hosts"
+      },
+      {
+        "i": 35,
+        "name": "unfinished detached parser remains owned until realm teardown"
+      },
+      {
+        "i": 36,
+        "name": "held descendant retains detached subtree ancestry after open"
+      }
+    ],
+    "deferredInitialNetworkDependentIndices": [
+      0,
+      1,
+      2,
+      3,
+      6,
+      7,
+      8,
+      28,
+      29,
+      30,
+      31
+    ],
+    "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+    "selectionFixedBeforeRun": true
+  },
+  "allOriginalEightControlsPass": true,
+  "supportedTargetsPass": true,
+  "legacyUnmodifiedFixture": {
+    "total": 15,
+    "passed": 10,
+    "intentionalChangedOutcomes": 5,
+    "exactMessagesVerified": true
+  },
+  "rejectedInitialNetworkCandidate": {
+    "path": "out/lume-20261029-cpu30/native-dsd-1/lumen-6528f5de82184891",
+    "sha256": "6528f5de82184891a39f024ee5559afbd604c1d0e6eb137f067df3ea4ab621c4",
+    "bytes": 14057768
+  },
+  "deferredInitialNetworkFeature": true,
+  "receiptSHA256": {
+    "out/lume-20261029-cpu30/declarative-shadow-red-1/summary.json": "b2e35652ca7aed4cb37d4a98e853de851ca799405d1a4d1f54cd1baece6be784",
+    "out/lume-20261029-cpu30/declarative-shadow-red-2/summary.json": "d88592b7d94e04d4104ea34f9980befdfb1255ef19ff6b36b7f13891a87452bb",
+    "out/lume-20261029-cpu30/declarative-shadow-patch-1/receipt.json": "76188039632437bf8b244c10060064b43ea24e100fe4d6174e827f25c48f5e2b",
+    "out/lume-20261029-cpu30/native-dsd-1/summary.json": "769718c7208b50b0bcd901321810602ea5f5ac9fafd7f5599f39676aaaed35aa",
+    "out/lume-20261029-cpu30/dsd-upstream-pair-1/summary.json": "d3d7c6ec72fd48a25f00d71fd55111c015fbee2cd70e8c867de814a8ea47f115",
+    "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/receipt.json": "e380c7bcdf66055b7ded970ff5faec7756d4a30cb41bc96af92be276d76c1ba7",
+    "out/lume-20261029-cpu30/native-dsd-2/summary.json": "e473bfd188f7174e9ad9e41d8042e6ec2d3b4b0e65cf886d3164f3ba975c966d",
+    "out/lume-20261029-cpu30/native-dsd-2/compiled-source-sha256.json": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+    "out/lume-20261029-cpu30/native-dsd-2/scope-selection.json": "5ce5898509dc98c9226e9fc5cb5f2a3fb751c6eb4d9220efd5d9289a6ad8d4d9"
+  },
+  "qualification": "The complete37 fixture retains its real failures. Supported target selection was frozen before this run and is not a replacement WPT denominator. No755/755 or fullDSD claim is made."
+}

@@ -67,14 +67,14 @@ std::string jcstr(v8::Isolate *iso, v8::Local<v8::Value> v) {
 static v8::Local<v8::Object> proto_for(JsCtx *c, Node *n) {
     v8::Isolate *iso = c->iso;
     if (c->protoFor.IsEmpty()) return {};
-    std::string key = std::to_string(n->type) + ":" + (n->type == NODE_ELEMENT && n->tag ? n->tag : "") + ":" + std::to_string(n->ns);
+    std::string key = std::to_string(n->type) + ":" + (n->type == NODE_ELEMENT && n->tag ? n->tag : "") + ":" + std::to_string(n->ns) + (n->host ? ":shadow" : "");
     auto it = c->protos.find(key);
     if (it != c->protos.end()) return it->second.Get(iso);
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
     v8::TryCatch tc(iso);
-    v8::Local<v8::Value> argv[3] = { v8::Integer::New(iso, n->type), jstr(iso, n->type == NODE_ELEMENT ? n->tag : ""), v8::Integer::New(iso, n->ns) };
+    v8::Local<v8::Value> argv[4] = { v8::Integer::New(iso, n->type), jstr(iso, n->type == NODE_ELEMENT ? n->tag : ""), v8::Integer::New(iso, n->ns), v8::Boolean::New(iso, n->host != nullptr) };
     v8::Local<v8::Value> r;
-    if (!c->protoFor.Get(iso)->Call(ctx, v8::Undefined(iso), 3, argv).ToLocal(&r) || !r->IsObject()) return {};
+    if (!c->protoFor.Get(iso)->Call(ctx, v8::Undefined(iso), 4, argv).ToLocal(&r) || !r->IsObject()) return {};
     c->protos[key].Reset(iso, r.As<v8::Object>());
     return r.As<v8::Object>();
 }
@@ -639,6 +639,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     if (frame) frame->refcount++;
     if (parent) parent->kids.push_back(c);
     c->doc = d;
+    d->allow_declarative_shadow_roots = d->node.ns == NS_HTML;
     if (parent) { c->sb_opaque = parent->sb_opaque; c->sb_noscript = parent->sb_noscript; }
     size_t sandbox_length = 0;
     if (const char *sb = frame ? node_attr_n(frame, "sandbox", &sandbox_length) : nullptr) {
@@ -824,6 +825,10 @@ void js_free(JsCtx *c) {
         c->ctx.Reset();
     }
     if (!c->parent) c->iso->Dispose(); /* the last isolate/backing store releases its shared allocator */
+    /* All document-owned parser/retired-root holds must be dropped before
+     * any document destructor can reclaim a cross-adopted tree. */
+    html_document_dispose_write_state(c->doc);
+    for (Document *d : docs) html_document_dispose_write_state(d);
     for (Node *n : roots) node_free_tree(n);
     for (Document *d : docs) doc_free(d);
     delete c;

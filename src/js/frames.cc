@@ -176,6 +176,8 @@ static JsCtx *frame_create(JsCtx *p, Node *f, const char *url, const char *html,
                            const std::string &source_key, const char *content_type = nullptr) {
     JsCtx *old = js_frame_ctx(f);
     Document *d = doc_new(url);
+    /* Initial eager frame parsing keeps the default-disabled shadow policy.
+     * Its browsing context sets the policy for later detached document clones. */
     if (!g_next_permissions.empty()) { d->permissions_policy = strdup(g_next_permissions.c_str()); g_next_permissions.clear(); }
     if (!g_next_csp.empty()) { d->csp = csp_append(nullptr, g_next_csp.c_str()); g_next_csp.clear(); }
     if (!g_next_ref.empty()) { d->referrer = strdup(g_next_ref.c_str()); g_next_ref.clear(); }

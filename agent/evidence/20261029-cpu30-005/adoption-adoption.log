@@ -1,0 +1,43 @@
+PASS the adoption control has a native HTML document
+PASS the adoption control has a real V8 realm
+PASS all four earlier-owner adoption dispositions preserve live wrappers
+PASS adopted retired roots are disposed once with no native node residue
+DSD_ADOPTION_CYCLE {"cycle":0,"baselineNodes":0,"beforeTeardown":69,"afterTeardown":0}
+PASS the adoption control has a native HTML document
+PASS the adoption control has a real V8 realm
+PASS all four earlier-owner adoption dispositions preserve live wrappers
+PASS adopted retired roots are disposed once with no native node residue
+DSD_ADOPTION_CYCLE {"cycle":1,"baselineNodes":0,"beforeTeardown":69,"afterTeardown":0}
+PASS the adoption control has a native HTML document
+PASS the adoption control has a real V8 realm
+PASS all four earlier-owner adoption dispositions preserve live wrappers
+PASS adopted retired roots are disposed once with no native node residue
+DSD_ADOPTION_CYCLE {"cycle":2,"baselineNodes":0,"beforeTeardown":69,"afterTeardown":0}
+PASS the adoption control has a native HTML document
+PASS the adoption control has a real V8 realm
+PASS all four earlier-owner adoption dispositions preserve live wrappers
+PASS adopted retired roots are disposed once with no native node residue
+DSD_ADOPTION_CYCLE {"cycle":3,"baselineNodes":0,"beforeTeardown":69,"afterTeardown":0}
+PASS the adoption control has a native HTML document
+PASS the adoption control has a real V8 realm
+PASS all four earlier-owner adoption dispositions preserve live wrappers
+PASS adopted retired roots are disposed once with no native node residue
+DSD_ADOPTION_CYCLE {"cycle":4,"baselineNodes":0,"beforeTeardown":69,"afterTeardown":0}
+PASS the adoption control has a native HTML document
+PASS the adoption control has a real V8 realm
+PASS all four earlier-owner adoption dispositions preserve live wrappers
+PASS adopted retired roots are disposed once with no native node residue
+DSD_ADOPTION_CYCLE {"cycle":5,"baselineNodes":0,"beforeTeardown":69,"afterTeardown":0}
+PASS the adoption control has a native HTML document
+PASS the adoption control has a real V8 realm
+PASS all four earlier-owner adoption dispositions preserve live wrappers
+PASS adopted retired roots are disposed once with no native node residue
+DSD_ADOPTION_CYCLE {"cycle":6,"baselineNodes":0,"beforeTeardown":69,"afterTeardown":0}
+PASS the adoption control has a native HTML document
+PASS the adoption control has a real V8 realm
+PASS all four earlier-owner adoption dispositions preserve live wrappers
+PASS adopted retired roots are disposed once with no native node residue
+DSD_ADOPTION_CYCLE {"cycle":7,"baselineNodes":0,"beforeTeardown":69,"afterTeardown":0}
+PASS adoption control leaves no native network request
+PASS adoption control leaves no worker ownership
+DSD_ADOPTION_RESULTS {"cycles":8,"dispositionsPerCycle":4,"checks":34,"passed":34,"failed":0,"baselineNodes":0,"finalNodes":0,"durationMs":136.849}

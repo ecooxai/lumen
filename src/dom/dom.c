@@ -67,6 +67,16 @@ Node *node_template_content(Node *n) {
 void node_adopt_tree(Node *n, Document *d) {
     if (n->doc == d) return;
     for (Node *x = n; x; x = node_next_in_tree(x, n)) {
+        Document *previous = x->doc;
+        /* Transfer retained detached-root ownership with adoption. This keeps
+         * a retired tree from outliving (or dangling in) the wrong document. */
+        if (previous && previous != d) for (int i = 0; i < previous->retired_write_roots.n;) {
+            if (previous->retired_write_roots.v[i] != x) { ++i; continue; }
+            vec_push(d->retired_write_roots, x);
+            memmove(previous->retired_write_roots.v + i, previous->retired_write_roots.v + i + 1,
+                    sizeof(Node *) * (size_t)(previous->retired_write_roots.n - i - 1));
+            --previous->retired_write_roots.n;
+        }
         x->doc = d;
         if (x->shadow_root) node_adopt_tree(x->shadow_root, d);
         if (x->template_content)
@@ -80,6 +90,51 @@ Node *node_new_element(Document *d, const char *tag, int ns) { Node *n = alloc_n
 Node *node_new_text(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_TEXT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#text"); return n; }
 Node *node_new_comment(Document *d, const char *s, size_t len) { Node *n = alloc_node(d, NODE_COMMENT); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom("#comment"); return n; }
 Node *node_new_fragment(Document *d) { Node *n = alloc_node(d, NODE_FRAGMENT); n->tag = atom("#document-fragment"); return n; }
+
+/* Shared allocation and host validation for imperative and parser-created roots.
+ * Root ownership belongs to the host's document, including inert template owners. */
+static bool shadow_host_name(const char *name) {
+    static const char *const builtins[] = {"article","aside","blockquote","body","div","footer","h1","h2","h3","h4","h5","h6","header","main","nav","p","section","span"};
+    for (size_t i = 0; i < ARRLEN(builtins); ++i) if (!strcmp(name, builtins[i])) return true;
+    if (name[0] < 'a' || name[0] > 'z' || !strchr(name, '-')) return false;
+    static const char *const reserved[] = {"annotation-xml","color-profile","font-face","font-face-src","font-face-uri","font-face-format","font-face-name","missing-glyph"};
+    for (size_t i = 0; i < ARRLEN(reserved); ++i) if (!strcmp(name, reserved[i])) return false;
+    size_t length = strlen(name);
+    for (size_t i = 0; i < length;) {
+        uint32_t cp; int used = utf8_decode(name + i, length - i, &cp);
+        if (used < 1) return false;
+        i += (size_t)used;
+        if (cp == '-' || cp == '.' || cp == '_' || (cp >= '0' && cp <= '9') ||
+            (cp >= 'a' && cp <= 'z') || cp == 0xB7 ||
+            (cp >= 0xC0 && cp <= 0xD6) || (cp >= 0xD8 && cp <= 0xF6) ||
+            (cp >= 0xF8 && cp <= 0x37D) || (cp >= 0x37F && cp <= 0x1FFF) ||
+            (cp >= 0x200C && cp <= 0x200D) || (cp >= 0x203F && cp <= 0x2040) ||
+            (cp >= 0x2070 && cp <= 0x218F) || (cp >= 0x2C00 && cp <= 0x2FEF) ||
+            (cp >= 0x3001 && cp <= 0xD7FF) || (cp >= 0xF900 && cp <= 0xFDCF) ||
+            (cp >= 0xFDF0 && cp <= 0xFFFD) || (cp >= 0x10000 && cp <= 0xEFFFF)) continue;
+        return false;
+    }
+    return true;
+}
+Node *node_attach_shadow(Node *host, uint32_t options, bool reuse_declarative) {
+    if (!host || host->type != NODE_ELEMENT || host->ns != NS_HTML || !shadow_host_name(host->tag)) return NULL;
+    if (host->shadow_root) {
+        Node *root = host->shadow_root;
+        if (!reuse_declarative || !(root->flags & NF_SHADOW_DECLARATIVE) ||
+            ((root->flags ^ options) & NF_SHADOW_CLOSED)) return NULL;
+        node_set_text_content(root, "");
+        root->flags &= ~(uint32_t)NF_SHADOW_DECLARATIVE;
+        return root;
+    }
+    Node *root = node_new_fragment(host->doc);
+    root->host = host; root->refcount = 1;
+    root->flags |= options & NF_SHADOW_OPTIONS;
+    if (host->flags & NF_CONNECTED) root->flags |= NF_CONNECTED;
+    host->shadow_root = root;
+    doc_mark_dirty(host->doc, host);
+    return root;
+}
+
 Node *node_new_doctype(Document *d, const char *name) { Node *n = alloc_node(d, NODE_DOCTYPE); n->text = xstrdup(name ? name : "html"); n->text_len = strlen(n->text); n->tag = atom("#doctype"); return n; }
 
 Node *node_new_pi(Document *d, const char *target, const char *s, size_t len) { Node *n = alloc_node(d, NODE_PI); n->text = xstrndup(s, len); n->text_len = len; n->tag = atom(target); return n; }
@@ -183,7 +238,10 @@ void node_free_tree(Node *n) {
     if (n->shadow_root) { n->shadow_root->host = NULL; n->shadow_root->refcount = 0; node_free_tree(n->shadow_root); }
     node_free_one(n);
 }
+/* DOM-only users never create a write parser; HTML supplies its strong owner cleanup. */
+__attribute__((weak)) void html_document_dispose_write_state(Document *d) { (void)d; }
 void doc_free(Document *d) {
+    html_document_dispose_write_state(d);
     if (d->target_element) { node_release(d->target_element); d->target_element = NULL; }
     for (int i = 0; i < 2; i++) if (d->sel[i]) { node_release(d->sel[i]); d->sel[i] = NULL; }
     hm_free(&d->id_cache, NULL);
@@ -403,6 +461,7 @@ Node *node_clone(Node *n, bool deep, Document *d) {
         d->node.ns = n->ns;
         d->encoding = source->encoding;
         d->quirks = source->quirks;
+        d->allow_declarative_shadow_roots = source->allow_declarative_shadow_roots;
         if (source->base_url) d->base_url = xstrdup(source->base_url);
         c = &d->node;
         break;
@@ -423,6 +482,12 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     }
     if (n->template_content) { c->template_content = node_clone(n->template_content, deep, doc_template_contents_owner(d)); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
     if (deep) for (Node *k = n->first; k; k = k->next) node_append(c, node_clone(k, true, d));
+    /* Clonable shadow children are copied even for a shallow host clone. */
+    if (n->shadow_root && (n->shadow_root->flags & NF_SHADOW_CLONABLE)) {
+        Node *root = node_attach_shadow(c, n->shadow_root->flags, false);
+        if (root) for (Node *child = n->shadow_root->first; child; child = child->next)
+            node_append(root, node_clone(child, true, d));
+    }
     control_clone_state(c, n);
     return c;
 }

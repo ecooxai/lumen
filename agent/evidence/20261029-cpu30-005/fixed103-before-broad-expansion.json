@@ -1,0 +1,276 @@
+{
+  "schema": 1,
+  "updatedUTC": "2026-10-29T05:51:49.261134+00:00",
+  "binarySHA256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+  "cohortSHA256": "a9952946f7f2e7c865712f567e6b3e7c86aa4fdcadee383cc95fa2e469f521e9",
+  "scope": "Native-only frozen priority cohort; never full WPT or Chrome parity",
+  "scheduled": 1515,
+  "run": 103,
+  "fullyPassing": 101,
+  "unrun": 1412,
+  "passingPercentOfRun": 98.058,
+  "verifiedPassingCoveragePercent": 6.667,
+  "harnessStatuses": {
+    "OK": 103
+  },
+  "assertions": {
+    "PASS": 23632,
+    "FAIL": 26
+  },
+  "categories": {
+    "dom": {
+      "scheduled": 14,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 14,
+      "passingPercentOfRun": null
+    },
+    "events": {
+      "scheduled": 16,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 16,
+      "passingPercentOfRun": null
+    },
+    "url": {
+      "scheduled": 77,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 77,
+      "passingPercentOfRun": null
+    },
+    "encoding": {
+      "scheduled": 1339,
+      "run": 103,
+      "fullyPassing": 101,
+      "unrun": 1236,
+      "passingPercentOfRun": 98.058
+    },
+    "headers": {
+      "scheduled": 52,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 52,
+      "passingPercentOfRun": null
+    },
+    "microtasks": {
+      "scheduled": 10,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 10,
+      "passingPercentOfRun": null
+    },
+    "storage": {
+      "scheduled": 7,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 7,
+      "passingPercentOfRun": null
+    }
+  },
+  "groups": {
+    "encoding-streams": {
+      "scheduled": 26,
+      "run": 26,
+      "fullyPassing": 26,
+      "unrun": 0
+    },
+    "dom": {
+      "scheduled": 14,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 14
+    },
+    "events": {
+      "scheduled": 16,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 16
+    },
+    "url": {
+      "scheduled": 77,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 77
+    },
+    "storage": {
+      "scheduled": 7,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 7
+    },
+    "microtasks": {
+      "scheduled": 10,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 10
+    },
+    "headers": {
+      "scheduled": 52,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 52
+    },
+    "encoding-core": {
+      "scheduled": 77,
+      "run": 77,
+      "fullyPassing": 75,
+      "unrun": 0
+    },
+    "encoding-rest": {
+      "scheduled": 1236,
+      "run": 0,
+      "fullyPassing": 0,
+      "unrun": 1236
+    }
+  },
+  "failures": [
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "status": "OK",
+      "message": null,
+      "evidenceError": null,
+      "assertions": [
+        {
+          "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "csiso2022kr - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "hz-gb-2312 - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-kr - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "replacement - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "replacement - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        }
+      ]
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "status": "OK",
+      "message": null,
+      "evidenceError": null,
+      "assertions": [
+        {
+          "name": "UTF-7 should not be supported",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-7 should not be supported",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32 with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32 with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32 with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32 with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32LE with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32LE with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32le with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32le with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32be with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32be with BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32be with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32be with BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        }
+      ]
+    }
+  ],
+  "invocationWallSeconds": 59.876
+}

@@ -1,0 +1,114 @@
+[
+  {
+    "test": "/dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.html",
+    "type": "testharness",
+    "source": "dom/nodes/Document-adoptNode-DocumentFragment-with-host.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Document-adoptNode.html",
+    "type": "testharness",
+    "source": "dom/nodes/Document-adoptNode.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Document-createAttribute.html",
+    "type": "testharness",
+    "source": "dom/nodes/Document-createAttribute.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Document-createElement-namespace.html",
+    "type": "testharness",
+    "source": "dom/nodes/Document-createElement-namespace.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Document-createElement.html",
+    "type": "testharness",
+    "source": "dom/nodes/Document-createElement.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Document-createElementNS.html",
+    "type": "testharness",
+    "source": "dom/nodes/Document-createElementNS.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Document-importNode.html",
+    "type": "testharness",
+    "source": "dom/nodes/Document-importNode.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Node-cloneNode-XMLDocument.html",
+    "type": "testharness",
+    "source": "dom/nodes/Node-cloneNode-XMLDocument.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.html",
+    "type": "testharness",
+    "source": "dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.js",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Node-cloneNode-document-with-doctype.html",
+    "type": "testharness",
+    "source": "dom/nodes/Node-cloneNode-document-with-doctype.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Node-cloneNode-external-stylesheet-no-bc.sub.html",
+    "type": "testharness",
+    "source": "dom/nodes/Node-cloneNode-external-stylesheet-no-bc.sub.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Node-cloneNode-parser-created-names.html",
+    "type": "testharness",
+    "source": "dom/nodes/Node-cloneNode-parser-created-names.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Node-cloneNode-svg.html",
+    "type": "testharness",
+    "source": "dom/nodes/Node-cloneNode-svg.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  },
+  {
+    "test": "/dom/nodes/Node-cloneNode.html",
+    "type": "testharness",
+    "source": "dom/nodes/Node-cloneNode.html",
+    "timeout": "normal",
+    "metadata": {},
+    "references": []
+  }
+]

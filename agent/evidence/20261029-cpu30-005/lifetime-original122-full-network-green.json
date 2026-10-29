@@ -1,0 +1,318 @@
+{
+  "startedUTC": "2026-10-29T05:36:21.983167+00:00",
+  "phase": "green-1",
+  "sourceBaseCommit": "186666fe7ad94ef08d6cc80486e8cc808b99144e",
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-dsd-lifetime-green-1/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "c616b2110a5e72d36c9ed69fd3e3a085065044dd338782418a4126a57fb27a88",
+  "fixtureSHA256": "a55595727b1b52b59795b61205dae974e2abc8cb35da8755d203ae033db46aab",
+  "supplementalMakefileSHA256": "4463286d5204cb9f7730212ed36368dbbb83ca68be93af27e323d30dc86a3037",
+  "scope": "24 real V8 realm teardown cycles; project regression, not WPT or GUI performance",
+  "cpuDefinition": "One-second process-tree CPU deltas; 100% is one logical core.",
+  "rssDefinition": "External process-tree RSS plus macOS task_info current RSS at each realm teardown; warm-up and allocator retention can affect RSS.",
+  "stages": [
+    {
+      "name": "build",
+      "command": [
+        "make",
+        "-j3",
+        "-f",
+        "Makefile",
+        "-f",
+        "tools/apple-session-gpt6as/dsd_lifetime_cpu30.mk",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/test_declarative_shadow_lifetime"
+      ],
+      "durationSeconds": 1.079,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-lifetime-green-1/build.json",
+      "monitorSHA256": "bc522357ca31464b1850ec66938db833ac01bff40a76623dd5ac080fc7dc098d",
+      "log": "out/lume-20261029-cpu30/native-dsd-lifetime-green-1/build.log",
+      "logSHA256": "20c3e3f3a7d916cb8619aa52de0b4809c886fdb49f86bbdf8916c139a08eec80",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 7.969,
+      "maximumSamplingGapSeconds": 1.012,
+      "completedNaturally": true
+    },
+    {
+      "name": "lifetime",
+      "command": [
+        "/Users/devin/repos/lumen/out/lume-20261029-cpu30/native-dsd-lifetime-green-1/test_declarative_shadow_lifetime-cd8bf974c37feb62"
+      ],
+      "durationSeconds": 1.085,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-lifetime-green-1/lifetime.json",
+      "monitorSHA256": "c4a09866570b48c06e9be65516150ebf6000b4d7feb32f325866eb58489bb961",
+      "log": "out/lume-20261029-cpu30/native-dsd-lifetime-green-1/lifetime.log",
+      "logSHA256": "5b112c50e764f9c4bb802abe1d4072c9c742fd8e1f6ac8f7d3ed0a21a32391dc",
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.014,
+      "completedNaturally": true
+    }
+  ],
+  "artifacts": {
+    "lifetime": {
+      "path": "out/lume-20261029-cpu30/native-dsd-lifetime-green-1/test_declarative_shadow_lifetime-cd8bf974c37feb62",
+      "sha256": "cd8bf974c37feb62ee72794e843e9613bf9b570b4a375081602bb42d9fed18c8",
+      "bytes": 13846736
+    }
+  },
+  "passed": true,
+  "expectedFailureObserved": false,
+  "candidate": {
+    "summary": "out/lume-20261029-cpu30/native-dsd-1/summary.json",
+    "summarySHA256": "769718c7208b50b0bcd901321810602ea5f5ac9fafd7f5599f39676aaaed35aa",
+    "artifact": {
+      "path": "out/lume-20261029-cpu30/native-dsd-1/lumen-6528f5de82184891",
+      "sha256": "6528f5de82184891a39f024ee5559afbd604c1d0e6eb137f067df3ea4ab621c4",
+      "bytes": 14057768
+    }
+  },
+  "observed": {
+    "result": {
+      "cycles": 24,
+      "checks": 122,
+      "passed": 122,
+      "failed": 0,
+      "baselineNodes": 0,
+      "finalNodes": 0,
+      "durationMs": 435.102
+    },
+    "cycleCount": 24,
+    "allPostTeardownNodeBaselinesExact": true,
+    "warmCycles4To7RSSMedianMiB": 67.890625,
+    "finalFourCyclesRSSMedianMiB": 67.890625,
+    "settledRSSChangeMiB": 0.0,
+    "maximumPostTeardownRSSMiB": 67.890625,
+    "maximumLiveNodesBeforeTeardown": 217,
+    "cycles": [
+      {
+        "cycle": 0,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 68.84375,
+        "rssAfterTeardownMiB": 67.015625,
+        "durationMs": 22.7
+      },
+      {
+        "cycle": 1,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.609375,
+        "rssAfterTeardownMiB": 67.609375,
+        "durationMs": 17.118
+      },
+      {
+        "cycle": 2,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.625,
+        "rssAfterTeardownMiB": 67.625,
+        "durationMs": 16.596
+      },
+      {
+        "cycle": 3,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.625,
+        "rssAfterTeardownMiB": 67.625,
+        "durationMs": 16.856
+      },
+      {
+        "cycle": 4,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.640625,
+        "rssAfterTeardownMiB": 67.640625,
+        "durationMs": 20.885
+      },
+      {
+        "cycle": 5,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 20.056
+      },
+      {
+        "cycle": 6,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 18.753
+      },
+      {
+        "cycle": 7,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 18.154
+      },
+      {
+        "cycle": 8,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 20.771
+      },
+      {
+        "cycle": 9,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 16.422
+      },
+      {
+        "cycle": 10,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 17.284
+      },
+      {
+        "cycle": 11,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 16.654
+      },
+      {
+        "cycle": 12,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 19.968
+      },
+      {
+        "cycle": 13,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 15.93
+      },
+      {
+        "cycle": 14,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 16.971
+      },
+      {
+        "cycle": 15,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 15.823
+      },
+      {
+        "cycle": 16,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 20.006
+      },
+      {
+        "cycle": 17,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 16.122
+      },
+      {
+        "cycle": 18,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 17.113
+      },
+      {
+        "cycle": 19,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 16.393
+      },
+      {
+        "cycle": 20,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 18.317
+      },
+      {
+        "cycle": 21,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 20.066
+      },
+      {
+        "cycle": 22,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 19.323
+      },
+      {
+        "cycle": 23,
+        "baselineNodes": 0,
+        "liveNodesBeforeTeardown": 217,
+        "liveNodesAfterTeardown": 0,
+        "rssBeforeTeardownMiB": 69.890625,
+        "rssAfterTeardownMiB": 67.890625,
+        "durationMs": 16.299
+      }
+    ]
+  },
+  "finishedUTC": "2026-10-29T05:36:24.202824+00:00",
+  "durationSeconds": 2.22
+}

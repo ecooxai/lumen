@@ -1,0 +1,574 @@
+{
+  "independentlyReviewed": true,
+  "baselineHead": "186666fe7ad94ef08d6cc80486e8cc808b99144e",
+  "nativeSHA256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+  "compiledManifestSHA256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+  "build": "out/lume-20261029-cpu30/native-dsd-2/summary.json",
+  "sourceAudit": "out/lume-20261029-cpu30/detached-writer-source-audit.json",
+  "fixed103": "out/lume-20261029-cpu30/compat-dsd-2/summary.json",
+  "broad279": "out/lume-20261029-cpu30/priority-expansion-dsd-2/summary.json",
+  "cohort": "out/lume-20261029-cpu30/compat-dsd-2/cohort",
+  "lifetime": "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/summary.json",
+  "adoption": "out/lume-20261029-cpu30/native-dsd-adoption-2/summary.json",
+  "resources": "out/lume-20261029-cpu30/native-resources-dsd-2/summary.json",
+  "paired279": "out/lume-20261029-cpu30/paired-chrome279-detached-audit.json",
+  "paired103": "out/lume-20261029-cpu30/paired-chrome103-detached-audit.json",
+  "rawDelta": "out/lume-20261029-cpu30/detached-writer-wpt-regression-audit.json",
+  "upstreamDiagnostic": "out/lume-20261029-cpu30/dsd-upstream-pair-2/summary.json",
+  "compositorSource": "out/lume-20261029-cpu30/integration-materials-005/compose_current_progress_cpu30.py",
+  "compositorSHA256": "26e03386b6a7f7d2027d27d791c7a066ceaee64fec76befbca4fd87d96efec5e",
+  "sourceAllowlist": {
+    "src/dom/dom.h": "eceaac84049260e7596fd72a9103965d3fc45f019b228e21d184d4f3abf68f23",
+    "src/dom/dom.c": "f75bdc9fd65fdd00df8150f9c03c4d70d597ce65a3adaee89a2af8f478193d74",
+    "src/html/html.c": "199162994dda0b431647d0b80bf763bbda9dced35dfa65dff01cd9fa5805453c",
+    "src/js/jsnative.cc": "cd4359264b42329a87558e09a671b3a153fd34f70d9a56a96417fc965feb4746",
+    "src/js/js.cc": "d9a3f2b9461e750e3ae057783ac90225c9818e61e69f6238c1e732231516f7e3",
+    "src/js/frames.cc": "638fbb25c26fb22bc0b8aa4a9d789c049d2262d0b867e1bd2adebee0fabac7cf",
+    "src/js/prelude/02-node.js": "9a8df983ac4b39c294ed459cb8763824d5611359df08a467e6675978c44bb90f",
+    "src/js/prelude/03-element.js": "675e1c130e23225bd4f4bb7b0eb5f6af9079c22d03781ff7431c9497d5e6bf53",
+    "src/js/prelude/05-ce.js": "e1618c710c98ad5169f6eb36b66f7709bb1b6bc2bbca3e2ebf6b9c427ada71bd",
+    "src/js/prelude/06-document.js": "98c43b850f2fda2f007aa56885d90f369c38832449604675fbc3e92eb1c2bde6",
+    "tests/test_declarative_shadow_documents.py": "60c78f66aabcaed704aaa0635c4beb4412d9acc7f8469b98c8de0cab20a8b941",
+    "tests/test_declarative_shadow_documents_v2.py": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+    "tools/apple-session-gpt6as/run_declarative_shadow_red_cpu30.py": "380840b1cfbdc41ebd6da359ee3cd9c21593bc3717e580f300887894fbeba985",
+    "tools/apple-session-gpt6as/run_declarative_shadow_red2_cpu30.py": "94e71b2e7fba5fb028784e2284c918f92a2a9adb96c34dd15faa089bf104a7d3",
+    "tools/apple-session-gpt6as/run_declarative_shadow_green_cpu30.py": "d2cb5d6f0e9765737e82490b93ec7d1fa8fb810f5d0160b4450d887dc160aabf",
+    "tools/apple-session-gpt6as/run_compat_wpt_cpu30.py": "f0700385d7c92cb0065be21bc61dc8fa196611129727d5235a716bbecba2933c",
+    "tools/apple-session-gpt6as/run_frozen_original_wpt_cpu30.py": "03ed953a56f5f9b9ab8e4506eca4a7c447e541ed3c3cc6348731898bf8ba451e",
+    "tools/apple-session-gpt6as/run_detached_writer_green_cpu30.py": "db4f8c983ff94563797704855e3e839e0ccd75259f1fcffa7685b9e16dff3365",
+    "tests/test_declarative_shadow_lifetime.cc": "a55595727b1b52b59795b61205dae974e2abc8cb35da8755d203ae033db46aab",
+    "tools/apple-session-gpt6as/dsd_lifetime_cpu30.mk": "4463286d5204cb9f7730212ed36368dbbb83ca68be93af27e323d30dc86a3037",
+    "tools/apple-session-gpt6as/run_dsd_lifetime_cpu30.py": "bd30a3f3bdd863038937b9b34ffed12eb68d777c1ae22c926d7741cb1dee948e",
+    "tests/test_declarative_shadow_adoption_lifetime.cc": "5f8d947e6592742b472560017c2a08959551151fb69c3d1aa23934f6ce9b7b8e",
+    "tools/apple-session-gpt6as/dsd_adoption_lifetime_cpu30.mk": "3abcdc51721c698fe896ce5bc162c6f470371c42ea2eb2b60f5ee43feea3efe7",
+    "tools/apple-session-gpt6as/run_dsd_adoption_lifetime_cpu30.py": "91d72bfecbb08d2defea3d8ea2eb9063ef219a2b4aa7a267ee04291ebf927d59",
+    "tests/test_declarative_shadow_lifetime_v2.cc": "65de63021f681862ae6d2ee1bddcb8729cfeb398b1660a252cb2e3e0f6e00438",
+    "tools/apple-session-gpt6as/dsd_lifetime_v2_cpu30.mk": "170cdf5ce224242eb603b842ed2ca5849f913365a3477ea199b578c082bad619",
+    "tools/apple-session-gpt6as/run_dsd_lifetime_v2_cpu30.py": "1682a7de88939aed4411454505187aa86df97e4780caf3a60e53eaa487043d80",
+    "tools/apple-session-gpt6as/run_dsd_adoption_lifetime_v2_cpu30.py": "277e5fc88dc8310a191bce74c3989e8dc57a9c4279022591b6b822e7b05e2179",
+    "tools/apple-session-gpt6as/run_dsd_chrome_control_cpu30.py": "da7b4961b6c0fcedacc0f96c292bd480f357b779c27d0a521f49f38e608d2c93",
+    "tools/apple-session-gpt6as/run_dsd_chrome_control2_cpu30.py": "4a224aa966edba1edd9971e15e576bdeb571233d1f464a1ad2a7b537717c377a",
+    "tools/apple-session-gpt6as/run_dsd_upstream_pair_cpu30.py": "d00d65543ec0a66fe525c551b8655b0d56f5c3a6869970753bf8dce7eff7843b",
+    "tools/apple-session-gpt6as/run_dsd_upstream_pair2_cpu30.py": "9069f7e3ee63d4a8c89c28ae9d26d88bfc1f1a40cf578723f5b92334c43c86d8"
+  },
+  "scopeLedger": {
+    "prior718Passed": true,
+    "allOriginalEightControlsPass": true,
+    "supportedTargetsPass": true,
+    "fixtureAssertionsUnchanged": true,
+    "full37": {
+      "total": 37,
+      "passed": 26,
+      "failed": 11,
+      "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+      "allPassed": false,
+      "checks": [
+        {
+          "i": 0,
+          "name": "network open root content and native ShadowRoot brand",
+          "ok": false,
+          "error": "Error: expected truthy value"
+        },
+        {
+          "i": 1,
+          "name": "declarative template is absent from light DOM",
+          "ok": false,
+          "error": "Error: expected null, got {}"
+        },
+        {
+          "i": 2,
+          "name": "shadow descendants retain owner document and connectivity",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+        },
+        {
+          "i": 3,
+          "name": "closed root rejects a conflicting imperative mode",
+          "ok": false,
+          "error": "Error: expected NotSupportedError"
+        },
+        {
+          "i": 4,
+          "name": "invalid mode remains ordinary inert template",
+          "ok": true
+        },
+        {
+          "i": 5,
+          "name": "invalid host remains ordinary inert template",
+          "ok": true
+        },
+        {
+          "i": 6,
+          "name": "second declarative template remains light template",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+        },
+        {
+          "i": 7,
+          "name": "nested declarative shadow roots use separate hosts",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+        },
+        {
+          "i": 8,
+          "name": "enumerated shadow mode is ASCII case insensitive",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+        },
+        {
+          "i": 9,
+          "name": "shadow mode whitespace is not stripped",
+          "ok": true
+        },
+        {
+          "i": 10,
+          "name": "ordinary template stays inert with a separate owner",
+          "ok": true
+        },
+        {
+          "i": 11,
+          "name": "DOMParser keeps declarative shadow parsing disabled",
+          "ok": true
+        },
+        {
+          "i": 12,
+          "name": "innerHTML keeps declarative shadow parsing disabled",
+          "ok": true
+        },
+        {
+          "i": 13,
+          "name": "fragment parsing does not attach a root to context",
+          "ok": true
+        },
+        {
+          "i": 14,
+          "name": "shallow document clone preserves allow-declarative policy",
+          "ok": true
+        },
+        {
+          "i": 15,
+          "name": "deep document clone preserves allow-declarative policy",
+          "ok": true
+        },
+        {
+          "i": 16,
+          "name": "cloned detached document keeps copied policy again",
+          "ok": true
+        },
+        {
+          "i": 17,
+          "name": "new HTML document write keeps declarative parsing disabled",
+          "ok": true
+        },
+        {
+          "i": 18,
+          "name": "DOMParser document clone preserves disabled policy",
+          "ok": true
+        },
+        {
+          "i": 19,
+          "name": "detached writes do not insert into active document",
+          "ok": true
+        },
+        {
+          "i": 20,
+          "name": "split writes retain tokenizer state across tags",
+          "ok": true
+        },
+        {
+          "i": 21,
+          "name": "two detached parsers can interleave independently",
+          "ok": true
+        },
+        {
+          "i": 22,
+          "name": "open detaches old nodes without invalidating held wrappers",
+          "ok": true
+        },
+        {
+          "i": 23,
+          "name": "open disposes an unfinished parser before replacement",
+          "ok": true
+        },
+        {
+          "i": 24,
+          "name": "intervening DOM removal leaves parser state alive",
+          "ok": true
+        },
+        {
+          "i": 25,
+          "name": "detached Unicode writes preserve leading FEFF",
+          "ok": true
+        },
+        {
+          "i": 26,
+          "name": "detached scripts do not execute in the active realm",
+          "ok": true
+        },
+        {
+          "i": 27,
+          "name": "close handles an unclosed declarative template",
+          "ok": true
+        },
+        {
+          "i": 28,
+          "name": "declarative attachment options are native state",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'delegatesFocus')"
+        },
+        {
+          "i": 29,
+          "name": "clonable root children copy even on shallow host clone",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+        },
+        {
+          "i": 30,
+          "name": "matching imperative mode reuses and clears declarative root",
+          "ok": false,
+          "error": "Error: expected null, got {}"
+        },
+        {
+          "i": 31,
+          "name": "conflicting imperative mode leaves declarative content intact",
+          "ok": false,
+          "error": "Error: expected NotSupportedError"
+        },
+        {
+          "i": 32,
+          "name": "ordinary imperative open and closed roots remain supported",
+          "ok": true
+        },
+        {
+          "i": 33,
+          "name": "imperative attachment rejects missing or invalid mode",
+          "ok": true
+        },
+        {
+          "i": 34,
+          "name": "imperative attachment rejects invalid HTML and foreign hosts",
+          "ok": true
+        },
+        {
+          "i": 35,
+          "name": "unfinished detached parser remains owned until realm teardown",
+          "ok": true
+        },
+        {
+          "i": 36,
+          "name": "held descendant retains detached subtree ancestry after open",
+          "ok": true
+        }
+      ]
+    },
+    "selection": {
+      "originalEightControls": [
+        {
+          "i": 4,
+          "name": "invalid mode remains ordinary inert template"
+        },
+        {
+          "i": 5,
+          "name": "invalid host remains ordinary inert template"
+        },
+        {
+          "i": 9,
+          "name": "shadow mode whitespace is not stripped"
+        },
+        {
+          "i": 10,
+          "name": "ordinary template stays inert with a separate owner"
+        },
+        {
+          "i": 11,
+          "name": "DOMParser keeps declarative shadow parsing disabled"
+        },
+        {
+          "i": 12,
+          "name": "innerHTML keeps declarative shadow parsing disabled"
+        },
+        {
+          "i": 13,
+          "name": "fragment parsing does not attach a root to context"
+        },
+        {
+          "i": 32,
+          "name": "ordinary imperative open and closed roots remain supported"
+        }
+      ],
+      "supportedTargets": [
+        {
+          "i": 14,
+          "name": "shallow document clone preserves allow-declarative policy"
+        },
+        {
+          "i": 15,
+          "name": "deep document clone preserves allow-declarative policy"
+        },
+        {
+          "i": 16,
+          "name": "cloned detached document keeps copied policy again"
+        },
+        {
+          "i": 17,
+          "name": "new HTML document write keeps declarative parsing disabled"
+        },
+        {
+          "i": 18,
+          "name": "DOMParser document clone preserves disabled policy"
+        },
+        {
+          "i": 19,
+          "name": "detached writes do not insert into active document"
+        },
+        {
+          "i": 20,
+          "name": "split writes retain tokenizer state across tags"
+        },
+        {
+          "i": 21,
+          "name": "two detached parsers can interleave independently"
+        },
+        {
+          "i": 22,
+          "name": "open detaches old nodes without invalidating held wrappers"
+        },
+        {
+          "i": 23,
+          "name": "open disposes an unfinished parser before replacement"
+        },
+        {
+          "i": 24,
+          "name": "intervening DOM removal leaves parser state alive"
+        },
+        {
+          "i": 25,
+          "name": "detached Unicode writes preserve leading FEFF"
+        },
+        {
+          "i": 26,
+          "name": "detached scripts do not execute in the active realm"
+        },
+        {
+          "i": 27,
+          "name": "close handles an unclosed declarative template"
+        },
+        {
+          "i": 33,
+          "name": "imperative attachment rejects missing or invalid mode"
+        },
+        {
+          "i": 34,
+          "name": "imperative attachment rejects invalid HTML and foreign hosts"
+        },
+        {
+          "i": 35,
+          "name": "unfinished detached parser remains owned until realm teardown"
+        },
+        {
+          "i": 36,
+          "name": "held descendant retains detached subtree ancestry after open"
+        }
+      ],
+      "deferredInitialNetworkDependentIndices": [
+        0,
+        1,
+        2,
+        3,
+        6,
+        7,
+        8,
+        28,
+        29,
+        30,
+        31
+      ],
+      "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+      "selectionFixedBeforeRun": true
+    },
+    "priorCustomChecks": {
+      "passed": 718,
+      "total": 718
+    },
+    "legacyUnchanged": {
+      "passed": 10,
+      "total": 15,
+      "intentionalDifferences": 5
+    },
+    "passingCustomChecksAcrossPriorAggregateAndWhole37": 744,
+    "scopeNote": "718 previous controls plus26 passing rows in the unchanged37 fixture;11 deferred initial-network rows still FAIL. This is not755/755. Lifetime122v2 and34 are separate disposal controls, not within-live-realm GC proof."
+  },
+  "ctoVisual": {
+    "reviewed": true,
+    "reviewer": "root CTO, direct inspection of the actual native window capture",
+    "reviewedUTC": "2026-10-29T06:01:47Z",
+    "nativeSHA256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+    "screenshotPath": "out/lume-20261029-cpu30/native-resources-dsd-2/scroll/native-window/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png",
+    "screenshotSHA256": "5245b668fdf081c1d237bc1b55735d49c786bc50c86ce643b1ff7688072061ee",
+    "viewport": [
+      1000,
+      700
+    ],
+    "finding": "Coherent native browser chrome and aligned alternating fixture rows 55\u201374, with no visible rendering corruption.",
+    "scope": "Synthetic Mac scroll fixture only. This is not public-site or mobile visual coverage. The navigation resource gate was still running at the visual-review time and is accepted separately."
+  },
+  "captureFiles": {
+    "out/lume-20261029-cpu30/native-dsd-2/summary.json": "native-current-scoped-build.json",
+    "out/lume-20261029-cpu30/detached-writer-source-audit.json": "current-independent-source-audit.json",
+    "out/lume-20261029-cpu30/compat-dsd-2/summary.json": "fixed103-summary.json",
+    "out/lume-20261029-cpu30/priority-expansion-dsd-2/summary.json": "broad279-summary.json",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/summary.json": "lifetime-v2-current-summary.json",
+    "out/lume-20261029-cpu30/native-dsd-adoption-2/summary.json": "adoption-current-summary.json",
+    "out/lume-20261029-cpu30/native-resources-dsd-2/summary.json": "native-resource-summary.json",
+    "out/lume-20261029-cpu30/paired-chrome279-detached-audit.json": "paired-chrome279.json",
+    "out/lume-20261029-cpu30/paired-chrome103-detached-audit.json": "paired-chrome103.json",
+    "out/lume-20261029-cpu30/detached-writer-wpt-regression-audit.json": "raw279-regression-audit.json",
+    "out/lume-20261029-cpu30/dsd-upstream-pair-2/summary.json": "whole6-current-summary.json",
+    "out/lume-20261029-cpu30/native-dsd-1/summary.json": "rejected-full-network-build.json",
+    "out/lume-20261029-cpu30/native-dsd-1/compiled-source-sha256.json": "rejected-full-network-compiled-manifest.json",
+    "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/preimages/src/html/html.c": "rejected-full-network-source/src/html/html.c",
+    "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/preimages/src/js/frames.cc": "rejected-full-network-source/src/js/frames.cc",
+    "out/lume-20261029-cpu30/declarative-shadow-source-audit.json": "rejected-full-network-source-audit.json",
+    "out/lume-20261029-cpu30/dsd-upstream-pair-1/summary.json": "rejected-full-network-whole6-summary.json",
+    "out/lume-20261029-cpu30/declarative-shadow-red-1/summary.json": "original36-red-summary.json",
+    "out/lume-20261029-cpu30/declarative-shadow-red-2/summary.json": "versioned37-red-summary.json",
+    "out/lume-20261029-cpu30/declarative-shadow-patch-1/receipt.json": "full-network-patch-receipt.json",
+    "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/receipt.json": "narrowed-scope-patch-receipt.json",
+    "out/lume-20261029-cpu30/native-dsd-2/scope-selection.json": "scope-selection-frozen-before-run.json",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-red-1/summary.json": "lifetime-original122-red.json",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-1/summary.json": "lifetime-original122-full-network-green.json",
+    "out/lume-20261029-cpu30/native-dsd-adoption-1/summary.json": "adoption-full-network-green.json",
+    "out/lume-20261029-cpu30/dsd-chrome-control-1/summary.json": "qualified-chrome-original36.json",
+    "out/lume-20261029-cpu30/dsd-chrome-control-2/summary.json": "qualified-chrome-versioned37.json",
+    "out/lume-20261029-cpu30/priority-expansion-dsd-2/cohort-before.json": "fixed103-before-broad-expansion.json",
+    "out/lume-20261029-cpu30/compat-dsd-2/cohort/original-six-receipt.json": "original-six-receipt.json",
+    "out/lume-20261029-cpu30/integration-materials-005/independent-ownership-review.json": "independent-ownership-review.json",
+    "out/lume-20261029-cpu30/integration-materials-005/performance-source-allowlist.json": "performance-source-allowlist.json",
+    "out/lume-20261029-cpu30/v8-prebuilt-identity.json": "prebuilt-v8-identity.json",
+    "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task20261029-cpu30-compat-dsd-2-c259da2597a6e064/wpt-report.json": "original-six-raw.json",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/compiled-source-sha256.json": "lifetime-compiled-source-manifest.json",
+    "out/lume-20261029-cpu30/native-dsd-2/compiled-source-sha256.json": "adoption-compiled-source-manifest.json",
+    "out/lume-20261029-cpu30/native-dsd-2/build.json": "build-build-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/build.log": "build-build.log",
+    "out/lume-20261029-cpu30/native-dsd-2/detached-writer-scope.json": "build-detached-writer-scope-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/detached-writer-scope.log": "build-detached-writer-scope.log",
+    "out/lume-20261029-cpu30/native-dsd-2/fatal-codec.json": "build-fatal-codec-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/fatal-codec.log": "build-fatal-codec.log",
+    "out/lume-20261029-cpu30/native-dsd-2/html-bom.json": "build-html-bom-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/html-bom.log": "build-html-bom.log",
+    "out/lume-20261029-cpu30/native-dsd-2/json-document.json": "build-json-document-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/json-document.log": "build-json-document.log",
+    "out/lume-20261029-cpu30/native-dsd-2/driver-parent-charset.json": "build-driver-parent-charset-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/driver-parent-charset.log": "build-driver-parent-charset.log",
+    "out/lume-20261029-cpu30/native-dsd-2/legacy-frame-policy.json": "build-legacy-frame-policy-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/legacy-frame-policy.log": "build-legacy-frame-policy.log",
+    "out/lume-20261029-cpu30/native-dsd-2/xhr-encoding.json": "build-xhr-encoding-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/xhr-encoding.log": "build-xhr-encoding.log",
+    "out/lume-20261029-cpu30/native-dsd-2/html-meta.json": "build-html-meta-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/html-meta.log": "build-html-meta.log",
+    "out/lume-20261029-cpu30/native-dsd-2/document-encoding.json": "build-document-encoding-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/document-encoding.log": "build-document-encoding.log",
+    "out/lume-20261029-cpu30/native-dsd-2/parser-input.json": "build-parser-input-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/parser-input.log": "build-parser-input.log",
+    "out/lume-20261029-cpu30/native-dsd-2/test_render_overdraw.json": "build-test_render_overdraw-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/test_render_overdraw.log": "build-test_render_overdraw.log",
+    "out/lume-20261029-cpu30/native-dsd-2/test_gpu_present.json": "build-test_gpu_present-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/test_gpu_present.log": "build-test_gpu_present.log",
+    "out/lume-20261029-cpu30/native-dsd-2/test_app_wheel.json": "build-test_app_wheel-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/test_app_wheel.log": "build-test_app_wheel.log",
+    "out/lume-20261029-cpu30/native-dsd-2/html-default-boundary.json": "build-html-default-boundary-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/html-default-boundary.log": "build-html-default-boundary.log",
+    "out/lume-20261029-cpu30/native-dsd-2/html-default-navigation.json": "build-html-default-navigation-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-2/html-default-navigation.log": "build-html-default-navigation.log",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/build.json": "lifetime-build-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/build.log": "lifetime-build.log",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/lifetime.json": "lifetime-lifetime-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/lifetime.log": "lifetime-lifetime.log",
+    "out/lume-20261029-cpu30/native-dsd-adoption-2/build.json": "adoption-build-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-adoption-2/build.log": "adoption-build.log",
+    "out/lume-20261029-cpu30/native-dsd-adoption-2/adoption.json": "adoption-adoption-monitor.json",
+    "out/lume-20261029-cpu30/native-dsd-adoption-2/adoption.log": "adoption-adoption.log",
+    "out/lume-20261029-cpu30/declarative-shadow-red-1/dsd.json": "declarative-shadow-red-1-monitor.json",
+    "out/lume-20261029-cpu30/declarative-shadow-red-2/dsd.json": "declarative-shadow-red-2-monitor.json"
+  },
+  "receiptHashes": {
+    "out/lume-20261029-cpu30/native-dsd-2/summary.json": "e473bfd188f7174e9ad9e41d8042e6ec2d3b4b0e65cf886d3164f3ba975c966d",
+    "out/lume-20261029-cpu30/detached-writer-source-audit.json": "237b88291f8aca8010f8d005eb2c3891d25df21afec6eacedeb0c4c61f1271b7",
+    "out/lume-20261029-cpu30/compat-dsd-2/summary.json": "d3f008a7ba7666937ee48c45f943f720558a090809bf41461a427a16edd319e7",
+    "out/lume-20261029-cpu30/priority-expansion-dsd-2/summary.json": "177b55540456661a6c9b2ec213dbc244c4602ed7062d7b84f95569a5590fbf25",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/summary.json": "18978e10f65f25200acc9b25a636cfae49c09f03ea1b2e19d53fe454e62acec0",
+    "out/lume-20261029-cpu30/native-dsd-adoption-2/summary.json": "11533d4671d41e1fe0b3897e2b6771f418c74055ea5b96923e7813a79a170a39",
+    "out/lume-20261029-cpu30/native-resources-dsd-2/summary.json": "576ab6ca88c1013c09f783c15c2fc04f0b5c59e9b7398a46bae7fbea47a5fdc9",
+    "out/lume-20261029-cpu30/paired-chrome279-detached-audit.json": "3a967af72b73962a4ebfbcfa6d77f9ce320844285edde616695b6a82a5430267",
+    "out/lume-20261029-cpu30/paired-chrome103-detached-audit.json": "ffabde197d57c59ca362c98d6796231f92842f4c19cd6eaadc1f1b05ac65b12f",
+    "out/lume-20261029-cpu30/detached-writer-wpt-regression-audit.json": "7faa908ee766eaa816655581cf50a3a3450441e8a0104931cf4b2222d0fc6558",
+    "out/lume-20261029-cpu30/dsd-upstream-pair-2/summary.json": "233d701321c15320f28df718c1b4dba4160456e5c6c52573d5116f8c9e54cdba",
+    "out/lume-20261029-cpu30/native-dsd-1/summary.json": "769718c7208b50b0bcd901321810602ea5f5ac9fafd7f5599f39676aaaed35aa",
+    "out/lume-20261029-cpu30/native-dsd-1/compiled-source-sha256.json": "40fca579d5b18047b4911ab6e6f35edd61765137d2df594c9beced14a7882e14",
+    "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/preimages/src/html/html.c": "4651ead84e6a70bea0c68a5c3bb50e7b5730bab845d7ee07341f2bea02ac9a55",
+    "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/preimages/src/js/frames.cc": "8f0e1818cb770dd66c262e1a1dfabd86663b3b71a59f016aa8f322e58fc37f00",
+    "out/lume-20261029-cpu30/declarative-shadow-source-audit.json": "ac72b02bd013e63e7934514a0c7ce9efc1bc73b32f232edf4bffebbfa5d4f332",
+    "out/lume-20261029-cpu30/dsd-upstream-pair-1/summary.json": "d3d7c6ec72fd48a25f00d71fd55111c015fbee2cd70e8c867de814a8ea47f115",
+    "out/lume-20261029-cpu30/declarative-shadow-red-1/summary.json": "b2e35652ca7aed4cb37d4a98e853de851ca799405d1a4d1f54cd1baece6be784",
+    "out/lume-20261029-cpu30/declarative-shadow-red-2/summary.json": "d88592b7d94e04d4104ea34f9980befdfb1255ef19ff6b36b7f13891a87452bb",
+    "out/lume-20261029-cpu30/declarative-shadow-patch-1/receipt.json": "76188039632437bf8b244c10060064b43ea24e100fe4d6174e827f25c48f5e2b",
+    "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/receipt.json": "e380c7bcdf66055b7ded970ff5faec7756d4a30cb41bc96af92be276d76c1ba7",
+    "out/lume-20261029-cpu30/native-dsd-2/scope-selection.json": "5ce5898509dc98c9226e9fc5cb5f2a3fb751c6eb4d9220efd5d9289a6ad8d4d9",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-red-1/summary.json": "8b06542c7f8c2df6ac8d1ee1b0900908c5861ad667c7e132eb22cbd8bdaaa580",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-1/summary.json": "4856b8fc7382eb8f35c7b053b30b05e5be67bde76b7e4bf53bf717d76c4300eb",
+    "out/lume-20261029-cpu30/native-dsd-adoption-1/summary.json": "bc2c49f75e0e1eea11837115e78051593788f6ffaf51d641cee41be291514377",
+    "out/lume-20261029-cpu30/dsd-chrome-control-1/summary.json": "fd02cb3bed611275e90e4776ff0ce79a74c1a8f3dc9c64dad6142580fb483e20",
+    "out/lume-20261029-cpu30/dsd-chrome-control-2/summary.json": "2d08df9122a21d9415c819514b4e4b12efbdef20a61c274a10bf71bf656a99d9",
+    "out/lume-20261029-cpu30/priority-expansion-dsd-2/cohort-before.json": "9559ff6d255e006088ab295fb7334dae3656f5488fc994385c699e5381802531",
+    "out/lume-20261029-cpu30/compat-dsd-2/cohort/original-six-receipt.json": "94547ed57082787241c776a2ab82cf51c417f924a8dfa29cbc3a95d2804c9c66",
+    "out/lume-20261029-cpu30/integration-materials-005/independent-ownership-review.json": "a5336165cd2d8ef147534121bf4607d6a20f67648bc91b7553507803779078cb",
+    "out/lume-20261029-cpu30/integration-materials-005/performance-source-allowlist.json": "e633ae61e7d5e8d105f931b67915dd6a8b8066ed1aa943a6781dc7a801086f73",
+    "out/lume-20261029-cpu30/v8-prebuilt-identity.json": "fd3cdbb701d65f4b30ee46cb27a39418a3f8b535519d07bc6e16db28f9d133cf",
+    "/Users/devin/repos/lumen/output/session-20261029/native-qa-kit-v1/source/output/native-wpt-task20261029-cpu30-compat-dsd-2-c259da2597a6e064/wpt-report.json": "891e2c11861ddc64fa49949bb116d1f4013e582abaa55420b962fad571bb0b89",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/compiled-source-sha256.json": "cb9b82648967c8627d42d92c2afc190a468a151d8b6892843bb34b6ef5c2c981",
+    "out/lume-20261029-cpu30/native-dsd-2/compiled-source-sha256.json": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+    "out/lume-20261029-cpu30/native-dsd-2/build.json": "6271dadb4e5087c22fe262f3de331943676ee79985fd083faab28192f57fad7c",
+    "out/lume-20261029-cpu30/native-dsd-2/build.log": "140bcff247a31ac738707cfe5e7aadadd770ef642c7c1c21081cf73e95f91f83",
+    "out/lume-20261029-cpu30/native-dsd-2/detached-writer-scope.json": "d66d02f264bc51e91666befdaad0905dd0ffef4c99614659313611ec93030f5d",
+    "out/lume-20261029-cpu30/native-dsd-2/detached-writer-scope.log": "d4fd8f551ca2ddddc9128937bcc158686fa2abc4f586be2e56cd0cf1fc61ebfe",
+    "out/lume-20261029-cpu30/native-dsd-2/fatal-codec.json": "46bdc5cdb9e0e17ed81ffa841c7f954c85ea2da886b354ccf3e8f815b81e1125",
+    "out/lume-20261029-cpu30/native-dsd-2/fatal-codec.log": "01bc5c93b74f82ed3bbd2db19ebcfab0f15cafbcd0a3c7b9aa37aa0b28933c67",
+    "out/lume-20261029-cpu30/native-dsd-2/html-bom.json": "c9d0c14e0a1e34892ce5a8ed3e1f61837b00ac927f789592603e8286c78d6649",
+    "out/lume-20261029-cpu30/native-dsd-2/html-bom.log": "d280e37b0091c0b7ab5cb19c55d71e1707cfd08922dae5de243c5c1ca14b455d",
+    "out/lume-20261029-cpu30/native-dsd-2/json-document.json": "0c676fd3747cb23cbe3b7b892b09b58f7cb8b91913d804f2e8da855a839712a1",
+    "out/lume-20261029-cpu30/native-dsd-2/json-document.log": "eae3504640df2452fa1285aaee82f41201831d459057e1bb8c30147fb0cb4172",
+    "out/lume-20261029-cpu30/native-dsd-2/driver-parent-charset.json": "d49478f6b11ef83cc265b37f14dcd232e2df1294cd0ff89b7ce4e38460d85d39",
+    "out/lume-20261029-cpu30/native-dsd-2/driver-parent-charset.log": "5a770d1bd778102537e287979c6e5bc295ca22c00d90ce2f2b663c1d3998d0c0",
+    "out/lume-20261029-cpu30/native-dsd-2/legacy-frame-policy.json": "507c085019c82b42ac47b3b8bc818a3e5e65dc8310a5fb68d0ad1c26b09fc731",
+    "out/lume-20261029-cpu30/native-dsd-2/legacy-frame-policy.log": "8bd813e34c4f13917dea149a2f23936f87c6973b407414d385ec7ed2ada0e76d",
+    "out/lume-20261029-cpu30/native-dsd-2/xhr-encoding.json": "0ceb430ce81c2ed29b96f2d8abd7db937206910fd56bf1ad6fad978c9864994e",
+    "out/lume-20261029-cpu30/native-dsd-2/xhr-encoding.log": "d1a74b67d3e7210f9e9d90890505a35e51415e4bdf709d136528efa03d53821d",
+    "out/lume-20261029-cpu30/native-dsd-2/html-meta.json": "e69ad669b955afa94a2f0084ab1550d738c61eae1252ff3d3467abf8117d4f7b",
+    "out/lume-20261029-cpu30/native-dsd-2/html-meta.log": "371814273fc504e081fbd77c1b9bd234f4ac7630d773be8e42f0e6f1b9a0aa9d",
+    "out/lume-20261029-cpu30/native-dsd-2/document-encoding.json": "94159d0ad725290be38b8db6993ea37858646a9c35ae31fd6204728c3e6d43b5",
+    "out/lume-20261029-cpu30/native-dsd-2/document-encoding.log": "951d1fad04152778fc17ce36777774b590d1b6c177ec1210452aacfad2c37db8",
+    "out/lume-20261029-cpu30/native-dsd-2/parser-input.json": "4cd8d5973930ec73a443588457c14aaa2c655e3aa1c07f0d41d9dc271033827f",
+    "out/lume-20261029-cpu30/native-dsd-2/parser-input.log": "223555e5612e9415a045db5b5dd6949ac34974a9b83f45dacfaa74f48edac2ae",
+    "out/lume-20261029-cpu30/native-dsd-2/test_render_overdraw.json": "029f3a71e6fd39f28c0a380bbfc522e9ba93890ea94e115c383a4aeeedff280a",
+    "out/lume-20261029-cpu30/native-dsd-2/test_render_overdraw.log": "04341450e0dfb63e562ba0fd8d7701b0d8db8daf079fde4b9542ec3fab28d369",
+    "out/lume-20261029-cpu30/native-dsd-2/test_gpu_present.json": "f1550abc0b2c8c37a84eecea056721400c3fd459ca9ab0361e6bd22a21889fc1",
+    "out/lume-20261029-cpu30/native-dsd-2/test_gpu_present.log": "a00302b05386e15ce22fabcdaffb8331c19f72fb11b2d838b8587d6dcec75433",
+    "out/lume-20261029-cpu30/native-dsd-2/test_app_wheel.json": "5dded2f2a272a6778260c6948d2d6c944b8478705a7c7cd2fbd97743267f7357",
+    "out/lume-20261029-cpu30/native-dsd-2/test_app_wheel.log": "f2255b4799d8fd5ac9250a44c65daaec47dab6aef1a3cb92ca76dd70a841e7bd",
+    "out/lume-20261029-cpu30/native-dsd-2/html-default-boundary.json": "1b1429c64666312c92eb849b96b0a86636d052cfeba0246f2d3379b262b6aa93",
+    "out/lume-20261029-cpu30/native-dsd-2/html-default-boundary.log": "910b4b27aa4aacfca38af5cd7114a209af55fe50cdea4a61258b17311c8b73a0",
+    "out/lume-20261029-cpu30/native-dsd-2/html-default-navigation.json": "a49857ef6323b741cf3ad008a5e8600bca1a6af4b8594d559788b901207096fe",
+    "out/lume-20261029-cpu30/native-dsd-2/html-default-navigation.log": "07ecb55eca81d4d5bce93949142637a214263a057a2ee283c41e7e6126efca4f",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/build.json": "a9fad7fbd289412a3ec02641fcb53e8c403b18cdb2f7c599af89e2bb1fc49a37",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/build.log": "2596f17753927dc2781fb85bea1bb38ffba8e58f21dfe612c8c3a596e0db51c9",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/lifetime.json": "25ed42e756444c1c53c691be6715b86d54c473ac73d9fc52876448118961d429",
+    "out/lume-20261029-cpu30/native-dsd-lifetime-green-2/lifetime.log": "89a0327175deea820fde27830e8c0de28481593a3ecf16cd925034647a347680",
+    "out/lume-20261029-cpu30/native-dsd-adoption-2/build.json": "3e4b6fee6fbcc6d4fb9ecd06a7ae178f9640fc2b00f73d390e704706a5d3be2c",
+    "out/lume-20261029-cpu30/native-dsd-adoption-2/build.log": "0b66d7741113ad4c4688953e615a556d736cd277be4eb870fc7898f2113cd56c",
+    "out/lume-20261029-cpu30/native-dsd-adoption-2/adoption.json": "c832be5981b6d930912254a7bfea6238fb93b4079c038f6a4af28ca8bd4088ec",
+    "out/lume-20261029-cpu30/native-dsd-adoption-2/adoption.log": "3244608001d5290027b8f4c4f9a60242bc1d9bc369f7a12fc2efbc1927b0341b",
+    "out/lume-20261029-cpu30/declarative-shadow-red-1/dsd.json": "1390ef8e215b6adb7fd7f03fd98ef08a9eb4348fa2f5af91b95130e4ffae2f14",
+    "out/lume-20261029-cpu30/declarative-shadow-red-2/dsd.json": "92833d8841decd576b749491538562ac23f1b8492f5243806dbb2c6a1d65b613",
+    "out/lume-20261029-cpu30/native-resources-dsd-2/cto-visual-review.json": "49a580305a0c417aaa9845c1b8b7e2c4c127bc7b4dbf7f13c780b935ad5af56a"
+  }
+}

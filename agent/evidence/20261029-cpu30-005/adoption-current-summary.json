@@ -1,0 +1,143 @@
+{
+  "startedUTC": "2026-10-29T05:49:06.887559+00:00",
+  "candidateSummary": "out/lume-20261029-cpu30/native-dsd-2/summary.json",
+  "candidateSummarySHA256": "e473bfd188f7174e9ad9e41d8042e6ec2d3b4b0e65cf886d3164f3ba975c966d",
+  "candidateArtifact": {
+    "path": "out/lume-20261029-cpu30/native-dsd-2/lumen-c259da2597a6e064",
+    "sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+    "bytes": 14057768
+  },
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-dsd-2/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+  "fixtures": [
+    {
+      "path": "tests/test_declarative_shadow_adoption_lifetime.cc",
+      "sha256": "5f8d947e6592742b472560017c2a08959551151fb69c3d1aa23934f6ce9b7b8e",
+      "bytes": 5929
+    },
+    {
+      "path": "tools/apple-session-gpt6as/dsd_adoption_lifetime_cpu30.mk",
+      "sha256": "3abcdc51721c698fe896ce5bc162c6f470371c42ea2eb2b60f5ee43feea3efe7",
+      "bytes": 371
+    }
+  ],
+  "scope": "Eight real V8 realm teardown cycles, each with four retired-tree adoption dispositions; custom regression only.",
+  "stages": [
+    {
+      "name": "build",
+      "command": [
+        "make",
+        "-j3",
+        "-f",
+        "Makefile",
+        "-f",
+        "tools/apple-session-gpt6as/dsd_adoption_lifetime_cpu30.mk",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/test_declarative_shadow_adoption_lifetime"
+      ],
+      "durationSeconds": 1.106,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 7.953,
+      "maximumSamplingGapSeconds": 1.034,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-adoption-2/build.json",
+      "monitorSHA256": "3e4b6fee6fbcc6d4fb9ecd06a7ae178f9640fc2b00f73d390e704706a5d3be2c",
+      "log": "out/lume-20261029-cpu30/native-dsd-adoption-2/build.log",
+      "logSHA256": "0b66d7741113ad4c4688953e615a556d736cd277be4eb870fc7898f2113cd56c",
+      "passed": true
+    },
+    {
+      "name": "adoption",
+      "command": [
+        "/Users/devin/repos/lumen/out/lume-20261029-cpu30/native-dsd-adoption-2/test_declarative_shadow_adoption_lifetime-383c10b81bbfbefe"
+      ],
+      "durationSeconds": 1.108,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.028,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-adoption-2/adoption.json",
+      "monitorSHA256": "c832be5981b6d930912254a7bfea6238fb93b4079c038f6a4af28ca8bd4088ec",
+      "log": "out/lume-20261029-cpu30/native-dsd-adoption-2/adoption.log",
+      "logSHA256": "3244608001d5290027b8f4c4f9a60242bc1d9bc369f7a12fc2efbc1927b0341b",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "testArtifact": {
+    "path": "out/lume-20261029-cpu30/native-dsd-adoption-2/test_declarative_shadow_adoption_lifetime-383c10b81bbfbefe",
+    "sha256": "383c10b81bbfbefe97769df85255382e716c0e795d6f5542ff364149b70d5d65",
+    "bytes": 13846520
+  },
+  "result": {
+    "cycles": 8,
+    "dispositionsPerCycle": 4,
+    "checks": 34,
+    "passed": 34,
+    "failed": 0,
+    "baselineNodes": 0,
+    "finalNodes": 0,
+    "durationMs": 136.849
+  },
+  "cycles": [
+    {
+      "cycle": 0,
+      "baselineNodes": 0,
+      "beforeTeardown": 69,
+      "afterTeardown": 0
+    },
+    {
+      "cycle": 1,
+      "baselineNodes": 0,
+      "beforeTeardown": 69,
+      "afterTeardown": 0
+    },
+    {
+      "cycle": 2,
+      "baselineNodes": 0,
+      "beforeTeardown": 69,
+      "afterTeardown": 0
+    },
+    {
+      "cycle": 3,
+      "baselineNodes": 0,
+      "beforeTeardown": 69,
+      "afterTeardown": 0
+    },
+    {
+      "cycle": 4,
+      "baselineNodes": 0,
+      "beforeTeardown": 69,
+      "afterTeardown": 0
+    },
+    {
+      "cycle": 5,
+      "baselineNodes": 0,
+      "beforeTeardown": 69,
+      "afterTeardown": 0
+    },
+    {
+      "cycle": 6,
+      "baselineNodes": 0,
+      "beforeTeardown": 69,
+      "afterTeardown": 0
+    },
+    {
+      "cycle": 7,
+      "baselineNodes": 0,
+      "beforeTeardown": 69,
+      "afterTeardown": 0
+    }
+  ],
+  "finishedUTC": "2026-10-29T05:49:09.137661+00:00",
+  "durationSeconds": 2.25
+}

@@ -1,0 +1,24 @@
+{
+  "appliedUTC": "2026-10-29T05:46:32.725800+00:00",
+  "beforeSHA256": {
+    "src/html/html.c": "4651ead84e6a70bea0c68a5c3bb50e7b5730bab845d7ee07341f2bea02ac9a55",
+    "src/js/frames.cc": "8f0e1818cb770dd66c262e1a1dfabd86663b3b71a59f016aa8f322e58fc37f00"
+  },
+  "afterSHA256": {
+    "src/html/html.c": "199162994dda0b431647d0b80bf763bbda9dced35dfa65dff01cd9fa5805453c",
+    "src/js/frames.cc": "638fbb25c26fb22bc0b8aa4a9d789c049d2262d0b867e1bd2adebee0fabac7cf"
+  },
+  "rejectedCandidate": {
+    "path": "out/lume-20261029-cpu30/native-dsd-1/lumen-6528f5de82184891",
+    "sha256": "6528f5de82184891a39f024ee5559afbd604c1d0e6eb137f067df3ea4ab621c4",
+    "bytes": 14057768
+  },
+  "regressionEvidence": "out/lume-20261029-cpu30/dsd-upstream-pair-1/summary.json",
+  "regressionEvidenceSHA256": "d3d7c6ec72fd48a25f00d71fd55111c015fbee2cd70e8c867de814a8ea47f115",
+  "initialPatchReceipt": "out/lume-20261029-cpu30/declarative-shadow-patch-1/receipt.json",
+  "initialPatchReceiptSHA256": "76188039632437bf8b244c10060064b43ea24e100fe4d6174e827f25c48f5e2b",
+  "scope": "Receiver-correct detached HTML document streams and cloned document policy only. Initial network/frame declarative shadow parsing is deferred until real parser/script checkpoints exist; all37 original fixture outcomes remain visible.",
+  "deferredInitialNetworkFeature": true,
+  "assertionChanges": false,
+  "actualHTMLDocumentPolicyPreservedAtJsCtxCreation": true
+}

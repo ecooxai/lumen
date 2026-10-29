@@ -1,0 +1,32 @@
+{
+  "appliedUTC": "2026-10-29T05:34:54.234852+00:00",
+  "beforeSHA256": {
+    "src/dom/dom.h": "485176ebeb62c46a2875c6ab2ec567ccc40b178cdd5d3b13e7b2de4d495be612",
+    "src/dom/dom.c": "cb8f23b39814ac5ed527b4f2090cf14dd4d4793660564ed1dc9ee071a1c2d740",
+    "src/html/html.c": "5cbeceeb402b0cf79bd46cc9af63b2dcf05dea3f0199c27b200d3e3611ba2db6",
+    "src/js/jsnative.cc": "4d3b3e9106451873c8d1fe29823966edbc5e4e81fb453efe2a3412a646fdb220",
+    "src/js/js.cc": "ae8deb196729291c038dca13533808eb06e5c3ad236bf2d1ef815e8abe5f878b",
+    "src/js/frames.cc": "8f608a0f8af0362af69cd57e9544067ddc4213fa7b053d3be7fa5f63bb6164f9",
+    "src/js/prelude/02-node.js": "68dbfc71982d48c5638a36a917ee9d490530b1f97462aee5c22e3b592f2bd50f",
+    "src/js/prelude/03-element.js": "48b7ac01190fcb2c732560fc7705d3d1d793228ad508a62ba1313b469dd1e7dd",
+    "src/js/prelude/05-ce.js": "99aab51bda702019da5b3f8ee5ce9e8b863aab4266d9804c5fca6d25e2e719ee",
+    "src/js/prelude/06-document.js": "3f2e30effe49d43e68ca0948df538004d6226146f42d1a7b75f732aaf2ba93a9"
+  },
+  "afterSHA256": {
+    "src/dom/dom.h": "eceaac84049260e7596fd72a9103965d3fc45f019b228e21d184d4f3abf68f23",
+    "src/dom/dom.c": "f75bdc9fd65fdd00df8150f9c03c4d70d597ce65a3adaee89a2af8f478193d74",
+    "src/html/html.c": "4651ead84e6a70bea0c68a5c3bb50e7b5730bab845d7ee07341f2bea02ac9a55",
+    "src/js/jsnative.cc": "cd4359264b42329a87558e09a671b3a153fd34f70d9a56a96417fc965feb4746",
+    "src/js/js.cc": "d9a3f2b9461e750e3ae057783ac90225c9818e61e69f6238c1e732231516f7e3",
+    "src/js/frames.cc": "8f0e1818cb770dd66c262e1a1dfabd86663b3b71a59f016aa8f322e58fc37f00",
+    "src/js/prelude/02-node.js": "9a8df983ac4b39c294ed459cb8763824d5611359df08a467e6675978c44bb90f",
+    "src/js/prelude/03-element.js": "675e1c130e23225bd4f4bb7b0eb5f6af9079c22d03781ff7431c9497d5e6bf53",
+    "src/js/prelude/05-ce.js": "e1618c710c98ad5169f6eb36b66f7709bb1b6bc2bbca3e2ebf6b9c427ada71bd",
+    "src/js/prelude/06-document.js": "98c43b850f2fda2f007aa56885d90f369c38832449604675fbc3e92eb1c2bde6"
+  },
+  "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+  "redPath": "out/lume-20261029-cpu30/declarative-shadow-red-2/summary.json",
+  "redSHA256": "d88592b7d94e04d4104ea34f9980befdfb1255ef19ff6b36b7f13891a87452bb",
+  "sourceBaseCommit": "186666fe7ad94ef08d6cc80486e8cc808b99144e",
+  "scope": "Core declarative shadow parsing and receiver-correct detached document streams; active-page document.write behavior retained; no WPT assertions modified."
+}

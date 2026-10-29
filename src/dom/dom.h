@@ -21,11 +21,17 @@ enum {
     NF_CSP_STYLE_CHECKED = 1 << 16, NF_CSP_STYLE_BLOCKED = 1 << 17,   /* parser-inserted <style>: CSP decided once */
     NF_STYLE_CSSOM = 1 << 18,     /* style attribute last written through CSSOM (el.style): exempt from CSP */
     NF_CSP_SATTR_CHECKED = 1 << 19, NF_CSP_SATTR_BLOCKED = 1 << 20,   /* style= attribute CSP decision for inline_style_src */
+    NF_SHADOW_CLOSED = 1 << 21, NF_SHADOW_DELEGATES_FOCUS = 1 << 22,
+    NF_SHADOW_DECLARATIVE = 1 << 23, NF_SHADOW_CLONABLE = 1 << 24,
+    NF_SHADOW_SERIALIZABLE = 1 << 25, NF_SHADOW_MANUAL = 1 << 26,
+    NF_SHADOW_OPTIONS = NF_SHADOW_CLOSED | NF_SHADOW_DELEGATES_FOCUS | NF_SHADOW_DECLARATIVE |
+                        NF_SHADOW_CLONABLE | NF_SHADOW_SERIALIZABLE | NF_SHADOW_MANUAL,
 };
 
 typedef struct { const char *name; char *value; size_t value_len; const char *namespace_uri; } Attr; /* names/namespaces are atoms; value may contain NUL */
 
 struct Document;
+struct HtmlParser;
 struct ComputedStyle;
 struct Box;
 
@@ -65,6 +71,9 @@ typedef struct Document {
     Node *target_element;         /* retained initial fragment target; independent of later ID/URL mutations */
     WebEncoding encoding;        /* immutable response encoding; zero keeps Unicode/default documents UTF-8 */
     bool quirks;
+    bool allow_declarative_shadow_roots; /* false for detached string-created documents */
+    struct HtmlParser *write_parser;     /* owned only by a detached document.write stream */
+    VEC(Node *) retired_write_roots;     /* detached trees with still-live JS descendants */
     struct Document *template_contents_owner; /* owned, lazily created inert document */
     bool is_template_contents_owner;
     char *csp;                    /* enforced Content-Security-Policy, one policy per line (NULL = none) */
@@ -89,6 +98,7 @@ Document *doc_new(const char *url);
 void doc_free(Document *d);
 Document *doc_template_contents_owner(Document *d);
 Node *node_template_content(Node *n);
+Node *node_attach_shadow(Node *host, uint32_t options, bool reuse_declarative);
 void node_adopt_tree(Node *n, Document *d);
 void doc_update_fragment_target(Document *d); /* initial navigation, before interactive readiness */
 Node *node_new_element(Document *d, const char *tag, int ns);
@@ -141,6 +151,10 @@ Node *html_parse_fragment(Document *d, Node *context, const char *src, size_t le
 /* Incremental parser for document.write & streaming */
 typedef struct HtmlParser HtmlParser;
 HtmlParser *html_parser_new(Document *d, Node *fragment_context);
+bool html_document_open(Document *d);
+bool html_document_write(Document *d, const char *src, size_t len);
+void html_document_close(Document *d);
+void html_document_dispose_write_state(Document *d);
 void html_parser_feed(HtmlParser *p, const char *src, size_t len);
 void html_parser_finish(HtmlParser *p);
 void html_parser_free(HtmlParser *p);

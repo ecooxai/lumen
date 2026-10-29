@@ -1,0 +1,136 @@
+{
+  "signature": {
+    "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+    "manifest_sha256": "7f2b0405286816226928047248543c709d4df237a2cfbe720e5c05e7a3554b24",
+    "inventory_sha256": "5ceae6d5879ba27038f530511428432d652d5e2d079c4b33a4d017c3fee94d1b",
+    "source_fixture": {
+      "wpt_revision": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+      "manifest_sha256": "7f2b0405286816226928047248543c709d4df237a2cfbe720e5c05e7a3554b24",
+      "tracked_upstream_sources_clean": true
+    },
+    "server_config_sha256": "d3d4f26a540e3564d1d9f6137be4c465d99283ce5ad87531b67cd5719c79c9d0",
+    "fixture_manifest_sha256": "3f0ea2bafc7cac953cc5a141ef2e3717d2613428e5de70ddc09914cd31f25240",
+    "selection": {
+      "types": [
+        "testharness"
+      ],
+      "prefixes": [
+        "/encoding/idlharness.any.html",
+        "/encoding/idlharness.any.worker.html",
+        "/encoding/streams/backpressure.any.html",
+        "/encoding/streams/backpressure.any.worker.html",
+        "/encoding/streams/decode-attributes.any.html",
+        "/encoding/streams/decode-attributes.any.worker.html",
+        "/encoding/streams/decode-bad-chunks.any.html",
+        "/encoding/streams/decode-bad-chunks.any.worker.html",
+        "/encoding/streams/decode-ignore-bom.any.html",
+        "/encoding/streams/decode-ignore-bom.any.worker.html",
+        "/encoding/streams/decode-incomplete-input.any.html",
+        "/encoding/streams/decode-incomplete-input.any.worker.html",
+        "/encoding/streams/decode-non-utf8.any.html",
+        "/encoding/streams/decode-non-utf8.any.worker.html",
+        "/encoding/streams/decode-split-character.any.html",
+        "/encoding/streams/decode-split-character.any.worker.html",
+        "/encoding/streams/decode-utf8.any.html",
+        "/encoding/streams/decode-utf8.any.worker.html",
+        "/encoding/streams/encode-bad-chunks.any.html",
+        "/encoding/streams/encode-bad-chunks.any.worker.html",
+        "/encoding/streams/encode-utf8.any.html",
+        "/encoding/streams/encode-utf8.any.worker.html",
+        "/encoding/streams/invalid-realm.window.html",
+        "/encoding/streams/readable-writable-properties.any.html",
+        "/encoding/streams/readable-writable-properties.any.worker.html",
+        "/encoding/streams/realms.window.html"
+      ],
+      "order": [
+        "type",
+        "test URL"
+      ],
+      "offset": 0,
+      "limit": null,
+      "eligible_files_before_slice": 26,
+      "selected_files": 26
+    },
+    "schedule_sha256": "86c9bb4c01e0394b7052abab611088e7c68c7674cb083dd84ceefa6b063d594d",
+    "engine": "lumen",
+    "binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+    "runner_sha256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7",
+    "reporter_sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "reporter_delivery": "official WPT /resources/testharnessreport.js exact file alias",
+    "verified_http_reporter_sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "monitor_sha256": "e31aa4fc949b149ac9c0e8c6170ce72ec3def971dbab4d6b026635f262d9cd79",
+    "native_fixture": {
+      "host_map": "not-web-platform.test=127.0.0.1,web-platform.test=127.0.0.1,www.not-web-platform.test=127.0.0.1,www.web-platform.test=127.0.0.1,www.www.not-web-platform.test=127.0.0.1,www.www.web-platform.test=127.0.0.1,www.www1.not-web-platform.test=127.0.0.1,www.www1.web-platform.test=127.0.0.1,www.www2.not-web-platform.test=127.0.0.1,www.www2.web-platform.test=127.0.0.1,www.xn--lve-6lad.not-web-platform.test=127.0.0.1,www.xn--lve-6lad.web-platform.test=127.0.0.1,www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,www1.not-web-platform.test=127.0.0.1,www1.web-platform.test=127.0.0.1,www1.www.not-web-platform.test=127.0.0.1,www1.www.web-platform.test=127.0.0.1,www1.www1.not-web-platform.test=127.0.0.1,www1.www1.web-platform.test=127.0.0.1,www1.www2.not-web-platform.test=127.0.0.1,www1.www2.web-platform.test=127.0.0.1,www1.xn--lve-6lad.not-web-platform.test=127.0.0.1,www1.xn--lve-6lad.web-platform.test=127.0.0.1,www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,www2.not-web-platform.test=127.0.0.1,www2.web-platform.test=127.0.0.1,www2.www.not-web-platform.test=127.0.0.1,www2.www.web-platform.test=127.0.0.1,www2.www1.not-web-platform.test=127.0.0.1,www2.www1.web-platform.test=127.0.0.1,www2.www2.not-web-platform.test=127.0.0.1,www2.www2.web-platform.test=127.0.0.1,www2.xn--lve-6lad.not-web-platform.test=127.0.0.1,www2.xn--lve-6lad.web-platform.test=127.0.0.1,www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--lve-6lad.web-platform.test=127.0.0.1,xn--lve-6lad.www.not-web-platform.test=127.0.0.1,xn--lve-6lad.www.web-platform.test=127.0.0.1,xn--lve-6lad.www1.not-web-platform.test=127.0.0.1,xn--lve-6lad.www1.web-platform.test=127.0.0.1,xn--lve-6lad.www2.not-web-platform.test=127.0.0.1,xn--lve-6lad.www2.web-platform.test=127.0.0.1,xn--lve-6lad.xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--lve-6lad.xn--lve-6lad.web-platform.test=127.0.0.1,xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test=127.0.0.1,xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test=127.0.0.1",
+      "host_map_mode": "exact",
+      "ssl_cert_sha256": "6760c932218bfe2703b10f2ea89a54b409f04d94dc5a1c9cf0f1fe7da8b30b52"
+    },
+    "origin": "http://web-platform.test:18800",
+    "secure_origin": "https://web-platform.test:18443",
+    "h2_origin": "https://web-platform.test:18900",
+    "timeout_s": 15,
+    "long_timeout_s": 65,
+    "strict_infrastructure": false,
+    "chromium_args": [
+      "--host-resolver-rules=MAP not-web-platform.test 127.0.0.1, MAP web-platform.test 127.0.0.1, MAP www.not-web-platform.test 127.0.0.1, MAP www.web-platform.test 127.0.0.1, MAP www.www.not-web-platform.test 127.0.0.1, MAP www.www.web-platform.test 127.0.0.1, MAP www.www1.not-web-platform.test 127.0.0.1, MAP www.www1.web-platform.test 127.0.0.1, MAP www.www2.not-web-platform.test 127.0.0.1, MAP www.www2.web-platform.test 127.0.0.1, MAP www.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP www1.not-web-platform.test 127.0.0.1, MAP www1.web-platform.test 127.0.0.1, MAP www1.www.not-web-platform.test 127.0.0.1, MAP www1.www.web-platform.test 127.0.0.1, MAP www1.www1.not-web-platform.test 127.0.0.1, MAP www1.www1.web-platform.test 127.0.0.1, MAP www1.www2.not-web-platform.test 127.0.0.1, MAP www1.www2.web-platform.test 127.0.0.1, MAP www1.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www1.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www1.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www1.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP www2.not-web-platform.test 127.0.0.1, MAP www2.web-platform.test 127.0.0.1, MAP www2.www.not-web-platform.test 127.0.0.1, MAP www2.www.web-platform.test 127.0.0.1, MAP www2.www1.not-web-platform.test 127.0.0.1, MAP www2.www1.web-platform.test 127.0.0.1, MAP www2.www2.not-web-platform.test 127.0.0.1, MAP www2.www2.web-platform.test 127.0.0.1, MAP www2.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP www2.xn--lve-6lad.web-platform.test 127.0.0.1, MAP www2.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP www2.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www1.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www1.web-platform.test 127.0.0.1, MAP xn--lve-6lad.www2.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.www2.web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--lve-6lad.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www1.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www1.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www2.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.www2.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--lve-6lad.web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.not-web-platform.test 127.0.0.1, MAP xn--n8j6ds53lwwkrqhv28a.xn--n8j6ds53lwwkrqhv28a.web-platform.test 127.0.0.1",
+      "--ignore-certificate-errors-spki-list=WXjEgm6G9rSgRQQVGbD5q+zOszPmv3ZBSfaIAMv+bY8="
+    ],
+    "chromium_headless": null
+  },
+  "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "started_at_unix_ms": 1793253096151,
+  "binary": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/native-dsd-2/lumen-c259da2597a6e064",
+  "lumen_revision": "186666fe7ad94ef08d6cc80486e8cc808b99144e",
+  "lumen_dirty": true,
+  "full_inventory_counts": {
+    "crashtest": 28,
+    "manual": 2,
+    "reftest": 7,
+    "testharness": 2155
+  },
+  "scheduled_files": 26,
+  "supported_execution_types": [
+    "test262",
+    "testharness"
+  ],
+  "inventory_coverage_by_type": {
+    "crashtest": {
+      "inventory_variants": 28,
+      "selected_variants": 0,
+      "outside_selection_variants": 28,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "manual": {
+      "inventory_variants": 2,
+      "selected_variants": 0,
+      "outside_selection_variants": 2,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "reftest": {
+      "inventory_variants": 7,
+      "selected_variants": 0,
+      "outside_selection_variants": 7,
+      "executor_available": false,
+      "execution_plan": "NOTRUN",
+      "reason": "No validated executor for this class; never counted as passed"
+    },
+    "testharness": {
+      "inventory_variants": 2155,
+      "selected_variants": 26,
+      "outside_selection_variants": 2129,
+      "executor_available": true,
+      "execution_plan": "SCHEDULED",
+      "reason": "Official server wrapper and synchronous reporter"
+    }
+  },
+  "automation_limitation": "No testdriver/WebDriver actions; manual, reference and protocol tests remain explicitly unrun.",
+  "is_full_suite_schedule": false,
+  "last_invocation_budget_s": 240.0,
+  "last_invocation_started_unix_ms": 1793253096176,
+  "last_checkpoint_unix_ms": 1793253109103,
+  "finished_schedule": true
+}

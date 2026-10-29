@@ -1,0 +1,14 @@
+{
+  "reviewed": true,
+  "reviewer": "root CTO, direct inspection of the actual native window capture",
+  "reviewedUTC": "2026-10-29T06:01:47Z",
+  "nativeSHA256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+  "screenshotPath": "out/lume-20261029-cpu30/native-resources-dsd-2/scroll/native-window/gpt6-astra-pro_builtin-agents_devinmac3d_lumen-window.png",
+  "screenshotSHA256": "5245b668fdf081c1d237bc1b55735d49c786bc50c86ce643b1ff7688072061ee",
+  "viewport": [
+    1000,
+    700
+  ],
+  "finding": "Coherent native browser chrome and aligned alternating fixture rows 55\u201374, with no visible rendering corruption.",
+  "scope": "Synthetic Mac scroll fixture only. This is not public-site or mobile visual coverage. The navigation resource gate was still running at the visual-review time and is accepted separately."
+}

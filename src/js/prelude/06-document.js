@@ -130,8 +130,10 @@ methods(Document.prototype, {
         return false;
     },
     queryCommandSupported(c) { return /^(inserttext|delete)$/i.test(c); },
-    open() { return this; }, close() {},
-    write(...s) { docWrite(s.join('')); }, writeln(...s) { docWrite(s.join('') + '\n'); },
+    open() { if (this !== document) N.documentOpen(this); return this; },
+    close() { if (this !== document) N.documentClose(this); },
+    write(...s) { const text = s.join(''); if (this === document) docWrite(text); else N.documentWrite(this, text); },
+    writeln(...s) { const text = s.join('') + '\n'; if (this === document) docWrite(text); else N.documentWrite(this, text); },
 });
 function docWrite(html) {
     const s = N.currentScript(), parent = s ? N.parent(s) : document.body;

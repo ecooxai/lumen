@@ -1,0 +1,1924 @@
+{
+  "startedUTC": "2026-10-29T05:49:54.704046+00:00",
+  "scope": "Independent six whole upstream DSD files at the existing official pin, outside the frozen 1515-variant schedule and outside its 279 recorded variants. No assertions filtered or rewritten. Basic file deliberately retains unsupported API/slot/IDL failures.",
+  "pin": "7f8d49b5a82606efc771f43d10aad5bce5ccbfeb",
+  "upstream": "output/wpt-10290244/upstream",
+  "schedule": [
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-basic.html",
+      "sha256": "f4eb6d3e2a5459e08453f1ff25ffcbc9da0cfe696c76221d194f646532274bca"
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-after-attachshadow.html",
+      "sha256": "567de552e82a32f8b7d698dd5e2b45b1cbbe474210f47e1397ff19a6e7319227"
+    },
+    {
+      "path": "shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+      "sha256": "1693cd57a8b99e80e6600fc423dd40b97cf699120f995fd08a68bf90587bc116"
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+      "sha256": "3b5120ec28b5d94f51679a7c9e99711771fc41774c1f0ef6dff0757bcaa550ed"
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+      "sha256": "cd0ba36bbce56f8fcd800007e0df73451db6c38a46a76edea769ade1d8710ce2"
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-parser-interaction.html",
+      "sha256": "957c6660ae31f816a2d4c2e3e0b6db853ce4d55a9d22e1c8d1691cbdd652d64d"
+    }
+  ],
+  "signature": {
+    "reporterSHA256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328",
+    "reporterDelivery": "Unchanged project completion reporter at /resources/testharnessreport.js, identical for both native artifacts and qualified Chrome.",
+    "adapterInputs": {
+      "frozen_selection": {
+        "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/priority-selection-v1.json",
+        "sha256": "46c7dc21e6bea1fff3505c9390663f160c4fcf34aa3d4f897cc1732efd2ed7d9"
+      },
+      "inventory": {
+        "path": "/Users/devin/repos/lumen/output/wpt-10290244/inventory.json",
+        "sha256": "5ceae6d5879ba27038f530511428432d652d5e2d079c4b33a4d017c3fee94d1b"
+      },
+      "fixture_readiness": {
+        "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/fixture-readiness.json",
+        "sha256": "3f0ea2bafc7cac953cc5a141ef2e3717d2613428e5de70ddc09914cd31f25240"
+      },
+      "server_config": {
+        "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/server.config.json",
+        "sha256": "d3d4f26a540e3564d1d9f6137be4c465d99283ce5ad87531b67cd5719c79c9d0"
+      },
+      "browser_environment": {
+        "path": "/Users/devin/repos/lumen/output/session-102900614/wpt-fixture-1/browser-fixture-environment.json",
+        "sha256": "76eb4cd3a5008bf7c770c32ee7702d03af64e4ec0e96472f1f23e740cee90731"
+      },
+      "runner": {
+        "path": "/Users/devin/repos/lumen/tests/wpt/full_runner.py",
+        "sha256": "a7bc96c3697fb099ad63c145011bc434a66d865a713a62e5198731bed9600ac7"
+      },
+      "reporter": {
+        "path": "/Users/devin/repos/lumen/tests/wpt/testharnessreport.js",
+        "sha256": "dd0c222e2680c8621ac42dc98746b15891fa4e14d9f99f4c909dbc2ca2558328"
+      },
+      "monitor": {
+        "path": "/Users/devin/repos/lumen/tools/monitor_process.py",
+        "sha256": "e31aa4fc949b149ac9c0e8c6170ce72ec3def971dbab4d6b026635f262d9cd79"
+      },
+      "orchestrator": {
+        "path": "/Users/devin/repos/lumen/tools/apple-session-gpt6as/run_priority_wpt_10290244.py",
+        "sha256": "b2395c8e7b00e4081924025d765cdb5386de19cd6eddb0f4178c4a8c6d6e2987"
+      }
+    },
+    "timeoutPerFileSeconds": 10,
+    "overallBudgetSeconds": 105,
+    "qualificationSHA256": "1e34a36c89d61da6314e975fb8fe8296e0bd2e07ac73cc3836861785fcac5452"
+  },
+  "binaries": {
+    "baseline": {
+      "path": "out/lume-20261029-cpu30/native-default-1/lumen-3ad884713a4aa896",
+      "sha256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce"
+    },
+    "candidate": {
+      "path": "out/lume-20261029-cpu30/native-dsd-2/lumen-c259da2597a6e064",
+      "sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849"
+    }
+  },
+  "chromeBinarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "complete": true,
+  "engines": {
+    "baseline": {
+      "rows": [
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 22,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: Basic test",
+              "status": "FAIL",
+              "message": "assert_equals: No leftover template node expected null but got Element node <template shadowrootmode=\"open\">\n    <slot id=\"s1\" name=\"..."
+            },
+            {
+              "name": "Declarative Shadow DOM: Feature detection",
+              "status": "FAIL",
+              "message": "assert_true: Unable to feature detect expected true got false"
+            },
+            {
+              "name": "Shadowrootmode reflection",
+              "status": "FAIL",
+              "message": "assert_equals: The shadowRootMode IDL should reflect the content attribute expected (string) \"open\" but got (undefined) undefined"
+            },
+            {
+              "name": "Shadowrootmode reflection, setter",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\" but got \"blah\""
+            },
+            {
+              "name": "Shadowrootdelegatesfocus reflection",
+              "status": "FAIL",
+              "message": "assert_equals: The shadowRootDelegatesFocus IDL should reflect the content attribute expected (boolean) true but got (undefined) undefined"
+            },
+            {
+              "name": "Shadowrootdelegatesfocus reflection, setter",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"\" but got (object) null"
+            },
+            {
+              "name": "Shadowrootclonable reflection",
+              "status": "FAIL",
+              "message": "assert_equals: The shadowRootClonable IDL should reflect the content attribute expected (boolean) true but got (undefined) undefined"
+            },
+            {
+              "name": "Shadowrootclonable reflection, setter",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"\" but got (object) null"
+            },
+            {
+              "name": "Declarative Shadow DOM: Fragment parser basic test",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: Invalid shadow root attribute",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: Closed shadow root attribute",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: Missing closing tag",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: delegates focus attribute",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: clonable attribute",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: Multiple roots",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"closed\" but got \"open\""
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing declarative shadow root (with shadowrootclonable)",
+              "status": "FAIL",
+              "message": "assert_true: Inner div should have a shadow root expected true got false"
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing (deeply nested) declarative shadow root",
+              "status": "FAIL",
+              "message": "assert_true: Inner div should have a shadow root expected true got false"
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing a template containing declarative shadow root",
+              "status": "FAIL",
+              "message": "assert_true: Inner div should have a shadow root expected true got false"
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing declarative shadow root and UA shadow root",
+              "status": "FAIL",
+              "message": "assert_true: Inner div should have a shadow root expected true got false"
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing closed declarative shadow root and UA shadow root",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: declarative shadow roots are not supported by the template element",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: explicit test that exceptions are not thrown",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 2930,
+          "duration_ms": 510,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.016,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.641,
+            "rss_final_mb": 0.641,
+            "rss_steady_median_mb": 0.641,
+            "rss_steady_p95_mb": 0.641,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:54 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 20
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/declarative-shadow-dom-basic.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-basic.html",
+          "startedUTC": "2026-10-29T05:49:54.785330+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: declarative shadow should fail if attachShadow() already called",
+              "status": "FAIL",
+              "message": "assert_true: expected true got false"
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 2969,
+          "duration_ms": 484,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.016,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.75,
+            "rss_final_mb": 0.75,
+            "rss_steady_median_mb": 0.75,
+            "rss_steady_p95_mb": 0.75,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:55 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 16
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/declarative-after-attachshadow.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-after-attachshadow.html",
+          "startedUTC": "2026-10-29T05:49:55.300712+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: innerHTML should work on <template shadowroot> that is left over",
+              "status": "FAIL",
+              "message": "assert_true: Shadow root should be present expected true got false"
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 2987,
+          "duration_ms": 481,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.019,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.734,
+            "rss_final_mb": 0.734,
+            "rss_steady_median_mb": 0.734,
+            "rss_steady_p95_mb": 0.734,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:55 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 18
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+          "startedUTC": "2026-10-29T05:49:55.785897+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 3,
+          "subtests": [
+            {
+              "name": "Repeated declarative shadow roots keep only the first",
+              "status": "FAIL",
+              "message": "assert_true: Remaining shadow root should be open expected true got false"
+            },
+            {
+              "name": "Calling attachShadow() on declarative shadow root must match mode",
+              "status": "FAIL",
+              "message": "assert_throws_dom: Mismatched shadow root mode should throw function \"() => {\n    open1.attachShadow({mode: \"closed\"});\n  }\" did not throw"
+            },
+            {
+              "name": "Calling attachShadow() on declarative shadow root must match all parameters",
+              "status": "FAIL",
+              "message": "assert_true: expected true got false"
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 2996,
+          "duration_ms": 470,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.02,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.75,
+            "rss_final_mb": 0.75,
+            "rss_steady_median_mb": 0.75,
+            "rss_steady_p95_mb": 0.75,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:56 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 17
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+          "startedUTC": "2026-10-29T05:49:56.267567+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "`document.write` on inner iframe handles declarative shadow DOM",
+              "status": "FAIL",
+              "message": "assert_true: write should create shadowroot expected true got false"
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 3023,
+          "duration_ms": 489,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.019,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.672,
+            "rss_final_mb": 0.672,
+            "rss_steady_median_mb": 0.672,
+            "rss_steady_p95_mb": 0.672,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:56 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 22
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+          "startedUTC": "2026-10-29T05:49:56.737824+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: Test for crashes and improper parsing",
+              "status": "PASS",
+              "message": null
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 3031,
+          "duration_ms": 490,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.022,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.781,
+            "rss_final_mb": 0.781,
+            "rss_steady_median_mb": 0.781,
+            "rss_steady_p95_mb": 0.781,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:57 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 18
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/declarative-parser-interaction.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-parser-interaction.html",
+          "startedUTC": "2026-10-29T05:49:57.227750+00:00"
+        }
+      ],
+      "summary": {
+        "recorded": 6,
+        "scheduled": 6,
+        "fullyPassing": 1,
+        "assertions": {
+          "FAIL": 26,
+          "PASS": 3
+        },
+        "harness": {
+          "OK": 6
+        }
+      }
+    },
+    "candidate": {
+      "rows": [
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 22,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: Basic test",
+              "status": "FAIL",
+              "message": "assert_equals: No leftover template node expected null but got Element node <template shadowrootmode=\"open\">\n    <slot id=\"s1\" name=\"..."
+            },
+            {
+              "name": "Declarative Shadow DOM: Feature detection",
+              "status": "FAIL",
+              "message": "assert_true: Unable to feature detect expected true got false"
+            },
+            {
+              "name": "Shadowrootmode reflection",
+              "status": "FAIL",
+              "message": "assert_equals: The shadowRootMode IDL should reflect the content attribute expected (string) \"open\" but got (undefined) undefined"
+            },
+            {
+              "name": "Shadowrootmode reflection, setter",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"\" but got \"blah\""
+            },
+            {
+              "name": "Shadowrootdelegatesfocus reflection",
+              "status": "FAIL",
+              "message": "assert_equals: The shadowRootDelegatesFocus IDL should reflect the content attribute expected (boolean) true but got (undefined) undefined"
+            },
+            {
+              "name": "Shadowrootdelegatesfocus reflection, setter",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"\" but got (object) null"
+            },
+            {
+              "name": "Shadowrootclonable reflection",
+              "status": "FAIL",
+              "message": "assert_equals: The shadowRootClonable IDL should reflect the content attribute expected (boolean) true but got (undefined) undefined"
+            },
+            {
+              "name": "Shadowrootclonable reflection, setter",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"\" but got (object) null"
+            },
+            {
+              "name": "Declarative Shadow DOM: Fragment parser basic test",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: Invalid shadow root attribute",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: Closed shadow root attribute",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: Missing closing tag",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: delegates focus attribute",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: clonable attribute",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            },
+            {
+              "name": "Declarative Shadow DOM: Multiple roots",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"closed\" but got \"open\""
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing declarative shadow root (with shadowrootclonable)",
+              "status": "FAIL",
+              "message": "assert_true: Inner div should have a shadow root expected true got false"
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing (deeply nested) declarative shadow root",
+              "status": "FAIL",
+              "message": "assert_true: Inner div should have a shadow root expected true got false"
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing a template containing declarative shadow root",
+              "status": "FAIL",
+              "message": "assert_true: Inner div should have a shadow root expected true got false"
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing declarative shadow root and UA shadow root",
+              "status": "FAIL",
+              "message": "assert_true: Inner div should have a shadow root expected true got false"
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing closed declarative shadow root and UA shadow root",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: declarative shadow roots are not supported by the template element",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: explicit test that exceptions are not thrown",
+              "status": "FAIL",
+              "message": "div.setHTMLUnsafe is not a function"
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 3048,
+          "duration_ms": 492,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.018,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.703,
+            "rss_final_mb": 0.703,
+            "rss_steady_median_mb": 0.703,
+            "rss_steady_p95_mb": 0.703,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:57 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 17
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/declarative-shadow-dom-basic.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-basic.html",
+          "startedUTC": "2026-10-29T05:49:57.718385+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: declarative shadow should fail if attachShadow() already called",
+              "status": "FAIL",
+              "message": "assert_true: expected true got false"
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 3054,
+          "duration_ms": 479,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.018,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.719,
+            "rss_final_mb": 0.719,
+            "rss_steady_median_mb": 0.719,
+            "rss_steady_p95_mb": 0.719,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:58 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 17
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/declarative-after-attachshadow.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-after-attachshadow.html",
+          "startedUTC": "2026-10-29T05:49:58.211471+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: innerHTML should work on <template shadowroot> that is left over",
+              "status": "FAIL",
+              "message": "assert_true: Shadow root should be present expected true got false"
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 3082,
+          "duration_ms": 483,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.018,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.656,
+            "rss_final_mb": 0.656,
+            "rss_steady_median_mb": 0.656,
+            "rss_steady_p95_mb": 0.656,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:58 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 20
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+          "startedUTC": "2026-10-29T05:49:58.690818+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 3,
+          "subtests": [
+            {
+              "name": "Repeated declarative shadow roots keep only the first",
+              "status": "FAIL",
+              "message": "assert_true: Remaining shadow root should be open expected true got false"
+            },
+            {
+              "name": "Calling attachShadow() on declarative shadow root must match mode",
+              "status": "FAIL",
+              "message": "assert_throws_dom: Mismatched shadow root mode should throw function \"() => {\n    open1.attachShadow({mode: \"closed\"});\n  }\" did not throw"
+            },
+            {
+              "name": "Calling attachShadow() on declarative shadow root must match all parameters",
+              "status": "FAIL",
+              "message": "assert_true: expected true got false"
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 3088,
+          "duration_ms": 479,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.018,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.609,
+            "rss_final_mb": 0.609,
+            "rss_steady_median_mb": 0.609,
+            "rss_steady_p95_mb": 0.609,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:59 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 18
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+          "startedUTC": "2026-10-29T05:49:59.174235+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "`document.write` on inner iframe handles declarative shadow DOM",
+              "status": "FAIL",
+              "message": "assert_true: write should create shadowroot expected true got false"
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 3107,
+          "duration_ms": 486,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.017,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.656,
+            "rss_final_mb": 0.656,
+            "rss_steady_median_mb": 0.656,
+            "rss_steady_p95_mb": 0.656,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:49:59 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 18
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+          "startedUTC": "2026-10-29T05:49:59.654410+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: Test for crashes and improper parsing",
+              "status": "PASS",
+              "message": null
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "natural_exit_code": null,
+          "pid": 3115,
+          "duration_ms": 485,
+          "metrics": {
+            "samples": 1,
+            "steady_samples": 1,
+            "interval_cpu_samples": 0,
+            "steady_interval_cpu_samples": 0,
+            "max_sampling_gap_s": 0.017,
+            "cpu_mean_percent": 0.0,
+            "steady_cpu_mean_percent": 0.0,
+            "steady_cpu_median_percent": 0.0,
+            "steady_cpu_p95_percent": 0.0,
+            "cpu_peak_percent": 0.0,
+            "interval_cpu_mean_percent": null,
+            "steady_interval_cpu_mean_percent": null,
+            "steady_interval_cpu_median_percent": null,
+            "steady_interval_cpu_p95_percent": null,
+            "interval_cpu_peak_percent": null,
+            "rss_peak_mb": 0.641,
+            "rss_final_mb": 0.641,
+            "rss_steady_median_mb": 0.641,
+            "rss_steady_p95_mb": 0.641,
+            "rss_steady_growth_mb": 0.0,
+            "in_memory_sample_limit": 600,
+            "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+            "quantile_scope": "all recorded samples",
+            "errors": [],
+            "sample_interval_s": 1,
+            "stop_reason": "requested_stop",
+            "telemetry_status": "partial",
+            "interval_cpu_coverage": "unavailable",
+            "observed_span_s": 0,
+            "root_start_identity": "Wed Oct 28 22:50:00 2026",
+            "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+            "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+            "memory_unit": "MiB (legacy field names retain mb)",
+            "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+            "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+            "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+          },
+          "cleanup": {
+            "sent_sigterm": true,
+            "sent_sigkill": false,
+            "error": null,
+            "post_signal_verification": {
+              "allowed_wait_s": 1,
+              "initial_live_members": {},
+              "duration_ms": 18
+            },
+            "process_group_gone": true,
+            "remaining_group_members": {},
+            "root_exit_code": 0
+          },
+          "test": "shadow-dom/declarative/declarative-parser-interaction.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-parser-interaction.html",
+          "startedUTC": "2026-10-29T05:50:00.140959+00:00"
+        }
+      ],
+      "summary": {
+        "recorded": 6,
+        "scheduled": 6,
+        "fullyPassing": 1,
+        "assertions": {
+          "FAIL": 26,
+          "PASS": 3
+        },
+        "harness": {
+          "OK": 6
+        }
+      }
+    },
+    "chrome": {
+      "rows": [
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 22,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: Basic test",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: Feature detection",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Shadowrootmode reflection",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Shadowrootmode reflection, setter",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Shadowrootdelegatesfocus reflection",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Shadowrootdelegatesfocus reflection, setter",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Shadowrootclonable reflection",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Shadowrootclonable reflection, setter",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: Fragment parser basic test",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: Invalid shadow root attribute",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: Closed shadow root attribute",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: Missing closing tag",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: delegates focus attribute",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: clonable attribute",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: Multiple roots",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing declarative shadow root (with shadowrootclonable)",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing (deeply nested) declarative shadow root",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing a template containing declarative shadow root",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing declarative shadow root and UA shadow root",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: template containing closed declarative shadow root and UA shadow root",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: declarative shadow roots are not supported by the template element",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Declarative Shadow DOM: explicit test that exceptions are not thrown",
+              "status": "PASS",
+              "message": null
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "duration_ms": 337,
+          "cleanup": {
+            "context_id": "AEE9122FA6D417CD2930D90626AB3D35",
+            "errors": []
+          },
+          "browser_pid": 3144,
+          "telemetry_errors": [],
+          "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+          "test": "shadow-dom/declarative/declarative-shadow-dom-basic.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-basic.html",
+          "startedUTC": "2026-10-29T05:50:01.170234+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: declarative shadow should fail if attachShadow() already called",
+              "status": "PASS",
+              "message": null
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "duration_ms": 788,
+          "cleanup": {
+            "context_id": "6C100F7C0EE1261F0AA0AAFEC273C209",
+            "errors": []
+          },
+          "browser_pid": 3144,
+          "telemetry_errors": [],
+          "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+          "test": "shadow-dom/declarative/declarative-after-attachshadow.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-after-attachshadow.html",
+          "startedUTC": "2026-10-29T05:50:01.509184+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: innerHTML should work on <template shadowroot> that is left over",
+              "status": "PASS",
+              "message": null
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "duration_ms": 246,
+          "cleanup": {
+            "context_id": "7D4A01F5596145A67581EB82E9D8B21B",
+            "errors": []
+          },
+          "browser_pid": 3144,
+          "telemetry_errors": [],
+          "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+          "test": "shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+          "startedUTC": "2026-10-29T05:50:02.297818+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 3,
+          "subtests": [
+            {
+              "name": "Repeated declarative shadow roots keep only the first",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Calling attachShadow() on declarative shadow root must match mode",
+              "status": "PASS",
+              "message": null
+            },
+            {
+              "name": "Calling attachShadow() on declarative shadow root must match all parameters",
+              "status": "PASS",
+              "message": null
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "duration_ms": 206,
+          "cleanup": {
+            "context_id": "F790FE0322961E84E306C47A6D9A0FF6",
+            "errors": []
+          },
+          "browser_pid": 3144,
+          "telemetry_errors": [],
+          "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+          "test": "shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+          "startedUTC": "2026-10-29T05:50:02.544366+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "`document.write` on inner iframe handles declarative shadow DOM",
+              "status": "PASS",
+              "message": null
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "duration_ms": 161,
+          "cleanup": {
+            "context_id": "A578ABEFB254E5E2726FDF01E9F5AAA7",
+            "errors": []
+          },
+          "browser_pid": 3144,
+          "telemetry_errors": [],
+          "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+          "test": "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+          "startedUTC": "2026-10-29T05:50:02.751035+00:00"
+        },
+        {
+          "status": "OK",
+          "message": null,
+          "subtest_count": 1,
+          "subtests": [
+            {
+              "name": "Declarative Shadow DOM: Test for crashes and improper parsing",
+              "status": "PASS",
+              "message": null
+            }
+          ],
+          "reporter_state": {
+            "status": "ATTACHED"
+          },
+          "duration_ms": 200,
+          "cleanup": {
+            "context_id": "BFEDD353DDE22BA656177238A63D4556",
+            "errors": []
+          },
+          "browser_pid": 3144,
+          "telemetry_errors": [],
+          "metrics_reference": "out/lume-20261029-cpu30/dsd-upstream-pair-2/chrome/browser/chromium.metrics.jsonl",
+          "test": "shadow-dom/declarative/declarative-parser-interaction.html",
+          "actualURL": "http://127.0.0.1:56380/shadow-dom/declarative/declarative-parser-interaction.html",
+          "startedUTC": "2026-10-29T05:50:02.912366+00:00"
+        }
+      ],
+      "summary": {
+        "recorded": 6,
+        "scheduled": 6,
+        "fullyPassing": 6,
+        "assertions": {
+          "PASS": 29
+        },
+        "harness": {
+          "OK": 6
+        }
+      }
+    }
+  },
+  "requests": [
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-basic.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-after-attachshadow.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "html/resources/common.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-parser-interaction.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-basic.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-after-attachshadow.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "html/resources/common.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-parser-interaction.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-basic.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "favicon.ico",
+      "status": 404
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-after-attachshadow.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "html/resources/common.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/declarative-parser-interaction.html",
+      "status": 200
+    },
+    {
+      "path": "shadow-dom/declarative/non-existent.css",
+      "status": 404
+    },
+    {
+      "path": "resources/testharness.js",
+      "status": 200
+    },
+    {
+      "path": "resources/testharnessreport.js",
+      "status": 200
+    }
+  ],
+  "servedInputs": {
+    "shadow-dom/declarative/declarative-shadow-dom-basic.html": {
+      "sha256": "f4eb6d3e2a5459e08453f1ff25ffcbc9da0cfe696c76221d194f646532274bca",
+      "bytes": 16529,
+      "source": "git show 7f8d49b5a82606efc771f43d10aad5bce5ccbfeb:shadow-dom/declarative/declarative-shadow-dom-basic.html"
+    },
+    "shadow-dom/declarative/declarative-after-attachshadow.html": {
+      "sha256": "567de552e82a32f8b7d698dd5e2b45b1cbbe474210f47e1397ff19a6e7319227",
+      "bytes": 1626,
+      "source": "git show 7f8d49b5a82606efc771f43d10aad5bce5ccbfeb:shadow-dom/declarative/declarative-after-attachshadow.html"
+    },
+    "shadow-dom/declarative/innerhtml-on-ordinary-template.html": {
+      "sha256": "1693cd57a8b99e80e6600fc423dd40b97cf699120f995fd08a68bf90587bc116",
+      "bytes": 2104,
+      "source": "git show 7f8d49b5a82606efc771f43d10aad5bce5ccbfeb:shadow-dom/declarative/innerhtml-on-ordinary-template.html"
+    },
+    "shadow-dom/declarative/declarative-shadow-dom-repeats.html": {
+      "sha256": "3b5120ec28b5d94f51679a7c9e99711771fc41774c1f0ef6dff0757bcaa550ed",
+      "bytes": 3798,
+      "source": "git show 7f8d49b5a82606efc771f43d10aad5bce5ccbfeb:shadow-dom/declarative/declarative-shadow-dom-repeats.html"
+    },
+    "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html": {
+      "sha256": "cd0ba36bbce56f8fcd800007e0df73451db6c38a46a76edea769ade1d8710ce2",
+      "bytes": 872,
+      "source": "git show 7f8d49b5a82606efc771f43d10aad5bce5ccbfeb:shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html"
+    },
+    "shadow-dom/declarative/declarative-parser-interaction.html": {
+      "sha256": "957c6660ae31f816a2d4c2e3e0b6db853ce4d55a9d22e1c8d1691cbdd652d64d",
+      "bytes": 1009,
+      "source": "git show 7f8d49b5a82606efc771f43d10aad5bce5ccbfeb:shadow-dom/declarative/declarative-parser-interaction.html"
+    },
+    "resources/testharness.js": {
+      "sha256": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+      "bytes": 198420,
+      "source": "git show 7f8d49b5a82606efc771f43d10aad5bce5ccbfeb:resources/testharness.js"
+    },
+    "html/resources/common.js": {
+      "sha256": "5099709377292cd60778f3db339a22487c83da37be78d20b0985435ec139047f",
+      "bytes": 7223,
+      "source": "git show 7f8d49b5a82606efc771f43d10aad5bce5ccbfeb:html/resources/common.js"
+    }
+  },
+  "errors": [],
+  "origin": "http://127.0.0.1:56380",
+  "chromeVersion": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.74",
+    "revision": "@d331de35ca8ab1358c7a17e4bd41627d55eaef51",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.25"
+  },
+  "chromeCleanup": {
+    "process": {
+      "sent_sigterm": false,
+      "sent_sigkill": false,
+      "error": null,
+      "post_signal_verification": {
+        "allowed_wait_s": 10,
+        "initial_live_members": {},
+        "duration_ms": 17
+      },
+      "process_group_gone": true,
+      "remaining_group_members": {},
+      "root_exit_code": 0,
+      "root_exit_before_signal_cleanup": 0,
+      "root_exit_observation_verified": true
+    },
+    "errors": [],
+    "graceful_close": {
+      "method": "Browser.close",
+      "attempted": true,
+      "acknowledged": true,
+      "allowed_drain_s": 20,
+      "exit_requirement": "All live owned-group members must disappear; an exiting process state is not ignored.",
+      "initial_process_state": {
+        "observed_unix_ms": 1793253003166,
+        "members": [
+          {
+            "pid": 3144,
+            "ppid": 2899,
+            "pgid": 3144,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "Rs",
+            "start_identity": "Wed Oct 28 22:50:00 2026",
+            "executable": "output/session-102900614/chrome-official-reference-v2/Google Chrome.app/Contents/MacOS/Google Chrome"
+          },
+          {
+            "pid": 3151,
+            "ppid": 3144,
+            "pgid": 3144,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "S",
+            "start_identity": "Wed Oct 28 22:50:00 2026",
+            "executable": "(Google Chrome He)"
+          },
+          {
+            "pid": 3152,
+            "ppid": 3144,
+            "pgid": 3144,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "R",
+            "start_identity": "Wed Oct 28 22:50:00 2026",
+            "executable": "(Google Chrome He)"
+          },
+          {
+            "pid": 3153,
+            "ppid": 3144,
+            "pgid": 3144,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "R",
+            "start_identity": "Wed Oct 28 22:50:00 2026",
+            "executable": "(Google Chrome He)"
+          },
+          {
+            "pid": 3174,
+            "ppid": 3144,
+            "pgid": 3144,
+            "uid": 501,
+            "ruid": 501,
+            "stat": "?",
+            "start_identity": "Wed Oct 28 22:50:01 2026",
+            "executable": "(Google Chrome He)"
+          }
+        ]
+      },
+      "process_group_gone": true,
+      "drain_duration_ms": 338
+    }
+  },
+  "nativeDelta": [
+    {
+      "test": "shadow-dom/declarative/declarative-shadow-dom-basic.html",
+      "oldHarness": "OK",
+      "newHarness": "OK",
+      "fixedAssertions": [],
+      "lostPreviouslyPassingAssertions": []
+    },
+    {
+      "test": "shadow-dom/declarative/declarative-after-attachshadow.html",
+      "oldHarness": "OK",
+      "newHarness": "OK",
+      "fixedAssertions": [],
+      "lostPreviouslyPassingAssertions": []
+    },
+    {
+      "test": "shadow-dom/declarative/innerhtml-on-ordinary-template.html",
+      "oldHarness": "OK",
+      "newHarness": "OK",
+      "fixedAssertions": [],
+      "lostPreviouslyPassingAssertions": []
+    },
+    {
+      "test": "shadow-dom/declarative/declarative-shadow-dom-repeats.html",
+      "oldHarness": "OK",
+      "newHarness": "OK",
+      "fixedAssertions": [],
+      "lostPreviouslyPassingAssertions": []
+    },
+    {
+      "test": "shadow-dom/declarative/declarative-shadow-dom-write-to-iframe.html",
+      "oldHarness": "OK",
+      "newHarness": "OK",
+      "fixedAssertions": [],
+      "lostPreviouslyPassingAssertions": []
+    },
+    {
+      "test": "shadow-dom/declarative/declarative-parser-interaction.html",
+      "oldHarness": "OK",
+      "newHarness": "OK",
+      "fixedAssertions": [],
+      "lostPreviouslyPassingAssertions": []
+    }
+  ],
+  "finishedUTC": "2026-10-29T05:50:03.564328+00:00",
+  "durationSeconds": 8.86
+}

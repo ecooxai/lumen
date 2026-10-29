@@ -293,9 +293,12 @@ methods(DocumentFragment.prototype, ParentNode);
 methods(DocumentFragment.prototype, { getElementById(id) { return N.query(this, '#' + CSS.escape(String(id)), false); } });
 class ShadowRoot extends DocumentFragment {}
 methods(ShadowRoot.prototype, {
-    get host() { return N.host(this); }, get mode() { return this.__mode || 'open'; },
+    get host() { return N.host(this); }, get mode() { return N.shadowFlags(this) & (1 << 21) ? 'closed' : 'open'; },
     get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, String(v)); },
-    get activeElement() { return null; }, get delegatesFocus() { return false; },
+    get activeElement() { return null; }, get delegatesFocus() { return !!(N.shadowFlags(this) & (1 << 22)); },
+    get clonable() { return !!(N.shadowFlags(this) & (1 << 24)); },
+    get serializable() { return !!(N.shadowFlags(this) & (1 << 25)); },
+    get slotAssignment() { return N.shadowFlags(this) & (1 << 26) ? 'manual' : 'named'; },
     get adoptedStyleSheets() { return adoptedGet(this); }, set adoptedStyleSheets(v) { adoptSheets(this, v); },
     get styleSheets() { return scopeSheets(this); },
 });

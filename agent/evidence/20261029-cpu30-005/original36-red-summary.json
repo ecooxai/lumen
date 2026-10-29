@@ -1,0 +1,430 @@
+{
+  "startedUTC": "2026-10-29T05:24:16.508690+00:00",
+  "artifact": {
+    "path": "out/lume-20261029-cpu30/native-default-1/jsrun-22e574acf9d05739",
+    "sha256": "22e574acf9d0573923303abded07223f07143a5a745a1b39166416325f5ddfa8",
+    "bytes": 13828152
+  },
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-default-1/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "0cd15150cf85c9699ea847fd1859ab8a8097694e802ca2ca66e650262dc38ab7",
+  "fixtureSHA256": "60c78f66aabcaed704aaa0635c4beb4412d9acc7f8469b98c8de0cab20a8b941",
+  "redConfirmed": true,
+  "monitor": {
+    "path": "out/lume-20261029-cpu30/declarative-shadow-red-1/dsd.json",
+    "sha256": "1390ef8e215b6adb7fd7f03fd98ef08a9eb4348fa2f5af91b95130e4ffae2f14",
+    "naturalExitCode": 1,
+    "collectorError": null,
+    "endedByMonitor": false,
+    "cpuSamples": 0,
+    "cpuPeakPercent": null,
+    "rssPeakMiB": 5.484
+  },
+  "checks": [
+    {
+      "i": 0,
+      "name": "network open root content and native ShadowRoot brand",
+      "ok": false,
+      "error": "Error: expected truthy value"
+    },
+    {
+      "i": 1,
+      "name": "declarative template is absent from light DOM",
+      "ok": false,
+      "error": "Error: expected null, got {}"
+    },
+    {
+      "i": 2,
+      "name": "shadow descendants retain owner document and connectivity",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+    },
+    {
+      "i": 3,
+      "name": "closed root rejects a conflicting imperative mode",
+      "ok": false,
+      "error": "Error: expected NotSupportedError"
+    },
+    {
+      "i": 4,
+      "name": "invalid mode remains ordinary inert template",
+      "ok": true
+    },
+    {
+      "i": 5,
+      "name": "invalid host remains ordinary inert template",
+      "ok": true
+    },
+    {
+      "i": 6,
+      "name": "second declarative template remains light template",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 7,
+      "name": "nested declarative shadow roots use separate hosts",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+    },
+    {
+      "i": 8,
+      "name": "enumerated shadow mode is ASCII case insensitive",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 9,
+      "name": "shadow mode whitespace is not stripped",
+      "ok": true
+    },
+    {
+      "i": 10,
+      "name": "ordinary template stays inert with a separate owner",
+      "ok": true
+    },
+    {
+      "i": 11,
+      "name": "DOMParser keeps declarative shadow parsing disabled",
+      "ok": true
+    },
+    {
+      "i": 12,
+      "name": "innerHTML keeps declarative shadow parsing disabled",
+      "ok": true
+    },
+    {
+      "i": 13,
+      "name": "fragment parsing does not attach a root to context",
+      "ok": true
+    },
+    {
+      "i": 14,
+      "name": "shallow document clone preserves allow-declarative policy",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 15,
+      "name": "deep document clone preserves allow-declarative policy",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 16,
+      "name": "cloned detached document keeps copied policy again",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 17,
+      "name": "new HTML document write keeps declarative parsing disabled",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 18,
+      "name": "DOMParser document clone preserves disabled policy",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 19,
+      "name": "detached writes do not insert into active document",
+      "ok": false,
+      "error": "Error: expected null, got {}"
+    },
+    {
+      "i": 20,
+      "name": "split writes retain tokenizer state across tags",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 21,
+      "name": "two detached parsers can interleave independently",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 22,
+      "name": "open detaches old nodes without invalidating held wrappers",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 23,
+      "name": "open disposes an unfinished parser before replacement",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 24,
+      "name": "intervening DOM removal leaves parser state alive",
+      "ok": false,
+      "error": "TypeError: Cannot set properties of null (setting 'textContent')"
+    },
+    {
+      "i": 25,
+      "name": "detached Unicode writes preserve leading FEFF",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 26,
+      "name": "detached scripts do not execute in the active realm",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 27,
+      "name": "close handles an unclosed declarative template",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 28,
+      "name": "declarative attachment options are native state",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'delegatesFocus')"
+    },
+    {
+      "i": 29,
+      "name": "clonable root children copy even on shallow host clone",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 30,
+      "name": "matching imperative mode reuses and clears declarative root",
+      "ok": false,
+      "error": "Error: expected null, got {}"
+    },
+    {
+      "i": 31,
+      "name": "conflicting imperative mode leaves declarative content intact",
+      "ok": false,
+      "error": "Error: expected NotSupportedError"
+    },
+    {
+      "i": 32,
+      "name": "ordinary imperative open and closed roots remain supported",
+      "ok": true
+    },
+    {
+      "i": 33,
+      "name": "imperative attachment rejects missing or invalid mode",
+      "ok": false,
+      "error": "Error: expected TypeError"
+    },
+    {
+      "i": 34,
+      "name": "imperative attachment rejects invalid HTML and foreign hosts",
+      "ok": false,
+      "error": "Error: expected NotSupportedError"
+    },
+    {
+      "i": 35,
+      "name": "unfinished detached parser remains owned until realm teardown",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    }
+  ],
+  "failedChecks": [
+    {
+      "i": 0,
+      "name": "network open root content and native ShadowRoot brand",
+      "ok": false,
+      "error": "Error: expected truthy value"
+    },
+    {
+      "i": 1,
+      "name": "declarative template is absent from light DOM",
+      "ok": false,
+      "error": "Error: expected null, got {}"
+    },
+    {
+      "i": 2,
+      "name": "shadow descendants retain owner document and connectivity",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+    },
+    {
+      "i": 3,
+      "name": "closed root rejects a conflicting imperative mode",
+      "ok": false,
+      "error": "Error: expected NotSupportedError"
+    },
+    {
+      "i": 6,
+      "name": "second declarative template remains light template",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 7,
+      "name": "nested declarative shadow roots use separate hosts",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+    },
+    {
+      "i": 8,
+      "name": "enumerated shadow mode is ASCII case insensitive",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 14,
+      "name": "shallow document clone preserves allow-declarative policy",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 15,
+      "name": "deep document clone preserves allow-declarative policy",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 16,
+      "name": "cloned detached document keeps copied policy again",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 17,
+      "name": "new HTML document write keeps declarative parsing disabled",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 18,
+      "name": "DOMParser document clone preserves disabled policy",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 19,
+      "name": "detached writes do not insert into active document",
+      "ok": false,
+      "error": "Error: expected null, got {}"
+    },
+    {
+      "i": 20,
+      "name": "split writes retain tokenizer state across tags",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 21,
+      "name": "two detached parsers can interleave independently",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 22,
+      "name": "open detaches old nodes without invalidating held wrappers",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 23,
+      "name": "open disposes an unfinished parser before replacement",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 24,
+      "name": "intervening DOM removal leaves parser state alive",
+      "ok": false,
+      "error": "TypeError: Cannot set properties of null (setting 'textContent')"
+    },
+    {
+      "i": 25,
+      "name": "detached Unicode writes preserve leading FEFF",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 26,
+      "name": "detached scripts do not execute in the active realm",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 27,
+      "name": "close handles an unclosed declarative template",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    },
+    {
+      "i": 28,
+      "name": "declarative attachment options are native state",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'delegatesFocus')"
+    },
+    {
+      "i": 29,
+      "name": "clonable root children copy even on shallow host clone",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+    },
+    {
+      "i": 30,
+      "name": "matching imperative mode reuses and clears declarative root",
+      "ok": false,
+      "error": "Error: expected null, got {}"
+    },
+    {
+      "i": 31,
+      "name": "conflicting imperative mode leaves declarative content intact",
+      "ok": false,
+      "error": "Error: expected NotSupportedError"
+    },
+    {
+      "i": 33,
+      "name": "imperative attachment rejects missing or invalid mode",
+      "ok": false,
+      "error": "Error: expected TypeError"
+    },
+    {
+      "i": 34,
+      "name": "imperative attachment rejects invalid HTML and foreign hosts",
+      "ok": false,
+      "error": "Error: expected NotSupportedError"
+    },
+    {
+      "i": 35,
+      "name": "unfinished detached parser remains owned until realm teardown",
+      "ok": false,
+      "error": "TypeError: Cannot read properties of null (reading 'shadowRoot')"
+    }
+  ],
+  "regression": {
+    "binarySHA256": "22e574acf9d0573923303abded07223f07143a5a745a1b39166416325f5ddfa8",
+    "fixtureSHA256": "60c78f66aabcaed704aaa0635c4beb4412d9acc7f8469b98c8de0cab20a8b941",
+    "htmlSHA256": "c02145f968c82e0ae766995ff84c060f0e47bf95741ef36812adeed9912d8740",
+    "total": 36,
+    "passed": 8,
+    "failed": 28
+  },
+  "requiredPassingControls": [
+    "DOMParser keeps declarative shadow parsing disabled",
+    "fragment parsing does not attach a root to context",
+    "innerHTML keeps declarative shadow parsing disabled",
+    "invalid host remains ordinary inert template",
+    "invalid mode remains ordinary inert template",
+    "ordinary imperative open and closed roots remain supported",
+    "ordinary template stays inert with a separate owner",
+    "shadow mode whitespace is not stripped"
+  ],
+  "requiredFailingTargets": [
+    "declarative template is absent from light DOM",
+    "detached writes do not insert into active document",
+    "network open root content and native ShadowRoot brand",
+    "shallow document clone preserves allow-declarative policy",
+    "split writes retain tokenizer state across tags",
+    "two detached parsers can interleave independently"
+  ],
+  "finishedUTC": "2026-10-29T05:24:17.631419+00:00",
+  "durationSeconds": 1.123
+}

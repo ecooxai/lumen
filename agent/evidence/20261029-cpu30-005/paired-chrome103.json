@@ -1,0 +1,217 @@
+{
+  "taskId": "20261029-cpu30",
+  "createdUTC": "2026-10-29T05:53:54.355614+00:00",
+  "nativeBinarySHA256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+  "chromeBinarySHA256": "0a8cb6eba2bee365c01fb0612f64f1d15855fd499dd54625ced1fe50215e5fb4",
+  "scope": "Named-assertion comparison of the same103 pinned upstream variants. Qualified Chrome has real failures, retained separately. This is not full WPT or an overall engine ranking.",
+  "groups": {
+    "encoding-core": {
+      "variants": 77,
+      "assertionClasses": {
+        "native_PASS__chrome_PASS": 23107,
+        "native_PASS__chrome_FAIL": 167,
+        "native_FAIL__chrome_PASS": 26
+      },
+      "variantClasses": {
+        "native_PASS__chrome_PASS": 64,
+        "native_PASS__chrome_not_PASS": 11,
+        "native_not_PASS__chrome_PASS": 2
+      },
+      "nativeRawSHA256": "dc749a7de4a40cbbb8ecaeb00a1bf9241e68f4619b26673e9b895fe918f0135a",
+      "chromeRawSHA256": "4bbf1535b81a001f9b171206e3c8ae12628a1e09256180bc23be54c7350869ff",
+      "scheduleSHA256": "6ec47e6f74edcd585cad897c02a3b97079c264b65f6af4d8527fa8ef9cae9ba9"
+    },
+    "encoding-streams": {
+      "variants": 26,
+      "assertionClasses": {
+        "native_PASS__chrome_PASS": 344,
+        "native_PASS__chrome_FAIL": 14
+      },
+      "variantClasses": {
+        "native_PASS__chrome_PASS": 23,
+        "native_PASS__chrome_not_PASS": 3
+      },
+      "nativeRawSHA256": "ca647ff3bfd267e65a49a6ca71a743959711ce79b16ec8468998dc2dead5c29b",
+      "chromeRawSHA256": "a2563dd5a73401fc47325ee7efca0257a25adc75e933b8c3a7425cc64a1c1de3",
+      "scheduleSHA256": "86c9bb4c01e0394b7052abab611088e7c68c7674cb083dd84ceefa6b063d594d"
+    }
+  },
+  "fullFrozenVariants": 1515,
+  "unrun": 1412,
+  "harnessStatuses": {
+    "both_OK": 103
+  },
+  "assertionClasses": {
+    "native_PASS__chrome_PASS": 23451,
+    "native_PASS__chrome_FAIL": 181,
+    "native_FAIL__chrome_PASS": 26
+  },
+  "variantClasses": {
+    "native_PASS__chrome_PASS": 87,
+    "native_PASS__chrome_not_PASS": 14,
+    "native_not_PASS__chrome_PASS": 2
+  },
+  "nativeFailuresOnChromePassingAssertions": [
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "csiso2022kr - empty input decodes to empty output.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "hz-gb-2312 - empty input decodes to empty output.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn - empty input decodes to empty output.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "iso-2022-kr - empty input decodes to empty output.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "replacement - non-empty input decodes to one replacement character.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "name": "replacement - empty input decodes to empty output.",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-7 should not be supported",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-7 should not be supported",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32 with BOM should decode as UTF-16LE",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32 with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32 with BOM should decode as UTF-16LE",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32 with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32LE with BOM should decode as UTF-16LE",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32LE with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32le with BOM should decode as UTF-16LE",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32le with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32be with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "UTF-32be with BOM should decode as UTF-8",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32be with no BOM should decode as UTF-8",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "name": "utf-32be with BOM should decode as UTF-8",
+      "nativeStatus": "FAIL",
+      "nativeMessage": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+    }
+  ],
+  "chromePassingAssertions": 23477,
+  "nativePassesAmongChromePassingAssertions": 23451,
+  "chromePassingVariants": 89,
+  "nativeFullyPassesAmongChromePassingVariants": 87,
+  "complete": true
+}

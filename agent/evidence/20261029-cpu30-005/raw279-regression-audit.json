@@ -1,0 +1,411 @@
+{
+  "auditedUTC": "2026-10-29T05:58:31.899836+00:00",
+  "passed": true,
+  "scope": "Exact279 raw outcomes, accepted3ad versus narrowed detached-writer candidatec259. Supplemental DSD tests are separate; failures, missing contexts and unrun variants are not reclassified.",
+  "beforeBinarySHA256": "3ad884713a4aa896dec1d26e20c5a85af5543499467edf9b7ecf424196c63bce",
+  "afterBinarySHA256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+  "beforeResultsSHA256": {
+    "out/lume-20261029-cpu30/compat-default-1/cohort/encoding-core/results.jsonl": "32553a3eb568a2a0febc47e0bb44c4b412ceb2355c636b28784720a71e740753",
+    "out/lume-20261029-cpu30/compat-default-1/cohort/encoding-streams/results.jsonl": "f25a717605813f65387b394a0bfa636259b660beee89ad1f9e6e1d7e0ac75b07",
+    "out/lume-20261029-cpu30/compat-default-1/cohort/dom/results.jsonl": "4dae4b9f0d4aee7fb7de3ae4ba09c20e0c2524c5f80f1441d01667c07c60bbf3",
+    "out/lume-20261029-cpu30/compat-default-1/cohort/events/results.jsonl": "542ed3a04541e6fcc05b54b6181a7e548d7ec3d514d2ba015e6a9a43b00bac02",
+    "out/lume-20261029-cpu30/compat-default-1/cohort/url/results.jsonl": "b2c029d45291ce7f13d2a92f33ebf68b28dd0769e486fd47ad24cc373e059c6d",
+    "out/lume-20261029-cpu30/compat-default-1/cohort/storage/results.jsonl": "811fdb84b000712f9deb8a4201b45ad6c0207f38e14ad0acb32818542718332d",
+    "out/lume-20261029-cpu30/compat-default-1/cohort/microtasks/results.jsonl": "d605e0a8e755dea05bb9134b4e9b244333f8e24d453f385972faa9e876319d77",
+    "out/lume-20261029-cpu30/compat-default-1/cohort/headers/results.jsonl": "f39c2eaf15e48d61845a246c5a7cd514842a763c6b208fdd38e52722b03e0318"
+  },
+  "afterResultsSHA256": {
+    "out/lume-20261029-cpu30/compat-dsd-2/cohort/encoding-core/results.jsonl": "dc749a7de4a40cbbb8ecaeb00a1bf9241e68f4619b26673e9b895fe918f0135a",
+    "out/lume-20261029-cpu30/compat-dsd-2/cohort/encoding-streams/results.jsonl": "ca647ff3bfd267e65a49a6ca71a743959711ce79b16ec8468998dc2dead5c29b",
+    "out/lume-20261029-cpu30/compat-dsd-2/cohort/dom/results.jsonl": "48053ada73780edf1eed3f185ab33a2c7bc530fee83b9c2d55ea19e8c2ac460b",
+    "out/lume-20261029-cpu30/compat-dsd-2/cohort/events/results.jsonl": "a1a84900c32453bd1621a3bc774019659ec30d5f89016476d67526b201bb8117",
+    "out/lume-20261029-cpu30/compat-dsd-2/cohort/url/results.jsonl": "1205e15ff5d83af86e1a302552715cc77e860e8f9c8a81ee3190b1811cb60d00",
+    "out/lume-20261029-cpu30/compat-dsd-2/cohort/storage/results.jsonl": "beb4400e1fba18adbfae6a72acea7897b274680ba63346b6a1e3f140bf921100",
+    "out/lume-20261029-cpu30/compat-dsd-2/cohort/microtasks/results.jsonl": "9d9200d811fa254f4d7eeef56d59b2c88222a52401fab42521484ff8ff2a6cc6",
+    "out/lume-20261029-cpu30/compat-dsd-2/cohort/headers/results.jsonl": "996d068d69bb6ea862d23dd8cd9c2eb20e65d840b7b520db0f44e8cdc476466e"
+  },
+  "buildSummary": "out/lume-20261029-cpu30/native-dsd-2/summary.json",
+  "buildSummarySHA256": "e473bfd188f7174e9ad9e41d8042e6ec2d3b4b0e65cf886d3164f3ba975c966d",
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-dsd-2/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+  "sourcesUnchangedSinceBuild": true,
+  "sameActualDocumentURLsAndOrder": true,
+  "sameAssertionIdentityMultiplicities": true,
+  "sameProtocolSignatureKeys": [
+    "schedule_sha256",
+    "wpt_revision",
+    "inventory_sha256",
+    "source_fixture",
+    "server_config_sha256",
+    "fixture_manifest_sha256",
+    "runner_sha256",
+    "reporter_sha256",
+    "monitor_sha256",
+    "origin",
+    "secure_origin",
+    "h2_origin",
+    "timeout_s",
+    "long_timeout_s",
+    "strict_infrastructure"
+  ],
+  "fixedAssertionIdentities": [
+    [
+      "/dom/nodes/Node-cloneNode-document-allow-declarative-shadow-roots.window.html",
+      "cloneNode() and document's allow declarative shadow roots",
+      "FAIL"
+    ]
+  ],
+  "newFailedAssertions": [],
+  "lostPreviouslyPassingAssertions": [],
+  "unchangedNonOKHarnessCases": 30,
+  "remainingFailureCases": [
+    {
+      "test": "/encoding/replacement-encodings.any.worker.html",
+      "status": "OK",
+      "assertions": [
+        {
+          "name": "csiso2022kr - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "csiso2022kr - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "hz-gb-2312 - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "hz-gb-2312 - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn-ext - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-cn-ext - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-kr - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "iso-2022-kr - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "replacement - non-empty input decodes to one replacement character.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "replacement - empty input decodes to empty output.",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        }
+      ]
+    },
+    {
+      "test": "/encoding/unsupported-encodings.any.worker.html",
+      "status": "OK",
+      "assertions": [
+        {
+          "name": "UTF-7 should not be supported",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-7 should not be supported",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32 with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32 with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32 with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32 with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32LE with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32LE with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32le with BOM should decode as UTF-16LE",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32le with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32be with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "UTF-32be with BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32be with no BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        },
+        {
+          "name": "utf-32be with BOM should decode as UTF-8",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: XMLHttpRequest is not defined\""
+        }
+      ]
+    },
+    {
+      "test": "/url/IdnaTestV2.any.html",
+      "status": "OK",
+      "assertions": [
+        {
+          "name": "ToASCII(\"\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u10be\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\ucbd95\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac.\u0729.\ucbd95\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        }
+      ]
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask-exceptions.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/html/webappapis/microtask-queuing/queue-microtask.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/header-setcookie.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/header-setcookie.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-last-event-id.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-last-event-id.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-normalize.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values-normalize.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/header-values.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-basic.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-basic.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-casing.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-casing.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-combine.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-combine.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-errors.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-errors.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-forbidden-override.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-forbidden-override.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-no-cors.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-no-cors.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-normalize.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-normalize.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-record.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-record.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-structure.any.serviceworker.html",
+      "status": "TIMEOUT",
+      "assertions": []
+    },
+    {
+      "test": "/fetch/api/headers/headers-structure.any.sharedworker.html",
+      "status": "ERROR",
+      "assertions": []
+    }
+  ],
+  "finalTotals": {
+    "variants": 279,
+    "fullyPassing": 246,
+    "assertions": {
+      "PASS": 38728,
+      "FAIL": 33
+    },
+    "harnessStatuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "frozenInventory": 1515,
+    "unrun": 1236
+  }
+}

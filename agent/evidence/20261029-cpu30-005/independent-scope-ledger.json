@@ -1,0 +1,347 @@
+{
+  "prior718Passed": true,
+  "allOriginalEightControlsPass": true,
+  "supportedTargetsPass": true,
+  "fixtureAssertionsUnchanged": true,
+  "full37": {
+    "total": 37,
+    "passed": 26,
+    "failed": 11,
+    "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+    "allPassed": false,
+    "checks": [
+      {
+        "i": 0,
+        "name": "network open root content and native ShadowRoot brand",
+        "ok": false,
+        "error": "Error: expected truthy value"
+      },
+      {
+        "i": 1,
+        "name": "declarative template is absent from light DOM",
+        "ok": false,
+        "error": "Error: expected null, got {}"
+      },
+      {
+        "i": 2,
+        "name": "shadow descendants retain owner document and connectivity",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+      },
+      {
+        "i": 3,
+        "name": "closed root rejects a conflicting imperative mode",
+        "ok": false,
+        "error": "Error: expected NotSupportedError"
+      },
+      {
+        "i": 4,
+        "name": "invalid mode remains ordinary inert template",
+        "ok": true
+      },
+      {
+        "i": 5,
+        "name": "invalid host remains ordinary inert template",
+        "ok": true
+      },
+      {
+        "i": 6,
+        "name": "second declarative template remains light template",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+      },
+      {
+        "i": 7,
+        "name": "nested declarative shadow roots use separate hosts",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+      },
+      {
+        "i": 8,
+        "name": "enumerated shadow mode is ASCII case insensitive",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+      },
+      {
+        "i": 9,
+        "name": "shadow mode whitespace is not stripped",
+        "ok": true
+      },
+      {
+        "i": 10,
+        "name": "ordinary template stays inert with a separate owner",
+        "ok": true
+      },
+      {
+        "i": 11,
+        "name": "DOMParser keeps declarative shadow parsing disabled",
+        "ok": true
+      },
+      {
+        "i": 12,
+        "name": "innerHTML keeps declarative shadow parsing disabled",
+        "ok": true
+      },
+      {
+        "i": 13,
+        "name": "fragment parsing does not attach a root to context",
+        "ok": true
+      },
+      {
+        "i": 14,
+        "name": "shallow document clone preserves allow-declarative policy",
+        "ok": true
+      },
+      {
+        "i": 15,
+        "name": "deep document clone preserves allow-declarative policy",
+        "ok": true
+      },
+      {
+        "i": 16,
+        "name": "cloned detached document keeps copied policy again",
+        "ok": true
+      },
+      {
+        "i": 17,
+        "name": "new HTML document write keeps declarative parsing disabled",
+        "ok": true
+      },
+      {
+        "i": 18,
+        "name": "DOMParser document clone preserves disabled policy",
+        "ok": true
+      },
+      {
+        "i": 19,
+        "name": "detached writes do not insert into active document",
+        "ok": true
+      },
+      {
+        "i": 20,
+        "name": "split writes retain tokenizer state across tags",
+        "ok": true
+      },
+      {
+        "i": 21,
+        "name": "two detached parsers can interleave independently",
+        "ok": true
+      },
+      {
+        "i": 22,
+        "name": "open detaches old nodes without invalidating held wrappers",
+        "ok": true
+      },
+      {
+        "i": 23,
+        "name": "open disposes an unfinished parser before replacement",
+        "ok": true
+      },
+      {
+        "i": 24,
+        "name": "intervening DOM removal leaves parser state alive",
+        "ok": true
+      },
+      {
+        "i": 25,
+        "name": "detached Unicode writes preserve leading FEFF",
+        "ok": true
+      },
+      {
+        "i": 26,
+        "name": "detached scripts do not execute in the active realm",
+        "ok": true
+      },
+      {
+        "i": 27,
+        "name": "close handles an unclosed declarative template",
+        "ok": true
+      },
+      {
+        "i": 28,
+        "name": "declarative attachment options are native state",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'delegatesFocus')"
+      },
+      {
+        "i": 29,
+        "name": "clonable root children copy even on shallow host clone",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+      },
+      {
+        "i": 30,
+        "name": "matching imperative mode reuses and clears declarative root",
+        "ok": false,
+        "error": "Error: expected null, got {}"
+      },
+      {
+        "i": 31,
+        "name": "conflicting imperative mode leaves declarative content intact",
+        "ok": false,
+        "error": "Error: expected NotSupportedError"
+      },
+      {
+        "i": 32,
+        "name": "ordinary imperative open and closed roots remain supported",
+        "ok": true
+      },
+      {
+        "i": 33,
+        "name": "imperative attachment rejects missing or invalid mode",
+        "ok": true
+      },
+      {
+        "i": 34,
+        "name": "imperative attachment rejects invalid HTML and foreign hosts",
+        "ok": true
+      },
+      {
+        "i": 35,
+        "name": "unfinished detached parser remains owned until realm teardown",
+        "ok": true
+      },
+      {
+        "i": 36,
+        "name": "held descendant retains detached subtree ancestry after open",
+        "ok": true
+      }
+    ]
+  },
+  "selection": {
+    "originalEightControls": [
+      {
+        "i": 4,
+        "name": "invalid mode remains ordinary inert template"
+      },
+      {
+        "i": 5,
+        "name": "invalid host remains ordinary inert template"
+      },
+      {
+        "i": 9,
+        "name": "shadow mode whitespace is not stripped"
+      },
+      {
+        "i": 10,
+        "name": "ordinary template stays inert with a separate owner"
+      },
+      {
+        "i": 11,
+        "name": "DOMParser keeps declarative shadow parsing disabled"
+      },
+      {
+        "i": 12,
+        "name": "innerHTML keeps declarative shadow parsing disabled"
+      },
+      {
+        "i": 13,
+        "name": "fragment parsing does not attach a root to context"
+      },
+      {
+        "i": 32,
+        "name": "ordinary imperative open and closed roots remain supported"
+      }
+    ],
+    "supportedTargets": [
+      {
+        "i": 14,
+        "name": "shallow document clone preserves allow-declarative policy"
+      },
+      {
+        "i": 15,
+        "name": "deep document clone preserves allow-declarative policy"
+      },
+      {
+        "i": 16,
+        "name": "cloned detached document keeps copied policy again"
+      },
+      {
+        "i": 17,
+        "name": "new HTML document write keeps declarative parsing disabled"
+      },
+      {
+        "i": 18,
+        "name": "DOMParser document clone preserves disabled policy"
+      },
+      {
+        "i": 19,
+        "name": "detached writes do not insert into active document"
+      },
+      {
+        "i": 20,
+        "name": "split writes retain tokenizer state across tags"
+      },
+      {
+        "i": 21,
+        "name": "two detached parsers can interleave independently"
+      },
+      {
+        "i": 22,
+        "name": "open detaches old nodes without invalidating held wrappers"
+      },
+      {
+        "i": 23,
+        "name": "open disposes an unfinished parser before replacement"
+      },
+      {
+        "i": 24,
+        "name": "intervening DOM removal leaves parser state alive"
+      },
+      {
+        "i": 25,
+        "name": "detached Unicode writes preserve leading FEFF"
+      },
+      {
+        "i": 26,
+        "name": "detached scripts do not execute in the active realm"
+      },
+      {
+        "i": 27,
+        "name": "close handles an unclosed declarative template"
+      },
+      {
+        "i": 33,
+        "name": "imperative attachment rejects missing or invalid mode"
+      },
+      {
+        "i": 34,
+        "name": "imperative attachment rejects invalid HTML and foreign hosts"
+      },
+      {
+        "i": 35,
+        "name": "unfinished detached parser remains owned until realm teardown"
+      },
+      {
+        "i": 36,
+        "name": "held descendant retains detached subtree ancestry after open"
+      }
+    ],
+    "deferredInitialNetworkDependentIndices": [
+      0,
+      1,
+      2,
+      3,
+      6,
+      7,
+      8,
+      28,
+      29,
+      30,
+      31
+    ],
+    "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+    "selectionFixedBeforeRun": true
+  },
+  "priorCustomChecks": {
+    "passed": 718,
+    "total": 718
+  },
+  "legacyUnchanged": {
+    "passed": 10,
+    "total": 15,
+    "intentionalDifferences": 5
+  },
+  "passingCustomChecksAcrossPriorAggregateAndWhole37": 744,
+  "scopeNote": "718 previous controls plus26 passing rows in the unchanged37 fixture;11 deferred initial-network rows still FAIL. This is not755/755. Lifetime122v2 and34 are separate disposal controls, not within-live-realm GC proof."
+}

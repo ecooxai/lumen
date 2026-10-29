@@ -1,0 +1,1640 @@
+{
+  "startedUTC": "2026-10-29T05:47:37.561127+00:00",
+  "sourceBaseCommit": "186666fe7ad94ef08d6cc80486e8cc808b99144e",
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-dsd-2/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "c6d61ab5743e054d1db9d7a2ae45d47709ef9c4ff4ab6a1a708f56d2b2f76883",
+  "patchReceipt": "out/lume-20261029-cpu30/html-default-patch-1/receipt.json",
+  "patchReceiptSHA256": "31e6aaa7ecdc24242a194d882254401b14c67c26b2b395bb0ac84e2709e7682c",
+  "codecPatchReceipt": "out/lume-20261029-cpu30/textcodec-fatal-patch-1/receipt.json",
+  "codecPatchReceiptSHA256": "78918a04dc157ab8ef418494b3cd7dd2fa15b69e19ac19546c393d9cefc9ae63",
+  "priorPolicyCheckCount": 718,
+  "prior718ChecksPassed": true,
+  "scopeSelection": {
+    "originalEightControls": [
+      {
+        "i": 4,
+        "name": "invalid mode remains ordinary inert template"
+      },
+      {
+        "i": 5,
+        "name": "invalid host remains ordinary inert template"
+      },
+      {
+        "i": 9,
+        "name": "shadow mode whitespace is not stripped"
+      },
+      {
+        "i": 10,
+        "name": "ordinary template stays inert with a separate owner"
+      },
+      {
+        "i": 11,
+        "name": "DOMParser keeps declarative shadow parsing disabled"
+      },
+      {
+        "i": 12,
+        "name": "innerHTML keeps declarative shadow parsing disabled"
+      },
+      {
+        "i": 13,
+        "name": "fragment parsing does not attach a root to context"
+      },
+      {
+        "i": 32,
+        "name": "ordinary imperative open and closed roots remain supported"
+      }
+    ],
+    "supportedTargets": [
+      {
+        "i": 14,
+        "name": "shallow document clone preserves allow-declarative policy"
+      },
+      {
+        "i": 15,
+        "name": "deep document clone preserves allow-declarative policy"
+      },
+      {
+        "i": 16,
+        "name": "cloned detached document keeps copied policy again"
+      },
+      {
+        "i": 17,
+        "name": "new HTML document write keeps declarative parsing disabled"
+      },
+      {
+        "i": 18,
+        "name": "DOMParser document clone preserves disabled policy"
+      },
+      {
+        "i": 19,
+        "name": "detached writes do not insert into active document"
+      },
+      {
+        "i": 20,
+        "name": "split writes retain tokenizer state across tags"
+      },
+      {
+        "i": 21,
+        "name": "two detached parsers can interleave independently"
+      },
+      {
+        "i": 22,
+        "name": "open detaches old nodes without invalidating held wrappers"
+      },
+      {
+        "i": 23,
+        "name": "open disposes an unfinished parser before replacement"
+      },
+      {
+        "i": 24,
+        "name": "intervening DOM removal leaves parser state alive"
+      },
+      {
+        "i": 25,
+        "name": "detached Unicode writes preserve leading FEFF"
+      },
+      {
+        "i": 26,
+        "name": "detached scripts do not execute in the active realm"
+      },
+      {
+        "i": 27,
+        "name": "close handles an unclosed declarative template"
+      },
+      {
+        "i": 33,
+        "name": "imperative attachment rejects missing or invalid mode"
+      },
+      {
+        "i": 34,
+        "name": "imperative attachment rejects invalid HTML and foreign hosts"
+      },
+      {
+        "i": 35,
+        "name": "unfinished detached parser remains owned until realm teardown"
+      },
+      {
+        "i": 36,
+        "name": "held descendant retains detached subtree ancestry after open"
+      }
+    ],
+    "deferredInitialNetworkDependentIndices": [
+      0,
+      1,
+      2,
+      3,
+      6,
+      7,
+      8,
+      28,
+      29,
+      30,
+      31
+    ],
+    "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+    "selectionFixedBeforeRun": true
+  },
+  "full37": {
+    "total": 37,
+    "passed": 26,
+    "failed": 11,
+    "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+    "allPassed": false,
+    "checks": [
+      {
+        "i": 0,
+        "name": "network open root content and native ShadowRoot brand",
+        "ok": false,
+        "error": "Error: expected truthy value"
+      },
+      {
+        "i": 1,
+        "name": "declarative template is absent from light DOM",
+        "ok": false,
+        "error": "Error: expected null, got {}"
+      },
+      {
+        "i": 2,
+        "name": "shadow descendants retain owner document and connectivity",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+      },
+      {
+        "i": 3,
+        "name": "closed root rejects a conflicting imperative mode",
+        "ok": false,
+        "error": "Error: expected NotSupportedError"
+      },
+      {
+        "i": 4,
+        "name": "invalid mode remains ordinary inert template",
+        "ok": true
+      },
+      {
+        "i": 5,
+        "name": "invalid host remains ordinary inert template",
+        "ok": true
+      },
+      {
+        "i": 6,
+        "name": "second declarative template remains light template",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+      },
+      {
+        "i": 7,
+        "name": "nested declarative shadow roots use separate hosts",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+      },
+      {
+        "i": 8,
+        "name": "enumerated shadow mode is ASCII case insensitive",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+      },
+      {
+        "i": 9,
+        "name": "shadow mode whitespace is not stripped",
+        "ok": true
+      },
+      {
+        "i": 10,
+        "name": "ordinary template stays inert with a separate owner",
+        "ok": true
+      },
+      {
+        "i": 11,
+        "name": "DOMParser keeps declarative shadow parsing disabled",
+        "ok": true
+      },
+      {
+        "i": 12,
+        "name": "innerHTML keeps declarative shadow parsing disabled",
+        "ok": true
+      },
+      {
+        "i": 13,
+        "name": "fragment parsing does not attach a root to context",
+        "ok": true
+      },
+      {
+        "i": 14,
+        "name": "shallow document clone preserves allow-declarative policy",
+        "ok": true
+      },
+      {
+        "i": 15,
+        "name": "deep document clone preserves allow-declarative policy",
+        "ok": true
+      },
+      {
+        "i": 16,
+        "name": "cloned detached document keeps copied policy again",
+        "ok": true
+      },
+      {
+        "i": 17,
+        "name": "new HTML document write keeps declarative parsing disabled",
+        "ok": true
+      },
+      {
+        "i": 18,
+        "name": "DOMParser document clone preserves disabled policy",
+        "ok": true
+      },
+      {
+        "i": 19,
+        "name": "detached writes do not insert into active document",
+        "ok": true
+      },
+      {
+        "i": 20,
+        "name": "split writes retain tokenizer state across tags",
+        "ok": true
+      },
+      {
+        "i": 21,
+        "name": "two detached parsers can interleave independently",
+        "ok": true
+      },
+      {
+        "i": 22,
+        "name": "open detaches old nodes without invalidating held wrappers",
+        "ok": true
+      },
+      {
+        "i": 23,
+        "name": "open disposes an unfinished parser before replacement",
+        "ok": true
+      },
+      {
+        "i": 24,
+        "name": "intervening DOM removal leaves parser state alive",
+        "ok": true
+      },
+      {
+        "i": 25,
+        "name": "detached Unicode writes preserve leading FEFF",
+        "ok": true
+      },
+      {
+        "i": 26,
+        "name": "detached scripts do not execute in the active realm",
+        "ok": true
+      },
+      {
+        "i": 27,
+        "name": "close handles an unclosed declarative template",
+        "ok": true
+      },
+      {
+        "i": 28,
+        "name": "declarative attachment options are native state",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'delegatesFocus')"
+      },
+      {
+        "i": 29,
+        "name": "clonable root children copy even on shallow host clone",
+        "ok": false,
+        "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+      },
+      {
+        "i": 30,
+        "name": "matching imperative mode reuses and clears declarative root",
+        "ok": false,
+        "error": "Error: expected null, got {}"
+      },
+      {
+        "i": 31,
+        "name": "conflicting imperative mode leaves declarative content intact",
+        "ok": false,
+        "error": "Error: expected NotSupportedError"
+      },
+      {
+        "i": 32,
+        "name": "ordinary imperative open and closed roots remain supported",
+        "ok": true
+      },
+      {
+        "i": 33,
+        "name": "imperative attachment rejects missing or invalid mode",
+        "ok": true
+      },
+      {
+        "i": 34,
+        "name": "imperative attachment rejects invalid HTML and foreign hosts",
+        "ok": true
+      },
+      {
+        "i": 35,
+        "name": "unfinished detached parser remains owned until realm teardown",
+        "ok": true
+      },
+      {
+        "i": 36,
+        "name": "held descendant retains detached subtree ancestry after open",
+        "ok": true
+      }
+    ]
+  },
+  "supportedTargetsPass": true,
+  "allOriginalEightControlsPass": true,
+  "deferredInitialNetworkFeature": true,
+  "detachedScopePatch": "out/lume-20261029-cpu30/declarative-shadow-detached-patch-1/receipt.json",
+  "detachedScopePatchSHA256": "e380c7bcdf66055b7ded970ff5faec7756d4a30cb41bc96af92be276d76c1ba7",
+  "declarativeShadowPatch": "out/lume-20261029-cpu30/declarative-shadow-patch-1/receipt.json",
+  "declarativeShadowPatchSHA256": "76188039632437bf8b244c10060064b43ea24e100fe4d6174e827f25c48f5e2b",
+  "legacyPolicyChecks": {
+    "total": 15,
+    "expectedPassing": 10,
+    "intentionalChangedOutcomes": 5,
+    "fixtureUnchanged": true
+  },
+  "driverConsistencyEvidence": {
+    "fixture": "out/lume-20261029-cpu30/json-document-red-1/fixture-invalid-v1.py",
+    "reason": "Recheck exact observed top-level jsrun transport-charset defect; original RED1 remains invalid for JSON compatibility."
+  },
+  "stages": [
+    {
+      "name": "build",
+      "command": [
+        "make",
+        "-j3",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/lumen",
+        "build-apple-load-20261029/jsrun",
+        "build-apple-load-20261029/test_document_encoding",
+        "build-apple-load-20261029/test_parser_input",
+        "build-apple-load-20261029/test_render_overdraw",
+        "build-apple-load-20261029/test_gpu_present",
+        "build-apple-load-20261029/test_app_wheel",
+        "build-apple-load-20261029/test_html_default_policy_network"
+      ],
+      "durationSeconds": 2.094,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/build.json",
+      "monitorSHA256": "6271dadb4e5087c22fe262f3de331943676ee79985fd083faab28192f57fad7c",
+      "logSHA256": "140bcff247a31ac738707cfe5e7aadadd770ef642c7c1c21081cf73e95f91f83",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 84.104,
+      "rssPeakMiB": 198.922,
+      "maximumSamplingGapSeconds": 1.011,
+      "resultLines": [],
+      "passed": true
+    },
+    {
+      "name": "detached-writer-scope",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_declarative_shadow_documents_v2.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366"
+      ],
+      "durationSeconds": 1.116,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/detached-writer-scope.json",
+      "monitorSHA256": "d66d02f264bc51e91666befdaad0905dd0ffef4c99614659313611ec93030f5d",
+      "logSHA256": "d4fd8f551ca2ddddc9128937bcc158686fa2abc4f586be2e56cd0cf1fc61ebfe",
+      "exitCode": 1,
+      "naturalExitCode": 1,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 5.406,
+      "maximumSamplingGapSeconds": 1.038,
+      "resultLines": [
+        "[js log] DSD_RESULTS {\"total\":37,\"passed\":26,\"failed\":11}",
+        "DSD_RECEIPT {\"binarySHA256\": \"6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2\", \"fixtureSHA256\": \"9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332\", \"htmlSHA256\": \"f8aba6403961ca1c4e0f20baa217ff3f540f1e81e63fefbb31b60235c506224e\", \"total\": 37, \"passed\": 26, \"failed\": 11}"
+      ],
+      "passed": false,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2",
+          "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+          "htmlSHA256": "f8aba6403961ca1c4e0f20baa217ff3f540f1e81e63fefbb31b60235c506224e",
+          "total": 37,
+          "passed": 26,
+          "failed": 11
+        }
+      ],
+      "acceptedScopedResult": true,
+      "rawChecks": [
+        {
+          "i": 0,
+          "name": "network open root content and native ShadowRoot brand",
+          "ok": false,
+          "error": "Error: expected truthy value"
+        },
+        {
+          "i": 1,
+          "name": "declarative template is absent from light DOM",
+          "ok": false,
+          "error": "Error: expected null, got {}"
+        },
+        {
+          "i": 2,
+          "name": "shadow descendants retain owner document and connectivity",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+        },
+        {
+          "i": 3,
+          "name": "closed root rejects a conflicting imperative mode",
+          "ok": false,
+          "error": "Error: expected NotSupportedError"
+        },
+        {
+          "i": 4,
+          "name": "invalid mode remains ordinary inert template",
+          "ok": true
+        },
+        {
+          "i": 5,
+          "name": "invalid host remains ordinary inert template",
+          "ok": true
+        },
+        {
+          "i": 6,
+          "name": "second declarative template remains light template",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+        },
+        {
+          "i": 7,
+          "name": "nested declarative shadow roots use separate hosts",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+        },
+        {
+          "i": 8,
+          "name": "enumerated shadow mode is ASCII case insensitive",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+        },
+        {
+          "i": 9,
+          "name": "shadow mode whitespace is not stripped",
+          "ok": true
+        },
+        {
+          "i": 10,
+          "name": "ordinary template stays inert with a separate owner",
+          "ok": true
+        },
+        {
+          "i": 11,
+          "name": "DOMParser keeps declarative shadow parsing disabled",
+          "ok": true
+        },
+        {
+          "i": 12,
+          "name": "innerHTML keeps declarative shadow parsing disabled",
+          "ok": true
+        },
+        {
+          "i": 13,
+          "name": "fragment parsing does not attach a root to context",
+          "ok": true
+        },
+        {
+          "i": 14,
+          "name": "shallow document clone preserves allow-declarative policy",
+          "ok": true
+        },
+        {
+          "i": 15,
+          "name": "deep document clone preserves allow-declarative policy",
+          "ok": true
+        },
+        {
+          "i": 16,
+          "name": "cloned detached document keeps copied policy again",
+          "ok": true
+        },
+        {
+          "i": 17,
+          "name": "new HTML document write keeps declarative parsing disabled",
+          "ok": true
+        },
+        {
+          "i": 18,
+          "name": "DOMParser document clone preserves disabled policy",
+          "ok": true
+        },
+        {
+          "i": 19,
+          "name": "detached writes do not insert into active document",
+          "ok": true
+        },
+        {
+          "i": 20,
+          "name": "split writes retain tokenizer state across tags",
+          "ok": true
+        },
+        {
+          "i": 21,
+          "name": "two detached parsers can interleave independently",
+          "ok": true
+        },
+        {
+          "i": 22,
+          "name": "open detaches old nodes without invalidating held wrappers",
+          "ok": true
+        },
+        {
+          "i": 23,
+          "name": "open disposes an unfinished parser before replacement",
+          "ok": true
+        },
+        {
+          "i": 24,
+          "name": "intervening DOM removal leaves parser state alive",
+          "ok": true
+        },
+        {
+          "i": 25,
+          "name": "detached Unicode writes preserve leading FEFF",
+          "ok": true
+        },
+        {
+          "i": 26,
+          "name": "detached scripts do not execute in the active realm",
+          "ok": true
+        },
+        {
+          "i": 27,
+          "name": "close handles an unclosed declarative template",
+          "ok": true
+        },
+        {
+          "i": 28,
+          "name": "declarative attachment options are native state",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'delegatesFocus')"
+        },
+        {
+          "i": 29,
+          "name": "clonable root children copy even on shallow host clone",
+          "ok": false,
+          "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+        },
+        {
+          "i": 30,
+          "name": "matching imperative mode reuses and clears declarative root",
+          "ok": false,
+          "error": "Error: expected null, got {}"
+        },
+        {
+          "i": 31,
+          "name": "conflicting imperative mode leaves declarative content intact",
+          "ok": false,
+          "error": "Error: expected NotSupportedError"
+        },
+        {
+          "i": 32,
+          "name": "ordinary imperative open and closed roots remain supported",
+          "ok": true
+        },
+        {
+          "i": 33,
+          "name": "imperative attachment rejects missing or invalid mode",
+          "ok": true
+        },
+        {
+          "i": 34,
+          "name": "imperative attachment rejects invalid HTML and foreign hosts",
+          "ok": true
+        },
+        {
+          "i": 35,
+          "name": "unfinished detached parser remains owned until realm teardown",
+          "ok": true
+        },
+        {
+          "i": 36,
+          "name": "held descendant retains detached subtree ancestry after open",
+          "ok": true
+        }
+      ],
+      "full37": {
+        "total": 37,
+        "passed": 26,
+        "failed": 11,
+        "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+        "allPassed": false,
+        "checks": [
+          {
+            "i": 0,
+            "name": "network open root content and native ShadowRoot brand",
+            "ok": false,
+            "error": "Error: expected truthy value"
+          },
+          {
+            "i": 1,
+            "name": "declarative template is absent from light DOM",
+            "ok": false,
+            "error": "Error: expected null, got {}"
+          },
+          {
+            "i": 2,
+            "name": "shadow descendants retain owner document and connectivity",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+          },
+          {
+            "i": 3,
+            "name": "closed root rejects a conflicting imperative mode",
+            "ok": false,
+            "error": "Error: expected NotSupportedError"
+          },
+          {
+            "i": 4,
+            "name": "invalid mode remains ordinary inert template",
+            "ok": true
+          },
+          {
+            "i": 5,
+            "name": "invalid host remains ordinary inert template",
+            "ok": true
+          },
+          {
+            "i": 6,
+            "name": "second declarative template remains light template",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+          },
+          {
+            "i": 7,
+            "name": "nested declarative shadow roots use separate hosts",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'firstChild')"
+          },
+          {
+            "i": 8,
+            "name": "enumerated shadow mode is ASCII case insensitive",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+          },
+          {
+            "i": 9,
+            "name": "shadow mode whitespace is not stripped",
+            "ok": true
+          },
+          {
+            "i": 10,
+            "name": "ordinary template stays inert with a separate owner",
+            "ok": true
+          },
+          {
+            "i": 11,
+            "name": "DOMParser keeps declarative shadow parsing disabled",
+            "ok": true
+          },
+          {
+            "i": 12,
+            "name": "innerHTML keeps declarative shadow parsing disabled",
+            "ok": true
+          },
+          {
+            "i": 13,
+            "name": "fragment parsing does not attach a root to context",
+            "ok": true
+          },
+          {
+            "i": 14,
+            "name": "shallow document clone preserves allow-declarative policy",
+            "ok": true
+          },
+          {
+            "i": 15,
+            "name": "deep document clone preserves allow-declarative policy",
+            "ok": true
+          },
+          {
+            "i": 16,
+            "name": "cloned detached document keeps copied policy again",
+            "ok": true
+          },
+          {
+            "i": 17,
+            "name": "new HTML document write keeps declarative parsing disabled",
+            "ok": true
+          },
+          {
+            "i": 18,
+            "name": "DOMParser document clone preserves disabled policy",
+            "ok": true
+          },
+          {
+            "i": 19,
+            "name": "detached writes do not insert into active document",
+            "ok": true
+          },
+          {
+            "i": 20,
+            "name": "split writes retain tokenizer state across tags",
+            "ok": true
+          },
+          {
+            "i": 21,
+            "name": "two detached parsers can interleave independently",
+            "ok": true
+          },
+          {
+            "i": 22,
+            "name": "open detaches old nodes without invalidating held wrappers",
+            "ok": true
+          },
+          {
+            "i": 23,
+            "name": "open disposes an unfinished parser before replacement",
+            "ok": true
+          },
+          {
+            "i": 24,
+            "name": "intervening DOM removal leaves parser state alive",
+            "ok": true
+          },
+          {
+            "i": 25,
+            "name": "detached Unicode writes preserve leading FEFF",
+            "ok": true
+          },
+          {
+            "i": 26,
+            "name": "detached scripts do not execute in the active realm",
+            "ok": true
+          },
+          {
+            "i": 27,
+            "name": "close handles an unclosed declarative template",
+            "ok": true
+          },
+          {
+            "i": 28,
+            "name": "declarative attachment options are native state",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'delegatesFocus')"
+          },
+          {
+            "i": 29,
+            "name": "clonable root children copy even on shallow host clone",
+            "ok": false,
+            "error": "TypeError: Cannot read properties of null (reading 'textContent')"
+          },
+          {
+            "i": 30,
+            "name": "matching imperative mode reuses and clears declarative root",
+            "ok": false,
+            "error": "Error: expected null, got {}"
+          },
+          {
+            "i": 31,
+            "name": "conflicting imperative mode leaves declarative content intact",
+            "ok": false,
+            "error": "Error: expected NotSupportedError"
+          },
+          {
+            "i": 32,
+            "name": "ordinary imperative open and closed roots remain supported",
+            "ok": true
+          },
+          {
+            "i": 33,
+            "name": "imperative attachment rejects missing or invalid mode",
+            "ok": true
+          },
+          {
+            "i": 34,
+            "name": "imperative attachment rejects invalid HTML and foreign hosts",
+            "ok": true
+          },
+          {
+            "i": 35,
+            "name": "unfinished detached parser remains owned until realm teardown",
+            "ok": true
+          },
+          {
+            "i": 36,
+            "name": "held descendant retains detached subtree ancestry after open",
+            "ok": true
+          }
+        ]
+      },
+      "scopeSelection": {
+        "originalEightControls": [
+          {
+            "i": 4,
+            "name": "invalid mode remains ordinary inert template"
+          },
+          {
+            "i": 5,
+            "name": "invalid host remains ordinary inert template"
+          },
+          {
+            "i": 9,
+            "name": "shadow mode whitespace is not stripped"
+          },
+          {
+            "i": 10,
+            "name": "ordinary template stays inert with a separate owner"
+          },
+          {
+            "i": 11,
+            "name": "DOMParser keeps declarative shadow parsing disabled"
+          },
+          {
+            "i": 12,
+            "name": "innerHTML keeps declarative shadow parsing disabled"
+          },
+          {
+            "i": 13,
+            "name": "fragment parsing does not attach a root to context"
+          },
+          {
+            "i": 32,
+            "name": "ordinary imperative open and closed roots remain supported"
+          }
+        ],
+        "supportedTargets": [
+          {
+            "i": 14,
+            "name": "shallow document clone preserves allow-declarative policy"
+          },
+          {
+            "i": 15,
+            "name": "deep document clone preserves allow-declarative policy"
+          },
+          {
+            "i": 16,
+            "name": "cloned detached document keeps copied policy again"
+          },
+          {
+            "i": 17,
+            "name": "new HTML document write keeps declarative parsing disabled"
+          },
+          {
+            "i": 18,
+            "name": "DOMParser document clone preserves disabled policy"
+          },
+          {
+            "i": 19,
+            "name": "detached writes do not insert into active document"
+          },
+          {
+            "i": 20,
+            "name": "split writes retain tokenizer state across tags"
+          },
+          {
+            "i": 21,
+            "name": "two detached parsers can interleave independently"
+          },
+          {
+            "i": 22,
+            "name": "open detaches old nodes without invalidating held wrappers"
+          },
+          {
+            "i": 23,
+            "name": "open disposes an unfinished parser before replacement"
+          },
+          {
+            "i": 24,
+            "name": "intervening DOM removal leaves parser state alive"
+          },
+          {
+            "i": 25,
+            "name": "detached Unicode writes preserve leading FEFF"
+          },
+          {
+            "i": 26,
+            "name": "detached scripts do not execute in the active realm"
+          },
+          {
+            "i": 27,
+            "name": "close handles an unclosed declarative template"
+          },
+          {
+            "i": 33,
+            "name": "imperative attachment rejects missing or invalid mode"
+          },
+          {
+            "i": 34,
+            "name": "imperative attachment rejects invalid HTML and foreign hosts"
+          },
+          {
+            "i": 35,
+            "name": "unfinished detached parser remains owned until realm teardown"
+          },
+          {
+            "i": 36,
+            "name": "held descendant retains detached subtree ancestry after open"
+          }
+        ],
+        "deferredInitialNetworkDependentIndices": [
+          0,
+          1,
+          2,
+          3,
+          6,
+          7,
+          8,
+          28,
+          29,
+          30,
+          31
+        ],
+        "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+        "selectionFixedBeforeRun": true
+      },
+      "allOriginalEightControlsPass": true,
+      "supportedTargetsPass": true,
+      "scopeExplanation": "Initial network/frame DSD remains unsupported. The unchanged whole37 fixture retains every real outcome; only the separately frozen detached-stream/imperative targets define this narrowed implementation gate."
+    },
+    {
+      "name": "fatal-codec",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_text_decoder_fatal_recovery.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366"
+      ],
+      "durationSeconds": 1.07,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/fatal-codec.json",
+      "monitorSHA256": "46bdc5cdb9e0e17ed81ffa841c7f954c85ea2da886b354ccf3e8f815b81e1125",
+      "logSHA256": "01bc5c93b74f82ed3bbd2db19ebcfab0f15cafbcd0a3c7b9aa37aa0b28933c67",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 5.25,
+      "maximumSamplingGapSeconds": 1.002,
+      "resultLines": [
+        "[js log] TEXT_CODEC_RESULTS {\"total\":218,\"passed\":218,\"failed\":0,\"workerIssue\":null}",
+        "TEXT_CODEC_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366\", \"binary_sha256\": \"6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2\", \"fixture_sha256\": \"06e264131d5aabb3c85aeaa2f45fdb1ef6c6bcb5138bd5814048892aa2e61a77\", \"worker_sha256\": \"292540cfdea6e9a0005106464a8455051b7737e228b22beb67b984398a446406\", \"total\": 218, \"passed\": 218, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 105, \"passed\": 105}, \"worker\": {\"total\": 105, \"passed\": 105}, \"cross-realm\": {\"total\": 8, \"passed\": 8}}}"
+      ],
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binary": "/Users/devin/repos/lumen/out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366",
+          "binary_sha256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2",
+          "fixture_sha256": "06e264131d5aabb3c85aeaa2f45fdb1ef6c6bcb5138bd5814048892aa2e61a77",
+          "worker_sha256": "292540cfdea6e9a0005106464a8455051b7737e228b22beb67b984398a446406",
+          "total": 218,
+          "passed": 218,
+          "failed": 0,
+          "scopes": {
+            "window": {
+              "total": 105,
+              "passed": 105
+            },
+            "worker": {
+              "total": 105,
+              "passed": 105
+            },
+            "cross-realm": {
+              "total": 8,
+              "passed": 8
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "html-bom",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_html_bom_boundary.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366"
+      ],
+      "durationSeconds": 1.077,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/html-bom.json",
+      "monitorSHA256": "c9d0c14e0a1e34892ce5a8ed3e1f61837b00ac927f789592603e8286c78d6649",
+      "logSHA256": "d280e37b0091c0b7ab5cb19c55d71e1707cfd08922dae5de243c5c1ca14b455d",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 5.266,
+      "maximumSamplingGapSeconds": 1.012,
+      "resultLines": [
+        "[js log] HTML_BOM_RESULTS {\"total\":21,\"passed\":21,\"failed\":0}",
+        "HTML_BOM_RECEIPT {\"binarySHA256\": \"6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2\", \"fixtureSHA256\": \"9025da241a3add95d7af5e0e3dc4dc081622471f685f479e7e6250149b843c7c\", \"htmlSHA256\": \"5e1211c79c776ba5c2478fa5ec8d3811a774cc2d1f29364782cd58654215236d\", \"caseSHA256\": [\"d2648564022ca4fd0d3915699cb040fc31bd2225e3efef12ec5c97d9151164a8\", \"511219fdf9a9c45a7d0d83178fd462554a584cf4a642599bae2f5e80b892eff7\", \"b17402259d6912b6eed93d6929ff870da434a39528422cb0ea2c095cb910263a\", \"09524311bf50e33c13fde3832a2ffbe80cdc01186f3fba68114f77144ff1eb89\", \"15c8bcc5a12452e421544cc711f751baf314daa9ccb7830fb11b08a20b5562f5\", \"6c4956370bac04fe21e5cc85c49c57086af05ee2cf5ea457f0ede3b5da330e8f\", \"35355717002f195daf7a26627874ff3b5a08a8cb381daff5a5999c027ff6d824\", \"e736d3181b29b7dbf5c702525637d8b575855d28853b6359724d286f7aec7f71\", \"06ca86c189cd91224bc5b07bfa787fa9f56e2744b76710f79587d497b0797330\", \"648070876835f0d75cd15570fc6b1996c88fee3dd9eb0e12a97bcfc97b484ac2\", \"d5f721c13f15bd48244d70207702fd80821594731aa52e9ec9b4051b57ba1211\", \"961a11224b8e4f8779b7bac440771fe71436f2c50344e20b372f02cf99850661\", \"4f9d81b2dff7fd7f64fecdfdc6d0292ed97f903d46a3fd2a51260eab4655eaa8\"], \"total\": 21, \"passed\": 21, \"failed\": 0}"
+      ],
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2",
+          "fixtureSHA256": "9025da241a3add95d7af5e0e3dc4dc081622471f685f479e7e6250149b843c7c",
+          "htmlSHA256": "5e1211c79c776ba5c2478fa5ec8d3811a774cc2d1f29364782cd58654215236d",
+          "caseSHA256": [
+            "d2648564022ca4fd0d3915699cb040fc31bd2225e3efef12ec5c97d9151164a8",
+            "511219fdf9a9c45a7d0d83178fd462554a584cf4a642599bae2f5e80b892eff7",
+            "b17402259d6912b6eed93d6929ff870da434a39528422cb0ea2c095cb910263a",
+            "09524311bf50e33c13fde3832a2ffbe80cdc01186f3fba68114f77144ff1eb89",
+            "15c8bcc5a12452e421544cc711f751baf314daa9ccb7830fb11b08a20b5562f5",
+            "6c4956370bac04fe21e5cc85c49c57086af05ee2cf5ea457f0ede3b5da330e8f",
+            "35355717002f195daf7a26627874ff3b5a08a8cb381daff5a5999c027ff6d824",
+            "e736d3181b29b7dbf5c702525637d8b575855d28853b6359724d286f7aec7f71",
+            "06ca86c189cd91224bc5b07bfa787fa9f56e2744b76710f79587d497b0797330",
+            "648070876835f0d75cd15570fc6b1996c88fee3dd9eb0e12a97bcfc97b484ac2",
+            "d5f721c13f15bd48244d70207702fd80821594731aa52e9ec9b4051b57ba1211",
+            "961a11224b8e4f8779b7bac440771fe71436f2c50344e20b372f02cf99850661",
+            "4f9d81b2dff7fd7f64fecdfdc6d0292ed97f903d46a3fd2a51260eab4655eaa8"
+          ],
+          "total": 21,
+          "passed": 21,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "json-document",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_json_document_encoding.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366"
+      ],
+      "durationSeconds": 1.088,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/json-document.json",
+      "monitorSHA256": "0c676fd3747cb23cbe3b7b892b09b58f7cb8b91913d804f2e8da855a839712a1",
+      "logSHA256": "eae3504640df2452fa1285aaee82f41201831d459057e1bb8c30147fb0cb4172",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 7.869,
+      "rssPeakMiB": 39.125,
+      "maximumSamplingGapSeconds": 1.017,
+      "resultLines": [
+        "[js log] JSON_DOC_RESULTS {\"total\":16,\"passed\":16,\"failed\":0}",
+        "JSON_DOC_RECEIPT {\"binarySHA256\": \"6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2\", \"fixtureSHA256\": \"d2b226d0c8cb878853e60bc72bd0d9c54b1b443de38050f1e5e50cf30b435077\", \"htmlSHA256\": \"6b637af532414d4d971f516d470c070d563cfb03b82e349568530cfa4ec7490e\", \"caseSHA256\": [\"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"1e720055bd1467a56f9ef8d41c2116e370eaf68fe8e63be60a552e93772b43fe\", \"7e3e222edf623ac7bbfea94ddbd432512a67970d7c288c51d3b6adba109ced93\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"299d90b763c263151b2972224336a4753ff56823ab740ae7f20da0ee99429a4f\", \"ffc688b683abd899f74bd32c546463df3f1e7ba31cab0d4eccfe306df21ffc80\", \"cd73d3a166274ff1bec53b5ea3beb7af2c9f3342aaae71eb478b5cfffab73e08\", \"49994461d6b46390f014c8c5275a8591ef8764760afe2739cee23f6fbe285778\", \"543ea154a3582af72abe8fb301deda383a733e9faac71338e734520174a90948\"], \"total\": 16, \"passed\": 16, \"failed\": 0}"
+      ],
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2",
+          "fixtureSHA256": "d2b226d0c8cb878853e60bc72bd0d9c54b1b443de38050f1e5e50cf30b435077",
+          "htmlSHA256": "6b637af532414d4d971f516d470c070d563cfb03b82e349568530cfa4ec7490e",
+          "caseSHA256": [
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "1e720055bd1467a56f9ef8d41c2116e370eaf68fe8e63be60a552e93772b43fe",
+            "7e3e222edf623ac7bbfea94ddbd432512a67970d7c288c51d3b6adba109ced93",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "299d90b763c263151b2972224336a4753ff56823ab740ae7f20da0ee99429a4f",
+            "ffc688b683abd899f74bd32c546463df3f1e7ba31cab0d4eccfe306df21ffc80",
+            "cd73d3a166274ff1bec53b5ea3beb7af2c9f3342aaae71eb478b5cfffab73e08",
+            "49994461d6b46390f014c8c5275a8591ef8764760afe2739cee23f6fbe285778",
+            "543ea154a3582af72abe8fb301deda383a733e9faac71338e734520174a90948"
+          ],
+          "total": 16,
+          "passed": 16,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "driver-parent-charset",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "out/lume-20261029-cpu30/json-document-red-1/fixture-invalid-v1.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366"
+      ],
+      "durationSeconds": 1.08,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/driver-parent-charset.json",
+      "monitorSHA256": "d49478f6b11ef83cc265b37f14dcd232e2df1294cd0ff89b7ce4e38460d85d39",
+      "logSHA256": "5a770d1bd778102537e287979c6e5bc295ca22c00d90ce2f2b663c1d3998d0c0",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 5.438,
+      "maximumSamplingGapSeconds": 1.009,
+      "resultLines": [
+        "[js log] JSON_DOC_RESULTS {\"total\":16,\"passed\":16,\"failed\":0}",
+        "JSON_DOC_RECEIPT {\"binarySHA256\": \"6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2\", \"fixtureSHA256\": \"1adf007f355fe384093fbcd805919e189135d174b4b041be5f3c1fdc19832057\", \"htmlSHA256\": \"0f99830d5c3674a587b07a9d084807251116ebb158c24c666d68c6c97ba7760e\", \"caseSHA256\": [\"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"1e720055bd1467a56f9ef8d41c2116e370eaf68fe8e63be60a552e93772b43fe\", \"7e3e222edf623ac7bbfea94ddbd432512a67970d7c288c51d3b6adba109ced93\", \"54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42\", \"299d90b763c263151b2972224336a4753ff56823ab740ae7f20da0ee99429a4f\", \"ffc688b683abd899f74bd32c546463df3f1e7ba31cab0d4eccfe306df21ffc80\", \"cd73d3a166274ff1bec53b5ea3beb7af2c9f3342aaae71eb478b5cfffab73e08\", \"49994461d6b46390f014c8c5275a8591ef8764760afe2739cee23f6fbe285778\", \"543ea154a3582af72abe8fb301deda383a733e9faac71338e734520174a90948\"], \"total\": 16, \"passed\": 16, \"failed\": 0}"
+      ],
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2",
+          "fixtureSHA256": "1adf007f355fe384093fbcd805919e189135d174b4b041be5f3c1fdc19832057",
+          "htmlSHA256": "0f99830d5c3674a587b07a9d084807251116ebb158c24c666d68c6c97ba7760e",
+          "caseSHA256": [
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "1e720055bd1467a56f9ef8d41c2116e370eaf68fe8e63be60a552e93772b43fe",
+            "7e3e222edf623ac7bbfea94ddbd432512a67970d7c288c51d3b6adba109ced93",
+            "54a71b971980e991d055b9fea93248621988f34fca0c8f61150724767df0cf42",
+            "299d90b763c263151b2972224336a4753ff56823ab740ae7f20da0ee99429a4f",
+            "ffc688b683abd899f74bd32c546463df3f1e7ba31cab0d4eccfe306df21ffc80",
+            "cd73d3a166274ff1bec53b5ea3beb7af2c9f3342aaae71eb478b5cfffab73e08",
+            "49994461d6b46390f014c8c5275a8591ef8764760afe2739cee23f6fbe285778",
+            "543ea154a3582af72abe8fb301deda383a733e9faac71338e734520174a90948"
+          ],
+          "total": 16,
+          "passed": 16,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "legacy-frame-policy",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_frame_encoding_fallback.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366"
+      ],
+      "durationSeconds": 2.114,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/legacy-frame-policy.json",
+      "monitorSHA256": "507c085019c82b42ac47b3b8bc818a3e5e65dc8310a5fb68d0ad1c26b09fc731",
+      "logSHA256": "8bd813e34c4f13917dea149a2f23936f87c6973b407414d385ec7ed2ada0e76d",
+      "exitCode": 1,
+      "naturalExitCode": 1,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 5.856,
+      "rssPeakMiB": 26.188,
+      "maximumSamplingGapSeconds": 1.024,
+      "resultLines": [
+        "[js log] FRAME_ENCODING_RESULTS {\"total\":15,\"passed\":10,\"failed\":5}",
+        "FRAME_ENCODING_RECEIPT {\"binarySHA256\": \"6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2\", \"fixtureSHA256\": \"e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40\", \"htmlSHA256\": \"73f65b3f6c46e9d0dc44b2fe32479840255f76da20b7d6f0aab709f0fb1d5d88\", \"total\": 15, \"passed\": 10, \"failed\": 5}",
+        "RESULTS frame-encoding-fallback FAIL (10/15 checks)"
+      ],
+      "passed": false,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2",
+          "fixtureSHA256": "e0dac5f09136cb13de02b7467fa5d8c8fdb0700e7210ef70e05b6b3224a2db40",
+          "htmlSHA256": "73f65b3f6c46e9d0dc44b2fe32479840255f76da20b7d6f0aab709f0fb1d5d88",
+          "total": 15,
+          "passed": 10,
+          "failed": 5
+        }
+      ],
+      "acceptedIntentionalPolicyDelta": true,
+      "rawLegacyChecks": [
+        {
+          "i": 0,
+          "name": "Windows1252 parent fallback",
+          "ok": true
+        },
+        {
+          "i": 1,
+          "name": "unsupported transport label uses parent fallback",
+          "ok": true
+        },
+        {
+          "i": 2,
+          "name": "Big5 parent fallback",
+          "ok": true
+        },
+        {
+          "i": 3,
+          "name": "UTF16LE parent encoding is not inherited",
+          "ok": false,
+          "error": "Error: expected \"UTF-8\", got \"windows-1252\""
+        },
+        {
+          "i": 4,
+          "name": "supported transport label overrides parent",
+          "ok": true
+        },
+        {
+          "i": 5,
+          "name": "HTML metadata overrides parent",
+          "ok": true
+        },
+        {
+          "i": 6,
+          "name": "UTF8 BOM overrides parent",
+          "ok": true
+        },
+        {
+          "i": 7,
+          "name": "cross-origin child does not inherit",
+          "ok": false,
+          "error": "Error: expected \"UTF-8\", got \"windows-1252\""
+        },
+        {
+          "i": 8,
+          "name": "sandbox opaque-origin child does not inherit",
+          "ok": false,
+          "error": "Error: expected \"UTF-8\", got \"windows-1252\""
+        },
+        {
+          "i": 9,
+          "name": "CSP sandbox opaque-origin child does not inherit",
+          "ok": false,
+          "error": "Error: expected \"UTF-8\", got \"windows-1252\""
+        },
+        {
+          "i": 10,
+          "name": "UTF8 parent fallback stays UTF8",
+          "ok": true
+        },
+        {
+          "i": 11,
+          "name": "UTF16BE parent encoding is not inherited",
+          "ok": false,
+          "error": "Error: expected \"UTF-8\", got \"windows-1252\""
+        },
+        {
+          "i": 12,
+          "name": "UTF16 child transport remains authoritative",
+          "ok": true
+        },
+        {
+          "i": 13,
+          "name": "Big5 meta overrides a Windows1252 parent",
+          "ok": true
+        },
+        {
+          "i": 14,
+          "name": "unsupported meta label permits Big5 parent fallback",
+          "ok": true
+        }
+      ],
+      "policyExplanation": "Original15-case fixture is unchanged. Five former UTF8-default expectations deliberately differ under explicit en-US1252 policy. These failures remain visible and separate from718 prior-policy controls and the raw37 DSD scope ledger."
+    },
+    {
+      "name": "xhr-encoding",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_xhr_response_encoding.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366"
+      ],
+      "durationSeconds": 1.116,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/xhr-encoding.json",
+      "monitorSHA256": "0ceb430ce81c2ed29b96f2d8abd7db937206910fd56bf1ad6fad978c9864994e",
+      "logSHA256": "d1a74b67d3e7210f9e9d90890505a35e51415e4bdf709d136528efa03d53821d",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 5.281,
+      "maximumSamplingGapSeconds": 1.041,
+      "resultLines": [
+        "[js log] XHR_ENCODING_RESULTS {\"total\":42,\"passed\":42,\"failed\":0}",
+        "XHR_ENCODING_RECEIPT {\"binarySHA256\": \"6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2\", \"fixtureSHA256\": \"0af8307a1ff9e24721eedc7298ee0ccdbc84372e67c5573dab17510b86793add\", \"htmlSHA256\": \"7839d5d09da919a3e878cec0837655517b38c9e29f953f0c28b1fcfd2c3ccf0d\", \"total\": 42, \"passed\": 42, \"failed\": 0}",
+        "RESULTS xhr-response-encoding PASS (42/42 checks)"
+      ],
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2",
+          "fixtureSHA256": "0af8307a1ff9e24721eedc7298ee0ccdbc84372e67c5573dab17510b86793add",
+          "htmlSHA256": "7839d5d09da919a3e878cec0837655517b38c9e29f953f0c28b1fcfd2c3ccf0d",
+          "total": 42,
+          "passed": 42,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "html-meta",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_html_meta_encoding.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366"
+      ],
+      "durationSeconds": 2.101,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/html-meta.json",
+      "monitorSHA256": "e69ad669b955afa94a2f0084ab1550d738c61eae1252ff3d3467abf8117d4f7b",
+      "logSHA256": "371814273fc504e081fbd77c1b9bd234f4ac7630d773be8e42f0e6f1b9a0aa9d",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 1,
+      "cpuPeakPercent": 4.884,
+      "rssPeakMiB": 26.297,
+      "maximumSamplingGapSeconds": 1.024,
+      "resultLines": [
+        "[js log] HTML_META_RESULTS {\"total\":29,\"passed\":29,\"failed\":0}",
+        "HTML_META_RECEIPT {\"binarySHA256\": \"6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2\", \"fixtureSHA256\": \"f466ea43bdb133c418df706162e4fab1f4d1b3717e9a2ab116d7745a89630468\", \"htmlSHA256\": \"8a7d5f2355050e84bc1961c9418862ecf8c11437fc7774ee0f5bc23fb68fba35\", \"caseSHA256\": [\"b2ba26ffad0242bc3a88c8c6241effd27cf032ec8b5a521fba2d008a7de525e9\", \"b489a1abb1022e6612eacece6c4bd2ad00e72bbfae3376f4ee41c5ef34caa47f\", \"4699033b94a3dc5aa825909789b35f5ad4e466dc8436e07166eecb450bf48172\", \"0c027f3f244c7543fbf8fba48a0f9ddc59759c0c22ec2743b6a3cb6391111bd0\", \"9f967b37fc2b2184e50f2beab711f7d72a3702e158fcba78619309bef2b0fbc3\", \"4e1a8d51ff31acaafc770cf0140ea886e10aacf26311e4d5b61f7286384ef626\", \"200e2f7fc0923cc164202465e6d415daed216dbdb3f5fa5ca69f9063c9f1a168\", \"ad4cb3a8a18c73b8cb70452e9d7829c5d88985e9fedb483ac36b112595681788\", \"2c014dc456df2caa4dda1fb563cdb26a947d0760a795fb587c003e8bd53c5353\", \"6eae0a0bff73bde7cbe385ba65cfac9a370556ac4803262277b3715cc6f5e77a\", \"8d5548191d7db8182b40ae42f1969c056f4cd103c39d903c64bf599721e2d1c5\", \"1f5ee4eb70b0a73484ffeb51bad6ad0ac52de3a585adf153f6ed6935119ddfa2\", \"6b2c1487288607594083acbfec842a286662ede4817875585e607ff46a593845\", \"58004cb7d52dffafdb556a28129250f4a0d0c0c6cdc9586fdca3303027e0f77f\", \"04b102704fc1045a590a9348cfd2af3e96756f7a95579655e7a3d5dcceac97ed\", \"fcc2d391110e1b29d50543096afb35436dcaa70e4a3d197229677474baf30169\", \"d1ea49ef4bac4f39cce43aed4caa4d22dc55cb6c4cf252c65d3ea4cca4a9beb6\", \"d2c4a39c23945ee149296ef2c928ab2dd0ce3c3426ab9ac1065accff1822bef9\", \"c2fc22136dbaa86cd735e27cf5992461c23de229e03bdfbd48b83353efba2bb3\", \"531d3d53cc1ca5288a58043b510f10fa1ee2ee38b1b97ff3bcae6ed754ef8fe7\", \"465ce8d813ec5effe56107f5caf3208c82687ac0ae89dd3b02ca5c0c09332cb5\", \"7d9b3d500cc8f05ceafc64041e2ebe829d5295c754e23e5e708ba920d6ba3055\", \"3a946068b2ffa59957b66361890e32f4b9b86c315349c2be78a12992733ca662\", \"b5155d0f298d7dd1b78a1e102ab13e0479d5abd7560aca074983144d63e97d73\", \"b44c782e7b0a6cda05786602285131865ad8325a1b4e3640e1e9061c75777fe2\", \"14871f6a7746734996394653c1914c470794c9d3342ab772f33d612dadfb1c7b\", \"d3e9f9bbd54b6e77c098096f0747b1045a90d0ebf7145f9b2e619c3546e351ee\", \"6779ecb808cc4d38b647354ff0cf537ac7487cc3d09f3065dda76260d76d82fe\", \"85adafac37b5e2a03fb57a178e4a86ad87828329e9d45504430567e17a496181\"], \"total\": 29, \"passed\": 29, \"failed\": 0}",
+        "RESULTS html-meta-encoding PASS (29/29 checks)"
+      ],
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "binarySHA256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2",
+          "fixtureSHA256": "f466ea43bdb133c418df706162e4fab1f4d1b3717e9a2ab116d7745a89630468",
+          "htmlSHA256": "8a7d5f2355050e84bc1961c9418862ecf8c11437fc7774ee0f5bc23fb68fba35",
+          "caseSHA256": [
+            "b2ba26ffad0242bc3a88c8c6241effd27cf032ec8b5a521fba2d008a7de525e9",
+            "b489a1abb1022e6612eacece6c4bd2ad00e72bbfae3376f4ee41c5ef34caa47f",
+            "4699033b94a3dc5aa825909789b35f5ad4e466dc8436e07166eecb450bf48172",
+            "0c027f3f244c7543fbf8fba48a0f9ddc59759c0c22ec2743b6a3cb6391111bd0",
+            "9f967b37fc2b2184e50f2beab711f7d72a3702e158fcba78619309bef2b0fbc3",
+            "4e1a8d51ff31acaafc770cf0140ea886e10aacf26311e4d5b61f7286384ef626",
+            "200e2f7fc0923cc164202465e6d415daed216dbdb3f5fa5ca69f9063c9f1a168",
+            "ad4cb3a8a18c73b8cb70452e9d7829c5d88985e9fedb483ac36b112595681788",
+            "2c014dc456df2caa4dda1fb563cdb26a947d0760a795fb587c003e8bd53c5353",
+            "6eae0a0bff73bde7cbe385ba65cfac9a370556ac4803262277b3715cc6f5e77a",
+            "8d5548191d7db8182b40ae42f1969c056f4cd103c39d903c64bf599721e2d1c5",
+            "1f5ee4eb70b0a73484ffeb51bad6ad0ac52de3a585adf153f6ed6935119ddfa2",
+            "6b2c1487288607594083acbfec842a286662ede4817875585e607ff46a593845",
+            "58004cb7d52dffafdb556a28129250f4a0d0c0c6cdc9586fdca3303027e0f77f",
+            "04b102704fc1045a590a9348cfd2af3e96756f7a95579655e7a3d5dcceac97ed",
+            "fcc2d391110e1b29d50543096afb35436dcaa70e4a3d197229677474baf30169",
+            "d1ea49ef4bac4f39cce43aed4caa4d22dc55cb6c4cf252c65d3ea4cca4a9beb6",
+            "d2c4a39c23945ee149296ef2c928ab2dd0ce3c3426ab9ac1065accff1822bef9",
+            "c2fc22136dbaa86cd735e27cf5992461c23de229e03bdfbd48b83353efba2bb3",
+            "531d3d53cc1ca5288a58043b510f10fa1ee2ee38b1b97ff3bcae6ed754ef8fe7",
+            "465ce8d813ec5effe56107f5caf3208c82687ac0ae89dd3b02ca5c0c09332cb5",
+            "7d9b3d500cc8f05ceafc64041e2ebe829d5295c754e23e5e708ba920d6ba3055",
+            "3a946068b2ffa59957b66361890e32f4b9b86c315349c2be78a12992733ca662",
+            "b5155d0f298d7dd1b78a1e102ab13e0479d5abd7560aca074983144d63e97d73",
+            "b44c782e7b0a6cda05786602285131865ad8325a1b4e3640e1e9061c75777fe2",
+            "14871f6a7746734996394653c1914c470794c9d3342ab772f33d612dadfb1c7b",
+            "d3e9f9bbd54b6e77c098096f0747b1045a90d0ebf7145f9b2e619c3546e351ee",
+            "6779ecb808cc4d38b647354ff0cf537ac7487cc3d09f3065dda76260d76d82fe",
+            "85adafac37b5e2a03fb57a178e4a86ad87828329e9d45504430567e17a496181"
+          ],
+          "total": 29,
+          "passed": 29,
+          "failed": 0
+        }
+      ]
+    },
+    {
+      "name": "document-encoding",
+      "command": [
+        "out/lume-20261029-cpu30/native-dsd-2/test_document_encoding-b966d7719ff11793"
+      ],
+      "durationSeconds": 1.108,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/document-encoding.json",
+      "monitorSHA256": "94159d0ad725290be38b8db6993ea37858646a9c35ae31fd6204728c3e6d43b5",
+      "logSHA256": "951d1fad04152778fc17ce36777774b590d1b6c177ec1210452aacfad2c37db8",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.033,
+      "resultLines": [
+        "PASS document encoding rows have unique names and explicit outcomes",
+        "PASS all twelve HTTP byte fixtures were actually requested once",
+        "PASS all encoding HTTP requests finish before network teardown",
+        "PASS native worker ownership remains drained before teardown",
+        "RESULTS document-encoding PASS (78/78 checks)"
+      ],
+      "passed": true,
+      "nativeCheckCount": 78
+    },
+    {
+      "name": "parser-input",
+      "command": [
+        "out/lume-20261029-cpu30/native-dsd-2/test_parser_input-c110c7e306e20ae7"
+      ],
+      "durationSeconds": 1.091,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/parser-input.json",
+      "monitorSHA256": "4cd8d5973930ec73a443588457c14aaa2c655e3aa1c07f0d41d9dc271033827f",
+      "logSHA256": "223555e5612e9415a045db5b5dd6949ac34974a9b83f45dacfaa74f48edac2ae",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.02,
+      "resultLines": [
+        "PASS empty text/plain creates an empty pre document",
+        "PASS text/plain never invokes the parser script hook",
+        "PASS text/html still parses elements with normalized input and encoding metadata",
+        "PASS all parser fixture native nodes are released",
+        "RESULTS parser-input PASS (48/48 checks)"
+      ],
+      "passed": true,
+      "nativeCheckCount": 48
+    },
+    {
+      "name": "test_render_overdraw",
+      "command": [
+        "out/lume-20261029-cpu30/native-dsd-2/test_render_overdraw-b81703ada5acc157"
+      ],
+      "durationSeconds": 1.095,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/test_render_overdraw.json",
+      "monitorSHA256": "029f3a71e6fd39f28c0a380bbfc522e9ba93890ea94e115c383a4aeeedff280a",
+      "logSHA256": "04341450e0dfb63e562ba0fd8d7701b0d8db8daf079fde4b9542ec3fab28d369",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.025,
+      "resultLines": [
+        "RESULTS render-overdraw PASS (100/100 checks)"
+      ],
+      "passed": true,
+      "nativeCheckCount": 100
+    },
+    {
+      "name": "test_gpu_present",
+      "command": [
+        "out/lume-20261029-cpu30/native-dsd-2/test_gpu_present-aa18e755e988b678"
+      ],
+      "durationSeconds": 1.071,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/test_gpu_present.json",
+      "monitorSHA256": "f1550abc0b2c8c37a84eecea056721400c3fd459ca9ab0361e6bd22a21889fc1",
+      "logSHA256": "a00302b05386e15ce22fabcdaffb8331c19f72fb11b2d838b8587d6dcec75433",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.004,
+      "resultLines": [
+        "PASS BGRA recovery submits a bounded upload",
+        "PASS unconfigured case starts with a valid page",
+        "PASS unconfigured surface skips acquisition",
+        "PASS restored surface presents retained pixels",
+        "GPU presentation: 68 checks, 0 failures"
+      ],
+      "passed": true,
+      "nativeCheckCount": 68
+    },
+    {
+      "name": "test_app_wheel",
+      "command": [
+        "out/lume-20261029-cpu30/native-dsd-2/test_app_wheel-7a136a1ceac8107d"
+      ],
+      "durationSeconds": 1.092,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/test_app_wheel.json",
+      "monitorSHA256": "5dded2f2a272a6778260c6948d2d6c944b8478705a7c7cd2fbd97743267f7357",
+      "logSHA256": "f2255b4799d8fd5ac9250a44c65daaec47dab6aef1a3cb92ca76dd70a841e7bd",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.015,
+      "resultLines": [
+        "RESULTS app-wheel PASS (35/35 checks)"
+      ],
+      "passed": true,
+      "nativeCheckCount": 35
+    },
+    {
+      "name": "html-default-boundary",
+      "command": [
+        "out/lume-20261029-cpu30/native-dsd-2/test_html_default_policy_network-6e9baa96c25cca69"
+      ],
+      "durationSeconds": 1.09,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/html-default-boundary.json",
+      "monitorSHA256": "1b1429c64666312c92eb849b96b0a86636d052cfeba0246f2d3379b262b6aa93",
+      "logSHA256": "910b4b27aa4aacfca38af5cd7114a209af55fe50cdea4a61258b17311c8b73a0",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 0,
+      "cpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "maximumSamplingGapSeconds": 1.014,
+      "resultLines": [
+        "PASS XML BOM remains authoritative",
+        "PASS XML declaration remains authoritative",
+        "PASS local file unlabelled UTF8 behavior is preserved",
+        "PASS all policy response documents are released",
+        "RESULTS html-default-boundary PASS (22/22 checks)"
+      ],
+      "passed": true,
+      "nativeCheckCount": 22
+    },
+    {
+      "name": "html-default-navigation",
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_html_default_policy.py",
+        "--binary",
+        "out/lume-20261029-cpu30/native-dsd-2/lumen-c259da2597a6e064",
+        "--output",
+        "out/lume-20261029-cpu30/native-dsd-2/navigation-policy-run"
+      ],
+      "durationSeconds": 3.089,
+      "monitor": "out/lume-20261029-cpu30/native-dsd-2/html-default-navigation.json",
+      "monitorSHA256": "a49857ef6323b741cf3ad008a5e8600bca1a6af4b8594d559788b901207096fe",
+      "logSHA256": "07ecb55eca81d4d5bce93949142637a214263a057a2ee283c41e7e6126efca4f",
+      "exitCode": 0,
+      "naturalExitCode": 0,
+      "collectorError": null,
+      "endedByMonitor": false,
+      "cpuSamples": 2,
+      "cpuPeakPercent": 113.581,
+      "rssPeakMiB": 341.547,
+      "maximumSamplingGapSeconds": 1.013,
+      "resultLines": [
+        "HTML_DEFAULT_RESULTS {\"total\": 25, \"passed\": 25, \"failed\": 0, \"unresolvedLegacyControls\": [\"UTF16LE parent encoding is not inherited\", \"UTF16BE parent encoding is not inherited\"]}"
+      ],
+      "passed": true,
+      "fixtureReceipts": [
+        {
+          "total": 25,
+          "passed": 25,
+          "failed": 0,
+          "unresolvedLegacyControls": [
+            "UTF16LE parent encoding is not inherited",
+            "UTF16BE parent encoding is not inherited"
+          ]
+        }
+      ]
+    }
+  ],
+  "artifacts": {
+    "lumen": {
+      "path": "out/lume-20261029-cpu30/native-dsd-2/lumen-c259da2597a6e064",
+      "sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+      "bytes": 14057768
+    },
+    "jsrun": {
+      "path": "out/lume-20261029-cpu30/native-dsd-2/jsrun-6814c2ee094ee366",
+      "sha256": "6814c2ee094ee3667623506942d7e804ecff94a5ae64b7cc9d4b7c7c5985c2a2",
+      "bytes": 13846520
+    },
+    "test_document_encoding": {
+      "path": "out/lume-20261029-cpu30/native-dsd-2/test_document_encoding-b966d7719ff11793",
+      "sha256": "b966d7719ff117933ec5cb507e6520d3d764232d4bd109d453c71341e6afbc81",
+      "bytes": 13870216
+    },
+    "test_parser_input": {
+      "path": "out/lume-20261029-cpu30/native-dsd-2/test_parser_input-c110c7e306e20ae7",
+      "sha256": "c110c7e306e20ae707c41ec9121c3a57eff4c0ac8983c604ff561dca60b342cd",
+      "bytes": 832736
+    },
+    "test_render_overdraw": {
+      "path": "out/lume-20261029-cpu30/native-dsd-2/test_render_overdraw-b81703ada5acc157",
+      "sha256": "b81703ada5acc1575666e4dcf68ed62b5d82d005a8aeda02898a72ec1ea0451e",
+      "bytes": 13863560
+    },
+    "test_gpu_present": {
+      "path": "out/lume-20261029-cpu30/native-dsd-2/test_gpu_present-aa18e755e988b678",
+      "sha256": "aa18e755e988b67822b481ca08b964c9389053c6089f8b10e457aa09fda2fe9c",
+      "bytes": 76352
+    },
+    "test_app_wheel": {
+      "path": "out/lume-20261029-cpu30/native-dsd-2/test_app_wheel-7a136a1ceac8107d",
+      "sha256": "7a136a1ceac8107d725f866d2244092cd3e1f464db779e1f3fc854d26e00c364",
+      "bytes": 14075296
+    },
+    "test_html_default_policy_network": {
+      "path": "out/lume-20261029-cpu30/native-dsd-2/test_html_default_policy_network-6e9baa96c25cca69",
+      "sha256": "6e9baa96c25cca6972d08e5f027fe21b5b61ca80fda4c4ac8914f35e23f63b66",
+      "bytes": 815744
+    }
+  },
+  "passed": true,
+  "prebuiltV8Linked": true,
+  "prebuiltV8IdentityReceipt": {
+    "path": "out/lume-20261029-cpu30/v8-prebuilt-identity.json",
+    "sha256": "fd3cdbb701d65f4b30ee46cb27a39418a3f8b535519d07bc6e16db28f9d133cf"
+  },
+  "finishedUTC": "2026-10-29T05:48:00.168167+00:00",
+  "durationSeconds": 22.634
+}

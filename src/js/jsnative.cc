@@ -347,7 +347,8 @@ FN(cloneMetadataPairs) {
     const bool deep = BOOL(2);
     auto result = v8::Array::New(iso);
     uint32_t index = 0;
-    std::vector<std::pair<Node *, Node *>> pending = {{source, copy}};
+    struct ClonePair { Node *from, *to; bool subtree; };
+    std::vector<ClonePair> pending = {{source, copy, deep}};
     /* Private DOM metadata exists only on an already-created source wrapper.
      * Walk the native trees so ordinary parsed descendants stay unwrapped:
      * N.first/N.next in JS would materialize and retain both entire trees. */
@@ -357,7 +358,7 @@ FN(cloneMetadataPairs) {
     };
     while (!pending.empty()) {
         auto pair = pending.back(); pending.pop_back();
-        Node *from = pair.first, *to = pair.second;
+        Node *from = pair.from, *to = pair.to;
         if (from->type != to->type) {
             iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Clone metadata trees do not match")));
             return;
@@ -380,13 +381,14 @@ FN(cloneMetadataPairs) {
                 }
             }
         }
-        if (!deep) continue;
+        if (from->shadow_root && to->shadow_root) pending.push_back({from->shadow_root, to->shadow_root, true});
+        if (!pair.subtree) continue;
         /* Preserve the former preorder, with template contents after ordinary
          * children. Do not create template contents merely to inspect them. */
         if (from->template_content && to->template_content)
-            pending.push_back({from->template_content, to->template_content});
+            pending.push_back({from->template_content, to->template_content, true});
         Node *a = from->last, *b = to->last;
-        for (; a && b; a = a->prev, b = b->prev) pending.push_back({a, b});
+        for (; a && b; a = a->prev, b = b->prev) pending.push_back({a, b, true});
         if (a || b) {
             iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Clone metadata children do not match")));
             return;
@@ -402,8 +404,28 @@ FN(connected) { CTX; ARGN(n, 0); RET(n->type == NODE_DOCUMENT || (n->flags & NF_
 FN(host) { CTX; ARGN(n, 0); RET(jwrap(c, n->host)); }
 FN(attachShadow) {
     CTX; ARGN(n, 0);
-    if (!n->shadow_root) { Node *f = node_new_fragment(c->doc); f->host = n; f->refcount = 1; n->shadow_root = f; if (n->flags & NF_CONNECTED) f->flags |= NF_CONNECTED; doc_mark_dirty(c->doc, n); }
-    RET(jwrap(c, n->shadow_root));
+    Node *root = node_attach_shadow(n, a[1]->Uint32Value(ctx).FromMaybe(0), true);
+    if (!root) { throw_dom(iso, ctx, "Shadow root is not supported for this host or attachment mode.", "NotSupportedError"); return; }
+    RET(jwrap(c, root));
+}
+FN(shadowRoot) { CTX; ARGN(n, 0); RET(jwrap(c, n->shadow_root)); }
+FN(shadowFlags) {
+    CTX; ARGN(n, 0);
+    if (n->type != NODE_FRAGMENT || !n->host) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Illegal ShadowRoot receiver"))); return; }
+    RET((int)(n->flags & NF_SHADOW_OPTIONS));
+}
+FN(documentOpen) {
+    CTX; ARGN(n, 0);
+    if (n->type != NODE_DOCUMENT || !html_document_open((Document *)n)) throw_dom(iso, ctx, "Only detached HTML document streams are supported.", "InvalidStateError");
+}
+FN(documentWrite) {
+    CTX; ARGN(n, 0); std::string text = S(1);
+    if (n->type != NODE_DOCUMENT || !html_document_write((Document *)n, text.data(), text.size())) throw_dom(iso, ctx, "Only HTML documents support writing markup.", "InvalidStateError");
+}
+FN(documentClose) {
+    CTX; ARGN(n, 0);
+    if (n->type != NODE_DOCUMENT || n->ns != NS_HTML) { throw_dom(iso, ctx, "Only HTML documents support closing an input stream.", "InvalidStateError"); return; }
+    html_document_close((Document *)n);
 }
 FN(templateContent) {
     CTX; ARGN(n, 0);
@@ -1608,7 +1630,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev);
     REG(text); REG(setText); REG(attr); REG(attrNamespace); REG(setAttr); REG(rmAttr); REG(cspExempt); REG(cspMedia); REG(referrer); REG(attrs); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(parseDoc); REG(xmlAppend); REG(xmlScript); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query); REG(elementsByTagName);
-    REG(matches); REG(byId); REG(clone); REG(cloneMetadataPairs); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow);
+    REG(matches); REG(byId); REG(clone); REG(cloneMetadataPairs); REG(doc); REG(contains); REG(connected); REG(host); REG(attachShadow); REG(shadowRoot); REG(shadowFlags); REG(documentOpen); REG(documentWrite); REG(documentClose);
     REG(templateContent); REG(rect); REG(vrect); REG(clipSet); REG(clipGet); REG(scrollPos); REG(setScroll); REG(computed); REG(value); REG(setValue); REG(checked); REG(setChecked); REG(setPseudo); REG(pickFiles);
     REG(controlSelection); REG(controlSetSelection); REG(controlSetRangeText); REG(controlSelect); REG(controlEditable);
     REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(baseUrl); REG(setUrl); REG(navigate); REG(navigatePost); REG(saveFile); REG(histGo);

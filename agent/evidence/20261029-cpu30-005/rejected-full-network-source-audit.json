@@ -1,0 +1,91 @@
+{
+  "auditedUTC": "2026-10-29T05:40:29.926963+00:00",
+  "passed": true,
+  "scope": "Source/fixture/functional audit for DSD candidate6528; native WPT279, supplemental upstream DSD, lifetime and GUI remain distinct required acceptance gates.",
+  "currentPolicyChecks": 755,
+  "priorPolicyChecks": 718,
+  "newDSDChecks": 37,
+  "original36ReplayExcludedFromUniqueCount": true,
+  "legacyUnmodifiedFixture": {
+    "total": 15,
+    "passed": 10,
+    "intentionalChangedOutcomes": 5,
+    "exactMessagesVerified": true
+  },
+  "native": {
+    "path": "out/lume-20261029-cpu30/native-dsd-1/lumen-6528f5de82184891",
+    "sha256": "6528f5de82184891a39f024ee5559afbd604c1d0e6eb137f067df3ea4ab621c4",
+    "bytes": 14057768
+  },
+  "jsrun": {
+    "path": "out/lume-20261029-cpu30/native-dsd-1/jsrun-e79b9580897bddb1",
+    "sha256": "e79b9580897bddb100166b65b01c930ac84263de90eea199f5c9c4500ea3cb30",
+    "bytes": 13846520
+  },
+  "compiledSourceManifest": "out/lume-20261029-cpu30/native-dsd-1/compiled-source-sha256.json",
+  "compiledSourceManifestSHA256": "40fca579d5b18047b4911ab6e6f35edd61765137d2df594c9beced14a7882e14",
+  "compiledInputCount": 142,
+  "sourcesUnchangedSinceBuild": true,
+  "runtimeSourceAllowlistSHA256": {
+    "src/dom/dom.h": "eceaac84049260e7596fd72a9103965d3fc45f019b228e21d184d4f3abf68f23",
+    "src/dom/dom.c": "f75bdc9fd65fdd00df8150f9c03c4d70d597ce65a3adaee89a2af8f478193d74",
+    "src/html/html.c": "4651ead84e6a70bea0c68a5c3bb50e7b5730bab845d7ee07341f2bea02ac9a55",
+    "src/js/jsnative.cc": "cd4359264b42329a87558e09a671b3a153fd34f70d9a56a96417fc965feb4746",
+    "src/js/js.cc": "d9a3f2b9461e750e3ae057783ac90225c9818e61e69f6238c1e732231516f7e3",
+    "src/js/frames.cc": "8f0e1818cb770dd66c262e1a1dfabd86663b3b71a59f016aa8f322e58fc37f00",
+    "src/js/prelude/02-node.js": "9a8df983ac4b39c294ed459cb8763824d5611359df08a467e6675978c44bb90f",
+    "src/js/prelude/03-element.js": "675e1c130e23225bd4f4bb7b0eb5f6af9079c22d03781ff7431c9497d5e6bf53",
+    "src/js/prelude/05-ce.js": "e1618c710c98ad5169f6eb36b66f7709bb1b6bc2bbca3e2ebf6b9c427ada71bd",
+    "src/js/prelude/06-document.js": "98c43b850f2fda2f007aa56885d90f369c38832449604675fbc3e92eb1c2bde6"
+  },
+  "executedHelperAllowlistSHA256": {
+    "tests/test_declarative_shadow_documents.py": "60c78f66aabcaed704aaa0635c4beb4412d9acc7f8469b98c8de0cab20a8b941",
+    "tests/test_declarative_shadow_documents_v2.py": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+    "tools/apple-session-gpt6as/run_declarative_shadow_red_cpu30.py": "380840b1cfbdc41ebd6da359ee3cd9c21593bc3717e580f300887894fbeba985",
+    "tools/apple-session-gpt6as/run_declarative_shadow_red2_cpu30.py": "94e71b2e7fba5fb028784e2284c918f92a2a9adb96c34dd15faa089bf104a7d3",
+    "tools/apple-session-gpt6as/run_declarative_shadow_green_cpu30.py": "d2cb5d6f0e9765737e82490b93ec7d1fa8fb810f5d0160b4450d887dc160aabf",
+    "tools/apple-session-gpt6as/run_compat_wpt_cpu30.py": "f0700385d7c92cb0065be21bc61dc8fa196611129727d5235a716bbecba2933c",
+    "tools/apple-session-gpt6as/run_frozen_original_wpt_cpu30.py": "03ed953a56f5f9b9ab8e4506eca4a7c447e541ed3c3cc6348731898bf8ba451e"
+  },
+  "executedGreenWorker": {
+    "path": "tools/apple-session-gpt6as/run_declarative_shadow_green_cpu30.py",
+    "sha256": "d2cb5d6f0e9765737e82490b93ec7d1fa8fb810f5d0160b4450d887dc160aabf",
+    "laterLocalHardenedVersion": null
+  },
+  "redEvidence": {
+    "1": {
+      "path": "out/lume-20261029-cpu30/declarative-shadow-red-1/summary.json",
+      "sha256": "b2e35652ca7aed4cb37d4a98e853de851ca799405d1a4d1f54cd1baece6be784",
+      "total": 36,
+      "passed": 8,
+      "failed": 28,
+      "artifact": {
+        "path": "out/lume-20261029-cpu30/native-default-1/jsrun-22e574acf9d05739",
+        "sha256": "22e574acf9d0573923303abded07223f07143a5a745a1b39166416325f5ddfa8",
+        "bytes": 13828152
+      },
+      "fixtureSHA256": "60c78f66aabcaed704aaa0635c4beb4412d9acc7f8469b98c8de0cab20a8b941"
+    },
+    "2": {
+      "path": "out/lume-20261029-cpu30/declarative-shadow-red-2/summary.json",
+      "sha256": "d88592b7d94e04d4104ea34f9980befdfb1255ef19ff6b36b7f13891a87452bb",
+      "total": 37,
+      "passed": 8,
+      "failed": 29,
+      "artifact": {
+        "path": "out/lume-20261029-cpu30/native-default-1/jsrun-22e574acf9d05739",
+        "sha256": "22e574acf9d0573923303abded07223f07143a5a745a1b39166416325f5ddfa8",
+        "bytes": 13828152
+      },
+      "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332"
+    }
+  },
+  "receiptSHA256": {
+    "out/lume-20261029-cpu30/declarative-shadow-patch-1/receipt.json": "76188039632437bf8b244c10060064b43ea24e100fe4d6174e827f25c48f5e2b",
+    "out/lume-20261029-cpu30/native-dsd-1/summary.json": "769718c7208b50b0bcd901321810602ea5f5ac9fafd7f5599f39676aaaed35aa",
+    "out/lume-20261029-cpu30/native-dsd-1/compiled-source-sha256.json": "40fca579d5b18047b4911ab6e6f35edd61765137d2df594c9beced14a7882e14",
+    "out/lume-20261029-cpu30/declarative-shadow-red-1/summary.json": "b2e35652ca7aed4cb37d4a98e853de851ca799405d1a4d1f54cd1baece6be784",
+    "out/lume-20261029-cpu30/declarative-shadow-red-2/summary.json": "d88592b7d94e04d4104ea34f9980befdfb1255ef19ff6b36b7f13891a87452bb"
+  },
+  "qualification": "The new DSD worker directly checks the five exact legacy failure messages. The prior default-policy worker had a separately audited later local hardening; its old executed receipts are not relabeled."
+}

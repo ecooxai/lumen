@@ -1,0 +1,125 @@
+{
+  "originalEightControls": [
+    {
+      "i": 4,
+      "name": "invalid mode remains ordinary inert template"
+    },
+    {
+      "i": 5,
+      "name": "invalid host remains ordinary inert template"
+    },
+    {
+      "i": 9,
+      "name": "shadow mode whitespace is not stripped"
+    },
+    {
+      "i": 10,
+      "name": "ordinary template stays inert with a separate owner"
+    },
+    {
+      "i": 11,
+      "name": "DOMParser keeps declarative shadow parsing disabled"
+    },
+    {
+      "i": 12,
+      "name": "innerHTML keeps declarative shadow parsing disabled"
+    },
+    {
+      "i": 13,
+      "name": "fragment parsing does not attach a root to context"
+    },
+    {
+      "i": 32,
+      "name": "ordinary imperative open and closed roots remain supported"
+    }
+  ],
+  "supportedTargets": [
+    {
+      "i": 14,
+      "name": "shallow document clone preserves allow-declarative policy"
+    },
+    {
+      "i": 15,
+      "name": "deep document clone preserves allow-declarative policy"
+    },
+    {
+      "i": 16,
+      "name": "cloned detached document keeps copied policy again"
+    },
+    {
+      "i": 17,
+      "name": "new HTML document write keeps declarative parsing disabled"
+    },
+    {
+      "i": 18,
+      "name": "DOMParser document clone preserves disabled policy"
+    },
+    {
+      "i": 19,
+      "name": "detached writes do not insert into active document"
+    },
+    {
+      "i": 20,
+      "name": "split writes retain tokenizer state across tags"
+    },
+    {
+      "i": 21,
+      "name": "two detached parsers can interleave independently"
+    },
+    {
+      "i": 22,
+      "name": "open detaches old nodes without invalidating held wrappers"
+    },
+    {
+      "i": 23,
+      "name": "open disposes an unfinished parser before replacement"
+    },
+    {
+      "i": 24,
+      "name": "intervening DOM removal leaves parser state alive"
+    },
+    {
+      "i": 25,
+      "name": "detached Unicode writes preserve leading FEFF"
+    },
+    {
+      "i": 26,
+      "name": "detached scripts do not execute in the active realm"
+    },
+    {
+      "i": 27,
+      "name": "close handles an unclosed declarative template"
+    },
+    {
+      "i": 33,
+      "name": "imperative attachment rejects missing or invalid mode"
+    },
+    {
+      "i": 34,
+      "name": "imperative attachment rejects invalid HTML and foreign hosts"
+    },
+    {
+      "i": 35,
+      "name": "unfinished detached parser remains owned until realm teardown"
+    },
+    {
+      "i": 36,
+      "name": "held descendant retains detached subtree ancestry after open"
+    }
+  ],
+  "deferredInitialNetworkDependentIndices": [
+    0,
+    1,
+    2,
+    3,
+    6,
+    7,
+    8,
+    28,
+    29,
+    30,
+    31
+  ],
+  "fixtureSHA256": "9bc9db9b916822320b650f9f25301e559356142f01dfa88d9e7798a09f80f332",
+  "selectionFixedBeforeRun": true
+}
