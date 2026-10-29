@@ -1,0 +1,4 @@
+<!doctype html>
+<script>
+onmessage = e => { const p = e.ports[0]; const dv = new DataView(new ArrayBuffer(16)); dv.setUint32(0, 7); p.postMessage({ d: dv.buffer, n: 16 }); };
+</script>

@@ -1,0 +1,38 @@
+<!doctype html><meta charset="utf-8"><title>Request internal state</title>
+<pre id="result">Running Request checks…</pre>
+<script>
+(async () => {
+    const results = [];
+    const check = async (name, fn) => { try { results.push({name, pass:!!(await fn())}); } catch(e) { results.push({name, pass:false, error:String(e)}); } };
+    await check('shadowed-data-request', async () => {
+        const r = new Request('data:application/json,%7B%22value%22%3A42%7D');
+        Object.defineProperty(r, 'url', {get: () => location.origin+'/unexpected-request'});
+        Object.defineProperty(r, 'method', {get: () => 'POST'});
+        Object.defineProperty(r, 'bodyUsed', {get: () => true});
+        Object.defineProperty(r, 'mode', {get: () => 'same-origin'});
+        Object.defineProperty(r, 'body', {get: () => new ReadableStream()});
+        return (await (await fetch(r)).json()).value === 42;
+    });
+    await check('throwing-url-copy', () => {
+        const r = new Request('data:text/plain,local');
+        Object.defineProperty(r, 'url', {get() { throw Error('Public URL getter read'); }});
+        return new Request(r).url === 'data:text/plain,local' && r.clone().url === 'data:text/plain,local';
+    });
+    await check('copy-options', () => {
+        const r = new Request('/report', {method:'POST', credentials:'include', cache:'no-store', mode:'same-origin', redirect:'error', keepalive:true});
+        const c = new Request(r);
+        return ['method','credentials','cache','mode','redirect','keepalive'].every(k => c[k] === r[k]);
+    });
+    await check('init-overrides', async () => {
+        const r = new Request('/report', {method:'POST', body:'original', headers:{'X-One':'1'}});
+        const c = new Request(r, {method:'PUT', body:'replacement', headers:{'X-Two':'2'}, credentials:'omit'});
+        return c.method === 'PUT' && c.credentials === 'omit' && c.headers.get('X-One') === null && await c.text() === 'replacement';
+    });
+    await check('readonly-url', () => {
+        const r = new Request('/report'), original = r.url;
+        return !Reflect.set(r, 'url', 'https://invalid.test/') && r.url === original;
+    });
+    document.getElementById('result').textContent = JSON.stringify(results,null,2);
+    await fetch('/report', {method:'POST',body:JSON.stringify(results)});
+})();
+</script>

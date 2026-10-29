@@ -1,0 +1,52 @@
+<!doctype html><meta name=viewport content="width=device-width">
+<style>body{font:20px sans-serif;margin:16px} button{font-size:28px;width:92%;height:120px;margin:8px 4%;background:#c8f0c8} #out{white-space:pre-wrap;font-size:22px}</style>
+<button id=go>Record 12s</button><div id=out>idle</div>
+<script>
+/* records 12 s twice at once: MediaRecorder (encoded) and the raw PCM a ScriptProcessor sees. Only numbers
+   (sizes, sample counts, levels) go to the result sink (tools/device_tests.py); the recordings themselves are
+   uploaded only with ?up=1. ?auto=0 waits for the button, ?ec=0 turns echo cancellation off, ?tone=1 plays a quiet 440 Hz
+   tone from the speaker meanwhile, so the levels show the microphone hears it (use with ec=0). */
+const out = document.getElementById('out'), lines = [], log = m => { lines.push(m); out.textContent += '\n' + m; };
+const q = new URLSearchParams(location.search), tag = (q.get('tag') || 'mic').replace(/\W/g, ''), ec = q.get('ec') !== '0';
+const up = (name, body) => q.get('up') === '1' ? fetch('/up?n=' + tag + '-' + name, { method: 'POST', body }) : Promise.resolve();
+const report = () => fetch('/r?n=' + tag, { method: 'POST', body: lines.join('\n') }).catch(() => {});
+const wav = (f, rate) => {
+  const b = new DataView(new ArrayBuffer(44 + f.length * 2)), s = (o, t) => { for (let i = 0; i < t.length; i++) b.setUint8(o + i, t.charCodeAt(i)); };
+  s(0, 'RIFF'); b.setUint32(4, 36 + f.length * 2, true); s(8, 'WAVEfmt '); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true);
+  b.setUint32(24, rate, true); b.setUint32(28, rate * 2, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true); s(36, 'data'); b.setUint32(40, f.length * 2, true);
+  for (let i = 0; i < f.length; i++) b.setInt16(44 + i * 2, Math.max(-1, Math.min(1, f[i])) * 32767, true);
+  return b.buffer;
+};
+let busy = false;
+const run = async () => {
+  if (busy) return; busy = true; out.textContent = 'start ec=' + ec;
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ audio: ec ? true : { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    const ac = new AudioContext(), sp = ac.createScriptProcessor(4096, 1, 1), parts = [], pcm = []; let n = 0;
+    log('ctx rate=' + ac.sampleRate);
+    sp.onaudioprocess = e => { const c = e.inputBuffer.getChannelData(0); pcm.push(new Float32Array(c)); n += c.length; };
+    ac.createMediaStreamSource(s).connect(sp); sp.connect(ac.destination);
+    let osc = null;
+    if (q.get('tone') === '1') { osc = ac.createOscillator(); const g = ac.createGain(); g.gain.value = 0.15; osc.frequency.value = 440; osc.connect(g); g.connect(ac.destination); osc.start(); }
+    const r = new MediaRecorder(s);
+    r.ondataavailable = e => parts.push(e.data);
+    const t0 = performance.now();
+    await new Promise(res => { r.onstop = res; r.start(1000); setTimeout(() => r.stop(), 12000); });
+    const ms = Math.round(performance.now() - t0);
+    if (osc) osc.stop();
+    sp.disconnect(); s.getTracks().forEach(t => t.stop());
+    const all = new Float32Array(n); let o = 0; for (const p of pcm) { all.set(p, o); o += p.length; }
+    const b = new Blob(parts, { type: r.mimeType });
+    log('rec mime=' + r.mimeType + ' chunks=' + parts.length + ' bytes=' + b.size + ' pcm=' + n + ' ms=' + ms);
+    let sq = 0, pk = 0; for (const v of all) { sq += v * v; pk = Math.max(pk, Math.abs(v)); }
+    log('level rms=' + Math.sqrt(sq / Math.max(1, n)).toFixed(4) + ' peak=' + pk.toFixed(4));
+    await up('rec.' + (r.mimeType.includes('mp4') ? 'mp4' : 'webm'), b);
+    await up('pcm.wav', wav(all, ac.sampleRate));
+    log('DONE');
+  } catch (e) { log('ERR ' + e.name + ': ' + e.message); }
+  await report();
+  busy = false;
+};
+document.getElementById('go').onclick = run;
+if (q.get('auto') !== '0') setTimeout(run, 500);
+</script>

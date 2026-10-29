@@ -1,0 +1,20 @@
+<!doctype html><body><div id=a><p class=x>1</p><p>2</p></div><script>
+const r = [], ok = (n, c) => r.push(n + ':' + (c ? 'PASS' : 'FAIL'));
+const a = document.getElementById('a'), cn = a.childNodes, ch = a.children, ps = document.getElementsByTagName('p'), xs = document.getElementsByClassName('x');
+ok('same', a.childNodes === cn && a.children === ch);
+ok('len0', cn.length === 2 && ps.length === 2 && xs.length === 1);
+a.appendChild(document.createElement('p')).className = 'x';
+ok('grow', cn.length === 3 && ch.length === 3 && ps.length === 3 && xs.length === 2);
+ok('idx', cn[2] === a.lastChild && cn.item(0) === a.firstChild && cn[9] === undefined && 2 in cn && !(5 in cn));
+ok('iter', [...cn].length === 3 && Array.from(ch).length === 3);
+let n = 0; cn.forEach(() => n++); ok('forEach', n === 3);
+const u = document.createElement('div'); u.innerHTML = '<br><i>a</i><b>b</b>text';
+const f = u.childNodes; u.removeChild(f[0]);
+const h = document.createDocumentFragment(); let g = 0; for (; f.length && g < 100; g++) h.appendChild(f[0]);
+ok('drain', g === 3 && f.length === 0 && h.childNodes.length === 3);
+ok('keys', Object.keys(cn).join() === '0,1,2' && cn instanceof NodeList);
+const qs = document.querySelectorAll('p');
+ok('notArray', !(cn instanceof Array) && !(qs instanceof Array) && [0].concat(ps).length === 2 && [0].concat(qs).length === 2);
+a.firstChild.remove(); ok('shrink', cn.length === 2 && xs.length === 1);
+console.log('RESULTS ' + r.join(' '));
+</script></body>

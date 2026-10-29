@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lumen Android scroll and input checks</title>
+<style>
+body { margin: 0; background: #dff2ff; color: #122535; font: 20px sans-serif; }
+header { position: fixed; top: 0; left: 0; right: 0; height: 100px; background: #123b61; color: white; z-index: 5; }
+header strong { display: block; padding: 10px; }
+button, input { font: 20px sans-serif; padding: 8px; margin: 4px; }
+main { padding-top: 110px; }
+section { height: 600px; border-left: 8px solid #008754; border-right: 8px solid #e96b19; padding: 16px; box-sizing: border-box; }
+.alternate { background: #c0dfff; }
+#overlay { display: none; position: fixed; top: 120px; left: 20px; right: 20px; padding: 20px; background: #ffe187; color: #122535; z-index: 10; }
+#status { display: none; position: fixed; bottom: 0; right: 0; padding: 8px; background: #123b61; color: white; z-index: 5; }
+input { width: 80%; }
+a { display: block; padding: 12px; }
+</style>
+<header><strong>FIXED TOP — must stay still</strong><button id="toggle" type="button">Open overlay</button><button id="footer" type="button">Toggle footer</button></header>
+<div id="overlay">OVERLAY — close and check the bands below.<button id="close" type="button">Close overlay</button></div>
+<main>
+<section><h1>Band 1</h1><p>Green left edge. Orange right edge. Scroll down, then reverse.</p><label for="first">First input</label><input id="first" placeholder="Type here"><a href="https://www.google.com/">Google</a><a href="https://en.wikipedia.org/wiki/Web_browser">Wikipedia browser article</a></section>
+<section class="alternate"><h1>Band 2</h1><label for="second">Input after scrolling</label><input id="second" placeholder="Keyboard resize check"></section>
+<section><h1>Band 3</h1><p>Check both colored edges and the fixed top and bottom labels.</p></section>
+<section class="alternate"><h1>Band 4</h1><label for="fourth">Another input</label><input id="fourth" placeholder="Reverse scroll check"></section>
+<section><h1>Band 5</h1><p>Last band. Scroll back up.</p></section>
+</main>
+<div id="status">FIXED BOTTOM</div>
+<script>
+document.getElementById('toggle').onclick = function () { document.getElementById('overlay').style.display = 'block'; };
+document.getElementById('close').onclick = function () { document.getElementById('overlay').style.display = 'none'; };
+document.getElementById('footer').onclick = function () { var footer = document.getElementById('status'); footer.style.display = footer.style.display === 'block' ? 'none' : 'block'; };
+</script>
+</html>

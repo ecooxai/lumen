@@ -1,0 +1,8 @@
+<!doctype html><title>js basic</title>
+<div id=out>pending</div>
+<script>
+document.getElementById('out').textContent = 'js ok: ' + typeof window + ' ' + document.querySelectorAll('div').length;
+document.addEventListener('DOMContentLoaded', () => console.log('DOMContentLoaded'));
+setTimeout(() => { const p = document.createElement('p'); p.textContent = 'timer ok'; document.body.appendChild(p); console.log('timer fired'); }, 50);
+Promise.resolve().then(() => console.log('microtask ok'));
+</script>

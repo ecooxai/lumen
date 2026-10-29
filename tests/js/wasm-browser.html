@@ -1,0 +1,82 @@
+<!doctype html><meta name="viewport" content="width=device-width">
+<title>WebAssembly browser integration</title><h2>WebAssembly browser integration</h2><pre id="results"></pre>
+<script>
+(async()=>{
+ const results=[], add=new Uint8Array([0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,3,2,1,0,7,7,1,3,97,100,100,0,0,10,9,1,7,0,32,0,32,1,106,11]);
+ const require=(value,message)=>{if(!value)throw Error(message)};
+ async function check(name,fn){let timer;try{await Promise.race([Promise.resolve().then(fn),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('timeout')),5000)})]);results.push({name,pass:true})}catch(e){results.push({name,pass:false,error:String(e)})}finally{clearTimeout(timer)}
+  document.getElementById('results').textContent=JSON.stringify(results,null,2);
+ }
+ // Small independent functions exercise actual engine instructions, not feature names.
+ function moduleBytes(result,code,memory=false){
+  const section=(id,bytes)=>[id,bytes.length,...bytes];
+  const body=[0,...code,11];
+  return new Uint8Array([0,97,115,109,1,0,0,0,
+   ...section(1,[1,96,0,1,result]),...section(3,[1,0]),
+   ...(memory?section(5,[1,0,1]):[]),...section(7,[1,1,102,0,0]),
+   ...section(10,[1,body.length,...body])]);
+ }
+ await check('sync validation and execution',()=>{
+  require(WebAssembly.validate(add),'valid module rejected');
+  require(!WebAssembly.validate(new Uint8Array([0,1,2])),'invalid module accepted');
+  require(new WebAssembly.Instance(new WebAssembly.Module(add)).exports.add(20,22)===42,'wrong result');
+ });
+ await check('async compile and instantiate',async()=>{
+  const m=await WebAssembly.compile(add),i=await WebAssembly.instantiate(m);
+  require(i.exports.add(20,22)===42,'wrong async result');
+ });
+ await check('memory growth preserves bytes',()=>{
+  const m=new WebAssembly.Memory({initial:1,maximum:2});new Uint8Array(m.buffer)[3]=99;
+  require(m.grow(1)===1&&m.buffer.byteLength===131072&&new Uint8Array(m.buffer)[3]===99,'growth failed');
+ });
+ await check('i64 BigInt boundary',()=>{
+  const i=new WebAssembly.Instance(new WebAssembly.Module(moduleBytes(126,[66,42])));
+  require(i.exports.f()===42n,'i64 failed');
+ });
+ await check('SIMD execution',()=>{
+  const i=new WebAssembly.Instance(new WebAssembly.Module(moduleBytes(127,[253,12,42,...Array(15).fill(0),253,21,0])));
+  require(i.exports.f()===42,'SIMD failed');
+ });
+ await check('bulk memory execution',()=>{
+  const i=new WebAssembly.Instance(new WebAssembly.Module(moduleBytes(127,[65,0,65,7,65,4,252,11,0,65,0,45,0,0],true)));
+  require(i.exports.f()===7,'memory.fill failed');
+ });
+ await check('runtime trap',()=>{
+  const i=new WebAssembly.Instance(new WebAssembly.Module(moduleBytes(127,[65,1,65,0,109])));
+  let trapped=false;try{i.exports.f()}catch(e){trapped=e instanceof WebAssembly.RuntimeError}require(trapped,'division did not trap');
+ });
+ await check('compileStreaming fetch',async()=>{
+  const m=await WebAssembly.compileStreaming(fetch('/add.wasm'));
+  require(new WebAssembly.Instance(m).exports.add(20,22)===42,'stream compile failed');
+ });
+ await check('instantiateStreaming fetch',async()=>{
+  const {instance}=await WebAssembly.instantiateStreaming(fetch('/add.wasm'));
+  require(instance.exports.add(20,22)===42,'stream instantiate failed');
+ });
+ await check('module structured clone',()=>{
+  const m=structuredClone(new WebAssembly.Module(add));
+  require(m instanceof WebAssembly.Module&&new WebAssembly.Instance(m).exports.add(20,22)===42,'module lost in clone');
+ });
+ const source=`onmessage=async e=>{try{const d=e.data;let result;
+  if(d.kind==='bytes')result=(await WebAssembly.instantiate(d.value)).instance.exports.add(20,22);
+  else if(d.kind==='module')result=new WebAssembly.Instance(d.value).exports.add(20,22);
+  else {Atomics.store(new Int32Array(d.value.buffer),0,42);result=42;}
+  postMessage({result});}catch(e){postMessage({error:String(e)})}}`;
+ async function worker(kind,value){
+  const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'}));let w;
+  try{w=new Worker(url);return await new Promise((resolve,reject)=>{
+   const timeout=setTimeout(()=>reject(Error('worker timeout')),4000);
+   w.onmessage=e=>{clearTimeout(timeout);e.data.error?reject(Error(e.data.error)):resolve(e.data.result)};
+   w.onerror=e=>{clearTimeout(timeout);reject(Error(e.message))};
+   try{w.postMessage({kind,value})}catch(e){clearTimeout(timeout);reject(e)}
+  })}finally{if(w)w.terminate();URL.revokeObjectURL(url)}
+ }
+ await check('worker compilation',async()=>require(await worker('bytes',add)===42,'worker compile failed'));
+ await check('compiled module to worker',async()=>require(await worker('module',new WebAssembly.Module(add))===42,'worker module failed'));
+ await check('shared wasm memory to worker',async()=>{
+  const m=new WebAssembly.Memory({initial:1,maximum:2,shared:true});
+  require(await worker('memory',m)===42&&Atomics.load(new Int32Array(m.buffer),0)===42,'memory not shared');
+ });
+ await fetch('/report',{method:'POST',body:JSON.stringify({fixture:'wasm-browser',complete:true,results})});
+})();
+</script>

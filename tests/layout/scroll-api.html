@@ -1,0 +1,13 @@
+<!doctype html>
+<style>body{margin:0}.s{height:100px;width:200px;overflow:auto}.s p{height:50px;margin:0}.r{display:flex;flex-direction:column-reverse}</style>
+<div class=s id=a><p>1</p><p>2</p><p>3</p><p>4</p><p>5</p><p>6</p></div>
+<div class="s r" id=b><div style="flex-shrink:0"><p>1</p><p>2</p><p>3</p><p>4</p></div></div>
+<script>
+const a = document.getElementById('a'), b = document.getElementById('b');
+let ev = 0; a.addEventListener('scroll', () => ev++);
+const h = a.scrollHeight; a.scrollTop = 70; const t = a.scrollTop; a.scrollTop = 9999; const mx = a.scrollTop;
+a.scrollBy(0, -20); const by = a.scrollTop;
+const b0 = b.scrollTop; b.scrollTop = -60; const b1 = b.scrollTop;
+setTimeout(() => console.log('RESULTS scroll-api height:' + (h === 300 ? 'PASS' : 'FAIL:' + h) + ' set:' + (t === 70 ? 'PASS' : 'FAIL:' + t) + ' clamp:' + (mx === 200 ? 'PASS' : 'FAIL:' + mx) +
+  ' by:' + (by === 180 ? 'PASS' : 'FAIL:' + by) + ' event:' + (ev > 0 ? 'PASS' : 'FAIL') + ' rev:' + (b0 === 0 && b1 === -60 ? 'PASS' : 'FAIL:' + b0 + ',' + b1)), 50);
+</script>

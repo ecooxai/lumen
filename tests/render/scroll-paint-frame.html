@@ -1,0 +1,6 @@
+<!doctype html>
+<style>body{margin:0}#s{width:160px;height:80px;overflow:auto}.before{height:240px;background:red}.after{height:80px;background:#00ff00}</style>
+<div id="s"><div class="before"></div><div class="after"></div></div>
+<script>
+setTimeout(() => { const s=document.getElementById('s'); s.scrollTop=240; console.error('SCROLL_PAINT_FRAME '+(s.scrollTop===240)); },2000);
+</script>

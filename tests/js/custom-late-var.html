@@ -1,0 +1,3 @@
+<!doctype html><style>:root{--base:1px}.n{--row:var(--nav);--nav:30px;--sum:calc(var(--base) + var(--nav))}.n:where([data-w=b] .n){--nav:36px}.m{height:var(--row);width:var(--sum)}</style>
+<div data-w=b><div class=n><div class=m id=m></div></div></div>
+<script>const cs=getComputedStyle(document.getElementById('m'));console.log('RESULTS custom-late-var later:'+(cs.height==='36px'?'PASS':'FAIL:'+cs.height)+' inherited:'+(cs.width==='calc(1px + 36px)'||cs.width==='37px'?'PASS':'FAIL:'+cs.width))</script>

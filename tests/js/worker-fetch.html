@@ -1,0 +1,11 @@
+<!doctype html><script>
+const src = `onmessage = async () => {
+  const R = {};
+  try { const r = await fetch(location.origin === 'null' ? 'data:,x' : '/', { method: 'GET', headers: { 'x-a': '1' } }); R.status = r.status > 0; R.headers = typeof r.headers.get('content-type') === 'string' || r.headers.get('content-type') === null; } catch (e) { R.status = false; R.err = String(e); }
+  try { const r = await fetch('https://httpbin.org/post', { method: 'POST', body: new Uint8Array([104, 105]), headers: { 'content-type': 'application/octet-stream' } }); const j = await r.json(); R.binBody = j.data === 'hi'; R.reqHeader = j.headers['Content-Type'] === 'application/octet-stream'; } catch (e) { R.binBody = false; R.err2 = String(e); }
+  postMessage(R);
+};`;
+const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+w.onmessage = e => console.log('RESULTS worker-fetch ' + Object.entries(e.data).map(([k, v]) => k + ':' + (v === true ? 'PASS' : v === false ? 'FAIL' : v)).join(' '));
+w.postMessage(1);
+</script>

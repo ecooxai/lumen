@@ -1,0 +1,2 @@
+<!doctype html><title>CPU burn</title><p>Burning CPU in a timer loop.</p>
+<script>setInterval(() => { const e = performance.now() + 45; while (performance.now() < e) {} }, 0);</script>

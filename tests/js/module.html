@@ -1,0 +1,28 @@
+<!doctype html>
+<script>window.order = [];</script>
+<script type="module">
+import { a, meta, resolved } from './mod/a.mjs';
+order.push('module');
+window.M = { a, meta, resolved };
+</script>
+<script>order.push('classic');</script>
+<script nomodule>window.nomod = 1;</script>
+<script>
+setTimeout(async () => {
+    const r = {};
+    r.static = !!window.M && M.a === 42;
+    r.deferred = order.join() === 'classic,module';
+    r.meta = !!window.M && /\/mod\/a\.mjs$/.test(M.meta) && /\/mod\/c\.mjs$/.test(M.resolved);
+    r.nomodule = !window.nomod;
+    const b = await import('./mod/b.mjs');
+    r.dynamic = b.b === 21 && window.bEvals === 1;
+    r.tla = (await import('./mod/c.mjs')).v === 7;
+    r.missing = await import('./mod/missing.mjs').then(() => false, e => e instanceof TypeError);
+    const s = document.createElement('script');
+    s.type = 'module';
+    s.textContent = 'window.inserted = import.meta.url.length > 0;';
+    document.body.appendChild(s);
+    r.inserted = window.inserted === true;
+    console.log('RESULTS module ' + Object.entries(r).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
+}, 50);
+</script>

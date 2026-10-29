@@ -1,0 +1,156 @@
+<!doctype html><meta name=viewport content="width=device-width">
+<title>gfx</title>
+<style>body{font:18px sans-serif;margin:10px;background:#fff} canvas{width:45vw;height:45vw;border:1px solid #888;margin:4px} #out{white-space:pre-wrap;font:16px monospace}</style>
+<div><canvas id=c1 width=256 height=256></canvas><canvas id=c2 width=256 height=256></canvas></div>
+<div id=out>running</div>
+<script>
+/* WebGL 1/2 and WebGPU checks; ?t=gl1,gl2,anim,gpu,gpuanim,rec picks tests (default all), ?s=SECONDS for the animations */
+const out = document.getElementById('out'), lines = [];
+const q = new URLSearchParams(location.search), T = (q.get('t') || 'gl1,gl2,anim,rec,gpu,gpuanim').split(','), SECS = +(q.get('s') || 5);
+const log = m => { lines.push(m); out.textContent = lines.join('\n'); console.log('GFX ' + m); };
+const RES = q.get('res') || '', tag = q.get('tag') || 'gfx';
+const report = () => fetch(RES + '/r?n=' + tag, { method: 'POST', mode: 'no-cors', body: lines.join('\n') }).catch(() => {});
+const upload = (b, n) => fetch(RES + '/up?n=' + tag + '-' + n + (b.type.includes('mp4') ? '.mp4' : '.webm'), { method: 'POST', mode: 'no-cors', body: b }).catch(() => {});
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const VS1 = 'attribute vec2 p; uniform float a; void main(){ float c=cos(a), s=sin(a); gl_Position=vec4(c*p.x-s*p.y, s*p.x+c*p.y, 0., 1.); }';
+const FS1 = 'precision mediump float; uniform vec4 col; void main(){ gl_FragColor=col; }';
+const VS2 = '#version 300 es\nin vec2 p; layout(std140) uniform U { vec4 col; float a; }; out vec4 vc; void main(){ float c=cos(a), s=sin(a); vc=col; gl_Position=vec4(c*p.x-s*p.y, s*p.x+c*p.y, 0., 1.); }';
+const FS2 = '#version 300 es\nprecision mediump float; in vec4 vc; out vec4 o; void main(){ o=vc; }';
+function prog(gl, vs, fs) {
+  const p = gl.createProgram();
+  for (const [t, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) {
+    const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error('compile: ' + gl.getShaderInfoLog(s));
+    gl.attachShader(p, s);
+  }
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error('link: ' + gl.getProgramInfoLog(p));
+  return p;
+}
+const px = gl => { const b = new Uint8Array(4); gl.readPixels(128, 128, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, b); return [...b].join(','); };
+const tri = new Float32Array([0, 0.9, -0.9, -0.9, 0.9, -0.9]);
+let g1 = null, g2 = null;
+function setup1() {
+  const gl = document.getElementById('c1').getContext('webgl');
+  if (!gl) throw new Error('no webgl context');
+  const p = prog(gl, VS1, FS1); gl.useProgram(p);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, tri, gl.STATIC_DRAW);
+  const l = gl.getAttribLocation(p, 'p'); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 2, gl.FLOAT, false, 0, 0);
+  const ua = gl.getUniformLocation(p, 'a'), uc = gl.getUniformLocation(p, 'col');
+  const draw = (a, col) => { gl.clearColor(0, 0, 0.3, 1); gl.clear(gl.COLOR_BUFFER_BIT); gl.uniform1f(ua, a); gl.uniform4fv(uc, col); gl.drawArrays(gl.TRIANGLES, 0, 3); };
+  return { gl, draw };
+}
+function setup2() {
+  const gl = document.getElementById('c2').getContext('webgl2', { antialias: true });
+  if (!gl) throw new Error('no webgl2 context');
+  const p = prog(gl, VS2, FS2); gl.useProgram(p);
+  const vao = gl.createVertexArray(); gl.bindVertexArray(vao);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, tri, gl.STATIC_DRAW);
+  const l = gl.getAttribLocation(p, 'p'); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 2, gl.FLOAT, false, 0, 0);
+  const ub = gl.createBuffer(); gl.bindBuffer(gl.UNIFORM_BUFFER, ub); gl.bufferData(gl.UNIFORM_BUFFER, 32, gl.DYNAMIC_DRAW);
+  gl.uniformBlockBinding(p, gl.getUniformBlockIndex(p, 'U'), 0); gl.bindBufferBase(gl.UNIFORM_BUFFER, 0, ub);
+  const u = new Float32Array(8);
+  const draw = (a, col) => { u.set(col); u[4] = a; gl.bufferSubData(gl.UNIFORM_BUFFER, 0, u); gl.clearColor(0.3, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3); };
+  return { gl, draw };
+}
+async function anim(ctxs, name) {
+  let n = 0; const t0 = performance.now();
+  await new Promise(res => { const f = t => { const a = (t - t0) / 1000; for (const c of ctxs) c.draw(a, [0.2, 0.9, 0.3, 1]); n++; if (t - t0 < SECS * 1000) requestAnimationFrame(f); else res(); }; requestAnimationFrame(f); });
+  log(name + ' frames=' + n + ' fps=' + (n / ((performance.now() - t0) / 1000)).toFixed(1));
+}
+async function rec(canvas, name) {
+  const s = canvas.captureStream(30), parts = [];
+  const r = new MediaRecorder(s);
+  r.ondataavailable = e => parts.push(e.data);
+  const ctx = canvas === g1?.gl.canvas ? g1 : g2;
+  let t0 = performance.now(), go = true;
+  const f = t => { if (!go) return; ctx.draw((t - t0) / 300, [1, 1, 0, 1]); requestAnimationFrame(f); };
+  requestAnimationFrame(f);
+  await new Promise(res => { r.onstop = res; r.start(1000); setTimeout(() => r.stop(), 3000); });
+  go = false;
+  const b = new Blob(parts, { type: r.mimeType });
+  log(name + ' mime=' + r.mimeType + ' chunks=' + parts.length + ' bytes=' + b.size + ' track=' + s.getVideoTracks().length);
+  await upload(b, 'gl');
+}
+const WGSL = `
+struct U { a: f32, pad: f32, pad2: vec2f, col: vec4f };
+@group(0) @binding(0) var<uniform> u: U;
+@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
+  var p = array<vec2f, 3>(vec2f(0., .9), vec2f(-.9, -.9), vec2f(.9, -.9));
+  let c = cos(u.a); let s = sin(u.a); let v = p[i];
+  return vec4f(c * v.x - s * v.y, s * v.x + c * v.y, 0., 1.);
+}
+@fragment fn fs() -> @location(0) vec4f { return u.col; }
+@group(0) @binding(0) var<storage, read_write> data: array<f32>;
+@compute @workgroup_size(64) fn cs(@builtin(global_invocation_id) id: vec3u) { if (id.x < arrayLength(&data)) { data[id.x] = data[id.x] * 2.0; } }`;
+let gpu = null;
+async function gpuTest() {
+  if (!navigator.gpu) throw new Error('no navigator.gpu');
+  const ad = await navigator.gpu.requestAdapter();
+  if (!ad) throw new Error('no adapter');
+  const dev = await ad.requestDevice();
+  let uncaptured = 0; dev.addEventListener('uncapturederror', () => uncaptured++);
+  log('gpu adapter vendor=' + ad.info.vendor + ' arch=' + ad.info.architecture + ' features=' + ad.features.size + ' maxTex2D=' + dev.limits.maxTextureDimension2D);
+  /* compute: double 1024 floats and read them back */
+  const N = 1024, vs = Float32Array.from({ length: N }, (_, i) => i);
+  dev.pushErrorScope('validation');
+  const sm = dev.createShaderModule({ code: WGSL.slice(WGSL.indexOf('@group(0) @binding(0) var<storage')) });
+  const info = await sm.getCompilationInfo();
+  const cp = await dev.createComputePipelineAsync({ layout: 'auto', compute: { module: sm, entryPoint: 'cs' } });
+  const sb = dev.createBuffer({ size: N * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST });
+  const rb = dev.createBuffer({ size: N * 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+  dev.queue.writeBuffer(sb, 0, vs);
+  const bg = dev.createBindGroup({ layout: cp.getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: sb } }] });
+  const enc = dev.createCommandEncoder(), pass = enc.beginComputePass();
+  pass.setPipeline(cp); pass.setBindGroup(0, bg); pass.dispatchWorkgroups(N / 64); pass.end();
+  enc.copyBufferToBuffer(sb, 0, rb, 0, N * 4);
+  dev.queue.submit([enc.finish()]);
+  const t0 = performance.now();
+  await rb.mapAsync(GPUMapMode.READ);
+  const r = new Float32Array(rb.getMappedRange()); let bad = 0; for (let i = 0; i < N; i++) if (r[i] !== i * 2) bad++;
+  rb.unmap();
+  const e = await dev.popErrorScope();
+  log('gpu compute bad=' + bad + ' msgs=' + info.messages.length + ' scopeErr=' + (e ? e.constructor.name : 'none') + ' mapMs=' + (performance.now() - t0).toFixed(1));
+  /* render pipeline to a third canvas */
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 256; cv.style.cssText = 'width:45vw;height:45vw;border:1px solid #888;margin:4px';
+  document.body.insertBefore(cv, out);
+  const ctx = cv.getContext('webgpu'), fmt = navigator.gpu.getPreferredCanvasFormat();
+  ctx.configure({ device: dev, format: fmt, alphaMode: 'opaque' });
+  const rm = dev.createShaderModule({ code: WGSL.replace(/@group\(0\) @binding\(0\) var<storage[\s\S]*$/, '') });
+  const rp = dev.createRenderPipeline({ layout: 'auto', vertex: { module: rm, entryPoint: 'vs' }, fragment: { module: rm, entryPoint: 'fs', targets: [{ format: fmt }] }, primitive: { topology: 'triangle-list' } });
+  const ub = dev.createBuffer({ size: 32, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+  const ubg = dev.createBindGroup({ layout: rp.getBindGroupLayout(0), entries: [{ binding: 0, resource: { buffer: ub } }] });
+  const u = new Float32Array(8);
+  const draw = (a, col) => {
+    u[0] = a; u.set(col, 4); dev.queue.writeBuffer(ub, 0, u);
+    const e = dev.createCommandEncoder();
+    const p = e.beginRenderPass({ colorAttachments: [{ view: ctx.getCurrentTexture().createView(), clearValue: { r: 0, g: 0.3, b: 0, a: 1 }, loadOp: 'clear', storeOp: 'store' }] });
+    p.setPipeline(rp); p.setBindGroup(0, ubg); p.draw(3); p.end();
+    dev.queue.submit([e.finish()]);
+  };
+  draw(0, [1, 0, 1, 1]);
+  await dev.queue.onSubmittedWorkDone();
+  gpu = { dev, draw, cv, uncaptured: () => uncaptured };
+  log('gpu render ok uncaptured=' + uncaptured);
+}
+(async () => {
+  log('ua webgl=' + !!window.WebGLRenderingContext + ' webgl2=' + !!window.WebGL2RenderingContext + ' gpu=' + !!navigator.gpu);
+  for (const t of T) {
+    try {
+      if (t === 'gl1') { g1 = setup1(); g1.draw(0, [1, 0, 0, 1]); log('gl1 ok px=' + px(g1.gl) + ' err=' + g1.gl.getError() + ' exts=' + g1.gl.getSupportedExtensions().length + ' ver=' + g1.gl.getParameter(g1.gl.VERSION)); }
+      else if (t === 'gl2') { g2 = setup2(); g2.draw(0, [1, 0, 0, 1]); log('gl2 ok px=' + px(g2.gl) + ' err=' + g2.gl.getError() + ' samples=' + g2.gl.getParameter(g2.gl.SAMPLES)); }
+      else if (t === 'anim') await anim([g1, g2].filter(Boolean), 'gl anim');
+      else if (t === 'rec') await rec((g2 || g1).gl.canvas, 'gl rec');
+      else if (t === 'gpu') await gpuTest();
+      else if (t === 'gpuanim' && gpu) { await anim([gpu], 'gpu anim'); log('gpu uncaptured=' + gpu.uncaptured()); }
+      else if (t === 'gpurec' && gpu) {
+        const s = gpu.cv.captureStream(30), parts = [], r = new MediaRecorder(s); r.ondataavailable = e => parts.push(e.data);
+        let go = true; const f = tt => { if (go) { gpu.draw(tt / 300, [0, 1, 1, 1]); requestAnimationFrame(f); } }; requestAnimationFrame(f);
+        await new Promise(res => { r.onstop = res; r.start(1000); setTimeout(() => r.stop(), 3000); }); go = false;
+        const gb = new Blob(parts, { type: r.mimeType }); log('gpu rec bytes=' + gb.size + ' chunks=' + parts.length); await upload(gb, 'gpu');
+      }
+    } catch (e) { log(t + ' FAIL ' + (e && e.name) + ': ' + (e && e.message)); }
+  }
+  log('done'); document.title = 'gfx done'; await report();
+})();
+</script>

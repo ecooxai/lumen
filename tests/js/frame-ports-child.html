@@ -1,0 +1,3 @@
+<!doctype html><script>
+addEventListener('message', e => { if (e.data === 'ping' && e.ports.length === 1) { const p = e.ports[0]; p.onmessage = m => p.postMessage('pong:' + m.data); p.postMessage('ready'); } });
+</script>

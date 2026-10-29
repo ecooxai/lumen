@@ -1,0 +1,20 @@
+<!doctype html><html><body><script>
+const r = {}; const got = [];
+addEventListener('message', e => got.push(e.data));
+const f = document.createElement('iframe'); f.src = 'iframe-child.html';
+let loads = 0; f.onload = () => {
+  loads++;
+  r.load = f.contentDocument.getElementById('h')?.textContent === 'child' ? 'PASS' : 'FAIL';
+  r.global = f.contentWindow.loaded === 'yes' ? 'PASS' : 'FAIL';
+  f.contentWindow.postMessage(7, '*');
+};
+r.blank = f.contentWindow === null ? 'PASS' : 'FAIL';
+document.body.appendChild(f);
+r.blankAfterInsert = f.contentDocument && f.contentDocument.URL === 'about:blank' ? 'PASS' : 'FAIL:' + f.contentDocument?.URL;
+setTimeout(() => {
+  r.hello = got.some(d => d.kind === 'hello' && d.href === 'iframe-child.html') ? 'PASS' : 'FAIL:' + JSON.stringify(got);
+  r.echo = got.some(d => d.kind === 'echo' && d.v === 7) ? 'PASS' : 'FAIL';
+  r.onceLoad = loads === 1 ? 'PASS' : 'FAIL:' + loads;
+  console.log('RESULTS ' + Object.entries(r).map(([k, v]) => k + ':' + v).join(' '));
+}, 400);
+</script></body></html>

@@ -1,0 +1,10 @@
+<!doctype html>
+<style>
+@font-face{font-family:"Web Mono";src:url(nope.woff2) format("woff2"),url("file:///System/Library/Fonts/Supplemental/Courier New.ttf") format("truetype")}
+span{font:16px "Web Mono",sans-serif}
+</style>
+<span id=s>iiiiiiiiii</span>
+<script>
+let n=0;(function f(){const w=document.getElementById('s').getBoundingClientRect().width;
+if(Math.abs(w-96)<1||++n>60)console.log('RESULTS webfont:'+(Math.abs(w-96)<1?'PASS':'FAIL w='+w));else setTimeout(f,50)})();
+</script>

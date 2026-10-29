@@ -1,0 +1,9 @@
+<!doctype html><iframe id=f></iframe>
+<script>
+const r = {}, f = document.getElementById('f');
+r.timeline = typeof document.timeline.currentTime === 'number' && document.timeline instanceof DocumentTimeline && document.timeline === document.timeline;
+f.sandbox.add('allow-scripts', 'allow-same-origin');
+r.sandboxAdd = f.getAttribute('sandbox') === 'allow-scripts allow-same-origin' && f.sandbox.contains('allow-scripts');
+f.sandbox = 'allow-forms'; r.sandboxSet = f.sandbox.length === 1 && f.sandbox.value === 'allow-forms';
+console.log('RESULTS timeline-sandbox ' + Object.entries(r).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
+</script>

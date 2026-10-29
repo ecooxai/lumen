@@ -1,0 +1,33 @@
+function(lumen_android_sdl_wait_source source output)
+    file(SHA256 "${source}" source_hash)
+    if(NOT source_hash STREQUAL "072576aed2027797079a92dfe1d2610f67afeb70dab90262866158576a7630b8")
+        message(FATAL_ERROR "Unreviewed SDL event source: review the Android wait fix before updating SDL")
+    endif()
+    file(READ "${source}" contents)
+    # A blocking wait neither needs a poll-batch sentinel nor a second pump
+    # immediately after the entry pump. Keep polling behavior and pump again
+    # after every actual wait, so lifecycle and queued input are still handled.
+    set(before "    // If there isn't a poll sentinel event pending, pump events and add one\n    if (SDL_GetAtomicInt(&SDL_sentinel_pending) == 0) {\n        SDL_PumpEventsInternal(true);\n    }")
+    set(after "#ifdef SDL_PLATFORM_ANDROID\n    bool entry_pumped = false;\n    if (SDL_GetAtomicInt(&SDL_sentinel_pending) == 0) {\n        SDL_PumpEventsInternal(include_sentinel);\n        entry_pumped = true;\n    }\n#else\n${before}\n#endif")
+    string(REPLACE "${before}" "${after}" contents "${contents}")
+    set(before "#ifdef SDL_PLATFORM_ANDROID\n    for (;;) {\n        SDL_PumpEventsInternal(true);")
+    set(after "#ifdef SDL_PLATFORM_ANDROID\n    for (;;) {\n        if (!entry_pumped) SDL_PumpEventsInternal(false);\n        entry_pumped = false;")
+    string(REPLACE "${before}" "${after}" contents "${contents}")
+    file(CONFIGURE OUTPUT "${output}" CONTENT "${contents}" @ONLY)
+endfunction()
+
+function(lumen_fix_android_sdl_wait target source_directory)
+    set(original "${source_directory}/src/events/SDL_events.c")
+    set(generated "${CMAKE_CURRENT_BINARY_DIR}/codex_android_SDL_events.c")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${original}")
+    lumen_android_sdl_wait_source("${original}" "${generated}")
+    get_target_property(sources ${target} SOURCES)
+    if(NOT original IN_LIST sources)
+        message(FATAL_ERROR "SDL event source missing from ${target}; cannot apply Android wait fix")
+    endif()
+    list(REMOVE_ITEM sources "${original}")
+    list(APPEND sources "${generated}")
+    set_property(TARGET ${target} PROPERTY SOURCES "${sources}")
+    set_source_files_properties("${generated}" TARGET_DIRECTORY ${target}
+        PROPERTIES INCLUDE_DIRECTORIES "${source_directory}/src/events")
+endfunction()

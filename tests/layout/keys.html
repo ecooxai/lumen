@@ -1,0 +1,11 @@
+<!-- run with build/lumen, then press Escape and Cmd+Shift+O with nothing focused; expects RESULTS keys esc:PASS cmd:PASS -->
+<p>Press Escape, then Cmd+Shift+O</p>
+<script>
+let esc = 'FAIL', cmd = 'FAIL';
+document.addEventListener('keydown', e => {
+    console.log('KEY', e.key, e.code, 'meta', e.metaKey, 'shift', e.shiftKey, 'target', e.target.tagName);
+    if (e.key === 'Escape' && e.code === 'Escape' && e.target === document.body) esc = 'PASS';
+    if (e.metaKey && e.shiftKey && e.code === 'KeyO' && e.key.toLowerCase() === 'o') { cmd = 'PASS'; e.preventDefault(); }
+    if (cmd === 'PASS') console.log('RESULTS keys esc:' + esc + ' cmd:' + cmd);
+});
+</script>

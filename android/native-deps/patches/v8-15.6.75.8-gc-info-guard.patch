@@ -1,0 +1,16 @@
+diff --git a/src/heap/cppgc-internal/gc-info.cc b/src/heap/cppgc-internal/gc-info.cc
+--- a/src/heap/cppgc-internal/gc-info.cc
++++ b/src/heap/cppgc-internal/gc-info.cc
+@@ -1,4 +1,3 @@
+-#if !defined(CPPGC_ENABLE_OBJECT_SECTION_GCINFO)
+ // Copyright 2020 the V8 project authors. All rights reserved.
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+@@ -9,6 +8,7 @@
+ #include "include/v8config.h"
+ #include "src/heap/cppgc-internal/gc-info-table.h"
+ 
++#if !defined(CPPGC_ENABLE_OBJECT_SECTION_GCINFO)
+ namespace cppgc::internal {
+ 
+ // static

@@ -1,0 +1,58 @@
+<!doctype html>
+<script>
+// IndexedDB (in memory): upgrade, auto-increment and in-line keys, unique and multiEntry indexes, cursors,
+// read-only and abort rollback, error bubbling request -> transaction -> database, versionchange, delete.
+const fail = [], ok = (c, m) => { if (!c) fail.push(m); };
+const P = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = e => { e.preventDefault(); rej(r.error); }; });
+const done = t => new Promise((res, rej) => { t.oncomplete = res; t.onabort = () => rej(t.error); });
+const walk = (r, f) => new Promise(res => { const out = []; r.onsuccess = () => { const c = r.result; if (!c) return res(out); out.push(f(c)); c.continue(); }; });
+(async () => {
+  const req = indexedDB.open('t', 2);
+  let upg = '';
+  req.onupgradeneeded = e => {
+    upg = e.oldVersion + '>' + e.newVersion + ' ' + (e instanceof IDBVersionChangeEvent);
+    const s = req.result.createObjectStore('items', { keyPath: 'id', autoIncrement: true });
+    s.createIndex('name', 'name', { unique: true }); s.createIndex('tags', 'tags', { multiEntry: true });
+    req.result.createObjectStore('kv');
+  };
+  const db = await P(req);
+  ok(upg === '0>2 true' && db.version === 2 && db.objectStoreNames.contains('kv') && db.objectStoreNames.length === 2, 'upgrade ' + upg);
+  let t = db.transaction(['items', 'kv'], 'readwrite'), s = t.objectStore('items');
+  const keys = [await P(s.add({ name: 'b', tags: ['x', 'y'] })), await P(s.add({ name: 'a', tags: ['y'] })), await P(s.put({ id: 10, name: 'c' })), await P(s.add({ name: 'd' }))];
+  ok(keys.join() === '1,2,10,11', 'keys ' + keys);
+  let dup = ''; try { await P(s.add({ name: 'a' })); } catch (e) { dup = e.name; }
+  ok(dup === 'ConstraintError', 'unique ' + dup);
+  t.objectStore('kv').put(1, ['a', 1]); t.objectStore('kv').put(2, 'z'); t.objectStore('kv').put(3, new Date(0)); t.objectStore('kv').put(4, 5);
+  await done(t);
+  t = db.transaction(['items', 'kv']); s = t.objectStore('items');
+  ok((await P(s.index('name').getAll())).map(v => v.id).join() === '2,1,10,11', 'index order');
+  ok((await P(s.index('tags').getAllKeys('y'))).join() === '1,2', 'multiEntry');
+  ok(await P(s.count(IDBKeyRange.bound(2, 10))) === 2, 'range count');
+  ok((await walk(s.openCursor(null, 'prev'), c => c.key)).join() === '11,10,2,1', 'prev cursor');
+  ok((await walk(s.index('tags').openKeyCursor(null, 'nextunique'), c => c.key + ':' + c.primaryKey)).join() === 'x:1,y:1', 'nextunique');
+  const kk = await P(t.objectStore('kv').getAllKeys());
+  ok(kk.length === 4 && kk[0] === 5 && kk[1] instanceof Date && kk[2] === 'z' && Array.isArray(kk[3]), 'key order');
+  let ro = ''; try { s.put({ name: 'q' }); } catch (e) { ro = e.name; }
+  ok(ro === 'ReadOnlyError', 'readonly ' + ro);
+  await done(t);
+  t = db.transaction('items', 'readwrite');
+  t.objectStore('items').delete(1); t.objectStore('items').clear().onsuccess = () => t.abort();
+  await done(t).catch(() => {});
+  ok(await P(db.transaction('items').objectStore('items').count()) === 4, 'abort rollback');
+  t = db.transaction('items', 'readwrite');
+  for (const c of await new Promise(res => { const r = t.objectStore('items').openCursor(); r.onsuccess = () => { const c = r.result; if (!c) return res([]); if (c.key === 1) c.delete(); else { const v = c.value; v.name += '!'; c.update(v); } c.continue(); }; }));
+  await done(t);
+  ok((await P(db.transaction('items').objectStore('items').getAll())).map(v => v.name).join() === 'a!,c!,d!', 'cursor update/delete');
+  let vc = 0; db.onversionchange = () => { vc++; db.close(); };
+  const r3 = indexedDB.open('t', 3); r3.onupgradeneeded = () => r3.result.deleteObjectStore('kv');
+  const db3 = await P(r3);
+  ok(vc === 1 && db3.version === 3 && db3.objectStoreNames.length === 1, 'versionchange');
+  let bubbled = ''; db3.onerror = e => { bubbled = e.target.error.name; };
+  t = db3.transaction('items', 'readwrite'); t.objectStore('items').add({ id: 2, name: 'zz' });
+  await done(t).catch(() => {});
+  ok(bubbled === 'ConstraintError' && t.error && t.error.name === 'ConstraintError', 'bubbling ' + bubbled);
+  db3.close(); await P(indexedDB.deleteDatabase('t'));
+  ok((await indexedDB.databases()).length === 0, 'deleteDatabase');
+  ok(indexedDB.cmp([1], 'a') === 1 && indexedDB.cmp('a', 1) === 1 && indexedDB.cmp(2, 2) === 0, 'cmp');
+})().catch(e => fail.push('threw ' + e)).then(() => console.log('RESULTS indexeddb:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS')));
+</script>

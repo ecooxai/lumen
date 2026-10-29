@@ -1,0 +1,16 @@
+<!doctype html>
+<style>
+:root{--f:inherit}
+:where([data-t]){--f:inherit}
+body{--f:mono}
+.u{--g:unset}
+.i{--f:initial}
+.e{--l:initial;--dk: ;color:var(--l,rgb(1,2,3)) var(--dk,rgb(9,9,9))}
+</style>
+<div data-t id=a><span id=b style="--g:1px"><i id=c class=u></i></span></div>
+<div id=d class=i></div><div id=e class=e></div>
+<script>
+const g=(i,p)=>getComputedStyle(document.getElementById(i)).getPropertyValue(p).trim();
+const r=g('a','--f')==='mono'&&g('b','--f')==='mono'&&g('c','--g')==='1px'&&g('d','--f')===''&&g('e','color')==='rgb(1, 2, 3)'&&getComputedStyle(document.documentElement).getPropertyValue('--f').trim()==='';
+console.log('RESULTS var-keyword:'+(r?'PASS':'FAIL a='+g('a','--f')+' b='+g('b','--f')+' c='+g('c','--g')+' d='+g('d','--f')+' e='+g('e','color')));
+</script>

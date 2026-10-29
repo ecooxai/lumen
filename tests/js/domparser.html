@@ -1,0 +1,27 @@
+<!doctype html><html><body><p id=p>abc<b>def</b>ghi</p><script>
+const R = {};
+const xd = new DOMParser().parseFromString('<?xml version="1.0"?><!DOCTYPE r SYSTEM "r.dtd"><r xmlns="urn:x" xmlns:s="http://www.w3.org/2000/svg" a="1&amp;2"><s:svg viewBox="0 0 1 1"/><![CDATA[<raw>]]><?pi data?><!--c-->t&#x41;</r>', 'application/xml');
+const r = xd.documentElement;
+R.xml = r.namespaceURI === 'urn:x' && r.getAttribute('a') === '1&2' && r.firstChild.namespaceURI === 'http://www.w3.org/2000/svg' && r.firstChild.localName === 'svg' && xd.doctype.systemId === 'r.dtd' ? 'PASS' : 'FAIL';
+R.nodes = r.childNodes[1].nodeType === 4 && r.childNodes[1].data === '<raw>' && r.childNodes[2].target === 'pi' && r.childNodes[3].nodeType === 8 && r.lastChild.data === 'tA' ? 'PASS' : 'FAIL';
+R.err = new DOMParser().parseFromString('<a><b></a>', 'text/xml').documentElement.localName === 'parsererror' ? 'PASS' : 'FAIL';
+const hd = new DOMParser().parseFromString('<title>T</title><p class=x>hi<script>window.bad=1<\/script>', 'text/html');
+R.html = hd.title === 'T' && hd.querySelector('p.x').firstChild.data === 'hi' && hd.body && hd.contentType === 'text/html' ? 'PASS' : 'FAIL';
+document.body.appendChild(hd.querySelector('p.x'));
+setTimeout(() => {
+  R.noScript = window.bad === undefined ? 'PASS' : 'FAIL';
+  R.ser = new XMLSerializer().serializeToString(r.firstChild) === '<s:svg xmlns:s="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>' || /<s:svg[^>]*viewBox="0 0 1 1"\/>/.test(new XMLSerializer().serializeToString(r.firstChild)) ? 'PASS' : 'FAIL';
+  const p = document.getElementById('p'), rg = document.createRange();
+  rg.setStart(p.firstChild, 1); rg.setEnd(p.lastChild, 2);
+  R.rangeStr = rg.toString() === 'bcdefgh' ? 'PASS' : 'FAIL';
+  const f = rg.cloneContents();
+  R.clone = f.childNodes.length === 3 && f.childNodes[1].textContent === 'def' ? 'PASS' : 'FAIL';
+  p.insertBefore(document.createTextNode('X'), p.firstChild);
+  R.live = rg.startContainer === p.childNodes[1] && rg.startOffset === 1 ? 'PASS' : 'FAIL';
+  const s = getSelection(); s.selectAllChildren(p);
+  R.sel = s.rangeCount === 1 && s.toString() === 'Xabcdefghi' && s.type === 'Range' ? 'PASS' : 'FAIL';
+  rg.deleteContents();
+  R.del = p.textContent === 'Xai' && rg.collapsed ? 'PASS' : 'FAIL';
+  console.log('RESULTS ' + Object.entries(R).map(([k, v]) => k + ':' + v).join(' '));
+}, 50);
+</script></body></html>

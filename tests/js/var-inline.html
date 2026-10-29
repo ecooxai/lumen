@@ -1,0 +1,7 @@
+<!doctype html>
+<style>.p{--b:var(--a)}.q{width:var(--b)}@layer x{.r{--b:var(--a,1px)}}</style>
+<div id=p class=p style="--a:52px"></div><div id=q class="p q" style="--a:20px;display:block"></div><div id=r class=r style="--a:7px"></div>
+<script>
+const g=(i,p)=>getComputedStyle(document.getElementById(i)).getPropertyValue(p).trim();
+console.log('RESULTS var-inline sheet:'+(g('p','--b')==='52px'?'PASS':'FAIL:'+g('p','--b'))+' width:'+(g('q','width')==='20px'?'PASS':'FAIL:'+g('q','width'))+' layer:'+(g('r','--b')==='7px'?'PASS':'FAIL:'+g('r','--b')))
+</script>

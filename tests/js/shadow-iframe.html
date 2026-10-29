@@ -1,0 +1,13 @@
+<!doctype html><div id="host"></div><script>
+const R = {};
+const sr = document.getElementById('host').attachShadow({ mode: 'closed' });
+R.connected = (() => { const d = document.createElement('div'); sr.appendChild(d); return d.isConnected; })();
+addEventListener('message', e => { R.message = e.data === 'ready'; done(); });
+const f = document.createElement('iframe');
+f.srcdoc = '<script>parent.postMessage("ready", "*")<\/script>';
+sr.appendChild(f);
+R.frames = window.frames.length === 1;
+let fin = false;
+function done() { if (fin) return; fin = true; console.log('RESULTS shadow-iframe ' + Object.entries(R).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' ')); }
+setTimeout(() => { R.message = R.message || false; done(); }, 1500);
+</script>

@@ -1,0 +1,29 @@
+<!doctype html>
+<style>
+body{margin:0;width:855.5px}
+.ct{container-type:inline-size;width:855.5px}
+.col{width:640px;margin:0 auto}
+.fr{width:auto;margin-inline:-107.75px;padding-inline:107.75px 0}
+table{border-collapse:collapse}
+.e{width:min(100%, min(calc(100cqw - 2 * 0px), 40rem))}
+.f{width:min(100%, min(calc(100cqw - 0px), 40rem))}
+.g{width:min(100%, 40rem)}
+.h{width:min(100%, min(855px, 640px))}
+.i{width:min(100%, calc(100cqw - 2 * 0px))}
+.j{width:min(100%, min(100cqw, 640px))}
+.k{min-width:min(100%,640px)}
+td{padding:4px}
+</style>
+<div class=ct><div class=col>
+<div class=fr><table class=e id=e><tr><td>A<td>R</table></div>
+<div class=fr><table class=f id=f><tr><td>A<td>R</table></div>
+<div class=fr><table class=g id=g><tr><td>A<td>R</table></div>
+<div class=fr><table class=h id=h><tr><td>A<td>R</table></div>
+<div class=fr><table class=i id=i><tr><td>A<td>R</table></div>
+<div class=fr><table class=j id=j><tr><td>A<td>R</table></div>
+<div class=fr><table class=k id=k><tr><td>A<td>R</table></div>
+</div></div>
+<script>
+setTimeout(()=>{const w=i=>i+'='+document.getElementById(i).getBoundingClientRect().width.toFixed(2);
+const r=['e','f','g','h','i','j','k'].map(w).join(' ');console.log('RESULTS minmax-pct:'+(r==='e=640.00 f=640.00 g=640.00 h=640.00 i=747.75 j=640.00 k=640.00'?'PASS':'FAIL '+r))},800);
+</script>

@@ -1,0 +1,64 @@
+<!doctype html><meta name="viewport" content="width=device-width">
+<title>Wasm worker scheduling</title><h2>Wasm worker scheduling</h2><pre id="results"></pre>
+<script>
+(async()=>{
+ const add=[0,97,115,109,1,0,0,0,1,7,1,96,2,127,127,1,127,3,2,1,0,7,7,1,3,97,100,100,0,0,10,9,1,7,0,32,0,32,1,106,11];
+ const results=[], workers=new Set();let nonce=0;
+ const assert=(v,m)=>{if(!v)throw Error(m)};
+ const bytes=()=>new Uint8Array([...add,0,5,0,++nonce&255,(nonce>>8)&255,0,0]);
+ function largeModule(){
+  const leb=v=>{const a=[];do{let b=v&127;v>>>=7;a.push(b|(v?128:0))}while(v);return a};
+  const out=[0,97,115,109,1,0,0,0],section=(id,data)=>{out.push(id,...leb(data.length));for(const b of data)out.push(b)};
+  section(1,[1,96,0,0]);section(3,[...leb(8192),...Array(8192).fill(0)]);
+  const code=leb(8192);for(let i=0;i<8192;i++)code.push(66,0,...Array(64).fill(1),11);
+  section(10,code);section(0,[0,++nonce&255,(nonce>>8)&255]);return new Uint8Array(out);
+ }
+ const source=`onmessage=async e=>{const {id,kind,bytes}=e.data;try{
+   if(kind==='terminate'){WebAssembly.compile(bytes);postMessage({id,started:true});return;}
+   if(kind==='invalid'){let rejected=false;try{await WebAssembly.compile(new Uint8Array([0,1,2]));}catch(e){rejected=e instanceof WebAssembly.CompileError;}
+     const m=await WebAssembly.compile(bytes);postMessage({id,rejected,value:new WebAssembly.Instance(m).exports.add(20,22)});return;}
+   if(kind==='batch'){const values=await Promise.all(Array.from({length:12},async()=>{
+     const {instance}=await WebAssembly.instantiate(bytes);return instance.exports.add(20,22)}));postMessage({id,values});return;}
+   const m=await WebAssembly.compile(bytes),i=await WebAssembly.instantiate(m);
+   postMessage({id,value:i.exports.add(20,22)});
+ }catch(e){postMessage({id,error:String(e)})}}`;
+ function spawn(){const url=URL.createObjectURL(new Blob([source],{type:'text/javascript'})), w=new Worker(url);URL.revokeObjectURL(url);workers.add(w);return w;}
+ function stop(w){w.terminate();workers.delete(w);}
+ let id=0;
+ function request(w,kind='compile',value=bytes()){
+  return new Promise((resolve,reject)=>{const ticket=++id,started=performance.now();
+   const timer=setTimeout(()=>{cleanup();reject(Error('worker timeout without worker timers'));},3000);
+   function cleanup(){clearTimeout(timer);w.removeEventListener('message',message);w.removeEventListener('error',error)}
+   function message(e){if(e.data.id!==ticket)return;cleanup();e.data.error?reject(Error(e.data.error)):resolve({...e.data,elapsedMs:performance.now()-started})}
+   function error(e){cleanup();reject(Error(e.message))}
+   w.addEventListener('message',message);w.addEventListener('error',error);w.postMessage({id:ticket,kind,bytes:value});
+  });
+ }
+ async function check(name,fn){const start=performance.now();try{const detail=await fn();results.push({name,pass:true,elapsedMs:performance.now()-start,detail})}
+  catch(e){results.push({name,pass:false,error:String(e)})}
+  document.getElementById('results').textContent=JSON.stringify(results,null,2);
+ }
+ await check('compile in startup script and close from promise',async()=>{
+  const url=URL.createObjectURL(new Blob([`WebAssembly.instantiate(new Uint8Array(${JSON.stringify(add)})).then(({instance})=>{postMessage(instance.exports.add(20,22));close()})`],{type:'text/javascript'}));
+  const w=new Worker(url);workers.add(w);
+  try{await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('startup compilation timed out')),3000);
+   w.onmessage=e=>{clearTimeout(timer);e.data===42?resolve():reject(Error('wrong startup result'))};
+   w.onerror=e=>{clearTimeout(timer);reject(Error(e.message))};
+  })}finally{stop(w);URL.revokeObjectURL(url)}
+ });
+ const resident=spawn();
+ await check('worker async compile and instantiate without timers',async()=>{const r=await request(resident);assert(r.value===42,'wrong result');return r.elapsedMs});
+ await check('compile rejection delivers microtasks and recovers',async()=>{const r=await request(resident,'invalid');assert(r.rejected&&r.value===42,'rejection or recovery failed');return r.elapsedMs});
+ await check('12 pending compilations in one worker',async()=>{const r=await request(resident,'batch');assert(r.values.length===12&&r.values.every(v=>v===42),'missing results');return r.elapsedMs});
+ await check('4 workers compile concurrently',async()=>{const ws=Array.from({length:4},spawn);try{const rs=await Promise.all(ws.map(w=>request(w)));assert(rs.every(r=>r.value===42),'wrong concurrent result');return rs.map(r=>r.elapsedMs)}finally{ws.forEach(stop)}});
+ await check('20 create compile terminate cycles',async()=>{let worst=0;for(let i=0;i<20;i++){const w=spawn();try{const r=await request(w);assert(r.value===42,'cycle failed');worst=Math.max(worst,r.elapsedMs)}finally{stop(w)}}return {worstMs:worst}});
+ await check('terminate after scheduling large compilation',async()=>{for(let i=0;i<8;i++){const w=spawn();try{const r=await request(w,'terminate',largeModule());assert(r.started,'compile not started')}finally{stop(w)}}assert((await request(resident)).value===42,'worker system did not recover')});
+ await fetch('/report',{method:'POST',body:JSON.stringify({fixture:'wasm-worker',phase:'idle-start',results})});
+ // Stay completely quiet beyond the worker's idle-GC deadline, then confirm
+ // that a new compiler completion still wakes it. No timers run in the worker.
+ await new Promise(resolve=>setTimeout(resolve,15000));
+ await check('compile after worker idle GC',async()=>{const r=await request(resident);assert(r.value===42,'idle wake failed');return r.elapsedMs});
+ await fetch('/report',{method:'POST',body:JSON.stringify({fixture:'wasm-worker',complete:true,results})});
+ // Leave one quiescent worker alive so host monitoring can measure steady idle.
+})();
+</script>

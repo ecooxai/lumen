@@ -1,0 +1,32 @@
+<!doctype html><style>#p{position:relative!important;width:200px;height:100px;margin:10px}</style>
+<body><div id=p><video id=v></video></div><div id=h></div>
+<script>
+// The Fullscreen API: the element is :fullscreen and covers the viewport over author !important rules,
+// document.fullscreenElement follows it (a shadow tree's element shows as its host), fullscreenchange
+// bubbles from it to the document, and the browser is asked to fill the window (jsrun logs "jsrun: fullscreen 1|0").
+(async () => {
+  const p = document.getElementById('p'), seen = [], fail = [];
+  const ok = (c, m) => { if (!c) fail.push(m); };
+  document.addEventListener('fullscreenchange', e => seen.push(e.type + ':' + (e.target.getRootNode() === document ? e.target.id : 'shadow')));
+  ok(document.fullscreenEnabled && document.fullscreenElement === null, 'initial');
+  ok('onfullscreenchange' in document && 'onwebkitfullscreenchange' in document && 'onfullscreenerror' in p && document.onfullscreenchange === null, 'handler properties');
+  let viaProp = 0; document.onfullscreenchange = () => viaProp++;
+  await p.requestFullscreen();
+  const s = getComputedStyle(p);
+  ok(document.fullscreenElement === p && document.webkitFullscreenElement === p && p.matches(':fullscreen'), 'element');
+  ok(s.position === 'fixed' && /^(1280px|100%)$/.test(s.width) && s.marginTop === '0px' && s.zIndex === '2147483647', 'style ' + s.position + ' ' + s.width + ' ' + s.marginTop + ' z' + s.zIndex);
+  await document.exitFullscreen();
+  ok(document.fullscreenElement === null && !p.matches(':fullscreen') && getComputedStyle(p).position === 'relative', 'exit');
+  const sr = document.getElementById('h').attachShadow({ mode: 'open' }); sr.innerHTML = '<span id=in></span>';
+  await sr.getElementById('in').requestFullscreen();
+  ok(document.fullscreenElement === document.getElementById('h'), 'shadow retarget');
+  __lumenFullscreenExit();
+  ok(document.fullscreenElement === null, 'browser exit');
+  await new Promise(r => setTimeout(r, 800));   // the event waits for the window's resize, here for none
+  let rejected = false; try { await document.exitFullscreen(); } catch (e) { rejected = e instanceof TypeError; }
+  ok(rejected, 'exit when not fullscreen rejects');
+  ok(viaProp === 4, 'onfullscreenchange calls ' + viaProp);
+  ok(/^fullscreenchange:p,fullscreenchange:p,fullscreenchange:(h|shadow),fullscreenchange:(h|shadow)$/.test(seen.join()), 'events ' + seen.join());
+  console.log('RESULTS fullscreen:' + (fail.length ? 'FAIL ' + fail.join('; ') : 'PASS'));
+})();
+</script>

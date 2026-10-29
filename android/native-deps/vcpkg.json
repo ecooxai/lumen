@@ -1,0 +1,43 @@
+{
+  "name": "codex-lumen-android-dependencies",
+  "version-string": "0.1.0",
+  "builtin-baseline": "e456309491fd875487bf02b8a0dca76c1b1b00cc",
+  "dependencies": [
+    "icu",
+    "openssl",
+    "zlib",
+    "brotli",
+    "zstd",
+    "freetype",
+    "harfbuzz",
+    {
+      "name": "ffmpeg",
+      "default-features": false,
+      "features": [
+        "avcodec",
+        "avformat",
+        "swresample",
+        "swscale"
+      ]
+    },
+    "libpng",
+    "libjpeg-turbo",
+    "libwebp",
+    "giflib",
+    "opus",
+    {
+      "name": "libdatachannel",
+      "default-features": false,
+      "features": [
+        "srtp"
+      ]
+    }
+  ],
+  "overrides": [
+    {
+      "name": "ffmpeg",
+      "version": "8.1.2",
+      "port-version": 3
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+<!doctype html><html><body><h1 id="h">child</h1><script>
+window.loaded = 'yes';
+parent.postMessage({ kind: 'hello', href: location.href.split('/').pop() }, '*');
+addEventListener('message', e => e.source.postMessage({ kind: 'echo', v: e.data }, '*'));
+</script></body></html>

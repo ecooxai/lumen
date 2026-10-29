@@ -1,0 +1,14 @@
+<!doctype html>
+<style>
+.c{container-type:inline-size;width:300px;padding:0 10px}
+.k{width:50cqw;height:10px}
+.v{--w:min(100cqw, 2000px)}
+.t{width:var(--w)}
+</style>
+<div class=c><div class=k id=k></div><div class=v><div class=t id=t></div></div></div>
+<script>
+requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  const k=document.getElementById('k').getBoundingClientRect().width, t=document.getElementById('t').getBoundingClientRect().width;
+  console.log('RESULTS cq-units:'+(k===150&&t===300?'PASS':'FAIL k='+k+' t='+t));
+}));
+</script>

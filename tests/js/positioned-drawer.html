@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Off-screen drawer scrolling</title>
+<style>
+body{margin:0;font:18px sans-serif}header,footer{position:fixed;left:0;right:0;height:32px;background:#142c46;color:white;z-index:2}header{top:0}footer{bottom:0}
+main{padding:40px 0}.row{height:88px;padding:8px 16px;border-bottom:1px solid #43586b}.row:nth-child(odd){background:#b4dbef}.row:nth-child(even){background:#e6eed3}
+#drawer{position:fixed;top:0;left:-100%;width:70%;height:100%;background:white;z-index:5}
+</style>
+<header>Fixed header — full width</header><main id="rows"></main><footer>Fixed footer — full width</footer><div id="drawer"></div>
+<script>
+for(let i=0;i<160;i++){const e=document.createElement('div');e.className='row';e.textContent='Row '+i+' — page content visible across the viewport';document.getElementById('rows').appendChild(e)}
+const r=document.getElementById('drawer').getBoundingClientRect();
+fetch('/report',{method:'POST',body:JSON.stringify([{name:'offscreen-drawer',pass:Math.abs(r.width-innerWidth*.7)<.1&&r.right<0,detail:{x:r.x,width:r.width,viewport:innerWidth}}])});
+</script>

@@ -1,0 +1,40 @@
+<!doctype html><meta charset="utf-8"><title>Performance startup and worker smoke</title>
+<script>
+(async () => {
+  function check(v, why) { if (!v) throw new Error(why); }
+  function timingCheck() {
+    if (Object.prototype.toString.call(performance) !== '[object Performance]') throw new Error('Performance global not initialized');
+    if (!Number.isFinite(performance.now()) || !Number.isFinite(performance.timeOrigin)) throw new Error('Timing clock unavailable');
+    const detail = { value: 7 };
+    const mark = performance.mark('startup-smoke', { startTime: 1, detail });
+    detail.value = 8;
+    if (mark.detail.value !== 7 || mark.toJSON().detail.value !== 7) throw new Error('Mark detail did not clone/serialize');
+    let rejected = false;
+    try { performance.getEntries.call({}); } catch (e) { rejected = e instanceof TypeError; }
+    if (!rejected) throw new Error('Invalid Performance receiver accepted');
+    rejected = false;
+    try { performance.getEntriesByType(); } catch (e) { rejected = e instanceof TypeError; }
+    if (!rejected) throw new Error('Missing required type accepted');
+    return performance.getEntriesByName('startup-smoke', 'mark').length === 1;
+  }
+  check(timingCheck(), 'Window mark missing');
+  const observed = new Promise((resolve, reject) => {
+    const observer = new PerformanceObserver(list => {
+      observer.disconnect();
+      try { check(list.getEntriesByName('startup-observed').length === 1, 'Observer entry missing'); resolve(); } catch (e) { reject(e); }
+    });
+    observer.observe({ type: 'mark' });
+    performance.mark('startup-observed');
+  });
+  const source = '(' + timingCheck.toString() + ')(); postMessage({ ok: true, navigationId: performance.getEntriesByName("startup-smoke")[0].navigationId });';
+  const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+  const worker = new Worker(url);
+  const worked = new Promise((resolve, reject) => {
+    worker.onmessage = e => { try { check(e.data.ok && e.data.navigationId === 0, 'Worker timing incorrect'); resolve(); } catch (err) { reject(err); } };
+    worker.onerror = e => reject(new Error(e.message || 'Worker startup error'));
+  });
+  await Promise.all([observed, worked]);
+  worker.terminate(); URL.revokeObjectURL(url);
+  console.log('RESULTS performance-startup:PASS');
+})().catch(e => console.log('RESULTS performance-startup:FAIL ' + e.message));
+</script>

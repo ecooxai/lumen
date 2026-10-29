@@ -1,0 +1,74 @@
+<!doctype html>
+<script>
+/* two peers of one page over the native transport (ICE on loopback, DTLS, SCTP, SRTP with Opus), signalled like ChatGPT voice:
+   the offerer has a data channel and a sendrecv audio transceiver and does not trickle; the answerer answers after gathering */
+const R = {};
+const keys = ['connected', 'channel', 'message', 'binary', 'audioAB', 'audioBA', 'element', 'stats', 'close'];
+let reported = false;
+const timers = [];
+const done = () => { if (reported) return; reported = true; console.log('RESULTS webrtc-native ' + keys.map(k => k + ':' + (R[k] || 'FAIL')).join(' ')); for (const t of timers) clearInterval(t); a && a.close(); b && b.close(); };
+/* a sender track fed with a sine through a MediaStreamAudioDestinationNode */
+function tone(hz) {
+    const dest = new AudioContext().createMediaStreamDestination();
+    let phase = 0;
+    timers.push(setInterval(() => {
+        const pcm = new Float32Array(1920);
+        for (let i = 0; i < pcm.length; i++) pcm[i] = 0.3 * Math.sin(2 * Math.PI * hz * (phase++) / 48000);
+        dest._feed(pcm);
+    }, 40));
+    return dest.stream.getAudioTracks()[0];
+}
+/* received PCM: loudness and frequency from zero crossings */
+function listen(track, hz, key) {
+    let n = 0, sq = 0, cross = 0, last = 0;
+    const sub = pcm => {
+        for (const v of pcm) { if (n > 4800) { sq += v * v; if ((v >= 0) !== (last >= 0)) cross++; } last = v; n++; }
+        if (n > 48000 * 1.2) {
+            track._.hub.subs.delete(sub);
+            const m = n - 4801, rms = Math.sqrt(sq / m), f = cross / 2 / (m / 48000);
+            R[key] = rms > 0.1 && Math.abs(f - hz) < hz * 0.05 ? 'PASS' : `BAD:rms=${rms.toFixed(3)},hz=${f.toFixed(0)}`;
+            if (R.audioAB && R.audioBA) finish();
+        }
+    };
+    track._.hub.subs.add(sub);
+}
+let a, b, dc;
+async function finish() {
+    const s = await a.getStats();
+    const t = [...s.values()].find(x => x.type === 'transport');
+    R.stats = t && t.bytesSent > 3000 && t.bytesReceived > 3000 ? 'PASS' : 'BAD:' + JSON.stringify(t);
+    dc.close();
+}
+(async () => {
+    a = new RTCPeerConnection({ bundlePolicy: 'max-bundle', lumenNative: true });
+    b = new RTCPeerConnection({ lumenNative: true });
+    dc = a.createDataChannel('oai-events');
+    a.addTransceiver(tone(440), { direction: 'sendrecv' });
+    a.ontrack = e => {
+        const el = new Audio();
+        el.srcObject = e.streams[0] || new MediaStream([e.track]);
+        el.play().then(() => { R.element = el.readyState === 4 && !el.paused ? 'PASS' : 'BAD'; }, err => { R.element = 'BAD:' + err; });
+        listen(e.track, 660, 'audioBA');
+    };
+    b.ontrack = e => listen(e.track, 440, 'audioAB');
+    b.ondatachannel = e => {
+        const ch = e.channel;
+        R.channel = ch.label === 'oai-events' ? 'PASS' : 'BAD:' + ch.label;
+        ch.onmessage = m => {
+            if (typeof m.data === 'string') { R.message = m.data === 'hello' ? 'PASS' : 'BAD'; ch.send(new Uint8Array([1, 2, 3, 250])); }
+        };
+        ch.onclose = () => { R.close = 'PASS'; done(); };
+    };
+    dc.onopen = () => { R.connected = a.connectionState === 'connected' && b.connectionState === 'connected' ? 'PASS' : 'BAD:' + a.connectionState + '/' + b.connectionState; dc.send('hello'); };
+    dc.onmessage = m => { const u = new Uint8Array(m.data); R.binary = m.data instanceof ArrayBuffer && u.join() === '1,2,3,250' ? 'PASS' : 'BAD'; };
+    await a.setLocalDescription();
+    await b.setRemoteDescription(a.localDescription);
+    const t = b.getTransceivers()[0];
+    t.direction = 'sendrecv';
+    await t.sender.replaceTrack(tone(660));
+    await b.setLocalDescription();
+    if (b.iceGatheringState !== 'complete') await new Promise(r => b.addEventListener('icegatheringstatechange', () => b.iceGatheringState === 'complete' && r()));
+    await a.setRemoteDescription(b.localDescription);
+})().catch(e => { console.log('webrtc-native error ' + e); done(); });
+setTimeout(done, 8000);
+</script>

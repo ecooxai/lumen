@@ -1,0 +1,14 @@
+<!doctype html><script>
+(async () => {
+  const R = {};
+  const t = async (n, f) => { try { R[n] = (await f()) ? 'PASS' : 'FAIL'; } catch (e) { R[n] = 'FAIL(' + e.message + ')'; } };
+  await t('pipeTo', async () => { const out = []; await new ReadableStream({ start(c) { c.enqueue(1); c.enqueue(2); c.close(); } }).pipeTo(new WritableStream({ write(x) { out.push(x); } })); return out.join() === '1,2'; });
+  await t('pipeThrough', async () => { const r = new ReadableStream({ start(c) { c.enqueue('a'); c.enqueue('b'); c.close(); } }).pipeThrough(new TransformStream({ transform(x, c) { c.enqueue(x.toUpperCase()); } })); let s = ''; for await (const x of r) s += x; return s === 'AB'; });
+  await t('pull', async () => { let i = 0; const r = new ReadableStream({ pull(c) { if (i < 3) c.enqueue(i++); else c.close(); } }); const rd = r.getReader(); const a = []; for (;;) { const { value, done } = await rd.read(); if (done) break; a.push(value); } return a.join() === '0,1,2' && r.locked; });
+  await t('tee', async () => { const [a, b] = new ReadableStream({ start(c) { c.enqueue(5); c.close(); } }).tee(); const x = await a.getReader().read(), y = await b.getReader().read(); return x.value === 5 && y.value === 5; });
+  await t('textstreams', async () => { const r = new Blob(['hé']).stream().pipeThrough(new TextDecoderStream()); let s = ''; for await (const x of r) s += x; return s === 'hé'; });
+  await t('closed', async () => { const rd = new ReadableStream({ start(c) { c.close(); } }).getReader(); await rd.closed; return true; });
+  await t('response.body', async () => { const r = new Response('xyz'); const t2 = await new Response(r.body).text(); return t2 === 'xyz'; });
+  console.log('RESULTS streams ' + Object.entries(R).map(([k, v]) => k + ':' + v).join(' '));
+})();
+</script>

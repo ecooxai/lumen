@@ -1,0 +1,13 @@
+<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Touch overlay target regression</title>
+<style>body{margin:16px;font:18px sans-serif}#player{position:relative;width:100%;height:240px;background:#123;color:white}#video{position:absolute;inset:0;padding:20px}#skip{position:absolute;right:12px;bottom:12px;padding:20px;background:white;color:black;z-index:2}#status{white-space:pre-wrap}</style>
+<h2>Tap Skip once</h2><div id="player"><div id="video">Underlying video — must not receive Skip's click</div><button id="skip">Skip</button></div><p id="status">Waiting</p>
+<script>
+const button=document.getElementById('skip'),video=document.getElementById('video');
+let skipped=0,paused=0,events=[];
+function report(){const result={fixture:'touch-overlay-removal',skipped,paused,pass:skipped===1&&paused===0,events};document.getElementById('status').textContent=JSON.stringify(result,null,2);fetch('/report',{method:'POST',body:JSON.stringify(result)})}
+for(const type of ['pointerdown','pointerup','touchstart','touchend','mousedown','mouseup','click'])button.addEventListener(type,e=>events.push({type,target:e.target.id,trusted:e.isTrusted}));
+button.addEventListener('touchend',()=>{button.style.visibility='hidden';setTimeout(report,300)});
+button.addEventListener('click',()=>{skipped++;button.remove()});
+video.addEventListener('click',()=>{paused++;report()});
+</script>

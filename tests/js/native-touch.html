@@ -1,0 +1,36 @@
+<!doctype html><meta name="viewport" content="width=device-width">
+<title>Native touch integration</title>
+<style>
+body{margin:12px;font:16px sans-serif;background:white;color:black}
+.zone{height:110px;margin:10px 0;padding:10px;background:#bde}
+#blocked{background:#fcb}#drag{background:#cfc}.space{height:1800px}
+</style>
+<h2>Native touch integration</h2>
+<div class="zone" id="normal">Tap: one touch sequence and one click</div>
+<div class="zone" id="blocked">Tap: cancel touchstart, no click</div>
+<div class="zone" id="drag">Drag: cancel touchmove, no page scroll</div>
+<div class="zone" id="scroll">Drag: native page scroll, pointercancel</div>
+<div class="space"></div>
+<script>
+const events=[];
+function report(phase) {
+ fetch('/report',{method:'POST',body:JSON.stringify({fixture:'native-touch',phase,
+  touchPoints:navigator.maxTouchPoints,hasTouch:'ontouchstart' in window,scrollY,
+  width:innerWidth,height:innerHeight,events:events.splice(0),
+  rects:['normal','blocked','drag','scroll'].map(id=>({id,...document.getElementById(id).getBoundingClientRect().toJSON()}))})});
+}
+for(const id of ['normal','blocked','drag','scroll']){
+ const zone=document.getElementById(id);
+ for(const type of ['pointerdown','pointermove','pointerup','pointercancel','touchstart','touchmove','touchend','touchcancel','mousedown','mouseup','click'])
+  zone.addEventListener(type,e=>{
+   events.push({id,type,time:performance.now(),trusted:e.isTrusted,pointerType:e.pointerType,
+    pointerId:e.pointerId,buttons:e.buttons,pressure:e.pressure,
+    touches:e.touches&&e.touches.length,changed:e.changedTouches&&e.changedTouches.length,
+    touchMouse:e.sourceCapabilities&&e.sourceCapabilities.firesTouchEvents,
+    cancelable:e.cancelable});
+   if((id==='blocked'&&type==='touchstart')||(id==='drag'&&type==='touchmove'))e.preventDefault();
+   if(type==='touchend'||type==='touchcancel')setTimeout(()=>report(id),300);
+  });
+}
+setTimeout(()=>report('ready'),800);
+</script>

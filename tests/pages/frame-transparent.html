@@ -1,0 +1,10 @@
+<!doctype html>
+<meta charset=utf-8>
+<title>Transparent frames</title>
+<!-- an iframe whose document has no background shows the page behind it (the left frame is yellow
+     with blue text); one whose body has a background covers it (the right frame is white) -->
+<style>
+body{margin:0;padding:20px;background:#fd0;font:20px system-ui,sans-serif}
+iframe{width:300px;height:160px;border:0;border-radius:24px;margin-right:20px}
+</style>
+<iframe srcdoc="<p style='color:#1a73e8;font:24px sans-serif'>No background</p>"></iframe><iframe srcdoc="<body style='background:#fff'><p style='font:24px sans-serif'>White body</p>"></iframe>

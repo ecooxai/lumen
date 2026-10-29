@@ -1,0 +1,11 @@
+<!doctype html><title>module workers</title>
+<script>
+const R = {};
+const done = () => console.log('RESULTS worker-module ' + ['file', 'blob'].map(k => k + ':' + (R[k] || 'FAIL')).join(' '));
+const w = new Worker('worker-module-a.js', { type: 'module' });
+w.onmessage = e => { R.file = e.data.v === 42 && e.data.echo === 'x' && e.data.meta === 'string' ? 'PASS' : 'BAD' + JSON.stringify(e.data); };
+w.postMessage('x');
+const b = new Worker(URL.createObjectURL(new Blob(['const t = await 7; postMessage(t * 6);'], { type: 'text/javascript' })), { type: 'module' });
+b.onmessage = e => { R.blob = e.data === 42 ? 'PASS' : 'BAD' + e.data; };
+setTimeout(done, 1500);
+</script>

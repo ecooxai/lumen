@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Scroll + DOM change damage check: run with LUMEN_CHECK_DAMAGE=1 LUMEN_AUTOSCROLL=600,400,-0.5,2000,250 (see agents/archive/CONTINUE-2026-10-25.md);
+     every "scroll damage" stderr line must report mismatched px=0. -->
+<html><head><style>
+html{background:#fbfaf6}   /* the canvas background item stays put while the page scrolls */
+body{margin:0;font:15px sans-serif}
+#hd{position:fixed;top:0;left:0;right:0;height:48px;background:#234;color:#fff;padding:12px 20px;box-sizing:border-box;z-index:2}
+#sd{position:fixed;top:48px;left:0;width:160px;bottom:0;background:#eef;padding:8px;box-sizing:border-box}
+#main{margin:56px 0 0 176px}
+.row{padding:6px 10px;border-bottom:1px solid #ccc;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.row.hot{background:#fd8;color:#600}
+.row:nth-child(4n){opacity:.85}   /* opacity layers: their pushes carry no position */
+.tag{display:inline-block;padding:2px 6px;margin-left:8px;border-radius:6px;background:#8c8}
+#pin{position:sticky;top:48px;background:#cfc;padding:4px 10px}
+.sec h3{position:sticky;top:80px;margin:0;padding:3px 10px;background:#dde;font-size:14px}   /* stuck, then pushed out by their section's end */
+</style></head><body>
+<div id="hd">header <span id="n">0</span></div>
+<div id="sd"><div id="side">side 0</div><p>menu one</p><p>menu two</p></div>
+<div id="main"><div id="pin">sticky bar</div></div>
+<script>
+const main = document.getElementById('main');
+let sec = main;
+for (let i = 0; i < 400; i++) {
+  if (i >= 40 && i % 40 == 0) { sec = document.createElement('div'); sec.className = 'sec'; sec.innerHTML = '<h3>section ' + i / 40 + '</h3>'; main.appendChild(sec); }
+  const r = document.createElement('div'); r.className = 'row';
+  r.innerHTML = 'row ' + i + ' with some text to wrap a little <span class="tag">t' + i + '</span>';
+  sec.appendChild(r);
+}
+let k = 0;
+function tick() {
+  k++;
+  document.getElementById('n').textContent = k;
+  if (k % 3 == 0) document.getElementById('side').textContent = 'side ' + k;
+  const rows = main.querySelectorAll('.row');
+  const mid = Math.floor(scrollY / 31) + 5 + (k * 7) % 20;
+  const r = rows[Math.min(rows.length - 1, mid)];
+  r.classList.toggle('hot');
+  r.querySelector('.tag').textContent = 't' + k;
+  if (k % 10 == 0) { const x = document.createElement('div'); x.className = 'row'; x.innerHTML = 'inserted ' + k + ' <span class="tag">i</span>'; rows[Math.min(rows.length - 1, mid + 2)].parentNode.insertBefore(x, rows[Math.min(rows.length - 1, mid + 2)]); }
+  if (k % 10 == 5) rows[Math.min(rows.length - 1, mid + 4)].remove();
+}
+setInterval(tick, 30);
+addEventListener('scroll', tick);   /* like YouTube: scroll handlers change the DOM in the same frame */
+</script></body></html>

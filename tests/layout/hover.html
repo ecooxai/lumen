@@ -1,0 +1,25 @@
+<!-- run with build/lumen, then move the mouse over the grey row and off it; expects RESULTS hover row:PASS group:PASS inherit:PASS has:PASS off:PASS -->
+<style>
+.row { width: 300px; height: 40px; background: #ddd; margin: 40px; position: relative; }
+.row:hover { background: rgb(0, 128, 0); color: rgb(0, 0, 255); }
+.hx { opacity: 0; }
+#hp:has(.row:hover) .hx { opacity: 1; }
+.act { opacity: 0; position: absolute; right: 0; top: 0; width: 40px; height: 40px; background: red; }
+:is(:where(.group):hover *) .act, .group:hover .act { opacity: 1; }
+</style>
+<div id="hp"><div class="group"><div class="row" id="r"><span class="act" id="a"></span><b id="t">text</b></div></div><i class="hx" id="x">x</i></div>
+<p id="out">move the mouse over the grey row, then off it</p>
+<script>
+let row = 'FAIL', group = 'FAIL', inh = 'FAIL', has = 'FAIL', off = 'FAIL', seen = false;
+const r = document.getElementById('r'), a = document.getElementById('a'), t = document.getElementById('t'), x = document.getElementById('x');
+setInterval(() => {
+    const on = r.matches(':hover');
+    if (on && getComputedStyle(r).backgroundColor === 'rgb(0, 128, 0)') row = 'PASS';
+    if (on && getComputedStyle(a).opacity === '1') group = 'PASS';
+    if (on && getComputedStyle(t).color === 'rgb(0, 0, 255)') inh = 'PASS';
+    if (on && getComputedStyle(x).opacity === '1') has = 'PASS';
+    if (on) seen = true;
+    if (seen && !on && getComputedStyle(a).opacity === '0' && getComputedStyle(x).opacity === '0' && getComputedStyle(t).color !== 'rgb(0, 0, 255)' && !document.querySelector('.group:hover')) off = 'PASS';
+    if (off === 'PASS') { console.log('RESULTS hover row:' + row + ' group:' + group + ' inherit:' + inh + ' has:' + has + ' off:' + off); seen = false; }
+}, 200);
+</script>

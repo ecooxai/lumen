@@ -1,0 +1,20 @@
+build/
+*.o
+*.dSYM
+out/
+build-dev/
+dist/
+build-g/
+/android/.gradle/
+/android/.cxx/
+/android/app/.cxx/
+/android/app/build/
+/android/build/
+/android/local.properties
+/tests/android/fonts/.gradle/
+/tests/android/fonts/.cxx/
+/tests/android/fonts/local.properties
+__pycache__/
+
+# Task-owned transient browser and benchmark scratch.
+/agent/t/

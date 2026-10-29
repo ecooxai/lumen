@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Screen recorder: getDisplayMedia + MediaRecorder demo</title>
+<style>
+  :root { --bg: #f4f6fa; --card: #fff; --ink: #1d2433; --mute: #667085; --line: #dde3ec; --acc: #2563eb; --bad: #dc2626; --ok: #16a34a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; }
+  header { padding: 14px 16px; background: #111827; color: #fff; }
+  header h1 { margin: 0; font-size: 19px; }
+  header p { margin: 4px 0 0; color: #cbd5e1; font-size: 13px; }
+  main { padding: 12px; max-width: 980px; margin: 0 auto; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+  h2 { margin: 0 0 10px; font-size: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin: 6px 0; }
+  label { display: flex; align-items: center; gap: 6px; }
+  select, input[type=number] { font: inherit; padding: 5px 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  button { font: inherit; padding: 8px 14px; border: 0; border-radius: 7px; background: var(--acc); color: #fff; }
+  button.alt { background: #e5e9f2; color: var(--ink); }
+  button.stop { background: var(--bad); }
+  button:disabled { opacity: .45; }
+  video { width: 100%; max-height: 360px; background: #000; border-radius: 8px; }
+  .stat { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 13px ui-monospace, monospace; color: var(--mute); }
+  .stat b { color: var(--ink); font-weight: 600; }
+  .meter { height: 10px; background: #e5e9f2; border-radius: 5px; overflow: hidden; flex: 1; min-width: 120px; }
+  .meter i { display: block; height: 100%; width: 0; background: var(--ok); }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 5px; background: #9ca3af; }
+  .dot.on { background: var(--bad); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td, th { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+  td.y { color: var(--ok); } td.n { color: var(--mute); } td.f { color: var(--bad); }
+  .rec { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-top: 8px; }
+  .rec .stat { margin: 6px 0; }
+  a.dl { color: var(--acc); }
+  #log { white-space: pre-wrap; font: 12px ui-monospace, monospace; color: var(--mute); max-height: 180px; overflow: auto; }
+  .hide { display: none; }
+</style>
+<header>
+  <h1>Screen recorder</h1>
+  <p>getDisplayMedia (screen + system audio), MediaRecorder in every format the browser encodes, with a self-test.</p>
+</header>
+<main>
+  <section>
+    <h2>1. Capture</h2>
+    <div class="row">
+      <label>Size <select id="size"><option value="1280x720">720p</option><option value="1920x1080" selected>1080p</option><option value="4096x4096">native</option></select></label>
+      <label>Frame rate <select id="fps"><option>15</option><option selected>30</option><option>60</option></select></label>
+      <label><input type="checkbox" id="sysaudio" checked> System audio</label>
+      <label><input type="checkbox" id="mic"> Mix microphone</label>
+    </div>
+    <div class="row">
+      <button id="share">Share screen</button>
+      <button id="unshare" class="stop" disabled>Stop sharing</button>
+      <button id="tone" class="alt">Play test tone</button>
+    </div>
+    <div class="stat" id="trackinfo">not sharing</div>
+    <div class="row"><span>Audio</span><div class="meter"><i id="lvl"></i></div><span class="stat" id="lvlnum">-</span></div>
+    <video id="live" muted playsinline autoplay></video>
+  </section>
+
+  <section>
+    <h2>2. Record</h2>
+    <div class="row">
+      <label>Format <select id="fmt"></select></label>
+      <label>Video <select id="vbr"><option value="0">auto</option><option value="1000000">1 Mbps</option><option value="2500000" selected>2.5 Mbps</option><option value="5000000">5 Mbps</option><option value="8000000">8 Mbps</option></select></label>
+      <label>Audio <select id="abr"><option value="0">auto</option><option value="64000">64 kbps</option><option value="128000" selected>128 kbps</option></select></label>
+      <label>Timeslice <select id="slice"><option value="0">none</option><option value="250">250 ms</option><option value="1000" selected>1 s</option></select></label>
+    </div>
+    <div class="row">
+      <button id="rec" disabled>Record</button>
+      <button id="pause" class="alt" disabled>Pause</button>
+      <button id="stop" class="stop" disabled>Stop</button>
+      <span class="dot" id="dot"></span>
+      <span class="stat" id="recinfo">idle</span>
+    </div>
+    <div id="recs"></div>
+  </section>
+
+  <section>
+    <h2>3. Formats</h2>
+    <table id="types"><tr><th>MIME type</th><th>isTypeSupported</th><th>self-test</th></tr></table>
+  </section>
+
+  <section>
+    <h2>4. Self-test</h2>
+    <p class="stat">Shares the screen, plays a tone, records 3 s in each supported format and checks the file: container, codecs, size, duration, picture size and that the tone was recorded.</p>
+    <div class="row"><button id="selftest">Run self-test</button><span class="stat" id="testinfo"></span></div>
+    <div id="log"></div>
+  </section>
+</main>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+const TAG = (q.get('tag') || 'scrrec').replace(/[^A-Za-z0-9_-]/g, '');
+/* ?report=1 (the phone test harness): result lines, numbers only, go to the local sink; recordings never leave the page */
+const REPORT = q.get('report') === '1';
+const lines = [], pending = [];
+const log = m => { lines.push(m); pending.push(m); $('log').textContent = lines.join('\n'); $('log').scrollTop = 1e9; console.log('SCRREC ' + m); };
+const flush = () => REPORT && pending.length ? fetch((q.get('res') || '') + '/r?n=' + TAG, { method: 'POST', mode: 'no-cors', body: pending.splice(0).join('\n') }).catch(() => {}) : Promise.resolve();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const kb = n => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(2) + ' MB';
+const mbps = b => b >= 1e6 ? (b / 1e6).toFixed(2) + ' Mbps' : (b / 1e3).toFixed(0) + ' kbps';
+
+/* every type Chrome's MediaRecorder knows; the select lists the ones this browser encodes */
+const TYPES = [
+  'video/webm', 'video/webm;codecs=vp8', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9', 'video/webm;codecs=vp9,opus',
+  'video/webm;codecs=av1', 'video/webm;codecs=av1,opus', 'video/webm;codecs=h264', 'video/webm;codecs=h264,opus', 'video/webm;codecs=vp8,pcm',
+  'video/mp4', 'video/mp4;codecs=avc1', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4;codecs=avc1,opus', 'video/mp4;codecs=hvc1',
+  'video/mp4;codecs=hvc1,mp4a.40.2', 'video/mp4;codecs=vp9,opus', 'video/mp4;codecs=av01,opus',
+  'video/x-matroska;codecs=avc1', 'video/x-matroska;codecs=avc1,opus', 'video/x-matroska;codecs=hvc1,opus',
+  'audio/webm', 'audio/webm;codecs=opus', 'audio/webm;codecs=pcm', 'audio/mp4', 'audio/mp4;codecs=mp4a.40.2', 'audio/mp4;codecs=opus', 'audio/ogg;codecs=opus',
+];
+const supported = typeof MediaRecorder !== 'undefined' ? TYPES.filter(t => MediaRecorder.isTypeSupported(t)) : [];
+const rowOf = {};
+for (const t of TYPES) {
+  const tr = document.createElement('tr'), ok = supported.includes(t);
+  tr.innerHTML = '<td></td><td class="' + (ok ? 'y">yes' : 'n">no') + '</td><td class="n">-</td>';
+  tr.firstChild.textContent = t; $('types').appendChild(tr); rowOf[t] = tr;
+  if (ok) { const o = document.createElement('option'); o.value = o.textContent = t; $('fmt').appendChild(o); }
+}
+const ext = t => /mp4/.test(t) ? 'mp4' : /matroska/.test(t) ? 'mkv' : /ogg/.test(t) ? 'ogg' : 'webm';
+
+/* ---- capture ---- */
+let shared = null, stream = null, ac = null, mixDest = null, micStream = null, meterTimer = 0, analyser = null;
+function audioCtx() { if (!ac) ac = new AudioContext(); if (ac.state === 'suspended') ac.resume(); return ac; }
+async function share(opts) {
+  const [w, h] = $('size').value.split('x').map(Number), fps = +$('fps').value;
+  opts = opts || { video: { width: { ideal: w }, height: { ideal: h }, frameRate: { ideal: fps } }, audio: $('sysaudio').checked, systemAudio: $('sysaudio').checked ? 'include' : 'exclude' };
+  shared = await navigator.mediaDevices.getDisplayMedia(opts);
+  stream = shared;
+  const vt = shared.getVideoTracks()[0], at = shared.getAudioTracks()[0];
+  vt.addEventListener('ended', unshare);
+  if ($('mic').checked) {
+    /* system audio and microphone mixed through Web Audio into one track */
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const ctx = audioCtx(); mixDest = ctx.createMediaStreamDestination();
+    if (at) ctx.createMediaStreamSource(new MediaStream([at])).connect(mixDest);
+    ctx.createMediaStreamSource(micStream).connect(mixDest);
+    stream = new MediaStream([vt, mixDest.stream.getAudioTracks()[0]]);
+  }
+  $('live').srcObject = new MediaStream([vt]);
+  meter(stream.getAudioTracks()[0]);
+  showTracks();
+  $('share').disabled = true; $('unshare').disabled = false; $('rec').disabled = !supported.length;
+  return shared;
+}
+function showTracks() {
+  if (!shared) { $('trackinfo').textContent = 'not sharing'; return; }
+  const s = shared.getVideoTracks()[0].getSettings(), at = shared.getAudioTracks()[0];
+  $('trackinfo').innerHTML = '<span>video <b>' + s.width + '×' + s.height + '</b> @ <b>' + s.frameRate + '</b> fps</span><span>surface <b>' + (s.displaySurface || '?') +
+    '</b></span><span>system audio <b>' + (at ? at.label + ' (' + at.readyState + ')' : 'not shared') + '</b></span>' + (micStream ? '<span>mic <b>mixed</b></span>' : '');
+}
+function meter(track) {
+  clearInterval(meterTimer); analyser = null;
+  if (!track) { $('lvlnum').textContent = 'no audio track'; $('lvl').style.width = '0'; return; }
+  const ctx = audioCtx(); analyser = ctx.createAnalyser(); analyser.fftSize = 2048;
+  ctx.createMediaStreamSource(new MediaStream([track])).connect(analyser);
+  const buf = new Float32Array(2048);
+  meterTimer = setInterval(() => {
+    analyser.getFloatTimeDomainData(buf);
+    let s = 0; for (const x of buf) s += x * x;
+    const rms = Math.sqrt(s / buf.length), db = rms > 0 ? 20 * Math.log10(rms) : -100;
+    $('lvl').style.width = Math.max(0, Math.min(100, (db + 60) * 100 / 60)) + '%';
+    $('lvlnum').textContent = (db > -100 ? db.toFixed(0) : '-∞') + ' dBFS';
+  }, 100);
+}
+function level() {   /* the meter's current RMS */
+  if (!analyser) return 0;
+  const buf = new Float32Array(2048); analyser.getFloatTimeDomainData(buf);
+  let s = 0; for (const x of buf) s += x * x; return Math.sqrt(s / buf.length);
+}
+function unshare() {
+  if (recorder && recorder.state !== 'inactive') recorder.stop();
+  for (const s of [shared, micStream]) if (s) for (const t of s.getTracks()) t.stop();
+  shared = stream = micStream = mixDest = null; clearInterval(meterTimer); analyser = null;
+  $('live').srcObject = null; $('lvl').style.width = '0'; $('lvlnum').textContent = '-';
+  $('share').disabled = false; $('unshare').disabled = true; $('rec').disabled = true; showTracks();
+}
+let tone = null;
+function playTone(on) {
+  if (tone) { tone.stop(); tone = null; }
+  if (!on) { $('tone').textContent = 'Play test tone'; return; }
+  const ctx = audioCtx(), g = ctx.createGain(); g.gain.value = 0.25;
+  tone = ctx.createOscillator(); tone.frequency.value = 440; tone.connect(g); g.connect(ctx.destination); tone.start();
+  $('tone').textContent = 'Stop test tone';
+}
+$('share').onclick = () => share().catch(e => { $('trackinfo').textContent = e.name + ': ' + e.message; });
+$('unshare').onclick = unshare;
+$('tone').onclick = () => playTone(!tone);
+
+/* ---- recording ---- */
+let recorder = null, chunks = [], recStart = 0, recBytes = 0, recTimer = 0, pausedFor = 0, pausedAt = 0;
+function record(type, vbps, abps, slice) {
+  chunks = []; recBytes = 0; pausedFor = 0;
+  const o = { mimeType: type };
+  if (vbps) o.videoBitsPerSecond = vbps;
+  if (abps) o.audioBitsPerSecond = abps;
+  const r = recorder = new MediaRecorder(stream, o);
+  const done = new Promise((res, rej) => {
+    r.ondataavailable = e => { if (e.data && e.data.size) { chunks.push(e.data); recBytes += e.data.size; } };
+    r.onstop = () => res(new Blob(chunks, { type: r.mimeType }));
+    r.onerror = e => rej(e.error || new Error('recorder error'));
+  });
+  r.start(slice || undefined);
+  recStart = performance.now();
+  clearInterval(recTimer);
+  recTimer = setInterval(() => {
+    const t = (performance.now() - recStart - pausedFor - (pausedAt ? performance.now() - pausedAt : 0)) / 1000;
+    $('recinfo').innerHTML = '<b>' + r.state + '</b> ' + t.toFixed(1) + ' s · ' + kb(recBytes) + ' · ' + chunks.length + ' chunks' + (t > 0 ? ' · ' + mbps(recBytes * 8 / t) : '') + ' · ' + r.mimeType;
+  }, 250);
+  return done;
+}
+$('rec').onclick = async () => {
+  $('rec').disabled = true; $('pause').disabled = $('stop').disabled = false; $('dot').classList.add('on');
+  try {
+    const blob = await record($('fmt').value, +$('vbr').value, +$('abr').value, +$('slice').value);
+    addRecording(blob, (performance.now() - recStart - pausedFor) / 1000);
+  } catch (e) { $('recinfo').textContent = 'error: ' + e.message; }
+  clearInterval(recTimer); $('dot').classList.remove('on');
+  $('pause').disabled = $('stop').disabled = true; $('pause').textContent = 'Pause'; $('rec').disabled = !shared;
+};
+$('pause').onclick = () => {
+  if (recorder.state === 'recording') { recorder.pause(); pausedAt = performance.now(); $('pause').textContent = 'Resume'; }
+  else if (recorder.state === 'paused') { recorder.resume(); pausedFor += performance.now() - pausedAt; pausedAt = 0; $('pause').textContent = 'Pause'; }
+};
+$('stop').onclick = () => { if (recorder && recorder.state !== 'inactive') { if (pausedAt) { pausedFor += performance.now() - pausedAt; pausedAt = 0; } recorder.stop(); } };
+
+/* what a file holds, from its first bytes: the container and the codec ids it names */
+async function sniff(blob) {
+  const b = new Uint8Array(await blob.slice(0, 65536).arrayBuffer());
+  const s = Array.from(b, c => c >= 32 && c < 127 ? String.fromCharCode(c) : ' ').join('');
+  const box = b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70;   /* ftyp */
+  const ebml = b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3;
+  const container = box ? 'mp4' : ebml ? (s.includes('webm') ? 'webm' : 'matroska') : s.startsWith('OggS') ? 'ogg' : 'unknown';
+  const ids = ['V_VP8', 'V_VP9', 'V_AV1', 'V_MPEG4/ISO/AVC', 'V_MPEGH/ISO/HEVC', 'A_OPUS', 'A_PCM/FLOAT/IEEE', 'A_AAC', 'avc1', 'hvc1', 'hev1', 'vp09', 'av01', 'mp4v', 'mp4a', 'Opus', 'OpusHead'];
+  const codecs = ids.filter(i => s.includes(i));
+  return { container, codecs: [...new Set(codecs)] };
+}
+/* the recording's metadata as a <video> reads it; null if it does not load in 8 s */
+function probe(url) {
+  return new Promise(res => {
+    const v = document.createElement('video'); v.muted = true; v.preload = 'metadata';
+    const t = setTimeout(() => res(null), 8000);
+    v.onloadedmetadata = () => { clearTimeout(t); res({ w: v.videoWidth, h: v.videoHeight, d: v.duration }); };
+    v.onerror = () => { clearTimeout(t); res(null); };
+    v.src = url;
+  });
+}
+/* the RMS of the recording's decoded audio, -1 if it does not decode */
+async function audioRms(blob) {
+  try {
+    const buf = await audioCtx().decodeAudioData(await blob.arrayBuffer());
+    const d = buf.getChannelData(0); let s = 0; for (const x of d) s += x * x;
+    return { rms: Math.sqrt(s / Math.max(1, d.length)), secs: buf.duration };
+  } catch (e) { return { rms: -1, secs: 0 }; }
+}
+async function addRecording(blob, secs) {
+  const url = URL.createObjectURL(blob), box = document.createElement('div'), sn = await sniff(blob), md = await probe(url);
+  box.className = 'rec';
+  const name = 'screen-' + new Date().toISOString().replace(/[:.]/g, '-') + '.' + ext(blob.type);
+  box.innerHTML = '<video controls playsinline></video><div class="stat"></div><div class="row"><a class="dl">Download</a><button class="alt">Delete</button></div>';
+  box.querySelector('video').src = url;
+  const st = box.querySelector('.stat');
+  st.innerHTML = '<span><b></b></span><span>size <b>' + kb(blob.size) + '</b></span><span>length <b>' + secs.toFixed(1) + ' s</b></span><span>bitrate <b>' + mbps(blob.size * 8 / Math.max(secs, 0.1)) +
+    '</b></span><span>picture <b>' + (md && md.w ? md.w + '×' + md.h : '-') + '</b></span><span>container <b>' + sn.container + '</b></span><span>codecs <b>' + (sn.codecs.join(' ') || '-') + '</b></span>';
+  st.querySelector('b').textContent = blob.type;
+  const a = box.querySelector('a'); a.href = url; a.download = name;
+  box.querySelector('button').onclick = () => { URL.revokeObjectURL(url); box.remove(); };
+  $('recs').prepend(box);
+}
+
+/* ---- self-test ---- */
+const want = t => {   /* the container and codec ids a type's file must hold */
+  const c = /mp4/.test(t) ? ['mp4'] : /ogg/.test(t) ? ['ogg'] : /matroska|h264|pcm/.test(t) ? ['matroska'] : ['webm'];
+  const id = [];
+  if (/vp8/.test(t)) id.push('V_VP8'); if (/vp9/.test(t)) id.push(/mp4/.test(t) ? 'vp09' : 'V_VP9'); if (/av1|av01/.test(t)) id.push(/mp4/.test(t) ? 'av01' : 'V_AV1');
+  if (/avc1|h264/.test(t)) id.push(/mp4/.test(t) ? 'avc1' : 'V_MPEG4/ISO/AVC'); if (/hvc1/.test(t)) id.push(/mp4/.test(t) ? 'hvc1' : 'V_MPEGH/ISO/HEVC');
+  if (/opus/.test(t)) id.push(/mp4/.test(t) ? 'Opus' : /ogg/.test(t) ? 'OpusHead' : 'A_OPUS'); if (/mp4a/.test(t)) id.push('mp4a'); if (/pcm/.test(t)) id.push('A_PCM/FLOAT/IEEE');
+  return { c, id };
+};
+async function selfTest() {
+  $('selftest').disabled = true; lines.length = 0;
+  log('ua ' + navigator.userAgent.replace(/[^A-Za-z0-9 ./()_;-]/g, '').slice(0, 120));
+  log('supported ' + supported.length + '/' + TYPES.length);
+  for (const t of TYPES) if (!supported.includes(t)) log('unsupported ' + t);
+  await flush();
+  try {
+    if (!shared) await share({ video: { frameRate: 30 }, audio: true, systemAudio: 'include' });
+  } catch (e) { log('share FAIL ' + e.name); log('done'); await flush(); $('selftest').disabled = false; return; }
+  const s = shared.getVideoTracks()[0].getSettings(), at = shared.getAudioTracks()[0];
+  log('share ok video=' + s.width + 'x' + s.height + '@' + s.frameRate + ' audio=' + (at ? 'yes' : 'no'));
+  playTone(true);
+  await sleep(1500);
+  const live = level();
+  log('system audio rms=' + live.toFixed(4) + (at ? live > 0.005 ? ' ok' : ' SILENT' : ' (no track)'));
+  await flush();
+  let pass = 0, fail = 0;
+  for (const t of supported) {
+    if (!shared) break;
+    const audioOnly = /^audio/.test(t);
+    if (audioOnly && !stream.getAudioTracks().length) { log('skip ' + t + ' (no audio track)'); continue; }
+    const t0 = performance.now();
+    let blob;
+    try {
+      const p = record(t, 2500000, 128000, 500);
+      await sleep(3000); recorder.stop(); blob = await p;
+    } catch (e) { log('FAIL ' + t + ' ' + (e.name || 'error')); fail++; rowOf[t].lastChild.className = 'f'; rowOf[t].lastChild.textContent = 'fail'; continue; }
+    clearInterval(recTimer);
+    const secs = (performance.now() - t0) / 1000, sn = await sniff(blob), url = URL.createObjectURL(blob), md = audioOnly ? { w: 0, h: 0, d: 0 } : await probe(url);
+    URL.revokeObjectURL(url);
+    const au = at ? await audioRms(blob) : { rms: 0, secs: 0 };
+    const w = want(recorder.mimeType), problems = [];
+    if (blob.size < 1000) problems.push('tiny');
+    if (!w.c.includes(sn.container)) problems.push('container ' + sn.container);
+    for (const id of w.id) if (!sn.codecs.includes(id)) problems.push('missing ' + id);
+    if (!audioOnly && (!md || !md.w)) problems.push('no picture');
+    if (at && /opus|mp4a|pcm|^audio|webm$|mp4$/.test(recorder.mimeType) && !(au.rms > 0.003)) problems.push(au.rms < 0 ? 'audio undecodable' : 'audio silent');
+    const ok = !problems.length; ok ? pass++ : fail++;
+    log((ok ? 'PASS ' : 'FAIL ') + t + ' -> ' + recorder.mimeType + ' size=' + blob.size + ' kbps=' + Math.round(blob.size * 8 / secs / 1000) +
+      ' picture=' + (md ? md.w + 'x' + md.h : '-') + ' container=' + sn.container + ' codecs=' + sn.codecs.join('+') + ' audio_rms=' + au.rms.toFixed(4) + (ok ? '' : ' problems=' + problems.join(',')));
+    rowOf[t].lastChild.className = ok ? 'y' : 'f'; rowOf[t].lastChild.textContent = ok ? 'pass' : problems.join(', ');
+    await flush();
+    await sleep(300);
+  }
+  playTone(false);
+  log('summary pass=' + pass + ' fail=' + fail);
+  $('testinfo').textContent = pass + ' passed, ' + fail + ' failed';
+  if (q.get('auto') === '1') unshare();
+  log('done'); await flush();
+  $('selftest').disabled = false;
+}
+$('selftest').onclick = selfTest;
+if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) $('trackinfo').textContent = 'getDisplayMedia is not available here';
+if (q.get('auto') === '1') setTimeout(selfTest, 500);
+</script>
+</html>

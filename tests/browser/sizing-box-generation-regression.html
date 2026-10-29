@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><title>Minimum sizes without eager layout boxes</title><pre id="results"></pre><script>
+(()=>{const rows=[],cases=[['hidden flex ancestor','none','flex','block','auto','0px'],['hidden ratio ancestor','none','block','block','2','0px'],['contents flex item','flex','contents','block','auto','auto'],['contents ordinary box','block','contents','block','auto','0px'],['contents ratio box','block','contents','block','2','auto'],['contents child','flex','block','contents','2','0px']];
+for(const [label,outerDisplay,parentDisplay,childDisplay,ratio,expected] of cases)for(const property of ['min-width','min-height','min-inline-size','min-block-size']){
+const outer=document.createElement('div'),parent=document.createElement('div'),child=document.createElement('div');outer.style.display=outerDisplay;parent.style.display=parentDisplay;child.style.cssText='display:'+childDisplay+';aspect-ratio:'+ratio;child.style.setProperty(property,'auto');parent.append(child);outer.append(parent);document.body.append(outer);
+const actual=getComputedStyle(child).getPropertyValue(property),name=label+' '+property;rows.push({name,expected,actual,status:actual===expected?'PASS':'FAIL'});outer.remove();}
+for(const row of rows)console.log('SIZING_BOX_RESULT '+JSON.stringify(row));const pass=rows.filter(r=>r.status==='PASS').length,marker='RESULTS browser-sizing-box-generation:'+(pass===rows.length?'PASS':'FAIL')+' '+pass+'/'+rows.length;console.log(marker);document.getElementById('results').textContent=marker;})();
+</script>

@@ -1,0 +1,29 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width">
+<title>Document base URI regression</title>
+<h1>Document base URI regression</h1>
+<pre id="result">Running…</pre>
+<div id="tree" style="display:none"></div>
+<script>
+(async () => {
+    const origin = location.origin, result = document.getElementById('result');
+    document.getElementById('tree').innerHTML = '<div><span>text</span></div>'.repeat(5000);
+    const results = [], start = performance.now();
+    let last;
+    for (let i = 0; i < 250; i++) last = document.baseURI;
+    results.push({name:'repeated-reads', pass:last === location.href, reads:250, ms:performance.now()-start});
+    const first = document.createElement('base'), second = document.createElement('base');
+    first.href = '/one/'; second.href = '/two/'; document.head.appendChild(first); document.head.appendChild(second);
+    results.push({name:'first-base', pass:document.baseURI === origin+'/one/'});
+    first.setAttribute('href', '/changed/');
+    results.push({name:'href-change', pass:document.baseURI === origin+'/changed/'});
+    first.remove();
+    results.push({name:'base-removal', pass:document.baseURI === origin+'/two/'});
+    second.setAttribute('href', 'relative/'); history.replaceState(null, '', '/new/page');
+    results.push({name:'history-change', pass:document.baseURI === origin+'/new/relative/'});
+    second.remove();
+    results.push({name:'fallback-after-removal', pass:document.baseURI === origin+'/new/page'});
+    result.textContent = JSON.stringify(results, null, 2);
+    await fetch(origin+'/report', {method:'POST', body:JSON.stringify(results)});
+})().catch(e => { document.getElementById('result').textContent = String(e); });
+</script>

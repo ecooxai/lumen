@@ -1,0 +1,15 @@
+<!doctype html><body><input id=a type=radio name=g checked><input id=b type=radio name=g><input id=c type=checkbox><input id=d type=checkbox>
+<script>
+const $ = id => document.getElementById(id), seen = [];
+$('b').addEventListener('click', () => seen.push('b' + $('b').checked + $('a').checked));
+$('b').addEventListener('change', () => seen.push('change'));
+$('b').click();
+$('c').addEventListener('click', () => seen.push('c' + $('c').checked));
+$('c').click();
+$('d').addEventListener('click', e => { seen.push('d' + $('d').checked); e.preventDefault(); });
+$('d').addEventListener('change', () => seen.push('dchange'));
+$('d').click();
+const ok = seen.join() === 'btruefalse,change,ctrue,dtrue' && $('b').checked && !$('a').checked && $('c').checked && !$('d').checked;
+console.log('check-preactivation ' + seen.join());
+console.log('RESULTS check-preactivation:' + (ok ? 'PASS' : 'FAIL'));
+</script>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="Draft.css">
+<!-- tools/edit_bar_test.py: a Draft.js editor (x.com's) that posts its text, the taps it sees and its first
+     line's position back to the script; the page under it takes the calibration taps -->
+<style>
+body{font:20px sans-serif;margin:30px;min-height:300vh}
+#ed{border:2px solid #36c;min-height:120px;padding:8px;width:600px}
+#log{font:13px monospace;white-space:pre}
+</style>
+</head><body>
+<div id="ed"></div>
+<div id="out">model: <span id="model"></span></div>
+<div id="log"></div>
+<script src="react.production.min.js"></script>
+<script src="react-dom.production.min.js"></script>
+<script src="immutable.min.js"></script>
+<script src="Draft.min.js"></script>
+<script>
+const post = o => fetch('/s', { method: 'POST', body: JSON.stringify(Object.assign({ t: Date.now() }, o)) }).catch(() => {});
+const logs = [];
+const log = s => { logs.push(s); document.getElementById('log').textContent = logs.slice(-25).join('\n'); };
+for (const t of ['keydown', 'beforeinput', 'input'])
+  document.addEventListener(t, e => log(t + ' ' + (e.key || e.inputType || '') + (e.ctrlKey ? ' ctrl' : '')), true);
+let lastDown = 0;   /* the first of pointerdown / touchstart / mousedown for one tap */
+for (const t of ['pointerdown', 'touchstart', 'mousedown'])
+  document.addEventListener(t, e => {
+    const p = e.touches ? e.touches[0] : e;
+    if (Date.now() - lastDown < 300) return;
+    lastDown = Date.now(); post({ ev: 'down', type: t, x: p.clientX, y: p.clientY });
+  }, true);
+const line = () => {
+  const bl = document.querySelectorAll('#ed [data-block]'), b = bl[bl.length - 1] || document.querySelector('#ed .public-DraftEditorPlaceholder-inner') || document.getElementById('ed');   /* the last line: taps at its end put the caret at the text's end */
+  const r = b.getBoundingClientRect(), m = document.getElementById('out').getBoundingClientRect();
+  return { line: [r.left, r.top, r.right, r.bottom], out: [m.left, m.top, m.right, m.bottom] };
+};
+function App() {
+  const [st, setSt] = React.useState(() => Draft.EditorState.createEmpty());
+  React.useEffect(() => {
+    const t = st.getCurrentContent().getPlainText('|');
+    document.getElementById('model').textContent = JSON.stringify(t);
+    post(Object.assign({ ev: 'model', model: t, dom: Array.from(document.querySelectorAll('#ed [data-block]'), b => b.textContent).join('|') }, line()));
+  }, [st]);
+  return React.createElement(Draft.Editor, { editorState: st, onChange: setSt, placeholder: 'type here' });
+}
+ReactDOM.render(React.createElement(App), document.getElementById('ed'));
+setTimeout(() => post(Object.assign({ ev: 'ready' }, line())), 300);
+</script></body></html>

@@ -1,0 +1,53 @@
+<!doctype html><meta charset=utf-8>
+<title>IntersectionObserver geometry</title>
+<!-- rootMargin shorthand, thresholds and ratios, zero-area targets, element roots and clipping ancestors -->
+<style>
+body{margin:0;height:3000px}
+.b{position:absolute;left:0;width:100px;height:100px}
+#below{top:1100px}#zero{top:200px;height:0}#half{top:-50px}
+#box{position:absolute;top:300px;left:300px;width:200px;height:100px;overflow:hidden}
+#inner{position:absolute;top:150px;left:0;width:50px;height:50px}#peek{position:absolute;top:80px;left:0;width:50px;height:40px}
+</style>
+<div id=below class=b></div><div id=zero class=b></div><div id=half class=b></div>
+<div id=box><div id=inner></div><div id=peek></div></div>
+<script>
+(async () => {
+    const fails = [], ok = (c, m) => { if (!c) fails.push(m); };
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const take = async (opts, ...els) => {
+        const got = new Map(), io = new IntersectionObserver(es => { for (const e of es) got.set(e.target.id, e); }, opts);
+        for (const e of els) io.observe(e);
+        for (let i = 0; i < 50 && got.size < els.length; i++) await wait(20);
+        io.disconnect(); return got;
+    };
+    const $ = id => document.getElementById(id), vh = innerHeight;
+    $('below').style.top = (vh + 100) + 'px';
+    let g = await take({}, $('below'), $('zero'), $('half'));
+    ok(g.get('below') && !g.get('below').isIntersecting, 'below without margin');
+    ok(g.get('zero') && g.get('zero').isIntersecting && g.get('zero').intersectionRatio === 1, 'zero-area target');
+    ok(g.get('half') && g.get('half').isIntersecting && Math.abs(g.get('half').intersectionRatio - 0.5) < 0.01, 'half ratio ' + (g.get('half') && g.get('half').intersectionRatio));
+    g = await take({ rootMargin: '0px 0px 200px 0px' }, $('below'));
+    ok(g.get('below') && g.get('below').isIntersecting, 'bottom rootMargin');
+    g = await take({ rootMargin: '0px 0px 50% 0px' }, $('below'));
+    ok(g.get('below') && g.get('below').isIntersecting === (vh / 2 >= 100), 'percent rootMargin');
+    const io = new IntersectionObserver(() => {}, { rootMargin: '10px 5%', threshold: [1, 0.5] });
+    ok(io.rootMargin === '10px 5% 10px 5%' && io.thresholds.join() === '0.5,1', 'normalized ' + io.rootMargin + ' ' + io.thresholds);
+    let threw = ''; try { new IntersectionObserver(() => {}, { rootMargin: '10em' }); } catch (e) { threw = e.name; }
+    ok(threw === 'SyntaxError', 'bad margin ' + threw);
+    threw = ''; try { new IntersectionObserver(() => {}, { threshold: 2 }); } catch (e) { threw = e.name; }
+    ok(threw === 'RangeError', 'bad threshold ' + threw);
+    g = await take({ threshold: [0.75] }, $('half'));
+    ok(g.get('half') && g.get('half').isIntersecting && g.get('half').intersectionRatio < 0.75, 'below threshold still reports intersecting');
+    g = await take({}, $('inner'), $('peek'));
+    ok(g.get('inner') && !g.get('inner').isIntersecting, 'clipped by overflow');
+    ok(g.get('peek') && g.get('peek').isIntersecting && Math.abs(g.get('peek').intersectionRatio - 0.5) < 0.01, 'partly clipped ' + (g.get('peek') && g.get('peek').intersectionRatio));
+    g = await take({ root: $('box') }, $('inner'), $('below'));
+    ok(g.get('inner') && !g.get('inner').isIntersecting, 'element root excludes');
+    ok(g.get('below') && !g.get('below').isIntersecting, 'not a descendant of the root');
+    g = await take({ root: $('box'), rootMargin: '0px 0px 100px 0px' }, $('inner'));
+    ok(g.get('inner') && g.get('inner').isIntersecting, 'element root with margin');
+    ok(typeof IntersectionObserverEntry === 'function' && 'intersectionRatio' in IntersectionObserverEntry.prototype && 'isIntersecting' in IntersectionObserverEntry.prototype, 'entry class (pages polyfill without it)');
+    ok(g.get('inner') instanceof IntersectionObserverEntry, 'entries are IntersectionObserverEntry');
+    console.log(fails.length ? 'RESULTS intersection-geometry:FAIL ' + fails.join('; ') : 'RESULTS intersection-geometry:PASS');
+})();
+</script>

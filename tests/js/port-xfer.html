@@ -1,0 +1,17 @@
+<!doctype html>
+<script>
+const R = {};
+const done = () => console.log('RESULTS port-xfer ' + ['local', 'toWorker', 'fromWorker'].map(k => k + ':' + (R[k] || 'FAIL')).join(' '));
+const a = new MessageChannel(), b = new MessageChannel();
+a.port2.onmessage = e => { if (e.ports.length !== 1) { R.local = 'NOPORT'; return; } e.ports[0].postMessage('pong'); };
+b.port1.onmessage = e => { R.local = e.data === 'pong' ? 'PASS' : 'BAD' + e.data; };
+a.port1.postMessage('x', [b.port2]);
+const src = `onmessage = e => { const ctl = e.ports[0]; ctl.onmessage = m => { const p = m.ports[0]; if (p) p.postMessage('w:' + m.data); const c = new MessageChannel(); c.port1.onmessage = z => c.port1.postMessage('back:' + z.data); ctl.postMessage('ret', [c.port2]); }; };`;
+const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+const ctl = new MessageChannel(), data = new MessageChannel();
+w.postMessage('init', [ctl.port2]);
+data.port1.onmessage = e => { R.toWorker = e.data === 'w:hi' ? 'PASS' : 'BAD' + e.data; };
+ctl.port1.onmessage = e => { const q = e.ports[0]; if (!q) { R.fromWorker = 'NOPORT'; return; } q.onmessage = z => { R.fromWorker = z.data === 'back:ping' ? 'PASS' : 'BAD' + z.data; }; q.postMessage('ping'); };
+ctl.port1.postMessage('hi', [data.port2]);
+setTimeout(done, 1500);
+</script>

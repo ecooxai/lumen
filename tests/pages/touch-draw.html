@@ -1,0 +1,78 @@
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Touch drawing</title>
+<style>
+body{margin:8px;font:14px sans-serif;background:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,256px);gap:8px}
+canvas,iframe{display:block;width:256px;height:240px;border:0;outline:1px solid #888;background:#fff}
+#draw,#gl{touch-action:none}
+.space{height:2400px}
+</style>
+<p>Drag a finger over each box: pointer capture drawing, touch events drawing, WebGL rotate, a drawing in an iframe.</p>
+<div class="grid">
+<canvas id="draw" width="256" height="240"></canvas>
+<canvas id="touch" width="256" height="240"></canvas>
+<canvas id="gl" width="256" height="240"></canvas>
+<iframe id="frame" srcdoc="<!doctype html><style>body{margin:0}canvas{display:block;touch-action:none}</style><canvas id=c width=256 height=240></canvas><script>
+const c=document.getElementById('c'),g=c.getContext('2d');let moves=0,last=null;g.lineWidth=6;g.strokeStyle='#c00';
+c.addEventListener('pointerdown',e=>{c.setPointerCapture(e.pointerId);last=[e.offsetX,e.offsetY];});
+c.addEventListener('pointermove',e=>{if(!last||!c.hasPointerCapture(e.pointerId))return;moves++;g.beginPath();g.moveTo(last[0],last[1]);g.lineTo(e.offsetX,e.offsetY);g.stroke();last=[e.offsetX,e.offsetY];});
+c.addEventListener('pointerup',e=>{last=null;const d=g.getImageData(0,0,256,240).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i])n++;parent.postMessage({frame:1,moves,px:n,type:e.pointerType},'*');});
+</script>"></iframe>
+</div>
+<div class="space"></div>
+<script>
+const L = s => console.warn('TDR ' + s);
+const R = el => { const r = el.getBoundingClientRect(); return Math.round(r.x) + ',' + Math.round(r.y) + ',' + Math.round(r.width) + 'x' + Math.round(r.height); };
+const painted = g => { const d = g.getImageData(0, 0, 256, 240).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i]) n++; return n; };
+// 1: pointer events with explicit capture, coalesced samples, the drawing gated on hasPointerCapture
+{
+  const c = document.getElementById('draw'), g = c.getContext('2d'); g.lineWidth = 6; g.strokeStyle = '#06c';
+  let st = null;
+  c.addEventListener('pointerdown', e => { c.setPointerCapture(e.pointerId); st = { moves: 0, co: 0, got: 0, lost: 0, mvx: 0, last: [e.offsetX, e.offsetY], hasDown: c.hasPointerCapture(e.pointerId), type: e.pointerType }; });
+  c.addEventListener('gotpointercapture', () => { if (st) st.got++; });
+  c.addEventListener('lostpointercapture', () => { if (st) st.lost++; });
+  c.addEventListener('pointermove', e => {
+    if (!st || !c.hasPointerCapture(e.pointerId)) return;
+    st.moves++; st.mvx += Math.abs(e.movementX) + Math.abs(e.movementY);
+    for (const p of e.getCoalescedEvents()) { st.co++; g.beginPath(); g.moveTo(st.last[0], st.last[1]); g.lineTo(p.offsetX, p.offsetY); g.stroke(); st.last = [p.offsetX, p.offsetY]; }
+  });
+  c.addEventListener('pointerup', e => {
+    const s = st; st = null; if (!s) return;
+    const hasUp = c.hasPointerCapture(e.pointerId);
+    setTimeout(() => L('draw type=' + s.type + ' moves=' + s.moves + ' co=' + s.co + ' movement=' + Math.round(s.mvx) + ' capdown=' + s.hasDown + ' capup=' + hasUp + ' got=' + s.got + ' lost=' + s.lost + ' px=' + painted(g) + ' sy=' + Math.round(scrollY)), 0);
+  });
+  c.addEventListener('pointercancel', () => { L('draw pointercancel sy=' + Math.round(scrollY)); st = null; });
+}
+// 2: touch events, touchmove cancelled by a non-passive listener
+{
+  const c = document.getElementById('touch'), g = c.getContext('2d'); g.lineWidth = 6; g.strokeStyle = '#090';
+  let last = null, moves = 0, touchOk = false;
+  const at = t => { const r = c.getBoundingClientRect(); return [t.clientX - r.left, t.clientY - r.top]; };
+  c.addEventListener('touchstart', e => { touchOk = e.touches[0] instanceof Touch && e.touches.length === 1; last = at(e.touches[0]); moves = 0; }, { passive: false });
+  c.addEventListener('touchmove', e => { e.preventDefault(); const p = at(e.touches[0]); moves++; g.beginPath(); g.moveTo(last[0], last[1]); g.lineTo(p[0], p[1]); g.stroke(); last = p; }, { passive: false });
+  c.addEventListener('touchend', e => { const ch = e.changedTouches.length, left = e.touches.length; setTimeout(() => L('touch moves=' + moves + ' Touch=' + touchOk + ' changed=' + ch + ' left=' + left + ' px=' + painted(g) + ' sy=' + Math.round(scrollY)), 0); });
+}
+// 3: WebGL, a triangle turned by pointer drags (pageX deltas, as three.js OrbitControls does)
+{
+  const c = document.getElementById('gl'), gl = c.getContext('webgl');
+  let angle = 0, drag = null, moves = 0, frames = 0;
+  if (gl) {
+    const sh = (t, src) => { const s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+    const pr = gl.createProgram();
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, 'attribute vec2 p;uniform float a;void main(){float c=cos(a),s=sin(a);gl_Position=vec4(c*p.x-s*p.y,s*p.x+c*p.y,0.,1.);}'));
+    gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, 'precision mediump float;void main(){gl_FragColor=vec4(.9,.4,.1,1.);}'));
+    gl.linkProgram(pr); gl.useProgram(pr);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, .8, -.7, -.5, .7, -.5]), gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    const ua = gl.getUniformLocation(pr, 'a');
+    const draw = () => { frames++; gl.clearColor(1, 1, 1, 1); gl.clear(gl.COLOR_BUFFER_BIT); gl.uniform1f(ua, angle); gl.drawArrays(gl.TRIANGLES, 0, 3); };
+    draw();
+    c.addEventListener('pointerdown', e => { c.setPointerCapture(e.pointerId); drag = e.pageX; moves = 0; });
+    c.addEventListener('pointermove', e => { if (drag == null) return; moves++; angle += (e.pageX - drag) * 0.01; drag = e.pageX; requestAnimationFrame(draw); });
+    c.addEventListener('pointerup', () => { drag = null; setTimeout(() => L('gl moves=' + moves + ' angle=' + angle.toFixed(2) + ' frames=' + frames + ' sy=' + Math.round(scrollY)), 0); });
+  } else L('gl none');
+}
+addEventListener('message', e => { if (e.data && e.data.frame) L('frame type=' + e.data.type + ' moves=' + e.data.moves + ' px=' + e.data.px + ' sy=' + Math.round(scrollY)); });
+setTimeout(() => L('rects dpr=' + devicePixelRatio + ' iw=' + innerWidth + ' sy=' + Math.round(scrollY) + ' draw@' + R(document.getElementById('draw')) + ' touch@' + R(document.getElementById('touch')) + ' gl@' + R(document.getElementById('gl')) + ' frame@' + R(document.getElementById('frame'))), 1500);
+</script>

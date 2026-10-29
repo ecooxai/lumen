@@ -1,0 +1,18 @@
+<!doctype html>
+<form id="f" action="javascript:void 0"><input id="i" name="q" value="x"><button id="b"><div><span id="s">Continue</span></div></button></form>
+<label id="l"><span id="ls">toggle</span><input type="checkbox" id="c"></label>
+<details id="d"><summary><b id="sb">more</b></summary>body</details>
+<script>
+const R = {};
+let submits = 0;
+document.getElementById('f').addEventListener('submit', e => { e.preventDefault(); submits++; });
+document.getElementById('s').click();
+R.buttonChild = submits === 1;
+document.getElementById('ls').click();
+R.labelChild = document.getElementById('c').checked === true;
+document.getElementById('sb').click();
+R.summaryChild = document.getElementById('d').open === true;
+document.getElementById('i').click();
+R.inputNoSubmit = submits === 1;
+console.log('RESULTS activate-descendant ' + Object.entries(R).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
+</script>

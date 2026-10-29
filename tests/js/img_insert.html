@@ -1,0 +1,7 @@
+<!doctype html><title>img insert</title>
+<p>Script-inserted image below (red bar after 300ms, src swap test after 800ms):</p>
+<div id="box"></div><img id="late" alt="late">
+<script>
+setTimeout(() => { const i = document.createElement('img'); i.id = 'ins'; i.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAAoCAIAAAC6iKlyAAAAZElEQVR4nO3QAQkAIBDAQJN8/1CGsYXCPFiAcWvP6ELr+cEngQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtzpxdoMtKEbuYAAAAABJRU5ErkJggg=='; document.getElementById('box').appendChild(i); }, 300);
+setTimeout(() => { document.getElementById('late').src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAAoCAIAAAC6iKlyAAAAZElEQVR4nO3QAQkAIBDAQJN8/1CGsYXCPFiAcWvP6ELr+cEngQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtzpxdoMtKEbuYAAAAABJRU5ErkJggg=='; }, 800);
+</script>

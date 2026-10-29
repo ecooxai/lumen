@@ -1,0 +1,40 @@
+<!doctype html><title>js full</title>
+<div id=root><span class=a>one</span><span class=b>two</span></div>
+<button id=btn onclick="window.inlineClicked = true">btn</button>
+<script src="ext.js"></script>
+<script>
+const R = window.results = [];
+const ok = (name, cond) => { R.push(name + ':' + (cond ? 'PASS' : 'FAIL')); };
+ok('extScript', window.extLoaded === 1);
+ok('query', document.querySelectorAll('#root span').length === 2 && document.querySelector('.b').textContent === 'two');
+const d = document.createElement('div'); d.id = 'made'; d.className = 'x y'; d.setAttribute('data-k', 'v');
+document.body.appendChild(d);
+ok('create', document.getElementById('made') === d && d.classList.contains('y') && d.dataset.k === 'v');
+d.innerHTML = '<b>bold</b><i>it</i>';
+ok('innerHTML', d.children.length === 2 && d.firstElementChild.tagName === 'B' && d.innerHTML === '<b>bold</b><i>it</i>');
+let order = [];
+document.body.addEventListener('ping', () => order.push('bubble'));
+document.body.addEventListener('ping', () => order.push('capture'), true);
+d.addEventListener('ping', e => { order.push('target'); e.preventDefault(); });
+const notCanceled = d.dispatchEvent(new CustomEvent('ping', { bubbles: true, cancelable: true }));
+ok('events', order.join() === 'capture,target,bubble' && notCanceled === false);
+document.getElementById('btn').click();
+ok('inlineHandler', window.inlineClicked === true);
+const mo = new MutationObserver(recs => { window.moCount = recs.length; });
+mo.observe(document.body, { childList: true, subtree: true });
+d.appendChild(document.createTextNode('t'));
+customElements.define('x-foo', class extends HTMLElement { connectedCallback() { this.textContent = 'ce!'; } });
+const xf = document.createElement('x-foo'); document.body.appendChild(xf);
+ok('customElement', xf.textContent === 'ce!' && xf instanceof HTMLElement);
+ok('url', new URL('../a/b?q=1#h', 'https://ex.com/x/y/z').href === 'https://ex.com/x/a/b?q=1#h');
+ok('encoding', new TextDecoder().decode(new TextEncoder().encode('héllo')) === 'héllo');
+let micro = false; Promise.resolve().then(() => { micro = true; });
+setTimeout(() => ok('microtaskBeforeTimer', micro && window.moCount >= 1), 0);
+let ticks = 0; const iv = setInterval(() => { if (++ticks === 3) clearInterval(iv); }, 5);
+requestAnimationFrame(t => ok('raf', typeof t === 'number'));
+fetch('data.json').then(r => r.json()).then(j => ok('fetch', j.hello === 'world' && j.n === 42)).catch(e => ok('fetch:' + e, false));
+const x = new XMLHttpRequest(); x.open('GET', 'data.json'); x.onload = () => ok('xhr', x.status === 200 && JSON.parse(x.responseText).n === 42); x.send();
+document.addEventListener('DOMContentLoaded', () => ok('DOMContentLoaded', document.readyState === 'interactive'));
+window.addEventListener('load', () => ok('load', document.readyState === 'complete'));
+setTimeout(() => { ok('interval', ticks === 3); console.log('RESULTS ' + R.join(' ')); }, 300);
+</script>

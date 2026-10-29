@@ -1,0 +1,8 @@
+<!doctype html><html><body>
+<div id="a" style="width:30px;min-width:10px;max-width:50%;top:5px;flex:2 3 40px;column-gap:4px;grid-template-columns:10px 1fr minmax(5px, 20px)"></div>
+<script>
+const cs = getComputedStyle(document.getElementById('a')), r = {};
+const want = { width: '30px', minWidth: '10px', maxWidth: '50%', top: '5px', left: 'auto', flexGrow: '2', flexShrink: '3', flexBasis: '40px', columnGap: '4px', rowGap: 'normal', maxHeight: 'none', gridTemplateColumns: '10px 1fr minmax(5px, 20px)' };
+for (const [k, v] of Object.entries(want)) r[k] = cs[k] === v ? 'PASS' : 'FAIL(' + cs[k] + ')';
+console.log('RESULTS ' + Object.entries(r).map(([k, v]) => k + ':' + v).join(' '));
+</script></body></html>

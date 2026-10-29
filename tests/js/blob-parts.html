@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><title>Blob parts</title><pre id="out">Running…</pre>
+<script>
+(async()=>{
+ const results=[], check=(name,pass,detail)=>results.push({name,pass:!!pass,detail});
+ const bytes=async b=>Array.from(new Uint8Array(await b.arrayBuffer())).join(',');
+ try {
+  check('text-parts',await new Blob(['ab','é','界']).text()==='abé界');
+  check('split-surrogates',await bytes(new Blob(['\ud83d','\ude00']))==='239,191,189,239,191,189');
+  check('paired-surrogates',await bytes(new Blob(['\ud83d\ude00']))==='240,159,152,128');
+  const backing=new Uint8Array([10,20,30,40]),view=new Uint8Array(backing.buffer,1,2);
+  const mixed=new Blob(['A',view,new Blob(['B']),'C']);backing.fill(0);
+  check('mixed-order-and-snapshot',await bytes(mixed)==='65,20,30,66,67');
+  const copy=await mixed.arrayBuffer();new Uint8Array(copy).fill(0);
+  check('read-copy',await bytes(mixed)==='65,20,30,66,67');
+  check('empty',new Blob([]).size===0);
+  const parts='abcdefghijklmnopqrstuvwxyz012345'.repeat(1024).split('');
+  const times=[];let total=0;
+  for(let i=0;i<20;i++){await new Promise(r=>setTimeout(r,20));const t=performance.now();total+=new Blob(parts).size;times.push(performance.now()-t)}
+  check('many-small-parts',total===parts.length*20,{parts:parts.length,rounds:20,ms:times,totalMs:times.reduce((a,b)=>a+b,0)});
+ }catch(e){check('unexpected-error',false,String(e))}
+ document.getElementById('out').textContent=JSON.stringify(results,null,2);
+ await fetch('/report',{method:'POST',body:JSON.stringify(results)});
+})();
+</script>

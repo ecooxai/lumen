@@ -1,0 +1,10 @@
+<!doctype html><script>
+/* testharness.js and many libraries call the global's EventTarget methods without a receiver inside workers */
+const src = "addEventListener('message', function (e) { postMessage('heard ' + e.data); });" +
+    "var hit = 0; addEventListener('ping', function () { hit++; }); dispatchEvent(new Event('ping')); postMessage('dispatched ' + hit);";
+const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+const got = [];
+w.onmessage = e => { got.push(e.data); if (got.length === 2) console.log('RESULTS worker-global-listener dispatch:' + (got[0] === 'dispatched 1' ? 'PASS' : 'FAIL') + ' listen:' + (got[1] === 'heard x' ? 'PASS' : 'FAIL')); };
+w.onerror = e => console.log('RESULTS worker-global-listener error:FAIL ' + e.message);
+w.postMessage('x');
+</script>

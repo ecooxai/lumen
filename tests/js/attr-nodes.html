@@ -1,0 +1,14 @@
+<!doctype html><div id=d a=1 b=2 c=3></div><input id=i type=checkbox><select><option id=o>x</option></select>
+<script>
+const d = document.getElementById('d'), r = {};
+const attrs = d.attributes; let guard = 0;
+while (attrs.length && guard++ < 10) d.removeAttributeNode(attrs[0]);
+r.liveRemove = d.attributes.length === 0 && guard === 4;
+d.setAttribute('x', 'y'); const at = d.getAttributeNode('x'); const old = d.removeAttributeNode(at);
+r.removed = old.value === 'y' && !d.hasAttribute('x');
+const i = document.getElementById('i'); i.defaultChecked = true; r.defaultChecked = i.hasAttribute('checked') && i.checked;
+i.defaultChecked = false; r.defaultUnchecked = !i.hasAttribute('checked');
+const o = document.getElementById('o'); o.defaultSelected = true; r.defaultSelected = o.hasAttribute('selected');
+r.iter = [...document.getElementById('i').attributes].map(a => a.name).join() === 'id,type';
+console.log('RESULTS attr-nodes ' + Object.entries(r).map(([k, v]) => k + ':' + (v ? 'PASS' : 'FAIL')).join(' '));
+</script>

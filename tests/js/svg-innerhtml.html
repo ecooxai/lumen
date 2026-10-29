@@ -1,0 +1,13 @@
+<!doctype html>
+<svg id=s width=20 height=20 viewBox="0 0 16 16"></svg>
+<script>
+const r=[];
+const s=document.getElementById('s');
+s.innerHTML='<path d="M1 1h4v4z" fill="currentColor"/> <path d="M8 8h4v4z"/><linearGradient id=g></linearGradient><div>x</div>';
+const k=[...s.children];
+r.push(k.length===4&&k[3].tagName==='DIV'&&k[3].namespaceURI==='http://www.w3.org/1999/xhtml'&&k[0].tagName==='path'&&k[0].namespaceURI==='http://www.w3.org/2000/svg'&&k[1].parentNode===s?'ok':'bad kids '+k.map(e=>e.tagName+'@'+e.namespaceURI).join(','));
+r.push(k[2]&&k[2].tagName==='linearGradient'?'ok':'bad case '+(k[2]&&k[2].tagName));
+const d=document.createElement('div');d.innerHTML='<p>a</p><svg><path/></svg>';
+r.push(d.firstChild.tagName==='P'&&d.querySelector('path').namespaceURI==='http://www.w3.org/2000/svg'?'ok':'bad html ctx');
+console.log('RESULTS svg-innerhtml:'+(r.every(x=>x==='ok')?'PASS':'FAIL '+r.join(';')));
+</script>

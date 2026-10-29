@@ -1,0 +1,69 @@
+<!doctype html><meta charset="utf-8"><title>Native input queue lifetime</title>
+<textarea id="input"></textarea><button id="button">Click</button>
+<script>
+(async function () {
+  const input = document.getElementById('input');
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const put = (key, value) => { document.cookie = key + '=' + encodeURIComponent(value) + ';path=/'; };
+  const get = key => { const value = document.cookie.split(';').map(x => x.trim()).find(x => x.startsWith(key + '=')); return value ? decodeURIComponent(value.slice(key.length + 1)) : null; };
+  if (location.search === '?closing-child') {
+    input.focus();
+    window.__lumenTd('key 122').catch(() => {});
+    window.close();
+    return;
+  }
+  if (location.search === '?new-child') { await sleep(100); window.opener.postMessage({inputQueueChild: input.value}, '*'); return; }
+  if (!location.search) {
+    put('inputQueueCancel', 'pending'); put('inputQueueOldInput', ''); put('inputQueueSentinel', 'present');
+    input.focus();
+    input.oninput = () => put('inputQueueOldInput', input.value);
+    window.__lumenTd('key 113').then(
+      () => put('inputQueueCancel', 'resolved'),
+      e => put('inputQueueCancel', e.name));
+    location.replace(location.pathname + '?after-navigation');
+    return;
+  }
+  const results = [];
+  const check = (name, ok, detail) => results.push({name, status: ok ? 'PASS' : 'FAIL', detail});
+  async function settled(promise) {
+    return await Promise.race([promise.then(() => true, e => String(e)), sleep(1500).then(() => 'timeout')]);
+  }
+  try {
+    await sleep(100);
+    check('control metadata survives navigation', get('inputQueueSentinel') === 'present', get('inputQueueSentinel'));
+    check('navigation cancels a live origin request with AbortError', get('inputQueueCancel') === 'AbortError', get('inputQueueCancel'));
+    check('cancelled input is not delivered to the departing document', !get('inputQueueOldInput'), get('inputQueueOldInput'));
+    check('cancelled input is not delivered to the replacement document', input.value === '', JSON.stringify(input.value));
+    input.focus();
+    const closing = window.open(location.pathname + '?closing-child', 'input-closing-target');
+    await sleep(500);
+    check('closed target receives no further input in another document', input.value === '', JSON.stringify(input.value));
+    check('closed scripted target is retired', closing && closing.closed, String(closing && closing.closed));
+    let childValue = null;
+    const childReport = new Promise(resolve => window.addEventListener('message', e => { if (e.data && typeof e.data.inputQueueChild === 'string') { childValue = e.data.inputQueueChild; resolve(); } }));
+    const later = window.open(location.pathname + '?new-child', 'input-new-target');
+    await Promise.race([childReport, sleep(1500)]);
+    check('later tab does not receive an earlier target request', childValue === '', childValue);
+    if (later) later.close();
+    await sleep(100);
+    input.value = ''; input.focus();
+    const sequence = await settled(Promise.all([window.__lumenTd('key 97\nkey 98'), window.__lumenTd('key 99')]));
+    check('concurrent input requests complete in queue order', sequence === true && input.value === 'abc', String(sequence) + ':' + JSON.stringify(input.value));
+    input.value = ''; input.focus();
+    const unicode = await settled(window.__lumenTd('key 233\nkey 20013'));
+    check('queued text retains its UTF-8 bytes through dispatch', unicode === true && input.value === 'é中', String(unicode) + ':' + JSON.stringify(input.value));
+    let clickCount = 0, trusted = false;
+    const button = document.getElementById('button');
+    button.onclick = e => { clickCount++; trusted = e.isTrusted; };
+    const popup = window.open('about:blank', 'input-pointer-target');
+    await sleep(150);
+    const rect = button.getBoundingClientRect();
+    const click = await settled(window.__lumenTd('move ' + (rect.left + rect.width / 2) + ' ' + (rect.top + rect.height / 2) + '\ndown 0\nup 0'));
+    check('pointer actions reach the originating page behind a popup', click === true && clickCount === 1, String(click) + ':' + clickCount);
+    check('routed pointer action uses the trusted native dispatch path', trusted, String(trusted));
+    if (popup) popup.close();
+  } catch (e) { results.push({name: 'fixture completion', status: 'FAIL', detail: String(e)}); }
+  window.__inputQueueResults = results;
+  console.log('RESULTS browser-input-queue:' + (results.every(r => r.status === 'PASS') ? 'PASS' : 'FAIL') + ' ' + results.filter(r => r.status === 'PASS').length + '/' + results.length + ' ' + JSON.stringify(results));
+})();
+</script>

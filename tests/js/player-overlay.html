@@ -1,0 +1,45 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Positioned player controls</title>
+<style>
+body { margin:0; font:18px sans-serif; background:#fafafa }
+#player-container { position:fixed; top:20px; left:20px; width:400px; height:240px; z-index:2 }
+#player { position:relative; width:100%; height:100%; z-index:0; background:#142438 }
+#video { position:absolute; inset:0; z-index:10; color:white; padding:20px }
+#overlay { position:absolute; inset:0 }
+#control { display:block; width:160px; height:70px; margin:80px auto 0; background:#b2f2bb; border:0; font-size:22px }
+#status { margin:285px 20px 0 }
+.row { padding:20px; border-bottom:1px solid #ddd }
+</style>
+<div id="player-container"><div id="player"><div id="video">Underlying video surface</div></div>
+<div><div><div id="overlay"><button id="control">Tap control</button></div></div></div></div>
+<p id="status">Waiting for a tap</p><main id="rows"></main>
+<script>
+const results=[];
+const report=(name,pass,detail)=>{
+  const result={name,pass,detail}; results.push(result);
+  fetch('/report',{method:'POST',body:JSON.stringify([result])});
+};
+for(let i=0;i<160;i++){const row=document.createElement('div');row.className='row';row.textContent='Scroll row '+i;rows.appendChild(row)}
+const button=document.getElementById('control'), overlay=document.getElementById('overlay');
+const target=()=>{const r=button.getBoundingClientRect();return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)?.id};
+setTimeout(()=>{
+  report('positioned overlay hit',target()==='control',target());
+  overlay.style.pointerEvents='none';
+  report('pointer events none passes through',target()==='video',target());
+  overlay.style.pointerEvents='';
+  overlay.style.visibility='hidden';
+  report('hidden overlay passes through',target()==='video',target());
+  overlay.style.visibility='';
+  overlay.style.opacity='0';
+  report('transparent overlay receives input',target()==='control',target());
+  overlay.style.opacity='';
+},200);
+let taps=0;
+button.onclick=e=>{
+  taps++;button.textContent='Tapped '+taps;
+  document.getElementById('status').textContent='Control received tap '+taps;
+  report('trusted control tap '+taps,e.isTrusted&&target()==='control',{trusted:e.isTrusted,scrollY,target:target()});
+};
+document.getElementById('video').onclick=()=>report('tap reached underlying video',false,{scrollY});
+</script>

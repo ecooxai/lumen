@@ -1,0 +1,29 @@
+<!doctype html><meta name="viewport" content="width=device-width">
+<title>Page zoom checks</title>
+<style>
+html,body { margin:0; font:16px sans-serif; }
+body { min-height:2000px; background:#fafafa; }
+#hit { position:fixed; left:20px; top:20px; width:140px; height:50px; background:#2578c9; color:white; border:0; }
+#scroller { position:absolute; left:200px; top:20px; width:140px; height:120px; overflow:auto; background:#def; }
+#scroller div { height:800px; }
+iframe { position:absolute; left:20px; top:100px; width:160px; height:80px; border:0; }
+#log { position:absolute; left:20px; top:220px; white-space:pre-wrap; }
+</style>
+<button id="hit">Zoom target</button><div id="scroller"><div>Nested scroll target</div></div>
+<iframe id="frame"></iframe><pre id="log"></pre>
+<div style="height:2000px">Root scroll extent</div>
+<script>
+function zoomReport(kind,extra={}) {
+ const row={kind,width:innerWidth,height:innerHeight,dpr:devicePixelRatio,scrollY,nested:document.getElementById('scroller').scrollTop,...extra};
+ console.log('PAGE_ZOOM '+JSON.stringify(row));
+ if(location.protocol==='http:')fetch('/report',{method:'POST',body:JSON.stringify({fixture:'page-zoom',...row})}).catch(()=>{});
+ document.getElementById('log').textContent=JSON.stringify(row,null,2);
+}
+addEventListener('resize',()=>zoomReport('resize'));
+addEventListener('scroll',()=>zoomReport('scroll'));
+document.getElementById('hit').addEventListener('click',e=>zoomReport('click',{x:e.clientX,y:e.clientY}));
+document.getElementById('scroller').addEventListener('scroll',()=>zoomReport('nested'));
+addEventListener('message',e=>{if(e.data&&e.data.zoomFrame)zoomReport('frame',e.data)});
+document.getElementById('frame').srcdoc='<style>body{margin:0}button{position:absolute;left:10px;top:10px;width:100px;height:40px}</style><button>Frame target</button><script>function report(kind,e){parent.postMessage({zoomFrame:true,kind:kind,frameDpr:devicePixelRatio,frameWidth:innerWidth,x:e&&e.clientX,y:e&&e.clientY},"*")}addEventListener("resize",()=>report("frame-resize"));document.querySelector("button").onclick=e=>report("frame-click",e);report("frame-load");<\/script>';
+zoomReport('load');
+</script>

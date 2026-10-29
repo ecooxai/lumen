@@ -1,0 +1,13 @@
+<!doctype html><style>
+@property --ap-w { syntax: "<length>"; inherits: false; initial-value: 37px; }
+@property --ap-none { syntax: "*"; inherits: false; }
+.a { width: var(--ap-w); height: 10px; }
+.b { --ap-w: 12px; width: var(--ap-w); height: 10px; }
+.c { width: var(--ap-none, 21px); height: 10px; }
+</style><body><div id=a class=a></div><div id=b class=b></div><div id=c class=c></div>
+<script>
+const w = id => getComputedStyle(document.getElementById(id)).width;
+const ok = w('a') === '37px' && w('b') === '12px' && w('c') === '21px';
+console.log('at-property a=' + w('a') + ' b=' + w('b') + ' c=' + w('c'));
+console.log('RESULTS at-property:' + (ok ? 'PASS' : 'FAIL'));
+</script>

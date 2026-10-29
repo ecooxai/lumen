@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>Encoding label byte-boundary controls</title>
+<h1>Encoding label controls</h1><pre id="result">Running…</pre><script>
+(function () {
+  let passed = 0, total = 0; const failures = [];
+  function check(name, fn) { total++; try { if (!fn()) throw Error('wrong outcome'); passed++; } catch (e) { failures.push(name + ': ' + e); } }
+  const aliases = [['utf-8','utf-8'],['unicode-1-1-utf-8','utf-8'],['utf8','utf-8'],['ascii','windows-1252'],['latin1','windows-1252'],['iso-8859-1','windows-1252'],['us-ascii','windows-1252'],['windows-1252','windows-1252'],['gbk','gbk'],['gb2312','gbk'],['gb18030','gb18030'],['shift_jis','shift_jis'],['sjis','shift_jis'],['euc-jp','euc-jp'],['euc-kr','euc-kr'],['big5','big5'],['utf-16','utf-16le'],['utf-16le','utf-16le'],['utf-16be','utf-16be'],['x-user-defined','x-user-defined'],['koi8-r','koi8-r'],['macintosh','macintosh'],['windows-1251','windows-1251'],['iso-2022-jp','iso-2022-jp']];
+  for (const Constructor of [TextDecoder, TextDecoderStream]) {
+    check(Constructor.name + ' omitted label', () => new Constructor().encoding === 'utf-8');
+    check(Constructor.name + ' undefined label', () => new Constructor(undefined).encoding === 'utf-8');
+    for (const [label, expected] of aliases) {
+      check(Constructor.name + ' alias ' + label, () => new Constructor(label).encoding === expected);
+      check(Constructor.name + ' whitespace/case ' + label, () => new Constructor('\t\n\r\f ' + label.toUpperCase() + ' \f\r\n\t').encoding === expected);
+      for (const invalid of [label+'\0','\0'+label,label+'\0junk',' '+label+'\0 ',label.slice(0,1)+'\0'+label.slice(1),label+'\v',label+'\u00a0']) {
+        check(Constructor.name + ' invalid ' + JSON.stringify(invalid), () => { try { new Constructor(invalid); return false; } catch (e) { return e instanceof RangeError; } });
+      }
+    }
+    check(Constructor.name + ' replacement rejected', () => { try { new Constructor('replacement'); return false; } catch (e) { return e instanceof RangeError; } });
+    check(Constructor.name + ' single stringification', () => { let count=0; const decoder=new Constructor({toString(){ count++; return 'UTF-8'; }}); return count===1 && decoder.encoding==='utf-8'; });
+  }
+  check('UTF-8 decoding retains embedded NUL data', () => new TextDecoder().decode(new Uint8Array([65,0,66])) === 'A\0B');
+  check('Windows-1252 alias decoding retained', () => new TextDecoder('latin1').decode(new Uint8Array([0x80])) === '\u20ac');
+  check('UTF-16LE alias decoding retained', () => new TextDecoder('utf-16').decode(new Uint8Array([65,0,66,0])) === 'AB');
+  const summary='RESULTS browser-encoding-label-nul:'+(passed===total?'PASS ':'FAIL ')+passed+'/'+total;
+  document.getElementById('result').textContent=summary+'\n'+failures.join('\n'); console.log(summary); if(failures.length)console.log(JSON.stringify(failures));
+})();
+</script>

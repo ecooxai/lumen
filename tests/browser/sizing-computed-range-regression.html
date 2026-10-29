@@ -1,0 +1,29 @@
+<!doctype html><meta charset="utf-8"><title>Computed sizing range controls</title>
+<pre id="results">Running</pre><script>
+(()=>{
+ const results=[],eq=(a,b)=>{if(a!==b)throw Error(JSON.stringify(a)+' != '+JSON.stringify(b));};
+ const test=(name,fn)=>{try{fn();results.push({name,status:'PASS'});}catch(e){results.push({name,status:'FAIL',message:String(e.message||e)});}};
+ const physical=['width','height','min-width','min-height','max-width','max-height'];
+ const logical=['min-inline-size','min-block-size','max-inline-size','max-block-size'];
+ const values=[['calc(10px - 0.5em)','0px'],['calc(-10px)','0px'],['calc(-0px)','0px'],['calc(10px + 0.5em)','30px']];
+ function node(display='none',writing='horizontal-tb'){
+  const e=document.createElement('div');e.style.cssText='font-size:40px;box-sizing:content-box;padding:0;border:0;margin:0;display:'+display+';writing-mode:'+writing;document.body.append(e);return e;
+ }
+ for(const property of physical)for(const [value,expected] of values)test('hidden '+property+' '+value,()=>{
+  const e=node();try{e.style.setProperty(property,value);eq(getComputedStyle(e).getPropertyValue(property),expected);}finally{e.remove();}
+ });
+ for(const property of logical)for(const writing of ['horizontal-tb','vertical-rl'])for(const [value,expected] of [values[0],values[3]])test(writing+' '+property+' '+value,()=>{
+  const e=node('none',writing);try{e.style.setProperty(property,value);eq(getComputedStyle(e).getPropertyValue(property),expected);}finally{e.remove();}
+ });
+ for(const property of ['margin-left','margin-top','left','top'])test('negative length remains valid for '+property,()=>{
+  const e=node();try{e.style.setProperty(property,'calc(10px - 0.5em)');eq(getComputedStyle(e).getPropertyValue(property),'-10px');}finally{e.remove();}
+ });
+ for(const property of ['min-width','min-height','max-width','max-height']){
+  test('percentage stays unresolved for '+property,()=>{const e=node();try{e.style.setProperty(property,'calc(10% - 20px)');eq(getComputedStyle(e).getPropertyValue(property),'calc(10% - 20px)');}finally{e.remove();}});
+  test('custom-property mutation remains live for '+property,()=>{const e=node();try{e.style.setProperty('--n','-20px');e.style.setProperty(property,'calc(var(--n) + 5px)');eq(getComputedStyle(e).getPropertyValue(property),'0px');e.style.setProperty('--n','20px');eq(getComputedStyle(e).getPropertyValue(property),'25px');}finally{e.remove();}});
+  test('font changes re-evaluate '+property,()=>{const e=node();try{e.style.setProperty(property,'calc(10px - 0.5em)');eq(getComputedStyle(e).getPropertyValue(property),'0px');e.style.fontSize='10px';eq(getComputedStyle(e).getPropertyValue(property),'5px');}finally{e.remove();}});
+ }
+ const pass=results.filter(x=>x.status==='PASS').length,marker='RESULTS browser-sizing-computed-range:'+(pass===results.length?'PASS':'FAIL')+' '+pass+'/'+results.length;
+ console.log(marker);for(const row of results)console.log('SIZING_RANGE_RESULT '+JSON.stringify(row));document.getElementById('results').textContent=marker;
+})();
+</script>

@@ -1,0 +1,42 @@
+<!doctype html><meta charset="utf-8"><title>Queued modifier cancellation</title><input id="input">
+<script>
+(async function () {
+  const input = document.getElementById('input');
+  const put = value => { document.cookie = 'modifierCancel=' + encodeURIComponent(value) + ';path=/'; };
+  const get = () => { const p = document.cookie.split(';').map(x => x.trim()).find(x => x.startsWith('modifierCancel=')); return p ? decodeURIComponent(p.slice(15)) : null; };
+  if (!location.search) {
+    put('pending'); input.focus();
+    window.__lumenTd('key 57353').then(() => put('resolved'), e => put(e.name));
+    location.replace(location.pathname + '?after-navigation'); return;
+  }
+  const prior = document.cookie.split(';').map(x => x.trim()).find(x => x.startsWith('modifierChecks='));
+  const results = location.search === '?after-held-release' && prior ? JSON.parse(decodeURIComponent(prior.slice(15))) : [], events = [];
+  const check = (name, ok, detail) => results.push({name, status: ok ? 'PASS' : 'FAIL', detail});
+  document.addEventListener('keydown', e => events.push({key: e.key, ctrl: e.ctrlKey, shift: e.shiftKey}));
+  try {
+    if (location.search === '?after-held-release') {
+      input.focus(); await window.__lumenTd('key 57362');
+      check('cancelled release request reports AbortError', get() === 'AbortError', get());
+      check('cancelled release preserves an already delivered modifier', events.some(e => e.key === 'ArrowLeft' && e.ctrl), JSON.stringify(events));
+      await window.__lumenTd('keyup 57353'); events.length = 0; await window.__lumenTd('key 98');
+      check('explicit release clears delivered virtual state', input.value === 'b' && events.some(e => e.key === 'b' && !e.ctrl), JSON.stringify({value: input.value, events}));
+    } else {
+    input.focus(); await window.__lumenTd('key 97');
+    check('cancelled modifier request reports AbortError', get() === 'AbortError', get());
+    check('cancelled modifier does not affect replacement input', input.value === 'a' && events.some(e => e.key === 'a' && !e.ctrl), JSON.stringify({value: input.value, events}));
+    await window.__lumenTd('keyup 57353');
+    input.value = ''; input.focus(); events.length = 0;
+    await window.__lumenTd('key 57353\nkey 57362\nkeyup 57353');
+    check('queued modifier changes apply in dispatch order', events.some(e => e.key === 'ArrowLeft' && e.ctrl), JSON.stringify(events));
+    events.length = 0; await window.__lumenTd('key 98');
+    check('released modifier does not affect later input', input.value === 'b' && events.some(e => e.key === 'b' && !e.ctrl), JSON.stringify({value: input.value, events}));
+    document.cookie = 'modifierChecks=' + encodeURIComponent(JSON.stringify(results)) + ';path=/';
+    await window.__lumenTd('key 57353'); put('pending');
+    window.__lumenTd('keyup 57353').then(() => put('released'), e => put(e.name));
+    location.replace(location.pathname + '?after-held-release'); return;
+    }
+  } catch (e) { results.push({name: 'fixture completion', status: 'FAIL', detail: String(e)}); }
+  window.__inputModifierResults = results;
+  console.log('RESULTS browser-input-modifier:' + (results.every(r => r.status === 'PASS') ? 'PASS' : 'FAIL') + ' ' + results.filter(r => r.status === 'PASS').length + '/' + results.length + ' ' + JSON.stringify(results));
+})();
+</script>

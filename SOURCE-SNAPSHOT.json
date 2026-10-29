@@ -1,0 +1,29 @@
+{
+  "binary_sha256": "127ec518e9522352aa58d91e3807671c65f593a06f68c95bc355f74012a49052",
+  "browser_sanitizer_shutdown_verified": false,
+  "build_claim": "Exact recorded inputs match qualified experimental build 168 and this snapshot. No fresh extracted-source rebuild was run at preparation time; later verification is recorded separately. This is not a hermetic toolchain.",
+  "checkpoint_classification": "EXPERIMENTAL",
+  "external_requirements": [
+    "Native compiler and platform development libraries",
+    "Matching external V8 and wgpu dependencies for the native browser",
+    "Systemd user quota support for the retained build wrapper",
+    "Actual font unit controls require separately supplied Ahem.ttf (SHA256 b719ecb31c5b21fc573c03f6421c74ac63c271a5a3ff841e34f9705fb94b8448) and ChTestZeroWidthZero.woff (SHA256 45280eaf99497623d086bb218e8faf059e3034b675985d04139077393a99f22f) via LUMEN_TEST_AHEM_FONT and LUMEN_TEST_ZERO_FONT; absent configuration produces explicit skip77. These external fixtures are not bundled."
+  ],
+  "goal_achieved": false,
+  "goal_score": 98,
+  "omitted_scope": [
+    "Local agent task and handoff documents",
+    "Private validation helpers, raw result reports and runtime",
+    "Browser profiles, credentials and feedback capabilities",
+    "Full Git history and private development branches"
+  ],
+  "production_release_claim": false,
+  "qualification": "Qualified experimental checkpoint only. The fixed 4200 comparison retained 102 common PASS gains and 3 prior-PASS losses; isolated diagnostics did not reproduce a final-only difference, but batch-history/load sensitivity remains unresolved. Whole-browser sanitizer shutdown is unproven.",
+  "recorded_input_count": 605,
+  "recorded_input_digest": "caddfbad3c0df624b82cd3a846ce42475d49a6544ec5f53cb136e58753a4bdc7",
+  "regression_free_claim": false,
+  "scope": "Reviewed-membership engine, resources, ordinary tests and build-input snapshot. Private validation setup and full development history are excluded.",
+  "source_commit": "fbbf127b9e082d2805b750e5238a77d7f8c30aa2",
+  "tested_iteration": 168,
+  "whole_goal_readiness_estimate": 19
+}
