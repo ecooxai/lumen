@@ -480,3 +480,12 @@ Recorded 2026-10-29T12:57:56.648281+00:00 UTC /2026-10-29T20:57:56.648281+08:00 
 - Prior checkpoint52af04e was saved with full portable history: archiveSHA d37f60d4ac3a98484a7618f5c311ff4266ea195f46d42df083f344b8797c6e15, archive file `libfile_d0a443aeb0b48191a22ddbedf95d2f7a`, receipt `libfile_51d313cb793c8191a7920c973a6a8a46`. Git push remains blocked by automatic approval review because specific repository disclosure authorization was not established; no connector bypass was attempted.
 
 Independent review evidence is `agent/evidence/10.292019r-delivery-review-002/review.json`. Same manifest246/279 historical WPT and1236unrun remain. Full official WPT and shared signed IPA/iPad execution remain unknown. All task/agent times are wall timestamps; simultaneous work is not summed and model-compute time is unavailable.
+
+
+## Task10.292019r — independent native worker headers iteration003
+
+13:07:10.176203–13:07:12.328032UTC (21:07 Asia/Shanghai),2.151829s total sequential monitored wall. Historical assessment55/100 remains; this is native Linux functional progress, not Apple acceptance or a changed WPT percentage.
+
+The identical36-case two-origin DedicatedWorker fixture improved **12/36 baseline→36/36 candidate**, matching actual Chrome36/36. Baseline binary33ab865d1613029156864317b7cf0a2d7898855b261e47cd416d6c68c21c9a94; candidatef08658d4d945e59775f1c4d3045aeb591cd279c53af1aad7e85709b369eccd03. Actual browser durations0.627969s/0.641387s; complete stage durations1.068692s/1.067736s. All raw rows are present and no infrastructure errors occurred. The baseline exposed cross-origin private headers, allowed CORS-denied responses and lacked worker XHR. Candidate correctly filters/denies these while retaining explicit and uncredentialed-wildcard exposure. Exact source manifests, runtime manifests and adjacent10,824,432-byte ICU assetSHA02a01b3188b6a41a756f7322fdb5e6b5ca6573b327b01dfc8ed662d571a6f769 bind both executables. Prebuilt LinuxV8 is15.7.112.12; RTC/WebTransport disabled for this headless test build. Do not relabel it as MacV8 or shared IPA.
+
+Evidence:agent/evidence/10.292019r-native-headers-003/acceptance.json. Both runs use the same immutable older safe monitor; their short duration cannot establish CPU/RAM stability. The subsequent precise Linux monitor has its own calibrated evidence and will be frozen for WPT.

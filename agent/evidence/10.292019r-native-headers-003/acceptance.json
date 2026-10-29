@@ -1,0 +1,116 @@
+{
+  "iteration": "10.292019r-native-headers-003",
+  "scope": "Actual Linux Lumen dedicated-worker fetch/XHR HTTP regression; custom fixture, not WPT or Apple execution",
+  "accepted": true,
+  "project_score": 55,
+  "score_is_wpt_percentage": false,
+  "baseline": {
+    "binarySHA256": "33ab865d1613029156864317b7cf0a2d7898855b261e47cd416d6c68c21c9a94",
+    "passed": 12,
+    "total": 36,
+    "durationSeconds": 0.6279685879999306
+  },
+  "candidate": {
+    "binarySHA256": "f08658d4d945e59775f1c4d3045aeb591cd279c53af1aad7e85709b369eccd03",
+    "passed": 36,
+    "total": 36,
+    "durationSeconds": 0.6413867929986736
+  },
+  "chrome": {
+    "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+    "version": "Chrome/156.0.8078.47",
+    "passed": 36,
+    "total": 36
+  },
+  "sameFixtureAcrossAllThree": true,
+  "fixtureSHA256": "9b2c3193da9ec4d5b53ab551c3c23b5f856f1cac5ec500cc519520358874c8a0",
+  "caseManifestSHA256": "b11ca57547bd3a2af341c9c3ee45769988952ede5e4b8bbda306fc458287d14e",
+  "baselineDefects": [
+    "Dedicated-worker XMLHttpRequest absent",
+    "Cross-origin private headers exposed",
+    "Cross-origin CORS-denied responses were readable"
+  ],
+  "candidateOutcome": "All36 checks pass, including credentialed/uncredentialed wildcard, explicit exposure, forbidden cookies, redirects and denied CORS",
+  "resourceScope": "Same frozen1Hz monitor for both; subsecond browser executions are insufficient for resource acceptance",
+  "wptPercentageChange": null,
+  "macRuntimeVerified": false,
+  "ipadVerified": false,
+  "sharedIPA": false,
+  "startedUTC": "2026-10-29T13:07:10.176203+00:00",
+  "finishedUTC": "2026-10-29T13:07:12.328032+00:00",
+  "wallSeconds": 2.151829,
+  "evidence": {
+    "baseline-binaries.json": {
+      "sha256": "d875c94089c981e4b4154d31679fd963c568a67d196faf1fb08daa5bef66b06f",
+      "bytes": 981
+    },
+    "baseline-driver.log": {
+      "sha256": "9c6a43c2bfebd339993ce8d89721b7d763a6887fc677746c1919decd26860bd5",
+      "bytes": 2048
+    },
+    "baseline-receipt.json": {
+      "sha256": "c3215e31459c4b7efe93ec7c1a3c3deaab37239c4ebfde337e49c54f1ce2051f",
+      "bytes": 6826
+    },
+    "baseline-source-manifest.json": {
+      "sha256": "58761aa01a256385e88ce49cce39b066fb7d788a7aec955e24ab64204d1dbf09",
+      "bytes": 54772
+    },
+    "baseline.csv": {
+      "sha256": "ac4a225c6d2f0d2e520249ad2b3498113626236a674c8f6cd6802454f9667c61",
+      "bytes": 80
+    },
+    "baseline.json": {
+      "sha256": "bb7b740cdc05b6655eec3df03f61983ac2ea89b3ec6a459134c6c874474c1f92",
+      "bytes": 2192
+    },
+    "baseline.log": {
+      "sha256": "cca99cf265c43942e8df8d5437840169aa3e68e01b35d1d7c1dbe96b618948ba",
+      "bytes": 6577
+    },
+    "candidate-binaries.json": {
+      "sha256": "4933f63f75bf8cb2179911edb7ff7cb70c08461e65cc46cebd60e07e25811cbb",
+      "bytes": 988
+    },
+    "candidate-driver.log": {
+      "sha256": "9ccadc9402160e90d47eb8ef989abcf163e76856b0d48c6342c6a3fd5a651470",
+      "bytes": 2015
+    },
+    "candidate-receipt.json": {
+      "sha256": "ed192455bd2e252018b7b980d0f8cad73be49743b2ab6896bb479a06c226ee67",
+      "bytes": 5279
+    },
+    "candidate-source-manifest.json": {
+      "sha256": "d6e16dc47fa744245e28422043fc19d92be9f54cd45c88bc3e61621dfdeb099b",
+      "bytes": 13478
+    },
+    "candidate.csv": {
+      "sha256": "9ff8e5ac90cccec4ad1bb5f868c54591993e25a726a0988fa8e677e7a682fb8a",
+      "bytes": 80
+    },
+    "candidate.json": {
+      "sha256": "7f806f204ef42c7cf93fa83fed46ffd19ba5368f8120a216f4beeb1e7ccc7dad",
+      "bytes": 2151
+    },
+    "candidate.log": {
+      "sha256": "3e898a9c7916b80e1cd2a0eddf985bc03d8e44cfde4f8bb99bb4e3ca9e8832d6",
+      "bytes": 5221
+    },
+    "monitor_process.frozen.py": {
+      "sha256": "a5994971b4d2f496fe5f58a359badbd8fdd16401b60eb1d002fcceb29a2ab43a",
+      "bytes": 23744
+    },
+    "pair-receipt.json": {
+      "sha256": "0051f740c28fdb39b06c4bf3c2eb4bfbb8f5cea547b607c1beeec4d008d7ca05",
+      "bytes": 1266
+    },
+    "run.py": {
+      "sha256": "d319226eda1248991ad2ec90e1d8781d16b8fe19f75616ba07836e84949412e7",
+      "bytes": 1888
+    },
+    "test_worker_response_headers.frozen.py": {
+      "sha256": "9b2c3193da9ec4d5b53ab551c3c23b5f856f1cac5ec500cc519520358874c8a0",
+      "bytes": 18525
+    }
+  }
+}

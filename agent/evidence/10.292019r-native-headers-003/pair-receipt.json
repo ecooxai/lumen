@@ -1,0 +1,29 @@
+{
+  "kind": "actual-linux-lumen-headless-regression",
+  "notAppleRuntime": true,
+  "officialWPT": false,
+  "fixtureSHA256": "9b2c3193da9ec4d5b53ab551c3c23b5f856f1cac5ec500cc519520358874c8a0",
+  "monitorSHA256": "a5994971b4d2f496fe5f58a359badbd8fdd16401b60eb1d002fcceb29a2ab43a",
+  "stages": [
+    {
+      "stage": "baseline",
+      "started": "2026-10-29T13:07:10.176203+00:00",
+      "ended": "2026-10-29T13:07:11.244867+00:00",
+      "durationSeconds": 1.068691915999807,
+      "exitCode": 1,
+      "binarySHA256": "33ab865d1613029156864317b7cf0a2d7898855b261e47cd416d6c68c21c9a94",
+      "sourceManifestSHA256": "58761aa01a256385e88ce49cce39b066fb7d788a7aec955e24ab64204d1dbf09",
+      "icuSHA256": "02a01b3188b6a41a756f7322fdb5e6b5ca6573b327b01dfc8ed662d571a6f769"
+    },
+    {
+      "stage": "candidate",
+      "started": "2026-10-29T13:07:11.260324+00:00",
+      "ended": "2026-10-29T13:07:12.328032+00:00",
+      "durationSeconds": 1.0677359149995027,
+      "exitCode": 0,
+      "binarySHA256": "f08658d4d945e59775f1c4d3045aeb591cd279c53af1aad7e85709b369eccd03",
+      "sourceManifestSHA256": "d6e16dc47fa744245e28422043fc19d92be9f54cd45c88bc3e61621dfdeb099b",
+      "icuSHA256": "02a01b3188b6a41a756f7322fdb5e6b5ca6573b327b01dfc8ed662d571a6f769"
+    }
+  ]
+}

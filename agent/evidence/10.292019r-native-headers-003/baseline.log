@@ -1,0 +1,39 @@
+[js log] WORKER_HEADERS_CHECK {"i":0,"name":"fetch: same-origin Set-Cookie is hidden","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":1,"name":"fetch: same-origin Set-Cookie2 is hidden","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":2,"name":"fetch: same-origin custom header is visible","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":3,"name":"fetch: cross-origin private header is hidden","ok":false,"error":"Error: expected null, got \"private\""}
+[js log] WORKER_HEADERS_CHECK {"i":4,"name":"fetch: cross-origin safelisted Content-Type is visible","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":5,"name":"fetch: cross-origin CORS control header is hidden","ok":false,"error":"Error: expected null, got \"http://127.0.0.1:44791\""}
+[js log] WORKER_HEADERS_CHECK {"i":6,"name":"fetch: explicitly exposed custom header is visible","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":7,"name":"fetch: explicit exposure keeps other custom header hidden","ok":false,"error":"Error: expected null, got \"private\""}
+[js log] WORKER_HEADERS_CHECK {"i":8,"name":"fetch: explicit exposure cannot reveal Set-Cookie","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":9,"name":"fetch: explicit exposure cannot reveal Set-Cookie2","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":10,"name":"fetch: credentialed wildcard keeps private header hidden","ok":false,"error":"Error: expected null, got \"private\""}
+[js log] WORKER_HEADERS_CHECK {"i":11,"name":"fetch: credentialed wildcard retains safelisted header","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":12,"name":"fetch: uncredentialed wildcard exposes custom header","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":13,"name":"fetch: uncredentialed wildcard never exposes cookie","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":14,"name":"fetch: credentialed explicit exposure remains effective","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":15,"name":"fetch: credentialed wildcard plus explicit name exposes only explicit name","ok":true}
+[js log] WORKER_HEADERS_CHECK {"i":16,"name":"fetch: cross-origin redirect does not reveal private headers","ok":false,"error":"Error: expected null, got \"private\""}
+[js log] WORKER_HEADERS_CHECK {"i":17,"name":"fetch: missing CORS permission rejects response","ok":false,"error":"Error: CORS-denied response unexpectedly readable"}
+[js log] WORKER_HEADERS_CHECK {"i":18,"name":"xhr: same-origin Set-Cookie is hidden","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":19,"name":"xhr: same-origin Set-Cookie2 is hidden","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":20,"name":"xhr: same-origin custom header is visible","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":21,"name":"xhr: cross-origin private header is hidden","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":22,"name":"xhr: cross-origin safelisted Content-Type is visible","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":23,"name":"xhr: cross-origin CORS control header is hidden","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":24,"name":"xhr: explicitly exposed custom header is visible","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":25,"name":"xhr: explicit exposure keeps other custom header hidden","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":26,"name":"xhr: explicit exposure cannot reveal Set-Cookie","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":27,"name":"xhr: explicit exposure cannot reveal Set-Cookie2","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":28,"name":"xhr: credentialed wildcard keeps private header hidden","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":29,"name":"xhr: credentialed wildcard retains safelisted header","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":30,"name":"xhr: uncredentialed wildcard exposes custom header","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":31,"name":"xhr: uncredentialed wildcard never exposes cookie","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":32,"name":"xhr: credentialed explicit exposure remains effective","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":33,"name":"xhr: credentialed wildcard plus explicit name exposes only explicit name","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":34,"name":"xhr: cross-origin redirect does not reveal private headers","ok":false,"error":"ReferenceError: XMLHttpRequest is not defined"}
+[js log] WORKER_HEADERS_CHECK {"i":35,"name":"xhr: missing CORS permission rejects response","ok":false,"error":"Error: expected \"TypeError\", got \"ReferenceError\""}
+[js log] WORKER_HEADERS_RESULTS {"total":36,"passed":12,"failed":24}
+jsrun: context 55.1ms, 1 scripts 1.3ms, dom_version 20
+WORKER_HEADERS_RECEIPT {"kind": "dedicated-worker-public-api-http-regression", "officialWPT": false, "nativeLumenExecuted": true, "chromiumControlExecuted": false, "browserVersion": null, "binary": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-linux-worker/build-baseline/jsrun", "binarySHA256": "33ab865d1613029156864317b7cf0a2d7898855b261e47cd416d6c68c21c9a94", "fixtureSHA256": "9b2c3193da9ec4d5b53ab551c3c23b5f856f1cac5ec500cc519520358874c8a0", "htmlSHA256": "134b85e6bc373e2a22572be05052b7f2adadd0fd77e8c11f5ba89c10e84925fd", "workerTemplateSHA256": "72a6323fc656c5cbe33b1953c90868e8e32563db2acd593cc825f63fe1b0634a", "caseManifestSHA256": "b11ca57547bd3a2af341c9c3ee45769988952ede5e4b8bbda306fc458287d14e", "started": "2026-10-29T13:07:10.296857+00:00", "ended": "2026-10-29T13:07:10.929506+00:00", "durationSeconds": 0.6279685879999306, "total": 36, "passed": 12, "failed": 24, "infrastructureErrors": [], "monitor": "Run with the external 1Hz monitor; no embedded resource claim", "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "stderrSHA256": "9a9e7aa19816656c23c3c9f4895dbb62c72e7a182db43b8e2ec46907efa2ba0e"}
