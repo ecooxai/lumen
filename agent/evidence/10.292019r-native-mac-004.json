@@ -340,8 +340,9 @@
     "Scroll input uses synthetic SDL wheel events; no OS trackpad or arbitrary-website performance guarantee.",
     "The100-cycle worker soak is a native engine test executable linked to the same compiled source; it is separate from the GUI scroll workload.",
     "One worker checkpoint observed a borrowed OS thread settle13\u219212 within9ms under the unchanged500ms lifetime bound; final threads12 and FDs4 are stable.",
-    "The original-six1850 assertion proof and optional additional XHR53 are being preserved in a separate final addendum, not silently included in these five archive hashes.",
     "Current native iPad application and identical signed IPA execution remain unverified; expected mobile dependency closures and accessible signing/profile prerequisites were absent.",
-    "Full official WPT and the user98/100 overall goal are not established by this selected-test percentage."
-  ]
+    "Full official WPT and the user98/100 overall goal are not established by this selected-test percentage.",
+    "Original-six6/6 with1850PASS and additional actualMacXHR51/53 with609PASS are separately measured and durably preserved in the final addendum; two additionalSharedWorker contexts remain explicit errors."
+  ],
+  "finalAddendum": "agent/evidence/10.292019r-mac004-final-addendum.json"
 }

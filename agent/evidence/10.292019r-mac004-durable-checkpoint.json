@@ -69,6 +69,26 @@
   ],
   "referenceIdentityVerified": true,
   "heldNative003ApplicationDelivered": false,
-  "temporaryTransferCleanup": "Pending final addendum save; same nonce-owned site remains scoped to task artifacts",
-  "additionalEvidence": "Original-six and optional XHR53 addendum plus compact final receipt follow separately."
+  "temporaryTransferCleanup": {
+    "accepted": true,
+    "teardownExitCode": 0,
+    "postTeardownHTTPStatus": 404,
+    "error": null,
+    "durationSeconds": 1.982,
+    "source": "Parent observed devinmac3d command6386 exact compact result",
+    "remoteReceipt": "out/10292019r-artifact-shipment-004/cleanup-final-receipt.json",
+    "scope": "Only the nonce-owned six-artifact transfer publication and its staging; live progress/source publications preserved",
+    "byteExactRemoteReceiptCopied": false
+  },
+  "additionalEvidence": {
+    "archive": {
+      "path": "/workspace/scratch/2b90c4e9e7b5/lumen_apple_transfer/artifacts/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-final-addendum.tar.gz",
+      "sourceRelativePath": "out/10292019r-artifact-addendum-004/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-final-addendum.tar.gz",
+      "sha256": "c00d315bffc91d5b4e7eee184f4ef5cc17a3505509c4f0c901346361a55c7360",
+      "bytes": 97796,
+      "libraryFileId": "libfile_cb3793ee55088191a812c61139852809"
+    },
+    "receipt": "agent/evidence/10.292019r-mac004-final-addendum.json",
+    "rawFiles": 185
+  }
 }

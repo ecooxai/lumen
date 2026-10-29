@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "recordedUTC": "2026-10-29T15:56:24.462051+00:00",
+  "sourceCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "binarySHA256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+  "rawPath": "out/10292019r-mac/wpt-final-004/cohort/url/results.jsonl",
+  "rawSHA256": "2ff5df8d997e3c2e96d3b3e2b05a151786a3ecb2d3de642d13ec34896e780122",
+  "urlVariants": 77,
+  "failedAssertions": 7,
+  "rows": [
+    {
+      "test": "/url/IdnaTestV2.any.html",
+      "url": "http://web-platform.test:18800/url/IdnaTestV2.any.html",
+      "harnessStatus": "OK",
+      "rawRowSHA256": "48a710c4d666376a31b042cf3fddfd525297d9c62609c5ce8933a15e56cc6699",
+      "failedAssertions": [
+        {
+          "name": "ToASCII(\"\u2d0d\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u10be\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\u10ad\ud8be\udccd\ua868\u05ae.\u2d1e\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\ucbd95\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac\u3002\u0729\u3002\u110d\u1173\u11ac5\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac.\u0729.\ucbd95\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        },
+        {
+          "name": "ToASCII(\"\ud8ba\udcac.\u0729.\u110d\u1173\u11ac5\")",
+          "status": "FAIL",
+          "message": "Failed to construct 'URL': Invalid URL"
+        }
+      ]
+    }
+  ],
+  "scope": "Read-only extraction from unchanged final native004 WPT; no rerun or test/source change."
+}

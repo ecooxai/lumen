@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "recordedUTC": "2026-10-29T16:09:05.987034+00:00",
+  "status": "Verified and durably saved supplementary native004 measurements; separate selected denominators",
+  "sourceCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "lumenSHA256": "f906769431c7a25b28ba53a364ffb5027ca0dd04fa0f8accc1161407203d3b95",
+  "archive": {
+    "path": "/workspace/scratch/2b90c4e9e7b5/lumen_apple_transfer/artifacts/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-final-addendum.tar.gz",
+    "sourceRelativePath": "out/10292019r-artifact-addendum-004/GPT6-Astra-Pro_builtin-agents_devinmac3d_Lumen-10.292019r-Mac004-final-addendum.tar.gz",
+    "sha256": "c00d315bffc91d5b4e7eee184f4ef5cc17a3505509c4f0c901346361a55c7360",
+    "bytes": 97796,
+    "libraryFileId": "libfile_cb3793ee55088191a812c61139852809"
+  },
+  "rawFilesVerified": 185,
+  "originalSix": {
+    "fullyPassingFiles": 6,
+    "recordedFiles": 6,
+    "passingAssertions": 1850,
+    "reportSHA256": "a9376b9181cfc7fa59d7df338bde7485ae3a6557a0aaf8e58d6ebb0a9ec70548",
+    "innerSeconds": 10.307
+  },
+  "supplementaryXHR": {
+    "summary": {
+      "scheduled": 53,
+      "recorded": 53,
+      "fullyPassing": 51,
+      "unrun": 0,
+      "passPercentOfRecorded": 96.22641509433963,
+      "harnessStatuses": {
+        "OK": 51,
+        "ERROR": 2
+      },
+      "assertions": {
+        "PASS": 609
+      },
+      "qualifiedPassingAssertions": 609,
+      "measurementErrorVariants": 0
+    },
+    "failed": [
+      {
+        "test": "/xhr/idlharness.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "assertions": []
+      },
+      {
+        "test": "/xhr/sync-no-timeout.any.sharedworker.html",
+        "status": "ERROR",
+        "message": "SharedWorker is not defined",
+        "assertions": []
+      }
+    ],
+    "durationSeconds": 85.374,
+    "fixtureCleanup": {
+      "sentSIGTERM": true,
+      "sentSIGKILL": false,
+      "groupGone": true,
+      "naturalExitCode": null
+    },
+    "rawFiles": 161,
+    "separateDenominator": true
+  },
+  "sevenURLFailures": {
+    "count": 7,
+    "extractionSHA256": "dd7064a7aaadae3b4b1d5fde5857899b9e92c364dbbea3e0bdbeac86198fa1b7",
+    "confirmedVersionProof": "agent/evidence/10.292019r-idna-followup/confirmed-version-addendum.json",
+    "confirmedVersionProofSHA256": "11dc66bf59ad94081e034b55e6a6e4e03488f600734c758f439c350ba58290b8",
+    "qualification": "Exact ICU78.3 and Unicode17 dependency conservatively rejects all7 pinned18.0-labeled cases withUIDNA_ERROR_DISALLOWED0x80; the18.0 page remains preliminary-draft, no validation weakened."
+  },
+  "metadata": {
+    "agent/evidence/10.292019r-mac004-final-addendum/original-six-receipt.json": {
+      "bytes": 968,
+      "sha256": "e1ff8d32efa65a400b997035ab316195f2b8d4c8aa4d7af894c9d760f45e74b9"
+    },
+    "agent/evidence/10.292019r-mac004-final-addendum/xhr53-receipt.json": {
+      "bytes": 36650,
+      "sha256": "957d7e3778e38b34e4345e64a6d341cb74a12d0efe47a649144d8039d5efe965"
+    },
+    "agent/evidence/10.292019r-mac004-final-addendum/url-failures.json": {
+      "bytes": 2105,
+      "sha256": "dd7064a7aaadae3b4b1d5fde5857899b9e92c364dbbea3e0bdbeac86198fa1b7"
+    },
+    "agent/evidence/10.292019r-mac004-final-addendum/reference-classification.json": {
+      "bytes": 6511,
+      "sha256": "1755a96c510b60d3889103087f361c27e597fc54fb725316d19321977ee5c9a9"
+    }
+  },
+  "temporaryTransferCleanup": {
+    "accepted": true,
+    "teardownExitCode": 0,
+    "postTeardownHTTPStatus": 404,
+    "error": null,
+    "durationSeconds": 1.982,
+    "source": "Parent observed devinmac3d command6386 exact compact result",
+    "remoteReceipt": "out/10292019r-artifact-shipment-004/cleanup-final-receipt.json",
+    "scope": "Only the nonce-owned six-artifact transfer publication and its staging; live progress/source publications preserved",
+    "byteExactRemoteReceiptCopied": false
+  }
+}
