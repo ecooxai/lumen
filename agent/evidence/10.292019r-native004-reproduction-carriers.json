@@ -1,0 +1,26 @@
+{
+  "sourceCommit": "dc7a137d79551df3f5d3dc5cc914d06f0b7be468",
+  "scope": "Exact nonsecret authored carriers used or queued for Mac004; no source change or runtime rerun",
+  "files": {
+    "build_native004_10292019r.py": {
+      "sourceCarrier": "out/10292019r-linux-worker/mac-build-worker-004.py",
+      "sha256": "c1ce136bf0b5b962b3d5efb65e70c03db1dc57317aa00530856655005b172085",
+      "bytes": 7819
+    },
+    "run_final_priority004_10292019r.py": {
+      "sourceCarrier": "out/10292019r-linux-worker/mac-wpt-final004-priority.py",
+      "sha256": "570b2120ee32716e0d8c3b028414924894d950fddf884878645fda9a5ae60561",
+      "bytes": 4316
+    },
+    "observe_final_priority004_10292019r.py": {
+      "sourceCarrier": "out/10292019r-linux-worker/mac-wpt-final004-progress.py",
+      "sha256": "faee3b785ff5b6380ab340733bca83eb3716ea1d4479226dbcede54251518550",
+      "bytes": 3956
+    },
+    "run_final_original004_10292019r.py": {
+      "sourceCarrier": "out/10292019r-linux-worker/mac-wpt-final004-original-six.py",
+      "sha256": "4ec92d767994f260199696e3cdeb3e0cc23a1db9bf4c18d51505de353019b176",
+      "bytes": 1941
+    }
+  }
+}
