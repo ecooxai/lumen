@@ -1,0 +1,9 @@
+{
+  "source": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-official-chrome/verified-exact-156/chrome-linux64",
+  "binary": "out/10300110-chromium/chrome-linux64/chrome",
+  "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "copiedSHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "durationSeconds": 1.0513509189986507,
+  "sourceAcceptance": "agent/evidence/10.292019r-official-chrome-provenance/acceptance.json",
+  "networkDownloadPerformed": false
+}

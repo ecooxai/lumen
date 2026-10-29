@@ -1,0 +1,23 @@
+SHARED_WORKER_CHECK {"i":0,"name":"SharedWorker exposes its own public interface and stable MessagePort","ok":true}
+SHARED_WORKER_CHECK {"i":1,"name":"connect carries a trusted source port and empty data","ok":false,"error":"Error: expected \"\", got null"}
+SHARED_WORKER_CHECK {"i":2,"name":"worker has a genuine SharedWorkerGlobalScope and no document","ok":true}
+SHARED_WORKER_CHECK {"i":3,"name":"same URL and string or dictionary name share one global","ok":true}
+SHARED_WORKER_CHECK {"i":4,"name":"different names isolate globals","ok":true}
+SHARED_WORKER_CHECK {"i":5,"name":"different URLs with the same name isolate globals","ok":true}
+SHARED_WORKER_CHECK {"i":6,"name":"two clients receive only their own replies","ok":true}
+SHARED_WORKER_CHECK {"i":7,"name":"addEventListener does not start a port and start drains queued messages","ok":true}
+SHARED_WORKER_CHECK {"i":8,"name":"onmessage assignment starts a port automatically","ok":true}
+SHARED_WORKER_CHECK {"i":9,"name":"ArrayBuffer round trip transfers and detaches in both directions","ok":true}
+SHARED_WORKER_CHECK {"i":10,"name":"duplicate buffer transfer throws without detaching or breaking the port","ok":true}
+SHARED_WORKER_CHECK {"i":11,"name":"structured clone preserves cycles and typed arrays","ok":true}
+SHARED_WORKER_CHECK {"i":12,"name":"closing one client leaves the other client usable","ok":true}
+SHARED_WORKER_CHECK {"i":13,"name":"same-origin child frame joins the existing shared global","ok":true}
+SHARED_WORKER_CHECK {"i":14,"name":"removing a child owner does not terminate the remaining owner","ok":true}
+SHARED_WORKER_CHECK {"i":15,"name":"cross-origin pages do not share same-named worker globals","ok":true}
+SHARED_WORKER_CHECK {"i":16,"name":"matching URL and name with different type raises an asynchronous error","ok":true}
+SHARED_WORKER_CHECK {"i":17,"name":"matching URL and name with different credentials raises an asynchronous error","ok":true}
+SHARED_WORKER_CHECK {"i":18,"name":"invalid constructor enums and missing script argument throw TypeError","ok":true}
+SHARED_WORKER_CHECK {"i":19,"name":"failed script loading raises an asynchronous error","ok":true}
+SHARED_WORKER_CHECK {"i":20,"name":"module SharedWorker executes an imported module in its own global","ok":true}
+SHARED_WORKER_CHECK {"i":21,"name":"worker close permits a new independent global with the same identity","ok":true}
+SHARED_WORKER_RESULTS {"total":22,"passed":21,"failed":1}

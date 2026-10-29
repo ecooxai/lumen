@@ -1,0 +1,45 @@
+{
+  "officialWPT": false,
+  "purpose": "Diagnose actual reference behavior without changing the22-case oracle",
+  "binary": "/workspace/scratch/4aa97518bdcd/project/lumen/out/10300110-chromium/chrome-linux64/chrome",
+  "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "browserVersion": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.47",
+    "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.19"
+  },
+  "fixtureSHA256": "232e9e2ded9975c5c4c3fe6fc0990c155991317549e5fb5eb6a4572224f0f693",
+  "normativeSource": "https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker",
+  "normativeExpectation": "connect.data is the empty string; connect.origin defaults to the empty string",
+  "started": "2026-10-29T17:35:22.055462+00:00",
+  "durationSeconds": 1.180925,
+  "exitCode": 0,
+  "metadata": [
+    [
+      {
+        "connection": 1,
+        "data": null,
+        "dataType": "object",
+        "origin": "",
+        "originType": "string",
+        "sourceIsPort": true,
+        "portsLength": 1,
+        "trusted": true
+      },
+      {
+        "connection": 2,
+        "data": null,
+        "dataType": "object",
+        "origin": "",
+        "originType": "string",
+        "sourceIsPort": true,
+        "portsLength": 1,
+        "trusted": true
+      }
+    ]
+  ],
+  "stdout": "SHARED_CONNECT_METADATA [{\"connection\":1,\"data\":null,\"dataType\":\"object\",\"origin\":\"\",\"originType\":\"string\",\"sourceIsPort\":true,\"portsLength\":1,\"trusted\":true},{\"connection\":2,\"data\":null,\"dataType\":\"object\",\"origin\":\"\",\"originType\":\"string\",\"sourceIsPort\":true,\"portsLength\":1,\"trusted\":true}]\n",
+  "stderr": "[555862:555875:1029/103522.101014:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n[555862:555875:1029/103522.101201:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[555862:555875:1029/103522.111953:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n[555862:555875:1029/103522.112003:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n[555862:555875:1029/103522.112022:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n[555862:555875:1029/103522.112031:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[555862:555875:1029/103522.112038:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[555862:555875:1029/103522.116434:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[555862:555875:1029/103522.179229:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n\nDevTools listening on ws://127.0.0.1:39767/devtools/browser/51cf21d7-0fbf-435f-989b-924f10746fa4\n[555862:555862:1029/103522.310718:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[555862:555875:1029/103522.310826:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[555862:555862:1029/103522.310896:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[555862:555875:1029/103522.310926:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[555862:555862:1029/103522.311246:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[555862:555862:1029/103522.315770:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[555862:555875:1029/103522.315887:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[555862:555862:1029/103522.329419:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[555862:555862:1029/103522.329814:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[555862:555875:1029/103522.329854:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n[555862:555875:1029/103522.329947:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n[555862:555875:1029/103522.330041:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[555862:555862:1029/103522.330902:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[555862:555862:1029/103522.345959:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.Properties.GetAll: object_path= /org/freedesktop/UPower/devices/DisplayDevice: unknown error type: \n[555862:555862:1029/103522.346012:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[555862:555875:1029/103522.346231:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[555862:555862:1029/103522.370082:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[555862:555875:1029/103522.370180:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are \"tcp\" and on UNIX \"unix\")\n[555862:555862:1029/103522.390112:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: \n[555862:555875:1029/103522.390543:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory\n[555862:555862:1029/103522.393989:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.NetworkManager.GetDevices: object_path= /org/freedesktop/NetworkManager: unknown error type: \n[555896:555918:1029/103522.408675:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202\n[555896:555918:1029/103522.408842:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202\n[555896:555918:1029/103522.408881:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202\n[555896:555918:1029/103522.408942:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202\n[555896:555918:1029/103522.444045:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202\n[555896:555918:1029/103522.469251:ERROR:net/socket/ssl_client_socket_impl.cc:949] handshake failed; returned -1, SSL error code 1, net_error -202\n"
+}

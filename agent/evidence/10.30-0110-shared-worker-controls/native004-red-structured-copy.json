@@ -1,0 +1,157 @@
+{
+  "kind": "shared-worker-public-api-regression",
+  "officialWPT": false,
+  "nativeLumenExecuted": true,
+  "chromiumControlExecuted": false,
+  "binary": "/Users/devin/repos/lumen/out/10292019r-mac/native-worker-004/jsrun-96693ac8d8f914f7",
+  "binarySHA256": "96693ac8d8f914f75563335fae20876a7c30922f77679525ae9697f9cb1e04cb",
+  "browserVersion": null,
+  "fixtureSHA256": "bfce5fed315f65f67087c6bf231b83217aec34c1efae9921566c16f84e4907d0",
+  "pageTemplateSHA256": "f399d92e0b2e2a9e546ae6146bc3b0bc751aebc7bd2284c487ae20511017ac02",
+  "workerSHA256": "c4db01ff1032009352804ab3dd5e18f5f2e2f59a76d499bd3732241406197384",
+  "caseManifestSHA256": "87ab8e59d1b46f629d9de53b104b1ea15bdf02e6313277f7583c317f09c5e385",
+  "started": "2026-10-29T17:35:43.352696+00:00",
+  "ended": "2026-10-29T17:35:44.370274+00:00",
+  "durationSeconds": 1.017444,
+  "total": 22,
+  "passed": 0,
+  "failed": 22,
+  "rows": [
+    {
+      "i": 0,
+      "name": "SharedWorker exposes its own public interface and stable MessagePort",
+      "ok": false,
+      "error": "Error: SharedWorker is unavailable"
+    },
+    {
+      "i": 1,
+      "name": "connect carries a trusted source port and empty data",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 2,
+      "name": "worker has a genuine SharedWorkerGlobalScope and no document",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 3,
+      "name": "same URL and string or dictionary name share one global",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 4,
+      "name": "different names isolate globals",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 5,
+      "name": "different URLs with the same name isolate globals",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 6,
+      "name": "two clients receive only their own replies",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 7,
+      "name": "addEventListener does not start a port and start drains queued messages",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 8,
+      "name": "onmessage assignment starts a port automatically",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 9,
+      "name": "ArrayBuffer round trip transfers and detaches in both directions",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 10,
+      "name": "duplicate buffer transfer throws without detaching or breaking the port",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 11,
+      "name": "structured clone preserves cycles and typed arrays",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 12,
+      "name": "closing one client leaves the other client usable",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 13,
+      "name": "same-origin child frame joins the existing shared global",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 14,
+      "name": "removing a child owner does not terminate the remaining owner",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 15,
+      "name": "cross-origin pages do not share same-named worker globals",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 16,
+      "name": "matching URL and name with different type raises an asynchronous error",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 17,
+      "name": "matching URL and name with different credentials raises an asynchronous error",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 18,
+      "name": "invalid constructor enums and missing script argument throw TypeError",
+      "ok": false,
+      "error": "Error: expected \"TypeError\", got \"ReferenceError\""
+    },
+    {
+      "i": 19,
+      "name": "failed script loading raises an asynchronous error",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 20,
+      "name": "module SharedWorker executes an imported module in its own global",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    },
+    {
+      "i": 21,
+      "name": "worker close permits a new independent global with the same identity",
+      "ok": false,
+      "error": "ReferenceError: SharedWorker is not defined"
+    }
+  ],
+  "infrastructureErrors": [],
+  "monitor": "External 1Hz monitor required",
+  "stdoutSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stderrSHA256": "48a84f15237323a646bed1cb0e8527585873d4e7a42a749a8abae3013643c449"
+}

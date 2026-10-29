@@ -1,0 +1,79 @@
+{
+  "scope": "Independent custom public-API regression, not official WPT; no full1515 rate change is claimed.",
+  "nativeBaseline": {
+    "binarySHA256": "96693ac8d8f914f75563335fae20876a7c30922f77679525ae9697f9cb1e04cb",
+    "passed": 0,
+    "total": 22,
+    "allCasesPresent": true,
+    "infrastructureErrors": [],
+    "classification": "All 22 fail because the SharedWorker constructor is absent.",
+    "durationSeconds": 1.017444,
+    "copyQualification": "Structured copy from root authenticated remote read; this file does not assert exact raw-JSON-byte identity"
+  },
+  "chromiumControl": {
+    "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+    "version": "156.0.8078.47",
+    "platform": "Linux x86_64",
+    "passed": 21,
+    "total": 22,
+    "durationSeconds": 2.010884,
+    "infrastructureErrors": []
+  },
+  "disagreement": {
+    "case": "connect carries a trusted source port and empty data",
+    "observed": "Chromium connect.data is null on initial and reused worker connections; origin is the empty string, source is correct, and isTrusted is true.",
+    "normativeExpected": "connect.data is the empty string.",
+    "decision": "Preserve the original expectation and the reference failure; do not weaken the fixture.",
+    "source": "https://html.spec.whatwg.org/multipage/workers.html#dom-sharedworker",
+    "normativeAlgorithm": "SharedWorker constructor step 11.5.7; initial connection in run a worker.",
+    "inspectedUTCDate": "2026-10-29"
+  },
+  "monitoring": "Actual one-second process monitoring; two and three short samples cannot establish steady performance or leak freedom.",
+  "files": [
+    {
+      "name": "recovery.json",
+      "bytes": 531,
+      "sha256": "bdb27c1379f27c679b536c313e70ebaa4bbbc9a39f46ffbad9ae0bbced3201e5"
+    },
+    {
+      "name": "shared-worker-control.json",
+      "bytes": 4154,
+      "sha256": "ebe553431ef4a8f80661d0f6d624445ba7aab1fba2cb3ef3b435051df3ef37da"
+    },
+    {
+      "name": "shared-worker-control.stdout.log",
+      "bytes": 2451,
+      "sha256": "b4ca36317b5b7c8f9abc43f1b2db1f9aec86e00f22165845dfefa5d5394f4eed"
+    },
+    {
+      "name": "shared-worker-control.stderr.log",
+      "bytes": 7612,
+      "sha256": "97bb66e0c88651331f8c0ccde91ad20aaec565e4c345a13fe13c8f28a2f66986"
+    },
+    {
+      "name": "shared-worker-control-monitor.json",
+      "bytes": 2213,
+      "sha256": "f2d3d68d12e30baadd020f927a68d1878a5e2d79bb18f69ed7c6edfe3ae3641b"
+    },
+    {
+      "name": "shared-worker-control-monitor.csv",
+      "bytes": 133,
+      "sha256": "10396548f2edc4311a969623f1a68de20f495719b1ce0eeebbcdc2d379016e04"
+    },
+    {
+      "name": "connect-diagnostic.json",
+      "bytes": 8474,
+      "sha256": "92cf1ec420f5dece7a8e99112b53b9dfadd4ed7a729e16dc60beb3311d287351"
+    },
+    {
+      "name": "connect-diagnostic-monitor.json",
+      "bytes": 2175,
+      "sha256": "dd03e1febaef9d2f5d6a3088a106c9225bed8281bc73f308b62ad59de9094f13"
+    },
+    {
+      "name": "connect-diagnostic-monitor.csv",
+      "bytes": 108,
+      "sha256": "1bcb76c299a6656e0e79fefdc24c8a46108f3f83900b61ff3c7b12ac4c6459e3"
+    }
+  ]
+}
