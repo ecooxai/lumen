@@ -387,3 +387,72 @@ Score55/100; fixed101/103 and broad245/279 are separate selections.718 current-p
 }
 
 Score 55/100. Full network DSD candidate6528 rejected; the accepted artifact is restricted to detached streams and cloned policy. All full37 and supplementary6 outcomes remain visible. Evidence agent/evidence/20261029-cpu30-005-native-acceptance.json
+
+
+## Final documented handoff — 2026-10-29T06:14:58.575849+00:00
+
+This is a documentation-only handoff after the accepted native/source release. The published release snapshot remains `46765018402178eaf5f15a7352d5b201ea5c3d1f` and its immutable source archive remains SHA256 `a26899db11c5456145d0ae41795c26e2d4e1ff2458fd80754b6e06ed5ce51250` (13824693 bytes). The current branch's later handoff commit must not be substituted for that published snapshot. Compiled native source remains `15ab329736c26a3bbb907b718af376206c115436` and the accepted binary remains `c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849`; no runtime code or fixture is changed by this handoff.
+
+Current selected WPT is **246/279 (88.172%)**, with 38,728 PASS / 33 FAIL assertions and 249 OK / 15 TIMEOUT / 15 ERROR. The fixed Encoding subset is 101/103 and is included within 279; never add those denominators. Original six files retain 1,850/1,850 separately. All 1,236 unrun frozen variants and full official-suite uncertainty remain. Qualified Chrome-passing retention is 37,840/38,382 assertions and 202/234 whole variants. Project score remains 55/100; requested 98/100 is not achieved.
+
+The accepted extension implements detached-document streams and cloned policy. The unchanged 37-case fixture is 26 PASS / 11 FAIL, with all 8 baseline controls and 18 predeclared supported targets passing; all 718 previous custom controls are retained. The whole six additional upstream DSD files remain 1/6 fully passing,3 PASS / 26 FAIL,6 OK on both accepted baseline 3ad and current c259; qualified Chrome passes 6/6 and 29 assertions. Full-network 6528 was rejected after a genuine new harness ERROR. Initial network/frame DSD remains deferred pending actual parser/script/MutationObserver checkpoints. Lifetime-v2 passes 122 checks over 24 actual realm teardowns; unchanged adoption control passes 34 over 8 teardowns. These are disposal tests, not within-live-realm garbage-collection proof. The earlier 9137 decoder 26/28 and 3ad isolation 6/6 controls remain historical, not relabeled.
+
+Fresh c259 native scroll CPU p95 is 12.997%, peak 13.051%; all 35 observed intervals remain below the user's 30% limit. Post-scroll idle RSS is 153.219 MiB; 20-navigation settled RSS falls 157.078125→146.40625 MiB. All owned apps/samplers exit naturally, with no GPU/collector/cleanup errors. Mac visual proof is a synthetic 1000×700 fixture. Shared signed device IPA on Mac and actual Lume iPad simulator execution remain unverified; mobile V8/dependency closure and signing/profile/export remain missing despite recovered SDK/compiler probes. Prebuilt Mac V8 15.6.75.16arm64 remains unchanged.
+
+Published progress, source bytes, four desktop/mobile views, private-message reload continuity, HTTPS/WSS and server/inbox health were verified. The stale unused `candidateCatalog['qualified Chrome']` key was removed with an exact one-key state-only guard; historical consumed `qualified Chrome` and current 279 diagnostics were unchanged. Preserve all inherited untracked files and the two earlier current-session diagnostic helpers; the tracked tree was clean before this docs checkpoint. Keep the existing private message namespace 102900614 and access material private.
+
+Agent roles: root CTO coordinated/reviewed and relayed agent-authored Mac payloads; integration owned Git, source binding, independent controls and records; compatibility owned engine/WPT fixes; performance_release owned resource/lifetime/Apple/delivery validation. All used the same inherited model and reasoning level, filling the available three subagent slots. Overlapping agent/stage durations are not added as wall time. The initial child-MCP hangs, invalid first JSON carrier, rejected 6528 candidate and every failed attempt remain recorded.
+
+Session start 02:18:45 UTC. This documentation checkpoint was written at 2026-10-29T06:14:58.575849+00:00, elapsed 14173.576 seconds. The authorized hard limit is 06:18:45 UTC. This timestamp is actual, not a future completion claim; the final closeout receipt records subsequent push completion and its measured wall time. The standalone final report records the final session readback/closure separately.
+
+Next priorities: implement real async worker-owned XHR transport/cancellation/completion (26 failing assertions), real service/shared-worker contexts (30 harness outcomes), parser/script checkpoints before initial-network DSD, remaining shadow API/slot behavior, 1,236 unrun frozen variants and broader WPT, then compatible mobile dependency/signing execution. Worker fetch currently calls blocking net_fetch_sync; do not disguise it with a Promise or fake worker context. Read AGENTS.md, agent/continue.md and the complete unchanged agent/task.md first. Full evidence is `agent/evidence/20261029-cpu30-005-native-acceptance.json`; the public source snapshot and latest handoff Git commit are intentionally distinct.
+
+### Actual recorded iteration history
+
+[
+  {
+    "iteration": "20261029-cpu30-001",
+    "started_utc": "2026-10-29T03:33:28.987717+00:00",
+    "updated_utc": "2026-10-29T04:05:18.067295+00:00",
+    "elapsed_seconds": 1909.08,
+    "total_session_seconds": 6393.067,
+    "score": 50,
+    "status": "Fresh exact-artifact native acceptance, scroll below30%, navigation soak and source publication guard; public task delivery pending"
+  },
+  {
+    "iteration": "20261029-cpu30-002",
+    "started_utc": "2026-10-29T03:55:56.397308+00:00",
+    "finished_utc": "2026-10-29T04:25:54.392568+00:00",
+    "elapsed_seconds": 1797.995,
+    "total_session_seconds": 7629.393,
+    "score": 50,
+    "status": "JSON/BOM fixes and stable private message namespace functionally verified; changed native resource acceptance and public handoff pending"
+  },
+  {
+    "iteration": "20261029-cpu30-003",
+    "started_utc": "2026-10-29T04:22:09.528169+00:00",
+    "finished_utc": "2026-10-29T04:45:43.833967+00:00",
+    "elapsed_seconds": 1414.306,
+    "total_session_seconds": 8818.834,
+    "score": 55,
+    "status": "Current public source/message/telemetry delivery verified; broader native priority and qualified Chrome controls preserved"
+  },
+  {
+    "iteration": "20261029-cpu30-004",
+    "started_utc": "2026-10-29T04:49:12.692619+00:00",
+    "finished_utc": "2026-10-29T05:09:23.967673+00:00",
+    "elapsed_seconds": 1211.275,
+    "total_session_seconds": 10238.968,
+    "score": 55,
+    "status": "Final exact-artifact native source/WPT/resource acceptance; Apple execution and full frozen coverage remain incomplete"
+  },
+  {
+    "iteration": "20261029-cpu30-005",
+    "started_utc": "2026-10-29T05:17:11+00:00",
+    "finished_utc": "2026-10-29T06:04:22.598879+00:00",
+    "elapsed_seconds": 2831.599,
+    "total_session_seconds": 13537.599,
+    "score": 55,
+    "status": "Important-bug extension: detached document streams accepted; eager initial network DSD remains deferred. Apple execution and full frozen coverage remain incomplete."
+  }
+]
