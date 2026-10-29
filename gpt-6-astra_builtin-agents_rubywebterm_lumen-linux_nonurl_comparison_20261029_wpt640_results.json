@@ -1,0 +1,508 @@
+{
+  "generated_utc": "2026-10-29T20:55:11.579051+00:00",
+  "candidate": 200,
+  "capture_started_utc": "2026-10-29T20:40:53Z",
+  "capture_finished_utc": "2026-10-29T20:54:49Z",
+  "source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+  "binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+  "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f",
+  "manifest_cases": 640,
+  "definitions": {
+    "full_case": "Harness OK, at least one assertion, every assertion PASS.",
+    "identity": "URL + assertion name + duplicate occurrence index; complete union.",
+    "semantic": "FAIL→PASS or PASS→FAIL only; completion/missing transitions separate."
+  },
+  "engines": {
+    "176": {
+      "cases": 640,
+      "fully_passing_cases": 357,
+      "harness_statuses": {
+        "OK": 616,
+        "TIMEOUT": 23,
+        "ERROR": 1
+      },
+      "classifications": {
+        "harness-ok": 616,
+        "harness-timeout": 23,
+        "harness-error": 1
+      },
+      "empty_assertion_cases": 1,
+      "passing_assertions": 8073,
+      "reported_assertions": 10540,
+      "assertion_statuses": {
+        "PASS": 8073,
+        "FAIL": 2419,
+        "TIMEOUT": 21,
+        "NOTRUN": 27
+      }
+    },
+    "187": {
+      "cases": 640,
+      "fully_passing_cases": 368,
+      "harness_statuses": {
+        "OK": 616,
+        "TIMEOUT": 23,
+        "ERROR": 1
+      },
+      "classifications": {
+        "harness-ok": 616,
+        "harness-timeout": 23,
+        "harness-error": 1
+      },
+      "empty_assertion_cases": 1,
+      "passing_assertions": 8206,
+      "reported_assertions": 10540,
+      "assertion_statuses": {
+        "PASS": 8206,
+        "FAIL": 2286,
+        "TIMEOUT": 21,
+        "NOTRUN": 27
+      }
+    },
+    "chromium": {
+      "cases": 640,
+      "fully_passing_cases": 544,
+      "harness_statuses": {
+        "OK": 623,
+        "TIMEOUT": 16,
+        "ERROR": 1
+      },
+      "classifications": {
+        "harness-ok": 623,
+        "harness-timeout": 13,
+        "external-deadline": 3,
+        "harness-error": 1
+      },
+      "empty_assertion_cases": 3,
+      "passing_assertions": 9516,
+      "reported_assertions": 10549,
+      "assertion_statuses": {
+        "PASS": 9516,
+        "FAIL": 1015,
+        "NOTRUN": 7,
+        "TIMEOUT": 11
+      }
+    },
+    "candidate": {
+      "cases": 640,
+      "fully_passing_cases": 380,
+      "harness_statuses": {
+        "OK": 616,
+        "TIMEOUT": 23,
+        "ERROR": 1
+      },
+      "classifications": {
+        "harness-ok": 616,
+        "harness-timeout": 23,
+        "harness-error": 1
+      },
+      "empty_assertion_cases": 1,
+      "passing_assertions": 8324,
+      "reported_assertions": 10540,
+      "assertion_statuses": {
+        "PASS": 8324,
+        "FAIL": 2168,
+        "TIMEOUT": 21,
+        "NOTRUN": 27
+      }
+    }
+  },
+  "deltas": {
+    "176": {
+      "counts": {
+        "semantic_gains": 251,
+        "semantic_losses": 0,
+        "completion_changes": 0,
+        "missing_or_added": 0,
+        "case_gains": 23,
+        "case_losses": 0,
+        "case_status_changes": 0
+      },
+      "gain_categories": {
+        "css-sizing": 20,
+        "css-values": 60,
+        "fetch-headers": 2,
+        "fetch-request": 16,
+        "fetch-response": 14,
+        "forms-constraints": 128,
+        "xhr": 11
+      },
+      "loss_categories": {}
+    },
+    "187": {
+      "counts": {
+        "semantic_gains": 118,
+        "semantic_losses": 0,
+        "completion_changes": 0,
+        "missing_or_added": 0,
+        "case_gains": 12,
+        "case_losses": 0,
+        "case_status_changes": 0
+      },
+      "gain_categories": {
+        "css-sizing": 20,
+        "css-values": 52,
+        "fetch-headers": 2,
+        "fetch-request": 16,
+        "fetch-response": 14,
+        "forms-constraints": 3,
+        "xhr": 11
+      },
+      "loss_categories": {}
+    }
+  },
+  "categories": {
+    "dom-nodes": {
+      "cases": 35,
+      "candidate_full": 27,
+      "chromium_full": 33,
+      "candidate_pass": 270,
+      "candidate_total": 280,
+      "chromium_pass": 277,
+      "chromium_total": 280,
+      "chromium_pass_gap": 7,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "dom-events": {
+      "cases": 35,
+      "candidate_full": 18,
+      "chromium_full": 19,
+      "candidate_pass": 196,
+      "candidate_total": 224,
+      "chromium_pass": 202,
+      "chromium_total": 224,
+      "chromium_pass_gap": 10,
+      "candidate_only_pass": 4,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "dom-ranges": {
+      "cases": 16,
+      "candidate_full": 16,
+      "chromium_full": 16,
+      "candidate_pass": 174,
+      "candidate_total": 174,
+      "chromium_pass": 174,
+      "chromium_total": 174,
+      "chromium_pass_gap": 0,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "dom-traversal": {
+      "cases": 15,
+      "candidate_full": 12,
+      "chromium_full": 14,
+      "candidate_pass": 51,
+      "candidate_total": 56,
+      "chromium_pass": 55,
+      "chromium_total": 56,
+      "chromium_pass_gap": 4,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "dom-collections": {
+      "cases": 12,
+      "candidate_full": 10,
+      "chromium_full": 11,
+      "candidate_pass": 57,
+      "candidate_total": 60,
+      "chromium_pass": 59,
+      "chromium_total": 60,
+      "chromium_pass_gap": 2,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "dom-attributes": {
+      "cases": 0,
+      "candidate_full": 0,
+      "chromium_full": 0,
+      "candidate_pass": 0,
+      "candidate_total": 0,
+      "chromium_pass": 0,
+      "chromium_total": 0,
+      "chromium_pass_gap": 0,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "css-values": {
+      "cases": 35,
+      "candidate_full": 9,
+      "chromium_full": 31,
+      "candidate_pass": 1173,
+      "candidate_total": 1778,
+      "chromium_pass": 1725,
+      "chromium_total": 1778,
+      "chromium_pass_gap": 552,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "css-sizing": {
+      "cases": 35,
+      "candidate_full": 7,
+      "chromium_full": 33,
+      "candidate_pass": 307,
+      "candidate_total": 717,
+      "chromium_pass": 712,
+      "chromium_total": 717,
+      "chromium_pass_gap": 405,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "css-grid": {
+      "cases": 35,
+      "candidate_full": 8,
+      "chromium_full": 28,
+      "candidate_pass": 462,
+      "candidate_total": 721,
+      "chromium_pass": 686,
+      "chromium_total": 721,
+      "chromium_pass_gap": 224,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "css-flexbox": {
+      "cases": 35,
+      "candidate_full": 17,
+      "chromium_full": 35,
+      "candidate_pass": 456,
+      "candidate_total": 568,
+      "chromium_pass": 568,
+      "chromium_total": 568,
+      "chromium_pass_gap": 112,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "css-selectors": {
+      "cases": 34,
+      "candidate_full": 20,
+      "chromium_full": 24,
+      "candidate_pass": 332,
+      "candidate_total": 375,
+      "chromium_pass": 347,
+      "chromium_total": 375,
+      "chromium_pass_gap": 16,
+      "candidate_only_pass": 1,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "css-variables": {
+      "cases": 34,
+      "candidate_full": 8,
+      "chromium_full": 30,
+      "candidate_pass": 138,
+      "candidate_total": 299,
+      "chromium_pass": 267,
+      "chromium_total": 299,
+      "chromium_pass_gap": 147,
+      "candidate_only_pass": 18,
+      "missing_candidate": 2,
+      "missing_chromium": 2
+    },
+    "forms-constraints": {
+      "cases": 27,
+      "candidate_full": 24,
+      "chromium_full": 26,
+      "candidate_pass": 785,
+      "candidate_total": 790,
+      "chromium_pass": 787,
+      "chromium_total": 790,
+      "chromium_pass_gap": 2,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "html-parsing": {
+      "cases": 34,
+      "candidate_full": 20,
+      "chromium_full": 25,
+      "candidate_pass": 105,
+      "candidate_total": 127,
+      "chromium_pass": 114,
+      "chromium_total": 124,
+      "chromium_pass_gap": 13,
+      "candidate_only_pass": 4,
+      "missing_candidate": 0,
+      "missing_chromium": 3
+    },
+    "event-loops": {
+      "cases": 8,
+      "candidate_full": 3,
+      "chromium_full": 6,
+      "candidate_pass": 4,
+      "candidate_total": 9,
+      "chromium_pass": 7,
+      "chromium_total": 9,
+      "chromium_pass_gap": 3,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "timers": {
+      "cases": 16,
+      "candidate_full": 9,
+      "chromium_full": 15,
+      "candidate_pass": 18,
+      "candidate_total": 25,
+      "chromium_pass": 24,
+      "chromium_total": 25,
+      "chromium_pass_gap": 6,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "xhr": {
+      "cases": 34,
+      "candidate_full": 25,
+      "chromium_full": 31,
+      "candidate_pass": 90,
+      "candidate_total": 105,
+      "chromium_pass": 102,
+      "chromium_total": 105,
+      "chromium_pass_gap": 15,
+      "candidate_only_pass": 3,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "fetch-basic": {
+      "cases": 31,
+      "candidate_full": 19,
+      "chromium_full": 29,
+      "candidate_pass": 350,
+      "candidate_total": 385,
+      "chromium_pass": 374,
+      "chromium_total": 385,
+      "chromium_pass_gap": 30,
+      "candidate_only_pass": 6,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "fetch-headers": {
+      "cases": 11,
+      "candidate_full": 11,
+      "chromium_full": 11,
+      "candidate_pass": 217,
+      "candidate_total": 217,
+      "chromium_pass": 217,
+      "chromium_total": 217,
+      "chromium_pass_gap": 0,
+      "candidate_only_pass": 0,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "fetch-request": {
+      "cases": 25,
+      "candidate_full": 23,
+      "chromium_full": 20,
+      "candidate_pass": 447,
+      "candidate_total": 449,
+      "chromium_pass": 443,
+      "chromium_total": 449,
+      "chromium_pass_gap": 0,
+      "candidate_only_pass": 4,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "fetch-response": {
+      "cases": 31,
+      "candidate_full": 25,
+      "chromium_full": 26,
+      "candidate_pass": 276,
+      "candidate_total": 290,
+      "chromium_pass": 273,
+      "chromium_total": 290,
+      "chromium_pass_gap": 13,
+      "candidate_only_pass": 16,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "encoding": {
+      "cases": 34,
+      "candidate_full": 30,
+      "chromium_full": 30,
+      "candidate_pass": 1062,
+      "candidate_total": 1066,
+      "chromium_pass": 1015,
+      "chromium_total": 1078,
+      "chromium_pass_gap": 16,
+      "candidate_only_pass": 63,
+      "missing_candidate": 12,
+      "missing_chromium": 0
+    },
+    "domparsing": {
+      "cases": 34,
+      "candidate_full": 15,
+      "chromium_full": 21,
+      "candidate_pass": 844,
+      "candidate_total": 1281,
+      "chromium_pass": 551,
+      "chromium_total": 1281,
+      "chromium_pass_gap": 158,
+      "candidate_only_pass": 451,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    },
+    "cssom": {
+      "cases": 34,
+      "candidate_full": 24,
+      "chromium_full": 30,
+      "candidate_pass": 510,
+      "candidate_total": 544,
+      "chromium_pass": 537,
+      "chromium_total": 544,
+      "chromium_pass_gap": 32,
+      "candidate_only_pass": 5,
+      "missing_candidate": 0,
+      "missing_chromium": 0
+    }
+  },
+  "reference_comparison": {
+    "union_assertions": 10554,
+    "chromium_pass_retained": 7749,
+    "chromium_pass_total": 9516,
+    "chromium_pass_gap": 1767,
+    "candidate_only_pass": 575,
+    "missing_candidate": 14,
+    "missing_chromium": 5,
+    "full_case_overlap": {
+      "both": 358,
+      "chromium_only": 186,
+      "neither": 74,
+      "candidate_only": 22
+    }
+  },
+  "cleanup": {
+    "audit_event_counts": {
+      "started_at_private_gate": 640,
+      "constructor_verified_and_acknowledged": 640,
+      "author_url_released": 640,
+      "exited": 640
+    },
+    "native_exit_codes": {
+      "0": 640
+    },
+    "profiles_recorded": 640,
+    "remaining_profiles": [],
+    "native_root_ids_recorded": 640,
+    "remaining_native_root_pids": [],
+    "source_receipts": 2,
+    "sources_unchanged": true,
+    "remaining_cleanup_workers": []
+  },
+  "limitations": [
+    "Selected HTTP/window scope is not all WPT or a global readiness score.",
+    "Reference is the original sealed Chromium150.0.7871.114 run, reused without outcome replacement.",
+    "Different shared-host load windows prevent broad timings from proving engine speed.",
+    "Original187 cleanup defect and reference-only API/name/timeout differences remain preserved."
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "candidate": 200,
+  "source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+  "binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+  "attribution": "GPT-6 Astra Pro \u00b7 built-in agents \u00b7 RubyWebterm \u00b7 FFmpeg",
+  "source_frames": [
+    {
+      "file": "gpt-6-astra_builtin-agents_rubywebterm_lumen-candidate200-native-empty.png",
+      "sha256": "8e1afea5ae420ada1204727658d8bae07229e66c4a1cc34ff88f02b885eeb981"
+    },
+    {
+      "file": "gpt-6-astra_builtin-agents_rubywebterm_lumen-candidate200-native-filled.png",
+      "sha256": "07a0f5b91a538e6691d7dd9e8d65e125c97e6393b8ff807cdcfda38d2a744b0c"
+    }
+  ],
+  "video": {
+    "file": "gpt-6-astra-pro_builtin-agents_rubywebterm_ffmpeg_lumen-linux-candidate200-showcase.mp4",
+    "bytes": 214913,
+    "sha256": "333027d638a26f2ed53eb45173ba59fe7d620c24b32515db7dd016549be71926",
+    "metadata": {
+      "programs": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "width": 960,
+          "height": 720,
+          "pix_fmt": "yuv420p",
+          "r_frame_rate": "30/1",
+          "duration": "24.000000"
+        }
+      ],
+      "format": {
+        "duration": "24.000000"
+      }
+    }
+  },
+  "poster": {
+    "file": "gpt-6-astra-pro_builtin-agents_rubywebterm_ffmpeg_lumen-linux-candidate200-showcase-poster.png",
+    "bytes": 196545,
+    "sha256": "b4a1feee4412d0d1c5d1525faf1ce0aa96d0f8644b2f32bd5c947dc2120f21bf"
+  },
+  "encoding_seconds": 4.08544166199863,
+  "scope": "24-second edited sequence of two actual native CPU/offscreen still captures. No generated imagery, live interaction recording, GPU or performance-video claim. Encoding ran locally, away from the active Ruby WPT cohort.",
+  "per_process_encoding_resource_measurement": "Unavailable; no CPU/RSS/PSS claim. Browser benchmark resource evidence is separate."
+}
