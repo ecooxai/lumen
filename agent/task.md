@@ -1,4 +1,4 @@
-improve lumen  browse 10.292019r for apple device . 
+improve lumen  browse 10.30 01:10 for apple device . 
 pass web platform test like chrome,focus on important test first.
 also run ipa in mac we are now use same ipa fr mac ios ipad. kerp monitor cpu and ram usage ensure no abnormal high usage  . prefer use prebuilt v8 js binary.  show current progress wpt passrate first. utilize many subagent to accelate dev. tell me max number subagents you can spawn and use max them with same model and think levl of main agent
 scroll cpu usage below 30% is ok now

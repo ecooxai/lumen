@@ -1,14 +1,23 @@
-# Lumen Apple browser — task 10.292019r
+# Lumen Apple browser — task 10.30 01:10
 
-Read `agent/task.md`, this file, and `agent/continue.md` before changing the project. The complete user instruction remains unchanged in `agent/task.md`.
+Read `agent/task.md`, this file, and `agent/continue.md` before changing the project. `agent/task.md` preserves the complete current user request verbatim, including repeated directives.
 
-## First action: recover the correct environment
+## Active task and ownership
 
-The canonical Mac repository is `/Users/devin/repos/lumen` (the user's `~/project/lumen` alias). **Child-agent devinmac3d calls hang. Use the parent transport immediately**, with small agent-authored relay scripts. Recover these instructions through the existing GitHub repository `ecooxai/lumen` if necessary; do not repeat an eight-minute child probe. Root is the CTO/coordinator; the three same-model built-in agents own implementation, testing and independent review. The authorized local full-history fallback is `/workspace/scratch/2b90c4e9e7b5/project/lumen`.
+- Session start: 2026-10-29T17:11:00Z. Normal three-hour cutoff: 2026-10-29T20:11:00Z; extend only for an important bug, at most to21:11:00Z.
+- Current branch: `gpt6-astra-pro_builtin-agents_lumen-10.30-0110-sharedworker`.
+- Root is coordinator only. Three built-in agents inherit the same model/reasoning level: repository integration/source; independent WPT validation; Apple runtime/performance/package/progress delivery.
+- Canonical Mac repository: `/Users/devin/repos/lumen` (`~/project/lumen` alias). **Child devinmac3d calls hang; use root transport immediately with agent-authored bounded scripts.** The current local full-history source copy is `/workspace/scratch/4aa97518bdcd/project/lumen`.
+- Repository integration owns all branch/commit state and `AGENTS.md`, `agent/task.md`, `agent/continue.md`, `agent/devsummary.md`, `src/js/worker.cc`, and related worker preludes. WPT lead owns new oracle fixtures/drivers. Apple lead owns packaging/performance/dashboard files. Coordinate before crossing ownership.
+- Preserve unrelated/untracked remote tools and verification data. Do not broad-clean, reset, or kill unrelated processes. Existing approved product is native004/dc7 until a new candidate passes unchanged regression and resource gates.
+- Current target is genuine SharedWorker execution with one shared native isolate, distinct connection ports, origin/URL/name identity and safe per-owner teardown. Never alias DedicatedWorker as SharedWorker. ServiceWorker remains separately unsupported until actual lifecycle semantics exist.
+- Use existing compatible prebuilt V8. Keep platform identity, exact compiled-source manifest and binary hashes explicit. Sample the owned process tree once per second during builds/tests; record p95/peak, intervals, gaps and cleanup. Investigate stages exceeding five minutes.
+- Track real diagnose→fix→verify iterations with UTC start/end, stage wall time and evidence in `agent/devsummary.md`. Parallel effort is not elapsed wall time. Keep the fixed acceptance rubric and never equate WPT percentage with task quality; unknown mobile gates earn zero.
+- A previous local translated-PID issue requires supported execution escalation for affected monitoring/evidence operations. Preserve fail-closed PID/start-identity guards. Respect every automatic review rejection; do not change proxy/security settings or reroute a rejected operation.
 
-Mac native CLT and prebuilt V8 work. Direct Apple CoreSimulator backing tools are signed and valid, but zero-byte Built-in Syntax Types.xcsynspec and related plugin plist assertions block xcrun mobile SDK discovery. Do not repair vendor bundles or equate a running simulator with a Lumen launch. Shared signed device IPA on Mac and actual iPad app execution remain unverified.
+## Historical acceptance and constraints
 
-Local execution has a known translated-PID namespace mismatch in the default sandbox. Use supported `require_escalated` execution for monitors and evidence operations; retain the monitor's fail-closed PID/start-identity guards. Do not change proxies or security controls. Incomplete local JSONL writes were observed; their cause is unproven. Require immutable per-case records, atomic complete aggregates, fsync/readback and hash reconciliation. Never infer a missing result from stdout.
+The following retained evidence describes the prior accepted native004 artifact, not automatic acceptance of newly changed source. Read the current continuation for active candidate state.
 
 ## Current source and measured state
 
@@ -31,11 +40,11 @@ Earlier source b816/native003 completed the same WPT inventory but failed a new 
 
 The dc7 correction defers eager frame body/frameset handler activation to the parser position, after preceding policies/scripts. It retains owner-realm native CSP checks and legitimate earlier callbacks. Unchanged9 regression and an independent36-case suite pass on corrected source; actual Mac GUI coverage is recorded. Keep scoped regression success separate from a general security audit. Evidence: `agent/evidence/10.292019r-security-hold-013/`, `10.292019r-parser-handler-correction-014/`, and `10.292019r-parser-handler-focused-controls.json`.
 
-## Rules for the next agent
+## Retained prior-session acceptance rules
 
 - Branch: `gpt6-astra-pro_builtin-agents_lumen-10.292019r-worker-xhr`. Engineer owns Git/source integration; performance agent owns Apple/resource/lifetime oracles; delivery agent owns independent audit, publication and handoff. Preserve unrelated and untracked work; never broad-clean directories or kill unrelated processes.
 - User target is 98/100 under the existing task rubric. The WPT percentage is not that score. Unknown mobile gates earn zero. Read `agent/scorecard-rubric-20261029-cpu30.md` and inherited proportional/category rules in `agent/scorecard-rubric-10290244.md`; unsupported/incomplete categories remain unearned. Never round a lower score up to95/98.
-- Task began 2026-10-29T12:20:07Z. Normal cutoff15:20:07Z; the authorized critical-security-bug extension ends **16:20:07Z**. Builds/checkpoints are not stopping conditions. Record exact iteration and stage timings; parallel agent time is not summed as elapsed time.
+- Prior task10.292019r ran12:20:07–16:20:07Z. Its deadline is historical. Use the current task window above; builds/checkpoints are not stopping conditions.
 - Preserve every scheduled variant, failure, timeout, error and unrun result. SharedWorker/ServiceWorker cannot be faked with DedicatedWorker. Highest remaining compatibility gap is those real execution contexts, followed by wider official WPT coverage. Seven selected IDNA assertion failures also occur in the exact reference. A read-only probe of the exact linked ICU78.3 library reports UnicodeData17.0.0.0 and0x80 UIDNA_ERROR_DISALLOWED for each; the pinned test data is18.0.0-labeled and its version page remains draft. Preserve the compatibility failures; do not weaken URL validation to hide them.
 - Compare exact binary/source/dependency identity, pinned fixture, URLs, timeouts, reporter and monitor. Hash every accepted raw ledger. `tools/apple-session-gpt6as/audit_wpt_candidate.py` rejects disappearing assertions/results and invalid cleanup. Linux headless success cannot establish Apple runtime behavior.
 - Prefer existing compatible prebuilt V8: native Mac15.6.75.16 arm64; Linux headless tests used15.7.112.12 with RTC/WebTransport disabled. Preserve that platform distinction.
@@ -52,4 +61,4 @@ Git push remains blocked by automatic approval review. A later read-only Mac pro
 
 ## Context for continuing work
 
-Read the final continuation first for current native resource/package, score and artifact acceptance. The package is an ad-hoc developmentMac.app with external Homebrew dylibs, not self-contained/notarized and not a sharedIPA. All product changes remain frozen at dc7 while delivery finishes. Do not re-run qualified tests without a concrete risk. The remaining task is evidence-bound final delivery, then real mobile closure and broader context/WPT work in a later authorized session; no fabricated 95/98 completion.
+Read the final continuation first for current native resource/package, score and artifact acceptance. The package is an ad-hoc developmentMac.app with external Homebrew dylibs, not self-contained/notarized and not a sharedIPA. Native004/dc7 remains the accepted baseline. This newly authorized session may develop candidates; renewed candidate-specific tests/resources are required before promotion. No fabricated95/98 completion.

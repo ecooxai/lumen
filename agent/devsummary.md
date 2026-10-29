@@ -594,3 +594,14 @@ Current004 final resource/package gates accepted: GUI282.872s, scrollp9517.021/p
 Classifier6365 retains all1020missing referencePASS:510ServiceWorker/30TIMEOUT variants and510SharedWorker/30ERROR variants. Root and independent engineer approve exact expanded credit985700/86261=11.426948447154565 under the existing seven-equal-category rubric. Four eligible categories:DOM/events/storage full20/7each, URL20/7×12316/12323; three unsupported categories0. Provisional current-artifact score61.426948447154565; final5 delivery points remain unearned until corrected source/live+Surge byte verification, then66.42694844715457. Historical55 and all failures remain unchanged; mobile25points0, fullofficialWPTunknown.
 
 Actual Mac supplemental53 retry6378 ran15:59:29.774924–16:00:55.150250UTC,85.374s:51/53fullypassing,609PASS/0FAIL,51OK/2ERROR,0unrun/measurementerrors. Both failures are real unsupportedSharedWorker variants, not dropped. The initial clone failure is preserved; replacement source closure contains4,063 exact pinned tracked files verified against Git objects and SHA256, extracted into a fresh isolated directory with no primary fixture mutation. ActualHTTP/HTTPS/host-info routes verified and owned fixture group gone after execution. Receipt/raw manifest reviewed; exact raw supplement is being saved separately and does not alter1515. Local closure packaging4.450792s (monitored5.010s,47.207MiB peak), private archive16,580,564B SHA22bd6e087c3aa8003159d29c1a7a2c4b0d3ef19663e5fea98d033cc7b33eb8e1.
+
+
+# Task10.30 01:10 — 2026-10-29T17:11:00Z
+
+## Iteration1: continuity, baseline and genuine SharedWorker implementation (in progress)
+
+- StartUTC2026-10-29T17:11:00Z. Baseline accepted taskscore66.426948447154565/100; selectedWPT1454/1515. No new candidate accepted.
+- Integration agent initial childMCP calls stalled604.3s and185.6s without output/mutations;789.9s is environmentoverhead, not build/testtime. CurrentAGENTS already documents parenttransport as required; rootrelay restored access.
+- Verified sourcearchive SHA f40de5360f16470414e54fd269e8b234bf9aae4930a2fbfacac065f22dd3fc75, recovered fullGit to d4eefd9 then ff-only a17ac5f metadata. Source recovery used supported approved transfer; no remote/unrelatedchanges.
+- Fullcurrentprompt captured; previouscontinuationarchived; newtaskbranchcreated. PlannedRED→GREEN independentSharedWorker oracle plus native registry/per-ownerports.
+- Root walltime begins17:11:00Z. Parallelworker effort will be reported separately where measured; do not sum it as elapsedtime.
