@@ -699,7 +699,10 @@ function portList(options) {
     for (const item of list) {
         if (seen.has(item)) throw new DOMException('The transfer list contains a duplicate object.', 'DataCloneError');
         seen.add(item);
-        if (item instanceof MessagePort) ports.push(item);
+        if (item instanceof MessagePort) {
+            if (portState(item).detached) throw new DOMException('The MessagePort has already been transferred.', 'DataCloneError');
+            ports.push(item);
+        }
         else {
             // The intrinsic checks the ArrayBuffer brand, including detached
             // buffers; public properties and SharedArrayBuffer cannot spoof it.
@@ -720,7 +723,7 @@ function portState(port) {
 class MessagePort extends EventTarget {
     constructor() {
         super();
-        messagePortState.set(this, { started: false, closed: false, scheduled: false, queue: [], handler: null, sharedConnection: 0 });
+        messagePortState.set(this, { started: false, closed: false, detached: false, scheduled: false, queue: [], handler: null, sharedConnection: 0 });
         this.onmessageerror = null; def(this, '_other', null);
     }
     get onmessage() { return portState(this).handler; }
@@ -733,10 +736,11 @@ class MessagePort extends EventTarget {
         const state = portState(this);
         if (!arguments.length) throw new TypeError("Failed to execute 'postMessage': 1 argument required.");
         const { ports, buffers } = portList(options), remote = !state.closed && (this._wk || (this._other && this._other._wk));
+        if (ports.includes(this)) throw new DOMException('A port cannot transfer itself.', 'DataCloneError');
         if (remote) {
             const ids = ports.map(() => ++portSeq);
             N.workerPost(remote[0], { __lumenPort: remote[1], data: portSub(data, ports), xfer: ids }, buffers);
-            ports.forEach((port, i) => { port._wk = [remote[0], ids[i]]; if (port._other) remotePorts.set(remotePortKey(remote[0], ids[i]), port._other); });
+            adoptWorkerPorts(remote[0], ports, ids);
             return;
         }
         const other = !state.closed && this._other;
@@ -765,13 +769,15 @@ class MessagePort extends EventTarget {
     close() {
         const state = portState(this);
         if (state.closed) return;
-        state.closed = true; state.queue.length = 0; this._other = null;
-        if (this._wk) remotePorts.delete(remotePortKey(this._wk[0], this._wk[1]));
-        this._wk = null;
-        if (state.sharedConnection) {
-            N.sharedWorkerClose(state.sharedConnection);
-            workers.delete(state.sharedConnection); state.sharedConnection = 0;
+        state.closed = true; state.queue.length = 0;
+        if (this._other && this._other._other === this) this._other._other = null;
+        this._other = null;
+        if (this._wk) {
+            remotePorts.delete(remotePortKey(this._wk[0], this._wk[1]));
+            N.workerPortClose(this._wk[0], this._wk[1]);
         }
+        this._wk = null;
+        if (state.sharedConnection) { releaseSharedConnection(state.sharedConnection); state.sharedConnection = 0; }
     }
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
@@ -794,6 +800,98 @@ class BroadcastChannel extends EventTarget {
 const portSub = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; const i = ps.indexOf(v); if (i >= 0) return { __lumenPortRef: i }; seen.add(v); if (Array.isArray(v)) return v.map(x => portSub(x, ps, seen)); const pr = Object.getPrototypeOf(v); if (pr !== Object.prototype && pr !== null) return v; const o = {}; for (const k of Object.keys(v)) o[k] = portSub(v[k], ps, seen); return o; };
 const portRes = (v, ps, seen = new Set()) => { if (!ps.length || !v || typeof v !== 'object' || seen.has(v)) return v; if (typeof v.__lumenPortRef === 'number' && Object.keys(v).length === 1) return ps[v.__lumenPortRef]; seen.add(v); for (const k of Object.keys(v)) v[k] = portRes(v[k], ps, seen); return v; };
 const workers = new Map(); let portSeq = 0; const remotePorts = new Map();
+// An endpoint can move between real worker isolates. Keep its entanglement in
+// the private broker, not in the detached JavaScript wrapper. The shared native
+// connection remains alive while any owned port or broker route still uses it.
+const sharedConnections = new Map(), endpointBridges = new Map();
+function retainSharedConnection(id) {
+    const connection = sharedConnections.get(id);
+    if (connection) { ++connection.references; return id; }
+    return 0;
+}
+function releaseSharedConnection(id) {
+    const connection = sharedConnections.get(id);
+    if (!connection || --connection.references > 0) return;
+    sharedConnections.delete(id); N.sharedWorkerClose(id); workers.delete(id);
+}
+function remotePort(worker, key) {
+    const port = new MessagePort(); port._wk = [worker, key];
+    portState(port).sharedConnection = retainSharedConnection(worker);
+    remotePorts.set(remotePortKey(worker, key), port); return port;
+}
+function sendPortMessage(route, data, ports) {
+    const ids = ports.map(() => ++portSeq);
+    N.workerPost(route[0], {__lumenPort: route[1], data: portSub(data, ports), xfer: ids}, []);
+    adoptWorkerPorts(route[0], ports, ids);
+}
+function watchBridge(worker, bridge) {
+    let bridges = endpointBridges.get(worker);
+    if (!bridges) endpointBridges.set(worker, bridges = new Set());
+    bridges.add(bridge); N.workerWatchLifecycle(worker);
+}
+function unlinkBridge(bridge, close = false) {
+    if (!bridge.active) return 0;
+    bridge.active = false;
+    for (const route of [bridge.left, bridge.right]) {
+        const key = remotePortKey(route[0], route[1]);
+        if (remotePorts.get(key)?._bridge === bridge) remotePorts.delete(key);
+        const bridges = endpointBridges.get(route[0]);
+        if (bridges) { bridges.delete(bridge); if (!bridges.size) endpointBridges.delete(route[0]); }
+        if (close) N.workerPortClose(route[0], route[1]);
+    }
+    const connection = bridge.sharedConnection; bridge.sharedConnection = 0;
+    if (close && connection) releaseSharedConnection(connection);
+    return close ? 0 : connection;
+}
+function closeWorkerBridges(worker) {
+    for (const bridge of [...(endpointBridges.get(worker) || [])]) unlinkBridge(bridge, true);
+}
+function movedWorkerPort(worker, source) {
+    const key = remotePortKey(worker, source), old = remotePorts.get(key), port = new MessagePort();
+    if (old?._bridge) {
+        const bridge = old._bridge;
+        const route = bridge.left[0] === worker && bridge.left[1] === source ? bridge.right : bridge.left;
+        portState(port).sharedConnection = unlinkBridge(bridge);
+        port._wk = route.slice(); remotePorts.set(remotePortKey(route[0], route[1]), port);
+    } else if (old instanceof MessagePort) {
+        // The other endpoint has returned to this document. Both wrappers now
+        // live here; neither endpoint depends on the departed worker anymore.
+        remotePorts.delete(key); old._wk = null;
+        old._other = port; port._other = old;
+        const state = portState(old);
+        if (state.sharedConnection) { releaseSharedConnection(state.sharedConnection); state.sharedConnection = 0; }
+    }
+    return port;
+}
+function adoptWorkerPorts(worker, ports, ids) {
+    for (let index = 0; index < ports.length; ++index) {
+        const port = ports[index], state = portState(port), destination = [worker, ids[index]];
+        const pending = state.queue.splice(0);
+        const source = port._wk, other = port._other;
+        if (source && !state.closed) {
+            const bridge = {left: source.slice(), right: destination, active: true, sharedConnection: state.sharedConnection};
+            // Transfer the existing native-connection reference into the
+            // broker. Closing the detached sender must not close its receiver.
+            state.sharedConnection = 0;
+            remotePorts.set(remotePortKey(source[0], source[1]), {
+                _bridge: bridge,
+                _deliver(data, incoming) { if (bridge.active) sendPortMessage(destination, data, incoming); },
+            });
+            remotePorts.set(remotePortKey(worker, ids[index]), {
+                _bridge: bridge,
+                _deliver(data, incoming) { if (bridge.active) sendPortMessage(source, data, incoming); },
+            });
+            watchBridge(source[0], bridge); watchBridge(worker, bridge);
+        } else if (other && !state.closed) {
+            other._other = null; other._wk = destination;
+            portState(other).sharedConnection = retainSharedConnection(worker);
+            remotePorts.set(remotePortKey(worker, ids[index]), other);
+        }
+        port._other = null; port._wk = null;
+        state.detached = state.closed = true;
+        for (const message of pending) sendPortMessage(destination, message.data, message.ports);
+    }
+}
 class Worker extends EventTarget {
     constructor(url, opts) {
         super();
@@ -813,9 +911,9 @@ class Worker extends EventTarget {
         if (!ports.length) return N.workerPost(this._id, data, buffers);
         const ids = ports.map(() => ++portSeq);
         N.workerPost(this._id, { __lumenXfer: ids, data: portSub(data, ports) }, buffers);
-        ports.forEach((port, i) => { port._wk = [this._id, ids[i]]; if (port._other) remotePorts.set(remotePortKey(this._id, ids[i]), port._other); });
+        adoptWorkerPorts(this._id, ports, ids);
     }
-    terminate() { if (this._id) { N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
+    terminate() { if (this._id) { closeWorkerBridges(this._id); N.workerTerm(this._id); workers.delete(this._id); this._id = 0; } }
 }
 class SharedWorker extends EventTarget {
     constructor(url, options) {
@@ -844,25 +942,45 @@ class SharedWorker extends EventTarget {
         const id = N.sharedWorkerNew(u.href, src, N.userAgent(), N.platform(), name, type === 'module', credentials);
         if (!id) { setTimeout(() => dispatch(this, new Event('error', { cancelable: true }), true)); return; }
         def(this, '_id', id);
+        sharedConnections.set(id, {references: 1});
         port._wk = [id, 0]; portState(port).sharedConnection = id;
         remotePorts.set(remotePortKey(id, 0), port);
         workers.set(id, this);
     }
 }
-function workerEvent(id, kind, data, message, filename, lineno, colno) {
+function workerEvent(id, kind, data, message, filename, lineno, colno, moves, queues) {
     const w = workers.get(id); if (!w) return;
+    if (kind === 4) { closeWorkerBridges(id); return; }
+    if (kind === 5) {
+        const port = remotePorts.get(remotePortKey(id, data));
+        if (port?._bridge) unlinkBridge(port._bridge, true);
+        else if (port instanceof MessagePort) port.close();
+        return;
+    }
     if (kind === 0) {
+        const moved = new Map(moves || []), incoming = new Map();
+        const receive = key => {
+            if (!incoming.has(key)) incoming.set(key, moved.has(key) ? movedWorkerPort(id, moved.get(key)) : remotePort(id, key));
+            return incoming.get(key);
+        };
+        for (const [key, messages] of queues || []) {
+            const port = receive(key);
+            for (const message of messages) {
+                const ports = message.xfer.map(receive);
+                port._deliver(portRes(message.data, ports), ports);
+            }
+        }
         let ports = [];
         if (data && typeof data === 'object') {
             if (Object.prototype.hasOwnProperty.call(data, '__lumenPort')) {
                 const p = remotePorts.get(remotePortKey(id, data.__lumenPort));
                 if (p) {
-                    const qs = (data.xfer || []).map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(remotePortKey(id, k), q); return q; });
+                    const qs = (data.xfer || []).map(receive);
                     p._deliver(portRes(data.data, qs), qs);
                 }
                 return;
             }
-            if (data.__lumenXfer) { ports = data.__lumenXfer.map(k => { const q = new MessagePort(); q._wk = [id, k]; remotePorts.set(remotePortKey(id, k), q); return q; }); data = portRes(data.data, ports); }
+            if (data.__lumenXfer) { ports = data.__lumenXfer.map(receive); data = portRes(data.data, ports); }
         }
         dispatch(w, new MessageEvent('message', { data, ports }), true);
     }

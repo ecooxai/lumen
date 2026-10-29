@@ -38,10 +38,16 @@ struct Side {
     std::vector<std::shared_ptr<v8::BackingStore>> buffers;
 };
 struct Buf { uint8_t *p = nullptr; size_t n = 0; std::shared_ptr<Side> side; };
-enum { WI_MESSAGE, WI_CONNECT, WI_DISCONNECT };
-struct InMsg { Buf data; uint32_t connection = 0; int kind = WI_MESSAGE; };
-enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL };
-struct OutMsg { int kind; Buf data; std::string msg, file; int line = 0, col = 0; uint32_t connection = 0; };
+enum { WI_MESSAGE, WI_CONNECT, WI_DISCONNECT, WI_PORT_CLOSED };
+struct InMsg { Buf data; uint32_t connection = 0; int kind = WI_MESSAGE; int32_t port = 0; };
+enum { WM_MESSAGE, WM_ERROR, WM_LOADFAIL, WM_MESSAGEERROR, WM_FINISHED, WM_PORT_CLOSED };
+struct PortMove { int32_t target = 0, source = 0; };
+struct OutMsg {
+    int kind; Buf data; std::string msg, file; int line = 0, col = 0; uint32_t connection = 0;
+    // Private transport metadata. User message properties cannot forge a move
+    // or close another endpoint: only the prelude's captured W API sets this.
+    std::vector<PortMove> ports; int32_t port = 0; bool packed_ports = false;
+};
 struct WNetworkResult {
     uint32_t id = 0;
     std::unique_ptr<NetResponse, decltype(&net_response_free)> response{nullptr, net_response_free};
@@ -64,6 +70,7 @@ struct Worker {
     std::deque<WNetworkResult> network;   // protected by mu
     std::atomic<bool> term{false};
     std::atomic<bool> finished{false}; /* worker_main and its isolate/allocator cleanup have returned */
+    bool lifecycle_notify = false, lifecycle_notified = false; /* protected by mu */
     bool accepting = true;  /* protected by mu; close() stops incoming tasks without aborting the current task */
     v8::Isolate *iso = nullptr;
     NetRequest *request = nullptr; /* protected by mu; owned by the synchronous worker_fetch call */
@@ -340,7 +347,35 @@ typedef v8::FunctionCallbackInfo<v8::Value> FCI;
 WFN(post) {
     WENV; Buf b;
     uint32_t connection = E->w->shared && a.Length() > 2 ? a[2]->Uint32Value(ctx).FromMaybe(0) : 0;
-    if (ser(iso, ctx, a[0], b, a[1])) post_out(E, OutMsg{ WM_MESSAGE, b, {}, {}, 0, 0, connection });
+    v8::Local<v8::Value> payload = a[0];
+    const bool packed_ports = a.Length() > 4 && a[4]->IsArray();
+    if (packed_ports) {
+        auto packed = v8::Array::New(iso, 2);
+        (void)packed->Set(ctx, 0, a[0]); (void)packed->Set(ctx, 1, a[4]);
+        payload = packed;
+    }
+    if (!ser(iso, ctx, payload, b, a[1])) return;
+    OutMsg message{WM_MESSAGE, b, {}, {}, 0, 0, connection};
+    message.packed_ports = packed_ports;
+    if (a.Length() > 3 && a[3]->IsArray()) {
+        auto moves = a[3].As<v8::Array>();
+        for (uint32_t index = 0; index < moves->Length(); ++index) {
+            v8::Local<v8::Value> value;
+            if (!moves->Get(ctx, index).ToLocal(&value) || !value->IsArray()) continue;
+            auto move = value.As<v8::Array>();
+            v8::Local<v8::Value> target, source;
+            if (move->Length() != 2 || !move->Get(ctx, 0).ToLocal(&target) || !move->Get(ctx, 1).ToLocal(&source)) continue;
+            message.ports.push_back({target->Int32Value(ctx).FromMaybe(0), source->Int32Value(ctx).FromMaybe(0)});
+        }
+    }
+    post_out(E, std::move(message));
+}
+WFN(portClose) {
+    WENV;
+    uint32_t connection = E->w->shared && a.Length() > 1 ? a[1]->Uint32Value(ctx).FromMaybe(0) : 0;
+    OutMsg message{WM_PORT_CLOSED, {}, {}, {}, 0, 0, connection};
+    message.port = a[0]->Int32Value(ctx).FromMaybe(0);
+    post_out(E, std::move(message));
 }
 WFN(clone) { WENV; Buf b; if (!ser(iso, ctx, a[0], b, a[1])) return; v8::Local<v8::Value> v; if (deser(iso, ctx, b).ToLocal(&v)) a.GetReturnValue().Set(v); free(b.p); }
 WFN(timer) {
@@ -1245,7 +1280,10 @@ function portList(options) {
     for (const item of list) {
         if (seen.has(item)) throw new DOMException('The transfer list contains a duplicate object.', 'DataCloneError');
         seen.add(item);
-        if (item instanceof MessagePort) ports.push(item);
+        if (item instanceof MessagePort) {
+            if (portState(item).detached) throw new DOMException('The MessagePort has already been transferred.', 'DataCloneError');
+            ports.push(item);
+        }
         else {
             // The intrinsic checks the ArrayBuffer brand, including detached
             // buffers; public properties and SharedArrayBuffer cannot spoof it.
@@ -1267,7 +1305,7 @@ function portState(port) {
 class MessagePort extends EventTarget {
     constructor() {
         super();
-        workerPortState.set(this, { started: false, closed: false, scheduled: false, queue: [], handler: null });
+        workerPortState.set(this, { started: false, closed: false, detached: false, scheduled: false, queue: [], handler: null });
         this.onmessageerror = null;
         def(this, '_other', null); def(this, '_k', 0); def(this, '_client', 0); def(this, '_remote', false);
     }
@@ -1280,14 +1318,12 @@ class MessagePort extends EventTarget {
         const state = portState(this);
         if (!arguments.length) throw new TypeError("Failed to execute 'postMessage': 1 argument required.");
         const { ports, buffers } = portList(options);
+        if (ports.includes(this)) throw new DOMException('A port cannot transfer itself.', 'DataCloneError');
         const endpoint = !state.closed && (this._remote ? this : this._other && this._other._remote ? this._other : null);
         if (endpoint) {
-            const ids = ports.map(() => -(++wpseq)), connection = endpoint._client;
-            W.post({ __lumenPort: endpoint._k, data: portSub(data, ports), xfer: ids }, buffers, connection);
-            ports.forEach((port, i) => {
-                port._k = ids[i]; port._client = connection; port._remote = true;
-                if (port._other) wports.set(workerPortKey(connection, ids[i]), port._other);
-            });
+            const connection = endpoint._client, transfer = preparePortTransfer(ports, connection);
+            W.post({ __lumenPort: endpoint._k, data: portSub(data, ports), xfer: transfer.ids }, buffers, connection, transfer.moves, transfer.queues);
+            finishPortTransfer(transfer, connection);
             return;
         }
         const other = !state.closed && this._other;
@@ -1312,8 +1348,13 @@ class MessagePort extends EventTarget {
     start() { const state = portState(this); state.started = true; this._flush(); }
     close() {
         const state = portState(this); if (state.closed) return;
-        state.closed = true; state.queue.length = 0; this._other = null;
-        if (this._remote) wports.delete(workerPortKey(this._client, this._k));
+        state.closed = true; state.queue.length = 0;
+        if (this._other && this._other._other === this) this._other._other = null;
+        this._other = null;
+        if (this._remote) {
+            wports.delete(workerPortKey(this._client, this._k));
+            W.portClose(this._k, this._client);
+        }
         this._remote = false;
     }
 }
@@ -1322,6 +1363,35 @@ function incomingPort(connection, key) {
     wports.set(workerPortKey(connection, key), port); return port;
 }
 class MessageChannel { constructor() { this.port1 = new MessagePort(); this.port2 = new MessagePort(); this.port1._other = this.port2; this.port2._other = this.port1; } }
+function preparePortTransfer(ports, connection) {
+    const all = ports.slice(), keys = new Map(all.map(port => [port, -(++wpseq)])), moves = [], queues = [];
+    // A queued message and its transferred endpoints move with the receiving
+    // port. Pack them in the same native serializer transaction as the caller's
+    // payload, so a failed clone cannot detach any endpoint or lose its queue.
+    for (let index = 0; index < all.length; ++index) {
+        const port = all[index], state = portState(port), key = keys.get(port);
+        if (port._remote && port._client === connection) moves.push([key, port._k]);
+        const messages = [];
+        for (const message of state.queue) {
+            for (const incoming of message.ports) if (!keys.has(incoming)) { keys.set(incoming, -(++wpseq)); all.push(incoming); }
+            messages.push({data: portSub(message.data, message.ports), xfer: message.ports.map(incoming => keys.get(incoming))});
+        }
+        if (messages.length) queues.push([key, messages]);
+    }
+    return {all, keys, moves, queues, ids: ports.map(port => keys.get(port))};
+}
+function finishPortTransfer(transfer, connection) {
+    for (const port of transfer.all) {
+        const state = portState(port), key = transfer.keys.get(port), other = port._other;
+        if (port._remote) wports.delete(workerPortKey(port._client, port._k));
+        else if (other && !state.closed) {
+            other._other = null; other._k = key; other._client = connection; other._remote = true;
+            wports.set(workerPortKey(connection, key), other);
+        }
+        port._other = null; port._remote = false;
+        state.closed = state.detached = true; state.queue.length = 0;
+    }
+}
 const api = {
     self: G, globalThis: G, location, navigator, name: W.name, origin: location.origin, isSecureContext: !!W.secure, crossOriginIsolated: !!W.coi,
     onmessage: null, onmessageerror: null, onconnect: null, onerror: null, onunhandledrejection: null, onrejectionhandled: null, onlanguagechange: null, onoffline: null, ononline: null,
@@ -1329,9 +1399,9 @@ const api = {
         if (!arguments.length) throw new TypeError("Failed to execute 'postMessage': 1 argument required.");
         const { ports, buffers } = portList(options);
         if (!ports.length) return W.post(data, buffers);
-        const ids = ports.map(() => -(++wpseq));
-        W.post({ __lumenXfer: ids, data: portSub(data, ports) }, buffers);
-        ports.forEach((port, i) => { port._k = ids[i]; port._remote = true; if (port._other) wports.set(workerPortKey(0, ids[i]), port._other); });
+        const transfer = preparePortTransfer(ports, 0);
+        W.post({ __lumenXfer: transfer.ids, data: portSub(data, ports) }, buffers, 0, transfer.moves, transfer.queues);
+        finishPortTransfer(transfer, 0);
     },
     close() { W.close(); },
     importScripts(...urls) { for (const u of urls) W.importScript(String(u)); },
@@ -1359,6 +1429,7 @@ return {
         for (const ch of [...bcAll]) if (!ch._closed && ch.name === name && !(same && ch._id === id)) { ch.dispatchEvent(new MessageEvent('message', { data: first ? data : W.clone(data), origin: location.origin })); first = false; }
     },
     onmsg(data, connection, kind) {
+        if (kind === 3) { const port = wports.get(workerPortKey(connection, data)); if (port) port.close(); return; }
         if (W.shared && kind === 1) {
             const port = incomingPort(connection, 0);
             const event = new MessageEvent('connect', {data: '', ports: [port], source: port});
@@ -1457,7 +1528,7 @@ void worker_main(std::shared_ptr<Worker> w) {
         v8::Context::Scope cs(ctx);
         v8::Local<v8::Object> W = v8::Object::New(iso);
 #define WREG(nm) (void)W->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, w_##nm).ToLocalChecked())
-        WREG(post); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(textEncoding); WREG(textDecode); WREG(responseTextDecode); WREG(blobState); WREG(fileReaderPackage); WREG(fileReaderCheckpoint); WREG(resolve); WREG(urlParse); WREG(urlSet); WREG(idlGet); WREG(idlPut); WREG(idlRegister); WREG(idlFallback); WREG(initCloneIntrinsic); WREG(send); WREG(sendSync); WREG(abort); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
+        WREG(post); WREG(portClose); WREG(clone); WREG(timer); WREG(clear); WREG(close); WREG(now); WREG(log); WREG(decode); WREG(textEncoding); WREG(textDecode); WREG(responseTextDecode); WREG(blobState); WREG(fileReaderPackage); WREG(fileReaderCheckpoint); WREG(resolve); WREG(urlParse); WREG(urlSet); WREG(idlGet); WREG(idlPut); WREG(idlRegister); WREG(idlFallback); WREG(initCloneIntrinsic); WREG(send); WREG(sendSync); WREG(abort); WREG(importScript); WREG(reportErr); WREG(busOrigin); WREG(busPost);
         auto setS = [&](const char *k, const std::string &v) { (void)W->Set(ctx, jstr(iso, k), jstr(iso, v.c_str())); };
         setS("url", w->url); setS("ua", w->ua); setS("platform", w->platform); setS("name", w->name);
         setS("origin", w->creator_origin);
@@ -1579,6 +1650,7 @@ void worker_main(std::shared_ptr<Worker> w) {
                     v8::TryCatch tc(iso);
                     v8::Local<v8::Value> value = v8::Undefined(iso);
                     bool decoded = message.kind != WI_MESSAGE || deser(iso, ctx, b).ToLocal(&value);
+                    if (message.kind == WI_PORT_CLOSED) value = v8::Integer::New(iso, message.port);
                     if (decoded && !E->onmsg.IsEmpty()) {
                         v8::Local<v8::Value> args[3] = {value, v8::Integer::NewFromUnsigned(iso, message.connection), v8::Integer::New(iso, message.kind)};
                         (void)E->onmsg.Get(iso)->Call(ctx, v8::Undefined(iso), 3, args); wcheck(E, tc);
@@ -1695,7 +1767,17 @@ void *worker_thread(void *p) {
     {
         std::unique_ptr<std::shared_ptr<Worker>> sp(static_cast<std::shared_ptr<Worker> *>(p));
         worker_main(*sp);
-        (*sp)->finished = true;
+        bool notify = false;
+        {
+            std::lock_guard<std::mutex> lock((*sp)->mu);
+            (*sp)->finished = true;
+            if ((*sp)->lifecycle_notify && !(*sp)->lifecycle_notified && !(*sp)->term) {
+                (*sp)->lifecycle_notified = true;
+                (*sp)->out.push_back(OutMsg{WM_FINISHED, {}, {}, {}, 0, 0});
+                notify = true;
+            }
+        }
+        if (notify) wake();
     } /* Release the thread's Worker reference before signaling completion. */
     {
         std::lock_guard<std::mutex> lock(threads.mu);
@@ -1871,6 +1953,39 @@ void n_workerPost(const FCI &a) {
     }
     w->cv.notify_all();
 }
+void n_workerWatchLifecycle(const FCI &a) {
+    auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
+    auto found = g_workers.find(a[0]->Uint32Value(ctx).FromMaybe(0));
+    if (found == g_workers.end() || found->second->shared || found->second->owner != jctx(iso)) return;
+    auto w = found->second;
+    bool notify = false;
+    {
+        std::lock_guard<std::mutex> lock(w->mu);
+        w->lifecycle_notify = true;
+        if (w->finished && !w->term && !w->lifecycle_notified) {
+            w->lifecycle_notified = true;
+            w->out.push_back(OutMsg{WM_FINISHED, {}, {}, {}, 0, 0});
+            notify = true;
+        }
+    }
+    if (notify) wake();
+}
+void n_workerPortClose(const FCI &a) {
+    auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
+    const uint32_t id = a[0]->Uint32Value(ctx).FromMaybe(0);
+    auto found = g_workers.find(id); auto client = g_shared_clients.find(id);
+    auto *owner = jctx(iso);
+    uint32_t connection = 0; std::shared_ptr<Worker> w;
+    if (client != g_shared_clients.end() && client->second.owner == owner) { w = client->second.worker; connection = id; }
+    else if (found != g_workers.end() && !found->second->shared && found->second->owner == owner) w = found->second;
+    if (!w) return;
+    {
+        std::lock_guard<std::mutex> lock(w->mu);
+        if (w->term || !w->accepting || (connection && !w->clients.count(connection))) return;
+        w->in.push_back(InMsg{{}, connection, WI_PORT_CLOSED, a[1]->Int32Value(ctx).FromMaybe(0)});
+    }
+    w->cv.notify_all();
+}
 void n_transferClone(const FCI &a) {
     auto iso = a.GetIsolate(); auto ctx = iso->GetCurrentContext();
     Buf buffer;
@@ -1903,6 +2018,8 @@ void js_install_workers(JsCtx *c, v8::Local<v8::Object> N) {
     (void)N->Set(ctx, jstr(iso, "sharedWorkerClose"), v8::Function::New(ctx, n_sharedWorkerClose).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "workerPost"), v8::Function::New(ctx, n_workerPost).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "workerTerm"), v8::Function::New(ctx, n_workerTerm).ToLocalChecked());
+    (void)N->Set(ctx, jstr(iso, "workerWatchLifecycle"), v8::Function::New(ctx, n_workerWatchLifecycle).ToLocalChecked());
+    (void)N->Set(ctx, jstr(iso, "workerPortClose"), v8::Function::New(ctx, n_workerPortClose).ToLocalChecked());
     (void)N->Set(ctx, jstr(iso, "transferClone"), v8::Function::New(ctx, n_transferClone).ToLocalChecked());
 }
 
@@ -1946,8 +2063,22 @@ void workers_pump(JsCtx *c) {
             v8::Local<v8::Value> data = v8::Undefined(iso);
             int kind = m.kind;
             if (kind == WM_MESSAGE) { v8::TryCatch tc(iso); if (!deser(iso, ctx, m.data).ToLocal(&data)) { data = v8::Undefined(iso); kind = 3; } }
-            v8::Local<v8::Value> argv[7] = { v8::Integer::NewFromUnsigned(iso, item.first), v8::Integer::New(iso, kind), data, jstr(iso, m.msg.c_str()), jstr(iso, m.file.c_str()), v8::Integer::New(iso, m.line), v8::Integer::New(iso, m.col) };
-            (void)jcall(c, fv.As<v8::Function>(), v8::Undefined(iso), 7, argv);
+            v8::Local<v8::Value> queues = v8::Undefined(iso);
+            if (kind == WM_MESSAGE && m.packed_ports && data->IsArray()) {
+                auto packed = data.As<v8::Array>();
+                (void)packed->Get(ctx, 1).ToLocal(&queues);
+                (void)packed->Get(ctx, 0).ToLocal(&data);
+            }
+            auto moves = v8::Array::New(iso, (int)m.ports.size());
+            for (size_t index = 0; index < m.ports.size(); ++index) {
+                auto pair = v8::Array::New(iso, 2);
+                (void)pair->Set(ctx, 0, v8::Integer::New(iso, m.ports[index].target));
+                (void)pair->Set(ctx, 1, v8::Integer::New(iso, m.ports[index].source));
+                (void)moves->Set(ctx, (uint32_t)index, pair);
+            }
+            if (kind == WM_PORT_CLOSED) data = v8::Integer::New(iso, m.port);
+            v8::Local<v8::Value> argv[9] = { v8::Integer::NewFromUnsigned(iso, item.first), v8::Integer::New(iso, kind), data, jstr(iso, m.msg.c_str()), jstr(iso, m.file.c_str()), v8::Integer::New(iso, m.line), v8::Integer::New(iso, m.col), moves, queues };
+            (void)jcall(c, fv.As<v8::Function>(), v8::Undefined(iso), 9, argv);
         }
         free(m.data.p);
     }
