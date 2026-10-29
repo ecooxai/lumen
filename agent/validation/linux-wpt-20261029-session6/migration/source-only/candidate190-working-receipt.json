@@ -1,0 +1,17 @@
+{
+  "candidate": 190,
+  "prototype_started_utc": "2026-10-29T19:00:04.373674+00:00",
+  "integration_utc": "2026-10-29T19:04:44.968441+00:00",
+  "base_head": "7c4217d953e7e31b7c762243b7dc36aaae7a071c",
+  "file": "src/js/prelude/04f-forms.js",
+  "before": "987f8e3f3c1020f83f177f81fed213224fd89cea3d7a265633441d5e2ef29f8a",
+  "after": "77b0b46ba94f2e0474c2b02dd196c9cfa2d2a76811956215764ee97549a77f76",
+  "patch_sha256": "0f2e25c63e81bc53e96b239eaebfc948bb191a89ff1711b44526bcb5e750f11a",
+  "bounds": {
+    "canonical_number_text_max": 32,
+    "coefficient_digits_max": 24,
+    "decimal_shift_max": 650,
+    "cache_entries_max": 64
+  },
+  "scope": "Exact bounded canonical-decimal remainder for number/range; same step-relative tolerance on integer fast path; other input type paths unchanged; raw-authored precision beyond JSNumber remains explicit holdout."
+}

@@ -1237,3 +1237,36 @@ This repairs detached checked radios and external form-associated group
 membership. Frozen72radio observations and unchanged516numeric observations
 are the next gate. Numerical changes remain a separate190 candidate.
 Current overall assessment is pending;19/100 is historical only.
+
+
+### Iteration10 / Ruby candidate189 — accepted radio grouping
+
+Prototype start18:52:01UTC; acceptance checkpoint2026-10-29T19:04:44.968441+00:00;12.73minutes
+(overlaps the preceding CSSOM/export work; durations are not summed). Fixed
+radio fields60→72/72 (+12;100/100), with all516numeric observations unchanged
+(481pass/35retainedfail). Combined predeclared fixture541→553/588
+(94.0476/100 focused),zero lost/missing/added fields. Pinned upstream
+valueMissing78/78 and unchanged form-v28127/8127 pass.
+Source7c4217d953e7e31b7c762243b7dc36aaae7a071c; immutableSHA256
+792f9215242665dd752dbe46f3ce6c3646104d1cb6921aa69d30b0f7449ebc72.
+Recorded627-entry source set unchanged3e6ca3cfc6ea9a6c777a0bfcd6d5a5566b3fae99576edb7d439181afe80c798a.
+Monitored build/startup49.12s overlapped broad187/Chromium640 under the shared
+quota/idle priority.49samples: buildCPUmedian65.516%/max116.004%, peak
+summedRSS475.501MB/PSS373.591MB(10PSSsamples);hostCPUmedian73.5865%/
+max89.625%,hostusedRAMpeak9565.086MB. No quiet performance claim is made.
+Owned build/monitor drained. Agents:engine_lead,conformance_qa;release_ops
+checkpoint/runtime;root PM. Total task wall time98.97minutes.
+
+### Iteration11 / candidate190 — bounded numerical step source checkpoint
+
+Prototype start19:00:04UTC; integration2026-10-29T19:04:44.968441+00:00. Number/range step mismatch
+uses an exact decimal remainder of canonical finite Number values instead of
+subtracting a rounded enormous quotient. Coefficients≤24digits, decimal
+scaling≤650places, and cache≤64entries are explicit bounds. The common safe
+integer path applies the same step-relative tolerance; independent24-case/
+96-field controls caught and corrected an inconsistent prototype fast path
+before any190 runtime outcomes. Other input type paths remain unchanged.
+Raw authored digits beyond JSNumber precision and existing stepping/sanitization
+differences remain explicit interoperability holdouts. Fresh588+96 fields,
+upstream step cases, and a quiet4000-read resource comparison are pending.
+Current overall assessment remains pending;19/100 is historical only.

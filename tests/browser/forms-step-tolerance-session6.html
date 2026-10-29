@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8"><title>Independent step tolerance boundaries</title><body><script>
+(async()=>{
+const cases=[
+["integer-exact","1000000000","1000000000",""],
+["integer-plus-one","1000000001","1000000000",""],
+["integer-minus-one","999999999","1000000000",""],
+["integer-inside-tolerance","1000000059","1000000000",""],
+["integer-outside-tolerance","1000000060","1000000000",""],
+["zero-near-one","1","1000000000",""],
+["zero-near-59","59","1000000000",""],
+["zero-near-60","60","1000000000",""],
+["negative-inside","-1000000059","1000000000",""],
+["negative-outside","-1000000060","1000000000",""],
+["power-two-boundary","16777217","16777216",""],
+["below-power-two-boundary","16777216","16777215",""],
+["above-power-two-boundary","16777218","16777217",""],
+["positive-base-inside","2000000001","1000000000","1000000000"],
+["positive-base-outside","2000000060","1000000000","1000000000"],
+["negative-base-inside","-999999999","1000000000","-2000000000"],
+["negative-base-outside","-999999940","1000000000","-2000000000"],
+["fraction-inside","1.00000005","1",""],
+["fraction-outside","1.00000007","1",""],
+["ordinary-decimal","0.3","0.1",""],
+["binary-decimal","0.30000000000000004","0.1",""],
+["tiny-decimal-misaligned","17","3e-15",""],
+["tiny-decimal-aligned","18","3e-15",""],
+["safe-integer-limit","9007199254740991","1000000000",""]
+];
+const rows=[];
+for(const [name,value,step,min]of cases){const e=document.createElement("input");e.type="number";e.step=step;if(min!=="")e.min=min;e.value=value;document.body.appendChild(e);rows.push({name,values:{value:e.value,stepMismatch:e.validity.stepMismatch,valid:e.validity.valid,checkValidity:e.checkValidity()}});e.remove();}
+const result={cases:cases.length,fields:["value","stepMismatch","valid","checkValidity"],total:cases.length*4,rows};
+const raw=JSON.stringify(result),count=Math.ceil(raw.length/256);for(let i=0;i<count;i++)console.log("LUMEN_AUTHORED_CHUNK "+i+" "+JSON.stringify(raw.slice(i*256,(i+1)*256)));console.log("LUMEN_AUTHORED_DONE "+count);console.log("RESULTS STEP_TOLERANCE_OBSERVATIONS:PASS");
+})().catch(e=>console.log("RESULTS STEP_TOLERANCE_OBSERVATIONS:FAIL "+e.stack));
+</script></body>
