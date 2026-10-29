@@ -439,7 +439,7 @@ typedef struct App {
     DeviceInfo device; /* refreshed on native size/display/input changes; no UIKit queries from JS getters */
     PresentRetry present_retry;
     SDL_Cursor *cursors[3]; bool cursor_tried[3];
-    Canvas frame, page; DisplayList pdl, cdl, hdl;
+    Canvas frame, page; DisplayList pdl, cdl, hdl; ChromePaintCache chrome_cache;
     struct DSig *osig, *nsig; int nosig, cosig, cnsig; uint64_t chash; bool osig_ok;   /* last page display list, to raster only what changed */
     Tab *t, *tabs[MAX_TABS]; int ntabs, ti;
     AppWindowQueue windows;
@@ -1255,7 +1255,7 @@ static void render(App *a) {
     double t0 = now_ms();
     int toolbar_px = LMIN((int)(BAR * a->scale), a->view.px_h - 1);
     int bar_px = a->view.px_y + toolbar_px;
-    if (a->frame.w != a->pw || a->frame.h != a->ph) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); }
+    if (a->frame.w != a->pw || a->frame.h != a->ph) { canvas_free(&a->frame); canvas_init(&a->frame, a->pw, a->ph, a->scale); a->chrome_cache.valid = false; }
     a->frame.scale = a->scale;
     /* Paint chrome directly into a framebuffer subview: safe-area padding adds
        no full-screen allocation or copy, and the page/GPU share these offsets. */
@@ -1402,11 +1402,11 @@ static void render(App *a) {
             raster_rect(&a->frame, &empty, bg, 0, y, x, ey);
             raster_rect(&a->frame, &empty, bg, ex, y, a->pw, ey);
         }
-        paint_browser_chrome(&chrome, &a->cdl, RGBA(255, 255, 255, 255), sidebar_px, toolbar_px);
+        paint_browser_chrome_cached(&a->chrome_cache, &chrome, &a->cdl, RGBA(255, 255, 255, 255), sidebar_px, toolbar_px, a->chash, a->hdl.items.n != 0);
     }
     if (!gskip) for (int y = part ? ry0 : 0; y < (part ? ry1 : ph) && y + bar_px < a->ph; y++)
         memcpy(a->frame.px + (size_t)(y + bar_px) * (size_t)a->frame.stride + side_px, a->page.px + (size_t)y * (size_t)a->page.stride, (size_t)pwp * 4);
-    if (!gskip && a->hdl.items.n) { float s = chrome.scale; raster_rect(&chrome, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
+    if (!gskip && a->hdl.items.n) { a->chrome_cache.valid = false; float s = chrome.scale; raster_rect(&chrome, &a->hdl, RGBA(255, 255, 255, 255), (int)floorf(g_pop[0] * s), (int)floorf(g_pop[1] * s), (int)ceilf(g_pop[2] * s), (int)ceilf(g_pop[3] * s)); }   /* floats over the page */
 #if defined(__APPLE__) && !defined(LUMEN_IOS)
     mac_debug_visibility(a->win, a->mview ? SDL_Metal_GetLayer(a->mview) : NULL);
 #endif
