@@ -1,0 +1,339 @@
+{
+  "iteration": "102900614-014",
+  "started_utc": "2026-10-28T23:57:53.253967+00:00",
+  "updated_utc": "2026-10-29T00:01:47.736677+00:00",
+  "elapsed_seconds": 234.483,
+  "total_session_seconds": 6426.278,
+  "score": 45,
+  "status": "Correct tokenizer EOF underflow and preserve comment bytes",
+  "native_artifact_promoted": false,
+  "accepted_native_unchanged": "733943aa9496d1342dd9d90a76146d0433b24c9ef7848df5860881e57c2ac848",
+  "candidate_binary_sha256": "0d84262c11de64f17f4e0ed2c72a475ce5ef024dac121152c1de11bc85cbbd38",
+  "candidate_jsrun_sha256": "4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393",
+  "candidate_source_manifest": "agent/evidence/102900614-014/compiled-source-sha256.json",
+  "gates": {
+    "html-meta-bounds-3": {
+      "summary": "output/session-102900614/html-meta-bounds-3/summary.json",
+      "summarySHA256": "edd5302618cf8830c672a459555ebb497f57381aaffb84e69d286ac40c739ac7",
+      "durationSeconds": 3.213,
+      "results": {
+        "parseCalls": 55945,
+        "semanticChecks": 57,
+        "contractChecks": 3
+      },
+      "passed": true
+    },
+    "html-eof-semantics-1": {
+      "summary": "output/session-102900614/html-eof-semantics-1/summary.json",
+      "summarySHA256": "8286937b93154a582140aee769ce03ae07eddedad326be9df3b580475c95a086",
+      "durationSeconds": 3.176,
+      "results": {
+        "cases": 24,
+        "splitChecks": 172
+      },
+      "passed": true
+    },
+    "html-eof-green-1": {
+      "summary": "output/session-102900614/html-eof-green-1/summary.json",
+      "summarySHA256": "b0df4e5b2ebfa50105893b152c942ffdad66df57a7b7761217b4d4b729bafc32",
+      "durationSeconds": 15.421,
+      "results": null,
+      "passed": true
+    }
+  },
+  "evidence": [
+    {
+      "source": "output/session-102900614/html-eof-candidate-1/patch-receipt.json",
+      "committed": "agent/evidence/102900614-014/00-html-eof-candidate-1-patch-receipt.json",
+      "sha256": "45cc41a7d90fbb7309d580344794a53aefd05e504ae274be73f5186e2bf3a769",
+      "bytes": 728
+    },
+    {
+      "source": "output/session-102900614/html-meta-bounds-3/build.json",
+      "committed": "agent/evidence/102900614-014/01-html-meta-bounds-3-build.json",
+      "sha256": "5d2aa70141e6173cef3272df9b8ec6bcdad939b9fd69154e90a43c502f8414ca",
+      "bytes": 2030
+    },
+    {
+      "source": "output/session-102900614/html-meta-bounds-3/build.log",
+      "committed": "agent/evidence/102900614-014/02-html-meta-bounds-3-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": "output/session-102900614/html-meta-bounds-3/bounds.json",
+      "committed": "agent/evidence/102900614-014/03-html-meta-bounds-3-bounds.json",
+      "sha256": "ba2826a45503bf679408ce36d596d92650feb7ae12f9f3559de9e58b88edf02b",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/html-meta-bounds-3/bounds.log",
+      "committed": "agent/evidence/102900614-014/04-html-meta-bounds-3-bounds.log",
+      "sha256": "83cf16c5e30f9ef1f497b9da8c2b8c8af17d00b1e5c300fa3d5485d737394081",
+      "bytes": 86
+    },
+    {
+      "source": "output/session-102900614/html-meta-bounds-3/summary.json",
+      "committed": "agent/evidence/102900614-014/05-html-meta-bounds-3-summary.json",
+      "sha256": "edd5302618cf8830c672a459555ebb497f57381aaffb84e69d286ac40c739ac7",
+      "bytes": 2662
+    },
+    {
+      "source": "output/session-102900614/html-meta-bounds-3/source-manifest.json",
+      "committed": "agent/evidence/102900614-014/06-html-meta-bounds-3-source-manifest.json",
+      "sha256": "5b8b3e3092d4d7a9773d5cedb8cf54334b14657bb6b77833c78475c424433c1a",
+      "bytes": 1403
+    },
+    {
+      "source": "output/session-102900614/html-eof-semantics-1/build.json",
+      "committed": "agent/evidence/102900614-014/07-html-eof-semantics-1-build.json",
+      "sha256": "7f487c14ec25c653e492b632a791955100f17459b4dd8106498d79e9df9b16b3",
+      "bytes": 2029
+    },
+    {
+      "source": "output/session-102900614/html-eof-semantics-1/build.log",
+      "committed": "agent/evidence/102900614-014/08-html-eof-semantics-1-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "source": "output/session-102900614/html-eof-semantics-1/bounds.json",
+      "committed": "agent/evidence/102900614-014/09-html-eof-semantics-1-bounds.json",
+      "sha256": "a72e0e245b62cab1db5de497d66df231e55401e38a768486582dc14cfdbf2127",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/html-eof-semantics-1/bounds.log",
+      "committed": "agent/evidence/102900614-014/10-html-eof-semantics-1-bounds.log",
+      "sha256": "524a84829b37048ba0e292d1eb08f4e377e6f73f3e96a7d83271223fa85bae4b",
+      "bytes": 57
+    },
+    {
+      "source": "output/session-102900614/html-eof-semantics-1/summary.json",
+      "committed": "agent/evidence/102900614-014/11-html-eof-semantics-1-summary.json",
+      "sha256": "8286937b93154a582140aee769ce03ae07eddedad326be9df3b580475c95a086",
+      "bytes": 2628
+    },
+    {
+      "source": "output/session-102900614/html-eof-semantics-1/source-manifest.json",
+      "committed": "agent/evidence/102900614-014/12-html-eof-semantics-1-source-manifest.json",
+      "sha256": "cfde2015752df33597eba750dcfe7d81ff261292e2d2e4912ba1328383fa6422",
+      "bytes": 1401
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/build.json",
+      "committed": "agent/evidence/102900614-014/13-html-eof-green-1-build.json",
+      "sha256": "a5dd659fc286e34c50e7633e50197dc44a25a2853b9bcf91254d1eafb4536f68",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/build.log",
+      "committed": "agent/evidence/102900614-014/14-html-eof-green-1-build.log",
+      "sha256": "ad7a9a5082e571abead6a8b8f340afe992080dd0c38a2fecc592d6da5af9befb",
+      "bytes": 13533
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/html-eof.json",
+      "committed": "agent/evidence/102900614-014/15-html-eof-green-1-html-eof.json",
+      "sha256": "cb203ff54d6faf7c3c2172b3decb0e4cfbe8a01aaec5204960b1cb81e6ddbe5a",
+      "bytes": 2008
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/html-eof.log",
+      "committed": "agent/evidence/102900614-014/16-html-eof-green-1-html-eof.log",
+      "sha256": "78164d02f153299396a8d92b5f56b60ffc6dba09a9b241545947bde5cda720bd",
+      "bytes": 5036
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/xhr-encoding.json",
+      "committed": "agent/evidence/102900614-014/17-html-eof-green-1-xhr-encoding.json",
+      "sha256": "03776805a5dbada122058762ac5c5201905f97ec0b6e55545e98f87a5e63ab16",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/xhr-encoding.log",
+      "committed": "agent/evidence/102900614-014/18-html-eof-green-1-xhr-encoding.log",
+      "sha256": "b300cebf05544c56b595a5c55b5aa6d1119a981530d424fbcaa75207f9b89a0c",
+      "bytes": 4590
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/frame-load-tasks.json",
+      "committed": "agent/evidence/102900614-014/19-html-eof-green-1-frame-load-tasks.json",
+      "sha256": "4ca6d88e8d97e2bfc721acbe13807fd590eda26ae951aa9148cc5906ec3b7f34",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/frame-load-tasks.log",
+      "committed": "agent/evidence/102900614-014/20-html-eof-green-1-frame-load-tasks.log",
+      "sha256": "fca2a6cf5bca52729a44ebf62025ebdcec0707777739c3872a5d69cd3cd73849",
+      "bytes": 1305
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/legacy-codecs.json",
+      "committed": "agent/evidence/102900614-014/21-html-eof-green-1-legacy-codecs.json",
+      "sha256": "e0567581e341d21241b80ca51669cea96231536ac32ad3980a86e8b3b27d4c71",
+      "bytes": 2001
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/legacy-codecs.log",
+      "committed": "agent/evidence/102900614-014/22-html-eof-green-1-legacy-codecs.log",
+      "sha256": "83d23c7d8417562d43b203b4808ce8d92e257d872f10fe5285b6bacdcbd9d50b",
+      "bytes": 24101
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/text-streams.json",
+      "committed": "agent/evidence/102900614-014/23-html-eof-green-1-text-streams.json",
+      "sha256": "967835cfc7a67087ae2a9d6f6e4fff572b0b1b100c229bf4e003918d28e93df0",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/text-streams.log",
+      "committed": "agent/evidence/102900614-014/24-html-eof-green-1-text-streams.log",
+      "sha256": "0169be167098eecbccbf1bfad39a41a522a5fc9c5b67ffed86abdd0238aa133a",
+      "bytes": 10263
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/message-transfer.json",
+      "committed": "agent/evidence/102900614-014/25-html-eof-green-1-message-transfer.json",
+      "sha256": "bcfaf9678372a66bf85a888d2a99209700a51c3cf0410d06b8d650767387e272",
+      "bytes": 2001
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/message-transfer.log",
+      "committed": "agent/evidence/102900614-014/26-html-eof-green-1-message-transfer.log",
+      "sha256": "047ecf8097a7a648b5ed00853895fa8af1b98c042b229f860bda4696b87a0ba3",
+      "bytes": 10023
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/text-codec.json",
+      "committed": "agent/evidence/102900614-014/27-html-eof-green-1-text-codec.json",
+      "sha256": "ce62072525e09d3e50b396fc57f4fcfd20d9f40bc2119b1082d492ef07683b51",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/text-codec.log",
+      "committed": "agent/evidence/102900614-014/28-html-eof-green-1-text-codec.log",
+      "sha256": "ac04eaadc713558bd87a58b4d5b472a6e05c83c50894eac44beff1da0afc39c1",
+      "bytes": 21131
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/test_encoding.json",
+      "committed": "agent/evidence/102900614-014/29-html-eof-green-1-test_encoding.json",
+      "sha256": "c01d8116c6a1eb5c502f4fdba75c2077a22986947b3417a8cce2d55182008ba0",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/test_encoding.log",
+      "committed": "agent/evidence/102900614-014/30-html-eof-green-1-test_encoding.log",
+      "sha256": "dfbaa42bf908960b0e192756842ddf3403ecd583d2c08fd0868827220896a0e2",
+      "bytes": 30
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/test_encoding_encoder.json",
+      "committed": "agent/evidence/102900614-014/31-html-eof-green-1-test_encoding_encoder.json",
+      "sha256": "31fb14817a82592b9631cf131a5da74036159ee78e1121792920d6669b3fdbce",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/test_encoding_encoder.log",
+      "committed": "agent/evidence/102900614-014/32-html-eof-green-1-test_encoding_encoder.log",
+      "sha256": "3d0d7958a1bc993f0a545f8b6c667fefc55af300eb5590293405b3a43edafe62",
+      "bytes": 40
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/test_url_encoding.json",
+      "committed": "agent/evidence/102900614-014/33-html-eof-green-1-test_url_encoding.json",
+      "sha256": "92b9622d8d8583e7fd26ba5418dddd50c1619cedcaf9f9a3150c7ac25366d124",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/test_url_encoding.log",
+      "committed": "agent/evidence/102900614-014/34-html-eof-green-1-test_url_encoding.log",
+      "sha256": "bf0b0ec6a486af905b4aa0dc3415d15c7822111fe415e2ad09fba5ba79c3ee2f",
+      "bytes": 34
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/test_document_encoding.json",
+      "committed": "agent/evidence/102900614-014/35-html-eof-green-1-test_document_encoding.json",
+      "sha256": "8416a87eaca3fc139ca91fcc84cfcfe109820787cc7a868baf2bb54f49661019",
+      "bytes": 2004
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/test_document_encoding.log",
+      "committed": "agent/evidence/102900614-014/36-html-eof-green-1-test_document_encoding.log",
+      "sha256": "951d1fad04152778fc17ce36777774b590d1b6c177ec1210452aacfad2c37db8",
+      "bytes": 5104
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/test_parser_input.json",
+      "committed": "agent/evidence/102900614-014/37-html-eof-green-1-test_parser_input.json",
+      "sha256": "c2e7958149b647a0e9c7a66219391266f29d4310ba35f7dc5ec0a3b09d0cd881",
+      "bytes": 2005
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/test_parser_input.log",
+      "committed": "agent/evidence/102900614-014/38-html-eof-green-1-test_parser_input.log",
+      "sha256": "223555e5612e9415a045db5b5dd6949ac34974a9b83f45dacfaa74f48edac2ae",
+      "bytes": 2466
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/summary.json",
+      "committed": "agent/evidence/102900614-014/39-html-eof-green-1-summary.json",
+      "sha256": "b0df4e5b2ebfa50105893b152c942ffdad66df57a7b7761217b4d4b729bafc32",
+      "bytes": 20694
+    },
+    {
+      "source": "output/session-102900614/html-eof-green-1/compiled-source-sha256.json",
+      "committed": "agent/evidence/102900614-014/40-html-eof-green-1-compiled-source-sha256.json",
+      "sha256": "007c82006d43fbbd2cf56099f6aeb72a9ca11b37588fe405ec6194b6d056c9f4",
+      "bytes": 15370
+    },
+    {
+      "source": "output/session-102900614/html-meta-bounds-2/bounds.json",
+      "committed": "agent/evidence/102900614-014/41-html-meta-bounds-2-bounds.json",
+      "sha256": "52f5515481dfe3640768fbd242d31e4fea223aa3f9ea9c62185ad72d59c15643",
+      "bytes": 2049
+    },
+    {
+      "source": "output/session-102900614/html-meta-bounds-2/bounds.log",
+      "committed": "agent/evidence/102900614-014/42-html-meta-bounds-2-bounds.log",
+      "sha256": "3a5ca187452e7be8f3748fc87b2c75cbfa024e41d4e1439343570385de43f403",
+      "bytes": 1688
+    },
+    {
+      "source": "output/session-102900614/html-meta-bounds-2/bounds.csv",
+      "committed": "agent/evidence/102900614-014/43-html-meta-bounds-2-bounds.csv",
+      "sha256": "0bf0f0cbff2906eac25cf62402e49a56d889dec1fc0400d2d081e87298565481",
+      "bytes": 77
+    }
+  ],
+  "raw_byte_preservation": [
+    "agent/evidence/102900614-014/02-html-meta-bounds-3-build.log",
+    "agent/evidence/102900614-014/04-html-meta-bounds-3-bounds.log",
+    "agent/evidence/102900614-014/08-html-eof-semantics-1-build.log",
+    "agent/evidence/102900614-014/10-html-eof-semantics-1-bounds.log",
+    "agent/evidence/102900614-014/14-html-eof-green-1-build.log",
+    "agent/evidence/102900614-014/16-html-eof-green-1-html-eof.log",
+    "agent/evidence/102900614-014/18-html-eof-green-1-xhr-encoding.log",
+    "agent/evidence/102900614-014/20-html-eof-green-1-frame-load-tasks.log",
+    "agent/evidence/102900614-014/22-html-eof-green-1-legacy-codecs.log",
+    "agent/evidence/102900614-014/24-html-eof-green-1-text-streams.log",
+    "agent/evidence/102900614-014/26-html-eof-green-1-message-transfer.log",
+    "agent/evidence/102900614-014/28-html-eof-green-1-text-codec.log",
+    "agent/evidence/102900614-014/30-html-eof-green-1-test_encoding.log",
+    "agent/evidence/102900614-014/32-html-eof-green-1-test_encoding_encoder.log",
+    "agent/evidence/102900614-014/34-html-eof-green-1-test_url_encoding.log",
+    "agent/evidence/102900614-014/36-html-eof-green-1-test_document_encoding.log",
+    "agent/evidence/102900614-014/38-html-eof-green-1-test_parser_input.log",
+    "agent/evidence/102900614-014/42-html-meta-bounds-2-bounds.log",
+    "agent/evidence/102900614-014/43-html-meta-bounds-2-bounds.csv"
+  ],
+  "implementation": "Use exclusive end-of-input endpoints for incomplete bogus comments and malformed end tags, preventing a negative comment span from becoming SIZE_MAX while preserving final bytes. The original failing sanitizer receipt is retained.",
+  "verification": "Previously failing ASan parser input now passes55,945 parse calls,57 semantic controls and3 input contracts in3.213s. Independent24-case/172-split EOF semantics pass under sanitizers in3.176s. Native13-stage regression gate passes in15.421s (build1.080s), including metadata29, XHR42, frame7, legacy178, streams74, transfer68, codec170, document78 and existing parser-input coverage. These repair the recorded specific fault; they do not prove every parser path safe.",
+  "limits": [
+    "These are bounded focused sanitizer/functional checks, not proof of complete parser or frame conformance.",
+    "No current combined GUI resources/navigation soak, full-WPT or same signed IPA acceptance is claimed."
+  ],
+  "model_compute_duration": "Unavailable; parallel worker wall times are not summed",
+  "sourceStaging": "Historical source reconstructed from pinned installer/preimage bytes; later working-tree candidates preserved."
+}

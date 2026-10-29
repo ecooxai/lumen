@@ -1,0 +1,11 @@
+[js log] FRAME_LOAD_CHECK {"i":0,"name":"srcdoc load reaches a handler installed after append","ok":true}
+[js log] FRAME_LOAD_CHECK {"i":1,"name":"srcdoc load runs after append and microtask checkpoint","ok":true}
+[js log] FRAME_LOAD_CHECK {"i":2,"name":"removed srcdoc has no obsolete load event","ok":true}
+[js log] FRAME_LOAD_CHECK {"i":3,"name":"replaced srcdoc dispatches only current document load","ok":true}
+[js log] FRAME_LOAD_CHECK {"i":4,"name":"initial blank insertion preserves synchronous iframe load","ok":true}
+[js log] FRAME_LOAD_CHECK {"i":5,"name":"late blank handler does not redispatch completed initial load","ok":true}
+[js log] FRAME_LOAD_CHECK {"i":6,"name":"parent completion waits for srcdoc child completion task","ok":true}
+[js log] FRAME_LOAD_RESULTS {"total":7,"passed":7,"failed":0}
+jsrun: context 18.0ms, 1 scripts 9.7ms, dom_version 47
+FRAME_LOAD_RECEIPT {"binarySHA256": "4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393", "fixtureSHA256": "64edfda6febcfe6d4c634faeae0587024a4b5df57fdbd79746e2ed08f2694ed8", "htmlSHA256": "0b6c8fdd9b4466f87720ce4d5581844fcce787fbc00e6ad32e72ab37c21f16f6", "nestedSHA256": "752323f9a9243532894a93ba69393cc37caa5d7189462f8cdba16dedbb632492", "total": 7, "passed": 7, "failed": 0}
+RESULTS frame-load-tasks PASS (7/7 checks)

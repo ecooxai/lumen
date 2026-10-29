@@ -1,0 +1,77 @@
+{
+  "startedUTC": "2026-10-28T23:55:17.481356+00:00",
+  "sourceBaseCommit": "3021c23a40ee4ffdd929a1bb50de51a0bf96a03d",
+  "fixtureSHA256": "b29d14055d187c6845493672e9c231daf265a4e31f1abef741ad483ebfc95136",
+  "sourceManifestSHA256": "cfde2015752df33597eba750dcfe7d81ff261292e2d2e4912ba1328383fa6422",
+  "stages": [
+    {
+      "stage": "build",
+      "command": [
+        "clang",
+        "-std=c11",
+        "-D_DARWIN_C_SOURCE",
+        "-g",
+        "-O1",
+        "-UNDEBUG",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-I/opt/homebrew/opt/icu4c/include",
+        "-L/opt/homebrew/opt/icu4c/lib",
+        "tests/test_html_eof_semantics.c",
+        "src/html/html.c",
+        "src/html/entities.c",
+        "src/dom/dom.c",
+        "src/dom/control.c",
+        "src/base/url.c",
+        "src/base/encoding.c",
+        "src/base/util.c",
+        "-licuuc",
+        "-lm",
+        "-o",
+        "/Users/devin/repos/lumen/output/session-102900614/html-eof-semantics-1/test_html_eof_semantics_asan"
+      ],
+      "startedUTC": "2026-10-28T23:55:17.495504+00:00",
+      "finishedUTC": "2026-10-28T23:55:19.574551+00:00",
+      "durationSeconds": 2.079,
+      "passed": true,
+      "monitor": "output/session-102900614/html-eof-semantics-1/build.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 1,
+      "intervalCpuPeakPercent": 20.802,
+      "rssPeakMiB": 78.969
+    },
+    {
+      "stage": "bounds",
+      "command": [
+        "env",
+        "ASAN_OPTIONS=abort_on_error=1:detect_leaks=0",
+        "UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1",
+        "/Users/devin/repos/lumen/output/session-102900614/html-eof-semantics-1/test_html_eof_semantics_asan"
+      ],
+      "startedUTC": "2026-10-28T23:55:19.575722+00:00",
+      "finishedUTC": "2026-10-28T23:55:20.655848+00:00",
+      "durationSeconds": 1.08,
+      "passed": true,
+      "monitor": "output/session-102900614/html-eof-semantics-1/bounds.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031
+    }
+  ],
+  "passed": true,
+  "scope": "Native byte parser bounds and semantic controls, not full HTML conformance.",
+  "artifact": {
+    "path": "output/session-102900614/html-eof-semantics-1/test_html_eof_semantics_asan",
+    "sha256": "d29a659aef8bbf19bfa61c639b7d5eb7ecc040e12387e5a4c325e963590f8bc2",
+    "bytes": 2232368
+  },
+  "results": {
+    "cases": 24,
+    "splitChecks": 172
+  },
+  "finishedUTC": "2026-10-28T23:55:20.657365+00:00",
+  "durationSeconds": 3.176
+}

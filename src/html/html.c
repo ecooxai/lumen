@@ -617,29 +617,31 @@ static void run(HtmlParser *p, bool final) {
             }
             if (i + 9 <= n && str_ieqn(s + i + 2, "doctype", 7)) {
                 const char *e = memchr(s + i, '>', n - i);
-                if (!e) { if (!final) break; e = s + n - 1; }
+                if (!e) { if (!final) break; e = s + n; }
                 size_t q = i + 9; while (q < (size_t)(e - s) && is_ws((unsigned char)s[q])) q++;
                 size_t st = q; while (q < (size_t)(e - s) && !is_ws((unsigned char)s[q])) q++;
                 p->tt = T_DOCTYPE; for (size_t z = st; z < q; z++) sb_putc(&p->tag, (char)lc((unsigned char)s[z]));
-                emit(p); i = (size_t)(e - s) + 1; continue;
+                emit(p); i = (size_t)(e - s); if (i < n) ++i; continue;
             }
             if (i + 9 <= n && !memcmp(s + i + 2, "[CDATA[", 7) && in_foreign(p)) {
                 const char *e = NULL; for (size_t q = i + 9; q + 3 <= n; q++) if (!memcmp(s + q, "]]>", 3)) { e = s + q; break; }
                 if (!e) { if (!final) break; e = s + n; }
                 sb_put(&p->chars, s + i + 9, (size_t)(e - (s + i + 9))); i = (size_t)(e - s) + 3; if (i > n) i = n; continue;
             }
-            /* bogus comment */
+            /* EOF is the exclusive end, not the preceding byte. In particular,
+             * the two-byte input "<!" has an empty comment; subtracting from
+             * n - 1 would wrap its length to SIZE_MAX. */
             const char *e = memchr(s + i, '>', n - i);
-            if (!e) { if (!final) break; e = s + n - 1; }
-            p->tt = T_COMMENT; sb_put(&p->text, s + i + 2, (size_t)(e - (s + i + 2))); emit(p); i = (size_t)(e - s) + 1; continue;
+            if (!e) { if (!final) break; e = s + n; }
+            p->tt = T_COMMENT; sb_put(&p->text, s + i + 2, (size_t)(e - (s + i + 2))); emit(p); i = (size_t)(e - s); if (i < n) ++i; continue;
         }
-        if (d == '?') { const char *e = memchr(s + i, '>', n - i); if (!e) { if (!final) break; e = s + n - 1; } p->tt = T_COMMENT; sb_put(&p->text, s + i + 1, (size_t)(e - (s + i + 1))); emit(p); i = (size_t)(e - s) + 1; continue; }
+        if (d == '?') { const char *e = memchr(s + i, '>', n - i); if (!e) { if (!final) break; e = s + n; } p->tt = T_COMMENT; sb_put(&p->text, s + i + 1, (size_t)(e - (s + i + 1))); emit(p); i = (size_t)(e - s); if (i < n) ++i; continue; }
         bool end = d == '/';
         size_t q = i + (end ? 2 : 1);
         if (q >= n) { if (!final) break; sb_put(&p->chars, s + i, n - i); i = n; continue; }
         if (!is_alpha((unsigned char)s[q])) {
             if (end && s[q] == '>') { i = q + 1; continue; }
-            if (end) { const char *e = memchr(s + q, '>', n - q); if (!e) { if (!final) break; e = s + n - 1; } p->tt = T_COMMENT; sb_put(&p->text, s + q, (size_t)(e - (s + q))); emit(p); i = (size_t)(e - s) + 1; continue; }
+            if (end) { const char *e = memchr(s + q, '>', n - q); if (!e) { if (!final) break; e = s + n; } p->tt = T_COMMENT; sb_put(&p->text, s + q, (size_t)(e - (s + q))); emit(p); i = (size_t)(e - s); if (i < n) ++i; continue; }
             sb_putc(&p->chars, '<'); i++; continue;
         }
         /* find the end of the tag, respecting quotes */

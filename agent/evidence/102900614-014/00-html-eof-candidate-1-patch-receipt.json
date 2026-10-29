@@ -1,0 +1,15 @@
+{
+  "startedUTC": "2026-10-28T23:54:03.254790+00:00",
+  "sourceBaseCommit": "3021c23a40ee4ffdd929a1bb50de51a0bf96a03d",
+  "applied": true,
+  "before": {
+    "src/html/html.c": "99218b33f6190d865619f233164c7bb81627637b7d021ff39899ee8fa20e9a07"
+  },
+  "after": {
+    "src/html/html.c": "1863a73e2815a5da5c4e346366a08a3846458538d93e3709aa631d2376e9cf09"
+  },
+  "fixtureSHA256": "ce828546e389a1af1bdc25e534c79d28189af4f8927086a703f5658895fd0c50",
+  "redMonitorSHA256": "52f5515481dfe3640768fbd242d31e4fea223aa3f9ea9c62185ad72d59c15643",
+  "redLogSHA256": "3a5ca187452e7be8f3748fc87b2c75cbfa024e41d4e1439343570385de43f403",
+  "scope": "Existing tokenizer EOF endpoint arithmetic; metadata algorithm and frozen fixtures unchanged."
+}

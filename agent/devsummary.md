@@ -249,3 +249,10 @@ Checkpoint007 commit infrastructure follow-up `2026-10-28T23:29:47.289388+00:00`
 - Frozen XHR/data-URL checks **14/42 RED →42/42 GREEN**; meta29, legacy178, streams74, transfer68, codec170 and native document78 remain green. Build9.110s; eleven stages21.265s under1Hz sampling, reusing prebuilt V8.
 - This exact historical artifact still contains the tokenizer bounds failure recorded in011. Source and all relevant RED/GREEN/failed receipts are preserved in `agent/evidence/102900614-013-xhr-encoding.json`. No safety, GUI resource or full-WPT promotion follows from these functional gates.
 - Decode XHR response bytes with MIME/override charset and BOM precedence, preserve JSON UTF8 behavior and override state, and parse data URLs through percent-byte decoding and forgiving base64 with network errors for invalid payloads.
+
+## 102900614-014 — Correct tokenizer EOF underflow and preserve comment bytes
+
+- Start `2026-10-28T23:57:53.253967+00:00`; end `2026-10-29T00:01:47.736677+00:00`; checkpoint `234.483s`; total session `6426.278s`. Accepted **45/100**, artifact733 unchanged.
+- Previously failing ASan parser input now passes55,945 parse calls,57 semantic controls and3 input contracts in3.213s. Independent24-case/172-split EOF semantics pass under sanitizers in3.176s. Native13-stage regression gate passes in15.421s (build1.080s), including metadata29, XHR42, frame7, legacy178, streams74, transfer68, codec170, document78 and existing parser-input coverage. These repair the recorded specific fault; they do not prove every parser path safe.
+- Use exclusive end-of-input endpoints for incomplete bogus comments and malformed end tags, preventing a negative comment span from becoming SIZE_MAX while preserving final bytes. The original failing sanitizer receipt is retained.
+- All raw failed/green receipts remain preserved. Source and evidence `agent/evidence/102900614-014-html-eof.json`; current GUI/resource and complete upstream acceptance remain separate. Existing prebuilt V8 reused.

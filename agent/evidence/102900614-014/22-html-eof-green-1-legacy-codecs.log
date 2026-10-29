@@ -1,0 +1,182 @@
+[js log] LEGACY_CODEC_CHECK {"i":0,"scope":"window","name":"gbk existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":1,"scope":"window","name":"gbk every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":2,"scope":"window","name":"gbk bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":3,"scope":"window","name":"gbk every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":4,"scope":"window","name":"gbk bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":5,"scope":"window","name":"gbk final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":6,"scope":"window","name":"gbk TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":7,"scope":"window","name":"gb18030 existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":8,"scope":"window","name":"gb18030 every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":9,"scope":"window","name":"gb18030 bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":10,"scope":"window","name":"gb18030 every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":11,"scope":"window","name":"gb18030 bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":12,"scope":"window","name":"gb18030 final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":13,"scope":"window","name":"gb18030 TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":14,"scope":"window","name":"big5 existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":15,"scope":"window","name":"big5 every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":16,"scope":"window","name":"big5 bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":17,"scope":"window","name":"big5 every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":18,"scope":"window","name":"big5 bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":19,"scope":"window","name":"big5 final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":20,"scope":"window","name":"big5 TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":21,"scope":"window","name":"euc-jp existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":22,"scope":"window","name":"euc-jp every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":23,"scope":"window","name":"euc-jp bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":24,"scope":"window","name":"euc-jp every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":25,"scope":"window","name":"euc-jp bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":26,"scope":"window","name":"euc-jp final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":27,"scope":"window","name":"euc-jp TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":28,"scope":"window","name":"iso-2022-jp existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":29,"scope":"window","name":"iso-2022-jp every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":30,"scope":"window","name":"iso-2022-jp bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":31,"scope":"window","name":"iso-2022-jp every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":32,"scope":"window","name":"iso-2022-jp bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":33,"scope":"window","name":"iso-2022-jp final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":34,"scope":"window","name":"iso-2022-jp TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":35,"scope":"window","name":"shift_jis existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":36,"scope":"window","name":"shift_jis every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":37,"scope":"window","name":"shift_jis bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":38,"scope":"window","name":"shift_jis every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":39,"scope":"window","name":"shift_jis bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":40,"scope":"window","name":"shift_jis final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":41,"scope":"window","name":"shift_jis TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":42,"scope":"window","name":"euc-kr existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":43,"scope":"window","name":"euc-kr every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":44,"scope":"window","name":"euc-kr bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":45,"scope":"window","name":"euc-kr every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":46,"scope":"window","name":"euc-kr bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":47,"scope":"window","name":"euc-kr final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":48,"scope":"window","name":"euc-kr TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":49,"scope":"window","name":"gbk incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":50,"scope":"window","name":"gbk fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":51,"scope":"window","name":"gbk invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":52,"scope":"window","name":"gbk fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":53,"scope":"window","name":"gb18030 incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":54,"scope":"window","name":"gb18030 fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":55,"scope":"window","name":"gb18030 invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":56,"scope":"window","name":"gb18030 fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":57,"scope":"window","name":"big5 incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":58,"scope":"window","name":"big5 fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":59,"scope":"window","name":"big5 invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":60,"scope":"window","name":"big5 fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":61,"scope":"window","name":"euc-jp incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":62,"scope":"window","name":"euc-jp fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":63,"scope":"window","name":"euc-jp invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":64,"scope":"window","name":"euc-jp fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":65,"scope":"window","name":"shift_jis incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":66,"scope":"window","name":"shift_jis fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":67,"scope":"window","name":"shift_jis invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":68,"scope":"window","name":"shift_jis fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":69,"scope":"window","name":"euc-kr incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":70,"scope":"window","name":"euc-kr fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":71,"scope":"window","name":"euc-kr invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":72,"scope":"window","name":"euc-kr fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":73,"scope":"window","name":"ISO2022 incomplete escape EOF reconsumes leading byte","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":74,"scope":"window","name":"ISO2022 invalid escape reconsumes both following bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":75,"scope":"window","name":"ISO2022 consecutive escapes retain output flag","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":76,"scope":"window","name":"ISO2022 fatal consecutive escape resumes in output state","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":77,"scope":"window","name":"ISO2022 split Katakana escape and final reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":78,"scope":"window","name":"ISO2022 empty flush resets Katakana state","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":79,"scope":"window","name":"ISO2022 fatal invalid escape preserves reconsume queue","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":80,"scope":"window","name":"ISO2022 Roman state and explicit final flush","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":81,"scope":"window","name":"GB18030 invalid third byte restores digit and byte","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":82,"scope":"window","name":"GB18030 invalid fourth byte restores three bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":83,"scope":"window","name":"GB18030 EOF emits a single error for unfinished four-byte scalar","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":84,"scope":"window","name":"single-byte fatal streaming accepts valid bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":85,"scope":"window","name":"single-byte fatal streaming retains bytes after error","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":86,"scope":"window","name":"input mutation cannot change retained leading byte","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":87,"scope":"window","name":"decoder instances keep independent ISO2022 state","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":88,"scope":"cross-realm","name":"parent decode retains child legacy state","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":89,"scope":"cross-realm","name":"child decode retains parent legacy state","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":90,"scope":"worker","name":"gbk existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":91,"scope":"worker","name":"gbk every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":92,"scope":"worker","name":"gbk bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":93,"scope":"worker","name":"gbk every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":94,"scope":"worker","name":"gbk bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":95,"scope":"worker","name":"gbk final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":96,"scope":"worker","name":"gbk TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":97,"scope":"worker","name":"gb18030 existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":98,"scope":"worker","name":"gb18030 every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":99,"scope":"worker","name":"gb18030 bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":100,"scope":"worker","name":"gb18030 every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":101,"scope":"worker","name":"gb18030 bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":102,"scope":"worker","name":"gb18030 final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":103,"scope":"worker","name":"gb18030 TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":104,"scope":"worker","name":"big5 existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":105,"scope":"worker","name":"big5 every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":106,"scope":"worker","name":"big5 bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":107,"scope":"worker","name":"big5 every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":108,"scope":"worker","name":"big5 bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":109,"scope":"worker","name":"big5 final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":110,"scope":"worker","name":"big5 TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":111,"scope":"worker","name":"euc-jp existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":112,"scope":"worker","name":"euc-jp every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":113,"scope":"worker","name":"euc-jp bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":114,"scope":"worker","name":"euc-jp every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":115,"scope":"worker","name":"euc-jp bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":116,"scope":"worker","name":"euc-jp final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":117,"scope":"worker","name":"euc-jp TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":118,"scope":"worker","name":"iso-2022-jp existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":119,"scope":"worker","name":"iso-2022-jp every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":120,"scope":"worker","name":"iso-2022-jp bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":121,"scope":"worker","name":"iso-2022-jp every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":122,"scope":"worker","name":"iso-2022-jp bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":123,"scope":"worker","name":"iso-2022-jp final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":124,"scope":"worker","name":"iso-2022-jp TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":125,"scope":"worker","name":"shift_jis existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":126,"scope":"worker","name":"shift_jis every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":127,"scope":"worker","name":"shift_jis bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":128,"scope":"worker","name":"shift_jis every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":129,"scope":"worker","name":"shift_jis bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":130,"scope":"worker","name":"shift_jis final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":131,"scope":"worker","name":"shift_jis TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":132,"scope":"worker","name":"euc-kr existing one-shot output","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":133,"scope":"worker","name":"euc-kr every two-chunk boundary fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":134,"scope":"worker","name":"euc-kr bytewise with empty chunks fatal=false","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":135,"scope":"worker","name":"euc-kr every two-chunk boundary fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":136,"scope":"worker","name":"euc-kr bytewise with empty chunks fatal=true","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":137,"scope":"worker","name":"euc-kr final chunk resets state for subsequent decode","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":138,"scope":"worker","name":"euc-kr TextDecoderStream bytewise","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":139,"scope":"worker","name":"gbk incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":140,"scope":"worker","name":"gbk fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":141,"scope":"worker","name":"gbk invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":142,"scope":"worker","name":"gbk fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":143,"scope":"worker","name":"gb18030 incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":144,"scope":"worker","name":"gb18030 fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":145,"scope":"worker","name":"gb18030 invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":146,"scope":"worker","name":"gb18030 fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":147,"scope":"worker","name":"big5 incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":148,"scope":"worker","name":"big5 fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":149,"scope":"worker","name":"big5 invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":150,"scope":"worker","name":"big5 fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":151,"scope":"worker","name":"euc-jp incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":152,"scope":"worker","name":"euc-jp fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":153,"scope":"worker","name":"euc-jp invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":154,"scope":"worker","name":"euc-jp fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":155,"scope":"worker","name":"shift_jis incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":156,"scope":"worker","name":"shift_jis fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":157,"scope":"worker","name":"shift_jis invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":158,"scope":"worker","name":"shift_jis fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":159,"scope":"worker","name":"euc-kr incomplete final input emits one replacement","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":160,"scope":"worker","name":"euc-kr fatal incomplete flush then reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":161,"scope":"worker","name":"euc-kr invalid trail reconsumes ASCII","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":162,"scope":"worker","name":"euc-kr fatal streaming retains unconsumed bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":163,"scope":"worker","name":"ISO2022 incomplete escape EOF reconsumes leading byte","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":164,"scope":"worker","name":"ISO2022 invalid escape reconsumes both following bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":165,"scope":"worker","name":"ISO2022 consecutive escapes retain output flag","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":166,"scope":"worker","name":"ISO2022 fatal consecutive escape resumes in output state","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":167,"scope":"worker","name":"ISO2022 split Katakana escape and final reset","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":168,"scope":"worker","name":"ISO2022 empty flush resets Katakana state","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":169,"scope":"worker","name":"ISO2022 fatal invalid escape preserves reconsume queue","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":170,"scope":"worker","name":"ISO2022 Roman state and explicit final flush","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":171,"scope":"worker","name":"GB18030 invalid third byte restores digit and byte","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":172,"scope":"worker","name":"GB18030 invalid fourth byte restores three bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":173,"scope":"worker","name":"GB18030 EOF emits a single error for unfinished four-byte scalar","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":174,"scope":"worker","name":"single-byte fatal streaming accepts valid bytes","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":175,"scope":"worker","name":"single-byte fatal streaming retains bytes after error","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":176,"scope":"worker","name":"input mutation cannot change retained leading byte","ok":true,"error":null}
+[js log] LEGACY_CODEC_CHECK {"i":177,"scope":"worker","name":"decoder instances keep independent ISO2022 state","ok":true,"error":null}
+[js log] LEGACY_CODEC_RESULTS {"total":178,"passed":178,"failed":0,"issue":null}
+jsrun: context 18.1ms, 1 scripts 13.4ms, dom_version 22
+LEGACY_CODEC_RECEIPT {"binary": "/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa", "binary_sha256": "4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393", "fixture_sha256": "f78c296512856e34b9344616a3c27d946be81d73f375a2af6f0a4fb4de343f69", "worker_sha256": "90e27c54ec30a348803560ad4d7ae9921254acb0c49dbb85c04228f99f9c2386", "total": 178, "passed": 178, "failed": 0, "scopes": {"window": {"total": 88, "passed": 88}, "worker": {"total": 88, "passed": 88}, "cross-realm": {"total": 2, "passed": 2}}}
+RESULTS legacy-codecs PASS (178/178 checks)

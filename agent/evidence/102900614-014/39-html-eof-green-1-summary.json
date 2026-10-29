@@ -1,0 +1,370 @@
+{
+  "startedUTC": "2026-10-28T23:54:37.689185+00:00",
+  "kind": "html-eof",
+  "sourceBaseCommit": "3021c23a40ee4ffdd929a1bb50de51a0bf96a03d",
+  "patchReceipt": "output/session-102900614/html-eof-candidate-1/patch-receipt.json",
+  "patchReceiptSHA256": "45cc41a7d90fbb7309d580344794a53aefd05e504ae274be73f5186e2bf3a769",
+  "compiledSourceManifest": "output/session-102900614/html-eof-green-1/compiled-source-sha256.json",
+  "build": "build-apple-load-20261029",
+  "rtcEnabled": true,
+  "webtransportEnabled": true,
+  "prebuiltV8": "Existing platform-matched archive reused; no V8 source build.",
+  "artifacts": {
+    "lumen": {
+      "path": "build-apple-load-20261029/lumen",
+      "snapshot": "build-apple-load-20261029/lumen-html-eof-0d84262c11de64f1",
+      "sha256": "0d84262c11de64f17f4e0ed2c72a475ce5ef024dac121152c1de11bc85cbbd38",
+      "bytes": 14038920
+    },
+    "jsrun": {
+      "path": "build-apple-load-20261029/jsrun",
+      "snapshot": "build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa",
+      "sha256": "4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393",
+      "bytes": 13827608
+    },
+    "test_encoding": {
+      "path": "build-apple-load-20261029/test_encoding",
+      "snapshot": "build-apple-load-20261029/test_encoding-html-eof-35c49a8e310dcea4",
+      "sha256": "35c49a8e310dcea4faf66840dad0e1cb1a36b43c041d6ac2ee7f6a53b713de49",
+      "bytes": 589088
+    },
+    "test_encoding_encoder": {
+      "path": "build-apple-load-20261029/test_encoding_encoder",
+      "snapshot": "build-apple-load-20261029/test_encoding_encoder-html-eof-c5cd2ff5aceea8a6",
+      "sha256": "c5cd2ff5aceea8a6af136d826beca3d5a0f2834ce84bb78c5d1adc8145bfd0e5",
+      "bytes": 589368
+    },
+    "test_url_encoding": {
+      "path": "build-apple-load-20261029/test_url_encoding",
+      "snapshot": "build-apple-load-20261029/test_url_encoding-html-eof-e744e5952ff3ae20",
+      "sha256": "e744e5952ff3ae20a18617ac9e95a341b06ee39f5c09586f62e1c9276b25c951",
+      "bytes": 609664
+    },
+    "test_document_encoding": {
+      "path": "build-apple-load-20261029/test_document_encoding",
+      "snapshot": "build-apple-load-20261029/test_document_encoding-html-eof-acac00849e40b81e",
+      "sha256": "acac00849e40b81ee517c43f456c8d0cde5a32f4367b7246ec29c76c283aed4a",
+      "bytes": 13867880
+    },
+    "test_parser_input": {
+      "path": "build-apple-load-20261029/test_parser_input",
+      "snapshot": "build-apple-load-20261029/test_parser_input-html-eof-f521aef539446eda",
+      "sha256": "f521aef539446eda11c998dd2d63915be1e40dcb87ea13759b7b122e665e8500",
+      "bytes": 815360
+    }
+  },
+  "stages": [
+    {
+      "stage": "build",
+      "startedUTC": "2026-10-28T23:54:37.703618+00:00",
+      "finishedUTC": "2026-10-28T23:54:38.783307+00:00",
+      "durationSeconds": 1.08,
+      "passed": true,
+      "command": [
+        "make",
+        "-j3",
+        "BUILD=build-apple-load-20261029",
+        "MODE=release",
+        "RTC=1",
+        "WT=1",
+        "build-apple-load-20261029/lumen",
+        "build-apple-load-20261029/jsrun",
+        "build-apple-load-20261029/test_encoding",
+        "build-apple-load-20261029/test_encoding_encoder",
+        "build-apple-load-20261029/test_url_encoding",
+        "build-apple-load-20261029/test_document_encoding",
+        "build-apple-load-20261029/test_parser_input"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/build.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 7.906,
+      "resultLines": [],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "html-eof",
+      "startedUTC": "2026-10-28T23:54:38.875002+00:00",
+      "finishedUTC": "2026-10-28T23:54:40.979504+00:00",
+      "durationSeconds": 2.105,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_html_meta_encoding.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/html-eof.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 1,
+      "intervalCpuPeakPercent": 5.98,
+      "rssPeakMiB": 26.0,
+      "resultLines": [
+        "[js log] HTML_META_RESULTS {\"total\":29,\"passed\":29,\"failed\":0}",
+        "HTML_META_RECEIPT {\"binarySHA256\": \"4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393\", \"fixtureSHA256\": \"f466ea43bdb133c418df706162e4fab1f4d1b3717e9a2ab116d7745a89630468\", \"htmlSHA256\": \"8a7d5f2355050e84bc1961c9418862ecf8c11437fc7774ee0f5bc23fb68fba35\", \"caseSHA256\": [\"b2ba26ffad0242bc3a88c8c6241effd27cf032ec8b5a521fba2d008a7de525e9\", \"b489a1abb1022e6612eacece6c4bd2ad00e72bbfae3376f4ee41c5ef34caa47f\", \"4699033b94a3dc5aa825909789b35f5ad4e466dc8436e07166eecb450bf48172\", \"0c027f3f244c7543fbf8fba48a0f9ddc59759c0c22ec2743b6a3cb6391111bd0\", \"9f967b37fc2b2184e50f2beab711f7d72a3702e158fcba78619309bef2b0fbc3\", \"4e1a8d51ff31acaafc770cf0140ea886e10aacf26311e4d5b61f7286384ef626\", \"200e2f7fc0923cc164202465e6d415daed216dbdb3f5fa5ca69f9063c9f1a168\", \"ad4cb3a8a18c73b8cb70452e9d7829c5d88985e9fedb483ac36b112595681788\", \"2c014dc456df2caa4dda1fb563cdb26a947d0760a795fb587c003e8bd53c5353\", \"6eae0a0bff73bde7cbe385ba65cfac9a370556ac4803262277b3715cc6f5e77a\", \"8d5548191d7db8182b40ae42f1969c056f4cd103c39d903c64bf599721e2d1c5\", \"1f5ee4eb70b0a73484ffeb51bad6ad0ac52de3a585adf153f6ed6935119ddfa2\", \"6b2c1487288607594083acbfec842a286662ede4817875585e607ff46a593845\", \"58004cb7d52dffafdb556a28129250f4a0d0c0c6cdc9586fdca3303027e0f77f\", \"04b102704fc1045a590a9348cfd2af3e96756f7a95579655e7a3d5dcceac97ed\", \"fcc2d391110e1b29d50543096afb35436dcaa70e4a3d197229677474baf30169\", \"d1ea49ef4bac4f39cce43aed4caa4d22dc55cb6c4cf252c65d3ea4cca4a9beb6\", \"d2c4a39c23945ee149296ef2c928ab2dd0ce3c3426ab9ac1065accff1822bef9\", \"c2fc22136dbaa86cd735e27cf5992461c23de229e03bdfbd48b83353efba2bb3\", \"531d3d53cc1ca5288a58043b510f10fa1ee2ee38b1b97ff3bcae6ed754ef8fe7\", \"465ce8d813ec5effe56107f5caf3208c82687ac0ae89dd3b02ca5c0c09332cb5\", \"7d9b3d500cc8f05ceafc64041e2ebe829d5295c754e23e5e708ba920d6ba3055\", \"3a946068b2ffa59957b66361890e32f4b9b86c315349c2be78a12992733ca662\", \"b5155d0f298d7dd1b78a1e102ab13e0479d5abd7560aca074983144d63e97d73\", \"b44c782e7b0a6cda05786602285131865ad8325a1b4e3640e1e9061c75777fe2\", \"14871f6a7746734996394653c1914c470794c9d3342ab772f33d612dadfb1c7b\", \"d3e9f9bbd54b6e77c098096f0747b1045a90d0ebf7145f9b2e619c3546e351ee\", \"6779ecb808cc4d38b647354ff0cf537ac7487cc3d09f3065dda76260d76d82fe\", \"85adafac37b5e2a03fb57a178e4a86ad87828329e9d45504430567e17a496181\"], \"total\": 29, \"passed\": 29, \"failed\": 0}",
+        "RESULTS html-meta-encoding PASS (29/29 checks)"
+      ],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "xhr-encoding",
+      "startedUTC": "2026-10-28T23:54:40.979946+00:00",
+      "finishedUTC": "2026-10-28T23:54:42.087098+00:00",
+      "durationSeconds": 1.107,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_xhr_response_encoding.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/xhr-encoding.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 4.156,
+      "resultLines": [
+        "[js log] XHR_ENCODING_RESULTS {\"total\":42,\"passed\":42,\"failed\":0}",
+        "XHR_ENCODING_RECEIPT {\"binarySHA256\": \"4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393\", \"fixtureSHA256\": \"0af8307a1ff9e24721eedc7298ee0ccdbc84372e67c5573dab17510b86793add\", \"htmlSHA256\": \"7839d5d09da919a3e878cec0837655517b38c9e29f953f0c28b1fcfd2c3ccf0d\", \"total\": 42, \"passed\": 42, \"failed\": 0}",
+        "RESULTS xhr-response-encoding PASS (42/42 checks)"
+      ],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "frame-load-tasks",
+      "startedUTC": "2026-10-28T23:54:42.087428+00:00",
+      "finishedUTC": "2026-10-28T23:54:43.167876+00:00",
+      "durationSeconds": 1.08,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_frame_load_tasks.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/frame-load-tasks.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.344,
+      "resultLines": [
+        "[js log] FRAME_LOAD_RESULTS {\"total\":7,\"passed\":7,\"failed\":0}",
+        "FRAME_LOAD_RECEIPT {\"binarySHA256\": \"4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393\", \"fixtureSHA256\": \"64edfda6febcfe6d4c634faeae0587024a4b5df57fdbd79746e2ed08f2694ed8\", \"htmlSHA256\": \"0b6c8fdd9b4466f87720ce4d5581844fcce787fbc00e6ad32e72ab37c21f16f6\", \"nestedSHA256\": \"752323f9a9243532894a93ba69393cc37caa5d7189462f8cdba16dedbb632492\", \"total\": 7, \"passed\": 7, \"failed\": 0}",
+        "RESULTS frame-load-tasks PASS (7/7 checks)"
+      ],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "legacy-codecs",
+      "startedUTC": "2026-10-28T23:54:43.168235+00:00",
+      "finishedUTC": "2026-10-28T23:54:44.273730+00:00",
+      "durationSeconds": 1.106,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_legacy_codecs.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/legacy-codecs.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 4.75,
+      "resultLines": [
+        "[js log] LEGACY_CODEC_RESULTS {\"total\":178,\"passed\":178,\"failed\":0,\"issue\":null}",
+        "LEGACY_CODEC_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa\", \"binary_sha256\": \"4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393\", \"fixture_sha256\": \"f78c296512856e34b9344616a3c27d946be81d73f375a2af6f0a4fb4de343f69\", \"worker_sha256\": \"90e27c54ec30a348803560ad4d7ae9921254acb0c49dbb85c04228f99f9c2386\", \"total\": 178, \"passed\": 178, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 88, \"passed\": 88}, \"worker\": {\"total\": 88, \"passed\": 88}, \"cross-realm\": {\"total\": 2, \"passed\": 2}}}",
+        "RESULTS legacy-codecs PASS (178/178 checks)"
+      ],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "text-streams",
+      "startedUTC": "2026-10-28T23:54:44.274158+00:00",
+      "finishedUTC": "2026-10-28T23:54:45.362050+00:00",
+      "durationSeconds": 1.088,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_text_streams.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/text-streams.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 5.609,
+      "resultLines": [
+        "[js log] TEXT_STREAM_RESULTS {\"total\":74,\"passed\":74,\"failed\":0,\"issue\":null}",
+        "TEXT_STREAM_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa\", \"binary_sha256\": \"4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393\", \"fixture_sha256\": \"45d4a163068810e3fde0595b99d6f3db6814ac75dfd737131ef77b67ed1dbf82\", \"worker_sha256\": \"c95f251bec89bf94130284d6710c8d02c5c4295450ce0d0be4b6dd9b4df81f41\", \"total\": 74, \"passed\": 74, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 35, \"passed\": 35}, \"worker\": {\"total\": 35, \"passed\": 35}, \"cross-realm\": {\"total\": 4, \"passed\": 4}}}",
+        "RESULTS text-streams PASS (74/74 checks)"
+      ],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "message-transfer",
+      "startedUTC": "2026-10-28T23:54:45.362396+00:00",
+      "finishedUTC": "2026-10-28T23:54:46.447951+00:00",
+      "durationSeconds": 1.086,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_message_transfer.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/message-transfer.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 5.25,
+      "resultLines": [
+        "[js log] MESSAGE_TRANSFER_RESULTS {\"total\":68,\"passed\":68,\"failed\":0,\"issue\":null}",
+        "MESSAGE_TRANSFER_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa\", \"binary_sha256\": \"4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393\", \"fixture_sha256\": \"31f3e40bebaa4ba9f06bb705c5e5b4dc3eb9a375ccf5f4d4c47eeb88540b052d\", \"worker_sha256\": \"456a04b5a1e00d4b4ba1ec870613aef2e77429fb8c9a63090e7b51829d9026d4\", \"total\": 68, \"passed\": 68, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 31, \"passed\": 31}, \"worker\": {\"total\": 31, \"passed\": 31}, \"cross-worker\": {\"total\": 6, \"passed\": 6}}}",
+        "RESULTS message-transfer PASS (68/68 checks)"
+      ],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "text-codec",
+      "startedUTC": "2026-10-28T23:54:46.448246+00:00",
+      "finishedUTC": "2026-10-28T23:54:47.545195+00:00",
+      "durationSeconds": 1.097,
+      "passed": true,
+      "command": [
+        "/opt/homebrew/opt/python@3.15/bin/python3.15",
+        "tests/test_text_codec.py",
+        "--binary",
+        "build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/text-codec.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 5.844,
+      "resultLines": [
+        "[js log] TEXT_CODEC_RESULTS {\"total\":170,\"passed\":170,\"failed\":0,\"workerIssue\":null}",
+        "TEXT_CODEC_RECEIPT {\"binary\": \"/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa\", \"binary_sha256\": \"4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393\", \"fixture_sha256\": \"fe9efe3f8452bc46ae30f280b9c930b3f510e8fb9ccd2335824a11338bdc188b\", \"worker_sha256\": \"6e49e4aad71a6e60e2490243b46c861631ad2b48924673ac63be1129f4c6ff88\", \"total\": 170, \"passed\": 170, \"failed\": 0, \"scopes\": {\"window\": {\"total\": 81, \"passed\": 81}, \"worker\": {\"total\": 81, \"passed\": 81}, \"cross-realm\": {\"total\": 8, \"passed\": 8}}}"
+      ],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "test_encoding",
+      "startedUTC": "2026-10-28T23:54:47.545594+00:00",
+      "finishedUTC": "2026-10-28T23:54:48.654963+00:00",
+      "durationSeconds": 1.109,
+      "passed": true,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/html-eof-green-1/test_encoding-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_encoding-html-eof-35c49a8e310dcea4"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/test_encoding.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "test_encoding_encoder",
+      "startedUTC": "2026-10-28T23:54:48.655297+00:00",
+      "finishedUTC": "2026-10-28T23:54:49.768002+00:00",
+      "durationSeconds": 1.113,
+      "passed": true,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/html-eof-green-1/test_encoding_encoder-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_encoding_encoder-html-eof-c5cd2ff5aceea8a6"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/test_encoding_encoder.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "test_url_encoding",
+      "startedUTC": "2026-10-28T23:54:49.768408+00:00",
+      "finishedUTC": "2026-10-28T23:54:50.873489+00:00",
+      "durationSeconds": 1.105,
+      "passed": true,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/html-eof-green-1/test_url_encoding-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_url_encoding-html-eof-e744e5952ff3ae20"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/test_url_encoding.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "test_document_encoding",
+      "startedUTC": "2026-10-28T23:54:50.873883+00:00",
+      "finishedUTC": "2026-10-28T23:54:51.972976+00:00",
+      "durationSeconds": 1.099,
+      "passed": true,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/html-eof-green-1/test_document_encoding-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_document_encoding-html-eof-acac00849e40b81e"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/test_document_encoding.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [
+        "RESULTS document-encoding PASS (78/78 checks)"
+      ],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    },
+    {
+      "stage": "test_parser_input",
+      "startedUTC": "2026-10-28T23:54:51.973391+00:00",
+      "finishedUTC": "2026-10-28T23:54:53.085923+00:00",
+      "durationSeconds": 1.113,
+      "passed": true,
+      "command": [
+        "env",
+        "LUMEN_PROFILE_DIR=/Users/devin/repos/lumen/output/session-102900614/html-eof-green-1/test_parser_input-profile",
+        "/Users/devin/repos/lumen/build-apple-load-20261029/test_parser_input-html-eof-f521aef539446eda"
+      ],
+      "monitor": "output/session-102900614/html-eof-green-1/test_parser_input.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031,
+      "resultLines": [
+        "RESULTS parser-input PASS (48/48 checks)"
+      ],
+      "performanceNote": "One-second samples retained; short regression tests do not establish GUI or idle performance."
+    }
+  ],
+  "passed": true,
+  "finishedUTC": "2026-10-28T23:54:53.091552+00:00",
+  "durationSeconds": 15.421,
+  "scope": "Native regression gates only; unchanged upstream WPT, browser UI resource acceptance and Apple device packaging are separate gates."
+}

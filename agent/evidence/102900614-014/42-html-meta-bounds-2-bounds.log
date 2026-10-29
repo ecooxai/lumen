@@ -1,0 +1,29 @@
+=================================================================
+==79351==ERROR: AddressSanitizer: memcpy-param-overlap: memory ranges [0x000000000000,0xffffffffffffffff) and [0x6060006f1342, 0x6060006f1341) overlap
+    #0 0x000105bb00e0 in __asan_memcpy.cold.1+0x24 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x900e0)
+    #1 0x000105b5eb7c in __asan_memcpy+0x1ec (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x3eb7c)
+    #2 0x000104fb25a4 in sb_put util.c:22
+    #3 0x000104f55078 in run html.c
+    #4 0x000104f596a8 in html_parser_finish html.c:731
+    #5 0x000104f63990 in html_parse html.c:742
+    #6 0x000104f65320 in html_parse_bytes html.c:992
+    #7 0x000104f510c0 in parse test_html_encoding_bounds.c:17
+    #8 0x000104f50cc4 in main test_html_encoding_bounds.c:78
+    #9 0x000186cb04e0 in start+0x1b4c (dyld:arm64e+0x204e0)
+
+Address 0x000000000000 is a wild pointer inside of access range of size 0xffffffffffffffff.
+0x6060006f1342 is located 2 bytes inside of 64-byte region [0x6060006f1340,0x6060006f1380)
+allocated by thread T0 here:
+    #0 0x000105b61460 in realloc+0x80 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x41460)
+    #1 0x000104fb21f4 in xrealloc util.c:10
+    #2 0x000104fb21f4 in sb_grow util.c:19
+    #3 0x000104fb2538 in sb_put util.c:22
+    #4 0x000104f530c8 in html_parser_feed html.c:726
+    #5 0x000104f63988 in html_parse html.c:741
+    #6 0x000104f65320 in html_parse_bytes html.c:992
+    #7 0x000104f510c0 in parse test_html_encoding_bounds.c:17
+    #8 0x000104f50cc4 in main test_html_encoding_bounds.c:78
+    #9 0x000186cb04e0 in start+0x1b4c (dyld:arm64e+0x204e0)
+
+SUMMARY: AddressSanitizer: memcpy-param-overlap util.c:22 in sb_put
+==79351==ABORTING

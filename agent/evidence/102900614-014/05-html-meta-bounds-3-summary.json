@@ -1,0 +1,78 @@
+{
+  "startedUTC": "2026-10-28T23:54:04.325899+00:00",
+  "sourceBaseCommit": "3021c23a40ee4ffdd929a1bb50de51a0bf96a03d",
+  "fixtureSHA256": "ce828546e389a1af1bdc25e534c79d28189af4f8927086a703f5658895fd0c50",
+  "sourceManifestSHA256": "5b8b3e3092d4d7a9773d5cedb8cf54334b14657bb6b77833c78475c424433c1a",
+  "stages": [
+    {
+      "stage": "build",
+      "command": [
+        "clang",
+        "-std=c11",
+        "-D_DARWIN_C_SOURCE",
+        "-g",
+        "-O1",
+        "-UNDEBUG",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-I/opt/homebrew/opt/icu4c/include",
+        "-L/opt/homebrew/opt/icu4c/lib",
+        "tests/test_html_encoding_bounds.c",
+        "src/html/html.c",
+        "src/html/entities.c",
+        "src/dom/dom.c",
+        "src/dom/control.c",
+        "src/base/url.c",
+        "src/base/encoding.c",
+        "src/base/util.c",
+        "-licuuc",
+        "-lm",
+        "-o",
+        "/Users/devin/repos/lumen/output/session-102900614/html-meta-bounds-3/test_html_encoding_bounds_asan"
+      ],
+      "startedUTC": "2026-10-28T23:54:04.336571+00:00",
+      "finishedUTC": "2026-10-28T23:54:06.417478+00:00",
+      "durationSeconds": 2.081,
+      "passed": true,
+      "monitor": "output/session-102900614/html-meta-bounds-3/build.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 1,
+      "intervalCpuPeakPercent": 18.819,
+      "rssPeakMiB": 78.328
+    },
+    {
+      "stage": "bounds",
+      "command": [
+        "env",
+        "ASAN_OPTIONS=abort_on_error=1:detect_leaks=0",
+        "UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1",
+        "/Users/devin/repos/lumen/output/session-102900614/html-meta-bounds-3/test_html_encoding_bounds_asan"
+      ],
+      "startedUTC": "2026-10-28T23:54:06.418577+00:00",
+      "finishedUTC": "2026-10-28T23:54:07.536999+00:00",
+      "durationSeconds": 1.118,
+      "passed": true,
+      "monitor": "output/session-102900614/html-meta-bounds-3/bounds.json",
+      "naturalExitCode": 0,
+      "endedByMonitor": false,
+      "intervalCpuSamples": 0,
+      "intervalCpuPeakPercent": null,
+      "rssPeakMiB": 0.031
+    }
+  ],
+  "passed": true,
+  "scope": "Native byte parser bounds and semantic controls, not full HTML conformance.",
+  "artifact": {
+    "path": "output/session-102900614/html-meta-bounds-3/test_html_encoding_bounds_asan",
+    "sha256": "e9704ab087ea9b7d5743be475bd6cbb1f8a3d9b0301bdd9c4053e362ad4fe672",
+    "bytes": 2233648
+  },
+  "results": {
+    "parseCalls": 55945,
+    "semanticChecks": 57,
+    "contractChecks": 3
+  },
+  "finishedUTC": "2026-10-28T23:54:07.538641+00:00",
+  "durationSeconds": 3.213
+}

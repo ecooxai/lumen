@@ -1,0 +1,78 @@
+[js log] TEXT_STREAM_CHECK {"i":0,"scope":"window","name":"standalone encoder interface inheritance","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":1,"scope":"window","name":"standalone decoder interface inheritance","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":2,"scope":"window","name":"interface names lengths and tags","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":3,"scope":"window","name":"decoder options canonical encoding and fatal single-byte chunks","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":4,"scope":"window","name":"encoder encoding and separate streams","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":5,"scope":"window","name":"decoder readonly enumerable attributes","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":6,"scope":"window","name":"encoder attributes reject forged receivers","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":7,"scope":"window","name":"decoder attributes reject forged receivers","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":8,"scope":"window","name":"encoder brand rejects serialization after public prototype tampering","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":9,"scope":"window","name":"nested decoder brand rejects serialization after public prototype tampering","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":10,"scope":"window","name":"public decoder properties do not replace private state","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":11,"scope":"window","name":"decoder rejects invalid label","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":12,"scope":"window","name":"decoder rejects primitive dictionary","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":13,"scope":"window","name":"decoder accepts null dictionary","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":14,"scope":"window","name":"UTF8 scalar survives every byte boundary","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":15,"scope":"window","name":"UTF8 BOM survives every byte boundary","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":16,"scope":"window","name":"ignoreBOM preserves split BOM","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":17,"scope":"window","name":"UTF16 scalar spans bytes and chunks","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":18,"scope":"window","name":"final incomplete UTF8 emits one replacement","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":19,"scope":"window","name":"fatal incomplete flush errors both sides","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":20,"scope":"window","name":"invalid chunk type errors both sides","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":21,"scope":"window","name":"DataView uses only selected bytes","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":22,"scope":"window","name":"empty decoder chunks do not emit empty strings","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":23,"scope":"window","name":"decoder streaming reconsumes invalid continuation","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":24,"scope":"window","name":"encoder combines surrogate pair across chunks","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":25,"scope":"window","name":"encoder retains high surrogate across empty chunks","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":26,"scope":"window","name":"encoder flushes dangling high surrogate","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":27,"scope":"window","name":"encoder replaces unpaired low surrogate","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":28,"scope":"window","name":"encoder reconsumes nonlow after pending high","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":29,"scope":"window","name":"encoder converts undefined and null as DOMString","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":30,"scope":"window","name":"encoder Symbol input errors both sides","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":31,"scope":"window","name":"empty encoder input emits no empty byte chunks","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":32,"scope":"window","name":"codec writes wait for readable demand","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":33,"scope":"window","name":"readable cancellation rejects pending codec write","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":34,"scope":"window","name":"writable abort errors readable with original reason","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":35,"scope":"cross-realm","name":"parent getter reads child decoder options","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":36,"scope":"cross-realm","name":"child getter reads parent decoder encoding","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":37,"scope":"cross-realm","name":"parent getter retains child readable realm","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":38,"scope":"cross-realm","name":"child getter retains parent writable realm","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":39,"scope":"worker","name":"standalone encoder interface inheritance","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":40,"scope":"worker","name":"standalone decoder interface inheritance","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":41,"scope":"worker","name":"interface names lengths and tags","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":42,"scope":"worker","name":"decoder options canonical encoding and fatal single-byte chunks","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":43,"scope":"worker","name":"encoder encoding and separate streams","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":44,"scope":"worker","name":"decoder readonly enumerable attributes","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":45,"scope":"worker","name":"encoder attributes reject forged receivers","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":46,"scope":"worker","name":"decoder attributes reject forged receivers","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":47,"scope":"worker","name":"encoder brand rejects serialization after public prototype tampering","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":48,"scope":"worker","name":"nested decoder brand rejects serialization after public prototype tampering","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":49,"scope":"worker","name":"public decoder properties do not replace private state","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":50,"scope":"worker","name":"decoder rejects invalid label","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":51,"scope":"worker","name":"decoder rejects primitive dictionary","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":52,"scope":"worker","name":"decoder accepts null dictionary","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":53,"scope":"worker","name":"UTF8 scalar survives every byte boundary","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":54,"scope":"worker","name":"UTF8 BOM survives every byte boundary","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":55,"scope":"worker","name":"ignoreBOM preserves split BOM","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":56,"scope":"worker","name":"UTF16 scalar spans bytes and chunks","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":57,"scope":"worker","name":"final incomplete UTF8 emits one replacement","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":58,"scope":"worker","name":"fatal incomplete flush errors both sides","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":59,"scope":"worker","name":"invalid chunk type errors both sides","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":60,"scope":"worker","name":"DataView uses only selected bytes","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":61,"scope":"worker","name":"empty decoder chunks do not emit empty strings","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":62,"scope":"worker","name":"decoder streaming reconsumes invalid continuation","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":63,"scope":"worker","name":"encoder combines surrogate pair across chunks","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":64,"scope":"worker","name":"encoder retains high surrogate across empty chunks","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":65,"scope":"worker","name":"encoder flushes dangling high surrogate","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":66,"scope":"worker","name":"encoder replaces unpaired low surrogate","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":67,"scope":"worker","name":"encoder reconsumes nonlow after pending high","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":68,"scope":"worker","name":"encoder converts undefined and null as DOMString","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":69,"scope":"worker","name":"encoder Symbol input errors both sides","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":70,"scope":"worker","name":"empty encoder input emits no empty byte chunks","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":71,"scope":"worker","name":"codec writes wait for readable demand","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":72,"scope":"worker","name":"readable cancellation rejects pending codec write","ok":true,"error":null}
+[js log] TEXT_STREAM_CHECK {"i":73,"scope":"worker","name":"writable abort errors readable with original reason","ok":true,"error":null}
+[js log] TEXT_STREAM_RESULTS {"total":74,"passed":74,"failed":0,"issue":null}
+jsrun: context 19.9ms, 1 scripts 11.1ms, dom_version 22
+TEXT_STREAM_RECEIPT {"binary": "/Users/devin/repos/lumen/build-apple-load-20261029/jsrun-html-eof-4b4a9f0ba05a47aa", "binary_sha256": "4b4a9f0ba05a47aa4e1a22bc89fdda3e6ba9325101d5008d6c26c9a67227b393", "fixture_sha256": "45d4a163068810e3fde0595b99d6f3db6814ac75dfd737131ef77b67ed1dbf82", "worker_sha256": "c95f251bec89bf94130284d6710c8d02c5c4295450ce0d0be4b6dd9b4df81f41", "total": 74, "passed": 74, "failed": 0, "scopes": {"window": {"total": 35, "passed": 35}, "worker": {"total": 35, "passed": 35}, "cross-realm": {"total": 4, "passed": 4}}}
+RESULTS text-streams PASS (74/74 checks)
