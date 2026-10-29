@@ -3208,8 +3208,6 @@ int main(int argc, char **argv) {
     SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0");   /* fingers are turned into taps / scrolls below */
     ios_wait_init();
     SDL_SetHint(SDL_HINT_IOS_HIDE_HOME_INDICATOR, "0");
-    { const char *bp = SDL_GetBasePath(); char cp[1024];   /* app bundle ships cacert.pem + icudtl.dat */
-      if (bp) { snprintf(cp, sizeof cp, "%scacert.pem", bp); if (access(cp, R_OK) == 0) setenv("SSL_CERT_FILE", cp, 0); } }
 #endif
 #ifdef __linux__
     /* CPU frames go straight to the X11 window surface (XShm); otherwise SDL backs the surface with a GL
@@ -3217,6 +3215,13 @@ int main(int argc, char **argv) {
     SDL_SetHint(SDL_HINT_FRAMEBUFFER_ACCELERATION, "0");
 #endif
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) { fprintf(stderr, "SDL_Init: %s\n", SDL_GetError()); return 1; }
+#ifdef __APPLE__
+    /* SDL returns the bundle's resource directory on macOS and iOS. Keep an
+       explicit user trust configuration; otherwise use the app's CA resource. */
+    { const char *bp = SDL_GetBasePath(); char cp[4096];
+      if (bp) { int n = snprintf(cp, sizeof cp, "%scacert.pem", bp);
+        if (n > 0 && (size_t)n < sizeof cp && access(cp, R_OK) == 0) setenv("SSL_CERT_FILE", cp, 0); } }
+#endif
     if (!profile_init()) { SDL_Quit(); return 1; }
     dom_init(); net_init(6); font_init(); css_sheet_added_hook = sheet_fonts;
     icache_mu = SDL_CreateMutex(); EV_LOADED = SDL_RegisterEvents(1); EV_DL = SDL_RegisterEvents(1); js_save_file = download_save; EV_NET = SDL_RegisterEvents(1); EV_MENU = SDL_RegisterEvents(1);
