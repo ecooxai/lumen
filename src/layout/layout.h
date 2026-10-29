@@ -19,6 +19,7 @@ typedef struct IRect { float x, y, w, h; bool first, last; int line; } IRect;
 /* Owned by one layout box; sizes are final CSS pixels in logical track order. */
 typedef struct GridUsedTracks {
     float *size[2];
+    float offset[2], gap[2];  /* final content alignment and distributed gutters */
     int count[2], explicit_start[2], explicit_count[2], template_count[2];
 } GridUsedTracks;
 
@@ -85,6 +86,7 @@ float layout_inline(Layout *L, Box *b, float x0, float y0, float W, FloatCtx *fc
 float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, FloatCtx *fc);
 float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
+void grid_absolute_containing_block(const Box *cb, const Box *a, float *x, float *y, float *w, float *h);
 float grid_item_auto_min(Layout *L, Box *c, float maxlen);   /* contribution to a minmax(auto, maxlen) column */
 float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 void table_intrinsic(Layout *L, Box *b, float *mn, float *mx);

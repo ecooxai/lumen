@@ -320,6 +320,7 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
     float px, py, pw, ph;
     if (cb == L->root || (a->fixed && cb == L->root)) { px = 0; py = 0; pw = L->vw; ph = L->vh; }
     else { px = cb->x + cb->b[3]; py = cb->y + cb->b[0]; pw = cb->w - cb->b[1] - cb->b[3]; ph = cb->h - cb->b[0] - cb->b[2]; }
+    grid_absolute_containing_block(cb, a, &px, &py, &pw, &ph);
     const ComputedStyle *s = a->st;
     float af[2] = { -1, -1 };
     float x0 = px, y0 = py, w0 = pw, h0 = ph;

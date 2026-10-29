@@ -168,6 +168,60 @@ static GridPosition grid_axis_position(GridAxis axis, int explicit_tracks) {
     return (GridPosition){ LMAX(-1000, LMIN(start, 999)), span, first || last };
 }
 
+/* CSS Grid 9.1: an absolutely positioned descendant uses the grid area of
+   its containing block. Auto and nonexistent lines use the padding edge;
+   out-of-flow placement must never create implicit tracks. */
+static int64_t grid_absolute_line(int number, int explicit_tracks, int leading) {
+    return (number > 0 ? (int64_t)number - 1 : (int64_t)explicit_tracks + 1 + number) + leading;
+}
+static void grid_absolute_edges(GridAxis axis, const GridUsedTracks *tracks, int dim, int edge[2]) {
+    int64_t start = 0, end = 0;
+    bool first = axis.start.number != 0, last = axis.end.number != 0;
+    if (first) start = grid_absolute_line(axis.start.number, tracks->explicit_count[dim], tracks->explicit_start[dim]);
+    if (last) end = grid_absolute_line(axis.end.number, tracks->explicit_count[dim], tracks->explicit_start[dim]);
+    if (first && last) {
+        if (end < start) { int64_t tmp = start; start = end; end = tmp; }
+        if (end == start) end = start + 1;
+    }
+    int count = tracks->count[dim];
+    if (first && (start < 0 || start > count)) first = false;
+    if (last && (end < 0 || end > count)) last = false;
+    /* A span can resolve only against a surviving definite opposite edge. */
+    if (last && axis.start.span > 0) { start = end - (int64_t)axis.start.span; first = start >= 0 && start <= count; }
+    if (first && axis.end.span > 0) { end = start + (int64_t)axis.end.span; last = end >= 0 && end <= count; }
+    edge[0] = first ? (int)start : -1;
+    edge[1] = last ? (int)end : -1;
+}
+static float grid_absolute_coordinate(const GridUsedTracks *tracks, int dim, int line, bool end, bool reverse) {
+    int count = tracks->count[dim];
+    float position = 0, total = tracks->gap[dim] * LMAX(0, count - 1);
+    for (int i = 0; i < count; ++i) {
+        total += tracks->size[dim][i];
+        if (i < line) position += tracks->size[dim][i] + (i < count - 1 ? tracks->gap[dim] : 0);
+    }
+    /* A gutter belongs to neither adjacent grid area. */
+    if (end && line > 0 && line < count) position -= tracks->gap[dim];
+    return tracks->offset[dim] + (reverse ? total - position : position);
+}
+void grid_absolute_containing_block(const Box *cb, const Box *a, float *x, float *y, float *w, float *h) {
+    /* Vertical writing-mode grid geometry is not implemented by this path. */
+    if (!cb || cb->fmt != FMT_GRID || !cb->grid_used || !cb->st || cb->st->writing_mode || !a->st) return;
+    const GridUsedTracks *tracks = cb->grid_used;
+    for (int dim = 0; dim < 2; ++dim) {
+        int edge[2];
+        grid_absolute_edges(dim ? a->st->grid_row : a->st->grid_column, tracks, dim, edge);
+        bool reverse = !dim && cb->st->direction;
+        float *origin = dim ? y : x, *extent = dim ? h : w;
+        float content = *origin + cb->p[dim ? 0 : 3];
+        float start = *origin + (reverse ? *extent : 0);
+        float end = *origin + (reverse ? 0 : *extent);
+        if (edge[0] >= 0) start = content + grid_absolute_coordinate(tracks, dim, edge[0], false, reverse);
+        if (edge[1] >= 0) end = content + grid_absolute_coordinate(tracks, dim, edge[1], true, reverse);
+        *origin = reverse ? end : start;
+        *extent = LMAX(0, reverse ? start - end : end - start);
+    }
+}
+
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
     float cg = s->column_gap_l.pct ? res(s->column_gap_l, cw) : s->column_gap, rg = s->row_gap;
@@ -402,7 +456,8 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         .size = {cwid, rh}, .count = {items.n || explicit_columns ? nc : 0, nr},
         .explicit_start = {leading_columns, leading_rows},
         .explicit_count = {explicit_columns, explicit_rows},
-        .template_count = {sized_columns, s->grid_nrows}
+        .template_count = {sized_columns, s->grid_nrows},
+        .offset = {xoff, yoff}, .gap = {cg, rg}
     };
     free(cx0); free(ry); free(rows); free(auto_cols); free(auto_rows); vec_free(items); vec_free(cols);
     return total;
