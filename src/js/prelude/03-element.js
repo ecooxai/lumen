@@ -19,6 +19,9 @@ const serDecls = (m) => [...m].map(([k, [v, i]]) => k + ': ' + v + (i ? ' !impor
 const SHORTHAND_OF = { 'align-items': 'place-items', 'justify-items': 'place-items', 'align-self': 'place-self', 'justify-self': 'place-self', 'align-content': 'place-content', 'justify-content': 'place-content',
     'row-gap': 'gap', 'column-gap': 'gap', 'overflow-x': 'overflow', 'overflow-y': 'overflow', 'top': 'inset', 'right': 'inset', 'bottom': 'inset', 'left': 'inset',
     'margin-top': 'margin', 'margin-right': 'margin', 'margin-bottom': 'margin', 'margin-left': 'margin', 'padding-top': 'padding', 'padding-right': 'padding', 'padding-bottom': 'padding', 'padding-left': 'padding',
+    'margin-inline-start': 'margin-inline', 'margin-inline-end': 'margin-inline', 'margin-block-start': 'margin-block', 'margin-block-end': 'margin-block',
+    'padding-inline-start': 'padding-inline', 'padding-inline-end': 'padding-inline', 'padding-block-start': 'padding-block', 'padding-block-end': 'padding-block',
+    'inset-inline-start': 'inset-inline', 'inset-inline-end': 'inset-inline', 'inset-block-start': 'inset-block', 'inset-block-end': 'inset-block',
     'animation-range-start': 'animation-range', 'animation-range-end': 'animation-range' };
 /* one animation-range item: start [end]; an omitted end takes the start's range name at 100%, else normal */
 function animRangePart(v, end) {
@@ -44,6 +47,10 @@ function shorthandPart(m, p) {
         return first ? al : ju;
     }
     if (sh === 'gap' || sh === 'overflow') { if (t.length > 2) return ''; return p === 'row-gap' || p === 'overflow-x' ? t[0] : t[t.length - 1]; }
+    if (/^(margin|padding|inset)-(inline|block)$/.test(sh)) {
+        if (!t.length || t.length > 2) return '';
+        return p.endsWith('-start') ? t[0] : t[t.length - 1];
+    }
     if (t.length > 4) return '';
     const side = ['top', 'right', 'bottom', 'left'].indexOf(p.replace(/^(margin|padding)-/, ''));
     const idx = [[0, 0, 0, 0], [0, 1, 0, 1], [0, 1, 2, 1], [0, 1, 2, 3]][t.length - 1][side];

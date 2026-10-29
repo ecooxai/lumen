@@ -1,0 +1,126 @@
+{
+  "iteration": 167,
+  "status": "accepted qualified EXPERIMENTAL source checkpoint; final performance/render100/4200 pending; not a clean release",
+  "accepted": true,
+  "published": false,
+  "started_utc": "2026-10-29T00:23:09.496265+00:00",
+  "start_basis": "166 sanitizer rejection followed by explicit production font-buffer ownership repair",
+  "ended_utc": "2026-10-29T00:33:47.277606+00:00",
+  "end_basis": "root qualified experimental acceptance and sealed independent review; later final measurements retain their own timestamps",
+  "elapsed_minutes": 10.6297,
+  "session_elapsed_minutes": 106.9046,
+  "agents": [
+    "root",
+    "engine_lead_20261029",
+    "conformance_20261029",
+    "progress_20261029"
+  ],
+  "whole_goal_score": 19,
+  "target_score": 98,
+  "native_ctest": {
+    "pass": 139,
+    "total": 139,
+    "seconds": 40.04,
+    "actual_font_controls": 74,
+    "border_controls": 186
+  },
+  "fresh_normal_browser": {
+    "font4": [
+      6,
+      20
+    ],
+    "font4_chromium": [
+      14,
+      20
+    ],
+    "negative_margin": [
+      13,
+      13
+    ],
+    "native_guard_children": 5,
+    "exit0": 5,
+    "cleanup_complete": true,
+    "common_status_or_registration_losses": 0
+  },
+  "reused166_evidence": {
+    "qualification": "Only font.c ownership changed; all604 inputs compared. These remain166 measurements, not fresh167 claims.",
+    "input_delta": [
+      "src/text/font.c"
+    ],
+    "sizing38": [
+      234,
+      326
+    ],
+    "animation6": [
+      1431,
+      1504
+    ],
+    "logical7": [
+      179,
+      252
+    ],
+    "edges4": [
+      88,
+      162
+    ],
+    "stylesheet_metadata": [
+      20,
+      20
+    ],
+    "authored224": [
+      224,
+      224
+    ],
+    "authored_metadata60": [
+      58,
+      60
+    ],
+    "lifecycle41": [
+      41,
+      41
+    ],
+    "removed_link12": [
+      12,
+      12
+    ]
+  },
+  "sanitizer": {
+    "native_font_exit": 0,
+    "font_checks": 74,
+    "both_real_fonts_loaded": true,
+    "native_font_diagnostics": [],
+    "browser_checks_reached": [
+      [
+        41,
+        41
+      ],
+      [
+        12,
+        12
+      ]
+    ],
+    "browser_shutdown": "incomplete diagnostics; actual children-9; wrapper0 does not establish clean exit",
+    "extra_cleanup60_diagnostic": "same41fixture reached41/41 but actualchild-9 and same loader/LLVM diagnostics; original failures retained",
+    "clean_browser_sanitizer_claim": false,
+    "additional_concrete_engine_fault_signature_found": false,
+    "absence_of_fault_proved": false,
+    "independent_review_sha256": "729e697f5ddb8dce13e54d63da360593e402893acd1c6507e48a387fd6db2455"
+  },
+  "qualification_sha256": "af3d4fdc2c8b3b2144b9cb46b35182ef35fac09bada4135689a9a274570376ea",
+  "font_fault_origin": "Identical font_loaded allocation body existed in accepted163; newly exposed inherited defect repaired without suppressions.",
+  "limitations": [
+    "Whole WPT/Chromium parity is not achieved.",
+    "Public source replacement is held until final comparison review.",
+    "Instrumented browser shutdown coverage remains unproven; no benign-noise or clean-release claim.",
+    "Two authored parser stylesheet load callbacks remain unsupported.",
+    "Fixedfont4 native6/20 vsChromium14/20 retains14 native failures, six also failing onChromium.",
+    "Existing process-lifetime font caches remain; no bounded-cache memory claim.",
+    "External Ahem/zero fonts are explicit runtime test prerequisites and omitted from public source.",
+    "Full development history and denied private payload exports remain blocked."
+  ],
+  "binary": "build/codex-native/lumen-astra-i167",
+  "binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
+  "source_manifest_before": "accf917a6184a74c74035e57183cf62cf7bd8cbffd2694d9272764991eaae390",
+  "source_unchanged_during_build": true,
+  "head": "1df07afad74459acae3d66cd5e9fd4225b593d1c"
+}

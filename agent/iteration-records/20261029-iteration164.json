@@ -1,0 +1,108 @@
+{
+  "agents": [
+    "root",
+    "engine_lead_20261029",
+    "conformance_20261029",
+    "progress_20261029"
+  ],
+  "whole_goal_score": 19,
+  "target_score": 98,
+  "accepted": false,
+  "published": false,
+  "overlap_note": "Parallel agent intervals overlap; do not sum them as session elapsed time.",
+  "iteration": 164,
+  "status": "rejected: deterministic upstream inline-size regression",
+  "started_utc": "2026-10-28T23:03:05.705822+00:00",
+  "start_basis": "checkpoint interval after163 acceptance; includes isolated staging while immutable162 baseline ran",
+  "ended_utc": "2026-10-28T23:57:38+00:00",
+  "end_basis": "independent review and cleanup notification; raw gate completion23:55:23.757529UTC",
+  "native_ctest": {
+    "pass": 138,
+    "total": 138,
+    "seconds": 48.4
+  },
+  "portable_no_psl_controls": 195,
+  "known_regression": {
+    "url": "/css/css-logical/inheritance.html",
+    "name": "Property inline-size has initial value 294px",
+    "accepted163": "PASS",
+    "chromium": "PASS",
+    "candidate164": "FAIL",
+    "expected": "294px",
+    "actual": "300px"
+  },
+  "upstream_common_gains": {
+    "sizing38": 21,
+    "animation6": 51,
+    "logical7": 52,
+    "edges4": 81
+  },
+  "upstream_common_losses": {
+    "logical7": 1
+  },
+  "authored": {
+    "transition224": [
+      224,
+      224
+    ],
+    "iframe_metadata60": [
+      58,
+      60
+    ],
+    "stylesheet_lifecycle41": [
+      41,
+      41
+    ],
+    "removed_link12": [
+      12,
+      12
+    ]
+  },
+  "lifecycle_upstream3": {
+    "native163": [
+      8,
+      9
+    ],
+    "native164": [
+      8,
+      9
+    ],
+    "chromium": [
+      8,
+      9
+    ]
+  },
+  "isolated_negative_margin": {
+    "native162": [
+      13,
+      13
+    ],
+    "native164": [
+      13,
+      13
+    ],
+    "chromium": [
+      13,
+      13
+    ],
+    "qualification": "Does not erase the warmed actual-font core diagnostic or broad historical failures."
+  },
+  "guard_lifecycles": 70,
+  "guard_exit_codes": {
+    "0": 70
+  },
+  "independent_review_sha256": "46e802caa4e1e81fa60713f817bfc0c3ac6d8d3bdc6cb598dbcb6c1d6872bb57",
+  "limitations": [
+    "Exact294px deterministic loss prevents acceptance despite other gains.",
+    "Two parser stylesheet load notifications remain unsupported.",
+    "No sanitizer coverage at164.",
+    "No public164 source archive or accepted commit."
+  ],
+  "elapsed_minutes": 54.5382,
+  "session_elapsed_minutes": 70.75,
+  "binary": "build/codex-native/lumen-astra-i164",
+  "binary_sha256": "2524ee0a00fa1791aa179c2bb484bf510eccdd2cdbf0405919aa34139f9590f9",
+  "source_manifest_before": "43458e6bf60f69aef6829654665273fbccbf6596a7cb2f7c492e4799568fdd1b",
+  "source_unchanged_during_build": true,
+  "head": "1df07afad74459acae3d66cd5e9fd4225b593d1c"
+}

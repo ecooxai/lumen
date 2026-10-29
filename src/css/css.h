@@ -276,6 +276,7 @@ typedef struct StyleEngine {
     MediaCtx media;
     MediaCtx styled_media;
     bool media_valid;
+    bool uses_font_units; unsigned styled_font_generation;
     uint32_t order_counter;
     Document *doc;
     uint64_t generation;
@@ -342,6 +343,8 @@ extern void (*css_sheet_added_hook)(StyleSheet *s);
 void style_engine_remove_owner(StyleEngine *e, Node *owner);
 void style_engine_invalidate(StyleEngine *e);
 void style_recalc(StyleEngine *e, Node *root, bool force);
+/* True only for a document that resolved font-relative metrics before a font load. */
+bool style_font_metrics_dirty(const StyleEngine *e);
 int style_hover_affects(StyleEngine *e, Node *el); 
 int style_hover_has(StyleEngine *e, Node *el, bool child);
 void style_hover_desc(StyleEngine *e, Document *d, Node *key, Node *root, int which); /* restyle root's descendants that rules keyed on key's :hover (which 0) or :has(:hover) (1) can affect */ /* flags of :has(...:hover...) rules whose subject could be el */ /* restyle scope when el's :hover state flips: 0 none, 1 self, 2 subtree, 4 parent subtree */

@@ -1,0 +1,141 @@
+{
+  "iteration": 166,
+  "status": "rejected: production WOFF memory-face allocation leak; instrumented browser shutdown diagnostics incomplete",
+  "accepted": false,
+  "published": false,
+  "started_utc": "2026-10-29T00:03:11.387386+00:00",
+  "start_basis": "165 rejection followed by precise diagnostic, shared connector recovery and bounded repair",
+  "ended_utc": "2026-10-29T00:23:09.496265+00:00",
+  "end_basis": "actual instrumented sequence drain, followed by independent rejection review",
+  "elapsed_minutes": 19.9685,
+  "session_elapsed_minutes": 96.2749,
+  "agents": [
+    "root",
+    "engine_lead_20261029",
+    "conformance_20261029",
+    "progress_20261029"
+  ],
+  "whole_goal_score": 19,
+  "target_score": 98,
+  "native_ctest": {
+    "pass": 139,
+    "total": 139,
+    "seconds": 40.06,
+    "actual_font_controls": 74,
+    "border_controls": 186
+  },
+  "normal_focused": {
+    "sizing38": {
+      "pass": 234,
+      "total": 326,
+      "gains_vs163": 21
+    },
+    "animation6": {
+      "pass": 1431,
+      "total": 1504,
+      "gains_vs163": 51
+    },
+    "logical7": {
+      "pass": 179,
+      "total": 252,
+      "gains_vs163": 77
+    },
+    "edges4": {
+      "pass": 88,
+      "total": 162,
+      "gains_vs163": 81
+    },
+    "stylesheet_metadata": [
+      20,
+      20
+    ],
+    "common_PASS_losses": 0,
+    "added_or_missing_identities": 0,
+    "exact294px_restored": true
+  },
+  "font4": {
+    "diagnostic164": [
+      1,
+      20
+    ],
+    "candidate166": [
+      6,
+      20
+    ],
+    "chromium": [
+      14,
+      20
+    ],
+    "gains": 5,
+    "losses": 0,
+    "all_gains_Chromium_PASS": true,
+    "qualification": "164 is a rejected intermediate used only to isolate the font change; groups overlap broad4200."
+  },
+  "authored": {
+    "transitions": [
+      224,
+      224
+    ],
+    "metadata": [
+      58,
+      60
+    ],
+    "lifecycle": [
+      41,
+      41
+    ],
+    "removed_link": [
+      12,
+      12
+    ]
+  },
+  "normal_guard_children": {
+    "count": 72,
+    "exit0": 72,
+    "cleanup_complete": true
+  },
+  "normal_review_sha256": "b7ddb0ff8171d0e2eae3ce0507b310caa16ca9348c16399aeaab747602eab97d",
+  "sanitizer": {
+    "native_font_exit": 1,
+    "leak_bytes": 1056,
+    "leak_allocations": 1,
+    "allocation": "src/text/font.c font_loaded copied buffer, reported at test_font_units.c:140",
+    "native_font74_marker_observed": false,
+    "browser_markers": [
+      [
+        41,
+        41
+      ],
+      [
+        12,
+        12
+      ]
+    ],
+    "browser_wrapper_exits": [
+      0,
+      0
+    ],
+    "actual_browser_child_exits": [
+      -9,
+      -9
+    ],
+    "diagnostics": [
+      "post-marker loader preload-fd warning",
+      "LLVM broken-pipe diagnostic"
+    ],
+    "cleanup_complete": true,
+    "clean_sanitizer_claim": false,
+    "failure_seal_sha256": "9fcc255be6453b256e4b97dcc7282622977416d359c64d13fbdd07ced5fca655"
+  },
+  "limitations": [
+    "All normal gains are retained experimental evidence, not accepted/public166 release.",
+    "Both instrumented browser shutdown diagnostics remain unresolved; marker success does not override real exits.",
+    "No suppression or test expectation was changed.",
+    "Existing process-lifetime font caches are not a new bounded-cache implementation."
+  ],
+  "binary": "build/codex-native/lumen-astra-i166",
+  "binary_sha256": "a945c00c5a97ef2f128d88de2680f0c5f05c165eca3e54dcae0f7b7f9e99e6d3",
+  "source_manifest_before": "df45b6d4699f58dc4ef16ce8a7183c6377ef9c77cab03eb004061df48f9664ea",
+  "source_unchanged_during_build": true,
+  "head": "1df07afad74459acae3d66cd5e9fd4225b593d1c"
+}

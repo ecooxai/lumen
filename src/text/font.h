@@ -8,6 +8,8 @@ typedef struct Font {          /* a face at a pixel size */
     float size;                /* css px */
     float ascent, descent, line_gap, x_height, underline_pos, underline_thick;
     float space_adv;
+    float zero_advance[2]; /* horizontal / vertical; zero itself is a valid metric */
+    unsigned zero_generation; bool zero_valid;
     bool synth_bold, synth_italic;
     void *hb;                  /* hb_font_t* */
     HMap glyphs;               /* gid -> Glyph* */
@@ -28,6 +30,8 @@ void shaped_free(ShapedRun *r);
 /* changes whenever font resolution may change (a web font loaded), so cached shaping must not be reused */
 unsigned font_generation(void);
 float text_width(Font *f, const char *s, size_t len, float letter_spacing);
+/* Unshaped U+0030 advance in the native selected/fallback font, cached per generation. */
+float font_zero_advance(Font *f, bool upright);
 /* @font-face: declare a face (url must be absolute), drain fetches requested by use, hand back the bytes */
 void font_declare(const char *family, int weight, bool italic, const char *url);
 char *font_next_request(void);

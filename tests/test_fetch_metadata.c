@@ -6,6 +6,15 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#ifdef LUMEN_FETCH_METADATA_FULL_PSL
+#define SUBDOMAIN_SITE "same-site"
+#define SITE_TEST_SCOPE "pinned full PSL"
+#else
+/* This is an explicit conservative fallback contract, not a normative
+   same-site result or a substitute for full-PSL conformance coverage. */
+#define SUBDOMAIN_SITE "cross-site"
+#define SITE_TEST_SCOPE "conservative no-PSL fallback"
+#endif
 static _Atomic unsigned checks;
 #define CHECK(x) do { checks++; if (!(x)) { fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #x); exit(1); } } while (0)
 static void header(NetRequest *r, const char *name, const char *value) {
@@ -82,16 +91,16 @@ int main(void) {
     isolated("https://example.com/page", "https://example.com/s.css", "same-origin");
     isolated("https://example.com:443/page", "https://example.com/s.css", "same-origin");
     isolated("https://example.com:8443/page", "https://example.com/s.css", "same-site");
-    isolated("https://a.example.com/", "https://b.example.com/s.css", "same-site");
-    isolated("https://a.example.co.uk/", "https://b.example.co.uk/s.css", "same-site");
+    isolated("https://a.example.com/", "https://b.example.com/s.css", SUBDOMAIN_SITE);
+    isolated("https://a.example.co.uk/", "https://b.example.co.uk/s.css", SUBDOMAIN_SITE);
     isolated("https://a.co.uk/", "https://b.co.uk/s.css", "cross-site");
     isolated("https://a.github.io/", "https://b.github.io/s.css", "cross-site");
-    isolated("https://x.a.github.io/", "https://y.a.github.io/s.css", "same-site");
+    isolated("https://x.a.github.io/", "https://y.a.github.io/s.css", SUBDOMAIN_SITE);
     isolated("https://a.appspot.com/", "https://b.appspot.com/s.css", "cross-site");
     isolated("https://a.example.com/", "https://example.com.evil/s.css", "cross-site");
     isolated("http://example.com/", "https://example.com/s.css", "cross-site");
     isolated("https://example.com/", "https://example.com./s.css", "cross-site");
-    isolated("https://www.example.com./", "https://a.example.com./s.css", "same-site");
+    isolated("https://www.example.com./", "https://a.example.com./s.css", SUBDOMAIN_SITE);
     isolated("https://127.0.0.1/", "https://127.0.0.2/s.css", "cross-site");
     isolated("http://127.0.0.1:8000/", "http://127.0.0.1:9000/s.css", "same-site");
     isolated("http://[::1]:8000/", "http://[::1]:9000/s.css", "same-site");
@@ -105,8 +114,8 @@ int main(void) {
     NetRequest r = {0};
     net_request_set_fetch_metadata(&r, "https://a.example.com", "style", "cors");
     update(&r, "https://a.example.com/first", "same-origin", "cors");
-    update(&r, "https://b.example.com/middle", "same-site", "cors");
-    update(&r, "https://a.example.com/last", "same-site", "cors");
+    update(&r, "https://b.example.com/middle", SUBDOMAIN_SITE, "cors");
+    update(&r, "https://a.example.com/last", SUBDOMAIN_SITE, "cors");
     update(&r, "https://different.test/middle", "cross-site", "cors");
     update(&r, "https://a.example.com/last", "cross-site", "cors");
     update(&r, "http://a.example.com/insecure", NULL, "cors");
@@ -117,6 +126,6 @@ int main(void) {
     URL u; CHECK(url_parse("https://example.com", &u)); net_request_update_fetch_metadata(&r, &u); url_free(&u);
     header(&r, "Sec-Fetch-Dest", "empty"); headers_free(&r.headers);
     wire_redirects();
-    printf("fetch-metadata: %u/%u checks passed\n", checks, checks);
+    printf("fetch-metadata: %u/%u checks passed (%s)\n", checks, checks, SITE_TEST_SCOPE);
     return 0;
 }

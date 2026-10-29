@@ -434,6 +434,7 @@ static Face *resolve_one(const char *name, int weight, bool italic, bool *synth_
 }
 
 static void font_metrics(Font *f) {
+    f->zero_valid = false;
     FT_Face ft = f->face->ft;
     float upem = ft->units_per_EM ? ft->units_per_EM : 1000;
     float k = f->size / upem;
@@ -512,6 +513,7 @@ static Font *font_get_slow(const char *family, int weight, bool italic, float si
     snprintf(ck, sizeof ck, "%s|%d|%d", family, weight, italic);
 #endif
     pthread_mutex_lock(&font_mu);
+    font_init(); /* CSS font units can precede the first text layout. */
     Face *face = hm_get(&resolve_cache, ck); bool sb = false, si = false;
     uintptr_t flags = 0;
     if (!face) {
@@ -546,6 +548,7 @@ static Font *font_get_slow(const char *family, int weight, bool italic, float si
             Font *vf = hm_get(&fonts, key);
             if (!vf) {
                 vf = xcalloc(1, sizeof *vf); *vf = *f; memset(&vf->glyphs, 0, sizeof vf->glyphs);
+                vf->zero_valid = false; /* this instance has different variation coordinates */
                 hb_font_t *hb = hb_font_create(face->hb);
                 int sc = (int)lroundf(size * 64); hb_font_set_scale(hb, sc, sc);
                 hb_variation_t v = { HB_TAG('w', 'g', 'h', 't'), (float)weight }; hb_font_set_variations(hb, &v, 1);
@@ -677,6 +680,33 @@ void text_shape(Font *f, const char *s, size_t len, float ls, ShapedRun *out) {
 void shaped_free(ShapedRun *r) { free(r->g); r->g = NULL; r->n = 0; }
 unsigned font_generation(void) { return __atomic_load_n(&font_gen, __ATOMIC_RELAXED); }
 
+float font_zero_advance(Font *f, bool upright) {
+    if (!f) return 0;
+    pthread_mutex_lock(&font_mu);
+    unsigned generation = font_generation();
+    if (!f->zero_valid || f->zero_generation != generation) {
+        Font *selected = f;
+        if (!FT_Get_Char_Index(f->face->ft, '0')) {
+            Font *fallback = fallback_for(f, '0');
+            if (fallback) selected = fallback;
+        }
+        hb_codepoint_t glyph;
+        if (hb_font_get_nominal_glyph(selected->hb, '0', &glyph)) {
+            f->zero_advance[0] = hb_font_get_glyph_h_advance(selected->hb, glyph) / 64.f;
+            if (selected->synth_bold) f->zero_advance[0] += selected->size / 32;
+            f->zero_advance[1] = fabsf(hb_font_get_glyph_v_advance(selected->hb, glyph) / 64.f);
+        } else {
+            f->zero_advance[0] = f->size * .5f;
+            f->zero_advance[1] = f->size;
+        }
+        f->zero_generation = generation;
+        f->zero_valid = true;
+    }
+    float result = f->zero_advance[upright ? 1 : 0];
+    pthread_mutex_unlock(&font_mu);
+    return result;
+}
+
 float text_width(Font *f, const char *s, size_t len, float ls) {
     ShapedRun r; text_shape(f, s, len, ls, &r); float w = r.width; shaped_free(&r); return w;
 }
@@ -795,12 +825,25 @@ int font_pending(void) {
     return n;
 }
 
+/* FT_New_Memory_Face borrows its input until the face is destroyed. WOFF
+   decoding can replace the stream, so the original buffer needs an explicit
+   face-owned lifetime instead of relying on a stream pointer retaining it.
+   Our HarfBuzz faces use create_referenced, never create_cached (which owns
+   FT_Face.generic itself). The finalizer receives the owning FT_Face. */
+static void memory_face_done(void *object) {
+    FT_Face face = object;
+    free(face->generic.data);
+    face->generic.data = NULL;
+}
+
 bool font_loaded(const char *url, const void *data, size_t len) {
     pthread_mutex_lock(&font_mu);
     Face *f = NULL; FT_Face ft;
     void *buf = data && len ? xmalloc(len) : NULL;
     if (buf) memcpy(buf, data, len);
     if (buf && !FT_New_Memory_Face(ftlib, buf, (FT_Long)len, 0, &ft)) {
+        ft->generic.data = buf;
+        ft->generic.finalizer = memory_face_done;
         f = xcalloc(1, sizeof *f);
         char key[600]; snprintf(key, sizeof key, "web:%s", url);
         f->ft = ft; f->path = xstrdup(key);

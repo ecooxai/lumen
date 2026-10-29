@@ -107,6 +107,7 @@ typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver, seen_sheet_ver, seen_paint_ver, seen_res; bool res_seen;
     bool sheets_pending; /* a fetched stylesheet was added: next restyle recomputes everything once */
+    uint64_t link_generation; /* main-thread owner identity for native link completions */
     SheetRef *sref; int nsref;
     HMap img_fired, image_urls, blob_requests; uint64_t image_scope; bool img_check, internal_ui;
     double load_t0;   /* when its load event first became due (images delay it up to 10 s) */
@@ -551,8 +552,10 @@ static int loader(void *arg) {
 }
 
 static Page *g_loading_page;   /* the page whose load event may still be waiting for its images */
+static void link_forget_page(Page *p);
 static void page_free(Page *p) {
     if (!p) return;
+    link_forget_page(p);
     if (g_loading_page == p) g_loading_page = NULL;
     js_free(p->js);
     release_page_images(p);
@@ -2991,29 +2994,74 @@ static bool css_rule_boundary(const char *s, size_t n) {
     return depth == 0 && last == '}';
 }
 static bool is_sheet_link(Node *n) { const char *r = node_attr(n, "rel"); return n->tag == A_link && r && strstr(r, "stylesheet") && node_attr(n, "href"); }
-typedef struct { uint64_t gen; Node *n; } LinkLoad;
+typedef struct LinkLoad { uint64_t gen; Node *n; struct LinkLoad *next; } LinkLoad;
+static uint64_t g_link_generation;
+static LinkLoad *g_link_loads;
+static LinkLoad *link_load_new(Page *p, Node *n) {
+    if (!p->link_generation) p->link_generation = ++g_link_generation;
+    LinkLoad *l = xmalloc(sizeof *l); l->gen = p->link_generation; l->n = n; n->refcount++;
+    l->next = g_link_loads; g_link_loads = l;
+    return l;
+}
+static void link_load_release(LinkLoad *l) {
+    for (LinkLoad **q = &g_link_loads; *q; q = &(*q)->next)
+        if (*q == l) { *q = l->next; break; }
+    if (l->n) node_release(l->n);
+    free(l);
+}
+static void link_forget_page(Page *p) {
+    /* Nodes must release their owning-document-dependent references before
+       teardown. Keep only the empty callback record until the real request
+       completes; cancellation alone cannot remove already queued callbacks.
+       Records remain registered during dispatch, including self-navigation. */
+    for (LinkLoad *l = g_link_loads; l; l = l->next) if (l->gen == p->link_generation || (l->n && l->n->doc == p->d)) {
+        Node *n = l->n; l->n = NULL; l->gen = 0;
+        if (n) node_release(n);
+    }
+}
+static Page *link_owner(const LinkLoad *l) {
+    Page *p = image_page(l->n);
+    if (!p || p->link_generation != l->gen) return NULL;
+    /* A detached/navigated frame must not deliver a late request to the
+       active top-level document or to a replacement frame at a reused address. */
+    Page *ancestor = p;
+    for (int depth = 0; ancestor && ancestor->frame_el; depth++) {
+        if (depth >= 16 || !(ancestor->frame_el->flags & NF_CONNECTED)) return NULL;
+        ancestor = image_page(ancestor->frame_el);
+        if (!ancestor) return NULL;
+    }
+    return p;
+}
+static JsCtx *link_context(Page *p) {
+    return p && p->frame_el ? js_frame_ctx(p->frame_el) : p ? p->js : NULL;
+}
+
 static bool is_preload_link(Node *n) {
     const char *r = node_attr(n, "rel");
     return n->tag == A_link && r && strstr(r, "preload") && node_attr(n, "href");
 }
 static void preload_done(NetRequest *rq, NetResponse *r, void *ud) {
-    (void)rq; LinkLoad *l = ud; Page *p = g_app->t->cur;
-    if (p && p->gen == l->gen && p->js)
-        js_dispatch(p->js, l->n, r && r->status >= 200 && r->status < 300 ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
-    node_release(l->n);
-    free(l);
+    (void)rq; LinkLoad *l = ud; Page *p = link_owner(l); JsCtx *js = link_context(p);
+    if (js)
+        js_dispatch(js, l->n, r && r->status >= 200 && r->status < 300 ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
+    link_load_release(l);
 }
 static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
-    (void)rq; LinkLoad *l = ud; Page *p = g_app->t->cur;
-    if (p && p->gen == l->gen && r && r->status == 200 && r->body) {
+    (void)rq; LinkLoad *l = ud; Page *p = link_owner(l);
+    /* Completion can still notify a detached link, but its stylesheet must
+       not become active in a live document after the link was removed. */
+    if (p && (l->n->flags & NF_CONNECTED) && is_sheet_link(l->n) && r && r->status == 200 && r->body) {
         StyleSheet *s = css_parse_sheet(r->body, r->body_len, r->url, 1, &p->e->media); s->owner = l->n; style_engine_add_sheet(p->e, s);
         /* sheets arriving together share one full recalc (restyle runs after net_poll or on a JS style read) */
-        p->sheets_pending = true; g_app->t->relayout = g_app->dirty = true;
+        p->sheets_pending = true;
+        if (p->frame_el) p->frelayout = true;
+        Tab *t = tab_of_doc(g_app, p->d); if (t) t->relayout = true;
+        g_app->dirty = true;
     }
-    if (p && p->gen == l->gen && p->js)
-        js_dispatch(p->js, l->n, r && r->status == 200 && r->body ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
-    node_release(l->n);
-    free(l);
+    JsCtx *js = link_context(p);
+    if (js)
+        js_dispatch(js, l->n, r && r->status == 200 && r->body ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
+    link_load_release(l);
 }
 typedef struct { uint64_t gen; char *u; Image *im; } ImgLoad;
 /* bitmaps decode on the fetching thread, off the main loop; SVG decodes in img_done */
@@ -3268,7 +3316,7 @@ static bool sync_sheets(Page *p, bool seed) {
             if (t) { StyleSheet *sh = css_parse_sheet(t, strlen(t), p->d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); changed = true; n_full++; parsed += len; }
             else {
                 char *u = url_join(doc_base(p->d), node_attr(n, "href"));
-                if (u) { NetRequest *rq = is_sheet_link(n) ? sheet_request(p->d, n, u) : net_request_new("GET", u); LinkLoad *l = xmalloc(sizeof *l); l->gen = p->gen; l->n = n; n->refcount++; rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
+                if (u) { NetRequest *rq = is_sheet_link(n) ? sheet_request(p->d, n, u) : net_request_new("GET", u); LinkLoad *l = link_load_new(p, n); rq->done = is_sheet_link(n) ? link_done : preload_done; rq->ud = l; net_fetch(rq); free(u); }
             }
         }
         free(t);
@@ -3284,9 +3332,10 @@ static bool sync_sheets(Page *p, bool seed) {
     return changed;
 }
 static bool frame_restyle(Page *p) {
-    if (p->d->dom_version == p->seen_ver) return false;
+    if (p->d->dom_version == p->seen_ver && !p->sheets_pending && !style_font_metrics_dirty(p->e)) return false;
     p->seen_ver = p->d->dom_version;
     sync_sheets(p, false);
+    p->sheets_pending = false;
     style_recalc(p->e, &p->d->node, false); /* sheet changes restyle only what their rules can match */
     if (sync_images(p)) p->img_check = true;
     p->frelayout = true;
@@ -3466,7 +3515,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
             char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);
         } else if (is_sheet_link(n)) {
             char *u = url_join(doc_base(d), node_attr(n, "href"));
-            NetResponse *cr = u ? net_fetch_sync(net_request_new("GET", u)) : NULL;
+            NetResponse *cr = u ? net_fetch_sync(sheet_request(d, n, u)) : NULL;
             if (cr && cr->status == 200 && cr->body) { StyleSheet *sh = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
             if (cr) net_response_free(cr);
             free(u);
@@ -3481,6 +3530,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
 }
 static void h_frame_close(void *ud) {
     Page *p = ud;
+    link_forget_page(p);
     for (Page **pp = &g_frames; *pp; pp = &(*pp)->fnext) if (*pp == p) { *pp = p->fnext; break; }
     if (p->L) layout_free(p->L);
     if (p->e) style_engine_free(p->e);
@@ -3528,7 +3578,7 @@ static void restyle(App *a) {
         if (a->t == (a->pan ? a->pan : a->tabs[a->ti])) { a->dirty = true; a->vonly = false; }
     }
     bool viewport_changed = page_viewport(p, page_width(a), page_height(a), page_scale(a));
-    if (!viewport_changed && p->d->dom_version == p->seen_ver && !p->sheets_pending) return;
+    if (!viewport_changed && p->d->dom_version == p->seen_ver && !p->sheets_pending && !style_font_metrics_dirty(p->e)) return;
     p->seen_ver = p->d->dom_version;
     bool sheets = sync_sheets(p, false) | p->sheets_pending;
     p->sheets_pending = false;
@@ -7108,7 +7158,7 @@ int main(int argc, char **argv) {
         js_release_pins();
         double lt0 = now_ms(), tr_js = 0, tr_restyle = 0, tr_img = 0, tr_bg = 0;
         net_poll();
-        if (a.t->cur && a.t->cur->sheets_pending) restyle(&a);
+        if (a.t->cur && (a.t->cur->sheets_pending || style_font_metrics_dirty(a.t->cur->e))) restyle(&a);
         double lt1 = now_ms();
         { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); double c1 = now_ms(); restyle(&a); double c2 = now_ms(); fire_img_events(a.t->cur); double c = now_ms() - c0; tr_js += c1 - c0; tr_restyle += c2 - c1; tr_img += now_ms() - c2; a.t->cpu_ms += c; if (a.t != act) tr_bg += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         edit_sel_sync(&a);

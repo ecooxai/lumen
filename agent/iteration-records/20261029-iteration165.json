@@ -1,0 +1,58 @@
+{
+  "agents": [
+    "root",
+    "engine_lead_20261029",
+    "conformance_20261029",
+    "progress_20261029"
+  ],
+  "whole_goal_score": 19,
+  "target_score": 98,
+  "accepted": false,
+  "published": false,
+  "overlap_note": "Parallel agent intervals overlap; do not sum them as session elapsed time.",
+  "iteration": 165,
+  "status": "rejected: native CSS-wide physical border-width reset control failed",
+  "started_utc": "2026-10-28T23:27:05.620381+00:00",
+  "start_basis": "first actual-font causal diagnostic, overlapping164 staging; includes preserved failed compiler attempt",
+  "ended_utc": "2026-10-29T00:03:11.387386+00:00",
+  "end_basis": "independent native gate completion",
+  "native_ctest": {
+    "pass": 138,
+    "total": 139,
+    "seconds": 39.89
+  },
+  "font_controls_executed": 74,
+  "browser_gates_executed": false,
+  "sanitizer_executed": false,
+  "known_failure": {
+    "test": "logical_size",
+    "label": "physical/logical precedence and initial shorthand",
+    "exact_case": "border-style:solid;border-width:7px;border-width:initial",
+    "expected_width_px": 3,
+    "actual_width_px": 7,
+    "diagnostic_observed_four_widths": [
+      23,
+      17,
+      7,
+      3
+    ],
+    "unchanged_expected_four_widths": [
+      23,
+      17,
+      3,
+      3
+    ]
+  },
+  "limitations": [
+    "The186 control count belongs to repaired166, not failed165.",
+    "No browser acceptance or sanitizer coverage at165.",
+    "No public165 source archive or accepted commit."
+  ],
+  "elapsed_minutes": 36.0961,
+  "session_elapsed_minutes": 76.3065,
+  "binary": "build/codex-native/lumen-astra-i165",
+  "binary_sha256": "2cc8d882383c1b868289acbd4c190c25693126dff88b87fcfaed441e50da66e1",
+  "source_manifest_before": "61656cb7cdc5413fd7b3409d5e52804d0f0975ff39288ae4eede56ad211a143f",
+  "source_unchanged_during_build": true,
+  "head": "1df07afad74459acae3d66cd5e9fd4225b593d1c"
+}

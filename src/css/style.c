@@ -154,7 +154,21 @@ bool css_parse_color(const char *in, Color *out, Color current) {
 }
 
 /* ---------------- lengths ---------------- */
-typedef struct { float em, rem; const MediaCtx *mc; } LCtx;
+typedef struct {
+    float em, rem; const MediaCtx *mc;
+    const ComputedStyle *font_basis; bool actual_font; bool *used_font_units;
+} LCtx;
+static float ch_advance(LCtx *c) {
+    if (c->used_font_units) *c->used_font_units = true;
+    const ComputedStyle *s = c->font_basis;
+    const char *orientation = s ? custom_get(s->gen_i, "text-orientation") : NULL;
+    bool upright = s && s->writing_mode && orientation && str_ieq(orientation, "upright");
+    if (c->em <= 0) return 0;
+    if (!c->actual_font) return c->em * (upright ? 1.f : .5f);
+    Font *font = font_get(s ? s->font_family : "sans-serif", s ? s->font_weight : 400,
+                          s && s->font_style, c->em);
+    return font ? font_zero_advance(font, upright) : c->em * (upright ? 1.f : .5f);
+}
 /* nearest query container's size from the last layout (layout re-marks style when it changes); viewport otherwise */
 static float g_cq[2];
 /* set when a length used the viewport height, so a height-only viewport change (the on-screen
@@ -254,7 +268,7 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     else if (!strcmp(u, "em")) l.px = v * c->em;
     else if (!strcmp(u, "rem")) l.px = v * c->rem;
     else if (!strcmp(u, "ex")) l.px = v * c->em * 0.5f;
-    else if (!strcmp(u, "ch")) l.px = v * c->em * 0.55f;
+    else if (!strcmp(u, "ch")) l.px = v * ch_advance(c);
     else if (!strcmp(u, "cap") || !strcmp(u, "ic") || !strcmp(u, "lh")) l.px = v * c->em * (u[0] == 'l' ? 1.2f : 0.7f);
     else if (!strcmp(u, "pt")) l.px = v * 4.f / 3.f;
     else if (!strcmp(u, "pc")) l.px = v * 16;
@@ -311,17 +325,22 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
     }
     return true;
 }
-bool css_parse_length(const char *s, Length *out, float em, float rem, const MediaCtx *mc) {
+static bool css_parse_length_context(const char *s, Length *out, float em, float rem, const MediaCtx *mc,
+                                     const ComputedStyle *basis, bool actual, bool *used) {
     while (is_ws((unsigned char)*s)) s++;
     if (str_istarts(s, "auto")) { *out = L_auto(); return true; }
     if (str_istarts(s, "none")) { out->kind = LK_NONE; out->px = out->pct = 0; return true; }
     if (str_istarts(s, "min-content")) { out->kind = LK_MIN_CONTENT; out->px = out->pct = 0; return true; }
     if (str_istarts(s, "max-content")) { out->kind = LK_MAX_CONTENT; out->px = out->pct = 0; return true; }
     if (str_istarts(s, "fit-content") || str_istarts(s, "-webkit-fit-content") || str_istarts(s, "-moz-fit-content")) { out->kind = LK_FIT_CONTENT; out->px = out->pct = 0; return true; }
-    LCtx c = { em, rem, mc };
+    LCtx c = { em, rem, mc, basis, actual, used };
     const char *p = s;
     if (!parse_dim(&p, out, &c)) return false;
     return true;
+}
+
+bool css_parse_length(const char *s, Length *out, float em, float rem, const MediaCtx *mc) {
+    return css_parse_length_context(s, out, em, rem, mc, NULL, false, NULL);
 }
 
 /* ---------------- var() substitution ---------------- */
@@ -430,7 +449,25 @@ static int split_ws(const char *v, char **out, int max) { int n = 0; const char 
 static void free_toks(char **t, int n) { for (int i = 0; i < n; i++) free(t[i]); }
 
 typedef struct { ComputedStyle *st; const ComputedStyle *par; StyleEngine *e; Node *el; float em, rem; const MediaCtx *mc; } ACtx;
-static bool alen(ACtx *c, const char *v, Length *out) { return css_parse_length(v, out, c->em, c->rem, c->mc); }
+static bool alen(ACtx *c, const char *v, Length *out) {
+    return css_parse_length_context(v, out, c->em, c->rem, c->mc, c->st, true,
+                                    c->e ? &c->e->uses_font_units : NULL);
+}
+/* Font declarations precede their length consumers. A winning line-height
+   retains its existing value buffer until the final font is known. */
+typedef struct FontPhase { ComputedStyle *style; char *owned; const char *value; } FontPhase;
+static _Thread_local FontPhase *font_phase;
+static bool font_basis_prop(const char *p) {
+    if (*p == 'f') return !strcmp(p, "font") || !strcmp(p, "font-size") || !strcmp(p, "font-family")
+        || !strcmp(p, "font-weight") || !strcmp(p, "font-style");
+    return *p == 'l' && !strcmp(p, "line-height");
+}
+static bool line_height_valid(const char *v) {
+    if (str_ieq(v, "normal") || str_ieq(v, "inherit") || str_ieq(v, "initial") || str_ieq(v, "unset")
+        || str_ieq(v, "revert") || str_ieq(v, "revert-layer")) return true;
+    Length length;
+    return css_parse_length(v, &length, 16, 16, NULL) && length.kind == LK_LEN;
+}
 /* Sizing math is range-clamped once its computed length is independent of a
  * percentage reference. Keep unresolved percentages/comparisons intact for
  * layout; margin and inset values deliberately use the unrestricted parser. */
@@ -675,7 +712,7 @@ static void apply_background_image(ACtx *c, const char *v) {
 static const char *const bg_axis_props[] = { "background-position-x", "background-position-y" };
 static Length bg_percent(float value) { return (Length){ .pct = value, .kind = LK_LEN, .pctu = true }; }
 static bool bg_length(ACtx *c, const char *text, Length *out) {
-    const char *p = text; LCtx lc = { c->em, c->rem, c->mc };
+    const char *p = text; LCtx lc = { c->em, c->rem, c->mc, c->st, true, c->e ? &c->e->uses_font_units : NULL };
     char *end; float number = strtof(text, &end);
     if (end != text) {
         if (!*end && number != 0) return false;
@@ -998,6 +1035,9 @@ static void apply_font(ACtx *c, const char *v) {
     if (str_ieq(v, "caption") || str_ieq(v, "menu") || str_ieq(v, "message-box") || str_ieq(v, "status-bar") || str_ieq(v, "icon") || str_ieq(v, "small-caption")) { c->st->font_family = atom("system-ui"); return; }
     const char *p = v; char *t;
     c->st->font_style = 0; c->st->font_weight = 400; c->st->line_height_normal = true; c->st->line_height_factor = 0;
+    if (font_phase && font_phase->style == c->st) {
+        free(font_phase->owned); font_phase->owned = NULL; font_phase->value = NULL;
+    }
     css_apply_decl(c->st, c->par, "font-stretch", "normal", c->e, c->el); css_apply_decl(c->st, c->par, "font-variant-caps", "normal", c->e, c->el);
     while ((t = next_token(&p))) {
         if (str_ieq(t, "italic") || str_ieq(t, "oblique")) c->st->font_style = 1;
@@ -1326,9 +1366,9 @@ static int border_corner(const char *P) {
     return -1;
 }
 static bool inherit_copies_uncompared(const char *P) {
-    static const char *const props[] = { "background-color","background","width","height","margin","padding","border","position", NULL };
+    static const char *const props[] = { "background-color","background","width","height","margin","padding","inset","border","position", NULL };
     for (int i = 0; props[i]; i++) if (!strcmp(P, props[i])) return true;
-    return border_corner(P) >= 0;
+    return !strncmp(P, "border-", 7) || border_corner(P) >= 0;
 }
 static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block","inline-size","block-size","min-inline-size","max-inline-size","min-block-size","max-block-size", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0 || gen_prop(p); }
@@ -1463,18 +1503,118 @@ static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
 
 /* Logical sizes map to the physical ones; in vertical writing modes inline is the height */
 static const char *logical_size_prop(const char *p, bool vert) {
-    static const char *const map[][2] = { { "inline-size", "width" }, { "block-size", "height" }, { "min-inline-size", "min-width" },
-        { "max-inline-size", "max-width" }, { "min-block-size", "min-height" }, { "max-block-size", "max-height" } };
-    if (!strstr(p, "-size")) return p;
-    static const char *const vmap[][2] = { { "inline-size", "height" }, { "block-size", "width" }, { "min-inline-size", "min-height" },
-        { "max-inline-size", "max-height" }, { "min-block-size", "min-width" }, { "max-block-size", "max-width" } };
-    for (size_t i = 0; i < sizeof map / sizeof *map; i++) if (!strcmp(p, map[i][0])) return vert ? vmap[i][1] : map[i][1];
+    /* Most callers query ordinary physical properties. Dispatch by the first
+       character instead of scanning every name for a suffix on the hot path. */
+    if (p[0] == 'i') {
+        if (!strcmp(p, "inline-size")) return vert ? "height" : "width";
+    } else if (p[0] == 'b') {
+        if (!strcmp(p, "block-size")) return vert ? "width" : "height";
+    } else if (p[0] == 'm') {
+        if (!strcmp(p, "min-inline-size")) return vert ? "min-height" : "min-width";
+        if (!strcmp(p, "max-inline-size")) return vert ? "max-height" : "max-width";
+        if (!strcmp(p, "min-block-size")) return vert ? "min-width" : "min-height";
+        if (!strcmp(p, "max-block-size")) return vert ? "max-width" : "max-height";
+    }
     return p;
+}
+
+/* Flow-relative box edges share the physical slots selected by the final
+ * writing mode. Values remain distinct until their declarations cascade. */
+static bool flow_basis_prop(const char *p) {
+    return (p[0] == 'w' && !strcmp(p, "writing-mode")) ||
+           (p[0] == 'd' && !strcmp(p, "direction")) ||
+           (p[0] == 't' && !strcmp(p, "text-orientation"));
+}
+static int logical_edge_side(const ComputedStyle *s, bool block, bool end) {
+    bool vertical = s && s->writing_mode != 0, rtl = s && s->direction;
+    if (vertical && rtl) {
+        const GenProp *g = gen_prop("text-orientation");
+        const char *orientation = g ? gen_value(s, g) : NULL;
+        if (orientation && str_ieq(orientation, "upright")) rtl = false;
+    }
+    int side = block ? (!vertical ? 0 : s->writing_mode == 2 ? 1 : 3)
+                     : (!vertical ? (rtl ? 1 : 3) : (rtl ? 2 : 0));
+    return end ? (side + 2) % 4 : side;
+}
+static int box_edge_group(const char *p, const char **tail) {
+    if (p[0] == 'm' && !strncmp(p, "margin-", 7)) { *tail = p + 7; return 0; }
+    if (p[0] == 'p' && !strncmp(p, "padding-", 8)) { *tail = p + 8; return 1; }
+    if (p[0] == 'i' && !strncmp(p, "inset-", 6)) { *tail = p + 6; return 2; }
+    return -1;
+}
+static const char *const physical_edge_props[3][4] = {
+    { "margin-top", "margin-right", "margin-bottom", "margin-left" },
+    { "padding-top", "padding-right", "padding-bottom", "padding-left" },
+    { "top", "right", "bottom", "left" }
+};
+static bool logical_edge_pair(const char *p, int *group, bool *block) {
+    const char *tail = NULL; int g = box_edge_group(p, &tail);
+    if (g < 0 || (strcmp(tail, "block") && strcmp(tail, "inline"))) return false;
+    *group = g; *block = tail[0] == 'b'; return true;
+}
+static const char *const physical_border_props[3][4] = {
+    { "border-top-width", "border-right-width", "border-bottom-width", "border-left-width" },
+    { "border-top-style", "border-right-style", "border-bottom-style", "border-left-style" },
+    { "border-top-color", "border-right-color", "border-bottom-color", "border-left-color" }
+};
+static bool physical_border_prop(const char *p, int *kind, int *side) {
+    if (strncmp(p, "border-", 7)) return false;
+    for (int k = 0; k < 3; k++) for (int i = 0; i < 4; i++)
+        if (!strcmp(p, physical_border_props[k][i])) { *kind = k; *side = i; return true; }
+    return false;
+}
+static const char *logical_border_prop(const char *p, const ComputedStyle *s) {
+    if (p[0] != 'b' || strncmp(p, "border-", 7)) return p;
+    const char *tail = p + 7; bool block, end;
+    if (!strncmp(tail, "block-", 6)) { block = true; tail += 6; }
+    else if (!strncmp(tail, "inline-", 7)) { block = false; tail += 7; }
+    else return p;
+    if (!strncmp(tail, "start-", 6)) { end = false; tail += 6; }
+    else if (!strncmp(tail, "end-", 4)) { end = true; tail += 4; }
+    else return p;
+    int kind = !strcmp(tail, "width") ? 0 : !strcmp(tail, "style") ? 1 : !strcmp(tail, "color") ? 2 : -1;
+    return kind >= 0 ? physical_border_props[kind][logical_edge_side(s, block, end)] : p;
+}
+static const char *logical_box_prop(const char *p, const ComputedStyle *s) {
+    const char *size = logical_size_prop(p, s && s->writing_mode);
+    if (size != p) return size;
+    const char *border = logical_border_prop(p, s); if (border != p) return border;
+    const char *tail = NULL; int group = box_edge_group(p, &tail);
+    if (group < 0) return p;
+    bool block;
+    if (!strncmp(tail, "block-", 6)) { block = true; tail += 6; }
+    else if (!strncmp(tail, "inline-", 7)) { block = false; tail += 7; }
+    else return p;
+    if (strcmp(tail, "start") && strcmp(tail, "end")) return p;
+    return physical_edge_props[group][logical_edge_side(s, block, tail[0] == 'e')];
+}
+static Length *style_edge_values(ComputedStyle *s, int group) {
+    return group == 0 ? s->margin : group == 1 ? s->padding : s->inset;
+}
+static const Length *style_edge_values_const(const ComputedStyle *s, int group) {
+    return group == 0 ? s->margin : group == 1 ? s->padding : s->inset;
+}
+static bool physical_edge_prop(const char *p, int *group, int *side) {
+    if (p[0] != 'm' && p[0] != 'p' && p[0] != 't' && p[0] != 'r' && p[0] != 'b' && p[0] != 'l') return false;
+    for (int g = 0; g < 3; g++) for (int i = 0; i < 4; i++)
+        if (!strcmp(p, physical_edge_props[g][i])) { *group = g; *side = i; return true; }
+    return false;
+}
+/* A logical pair accepts one or two values atomically; invalid second values
+ * must not apply a half-declaration. The ordinary physical parsers stay shared. */
+static void apply_logical_edge_pair(ACtx *c, const char *value, int group, bool block) {
+    char *t[3]; int n = split_ws(value, t, 3); Length a, z;
+    if (n > 0 && n < 3 && alen(c, t[0], &a) && alen(c, t[n - 1], &z)) {
+        Length *v = style_edge_values(c->st, group);
+        v[logical_edge_side(c->st, block, false)] = a;
+        v[logical_edge_side(c->st, block, true)] = z;
+    }
+    free_toks(t, n);
 }
 
 static bool custom_defer;
 static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop);
-static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc);
+static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc, const ComputedStyle *basis, bool *used);
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
         char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
@@ -1518,7 +1658,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (strstr(v, "var(")) {
         subst = subst_vars(v, st, 0);
         if (!subst) {
-            if (!strcmp(prop, "writing-mode")) css_apply_decl(st, par, prop, "unset", e, el);
+            if (flow_basis_prop(prop)) css_apply_decl(st, par, prop, "unset", e, el);
             return;
         }
         v = subst;
@@ -1529,12 +1669,21 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)
         if (a->type == NODE_ELEMENT && a->style && a->style->container_type) { g_cq[0] = a->cq_w; g_cq[1] = a->style->container_type == 2 ? a->cq_h : 0; break; }
     if (e && e->doc && e->doc->html && e->doc->html->style && el != e->doc->html) c.rem = e->doc->html->style->font_size;
-    const char *P = logical_size_prop(prop, st->writing_mode);
-    Length l; Color col; int k;
+    const char *P = logical_box_prop(prop, st);
+    if (font_phase && font_phase->style == st && !strcmp(P, "line-height")) {
+        if (line_height_valid(val)) {
+            free(font_phase->owned); font_phase->owned = vbuf; font_phase->value = val;
+        } else free(vbuf);
+        free(subst); return;
+    }
+    Length l; Color col; int k, border_kind, border_side;
     bool inherit = str_ieq(val, "inherit"), initial = str_ieq(val, "initial") || str_ieq(val, "revert") || str_ieq(val, "revert-layer"), unset = str_ieq(val, "unset");
-    if (!strcmp(P, "writing-mode") && !inherit && !initial && !unset) {
+    if (flow_basis_prop(P) && !inherit && !initial && !unset) {
         static const char *const modes[] = { "horizontal-tb", "vertical-rl", "vertical-lr", "sideways-rl", "sideways-lr", NULL };
-        if (kw(val, modes) < 0) {
+        static const char *const directions[] = { "ltr", "rtl", NULL };
+        static const char *const orientations[] = { "mixed", "upright", "sideways", NULL };
+        const char *const *values = P[0] == 'w' ? modes : P[0] == 'd' ? directions : orientations;
+        if (kw(val, values) < 0) {
             /* Literal invalid declarations are ignored. Invalid substitution
                is invalid at computed-value time, so this inherited property
                takes its unset value instead of resurrecting a lower priority. */
@@ -1557,7 +1706,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (inherit && inherit_copies_uncompared(P)) st->parent_sensitive = true;
     {   /* anchor() insets wait for layout; anchor-name is kept for it */
         if (!strcmp(P, "inset")) for (int k = 0; k < 4; k++) { free(st->anchor_ins[k]); st->anchor_ins[k] = NULL; }
-        if (!strcmp(P, "inset") && (inherit || initial || unset)) { for (int k = 0; k < 4; k++) st->inset[k] = inherit && par ? par->inset[k] : (Length){ .kind = LK_AUTO }; return; }
+        if (!strcmp(P, "inset") && (inherit || initial || unset)) { for (int k = 0; k < 4; k++) st->inset[k] = inherit && par ? par->inset[k] : (Length){ .kind = LK_AUTO }; free(vbuf); free(subst); return; }
         if (!strcmp(P, "inset") && strstr(val, "anchor(")) {   /* each side may be (or replace) an anchor() inset */
             char *t[4]; int n = split_ws(val, t, 4);
             if (n) { static const char *const sd[4] = { "top", "right", "bottom", "left" }; int ix[4][4] = { { 0, 0, 0, 0 }, { 0, 1, 0, 1 }, { 0, 1, 2, 1 }, { 0, 1, 2, 3 } };
@@ -1605,7 +1754,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         const char *pv = par ? gen_value(par, gp) : NULL;
         if (inherit || (unset && gp->inherited)) gen_put(slot, P, grid_tracks && par ? animation_value_of(el, par, P) : xstrdup(pv ? pv : ""));
         else if (initial || unset) gen_put(slot, P, xstrdup(""));
-        else gen_put(slot, P, grid_tracks ? grid_computed_tokens(val, c.em, c.rem, c.mc) : xstrdup(val));
+        else gen_put(slot, P, grid_tracks ? grid_computed_tokens(val, c.em, c.rem, c.mc, st, e ? &e->uses_font_units : NULL) : xstrdup(val));
     }
     {
         const char *Q = strncmp(P, "-webkit-", 8) ? P : P + 8;
@@ -1631,8 +1780,21 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "display")) { st->display = src->display; st->display_text = src->display_text; }
         else if (!strcmp(P, "text-align")) st->text_align = src->text_align;
         else if (!strcmp(P, "writing-mode")) st->writing_mode = (unset && par ? par : src)->writing_mode;
-        else if (!strcmp(P, "width")) st->width = src->width;
-        else if (!strcmp(P, "height")) st->height = src->height;
+        else if (!strcmp(P, "direction")) st->direction = (unset && par ? par : src)->direction;
+        else if (!strcmp(P, "width") || !strcmp(P, "height") ||
+                 !strcmp(P, "min-width") || !strcmp(P, "min-height") ||
+                 !strcmp(P, "max-width") || !strcmp(P, "max-height")) {
+            /* Logical inherit takes the parent's corresponding logical value,
+               whose physical axis can differ from the child's. */
+            const char *from = inherit ? logical_box_prop(prop, src) : P;
+            const Length *v = !strcmp(from, "width") ? &src->width : !strcmp(from, "height") ? &src->height :
+                !strcmp(from, "min-width") ? &src->min_width : !strcmp(from, "min-height") ? &src->min_height :
+                !strcmp(from, "max-width") ? &src->max_width : &src->max_height;
+            Length *dst = !strcmp(P, "width") ? &st->width : !strcmp(P, "height") ? &st->height :
+                !strcmp(P, "min-width") ? &st->min_width : !strcmp(P, "min-height") ? &st->min_height :
+                !strcmp(P, "max-width") ? &st->max_width : &st->max_height;
+            *dst = *v; if (inherit) st->parent_sensitive = true;
+        }
         else if (!strcmp(P, "grid-column-start")) { st->grid_column.start = src->grid_column.start; if (inherit) st->parent_sensitive = true; }
         else if (!strcmp(P, "grid-column-end")) { st->grid_column.end = src->grid_column.end; if (inherit) st->parent_sensitive = true; }
         else if (!strcmp(P, "grid-row-start")) { st->grid_row.start = src->grid_row.start; if (inherit) st->parent_sensitive = true; }
@@ -1655,7 +1817,45 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         }
         else if (!strcmp(P, "margin")) memcpy(st->margin, src->margin, sizeof st->margin);
         else if (!strcmp(P, "padding")) memcpy(st->padding, src->padding, sizeof st->padding);
-        else if (!strcmp(P, "border")) { memcpy(st->border_style, src->border_style, 4); }
+        else if (!strcmp(P, "inset")) memcpy(st->inset, src->inset, sizeof st->inset);
+        else if (!strncmp(P, "margin-", 7) || !strncmp(P, "padding-", 8) || !strncmp(P, "inset-", 6) ||
+                 !strcmp(P, "top") || !strcmp(P, "right") || !strcmp(P, "bottom") || !strcmp(P, "left")) {
+            int group, side; bool block;
+            if (logical_edge_pair(P, &group, &block)) {
+                Length *dst = style_edge_values(st, group);
+                const Length *v = style_edge_values_const(src, group);
+                for (int end = 0; end < 2; end++)
+                    dst[logical_edge_side(st, block, end)] = v[logical_edge_side(inherit ? src : st, block, end)];
+                if (inherit) st->parent_sensitive = true;
+            } else if (physical_edge_prop(P, &group, &side)) {
+                const char *from = inherit ? logical_box_prop(prop, src) : P; int from_group, from_side;
+                if (physical_edge_prop(from, &from_group, &from_side))
+                    style_edge_values(st, group)[side] = style_edge_values_const(src, from_group)[from_side];
+                if (inherit) st->parent_sensitive = true;
+            }
+        }
+        else if (physical_border_prop(P, &border_kind, &border_side)) {
+            int from_kind, from_side;
+            const char *from = inherit ? logical_box_prop(prop, src) : P;
+            if (physical_border_prop(from, &from_kind, &from_side)) {
+                if (border_kind == 0) st->border_width[border_side] = src->border_width[from_side];
+                else if (border_kind == 1) st->border_style[border_side] = src->border_style[from_side];
+                else st->border_color[border_side] = inherit ? src->border_color[from_side] : st->color;
+                if (inherit) st->parent_sensitive = true;
+            }
+        }
+        else if (!strcmp(P, "border") || !strcmp(P, "border-width") ||
+                 !strcmp(P, "border-style") || !strcmp(P, "border-color")) {
+            bool all = !strcmp(P, "border");
+            if (all || !strcmp(P, "border-width"))
+                memcpy(st->border_width, src->border_width, sizeof st->border_width);
+            if (all || !strcmp(P, "border-style"))
+                memcpy(st->border_style, src->border_style, sizeof st->border_style);
+            if (all || !strcmp(P, "border-color"))
+                for (int i = 0; i < 4; i++)
+                    st->border_color[i] = inherit ? src->border_color[i] : st->color;
+            if (inherit) st->parent_sensitive = true;
+        }
         else if (!strcmp(P, "white-space")) st->white_space = src->white_space;
         else if (!strcmp(P, "visibility")) st->visibility = src->visibility;
         else if (!strcmp(P, "position")) st->position = src->position;
@@ -1740,7 +1940,6 @@ apply:
                 if (!strncmp(P + 7, corners[i], cl) && !strcmp(P + 7 + cl, "-radius")) { char *t[2]; int n = split_ws(val, t, 2); if (n) alen(&c, t[0], &st->border_radius[i]); free_toks(t, n); }
             }
             if (!strcmp(P, "border-collapse")) st->border_collapse = str_ieq(val, "collapse");
-            if (!strcmp(P, "border-inline-start-width") || !strcmp(P, "border-left-width")) { float w = border_w(&c, val); if (w >= 0) st->border_width[3] = w; }
             if (!strcmp(P, "border-start-start-radius")) alen(&c, val, &st->border_radius[0]);
             if (!strcmp(P, "border-start-end-radius")) alen(&c, val, &st->border_radius[1]);
             if (!strcmp(P, "border-end-end-radius")) alen(&c, val, &st->border_radius[2]);
@@ -1787,7 +1986,7 @@ apply:
             if (k >= 0) st->font_size = szv[k];
             else if (str_ieq(val, "smaller")) st->font_size = pf / 1.2f;
             else if (str_ieq(val, "larger")) st->font_size = pf * 1.2f;
-            else if (css_parse_length(val, &l, pf, c.rem, c.mc) && l.kind == LK_LEN) st->font_size = LMAX(0, l.px + l.pct * pf / 100);
+            else if (css_parse_length_context(val, &l, pf, c.rem, c.mc, par, true, e ? &e->uses_font_units : NULL) && l.kind == LK_LEN) st->font_size = LMAX(0, l.px + l.pct * pf / 100);
             c.em = st->font_size;
         }
         else if (!strcmp(P, "font-weight")) { if (str_ieq(val, "bold")) st->font_weight = 700; else if (str_ieq(val, "normal")) st->font_weight = 400; else if (str_ieq(val, "bolder")) st->font_weight = (int16_t)(par && par->font_weight >= 600 ? 900 : 700); else if (str_ieq(val, "lighter")) st->font_weight = 300; else { int w = atoi(val); if (w > 0) st->font_weight = (int16_t)w; } }
@@ -1862,8 +2061,8 @@ apply:
         else if (!strcmp(P, "inset-inline-end")) alen(&c, val, &st->inset[1]);
         else if (!strcmp(P, "inset-block-start")) alen(&c, val, &st->inset[0]);
         else if (!strcmp(P, "inset-block-end")) alen(&c, val, &st->inset[2]);
-        else if (!strcmp(P, "inset-inline")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { alen(&c, t[0], &st->inset[3]); alen(&c, t[n - 1], &st->inset[1]); } free_toks(t, n); }
-        else if (!strcmp(P, "inset-block")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { alen(&c, t[0], &st->inset[0]); alen(&c, t[n - 1], &st->inset[2]); } free_toks(t, n); }
+        else if (!strcmp(P, "inset-inline")) apply_logical_edge_pair(&c, val, 2, false);
+        else if (!strcmp(P, "inset-block")) apply_logical_edge_pair(&c, val, 2, true);
         else if (!strcmp(P, "isolation")) st->isolation = str_ieq(val, "isolate");
         break;
     case 'j':
@@ -1877,8 +2076,8 @@ apply:
             char *end; float x = strtof(val, &end);
             if (str_ieq(val, "normal")) { st->line_height_normal = true; st->line_height_factor = 0; }
             else if (end != val && !*end) { st->line_height_normal = false; st->line_height_factor = x; st->line_height = x * st->font_size; }
-            else if (str_istarts(val, "calc(") && !strpbrk(val + 4, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%") && css_parse_length(val, &l, st->font_size, c.rem, c.mc) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = l.px; st->line_height = l.px * st->font_size; }
-            else if (css_parse_length(val, &l, st->font_size, c.rem, c.mc) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = 0; st->line_height = l.px + l.pct * st->font_size / 100; }
+            else if (str_istarts(val, "calc(") && !strpbrk(val + 4, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%") && alen(&c, val, &l) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = l.px; st->line_height = l.px * st->font_size; }
+            else if (alen(&c, val, &l) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = 0; st->line_height = l.px + l.pct * st->font_size / 100; }
         }
         else if (!strcmp(P, "letter-spacing")) st->letter_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
         else if (!strcmp(P, "list-style-type") || !strcmp(P, "list-style")) {
@@ -1895,8 +2094,8 @@ apply:
         else if (!strcmp(P, "margin-left") || !strcmp(P, "margin-inline-start")) alen(&c, val, &st->margin[3]);
         else if (!strcmp(P, "margin-block-start")) alen(&c, val, &st->margin[0]);
         else if (!strcmp(P, "margin-block-end")) alen(&c, val, &st->margin[2]);
-        else if (!strcmp(P, "margin-inline")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { alen(&c, t[0], &st->margin[3]); alen(&c, t[n - 1], &st->margin[1]); } free_toks(t, n); }
-        else if (!strcmp(P, "margin-block")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { alen(&c, t[0], &st->margin[0]); alen(&c, t[n - 1], &st->margin[2]); } free_toks(t, n); }
+        else if (!strcmp(P, "margin-inline")) apply_logical_edge_pair(&c, val, 0, false);
+        else if (!strcmp(P, "margin-block")) apply_logical_edge_pair(&c, val, 0, true);
         else if (!strcmp(P, "min-width")) { alen_size(&c, val, &st->min_width); }
         else if (!strcmp(P, "min-height")) alen_size(&c, val, &st->min_height);
         else if (!strcmp(P, "max-width")) alen_size(&c, val, &st->max_width);
@@ -1928,8 +2127,8 @@ apply:
         else if (!strcmp(P, "padding-right") || !strcmp(P, "padding-inline-end")) alen(&c, val, &st->padding[1]);
         else if (!strcmp(P, "padding-bottom") || !strcmp(P, "padding-block-end")) alen(&c, val, &st->padding[2]);
         else if (!strcmp(P, "padding-left") || !strcmp(P, "padding-inline-start")) alen(&c, val, &st->padding[3]);
-        else if (!strcmp(P, "padding-inline")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { alen(&c, t[0], &st->padding[3]); alen(&c, t[n - 1], &st->padding[1]); } free_toks(t, n); }
-        else if (!strcmp(P, "padding-block")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { alen(&c, t[0], &st->padding[0]); alen(&c, t[n - 1], &st->padding[2]); } free_toks(t, n); }
+        else if (!strcmp(P, "padding-inline")) apply_logical_edge_pair(&c, val, 1, false);
+        else if (!strcmp(P, "padding-block")) apply_logical_edge_pair(&c, val, 1, true);
         else if (!strcmp(P, "position")) { static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky", NULL }; k = kw(val, ps); if (k >= 0) st->position = (uint8_t)k; else if (str_ieq(val, "-webkit-sticky")) st->position = P_STICKY; }
         else if (!strcmp(P, "pointer-events")) st->pointer_events = !str_ieq(val, "none");
         else if (!strcmp(P, "place-items")) { char *t[2]; int n = split_ws(val, t, 2); if (n) { st->align_items = parse_align(t[0]); st->justify_items = parse_align(t[n - 1]); gen_put(&st->gen_n, "align-items", xstrdup(t[0])); } free_toks(t, n); }
@@ -3693,6 +3892,8 @@ static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, No
     if (el->tag == A_img || el->tag == A_video) { /* aspect from attributes */ const char *w = node_attr_atom(el, A_width), *h = node_attr_atom(el, A_height); if (w && h && atof(h) > 0) st->aspect_ratio = (float)(atof(w) / atof(h)); }
 }
 
+static void apply_font_declarations(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n,
+                                    StyleEngine *e, Node *el, bool author);
 static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *base, int which) {
     int n; bool owned;
     MDecl *md = matched_decls(e, el, which, &n, &owned);
@@ -3702,10 +3903,11 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     if (!content) { if (owned) free(md); return NULL; }
     ComputedStyle *st = style_inherit(base);
     for (int i = 0; i < n; i++) if (md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-') css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
-    /* Logical dimensions use the pseudo's final writing mode, regardless of
+    /* Logical dimensions and edges use the pseudo's final mapping basis, regardless of
        where its declaration appears relative to the dimension declarations. */
-    for (int i = 0; i < n; i++) if (!strcmp(md[i].d->prop, "writing-mode")) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
-    for (int i = 0; i < n; i++) if (!(md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-') && strcmp(md[i].d->prop, "writing-mode")) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
+    for (int i = 0; i < n; i++) if (flow_basis_prop(md[i].d->prop)) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
+    apply_font_declarations(st, base, md, n, e, el, false);
+    for (int i = 0; i < n; i++) if (!(md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-') && !flow_basis_prop(md[i].d->prop) && !font_basis_prop(md[i].d->prop)) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
     if (owned) free(md);
     /* An absent pseudo can become visible when a consulted variable changes. */
     cm_or(&base->custom_dependencies, &st->custom_dependencies);
@@ -3763,8 +3965,21 @@ static bool unitless_invalid(const char *p, const char *v, Node *el) {
     if (el && el->doc && el->doc->quirks) return strchr(v, '\\') != NULL;
     return has_unitless_number(v);
 }
+static void apply_font_declarations(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n,
+                                    StyleEngine *e, Node *el, bool author) {
+    FontPhase pending = { .style = st }, *previous = font_phase;
+    font_phase = &pending;
+    for (int i = 0; i < n; i++) {
+        const char *p = v[i].d->prop;
+        if (font_basis_prop(p) && !(author && unitless_invalid(p, v[i].d->value, el)))
+            css_apply_decl(st, par, p, v[i].d->value, e, el);
+    }
+    font_phase = previous;
+    if (pending.value) css_apply_decl(st, par, "line-height", pending.value, e, el);
+    free(pending.owned);
+}
 static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el, bool author) {
-    /* Dependencies precede their consumers: custom values, writing mode,
+    /* Dependencies precede their consumers: custom values, writing-mode/direction/text-orientation,
        font-size (em basis), color, then the remaining cascade in its order. */
     custom_defer = true;
     for (int i = 0; i < n; i++) if (v[i].d->prop[0] == '-' && v[i].d->prop[1] == '-') css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
@@ -3779,12 +3994,12 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
     }
     /* CSS Logical Properties requires the element's computed writing mode
        before corresponding logical/physical dimensions cascade together. */
-    for (int i = 0; i < n; i++) if (!strcmp(v[i].d->prop, "writing-mode")) css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
-    for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if ((!strcmp(p, "font-size") || !strcmp(p, "font")) && !(author && unitless_invalid(p, v[i].d->value, el))) css_apply_decl(st, par, p, v[i].d->value, e, el); }
+    for (int i = 0; i < n; i++) if (flow_basis_prop(v[i].d->prop)) css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
+    apply_font_declarations(st, par, v, n, e, el, author);
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
     for (int i = 0; i < n; i++) {
         const char *p = v[i].d->prop;
-        if ((p[0] == '-' && p[1] == '-') || !strcmp(p, "writing-mode") || !strcmp(p, "font-size") || !strcmp(p, "font") || !strcmp(p, "color")) continue;
+        if ((p[0] == '-' && p[1] == '-') || flow_basis_prop(p) || font_basis_prop(p) || !strcmp(p, "color")) continue;
         if (author && unitless_invalid(p, v[i].d->value, el)) continue;
         if (author && el && el->doc && el->doc->quirks && quirky_length_prop(p) && has_unitless_number(v[i].d->value)) {
             char *q = quirk_px(v[i].d->value); css_apply_decl(st, par, p, q, e, el); free(q); continue;
@@ -3942,8 +4157,13 @@ static void adopt(ComputedStyle *old, ComputedStyle *nw) {
 /* The parent values an explicit `inherit` of a non-inherited property copies (see apply's inherit). */
 static bool uncompared_differ(const ComputedStyle *a, const ComputedStyle *b) {
     return a->bg_color != b->bg_color || memcmp(&a->width, &b->width, sizeof a->width) || memcmp(&a->height, &b->height, sizeof a->height) ||
+        memcmp(&a->min_width, &b->min_width, sizeof a->min_width) || memcmp(&a->min_height, &b->min_height, sizeof a->min_height) ||
+        memcmp(&a->max_width, &b->max_width, sizeof a->max_width) || memcmp(&a->max_height, &b->max_height, sizeof a->max_height) ||
         memcmp(a->margin, b->margin, sizeof a->margin) || memcmp(a->padding, b->padding, sizeof a->padding) ||
-        memcmp(a->border_style, b->border_style, sizeof a->border_style) || a->position != b->position ||
+        memcmp(a->inset, b->inset, sizeof a->inset) ||
+        memcmp(a->border_style, b->border_style, sizeof a->border_style) ||
+        memcmp(a->border_width, b->border_width, sizeof a->border_width) ||
+        memcmp(a->border_color, b->border_color, sizeof a->border_color) || a->position != b->position ||
         memcmp(a->border_radius, b->border_radius, sizeof a->border_radius);
 }
 static bool can_rebase(const ComputedStyle *s, const CustomProps *old_parent,
@@ -4028,6 +4248,14 @@ static unsigned inherited_diff(const ComputedStyle *a, const ComputedStyle *b) {
     INHERITED_EQ(direction);
     INHERITED_EQ(has_text_shadow); INHERITED_EQ(text_shadow); INHERITED_EQ(caret_color); INHERITED_EQ(fill); INHERITED_EQ(stroke); INHERITED_EQ(stroke_width);
     INHERITED_EQ(border_collapse); INHERITED_EQ(writing_mode); INHERITED_EQ(inert);
+    /* The generic inherited orientation is a dependency of logical edge
+       mapping. Keep the ordinary identical-map case free of hash lookups. */
+    if (a->gen_i != b->gen_i) {
+        const GenProp *orientation = gen_prop("text-orientation");
+        if (!str_same(gen_value(a, orientation), gen_value(b, orientation))) {
+            g_inh_field = "text-orientation"; return INH_OTHER;
+        }
+    }
 #undef INHERITED_EQ
     return (a->pointer_events != b->pointer_events ? INDEP_POINTER : 0) | (a->visibility != b->visibility ? INDEP_VISIBILITY : 0) |
         (a->cursor != b->cursor ? INDEP_CURSOR : 0) | (a->user_select != b->user_select ? INDEP_USER_SELECT : 0) |
@@ -4514,7 +4742,12 @@ static void invalidate_empty_dependents(StyleEngine *e) {
     (void)affected_count; (void)changed_n;
 #endif
 }
+bool style_font_metrics_dirty(const StyleEngine *e) {
+    return e && e->uses_font_units && e->styled_font_generation != font_generation();
+}
 void style_recalc(StyleEngine *e, Node *root, bool force) {
+    if (style_font_metrics_dirty(e)) { force = true; root = &e->doc->node; }
+    e->styled_font_generation = font_generation();
     e->stats_tree_tests = e->stats_tree_selector_tests = 0;
 #if defined(__ANDROID__) && !defined(NDEBUG)
     struct timespec dbg_t0, dbg_c0; clock_gettime(CLOCK_MONOTONIC, &dbg_t0); clock_gettime(CLOCK_THREAD_CPUTIME_ID, &dbg_c0);
@@ -4948,7 +5181,7 @@ static void gap_str(SB *b, float px, Length l) { if (l.kind == LK_LEN && l.pct) 
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop);
 static void computed_prepare(Node *el) {
     /* restyle skips display:none subtrees; an unstyled element there is styled when script asks for its style */
-    if (el && el->type == NODE_ELEMENT && (!el->style || (el->flags & NF_STYLE_DIRTY)) && (el->flags & NF_CONNECTED) && el->doc && el->doc->stylesheets) {
+    if (el && el->type == NODE_ELEMENT && (!el->style || (el->flags & NF_STYLE_DIRTY) || (el->doc && style_font_metrics_dirty(el->doc->stylesheets))) && (el->flags & NF_CONNECTED) && el->doc && el->doc->stylesheets) {
         bool flat = true;   /* not for children outside the flat tree: of a shadow host or of an element that doesn't render its children */
         for (Node *a = el->parent; a && flat; a = a->parent)
             if (a->shadow_root || (a->ns == NS_HTML && (a->tag == A_video || a->tag == A_audio || a->tag == A_object || a->tag == A_iframe || a->tag == A_canvas || a->tag == A_textarea))) flat = false;
@@ -4974,7 +5207,7 @@ char *css_get_computed_pseudo(Node *el, int which, const char *prop) {
 /* Resolve track dimensions while css_apply_decl has the correct element,
    font, viewport and container-query context. Store this computed structure,
    rather than reparsing old declarations against a later document state. */
-static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc) {
+static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc, const ComputedStyle *basis, bool *used) {
     SB out; sb_init(&out);
     for (const char *p = raw; *p;) {
         if (*p == '[') {
@@ -4990,7 +5223,7 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
                 if (u > end && length < 128 && !str_ieqn(end, "fr", (size_t)(u - end))) {
                     char token[128]; memcpy(token, p, length); token[length] = 0;
                     Length l;
-                    if (css_parse_length(token, &l, em, rem, mc) && l.kind == LK_LEN) {
+                    if (css_parse_length_context(token, &l, em, rem, mc, basis, true, used) && l.kind == LK_LEN) {
                         len_str(&out, l, "auto"); p = u; continue;
                     }
                 }
@@ -5110,9 +5343,17 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         if (v) { sb_puts(&b, v); return sb_take(&b); }
     }
     if (!s) return sb_take(&b);
-    /* Logical minimum/maximum sizes expose the same computed range as their
-       physical counterparts, using this element or pseudo-element's mode. */
-    if (!strncmp(prop, "min-", 4) || !strncmp(prop, "max-", 4)) prop = logical_size_prop(prop, s->writing_mode != 0);
+    /* Resolve logical queries through the same cascaded physical slots.
+       Pair shorthands serialize their computed longhands, not the raw tokens. */
+    int group; bool block;
+    if (logical_edge_pair(prop, &group, &block)) {
+        char *a = computed_of(el, s, physical_edge_props[group][logical_edge_side(s, block, false)]);
+        char *z = computed_of(el, s, physical_edge_props[group][logical_edge_side(s, block, true)]);
+        sb_puts(&b, a);
+        if (strcmp(a, z)) { sb_putc(&b, ' '); sb_puts(&b, z); }
+        free(a); free(z); return sb_take(&b);
+    }
+    prop = logical_box_prop(prop, s);
     if (!strcmp(prop, "background-position") || !strcmp(prop, "background-position-x") || !strcmp(prop, "background-position-y")) return bg_position_computed(s, !strcmp(prop, "background-position-x") ? 0 : !strcmp(prop, "background-position-y") ? 1 : -1);
     static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root" };
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };

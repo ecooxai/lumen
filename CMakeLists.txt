@@ -125,6 +125,9 @@ if(LUMEN_BUILD_TESTS)
     set_tests_properties(http_zstd PROPERTIES TIMEOUT 45)
     add_executable(test_fetch_metadata tests/test_fetch_metadata.c)
     target_link_libraries(test_fetch_metadata PRIVATE lumen_net)
+    if(NOT ANDROID AND LUMEN_PSL_INCLUDE_DIR AND LUMEN_PSL_LIBRARY)
+        target_compile_definitions(test_fetch_metadata PRIVATE LUMEN_FETCH_METADATA_FULL_PSL=1)
+    endif()
     add_test(NAME fetch_metadata COMMAND test_fetch_metadata)
     set_tests_properties(fetch_metadata PROPERTIES TIMEOUT 20)
     add_executable(test_net_redirect tests/test_net_redirect.c)
@@ -638,6 +641,18 @@ else()
         target_link_libraries(test_logical_size PRIVATE lumen_engine)
         target_compile_options(test_logical_size PRIVATE -UNDEBUG)
         add_test(NAME logical_size COMMAND test_logical_size)
+        add_executable(test_font_units tests/test_font_units.c)
+        target_link_libraries(test_font_units PRIVATE lumen_engine)
+        target_compile_options(test_font_units PRIVATE -UNDEBUG)
+        find_file(LUMEN_TEST_AHEM_FONT NAMES Ahem.ttf
+            PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../../wpt/fonts" "${CMAKE_CURRENT_SOURCE_DIR}/tests/fonts"
+            NO_DEFAULT_PATH DOC "Optional external WPT Ahem font for native font-unit controls")
+        find_file(LUMEN_TEST_ZERO_FONT NAMES ChTestZeroWidthZero.woff
+            PATHS "${CMAKE_CURRENT_SOURCE_DIR}/../../wpt/css/css-values/resources" "${CMAKE_CURRENT_SOURCE_DIR}/tests/fonts"
+            NO_DEFAULT_PATH DOC "Optional external WPT zero-advance font for native font-unit controls")
+        add_test(NAME font_units COMMAND test_font_units "${LUMEN_TEST_AHEM_FONT}" "${LUMEN_TEST_ZERO_FONT}")
+        set_tests_properties(font_units PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 20)
+
         add_executable(test_anon_block_size tests/test_anon_block_size.c)
         target_link_libraries(test_anon_block_size PRIVATE lumen_engine)
         target_compile_options(test_anon_block_size PRIVATE -UNDEBUG)

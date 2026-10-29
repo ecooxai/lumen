@@ -1,46 +1,62 @@
 {
-  "title": "Lumen \u00b7 Linux engine conformance",
-  "phase": "Candidate 163 passes focused gates; broad regression comparison remains pending",
-  "iteration": 163,
+  "title": "Lumen · Linux engine conformance",
+  "phase": "Experimental167 checkpoint recorded. The font ownership repair passes its native sanitizer controls; browser-sanitizer shutdown remains unproven. Public source remains163.",
+  "iteration": 167,
   "score": 19,
-  "iteration_quality": null,
-  "score_note": "Whole-goal readiness remains 19/100. Focused correctness improved; full-WPT and Chromium parity remain unachieved.",
+  "iteration_quality": 19,
+  "score_note": "Whole-engine readiness estimate19/100; requested98/100 target not achieved. Focused test totals and intermediate implementation scores are not Chromium parity.",
   "branch": "gpt-6-astra-engine-lead-linux-conformance-20261029-0647",
-  "checkpoint": "df053adb69af76da0b8ae5ba092fc3cf2af44b41",
-  "updated_utc": "2026-10-28T23:02:06.253286+00:00",
+  "checkpoint": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
+  "updated_utc": "2026-10-29T00:33:37.845911Z",
   "session_started_utc": "2026-10-28T22:46:53Z",
   "deadline_utc": "2026-10-29T01:46:53Z",
   "current_evidence": [
     [
-      "Native gate",
-      "Candidate 163 passes 138/138 native CTest entries. Final independent cleanup and source acceptance are being reviewed."
+      "Experimental167; browser shutdown unproven",
+      "The actual font-memory ownership repair passes74 native sanitizer controls with exit0 and no observed diagnostics. Original instrumented browser children ended-9 despite their completed41/41 and12/12 markers. Browser-sanitizer shutdown remains unproven; this is not a clean release."
+    ],
+    [
+      "Current normal checks",
+      "Native167 passes139/139 CTest entries, including74 actual-font and186 border controls. The fresh four-URL font cohort is6/20, Chromium14/20. These are separate units; final4200, performance and rendering comparisons remain pending."
+    ],
+    [
+      "Fresh fixed-selection baseline",
+      "The unchanged 162 replay completed at 07:47:45 Asia/Shanghai: 1,628/4,200 fully passing variants and 199,263/215,657 PASS reported subtests. Earlier 162 numbers remain historical; the replay difference is not a code gain."
+    ],
+    [
+      "Baseline integrity qualification",
+      "All 55 guarded lifecycle records drained and all owned profiles/PIDs are absent. 54 exited 0; one hard-deadline-associated -9 remains recorded and qualified."
+    ],
+    [
+      "Accepted source",
+      "Iteration 163: commit 1df07afad744. All 603 recorded inputs map to Git; independent process/profile cleanup is sealed. Native CTest: 138/138."
     ],
     [
       "Logical sizing repair",
-      "The unchanged authored 224-case fixture improves from 210/224 in fresh 162 to 224/224 in 163. These are authored checks, separate from WPT."
+      "The unchanged authored fixture improves from 210/224 in fresh 162 to 224/224 in 163. All 14 new native passes also pass in Chromium; no common losses or identity changes."
+    ],
+    [
+      "Authored expectation qualification",
+      "Chromium passes 184/224 in that authored fixture. Its 40 inherited noninitial aspect-ratio expectation differences are outside the new gains; 224/224 does not mean the engine is better than Chromium."
     ],
     [
       "Stylesheet Fetch Metadata",
-      "The unchanged WPT file improves from 8/20 PASS subtests in fresh 162 to 20/20 in 163, matching Chromium for that file."
+      "One unchanged upstream WPT file improves from 8/20 PASS subtests in fresh 162 to 20/20 in 163, matching Chromium for that file."
     ],
     [
       "Focused holdouts",
-      "Sizing remains 213/326 and animation remains 1,380/1,504 PASS subtests, with no new/missing identities or common PASS losses in these focused runs."
+      "Sizing remains 213/326 and animation 1,380/1,504 PASS subtests, with stable identities and no common PASS losses in these focused runs."
     ],
     [
-      "Additional integration limits",
-      "A new authored iframe integration fixture observed 12/60 checks passing on 162, 42/60 on 163, and 60/60 on Chromium. These gaps remain; a separate output-only collector repair is recovering complete identities after native console truncation."
+      "Authored integration gaps retained",
+      "The repaired output-only collector confirms the original totals: 162 at 12/60, 163 at 42/60, Chromium at 60/60. Candidate gaps are six missing parser-path header checks and twelve missing load callbacks; all 60 identities remain. Collector repair is not an engine gain."
     ],
     [
-      "Retained broad comparison",
-      "The latest completed fixed 4,200-variant result is still experimental 162: 1,627 full URLs and 199,248/215,641 PASS subtests. Prior-session Chromium: 3,534 full URLs and 209,574/217,350 PASS subtests. Candidate 163 broad results are pending."
-    ],
-    [
-      "Source publication",
-      "The reviewed source and native videos remain retained 162 at https://ecooxai.github.io/lumen/ . Candidate 163 is not published."
+      "Published source and historical native recording",
+      "Public source remains accepted163 at https://ecooxai.github.io/lumen/ until final comparison review. Experimental167 has not replaced that source. The existing published recording remains build162. This website previews progress; Lumen itself is a native Linux browser."
     ]
   ],
-  "coverage": "Latest completed fixed selection: experimental 162 fully passes 1,627/4,200 variants and 199,248/215,641 reported subtests. Prior-session Chromium fully passes 3,534/4,200 and 209,574/217,350 subtests. Candidate 163 broad validation is pending. This fixed selection is 10.66% of pinned testharness inventory, not full WPT.",
+  "coverage": "Fresh current-session baseline 162 fully passes 1,628/4,200 variants and 199,263/215,657 reported subtests. Prior-session Chromium fully passes 3,534/4,200 and 209,574/217,350 subtests. The earlier 162 totals remain historical; replay differences are not code gains. No 163/164/165 broad result is claimed. This fixed selection covers 10.66% of pinned testharness inventory, not full WPT.",
   "findings": [
     "This remains the native Lumen C/C++ + V8 + wgpu engine.",
     "Session4 starts from experimental162; source changes and results will be labeled by exact candidate.",
@@ -50,22 +66,25 @@
     "Active agents poll task messages during this authorized work window. Unattended replies are not promised."
   ],
   "active_iteration": {
-    "number": 163,
-    "scope": "Focused native, logical sizing, network metadata and holdout gates passed. Independent cleanup seal and broad comparison are pending. Original iframe integration limitations remain visible."
+    "iteration": 167,
+    "session_iteration": 5,
+    "state": "Qualified experimental checkpoint; performance, rendering and final4200 pending",
+    "last_tested_iteration": 167,
+    "last_tested_decision": "experimental checkpoint with explicit instrumentation limitations"
   },
-  "accepted_binary_sha256": "d76d88b2c6d67dadfc75375bd47679ae17d88d0cdb07f62d6d5969e422a949e5",
-  "accepted_binary_scope": "Retained experimental162 baseline, with original combined-run failures still counted. Not a regression-free or Chromium-parity release.",
+  "accepted_binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
+  "accepted_binary_scope": "Qualified experimental167 normal/native font-sanitizer checkpoint. Browser-sanitizer shutdown remains unproven; final comparison pending.",
   "agent_session": "active",
   "showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4",
-  "candidate_binary_sha256": "db0027c34c774bcfaea7269a208b26ae3d1ef66ec77213be218f87c173ceaef5",
-  "publication_status": "The published Pages source and native videos represent retained162. Candidate163 is not published. Surge requires ordinary account authentication.",
+  "candidate_binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
+  "publication_status": "Accepted engine source 163 is published and verified; native video remains historical 162. Rejected 164 and unaccepted 165 are not public source snapshots.",
   "showcase_note": "The linked 36-second native video is retained162, recorded in the prior completed session.",
   "source_archive_url": "https://ecooxai.github.io/lumen/src.tar.gz",
-  "source_archive_sha256": "85c4d1b3958d68c3347c9b6825621ef6159fe85cd68fad07a62405488d98a40f",
-  "source_archive_bytes": 4433706,
+  "source_archive_sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0",
+  "source_archive_bytes": 4438760,
   "measurement_units": "WPT numbers count reported testharness subtests, not individual assert_* calls. Native CTest entries and custom correctness checks are separate.",
   "clean_demo_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4",
-  "source_archive_scope": "Prepared source snapshot: 694 repository files and one metadata file, all 601 recorded inputs; separate external dependencies, not a hermetic build or Git history.",
+  "source_archive_scope": "696 repository files plus one public metadata file; all603 recorded inputs byte-matched. External native dependencies are separate; no fresh extracted163 build or hermetic toolchain is claimed.",
   "cloud_snapshot_url": "https://ecooxai.github.io/lumen/",
   "session_active": true,
   "session_id": "20261028-1641",
@@ -145,33 +164,29 @@
     ]
   ],
   "historical": {
-    "label": "Retained experimental162 \u2014 previous completed session, all original combined-run losses retained",
+    "label": "Retained experimental162 — previous completed session, all original combined-run losses retained",
     "test_files": 4200,
     "comparison": "Lumen162: 1,627 fully passing URLs, 199,248/215,641 PASS reported subtests. Chromium: 3,534 fully passing URLs, 209,574/217,350 PASS reported subtests. Fixed selection, not full WPT."
   },
-  "source_archive_iteration": 162,
-  "source_archive_commit": "dba9bb7808ad4bcb457441540a65b75a111049c5",
-  "source_archive_note": "Public source snapshot is the reviewed retained162 engine-only archive. Candidate source is not served. Private task/handoff documents, runtime, raw validation material and blocked report payloads are excluded.",
+  "source_archive_iteration": 163,
+  "source_archive_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
+  "source_archive_note": "The served archive remains the separately reviewed163 engine-only snapshot. Experimental167 has no public-source replacement approval yet; rejected164/165/166 are not published. No full development-history export is claimed.",
   "fresh_chromium4200": {
     "completed_utc": "2026-10-28T17:36:29Z",
     "fully_passing_variants": 3534,
     "pass_subtests": 209574,
     "reported_subtests": 217350,
     "selection_variants": 4200,
-    "source": "validation agent verified completion and cleanup"
+    "source": "validation agent verified completion and cleanup",
+    "freshness_note": "Historical previous-session comparator, not a new session 4 replay."
   },
   "source_archive_available": true,
   "session_response_availability": "An agent is active for this session until 09:46:53 Asia/Shanghai on 29 October 2026. Replies require an active agent; after this work window messages remain queued.",
   "selected_wpt": {
     "selected_urls": 4200,
     "native162": {
-      "fully_passing_urls": 1627,
-      "pass_subtests": 199248,
-      "registered_subtests": 215641
-    },
-    "baseline150": {
-      "fully_passing_urls": 1620,
-      "pass_subtests": 199144,
+      "fully_passing_urls": 1628,
+      "pass_subtests": 199263,
       "registered_subtests": 215657
     },
     "chromium": {
@@ -179,18 +194,22 @@
       "pass_subtests": 209574,
       "registered_subtests": 217350
     },
-    "common_pass_gains": 121,
-    "common_pass_losses": 13,
-    "missing_identities": 16,
+    "native_reference_freshness": "Current session; completed 2026-10-28T23:47:45Z",
+    "chromium_reference_freshness": "Prior-session fixed selection; same pinned revision and installed browser; not freshly replayed this session",
     "full_wpt": false,
-    "regression_free": false
+    "candidate_broad_result": null,
+    "historical162_retained_in": "retained_session3_evidence"
   },
   "publication": {
-    "git_commit": "126b2c35d93cfc513c7133d239235023ad063309",
+    "git_commit": "d8a7a4c76f4213f5e2e9d6b9fbb3da29f49441fa",
     "site": "https://ecooxai.github.io/lumen/",
     "anonymous_exact_payload_verified": true,
+    "source_iteration": 163,
+    "media_iteration": 162,
     "surge": "authentication_required",
-    "source": "https://ecooxai.github.io/lumen/src.tar.gz"
+    "source": "https://ecooxai.github.io/lumen/src.tar.gz",
+    "verification_receipt_url": "https://ecooxai.github.io/lumen/publication-receipt.json",
+    "metadata_verified_utc": "2026-10-28T23:14:45.770551+00:00"
   },
   "rendering": {
     "selected_cases": 100,
@@ -260,6 +279,192 @@
   "work_session_number": 4,
   "historical_public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "candidate_focused_results": {
+    "iteration": 167,
+    "session_iteration": 5,
+    "classification": "EXPERIMENTAL checkpoint; not a clean release",
+    "binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
+    "recorded_input_count": 604,
+    "recorded_input_digest": "accf917a6184a74c74035e57183cf62cf7bd8cbffd2694d9272764991eaae390",
+    "normal_native_ctest": [
+      139,
+      139
+    ],
+    "normal_native_ctest_seconds": 40.04,
+    "actual_font_controls_passed": 74,
+    "logical_border_controls_passed": 186,
+    "fresh_font_wpt_subtests": [
+      6,
+      20
+    ],
+    "chromium_font_wpt_subtests": [
+      14,
+      20
+    ],
+    "native_font_sanitizer": {
+      "passed_controls": 74,
+      "actual_exit_code": 0,
+      "diagnostics_observed": false
+    },
+    "browser_sanitizer": {
+      "shutdown_verified": false,
+      "original_instrumented_child_exit_codes": [
+        -9,
+        -9
+      ],
+      "qualification": "Original instrumented browser children ended-9 despite completed41/41 and12/12 markers and wrapper0. Browser-sanitizer shutdown remains unproven; this is not clean browser sanitizer coverage."
+    },
+    "qualified_checkpoint_seal_sha256": "729e697f5ddb8dce13e54d63da360593e402893acd1c6507e48a387fd6db2455",
+    "cleanup_diagnostic_sha256": "ddbe51ee2dbe9362ccb758a1b5bd1eea2eed284d6b0bfd019c521ccef716a6ea",
+    "performance_rendering_and_final4200": "pending",
+    "public_source_replacement_approved": false
+  },
+  "public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
+  "session_iteration": 5,
+  "iteration_identifier_note": "Global build164 is session4 candidate2. Build163 is the first accepted candidate; build164 is not yet built or accepted.",
+  "accepted_iteration": 167,
+  "accepted_focused_results": {
+    "iteration": 167,
+    "session_iteration": 5,
+    "classification": "EXPERIMENTAL checkpoint; not a clean release",
+    "binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
+    "recorded_input_count": 604,
+    "recorded_input_digest": "accf917a6184a74c74035e57183cf62cf7bd8cbffd2694d9272764991eaae390",
+    "normal_native_ctest": [
+      139,
+      139
+    ],
+    "normal_native_ctest_seconds": 40.04,
+    "actual_font_controls_passed": 74,
+    "logical_border_controls_passed": 186,
+    "fresh_font_wpt_subtests": [
+      6,
+      20
+    ],
+    "chromium_font_wpt_subtests": [
+      14,
+      20
+    ],
+    "native_font_sanitizer": {
+      "passed_controls": 74,
+      "actual_exit_code": 0,
+      "diagnostics_observed": false
+    },
+    "browser_sanitizer": {
+      "shutdown_verified": false,
+      "original_instrumented_child_exit_codes": [
+        -9,
+        -9
+      ],
+      "qualification": "Original instrumented browser children ended-9 despite completed41/41 and12/12 markers and wrapper0. Browser-sanitizer shutdown remains unproven; this is not clean browser sanitizer coverage."
+    },
+    "qualified_checkpoint_seal_sha256": "729e697f5ddb8dce13e54d63da360593e402893acd1c6507e48a387fd6db2455",
+    "cleanup_diagnostic_sha256": "ddbe51ee2dbe9362ccb758a1b5bd1eea2eed284d6b0bfd019c521ccef716a6ea",
+    "performance_rendering_and_final4200": "pending",
+    "public_source_replacement_approved": false
+  },
+  "rejected_session4_iterations": [
+    {
+      "iteration": 164,
+      "decision": "rejected",
+      "binary_sha256": "2524ee0a00fa1791aa179c2bb484bf510eccdd2cdbf0405919aa34139f9590f9",
+      "blocking_regression": {
+        "scope": "One unchanged upstream inline-size check",
+        "expected": "294px",
+        "observed": "300px",
+        "explanation": "Missing logical border-style application exposed by the new getter; genuine engine repair is required."
+      },
+      "authored_lifecycle_observed": [
+        41,
+        41
+      ],
+      "authored_stylesheet_metadata_observed": [
+        58,
+        60
+      ],
+      "qualification": "Focused gains do not override the retained upstream regression. These authored totals are not WPT counts or acceptance."
+    },
+    {
+      "iteration": 165,
+      "session_iteration": 3,
+      "decision": "rejected",
+      "native_ctest_observed": [
+        138,
+        139
+      ],
+      "actual_font_checks_passed": 74,
+      "blocking_control": "Native physical/logical border precedence and initial-value control",
+      "browser_tests_started": false,
+      "sanitizer_started": false,
+      "qualification": "The 74 passed actual-font checks do not override the failed native gate. No candidate165 source was accepted or published."
+    },
+    {
+      "iteration": 166,
+      "session_iteration": 4,
+      "decision": "rejected",
+      "binary_sha256": "a945c00c5a97ef2f128d88de2680f0c5f05c165eca3e54dcae0f7b7f9e99e6d3",
+      "normal_native_ctest_observed": [
+        139,
+        139
+      ],
+      "actual_font_controls_passed": 74,
+      "logical_border_controls_passed": 186,
+      "blocking_sanitizer_finding": {
+        "kind": "Production memory-face ownership leak reported by LeakSanitizer",
+        "bytes": 1056,
+        "font_pass_marker_present": false
+      },
+      "instrumented_browser_observations": {
+        "lifecycle_marker": [
+          41,
+          41
+        ],
+        "removed_link_marker": [
+          12,
+          12
+        ],
+        "wrapper_exit_codes": [
+          0,
+          0
+        ],
+        "actual_child_exit_codes": [
+          -9,
+          -9
+        ],
+        "owned_processes_and_profiles_drained": true,
+        "qualification": "Completed markers and wrapper0 do not prove clean sanitizer shutdown; both actual instrumented children ended-9."
+      },
+      "independent_review_sha256": "9fcc255be6453b256e4b97dcc7282622977416d359c64d13fbdd07ced5fca655",
+      "qualification": "Normal focused gains are retained as intermediate evidence, not accepted source or clean sanitizer coverage."
+    }
+  ],
+  "current_candidate": {
+    "iteration": 167,
+    "session_iteration": 5,
+    "state": "EXPERIMENTAL checkpoint; final comparison pending",
+    "qualification": "Not a clean release. Browser-sanitizer shutdown remains unproven.",
+    "published": false
+  },
+  "fresh_session4_baseline162": {
+    "iteration": 162,
+    "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
+    "binary_sha256": "d76d88b2c6d67dadfc75375bd47679ae17d88d0cdb07f62d6d5969e422a949e5",
+    "completed_utc": "2026-10-28T23:47:45Z",
+    "fully_passing_urls": 1628,
+    "selected_urls": 4200,
+    "pass_subtests": 199263,
+    "registered_subtests": 215657,
+    "independent_summary_sha256": "d4e89b85dbbe59dbccdc1b878743c1b962bd70fb1e9bfe48188a28ed976a213c",
+    "guard_cleanup": {
+      "total": 55,
+      "drained": 55,
+      "owned_profiles_and_pids_absent": true,
+      "exit0": 54,
+      "hard_deadline_associated_exit_minus9": 1
+    },
+    "interpretation": "Fresh current-session comparison reference. Differences from historical 162 are replay variability, not source gains."
+  },
+  "accepted_iteration_classification": "EXPERIMENTAL checkpoint; not a clean release",
+  "retained_accepted_focused163": {
     "iteration": 163,
     "native_ctest": [
       138,
@@ -273,7 +478,13 @@
       "candidate163": [
         224,
         224
-      ]
+      ],
+      "chromium": [
+        184,
+        224
+      ],
+      "all_14_new_passes_match_chromium": true,
+      "chromium_difference_scope": "40 inherited aspect-ratio resolved-style expectation differences, excluded from new gains"
     },
     "wpt_stylesheet_metadata": {
       "baseline162": [
@@ -310,9 +521,73 @@
         60,
         60
       ],
-      "identities": "Long native JSON output truncated; output-only collector repair under review"
+      "identities": "Historical first collection had truncated long native console JSON; the v2 output-only collection is sealed with the same 60 identities and original counts."
     },
     "broad_validation": "pending",
-    "public_source_iteration": 162
+    "public_source_iteration": 163,
+    "acceptance_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
+    "recorded_input_count": 603,
+    "acceptance_seal_sha256": "55aada557539c7b9196f0bd20150345c1f3ba00fd802c85a7c495200a4c1cc09",
+    "authored_iframe_integration_v2": {
+      "baseline162": [
+        12,
+        60
+      ],
+      "candidate163": [
+        42,
+        60
+      ],
+      "chromium": [
+        60,
+        60
+      ],
+      "identities": 60,
+      "new_or_missing_identities": 0,
+      "remaining_candidate_failures": {
+        "parser_header_checks": 6,
+        "load_callbacks": 12
+      },
+      "change": "Output-only transport repair; expectations and original counts unchanged"
+    }
+  },
+  "experimental_checkpoint167": {
+    "iteration": 167,
+    "session_iteration": 5,
+    "classification": "EXPERIMENTAL checkpoint; not a clean release",
+    "binary_sha256": "6d4692b51c0d136497640c9b074fb23ae41ec6a1f31859eecf113f3dd4cdce77",
+    "recorded_input_count": 604,
+    "recorded_input_digest": "accf917a6184a74c74035e57183cf62cf7bd8cbffd2694d9272764991eaae390",
+    "normal_native_ctest": [
+      139,
+      139
+    ],
+    "normal_native_ctest_seconds": 40.04,
+    "actual_font_controls_passed": 74,
+    "logical_border_controls_passed": 186,
+    "fresh_font_wpt_subtests": [
+      6,
+      20
+    ],
+    "chromium_font_wpt_subtests": [
+      14,
+      20
+    ],
+    "native_font_sanitizer": {
+      "passed_controls": 74,
+      "actual_exit_code": 0,
+      "diagnostics_observed": false
+    },
+    "browser_sanitizer": {
+      "shutdown_verified": false,
+      "original_instrumented_child_exit_codes": [
+        -9,
+        -9
+      ],
+      "qualification": "Original instrumented browser children ended-9 despite completed41/41 and12/12 markers and wrapper0. Browser-sanitizer shutdown remains unproven; this is not clean browser sanitizer coverage."
+    },
+    "qualified_checkpoint_seal_sha256": "729e697f5ddb8dce13e54d63da360593e402893acd1c6507e48a387fd6db2455",
+    "cleanup_diagnostic_sha256": "ddbe51ee2dbe9362ccb758a1b5bd1eea2eed284d6b0bfd019c521ccef716a6ea",
+    "performance_rendering_and_final4200": "pending",
+    "public_source_replacement_approved": false
   }
 }
