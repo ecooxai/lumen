@@ -1,0 +1,270 @@
+{
+  "kind": "actual Window/iframe FormData brands and constructor realms",
+  "officialWPT": false,
+  "nativeLumenExecuted": true,
+  "chromiumControlExecuted": false,
+  "binary": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-linux-worker/build-candidate-6/jsrun",
+  "binarySHA256": "61821bcae30b9e143b518e029581641f2fc3b84a1181c96884ac72209adeacc8",
+  "fixtureSHA256": "9c57415c26165afa728bf4fe021b3c7ce42d74deda2c23e5449badb2ae5b0f96",
+  "transportSHA256": "2744b223eea439ff5e0292c6c86baabc71d447037350193fafee3455217996f5",
+  "htmlSHA256": "766c278b6bad5effb143b81212e5c6038e257d8af65585a075cecc599a9cafc2",
+  "startedUTC": "2026-10-29T13:54:52.319676+00:00",
+  "rows": [
+    {
+      "index": 0,
+      "name": "local constructor / local form",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 1,
+      "name": "local constructor / foreign form",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 2,
+      "name": "foreign constructor / local form",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 3,
+      "name": "foreign constructor / foreign form",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 4,
+      "name": "local constructor / omitted argument",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 5,
+      "name": "foreign constructor / omitted argument",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 6,
+      "name": "local constructor / local prototype forgery",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 7,
+      "name": "local constructor / foreign prototype forgery",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 8,
+      "name": "foreign constructor / local prototype forgery",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 9,
+      "name": "foreign constructor / foreign prototype forgery",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 10,
+      "name": "local constructor / plain object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 11,
+      "name": "foreign constructor / plain object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 12,
+      "name": "local constructor / foreign div",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 13,
+      "name": "foreign constructor / local div",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 14,
+      "name": "local constructor / null",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 15,
+      "name": "foreign constructor / null",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 16,
+      "name": "local FormData.get / foreign real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 17,
+      "name": "foreign FormData.get / local real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 18,
+      "name": "local XHR.readyState / foreign real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 19,
+      "name": "foreign XHR.readyState / local real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 20,
+      "name": "local ProgressEvent.loaded / foreign real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 21,
+      "name": "foreign ProgressEvent.loaded / local real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 22,
+      "name": "local FormData.get / prototype forgery",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 23,
+      "name": "local FormData.get / proxy of real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 24,
+      "name": "foreign FormData.get / proxy of real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 25,
+      "name": "local XHR.readyState / prototype forgery",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 26,
+      "name": "local XHR.readyState / proxy of real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 27,
+      "name": "foreign XHR.readyState / proxy of real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 28,
+      "name": "local ProgressEvent.loaded / prototype forgery",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 29,
+      "name": "local ProgressEvent.loaded / proxy of real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 30,
+      "name": "foreign ProgressEvent.loaded / proxy of real object",
+      "ok": true,
+      "error": null
+    },
+    {
+      "index": 31,
+      "name": "foreign FormData.get / prototype forgery",
+      "ok": true,
+      "error": null
+    }
+  ],
+  "infrastructureErrors": [],
+  "sourceManifestSHA256": "199a33e45bb03169e8769cae8868626f3cb910eeab121268f35f81bf3bc69905",
+  "metrics": {
+    "samples": 1,
+    "steady_samples": 1,
+    "interval_cpu_samples": 0,
+    "steady_interval_cpu_samples": 0,
+    "max_sampling_gap_s": 0.006,
+    "cpu_mean_percent": 0.0,
+    "steady_cpu_mean_percent": 0.0,
+    "steady_cpu_median_percent": 0.0,
+    "steady_cpu_p95_percent": 0.0,
+    "cpu_peak_percent": 0.0,
+    "interval_cpu_mean_percent": null,
+    "steady_interval_cpu_mean_percent": null,
+    "steady_interval_cpu_median_percent": null,
+    "steady_interval_cpu_p95_percent": null,
+    "interval_cpu_peak_percent": null,
+    "rss_peak_mb": 3.031,
+    "rss_final_mb": 3.031,
+    "rss_steady_median_mb": 3.031,
+    "rss_steady_p95_mb": 3.031,
+    "rss_steady_growth_mb": 0.0,
+    "in_memory_sample_limit": 600,
+    "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+    "quantile_scope": "all recorded samples",
+    "errors": [],
+    "sample_interval_s": 1,
+    "stop_reason": "requested_stop",
+    "telemetry_status": "partial",
+    "interval_cpu_coverage": "unavailable",
+    "observed_span_s": 0,
+    "root_start_identity": "Thu Oct 29 06:54:51 2026",
+    "root_cpu_start_identity": 2595860,
+    "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+    "cpu_time_source": "Linux /proc/<pid>/stat user and system clock ticks",
+    "cpu_time_resolution_s": 0.01,
+    "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+    "memory_unit": "MiB (legacy field names retain mb)",
+    "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+    "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+    "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+  },
+  "cleanup": {
+    "sent_sigterm": true,
+    "sent_sigkill": false,
+    "error": null,
+    "post_signal_verification": {
+      "allowed_wait_s": 1,
+      "initial_live_members": {},
+      "duration_ms": 6
+    },
+    "process_group_gone": true,
+    "remaining_group_members": {},
+    "root_exit_code": -15
+  },
+  "naturalExitCode": null,
+  "finishedUTC": "2026-10-29T13:54:52.865441+00:00",
+  "durationSeconds": 0.5499355230022047,
+  "total": 32,
+  "recorded": 32,
+  "passed": 32,
+  "failed": 0,
+  "unrun": 0
+}

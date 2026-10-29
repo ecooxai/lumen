@@ -1,0 +1,360 @@
+{
+  "kind": "public XHR Blob Range Window and DedicatedWorker regression",
+  "officialWPT": false,
+  "nativeLumenExecuted": true,
+  "chromiumControlExecuted": false,
+  "binary": "/workspace/scratch/2b90c4e9e7b5/project/lumen/out/10292019r-linux-worker/build-candidate-2/jsrun",
+  "binarySHA256": "61212b0338a55213ad0fe90948195c7aebb6b833a68bad5f42924a2e04447274",
+  "fixtureSHA256": "2744b223eea439ff5e0292c6c86baabc71d447037350193fafee3455217996f5",
+  "pageSHA256": "16823bdb505fd46699b5b383d8031a2b89159eed191b762000c61749486310ba",
+  "workerSHA256": "31542a7cfff05795bbf546e0984fb00060c14414186b49b89501b0c0cb1bd7cb",
+  "cases": [
+    {
+      "range": "bytes \t =\t 1 - 2",
+      "status": 206,
+      "text": "12"
+    },
+    {
+      "range": "b ytes=0-1",
+      "status": 0,
+      "text": ""
+    },
+    {
+      "range": "bytes=1 0-11",
+      "status": 0,
+      "text": ""
+    },
+    {
+      "range": "bytes=0-1 2",
+      "status": 0,
+      "text": ""
+    },
+    {
+      "range": "bytes=\t0-\t1",
+      "status": 206,
+      "text": "01"
+    },
+    {
+      "range": "bytes=-0",
+      "status": 0,
+      "text": ""
+    },
+    {
+      "range": "bytes=-3",
+      "status": 206,
+      "text": "def"
+    },
+    {
+      "range": "bytes=99999-",
+      "status": 0,
+      "text": ""
+    }
+  ],
+  "startedUTC": "2026-10-29T13:42:31.739008+00:00",
+  "rows": [
+    {
+      "context": "window",
+      "index": 0,
+      "range": "bytes \t =\t 1 - 2",
+      "expected": {
+        "range": "bytes \t =\t 1 - 2",
+        "status": 206,
+        "text": "12"
+      },
+      "actual": {
+        "status": 206,
+        "text": "12"
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 1,
+      "range": "b ytes=0-1",
+      "expected": {
+        "range": "b ytes=0-1",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 206,
+        "text": "01"
+      },
+      "ok": false
+    },
+    {
+      "context": "window",
+      "index": 2,
+      "range": "bytes=1 0-11",
+      "expected": {
+        "range": "bytes=1 0-11",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 206,
+        "text": "ab"
+      },
+      "ok": false
+    },
+    {
+      "context": "window",
+      "index": 3,
+      "range": "bytes=0-1 2",
+      "expected": {
+        "range": "bytes=0-1 2",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 206,
+        "text": "0123456789abc"
+      },
+      "ok": false
+    },
+    {
+      "context": "window",
+      "index": 4,
+      "range": "bytes=\t0-\t1",
+      "expected": {
+        "range": "bytes=\t0-\t1",
+        "status": 206,
+        "text": "01"
+      },
+      "actual": {
+        "status": 206,
+        "text": "01"
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 5,
+      "range": "bytes=-0",
+      "expected": {
+        "range": "bytes=-0",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 6,
+      "range": "bytes=-3",
+      "expected": {
+        "range": "bytes=-3",
+        "status": 206,
+        "text": "def"
+      },
+      "actual": {
+        "status": 206,
+        "text": "def"
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 7,
+      "range": "bytes=99999-",
+      "expected": {
+        "range": "bytes=99999-",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 0,
+      "range": "bytes \t =\t 1 - 2",
+      "expected": {
+        "range": "bytes \t =\t 1 - 2",
+        "status": 206,
+        "text": "12"
+      },
+      "actual": {
+        "status": 206,
+        "text": "12"
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 1,
+      "range": "b ytes=0-1",
+      "expected": {
+        "range": "b ytes=0-1",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 206,
+        "text": "01"
+      },
+      "ok": false
+    },
+    {
+      "context": "worker",
+      "index": 2,
+      "range": "bytes=1 0-11",
+      "expected": {
+        "range": "bytes=1 0-11",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 206,
+        "text": "ab"
+      },
+      "ok": false
+    },
+    {
+      "context": "worker",
+      "index": 3,
+      "range": "bytes=0-1 2",
+      "expected": {
+        "range": "bytes=0-1 2",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 206,
+        "text": "0123456789abc"
+      },
+      "ok": false
+    },
+    {
+      "context": "worker",
+      "index": 4,
+      "range": "bytes=\t0-\t1",
+      "expected": {
+        "range": "bytes=\t0-\t1",
+        "status": 206,
+        "text": "01"
+      },
+      "actual": {
+        "status": 206,
+        "text": "01"
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 5,
+      "range": "bytes=-0",
+      "expected": {
+        "range": "bytes=-0",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 6,
+      "range": "bytes=-3",
+      "expected": {
+        "range": "bytes=-3",
+        "status": 206,
+        "text": "def"
+      },
+      "actual": {
+        "status": 206,
+        "text": "def"
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 7,
+      "range": "bytes=99999-",
+      "expected": {
+        "range": "bytes=99999-",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    }
+  ],
+  "infrastructureErrors": [],
+  "sourceManifestSHA256": "fde00b988dd8cf483c73635dc3483d05b6ef13876dc4553d5908bd87f56cdb52",
+  "metrics": {
+    "samples": 1,
+    "steady_samples": 1,
+    "interval_cpu_samples": 0,
+    "steady_interval_cpu_samples": 0,
+    "max_sampling_gap_s": 0.005,
+    "cpu_mean_percent": 0.0,
+    "steady_cpu_mean_percent": 0.0,
+    "steady_cpu_median_percent": 0.0,
+    "steady_cpu_p95_percent": 0.0,
+    "cpu_peak_percent": 0.0,
+    "interval_cpu_mean_percent": null,
+    "steady_interval_cpu_mean_percent": null,
+    "steady_interval_cpu_median_percent": null,
+    "steady_interval_cpu_p95_percent": null,
+    "interval_cpu_peak_percent": null,
+    "rss_peak_mb": 3.023,
+    "rss_final_mb": 3.023,
+    "rss_steady_median_mb": 3.023,
+    "rss_steady_p95_mb": 3.023,
+    "rss_steady_growth_mb": 0.0,
+    "in_memory_sample_limit": 600,
+    "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+    "quantile_scope": "all recorded samples",
+    "errors": [],
+    "sample_interval_s": 1,
+    "stop_reason": "requested_stop",
+    "telemetry_status": "partial",
+    "interval_cpu_coverage": "unavailable",
+    "observed_span_s": 0,
+    "root_start_identity": "Thu Oct 29 06:42:31 2026",
+    "root_cpu_start_identity": 2521803,
+    "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+    "cpu_time_source": "Linux /proc/<pid>/stat user and system clock ticks",
+    "cpu_time_resolution_s": 0.01,
+    "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+    "memory_unit": "MiB (legacy field names retain mb)",
+    "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+    "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+    "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved"
+  },
+  "cleanup": {
+    "sent_sigterm": true,
+    "sent_sigkill": false,
+    "error": null,
+    "post_signal_verification": {
+      "allowed_wait_s": 1,
+      "initial_live_members": {},
+      "duration_ms": 5
+    },
+    "process_group_gone": true,
+    "remaining_group_members": {},
+    "root_exit_code": -15
+  },
+  "naturalExitCode": null,
+  "finishedUTC": "2026-10-29T13:42:32.365881+00:00",
+  "durationSeconds": 0.626884796001832,
+  "total": 16,
+  "passed": 10,
+  "failed": 6,
+  "recorded": 16,
+  "unrun": 0
+}

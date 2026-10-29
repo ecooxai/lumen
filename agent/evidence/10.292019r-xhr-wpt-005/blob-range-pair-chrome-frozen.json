@@ -1,0 +1,505 @@
+{
+  "kind": "public XHR Blob Range Window and DedicatedWorker regression",
+  "officialWPT": false,
+  "nativeLumenExecuted": false,
+  "chromiumControlExecuted": true,
+  "binary": "/tmp/astra10292021-runtime/chrome-linux64/chrome",
+  "binarySHA256": "230f0db8c5086182f46c59c867c0d461eb525d6552dfad226ea6b4d9ec249db2",
+  "fixtureSHA256": "2744b223eea439ff5e0292c6c86baabc71d447037350193fafee3455217996f5",
+  "pageSHA256": "16823bdb505fd46699b5b383d8031a2b89159eed191b762000c61749486310ba",
+  "workerSHA256": "31542a7cfff05795bbf546e0984fb00060c14414186b49b89501b0c0cb1bd7cb",
+  "cases": [
+    {
+      "range": "bytes \t =\t 1 - 2",
+      "status": 206,
+      "text": "12"
+    },
+    {
+      "range": "b ytes=0-1",
+      "status": 0,
+      "text": ""
+    },
+    {
+      "range": "bytes=1 0-11",
+      "status": 0,
+      "text": ""
+    },
+    {
+      "range": "bytes=0-1 2",
+      "status": 0,
+      "text": ""
+    },
+    {
+      "range": "bytes=\t0-\t1",
+      "status": 206,
+      "text": "01"
+    },
+    {
+      "range": "bytes=-0",
+      "status": 0,
+      "text": ""
+    },
+    {
+      "range": "bytes=-3",
+      "status": 206,
+      "text": "def"
+    },
+    {
+      "range": "bytes=99999-",
+      "status": 0,
+      "text": ""
+    }
+  ],
+  "startedUTC": "2026-10-29T13:42:29.764342+00:00",
+  "rows": [
+    {
+      "context": "window",
+      "index": 0,
+      "range": "bytes \t =\t 1 - 2",
+      "expected": {
+        "range": "bytes \t =\t 1 - 2",
+        "status": 206,
+        "text": "12"
+      },
+      "actual": {
+        "status": 206,
+        "text": "12"
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 1,
+      "range": "b ytes=0-1",
+      "expected": {
+        "range": "b ytes=0-1",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 2,
+      "range": "bytes=1 0-11",
+      "expected": {
+        "range": "bytes=1 0-11",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 3,
+      "range": "bytes=0-1 2",
+      "expected": {
+        "range": "bytes=0-1 2",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 4,
+      "range": "bytes=\t0-\t1",
+      "expected": {
+        "range": "bytes=\t0-\t1",
+        "status": 206,
+        "text": "01"
+      },
+      "actual": {
+        "status": 206,
+        "text": "01"
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 5,
+      "range": "bytes=-0",
+      "expected": {
+        "range": "bytes=-0",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 6,
+      "range": "bytes=-3",
+      "expected": {
+        "range": "bytes=-3",
+        "status": 206,
+        "text": "def"
+      },
+      "actual": {
+        "status": 206,
+        "text": "def"
+      },
+      "ok": true
+    },
+    {
+      "context": "window",
+      "index": 7,
+      "range": "bytes=99999-",
+      "expected": {
+        "range": "bytes=99999-",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 0,
+      "range": "bytes \t =\t 1 - 2",
+      "expected": {
+        "range": "bytes \t =\t 1 - 2",
+        "status": 206,
+        "text": "12"
+      },
+      "actual": {
+        "status": 206,
+        "text": "12"
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 1,
+      "range": "b ytes=0-1",
+      "expected": {
+        "range": "b ytes=0-1",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 2,
+      "range": "bytes=1 0-11",
+      "expected": {
+        "range": "bytes=1 0-11",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 3,
+      "range": "bytes=0-1 2",
+      "expected": {
+        "range": "bytes=0-1 2",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 4,
+      "range": "bytes=\t0-\t1",
+      "expected": {
+        "range": "bytes=\t0-\t1",
+        "status": 206,
+        "text": "01"
+      },
+      "actual": {
+        "status": 206,
+        "text": "01"
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 5,
+      "range": "bytes=-0",
+      "expected": {
+        "range": "bytes=-0",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 6,
+      "range": "bytes=-3",
+      "expected": {
+        "range": "bytes=-3",
+        "status": 206,
+        "text": "def"
+      },
+      "actual": {
+        "status": 206,
+        "text": "def"
+      },
+      "ok": true
+    },
+    {
+      "context": "worker",
+      "index": 7,
+      "range": "bytes=99999-",
+      "expected": {
+        "range": "bytes=99999-",
+        "status": 0,
+        "text": ""
+      },
+      "actual": {
+        "status": 0,
+        "text": ""
+      },
+      "ok": true
+    }
+  ],
+  "infrastructureErrors": [],
+  "metrics": {
+    "samples": 1,
+    "steady_samples": 1,
+    "interval_cpu_samples": 0,
+    "steady_interval_cpu_samples": 0,
+    "max_sampling_gap_s": 0.006,
+    "cpu_mean_percent": 0.0,
+    "steady_cpu_mean_percent": 0.0,
+    "steady_cpu_median_percent": 0.0,
+    "steady_cpu_p95_percent": 0.0,
+    "cpu_peak_percent": 0.0,
+    "interval_cpu_mean_percent": null,
+    "steady_interval_cpu_mean_percent": null,
+    "steady_interval_cpu_median_percent": null,
+    "steady_interval_cpu_p95_percent": null,
+    "interval_cpu_peak_percent": null,
+    "rss_peak_mb": 2.242,
+    "rss_final_mb": 2.242,
+    "rss_steady_median_mb": 2.242,
+    "rss_steady_p95_mb": 2.242,
+    "rss_steady_growth_mb": 0.0,
+    "in_memory_sample_limit": 600,
+    "raw_samples_path_note": "The complete one-second stream is retained in the metrics JSONL file.",
+    "quantile_scope": "all recorded samples",
+    "errors": [],
+    "sample_interval_s": 1,
+    "stop_reason": "requested_stop",
+    "telemetry_status": "partial",
+    "interval_cpu_coverage": "unavailable",
+    "observed_span_s": 0,
+    "root_start_identity": "Thu Oct 29 06:42:29 2026",
+    "root_cpu_start_identity": 2521641,
+    "cpu_metric": "cpu_percent: ps rolling estimate; interval_cpu_percent: cumulative CPU-time deltas",
+    "cpu_time_source": "Linux /proc/<pid>/stat user and system clock ticks",
+    "cpu_time_resolution_s": 0.01,
+    "cpu_unit": "100%=one logical CPU; multithreaded work may exceed100%",
+    "memory_unit": "MiB (legacy field names retain mb)",
+    "memory_metric": "maximum sampled process-tree RSS, not a continuously observed peak; shared pages can be counted more than once",
+    "short_run_limit": "A subsecond case may only capture process startup; its single RSS sample cannot establish browser memory use or peak RSS.",
+    "sampling_limit": "one-second ps start identity; processes born and exited between samples are unobserved",
+    "session_scope": "Owned Chromium process tree while the root exists, including startup, workload and graceful teardown. Helper-only drain after root exit is not sampled; not an idle baseline."
+  },
+  "cleanup": {
+    "process": {
+      "sent_sigterm": false,
+      "sent_sigkill": false,
+      "error": null,
+      "post_signal_verification": {
+        "allowed_wait_s": 10,
+        "initial_live_members": {},
+        "duration_ms": 5
+      },
+      "process_group_gone": true,
+      "remaining_group_members": {},
+      "root_exit_code": 0,
+      "root_exit_before_signal_cleanup": 0,
+      "root_exit_observation_verified": true
+    },
+    "errors": [],
+    "graceful_close": {
+      "method": "Browser.close",
+      "attempted": true,
+      "acknowledged": true,
+      "allowed_drain_s": 20,
+      "exit_requirement": "All live owned-group members must disappear; an exiting process state is not ignored.",
+      "initial_process_state": {
+        "observed_unix_ms": 1793281350723,
+        "members": [
+          {
+            "pid": 172153,
+            "ppid": 172145,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Rsl",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172161,
+            "ppid": 172153,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "S",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172163,
+            "ppid": 172153,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "S",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172184,
+            "ppid": 172161,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172185,
+            "ppid": 172153,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172202,
+            "ppid": 172163,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172252,
+            "ppid": 172163,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172272,
+            "ppid": 172163,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172301,
+            "ppid": 172163,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "ZN",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172316,
+            "ppid": 172163,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Z",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172347,
+            "ppid": 172163,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          },
+          {
+            "pid": 172348,
+            "ppid": 172163,
+            "pgid": 172153,
+            "uid": 0,
+            "ruid": 0,
+            "stat": "Sl",
+            "start_identity": "Thu Oct 29 06:42:29 2026",
+            "executable": "chrome"
+          }
+        ]
+      },
+      "process_group_gone": true,
+      "drain_duration_ms": 220
+    }
+  },
+  "browserVersion": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.47",
+    "revision": "@1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.19"
+  },
+  "finishedUTC": "2026-10-29T13:42:31.661613+00:00",
+  "durationSeconds": 1.8972812139982125,
+  "total": 16,
+  "passed": 16,
+  "failed": 0,
+  "recorded": 16,
+  "unrun": 0
+}
