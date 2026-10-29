@@ -456,3 +456,14 @@ Next priorities: implement real async worker-owned XHR transport/cancellation/co
     "status": "Important-bug extension: detached document streams accepted; eager initial network DSD remains deferred. Apple execution and full frozen coverage remain incomplete."
   }
 ]
+
+
+## Task 10.292019r — recovery and audit checkpoint
+
+Observed 2026-10-29T12:43:08.909865+00:00 UTC; session began2026-10-29T12:20:07Z /20:20:07 Asia/Shanghai. This is an active checkpoint, not task completion.
+
+- Repository recovered from accepted0cf82085 with full nonshallow Git history; clean baseline then new task branch/bootstrap4ab1242. Exact request saved in agent/task.md; prior task/continue and AGENTS archived.
+- Initial child Mac call produced no command ID and hung499.8s before abort. GitHub connector supplied current instructions, revealing the documented child-transport issue. Root relay pending. Initial sandbox Git and Library transfer failed through the inherited proxy; supported escalated Git recovered source without changing proxy configuration.
+- Independent auditor:18 passing tooling cases, 0.078903s; initial not-implemented RED retained and empty-baseline behavioral RED→GREEN retained. Archived raw-cohort replay0.136483s reconstructs246/279 and1,236 unrun; no native test was run. Subsecond tooling runs cannot supply meaningful1Hz steady-state samples.
+- Baseline score55/100 unchanged; new candidate not accepted. Full WPT, actual iPad app and shared signed IPA remain unverified. Recovery/audit are not browser compatibility gains.
+- Evidence:agent/evidence/10292019r-000-recovery/receipt.json. Root/agent work overlaps; do not sum durations as wall time or invent model-compute timing.

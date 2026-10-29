@@ -1,0 +1,23 @@
+test_actual_url_mismatch_rejected (test_audit_wpt_candidate.CandidateAuditTests.test_actual_url_mismatch_rejected) ... ok
+test_changed_frozen_denominator_rejected (test_audit_wpt_candidate.CandidateAuditTests.test_changed_frozen_denominator_rejected) ... ok
+test_changed_manifest_rejected (test_audit_wpt_candidate.CandidateAuditTests.test_changed_manifest_rejected) ... ok
+test_cleanup_error_invalidates_passing_row (test_audit_wpt_candidate.CandidateAuditTests.test_cleanup_error_invalidates_passing_row) ... ok
+test_deleted_result_remains_explicit (test_audit_wpt_candidate.CandidateAuditTests.test_deleted_result_remains_explicit) ... ok
+test_disappearing_pass_fails_regression_gate (test_audit_wpt_candidate.CandidateAuditTests.test_disappearing_pass_fails_regression_gate) ... ok
+test_duplicate_assertion_names_rejected (test_audit_wpt_candidate.CandidateAuditTests.test_duplicate_assertion_names_rejected) ... ok
+test_duplicate_test_results_rejected (test_audit_wpt_candidate.CandidateAuditTests.test_duplicate_test_results_rejected) ... ok
+test_empty_harness_is_not_passing (test_audit_wpt_candidate.CandidateAuditTests.test_empty_harness_is_not_passing) ... ok
+test_genuine_fixed_failure_recorded (test_audit_wpt_candidate.CandidateAuditTests.test_genuine_fixed_failure_recorded) ... ok
+test_measurement_error_invalidates_passing_row (test_audit_wpt_candidate.CandidateAuditTests.test_measurement_error_invalidates_passing_row) ... ok
+test_missing_protocol_field_rejected (test_audit_wpt_candidate.CandidateAuditTests.test_missing_protocol_field_rejected) ... ok
+test_new_coverage_cannot_replace_lost_existing_case (test_audit_wpt_candidate.CandidateAuditTests.test_new_coverage_cannot_replace_lost_existing_case) ... ok
+test_no_baseline_cannot_claim_no_regression (test_audit_wpt_candidate.CandidateAuditTests.test_no_baseline_cannot_claim_no_regression) ... ok
+test_partial_pass_on_timeout_is_not_qualified_pass (test_audit_wpt_candidate.CandidateAuditTests.test_partial_pass_on_timeout_is_not_qualified_pass) ... ok
+test_retains_timeout_error_and_unrun_in_separate_counts (test_audit_wpt_candidate.CandidateAuditTests.test_retains_timeout_error_and_unrun_in_separate_counts) ... ok
+test_status_message_only_change_does_not_invent_gain (test_audit_wpt_candidate.CandidateAuditTests.test_status_message_only_change_does_not_invent_gain) ... ok
+test_timeout_cannot_retain_recorded_pass (test_audit_wpt_candidate.CandidateAuditTests.test_timeout_cannot_retain_recorded_pass) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.002s
+
+OK

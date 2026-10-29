@@ -1,0 +1,25 @@
+{
+  "scope": "Auditor replay over archived accepted evidence only; no browser execution or fresh conformance claim",
+  "binaryVerifiedOnHost": false,
+  "baseline": {
+    "scheduled": 1515,
+    "recorded": 279,
+    "fullyPassing": 246,
+    "unrun": 1236,
+    "passPercentOfRecorded": 88.17204301075269,
+    "harnessStatuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "assertions": {
+      "PASS": 38728,
+      "FAIL": 33
+    },
+    "qualifiedPassingAssertions": 38728,
+    "measurementErrorVariants": 0
+  },
+  "noRegression": true,
+  "changedAssertions": 0,
+  "wallSeconds": 0.136483
+}

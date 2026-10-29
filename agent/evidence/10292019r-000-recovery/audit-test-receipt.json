@@ -1,0 +1,7 @@
+{
+  "kind": "evidence-auditor unit tests, not browser compatibility",
+  "wallSeconds": 0.078903,
+  "exitCode": 0,
+  "sampling": "subsecond run; no one-second steady-state sample possible",
+  "testCount": 18
+}

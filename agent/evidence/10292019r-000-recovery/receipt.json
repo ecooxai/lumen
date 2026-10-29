@@ -1,0 +1,42 @@
+{
+  "observedUTC": "2026-10-29T12:43:08.909865+00:00",
+  "taskId": "10.292019r",
+  "phase": "recovery and independent evidence audit",
+  "sourceBase": "0cf82085d63eb42e789f57d303f9489d010d3fd5",
+  "bootstrapCommit": "4ab1242bd1c6bc37b537fb8aea707d4a498f4043",
+  "fullGitHistory": true,
+  "nativeExecutionThisPhase": false,
+  "historicalAssessment": 55,
+  "goalScore": 98,
+  "wpt": {
+    "scheduled": 1515,
+    "recorded": 279,
+    "fullyPassing": 246,
+    "unrun": 1236,
+    "passPercentOfRecorded": 88.17204301075269,
+    "harnessStatuses": {
+      "OK": 249,
+      "TIMEOUT": 15,
+      "ERROR": 15
+    },
+    "assertions": {
+      "PASS": 38728,
+      "FAIL": 33
+    },
+    "qualifiedPassingAssertions": 38728,
+    "measurementErrorVariants": 0
+  },
+  "environment": {
+    "childMacInitialCallHangSeconds": 499.8,
+    "initialLocalGit": "inherited proxy unreachable in restricted sandbox",
+    "supportedEscalatedGit": "accepted; ls-remote and full-history clone completed",
+    "proxyConfigurationChanged": false,
+    "parentMacRelay": "pending observation, not classified as working or failed"
+  },
+  "audit": {
+    "unitCasesPassed": 18,
+    "unitWallSeconds": 0.078903,
+    "archivedReplayWallSeconds": 0.136483,
+    "subsecondSampling": "no meaningful one-second sample possible; never substitutes for runtime telemetry"
+  }
+}

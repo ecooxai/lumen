@@ -1,0 +1,177 @@
+{
+  "schema_version": 2,
+  "task_id": "10292019r",
+  "human_task_id": "10.292019r",
+  "session_start_utc": "2026-10-29T12:20:07Z",
+  "deadline_utc": "2026-10-29T15:20:07Z",
+  "max_critical_fix_deadline_utc": "2026-10-29T16:20:07Z",
+  "target_score": 98,
+  "score": 55,
+  "score_state": "accepted_historical_baseline_current_candidate_unaccepted",
+  "score_is_wpt_percentage": false,
+  "full_official_wpt_pass_percent": null,
+  "updated_utc": "2026-10-29T12:43:08.909865+00:00",
+  "rubric": "agent/scorecard-rubric-20261029-cpu30.md",
+  "gates": [
+    {
+      "id": "wpt_original",
+      "category": "wpt",
+      "weight": 10,
+      "name": "Original frozen important subset",
+      "status": "passed",
+      "earned": 10,
+      "note": "Exact current artifact retains original six unchanged upstream files, separately from279 selected variants.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "wpt_expanded",
+      "category": "wpt",
+      "weight": 20,
+      "name": "Expanded important suite",
+      "status": "incomplete",
+      "earned": 0,
+      "note": "246/279 selected variants fully pass;15TIMEOUT/15ERROR and1236unrun remain. Full WPT unknown.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "wpt_no_regression",
+      "category": "wpt",
+      "weight": 10,
+      "name": "Provenance and no-regression confirmation",
+      "status": "passed",
+      "earned": 10,
+      "note": "718 previous custom checks retained; full37 fixture preserves deferred-feature failures and explicit supported detached-stream targets. Original1850/fixed103/broad279 and whole supplemental6 reviewed, with no new harness failure. Unchanged legacy15 remains10PASS/5explicit policy differences.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "ipa_mac",
+      "category": "apple",
+      "weight": 15,
+      "name": "Shared signed iOS device IPA executed on Mac",
+      "status": "blocked_environment",
+      "earned": 0,
+      "note": "No validated signed device IPA or matching signing/profile/export path; mobile V8/dependency closure absent. NativeMac run is not sharedIPA proof.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "ipad_simulator",
+      "category": "apple",
+      "weight": 10,
+      "name": "iPad simulator app executed from the same reviewed source",
+      "status": "blocked_environment",
+      "earned": 0,
+      "note": "iPad simulator OS is available. Matching existingCLT plus explicit SDK compile/link probes now pass, but mobile V8/dependencies and actual Lume simulator execution remain unverified.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "perf_idle",
+      "category": "performance",
+      "weight": 5,
+      "name": "Idle",
+      "status": "passed",
+      "earned": 5,
+      "note": "Fresh exact-artifact controlled idle; process-tree1 Hz samples, separate from host RAM/CPU.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "perf_interaction",
+      "category": "performance",
+      "weight": 5,
+      "name": "Ordinary interaction",
+      "status": "passed",
+      "earned": 5,
+      "note": "Fresh controlled native scroll gate and owned window visual review; no arbitrary-site or OS typing claim.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "perf_soak",
+      "category": "performance",
+      "weight": 5,
+      "name": "Controlled memory soak",
+      "status": "passed",
+      "earned": 5,
+      "note": "Fresh20-navigation settled RSS change -10.671875MiB;24+8 separate real realm teardown cycles restore native nodes exactly.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "perf_budgets",
+      "category": "performance",
+      "weight": 5,
+      "name": "Build/test budgets",
+      "status": "passed",
+      "earned": 5,
+      "note": "Same prebuilt V8 bytes reused; all build/test durations retained. Long worker-context timeouts are classified, not removed.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "repro_tdd",
+      "category": "reproducibility_release",
+      "weight": 5,
+      "name": "Regression-first improvement",
+      "status": "passed",
+      "earned": 5,
+      "note": "Original36 and versioned37 REDs remain immutable. Full-network candidate exposed a real upstream harness ERROR and was rejected; narrow detached-stream ledger and fresh no-regression gates are explicit.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "repro_source",
+      "category": "reproducibility_release",
+      "weight": 5,
+      "name": "Source/artifact continuity",
+      "status": "passed",
+      "earned": 5,
+      "note": "All 142 compiled Git blobs match source 15ab329736c26a3bbb907b718af376206c115436; original build-base186 remains separately recorded.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    },
+    {
+      "id": "release_progress",
+      "category": "reproducibility_release",
+      "weight": 5,
+      "name": "Reviewed progress/release delivery",
+      "status": "passed",
+      "earned": 5,
+      "note": "Both public routes delivered every source archive byte for963d4ddd; four responsive browser views and old namespace reloads passed. WSS/TLS2.012s telemetry, nonce RTT and private submit/reply verified. Latest documentation HEAD must be repackaged after this checkpoint.",
+      "evidence_generation": "accepted_baseline_20261029_cpu30",
+      "evidence": [
+        "agent/evidence/20261029-cpu30-005-native-acceptance.json"
+      ]
+    }
+  ],
+  "current_baseline_binary_sha256": "c259da2597a6e064764d7cec8c64edb5c935a99edad9c259f08dac7dbc5a3849",
+  "current_native_source_commit": "15ab329736c26a3bbb907b718af376206c115436",
+  "source_branch": "gpt6-astra-pro_builtin-agents_lumen-10.292019r-worker-xhr",
+  "candidate_acceptance": "pending fresh native execution; Linux tooling does not establish Apple conformance"
+}
