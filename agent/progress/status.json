@@ -1,13 +1,13 @@
 {
   "title": "Lumen Linux \u00b7 parser options and script lifecycle",
-  "phase": "build",
+  "phase": "build-correction",
   "iteration": 5,
   "score": 100,
   "iteration_quality": 100,
   "score_note": "Candidate205 retains the declared parser-options part:1961/1961 assertions and18/18 whole files. This100/100 is scoped. Ordinary script lifecycle is61/64 assertions and32/35 whole files; overall98/100 remains unmet.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
   "checkpoint": "2491c6ef792a713deeb7ccbdeb3df367120ad7f6",
-  "updated_utc": "2026-10-30T07:54:16.733331+00:00",
+  "updated_utc": "2026-10-30T07:57:52.697619+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
@@ -51,7 +51,7 @@
     "URL conformance remains deferred. All failure denominators and reference differences remain visible.",
     "Surge currently has no authenticated session; existing HTTPS progress and reviewed GitHub Pages publication remain available."
   ],
-  "active_iteration": 206,
+  "active_iteration": 207,
   "accepted_binary_sha256": "6d6f52aefc972765306567062b78a5413f68acc5050fed336b30d1998aeb7bf8",
   "accepted_binary_scope": "Candidate202,18wholeparser-optionfiles and1961assertions. Neighbor/security/broadcomparison remains separate.",
   "agent_session": "active",
@@ -418,7 +418,7 @@
     "state": "build sealed; independent runtime acceptance pending"
   },
   "public_report_url": "https://ecooxai.github.io/lumen/",
-  "session_iteration": 6,
+  "session_iteration": 7,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
   "accepted_iteration": 205,
   "accepted_focused_results": {

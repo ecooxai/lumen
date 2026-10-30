@@ -431,7 +431,7 @@ FN(parseFrag) {
 FN(docReparse) { CTX; std::string s = S(0); js_doc_reparse(c, s.data(), s.size()); }
 FN(docWrite) { CTX; std::string s = S(0); js_doc_write(c, s.data(), s.size()); }
 FN(docClose) { CTX; js_doc_close(c); }
-FN(docStreamWritePoint) { CTX; RET(Boolean::New(iso, document_stream_write_point(c))); }
+FN(docStreamWritePoint) { CTX; RET(v8::Boolean::New(iso, document_stream_write_point(c))); }
 FN(parseDoc) {
     CTX; std::string s = S(0);
     Document *nd = doc_new(c->doc->url);
