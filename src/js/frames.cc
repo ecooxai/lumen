@@ -460,7 +460,7 @@ void document_stream_tick(JsCtx *c) {
 }
 bool document_stream_write_point(JsCtx *c) {
     const auto &state = c->input_stream;
-    return state && !state->complete && stream_live(c, state) && c->parser_write_point;
+    return state && !state->complete && stream_live(c, state) && !html_parser_done(state->parser);
 }
 void js_doc_write(JsCtx *c, const char *source, size_t length) {
     auto state = document_stream(c);
