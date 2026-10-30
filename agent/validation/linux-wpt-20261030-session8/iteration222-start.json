@@ -1,0 +1,11 @@
+{
+  "iteration": 8,
+  "candidate": 222,
+  "started_utc": "2026-10-30T14:17:14.405101+00:00",
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Recover grid/BFC prior-pass losses, correct monochrome glyph blending and implement shared MIME/nosniff response policy with worker lifetime repair."
+}

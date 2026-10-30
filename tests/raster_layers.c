@@ -15,6 +15,9 @@ static void *layer_calloc(size_t count, size_t size) {
 
 const Glyph *font_glyph(Font *font, uint32_t gid, float scale) {
     (void)font; (void)scale;
+    static uint8_t ramp[256];
+    static Glyph coverage = {.w=256, .h=1, .alpha=ramp};
+    if (gid == 2) { for (int i = 0; i < 256; i++) ramp[i] = (uint8_t)i; return &coverage; }
     static uint8_t alpha[4] = {255, 170, 90, 0};
     static uint32_t rgba[4] = {0xff102030, 0x80102030, 0x400a141e, 0};
     static Glyph mono = {.w=2, .h=2, .alpha=alpha};
@@ -190,8 +193,64 @@ static void check_shadow_clip(void) {
     }
 }
 
+/* Independent scalar source-over oracle: retain channel products until the
+   one final rounded division. The production path packs two channels at once. */
+static uint32_t coverage_oracle(uint32_t dst, Color color, uint32_t a) {
+    uint32_t out = 0;
+    for (int shift = 0; shift < 32; shift += 8) {
+        uint32_t source = shift == 24 ? 255 : (color >> shift) & 255;
+        uint32_t target = (dst >> shift) & 255;
+        out |= ((source * a + target * (255 - a) + 127) / 255) << shift;
+    }
+    return out;
+}
+static void check_text_coverage(void) {
+    uint32_t seed = 0x1432b9a7u;
+    for (uint32_t channel = 0; channel < 256; channel++) for (uint32_t a = 0; a < 256; a++) {
+        Color color = RGBA(channel, channel * 17 % 256, 255 - channel, 255);
+        uint32_t same = color;
+        over_color_coverage(&same, color, a);
+        assert(same == color); /* all equal-color channels and coverage endpoints */
+        seed = seed * 1664525u + 1013904223u;
+        uint32_t da = seed >> 24;
+        uint32_t dst = (da << 24) | (((seed >> 16 & 255) * da / 255) << 16) |
+                       (((seed >> 8 & 255) * da / 255) << 8) | ((seed & 255) * da / 255);
+        uint32_t actual = dst, expected = coverage_oracle(dst, color, a);
+        over_color_coverage(&actual, color, a);
+        assert(actual == expected);
+        assert((actual >> 24) >= (actual >> 16 & 255));
+        assert((actual >> 24) >= (actual >> 8 & 255));
+        assert((actual >> 24) >= (actual & 255));
+    }
+    /* Exercise actual ordinary/rounded-clip glyph paths, not only arithmetic. */
+    uint32_t pixels[256];
+    Font font = {0};
+    DGlyph glyph = {.gid=2, .font=&font};
+    DItem item = {.op=DO_TEXT, .w=256, .h=1, .g=&glyph, .ng=1};
+    Canvas canvas = {.w=256, .h=1, .stride=256, .scale=1, .px=pixels};
+    const uint32_t alphas[] = {0, 1, 127, 128, 254, 255};
+    for (int rounded = 0; rounded < 2; rounded++) for (uint32_t channel = 0; channel < 256; channel++) {
+        R r = {.c=&canvas, .s=1, .nclip=1, .px=pixels, .stride=256, .height=1};
+        r.clips[0] = (Clip){0, 0, 256, 1, .25f, .1f, 255.5f, .8f, {.4f,.4f,.4f,.4f}, rounded != 0};
+        item.color = RGBA(channel, channel * 17 % 256, 255 - channel, alphas[channel % 6]);
+        uint32_t background = item.color | 0xff000000u;
+        for (int x = 0; x < 256; x++) pixels[x] = background;
+        text(&r, &item);
+        for (int x = 0; x < 256; x++) assert(pixels[x] == background);
+        background = 0x80602040u;
+        for (int x = 0; x < 256; x++) pixels[x] = background;
+        text(&r, &item);
+        for (int x = 0; x < 256; x++) {
+            uint32_t a = (uint32_t)x * COLOR_A(item.color) / 255;
+            if (rounded) a = (uint32_t)(a * clip_cov(&r, x + .5f, .5f) + .5f);
+            assert(pixels[x] == coverage_oracle(background, item.color, a));
+        }
+    }
+}
+
 int main(int argc, char **argv) {
     (void)argv;
+    check_text_coverage();
     check_gradient_spans();
     check_shadow_clip();
     check_image_scanlines();

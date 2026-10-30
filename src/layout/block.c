@@ -360,17 +360,17 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
     bool sizing_y = s->height.kind == LK_STRETCH || s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH;
     /* Both auto insets use the static-position edge. In normal flow this
        starts at the parent's content edge, inside the abs CB padding box;
-       grid's recorded static edge already describes its grid area. */
+       grid and flex already provide their context-specific static rectangles. */
     const Box *static_parent = a->parent;
     while (static_parent && layout_percentage_wrapper(static_parent)) static_parent = static_parent->parent;
-    if (!area && sizing_x && lA && rA && (!static_parent || static_parent->fmt != FMT_FLEX)) {
+    if (!area && sizing_x && lA && rA && (!static_parent || (static_parent->fmt != FMT_FLEX && static_parent->fmt != FMT_GRID))) {
         if (cb->st && static_axis_reverse(cb->st, true)) {
             float edge = static_parent && static_parent->fmt != FMT_GRID ?
                 static_parent->x + static_parent->w - static_parent->b[1] - static_parent->p[1] : px + pw;
             r = px + pw - edge; rA = false;
         } else { l = a->sx - px; lA = false; }
     }
-    if (!area && sizing_y && tA && bA && (!static_parent || static_parent->fmt != FMT_FLEX)) {
+    if (!area && sizing_y && tA && bA && (!static_parent || (static_parent->fmt != FMT_FLEX && static_parent->fmt != FMT_GRID))) {
         if (cb->st && static_axis_reverse(cb->st, false)) {
             float edge = static_parent && static_parent->fmt != FMT_GRID ?
                 static_parent->y + static_parent->h - static_parent->b[2] - static_parent->p[2] : py + ph;
@@ -718,7 +718,15 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
             (sizing_width || sizing_height)) {
             float ml = c->st->margin[3].kind == LK_AUTO ? 0 : c->m[3];
             float mr = c->st->margin[1].kind == LK_AUTO ? 0 : c->m[1];
-            float fy = y, left = cx + ml, right = cx + cw - mr, fitted = NAN;
+            /* A first independent box is tested beside floats at its
+               hypothetical collapsed border position. If it cannot fit,
+               clearance inhibits the escaped margin and starts at the float
+               bottom, not at the already-added margin. Explicit clear has
+               resolved that position above and must retain it. */
+            bool first_collapse = first && !c->st->clear && !b->bfc &&
+                b->b[0] == 0 && b->p[0] == 0 && b->st->display != D_TABLE_CELL;
+            float fy = first_collapse ? cursor : y;
+            float left = cx + ml, right = cx + cw - mr, fitted = NAN;
             /* Each change is either another excluded float edge or a move to
                a later float bottom. Bound the work and never repeat a layout
                when the width basis has not changed. */

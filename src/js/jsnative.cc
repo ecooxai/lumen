@@ -1010,7 +1010,8 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
     } else if (f->script_job) {
         auto job = f->script_job;
         job->ready = true;
-        job->success = r && !r->error && r->status >= 200 && r->status < 300;
+        job->success = r && !r->error && r->status >= 200 && r->status < 300 &&
+            net_response_mime_allowed(r, NET_MIME_SCRIPT);
         if (job->ordered || job->deferred) {
             if (job->success) {
                 job->source.assign(r->body ? r->body : "", r->body ? r->body_len : 0);
@@ -1023,7 +1024,8 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
             js_load_recheck(c);
         }
     } else if (f->script) {
-        if (r && !r->error && r->status >= 200 && r->status < 300) js_run_deferred_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
+        if (r && !r->error && r->status >= 200 && r->status < 300 &&
+            net_response_mime_allowed(r, NET_MIME_SCRIPT)) js_run_deferred_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
         else jfire(c, f->script, "error");
     } else {
         v8::Local<v8::Value> argv[6];

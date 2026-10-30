@@ -1,0 +1,75 @@
+{
+  "iteration": 7,
+  "candidate": 221,
+  "started_utc": "2026-10-30T13:38:36.703614+00:00",
+  "ended_utc": "2026-10-30T14:09:20.019588+00:00",
+  "duration_minutes": 30.721932900000002,
+  "session_wall_minutes": 143.40032646666666,
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "coordinator": "root",
+  "source_commit": "2f6f40457fa37eefbcf2e901a8d96b1dc72b24a0",
+  "binary_sha256": "64560f16e84d0424e07000c9622bfa30ce7eb5abb8e2a532d4abf94c88fba96e",
+  "source_manifest_sha256": "726e2ab6775e72688e69029b37ef352fbc4869586df26f53662fa8a259790cbb",
+  "native_ctest": {
+    "passed": 142,
+    "total": 142,
+    "stretch_checks_passed": 105,
+    "stretch_checks_total": 105,
+    "math_checks_passed": 145
+  },
+  "stretch_assertions": {
+    "passed": 987,
+    "total": 1012,
+    "whole_files_passed": 35,
+    "whole_files_total": 48,
+    "score_out_of_100": 97.5296442687747,
+    "gains_vs220": 49,
+    "prior_pass_losses_vs220": 24,
+    "gains_vs219": 773,
+    "prior_pass_losses_vs219": 4
+  },
+  "stretch_rendering": {
+    "passed": 27,
+    "total": 29,
+    "score_out_of_100": 93.10344827586206,
+    "gains_vs220": 17,
+    "prior_pass_losses": 0,
+    "actual_capture_exits0": 58
+  },
+  "independent_paint_rendering": {
+    "passed": 11,
+    "total": 11,
+    "actual_capture_exits0": 22
+  },
+  "independent_stretch_controls": {
+    "passed": 93,
+    "total": 94,
+    "main": "32/32",
+    "direction": "12/12",
+    "edges": "12/12",
+    "clearance": "17/18",
+    "static_and_lower_float": "20/20",
+    "prior_pass_losses": 0
+  },
+  "separate_observations": {
+    "whitespace_and_float_geometry": "9/9",
+    "paint_geometry": "32/32"
+  },
+  "earlier_scopes": {
+    "stepped_math": "594/594",
+    "math_neighbors": "173/432",
+    "progress": "90/139",
+    "all_prior_authored_and_smoke": "unchanged passing"
+  },
+  "acceptance": "REJECTED",
+  "reasons": [
+    "24 grid-area static sizing prior-pass regressions versus220",
+    "wide BFC clearance position remains incorrect",
+    "two exact render comparisons expose one-channel monochrome glyph blending rounding"
+  ],
+  "broad_640": "Not rerun on221; latest218 remains rejected, published214 fallback retained."
+}

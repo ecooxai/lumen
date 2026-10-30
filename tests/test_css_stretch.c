@@ -121,6 +121,21 @@ int main(void) {
     node_set_attr(doc_get_element_by_id(d,"parent"),"style","width:180px;height:140px;border:1px solid");
     style_recalc(e,&d->node,true);layout_run(l,d,800,1600);size(d,"normal",140,120);
     layout_free(l);style_engine_free(e);doc_free(d);
+    d=doc_new("https://css-stretch.test/grid-clearance");
+    const char *regressions="<!doctype html><html><body style='margin:0'>"
+      "<div style='display:grid;position:relative;width:50px;height:40px;padding:3px 5px;border:2px solid'>"
+      "<div id='grid-static-size' style='position:absolute;width:stretch;height:stretch;margin:1px 3px 2px 2px;border:3px solid;padding:2px'></div></div>"
+      "<div style='display:grid;position:relative;width:50px;height:40px;padding:3px 5px;border:2px solid'>"
+      "<div id='grid-static-max' style='position:absolute;width:100px;height:100px;max-width:stretch;max-height:stretch;margin:1px 3px 2px 2px;box-sizing:border-box;border:3px solid;padding:2px'></div></div>"
+      "<div id='clear-stage' style='display:flow-root;width:200px'>"
+      "<div style='float:left;width:100px;height:30px'></div>"
+      "<div id='clear-parent' style='height:100px'>"
+      "<div id='clear-wide' style='display:flow-root;width:200px;height:stretch;margin-top:50px'></div>"
+      "</div></div></body></html>";
+    html_parse(d,regressions,strlen(regressions));e=style_engine_new(d);style_recalc(e,&d->node,true);l=layout_new();layout_run(l,d,800,600);
+    size(d,"grid-static-size",55,43);size(d,"grid-static-max",55,43);
+    offset(d,"clear-stage","clear-parent",0,0);offset(d,"clear-stage","clear-wide",0,30);
+    layout_free(l);style_engine_free(e);doc_free(d);
     d=doc_new("https://css-stretch.test/quirks");
     const char *quirks="<html><body style='margin:0'><div></div><iframe id='quirks-child' style='display:inline-block;width:40px;height:stretch;box-sizing:border-box;border:5px solid'></iframe></body></html>";
     html_parse(d,quirks,strlen(quirks));e=style_engine_new(d);style_recalc(e,&d->node,true);l=layout_new();layout_run(l,d,800,600);

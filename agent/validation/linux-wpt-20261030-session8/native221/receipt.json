@@ -1,0 +1,52 @@
+{
+  "started_utc": "2026-10-30T14:01:43.262240+00:00",
+  "finished_utc": "2026-10-30T14:03:04.352107+00:00",
+  "duration_seconds": 81.08987086699926,
+  "command": [
+    "python3",
+    "tools/codex_compile.py",
+    "ctest",
+    "--test-dir",
+    "build/codex-native",
+    "-j1",
+    "--output-on-failure",
+    "-E",
+    "^(url|url_host_nul|data_url)$",
+    "--output-junit",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/native221/ctest.xml"
+  ],
+  "pid": 4191423,
+  "exit_code": 0,
+  "source_commit": "2f6f40457fa37eefbcf2e901a8d96b1dc72b24a0",
+  "monitors_joined": true,
+  "tests": {
+    "name": "(empty)",
+    "tests": "142",
+    "failures": "0",
+    "disabled": "0",
+    "skipped": "0",
+    "hostname": "",
+    "time": "80",
+    "timestamp": "2026-10-30T07:01:43"
+  },
+  "detail": {
+    "css_stepped_math": {
+      "attributes": {
+        "name": "css_stepped_math",
+        "classname": "css_stepped_math",
+        "time": "0.0526523",
+        "status": "run"
+      },
+      "output": "PASS css_stepped_math 145 native boundary checks\n"
+    },
+    "css_stretch": {
+      "attributes": {
+        "name": "css_stretch",
+        "classname": "css_stretch",
+        "time": "0.0858078",
+        "status": "run"
+      },
+      "output": "CSS stretch: 105/105 native checks passed\n"
+    }
+  }
+}
