@@ -1,6 +1,6 @@
 {
-  "title": "Lumen Linux \u00b7 CSS math, sizing and painting",
-  "phase": "Candidate226 is independently validated as a scoped development checkpoint: native143/143; selected stepped594/594, stretch1012/1012, MIME87/87; actual29/29 stretch and11/11 paint rendering. Fresh exact640 passes411/640 whole files and9162/10540 assertions, with no lost prior passes or changed native identities. Publication is pending; published source214 remains explicitly historical until verified replacement.",
+  "title": "Lumen Linux · CSS math, sizing and painting",
+  "phase": "Completed and published candidate 226: native143/143; selected stepped594/594, stretch1012/1012 and MIME87/87; rendering29/29 plus11/11. Fresh fixed640 remains411/640 whole files and9162/10540 assertions, with all prior passes preserved. Public source, archive, report and36-second walkthrough are verified. Full WPT and whole-browser98/100 remain unestablished.",
   "iteration": 12,
   "session_iteration": 12,
   "score": 100,
@@ -9,33 +9,33 @@
   "score_scope": "Selected stretch assertion fraction1012/1012 only; independent broad whole-file fraction64.21875%, not whole-browser quality.",
   "branch": "gpt-6-astra-builtin-repo-baseline-rubywebterm-20261030-css-math",
   "checkpoint": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
-  "updated_utc": "2026-10-30T16:02:30.526820+00:00",
-  "updated_at": "2026-10-30T16:02:30.526820+00:00",
+  "updated_utc": "2026-10-30T16:29:48.767248+00:00",
+  "updated_at": "2026-10-30T16:29:48.767248+00:00",
   "session_started_utc": "2026-10-30T11:45:56Z",
   "deadline_utc": "2026-10-30T16:45:56Z",
   "session_id": "20261030-114556",
   "work_session_id": "linux-wpt-20261030-session8",
   "work_session_number": 8,
-  "session_active": true,
-  "session_status": "active",
+  "session_active": false,
+  "session_status": "complete_scoped_release",
   "session_deadline_utc": "2026-10-30T16:45:56Z",
-  "session_active_until": "2026-10-30T16:45:56Z",
-  "session_response_availability": "Built-in agents are active for this work session until2026-10-30 16:45:56UTC (00:45:56China time Oct31), polling task updates. Replies are not unattended after the session ends.",
+  "session_active_until": "2026-10-30T16:27:41.939560+00:00",
+  "session_response_availability": "This work session completed on 30 October 2026 at 16:27:41 UTC. Later messages remain queued and require a new active session; unattended replies are not provided.",
   "goal_achieved": false,
   "goal_score": 98,
   "overall_assessment": "Whole-browser98/100 goal remains unverified; fixed sample and selected feature results are labeled separately.",
-  "overall_result_label": "226 independently validated; public deployment pending",
+  "overall_result_label": "226 published; whole-WPT unverified; session complete",
   "accepted_iteration": 226,
   "active_iteration": 226,
   "accepted_binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
   "accepted_binary_scope": "Candidate226: native143, selected focused scopes,29+11 rendering and fresh exact640 with full prior-pass preservation; whole-WPT and whole-browser98/100 unverified.",
   "current_evidence": [
     [
-      "Candidate226 \u2014 independently validated",
+      "Candidate226 — independently validated",
       "Native143/143;199 math,153 stretch and165 MIME direct checks. All31 focused jobs and80 mandatory rendering captures completed with actual exits0, pinned sources and cleanup verified."
     ],
     [
-      "Fresh exact640 \u2014 actual226",
+      "Fresh exact640 — actual226",
       "411/640 whole files and9162/10540 assertions;398 assertion gains and10 whole-file gains versus214, zero prior-pass losses/missing/added native identities. Harness624 OK,15 TIMEOUT,1 ERROR; nonpasses remain counted."
     ],
     [
@@ -43,19 +43,19 @@
       "10538 shared identities;1198 Chromium-PASS/Lumen-nonPASS gaps remain, plus14 reference-only and2 native-only identities shown separately. Starting214 gap1585. No full-suite parity claim."
     ],
     [
-      "Stepped math \u2014 actual226",
+      "Stepped math — actual226",
       "594/594 across4 whole files, versus214462/594 and sealedChromium156592/594. Allfour files are outside the640 sample; these132 gains are not added to broad totals."
     ],
     [
-      "Stretch \u2014 actual226",
+      "Stretch — actual226",
       "1012/1012,48/48 files:42 standard files738/738 plus6 tentative-alias files274/274.219 baseline218/1012,11/48. BothLumen226 andChromium156 pass29/29 unchanged rendering comparisons."
     ],
     [
-      "MIME and worker lifetime \u2014 actual226",
+      "MIME and worker lifetime — actual226",
       "87/87 across7 files. Safe221 baseline37/86 across6;49 recoveries plus1 newly tested post-fix importScripts assertion. Chromium15687/87. Real blocked-script/nonexecution and worker continuation checks pass."
     ],
     [
-      "Partial complete families \u2014 actual226",
+      "Partial complete families — actual226",
       "Progress138/139 versusChromium99/139; DOM71/72 versus72/72; grid percentage29/44 versus44/44; math neighbors173/432 versus430/432.3Drotate,XML and unrelated layout gaps remain visible."
     ],
     [
@@ -63,15 +63,15 @@
       "22 mandatory authored fixtures pass424 fields, including3 ordinary crash smokes; separate fromWPT. Corrected context33/33(reference21/33),DOM29/29,zero-percent4/4. Namespace1/2 retains requiredSVGpass and preexistingXMLfailure;10grid observations add0WPT assertions."
     ],
     [
-      "Painting and rendering \u2014 actual226",
+      "Painting and rendering — actual226",
       "29/29 stretch and11/11 independent paint comparisons;80 actual clean captures. Software800x600@1, unchanged expectations/readiness/comparator.11paint guards have no pre221 native baseline; noGPU certification."
     ],
     [
       "Monitored workload and delivery",
-      "640 one-second resource summaries: peak observed single-case RSS278.061MiB/PSS146.344MiB; shared-slice CPU44.35% ofonecore weighted under480% quota,0throttling. Noidle-memory/speed-advantage claim. Public226 deployment is pending; source214 remains the prior published download."
+      "640 one-second resource summaries: peak observed single-case RSS278.061MiB/PSS146.344MiB; shared-slice CPU44.35% ofonecore weighted under480% quota,0throttling. Noidle-memory/speed-advantage claim. Public226 source/archive/report/video are verified on Pages; live source/video routes match the same hashes. Work session complete, later messages require a new active session."
     ]
   ],
-  "coverage": "Complete selected scopes and unchanged regression sample: stepped4files594; stretch48files1012 plus29 realrendering; MIME7files87;11paintguards. Partial complete progress3files139,DOM4files72,grid2files44,neighbors16files432 remain counted.22 authoredfixtures424 fields including3 ordinarysmokes and2namespace diagnostics/10observations remain separate. URL/fullWPT suites are deferred/unverified.",
+  "coverage": "Complete selected scopes and unchanged regression sample: stepped math4files/594assertions; stretch48files/1012assertions plus29 rendering comparisons; MIME7files/87assertions;11 separate paint guards. Partial complete progress3files/139assertions, DOM4files/72, grid2files/44 and neighbors16files/432 remain counted. All22 mandatory authored fixtures pass424fields, including3 ordinary crash smokes. The2 namespace diagnostics and10 zero-assertion observations remain separate. URL conformance is deferred; full WPT remains unverified.",
   "findings": [
     "Fresh226 exact640 preserves all9162 prior PASS identities and411 whole files from49 complete historical result inputs; no native registration changes.",
     "Selected stepped math, stretch sizing and MIME families pass completely, with sealedChromium comparison and unchanged WPT expectations.",
@@ -80,7 +80,7 @@
     "The source export is curated from646 exact recorded build inputs on reviewed public history; private task/handoff/history/auth data stay excluded. Export rebuild/portablebinary/fullGPU compatibility are not claimed."
   ],
   "historical": {
-    "label": "Candidate214 fixed640 non-URL sample, measured2026-10-30 10:26\u201310:40UTC before this session",
+    "label": "Candidate214 fixed640 non-URL sample, measured2026-10-30 10:26–10:40UTC before this session",
     "test_files": 640,
     "comparison": "Sealed Chrome for Testing156.0.8078.80",
     "readiness_estimate_note": "No overall browser quality estimate is inferred from this selected sample."
@@ -165,19 +165,19 @@
     "disk": "decimalGB; mounted block-device filesystems deduplicated by device",
     "latency": "WebSocket round-trip milliseconds"
   },
-  "public_report_url": "https://ecooxai.github.io/lumen/",
-  "cloud_snapshot_url": "https://ecooxai.github.io/lumen/",
+  "public_report_url": "https://ecooxai.github.io/lumen/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.md",
+  "cloud_snapshot_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-rubywebterm-css-math-source226-20261030",
   "source_archive_url": "https://ecooxai.github.io/lumen/src.tar.gz",
   "source_archive_available": true,
-  "source_archive_iteration": 214,
-  "source_archive_commit": "5c0e775cfad2084ab5b8107837fe98275d54b35e",
-  "source_archive_sha256": "b3cd72554339cafd84d4e0568272257f6852a4acc59b653ff79bdd2aaf6c88d8",
-  "source_archive_bytes": 9433743,
+  "source_archive_iteration": 226,
+  "source_archive_commit": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+  "source_archive_sha256": "4e28b1f5801d27a7cfb7012aef669d7800b875daa4b0d4d405e7b22e9b61eaf3",
+  "source_archive_bytes": 9526948,
   "source_archive_scope": "Audited public source history and offline-restorable Git bundle; private task history, profiles, runtime capabilities, dependencies and raw results excluded.",
-  "source_archive_note": "Prior published214 archive retained until226 source/Pages HTTP and Git hashes are verified. Current accepted engine226 is distinct from published archive214.",
-  "showcase_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.mp4",
-  "showcase_note": "Published video remains historical214 until the actual226 measured-results walkthrough is captured, reviewed and published; it is not native Lumen UI footage.",
-  "publication_status": "Candidate226 final documentation and curated public deployment pending; current public source/archive remains explicitly labelled214.",
+  "source_archive_note": "Verified candidate226 source archive with reviewed public Git bundle and exact646 recorded inputs. Offline restoration passed; external build dependencies and portable browser binary are not included.",
+  "showcase_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.mp4",
+  "showcase_note": "Verified36-second1024x768 Chromium-rendered results walkthrough with three unedited original WPT captures; not native Lumen desktop footage.",
+  "publication_status": "Candidate226 source, archive, measured report and walkthrough were published by normal reviewed pushes and verified at canonical HTTPS URLs. Final Pages delivery-proof commit25af2cf0; live tunnel archive/video match accepted hashes. Surge remains unauthenticated.",
   "session8_fresh_focus_baseline": {
     "candidate": 214,
     "files": 4,
@@ -599,7 +599,7 @@
     "accepted": true,
     "scope": "Fresh fixed640 non-URL sample; not wholeWPT."
   },
-  "overall_qualification": "Accepted scoped engineering checkpoint, not complete WPT/Chromium parity or whole-browser98/100.",
+  "overall_qualification": "Accepted and published scoped engineering checkpoint; complete WPT/Chromium parity and whole-browser98/100 are not established.",
   "session8_candidate226": {
     "source_commit": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
     "binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
@@ -617,7 +617,67 @@
       1,
       2
     ],
-    "publication_complete": false,
-    "resource_summary_sha256": "1d8365bc75e2d32bdf412146d15a71278280376310be2df96c18f6d9ecc90f32"
+    "publication_complete": true,
+    "resource_summary_sha256": "1d8365bc75e2d32bdf412146d15a71278280376310be2df96c18f6d9ecc90f32",
+    "publication_packet_sha256": "dafaf1e5db76ddb28f2f11aee71801fe7594fe445c70eafdd38f90575259aa9a",
+    "final_pages_commit": "25af2cf0d71109ecebe1907bfe92c9a0e9168f33"
+  },
+  "completed_utc": "2026-10-30T16:27:41.939560+00:00",
+  "live_source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
+  "live_showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4",
+  "publication_verified": true,
+  "publication_verified_utc": "2026-10-30T16:26:46.445298+00:00",
+  "final_feedback_poll_utc": "2026-10-30T16:27:16.826123+00:00",
+  "final_feedback_unread": 0,
+  "goal_qualification": "The selected complete feature targets are passed and delivered; the full-WPT/whole-browser98/100 goal remains unachieved.",
+  "publication": {
+    "source_export_commit": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+    "source_export_tree": "919defc65c7d85b993041ea2f1cfd560f0b8d35e",
+    "initial_pages_content_commit": "d52fa381d467498b98d78bd6c08bb8f2ddde8af4",
+    "final_pages_commit": "25af2cf0d71109ecebe1907bfe92c9a0e9168f33",
+    "archive_sha256": "4e28b1f5801d27a7cfb7012aef669d7800b875daa4b0d4d405e7b22e9b61eaf3",
+    "archive_bytes": 9526948,
+    "video_sha256": "52d6958c48559f3d073c3814f669b8a635f04a1360a7731051eb12e8cd5f0244",
+    "video_bytes": 619695,
+    "video_duration_seconds": 36,
+    "video_dimensions": [
+      1024,
+      768
+    ],
+    "links": {
+      "live_preview": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz",
+      "stable_results": "https://ecooxai.github.io/lumen/",
+      "source_branch": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-rubywebterm-css-math-source226-20261030",
+      "source_archive": "https://ecooxai.github.io/lumen/src.tar.gz",
+      "video": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.mp4",
+      "poster": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.png",
+      "showcase": "https://ecooxai.github.io/lumen/showcase226/",
+      "measured_json": "https://ecooxai.github.io/lumen/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.json",
+      "measured_markdown": "https://ecooxai.github.io/lumen/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.md",
+      "verified_delivery": "https://ecooxai.github.io/lumen/publication-receipt226.json",
+      "qualification": "https://ecooxai.github.io/lumen/source-qualification226.json",
+      "live_source_archive": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
+      "live_video": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4"
+    },
+    "verification_receipt_sha256": "dafaf1e5db76ddb28f2f11aee71801fe7594fe445c70eafdd38f90575259aa9a",
+    "independent_review_sha256": "7030af98ab66a334d8f13b312abb737417d5b5a6363bc388276847c1d7f2b6b0"
+  },
+  "final_accounting": {
+    "task_started_utc": "2026-10-30T11:45:56+00:00",
+    "technical_iteration_finished_utc": "2026-10-30T15:59:39.154365+00:00",
+    "technical_elapsed_minutes": 253.71923941666668,
+    "delivery_completed_utc": "2026-10-30T16:27:41.939560+00:00",
+    "elapsed_minutes_through_delivery": 281.7656593333333,
+    "technical_iterations": 12,
+    "documentation_closeout_receipt": "agent/validation/linux-wpt-20261030-session8/final-accounting226.json",
+    "qualification": "Later exact documentation/equivalence time is recorded separately; test timestamps and scores are unchanged."
+  },
+  "desktop_preflight": {
+    "checked_utc": "2026-10-30T16:15:21.859608+00:00",
+    "default_binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
+    "valid_task_owned_display_pid": false,
+    "display_inspected": false,
+    "desktop_restart_performed": false,
+    "reason": "No /tmp/lumen-display0.pid receipt exists; no verified task-owned desktop process."
   }
 }

@@ -13,7 +13,7 @@
   ],
   "source_commit": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
   "binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
-  "acceptance": "ACCEPTED by root for measured scoped engine release after independent checkpoint; publication pending. Full WPT and whole-browser98/100 are not established.",
+  "acceptance": "ACCEPTED by root for measured scoped engine release; final source/archive/Pages/tunnel/report/video delivery independently verified. Full WPT and whole-browser98/100 remain unestablished.",
   "native": {
     "tests": 143,
     "passing": 143,
@@ -585,5 +585,50 @@
     "path": "agent/validation/linux-wpt-20261030-session8/candidate226-independent-checkpoint.json",
     "sha256": "ae3fcafa7f0901d918692761436dae75c4ae06aa6c20e2e1995075bc5b3f0b11"
   },
-  "delivery": "Publication pending; verified URLs/hashes and final task elapsed time will be recorded by a later non-engine handoff commit."
+  "delivery": {
+    "completed_utc": "2026-10-30T16:27:41.939560+00:00",
+    "elapsed_minutes_through_delivery": 281.7656593333333,
+    "publication_receipt": {
+      "path": "agent/ops/linux-wpt-20261030-session8/artifacts226/publication226-final-verification.json",
+      "sha256": "dafaf1e5db76ddb28f2f11aee71801fe7594fe445c70eafdd38f90575259aa9a"
+    },
+    "independent_review": {
+      "path": "agent/ops/linux-wpt-20261030-session8/publication226-final-independent-review.json",
+      "sha256": "7030af98ab66a334d8f13b312abb737417d5b5a6363bc388276847c1d7f2b6b0"
+    },
+    "source_export_commit": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+    "source_export_tree": "919defc65c7d85b993041ea2f1cfd560f0b8d35e",
+    "initial_pages_content_commit": "d52fa381d467498b98d78bd6c08bb8f2ddde8af4",
+    "final_pages_commit": "25af2cf0d71109ecebe1907bfe92c9a0e9168f33",
+    "archive_sha256": "4e28b1f5801d27a7cfb7012aef669d7800b875daa4b0d4d405e7b22e9b61eaf3",
+    "archive_bytes": 9526948,
+    "video_sha256": "52d6958c48559f3d073c3814f669b8a635f04a1360a7731051eb12e8cd5f0244",
+    "video_seconds": 36,
+    "video_dimensions": [
+      1024,
+      768
+    ],
+    "links": {
+      "live_preview": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz",
+      "stable_results": "https://ecooxai.github.io/lumen/",
+      "source_branch": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-rubywebterm-css-math-source226-20261030",
+      "source_archive": "https://ecooxai.github.io/lumen/src.tar.gz",
+      "video": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.mp4",
+      "poster": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.png",
+      "showcase": "https://ecooxai.github.io/lumen/showcase226/",
+      "measured_json": "https://ecooxai.github.io/lumen/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.json",
+      "measured_markdown": "https://ecooxai.github.io/lumen/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.md",
+      "verified_delivery": "https://ecooxai.github.io/lumen/publication-receipt226.json",
+      "qualification": "https://ecooxai.github.io/lumen/source-qualification226.json",
+      "live_source_archive": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
+      "live_video": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4",
+      "durable_progress_report": "https://chatgpt.com/library?file_id=libfile_815a174e65b8819192e19d788488fcd1&account_id=5195996a-03e7-4d60-a818-73af8dbfb742"
+    },
+    "session_active": false,
+    "last_feedback_poll_utc": "2026-10-30T16:27:16.826123+00:00",
+    "last_feedback_unread": 0,
+    "desktop_restart_performed": false,
+    "desktop_reason": "No verified task-owned display PID receipt exists.",
+    "final_documentation_accounting": "Recorded after commit in final-accounting226.json; technical iteration timestamps are unchanged."
+  }
 }
