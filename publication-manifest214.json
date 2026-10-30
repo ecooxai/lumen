@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "candidate": 214,
-  "parent_pages_commit": "92408349535787e3c6d16632c7678799dc144930",
+  "parent_pages_commit": "ef2e1c37ecac6f189d234660daff19c9fa50e490",
   "public_source_commit": "5c0e775cfad2084ab5b8107837fe98275d54b35e",
   "public_source_tree": "09082da1bc88eaabd0622b12f9488d7df528a60f",
   "tested_source_commit": "ab44cc7f825279391a0f193e0b8a10b5ab151eb4",
@@ -18,8 +18,18 @@
     },
     {
       "path": "index.html",
-      "sha256": "04ede4c165bb678e8f95091fe3ae16fe82d9235b191fcd0c1f4c945553feaeac",
-      "bytes": 12542
+      "sha256": "ced1cc0fb504f18be765e8466fb180b34dba7f47dca67ce7442736c6bc6c850c",
+      "bytes": 13164
+    },
+    {
+      "path": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.mp4",
+      "sha256": "0df401b60376874fafe73b7494dba1c57ad946b37e10f53779ec2c98e52e8c68",
+      "bytes": 467513
+    },
+    {
+      "path": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.png",
+      "sha256": "b657f755672af4a599da78408b028b121b3cfeeb2bddebb8eabbf6a2b178218c",
+      "bytes": 104829
     },
     {
       "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint214.json",
@@ -35,6 +45,11 @@
       "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_report214.md",
       "sha256": "3db97168e1f4075e9a83b9e8acc286894b6a63f4e0d2d90c44da1042f5fe28ac",
       "bytes": 7140
+    },
+    {
+      "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_showcase214.json",
+      "sha256": "5ae12527f5c94a784edd7b0e9f327cf7cbefae6323b2acb9f87d78bdfa8fe698",
+      "bytes": 1989
     },
     {
       "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_source214.tar.gz",
@@ -72,6 +87,11 @@
       "bytes": 9433743
     }
   ],
-  "capture_video_pending": true,
-  "created_utc": "2026-10-30T10:44:32.127731+00:00"
+  "capture_video_pending": false,
+  "created_utc": "2026-10-30T10:44:32.127731+00:00",
+  "showcase_manifest": "lumen_gpt-6-astra-pro_builtin-rubywebterm_showcase214.json",
+  "updated_utc": "2026-10-30T10:54:54.749880+00:00",
+  "previous_checkpoint_pages_commit": "92408349535787e3c6d16632c7678799dc144930",
+  "initial_candidate214_pages_commit": "ef2e1c37ecac6f189d234660daff19c9fa50e490",
+  "payload_manifest_scope": "Complete candidate214 payload relative to the previous checkpoint; the media commit follows the initial candidate214 Pages commit."
 }

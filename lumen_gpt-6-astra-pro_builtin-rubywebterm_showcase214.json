@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "candidate": 214,
+  "method": "Public-results still-frame walkthrough rendered by pinned Chromium and encoded with FFmpeg; not native Lumen UI footage or a performance benchmark.",
+  "model": "GPT-6 Astra Pro",
+  "agents": "Built-in integration, engine review and independent conformance agents",
+  "tools": [
+    "RubyWebterm",
+    "Chromium for Testing156.0.8078.80",
+    "FFmpeg"
+  ],
+  "page_url": "https://ecooxai.github.io/lumen/showcase214.html",
+  "page_sha256": "04ede4c165bb678e8f95091fe3ae16fe82d9235b191fcd0c1f4c945553feaeac",
+  "video": {
+    "file": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.mp4",
+    "sha256": "0df401b60376874fafe73b7494dba1c57ad946b37e10f53779ec2c98e52e8c68",
+    "bytes": 467513,
+    "width": 1024,
+    "height": 768,
+    "duration_seconds": 36,
+    "codec": "h264",
+    "pixel_format": "yuv420p",
+    "sample_aspect_ratio": "1:1"
+  },
+  "poster": {
+    "file": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.png",
+    "sha256": "b657f755672af4a599da78408b028b121b3cfeeb2bddebb8eabbf6a2b178218c",
+    "bytes": 104829,
+    "source_frame": "frame-02.png",
+    "width": 1024,
+    "height": 768
+  },
+  "capture": {
+    "frames": 5,
+    "fresh_profile": true,
+    "owned_cleanup_complete": true,
+    "public_assets_verified_before_and_after": true,
+    "viewport": [
+      1024,
+      768
+    ]
+  },
+  "encoding": {
+    "exit_code": 0,
+    "resource_sample_interval_seconds": 1,
+    "resource_samples": 11,
+    "peak_owned_rss_bytes": 263593984,
+    "peak_owned_cpu_percent_one_core": 307.0648198693205,
+    "monitor_joined": true,
+    "frames_unchanged": true,
+    "encoder_threads": 2,
+    "filter_threads": 1,
+    "owned_cleanup_complete": true
+  },
+  "tested_source_commit": "ab44cc7f825279391a0f193e0b8a10b5ab151eb4",
+  "tested_binary_sha256": "7ea0a9999ec521e90fdd2c25fa8485675abf4149aa7aaa7e1696b99bf8aae8ca",
+  "created_utc": "2026-10-30T10:54:54.636902+00:00"
+}
