@@ -222,7 +222,7 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
         if (!calc_expr(&p, &v[n], c)) return false;
         types[n] = c->math_type;
         ang[n] = math_type_equal(types[n], math_type_unit(MATH_ANGLE));
-        if (v[n].pct || v[n].mm) return false;
+        if (v[n].mm || (f > 2 && v[n].pct)) return false;
         n++; while (is_ws((unsigned char)*p)) p++;
         if (*p == ',') { p++; continue; }
         break;
@@ -250,34 +250,24 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
         for (int i = 0; i < n; i++) if (!math_type_equal(types[i], number_type)) return false;
         result_type = number_type;
     }
+    uint8_t stepped = f == 1 ? LEN_MATH_MOD : f == 2 ? LEN_MATH_REM :
+        strat == 1 ? LEN_MATH_UP : strat == 2 ? LEN_MATH_DOWN :
+        strat == 3 ? LEN_MATH_TO_ZERO : LEN_MATH_ROUND;
+    if (f <= 2 && (v[0].pct || v[0].pctu || (n > 1 && (v[1].pct || v[1].pctu)))) {
+        /* A layout reference is required. Keep exact affine operands rather
+           than substituting a guessed parent width at computed-value time. */
+        l = v[0]; l.mm = stepped;
+        l.px2 = v[1].px; l.pct2 = v[1].pct; l.px3 = l.pct3 = 0;
+        l.math_pct_mask = (v[0].pctu ? 1 : 0) | (v[1].pctu ? 2 : 0);
+        l.pctu = v[0].pctu || v[1].pctu;
+        c->math_type = result_type; *out = l; *pp = p; return true;
+    }
     double a = v[0].px, b = n > 1 ? v[1].px : 1, r, rad = M_PI / 180;
     bool has_nan = false;
     for (int i = 0; i < n; i++) has_nan |= isnan(v[i].px);
     if (has_nan) r = NAN;
     else switch (f) {
-    case 0:
-        b = fabs(b); /* A negative interval describes the same multiples. */
-        if (b == 0 || (isinf(a) && isinf(b))) r = NAN;
-        else if (isinf(a)) r = a;
-        else if (isinf(b)) r = strat == 1 ? (a > 0 ? INFINITY : a < 0 ? -0.0 : a) : strat == 2 ? (a < 0 ? -INFINITY : a > 0 ? 0.0 : a) : copysign(0, a);
-        else if (fmod(a, b) == 0) r = a;
-        else {
-            double q = a / b;
-            q = strat == 1 ? ceil(q) : strat == 2 ? floor(q) : strat == 3 ? trunc(q) : floor(q + 0.5);
-            r = q * b;
-            if (r == 0) r = copysign(0, a);
-        }
-        break;
-    case 1:
-        if (b == 0 || isinf(a)) r = NAN;
-        else if (isinf(b)) r = signbit(a) == signbit(b) ? a : NAN;
-        else {
-            r = fmod(a, b);
-            if (r == 0) r = copysign(0, b);
-            else if (signbit(r) != signbit(b)) r += b;
-        }
-        break;
-    case 2: r = (b == 0 || isinf(a)) ? NAN : isinf(b) ? a : fmod(a, b); break;
+    case 0: case 1: case 2: r = len_stepped_value(a, b, stepped); break;
     case 3: r = fabs(a); break;
     case 4: r = a > 0 ? 1 : a < 0 ? -1 : a; break;
     case 5: r = sin(ang[0] ? a * rad : a); break;
@@ -305,6 +295,8 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
         p = strchr(p, '(') + 1; Length v[3]; MathType common_type; int n = 0;
         while (n < 3) {
             if (!calc_expr(&p, &v[n], c)) return false;
+            /* The compact comparison form cannot contain a nonlinear child. */
+            if (len_math_stepped(v[n].mm)) return false;
             if (n && !math_type_equal(common_type, c->math_type)) return false;
             common_type = c->math_type;
             n++; while (is_ws((unsigned char)*p)) p++;
@@ -377,7 +369,11 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     c->math_type = math_type_unit(unit);
     *out = l; *pp = p; return true;
 }
-static void calc_scale(Length *value, float scale) {
+static bool calc_scale(Length *value, float scale) {
+    /* Homogeneity is exact for a finite nonzero multiplier. Zero and
+       nonfinite multipliers require a full expression tree; never turn
+       a finite rounded result times zero into round(0,0). */
+    if (len_math_stepped(value->mm) && (!isfinite(scale) || scale == 0)) return false;
     value->px *= scale;
     /* An absent percentage coefficient is not an authored zero operand:
        multiplying it by infinity would manufacture a NaN dependency. */
@@ -385,8 +381,14 @@ static void calc_scale(Length *value, float scale) {
     if (value->mm) { value->px2 *= scale; if (value->pct2 || (value->math_pct_mask & 2)) value->pct2 *= scale; }
     if (value->mm >= 3) { value->px3 *= scale; if (value->pct3 || (value->math_pct_mask & 4)) value->pct3 *= scale; }
     if (scale < 0) value->mm = len_math_flip(value->mm);
+    return true;
 }
 static void calc_add_linear(Length *value, float px, float pct, bool pctu) {
+    if (len_math_stepped(value->mm)) {
+        value->px3 += px; value->pct3 += pct;
+        if (pctu) { value->pctu = true; value->math_pct_mask |= 4; }
+        return;
+    }
     value->px += px; value->pct += pct;
     if (value->mm) { value->px2 += px; value->pct2 += pct; }
     if (value->mm >= 3) { value->px3 += px; value->pct3 += pct; }
@@ -402,16 +404,17 @@ static bool calc_term(const char **pp, Length *out, LCtx *c) {
             if (!math_type_product(left_type, c->math_type, op == '*' ? 1 : -1, &c->math_type)) return false;
             if (op == '*' && (out->mm || r.mm)) {
                 if (r.mm && !out->mm && !out->pct) { float k = out->px; *out = r; r = L_px(k); }
-                if (!r.mm && !r.pct) { calc_scale(out, r.px); *pp = p; continue; }
+                if (!r.mm && !r.pct && !r.pctu) { if (!calc_scale(out, r.px)) return false; *pp = p; continue; }
+                if (len_math_stepped(out->mm) || len_math_stepped(r.mm)) return false;
                 out->mm = 0;
             }
             if (op == '*') {
                 if (r.pct || r.pctu) {
                     if (out->pct || out->pctu || out->mm) return false;
-                    float k = out->px; *out = r; calc_scale(out, k);
-                } else calc_scale(out, r.px);
+                    float k = out->px; *out = r; if (!calc_scale(out, k)) return false;
+                } else if (!calc_scale(out, r.px)) return false;
             }
-            else { if (r.mm || r.pct) return false; calc_scale(out, 1.f / r.px); }
+            else { if (r.mm || r.pct || r.pctu) return false; if (!calc_scale(out, 1.f / r.px)) return false; }
             *pp = p;
         } else break;
     }
@@ -425,7 +428,8 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
             char op = *p++; MathType left_type = c->math_type;
             Length r; if (!calc_term(&p, &r, c)) return false;
             if (!math_type_equal(left_type, c->math_type)) return false;
-            if (op == '-') calc_scale(&r, -1);
+            if (op == '-' && !calc_scale(&r, -1)) return false;
+            if (out->mm && r.mm && (len_math_stepped(out->mm) || len_math_stepped(r.mm))) return false;
             if (r.mm && !out->mm) { float bx = out->px, bp = out->pct; bool pu = out->pctu; *out = r; calc_add_linear(out, bx, bp, pu); }
             else { if (r.mm) out->mm = 0; calc_add_linear(out, r.px, r.pct, r.pctu); }
             out->pctu |= r.pctu;
@@ -468,11 +472,16 @@ static bool css_scalar_math(const char *text, int unit, float em, float rem, flo
     if (*p) return false;
     *out = value.px; return true;
 }
-static float css_transform_number(const char *text, float fallback) {
+static bool css_transform_number(const char *text, float *out) {
     float value;
-    if (!css_scalar_math(text, MATH_NUMBER, 16, 16, &value)) return fallback;
+    if (!css_scalar_math(text, MATH_NUMBER, 16, 16, &value)) {
+        char *end; value = strtof(text, &end);
+        if (end == text || *end != '%' || end[1]) return false;
+        value /= 100;
+    }
     /* CSS applies range clamping after the complete calculation. */
-    return isnan(value) ? 0 : value;
+    *out = isnan(value) ? 0 : isinf(value) ? copysignf(3.4028234663852886e38f, value) : value;
+    return true;
 }
 
 /* ---------------- var() substitution ---------------- */
@@ -1093,6 +1102,25 @@ static bool bg_position_item(ACtx *c, const char *text, int axis, Length out[2])
     free_toks(t, n); return ok;
 }
 static void bg_length_str(SB *b, Length value) {
+    if (len_math_stepped(value.mm)) {
+        Length a = L_px(value.px), z = L_px(value.px2), offset = L_px(value.px3);
+        a.pct = value.pct; a.pctu = !!(value.math_pct_mask & 1);
+        z.pct = value.pct2; z.pctu = !!(value.math_pct_mask & 2);
+        offset.pct = value.pct3; offset.pctu = !!(value.math_pct_mask & 4);
+        bool shift = offset.px || offset.pct || offset.pctu;
+        bool lower = value.mm == LEN_MATH_ROUND_LOWER;
+        if (shift || lower) sb_puts(b, "calc(");
+        if (lower) { sb_puts(b, "-1 * "); calc_scale(&a, -1); calc_scale(&z, -1); }
+        const char *fn = value.mm == LEN_MATH_MOD ? "mod(" : value.mm == LEN_MATH_REM ? "rem(" : "round(";
+        sb_puts(b, fn);
+        if (value.mm == LEN_MATH_UP) sb_puts(b, "up, ");
+        else if (value.mm == LEN_MATH_DOWN) sb_puts(b, "down, ");
+        else if (value.mm == LEN_MATH_TO_ZERO) sb_puts(b, "to-zero, ");
+        bg_length_str(b, a); sb_puts(b, ", "); bg_length_str(b, z); sb_putc(b, ')');
+        if (shift) { sb_puts(b, " + "); bg_length_str(b, offset); }
+        if (shift || lower) sb_putc(b, ')');
+        return;
+    }
     if (value.mm >= 3) {
         Length preferred = value, lower = value, upper = value;
         preferred.mm = lower.mm = upper.mm = 0;
@@ -1391,48 +1419,78 @@ static void apply_font(ACtx *c, const char *v) {
         free(t);
     }
 }
+static bool transform_angle(ACtx *c, const char *text, float *out) {
+    if (!css_scalar_math(text, MATH_ANGLE, c->em, c->rem, out)) {
+        /* Unitless zero is allowed as a literal, not as a number-valued calc. */
+        char *end; float zero = strtof(text, &end);
+        if (end == text || *end || zero != 0) return false;
+        *out = 0;
+    }
+    if (isnan(*out)) *out = 0;
+    return true;
+}
 static void parse_transform(ACtx *c, const char *v) {
     float m[6] = { 1, 0, 0, 1, 0, 0 };
-    c->st->translate_pending[0] = c->st->translate_pending[1] = (Length){0, 0, LK_LEN};
-    if (str_ieq(v, "none")) { c->st->has_transform = false; return; }
-    const char *p = v;
+    Length pending[2] = { {0, 0, LK_LEN}, {0, 0, LK_LEN} };
+    if (str_ieq(v, "none")) {
+        c->st->has_transform = false;
+        c->st->translate_pending[0] = pending[0]; c->st->translate_pending[1] = pending[1];
+        return;
+    }
+    const char *p = v; bool parsed = false;
     while (*p) {
         while (is_ws((unsigned char)*p)) p++;
-        const char *lp = strchr(p, '('); if (!lp) break;
-        char fn[32]; snprintf(fn, sizeof fn, "%.*s", (int)LMIN(lp - p, 31), p);
+        if (!*p) break;
+        const char *lp = strchr(p, '('); if (!lp || lp - p >= 32) return;
+        char fn[32]; snprintf(fn, sizeof fn, "%.*s", (int)(lp - p), p);
         const char *rp = lp + 1; for (int dp = 1; *rp; rp++) { if (*rp == '(') dp++; else if (*rp == ')' && !--dp) break; }
-        if (!*rp) break;
+        if (!*rp) return;
         char *args = xstrndup(lp + 1, (size_t)(rp - lp - 1));
         { int dp = 0; for (char *q = args; *q; q++) { if (*q == '(') dp++; else if (*q == ')') dp--; else if (*q == ',' && !dp) *q = ' '; } }
-        char *t[6]; int n = split_ws(args, t, 6);
+        char *t[7]; int n = split_ws(args, t, 7);
         float a = 1, b = 0, cc = 0, d = 1, e = 0, f = 0;
+        bool valid = true;
         for (char *q = fn; *q; q++) *q = (char)lc(*q);
         if (!strcmp(fn, "translate") || !strcmp(fn, "translatex") || !strcmp(fn, "translatey") || !strcmp(fn, "translate3d")) {
-            Length lx = {0, 0, LK_LEN}, ly = {0, 0, LK_LEN};
-            if (!strcmp(fn, "translatey")) { if (n) alen(c, t[0], &ly); } else { if (n) alen(c, t[0], &lx); if (n > 1 && strcmp(fn, "translatex")) alen(c, t[1], &ly); }
-            e = lx.px; f = ly.px;
-            c->st->translate_pending[0].pct += lx.pct; c->st->translate_pending[1].pct += ly.pct;
-        } else if (!strcmp(fn, "scale") || !strcmp(fn, "scale3d")) { a = n ? css_transform_number(t[0], 1) : 1; d = n > 1 ? css_transform_number(t[1], 1) : a; }
-        else if (!strcmp(fn, "scalex")) a = n ? css_transform_number(t[0], 1) : 1;
-        else if (!strcmp(fn, "scaley")) d = n ? css_transform_number(t[0], 1) : 1;
+            bool only_y = !strcmp(fn, "translatey"), only_x = !strcmp(fn, "translatex"), three = !strcmp(fn, "translate3d");
+            valid = three ? n == 3 : only_x || only_y ? n == 1 : n == 1 || n == 2;
+            Length lx = L_px(0), ly = L_px(0);
+            if (valid) {
+                if (only_y) valid = alen(c, t[0], &ly);
+                else { valid = alen(c, t[0], &lx); if (valid && n > 1 && !only_x) valid = alen(c, t[1], &ly); }
+            }
+            /* This transform path currently stores only affine translations. */
+            if (len_math_stepped(lx.mm) || len_math_stepped(ly.mm)) valid = false;
+            if (valid) { e = lx.px; f = ly.px; pending[0].pct += lx.pct; pending[1].pct += ly.pct; }
+        } else if (!strcmp(fn, "scale") || !strcmp(fn, "scale3d")) {
+            valid = !strcmp(fn, "scale3d") ? n == 3 : n == 1 || n == 2;
+            if (valid) { valid = css_transform_number(t[0], &a); d = a; if (valid && n > 1) valid = css_transform_number(t[1], &d); }
+        } else if (!strcmp(fn, "scalex")) valid = n == 1 && css_transform_number(t[0], &a);
+        else if (!strcmp(fn, "scaley")) valid = n == 1 && css_transform_number(t[0], &d);
         else if (!strcmp(fn, "rotate") || !strcmp(fn, "rotatez")) {
-            float ang = 0;
-            if (n && !css_scalar_math(t[0], MATH_ANGLE, c->em, c->rem, &ang)) ang = 0;
-            if (isnan(ang)) ang = 0;
-            float r = ang * (float)M_PI / 180; a = cosf(r); b = sinf(r); cc = -sinf(r); d = cosf(r);
-        } else if (!strcmp(fn, "matrix") && n == 6) { a = strtof(t[0], NULL); b = strtof(t[1], NULL); cc = strtof(t[2], NULL); d = strtof(t[3], NULL); e = strtof(t[4], NULL); f = strtof(t[5], NULL); }
-        else if (!strcmp(fn, "skewx")) { cc = tanf(strtof(t[0], NULL) * (float)M_PI / 180); }
-        else if (!strcmp(fn, "skewy")) { b = tanf(strtof(t[0], NULL) * (float)M_PI / 180); }
-        /* m = m * [a b c d e f] */
+            float angle = 0; valid = n == 1 && transform_angle(c, t[0], &angle);
+            if (valid) { float r = angle * (float)M_PI / 180; a = cosf(r); b = sinf(r); cc = -sinf(r); d = cosf(r); }
+        } else if (!strcmp(fn, "matrix")) {
+            valid = n == 6;
+            if (valid) valid = css_transform_number(t[0], &a) && css_transform_number(t[1], &b) &&
+                css_transform_number(t[2], &cc) && css_transform_number(t[3], &d) &&
+                css_transform_number(t[4], &e) && css_transform_number(t[5], &f);
+        } else if (!strcmp(fn, "skewx") || !strcmp(fn, "skewy")) {
+            float angle = 0; valid = n == 1 && transform_angle(c, t[0], &angle);
+            if (valid) { float skew = tanf(angle * (float)M_PI / 180); if (fn[4] == 'x') cc = skew; else b = skew; }
+        } else valid = false;
+        free_toks(t, n); free(args);
+        /* A malformed whole value must preserve the preceding declaration,
+           including its containing-block behavior and translation state. */
+        if (!valid) return;
         float r0 = m[0] * a + m[2] * b, r1 = m[1] * a + m[3] * b, r2 = m[0] * cc + m[2] * d, r3 = m[1] * cc + m[3] * d, r4 = m[0] * e + m[2] * f + m[4], r5 = m[1] * e + m[3] * f + m[5];
         m[0] = r0; m[1] = r1; m[2] = r2; m[3] = r3; m[4] = r4; m[5] = r5;
-        free_toks(t, n); free(args);
-        p = rp + 1;
+        parsed = true; p = rp + 1;
     }
+    if (!parsed) return;
     memcpy(c->st->transform, m, sizeof m);
-    /* An explicitly specified identity transform still establishes a
-       transform and serializes as a matrix, rather than as none. */
-    c->st->has_transform = true;
+    c->st->translate_pending[0] = pending[0]; c->st->translate_pending[1] = pending[1];
+    c->st->has_transform = true; /* A specified identity matrix is still a transform. */
 }
 static bool parse_one_shadow(ACtx *c, char *v, Shadow *sh) {
     char *t[7]; int n = split_ws(v, t, 7); float nums[4] = {0}; int nn = 0;
@@ -2523,7 +2581,7 @@ apply:
             float x;
             if (!css_scalar_math(val, MATH_NUMBER, c.em, c.rem, &x)) {
                 char *end; x = strtof(val, &end);
-                if (end == val || *end != '%' || end[1]) return;
+                if (end == val || *end != '%' || end[1]) goto out;
                 x /= 100;
             }
             st->opacity = isnan(x) ? 0 : LCLAMP(x, 0, 1);
@@ -5453,6 +5511,7 @@ static void len_str(SB *b, Length l, const char *au) {
     else if (l.kind == LK_MAX_CONTENT) sb_puts(b, "max-content");
     else if (l.kind == LK_FIT_CONTENT) sb_puts(b, "fit-content");
     else if (l.kind == LK_CONTENT) sb_puts(b, "content");
+    else if (l.mm) bg_length_str(b, l);
     else if (l.pct && l.px) sb_printf(b, "calc(%g%% %c %gpx)", l.pct, l.px < 0 ? '-' : '+', fabsf(l.px));
     else if (l.pct || (l.pctu && !l.px)) sb_printf(b, "%g%%", l.pct);
     else sb_printf(b, "%gpx", l.px);
@@ -5776,7 +5835,7 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
                     float value;
                     if (!css_time(parts[i], &value)) { valid = false; break; }
                     if (i) sb_puts(&b, ", ");
-                    sb_printf(&b, "%gs", isnan(value) ? 0.0 : (double)value);
+                    sb_printf(&b, "%gs", isnan(value) || value == 0 ? 0.0 : isinf(value) ? copysign(3.4028234663852886e38, value) : (double)value);
                 }
                 free(copy);
                 if (valid) return sb_take(&b);
@@ -5984,7 +6043,7 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
             float value; int unit = prop[0] == 'r' ? MATH_ANGLE : MATH_NUMBER;
             if (css_scalar_math(v, unit, s->font_size, 16, &value)) {
                 const char *u = unit == MATH_ANGLE ? "deg" : "";
-                if (isnan(value)) sb_puts(&b, *u ? "calc(NaN * 1deg)" : "calc(NaN)");
+                if (isnan(value)) sb_printf(&b, "0%s", u);
                 else if (isinf(value)) sb_printf(&b, value > 0 ? "calc(infinity%s)" : "calc(-infinity%s)", *u ? " * 1deg" : "");
                 else sb_printf(&b, "%g%s", value == 0 ? 0.0 : (double)value, u);
                 return sb_take(&b);

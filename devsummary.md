@@ -1719,3 +1719,14 @@ Bounded entry points are `src/css/style.c` functions `math_fn`, `parse_dim`, `ca
 - Next bounded scope: upstream CSS stepped math round/mod/rem; freeze complete files and current Chromium control before engine edits. URL tests remain deferred. No overall98/100 readiness claim is made.
 - Same-model built-in agents: root project management; repo_baseline repository/implementation; wpt_review independent conformance/review; delivery_perf preview/resource/deployment.
 - Session8 bootstrap recorded at **2026-10-30T11:49:12.007063+00:00**; elapsed wall time **3.267 minutes**. No implementation iteration has completed yet; initial delivery/readiness score is provisional **4/100** and is not a browser conformance score.
+
+### Session8 iteration1 — candidate215
+
+- Recorded implementation start **2026-10-30T11:55:17.525299+00:00**; independent focused comparison completed **2026-10-30T12:03:02.102823+00:00**; interval **7.743 minutes**. Session elapsed wall time **17.102 minutes**; concurrent agent intervals are not summed.
+- Agents: repo_baseline implementation/build/native; wpt_review independent frozen upstream comparison; delivery_perf resource/source review and preview; root coordination.
+- Source commit f1d119a7eb107373eeafe9dfef705739df720b97. Build/startup exit0 with unchanged source-set SHA4b72433ebe0a3d88e7f9239833a1740f40cbe8f0357fcf7af0f1afea49a02c8d. Immutable215 binary SHAe9c902944c620a5aca1c309a35e832a3b8607dcedc9967915e6628ba0cf48b74.
+- Frozen stepped-math family **582/594 assertions (97.9798%)**, **3/4 wholly passing files**, **120 common-identity gains**, **zero prior-pass losses, missing or added registrations** against214. Chromium156 remains592/594 with its two upstream NaN failures preserved.
+- Selected16-file math-neighbor scope **163/432 assertions,3/16 whole files**,48gains with zero prior-pass losses/missing/added. This overlapping neighbor scope is separate from the4-file feature and640 broad sample.
+- Native non-URL gate **141/141**, including the newly added49 direct parser/style boundary checks. Actual native gate interval11:58:50.296503–12:00:11.370896UTC; all monitors joined. Build28one-second samples: peakRSS603.247MiB; native81samples: peakRSS228.696MiB, CPU median11.5%,max86.0%, onecore100%. Sharedquota stayed480%; active tests are not an idle or cross-browser performance claim.
+- Scoped implementation quality **97/100 provisional**. Remaining12percentagecases need exact deferred resolution. Reviewer flags native invalid-transform retention, negativezero time serialization, top-level nonfinite scalar outputs, and nested specified folding. No all-WPT/full-browser98 claim.
+- Next iteration uses inline two-affine-operand steppedmath plus affine outputoffset in the existing28-byte Length, with no retained heapstrings/reparsing. Arbitrary nested nonlinear percentage trees remain unsupported and must not be approximated.

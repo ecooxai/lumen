@@ -1,0 +1,13 @@
+{
+  "iteration": 1,
+  "candidate": 215,
+  "started_utc": "2026-10-30T11:55:17.525299+00:00",
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "baseline_assertions": "462/594",
+  "baseline_files": "0/4",
+  "scope": "Frozen CSS stepped math family; native IEEE and CSSOM typed consumers first"
+}

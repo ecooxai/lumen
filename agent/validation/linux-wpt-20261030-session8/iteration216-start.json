@@ -1,0 +1,11 @@
+{
+  "iteration": 2,
+  "candidate": 216,
+  "started_utc": "2026-10-30T12:04:02.025240+00:00",
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Exact compact deferred percentage stepped math and confirmed review repairs"
+}

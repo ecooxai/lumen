@@ -1,0 +1,29 @@
+{
+  "iteration": 1,
+  "candidate": 215,
+  "started_utc": "2026-10-30T11:55:17.525299+00:00",
+  "finished_utc": "2026-10-30T12:03:02.102823+00:00",
+  "end_qualification": "Independent focused comparison receipt created; includes implementation, build, native and focused replay, not every later review",
+  "duration_minutes": 7.742958733333333,
+  "session_elapsed_minutes": 17.101713716666666,
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf",
+    "root"
+  ],
+  "score": 97,
+  "score_scope": "Provisional selected-feature implementation quality; not full-browser quality or rounded percentage stopping threshold",
+  "focus_pass": 582,
+  "focus_total": 594,
+  "focus_files_pass": 3,
+  "focus_files_total": 4,
+  "gains": 120,
+  "losses": 0,
+  "missing": 0,
+  "added": 0,
+  "native_tests_pass": 141,
+  "native_tests_total": 141,
+  "new_native_boundary_checks": 49,
+  "remaining": "Twelve deferred percentage cases and independent source review concerns"
+}

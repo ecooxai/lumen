@@ -65,6 +65,42 @@ int main(void) {
         Length value; checks++;
         assert(!css_parse_length(invalid[i], &value, 16, 16, NULL));
     }
+    assert(sizeof(Length) == 28); checks++;
+    struct { const char *text; float at75, at150; } responsive[] = {
+        { "round(10%, 1px)", 8, 15 },
+        { "round(10%, 5px)", 10, 15 },
+        { "mod(10%, 5px)", 2.5f, 0 },
+        { "rem(10%, 5px)", 2.5f, 0 },
+        { "mod(18px, 100% / 15)", 3, 8 },
+        { "mod(-18px, 100% / 10)", 4.5f, 12 },
+        { "mod(-19%, 5%)", .75f, 1.5f },
+        { "calc(round(10%, 1px) * -1)", -8, -15 },
+        { "calc(round(10%, 1px) * -1 * -1)", 8, 15 },
+        { "calc(round(10%, 1px) * 2 + 5% + 2px)", 21.75f, 39.5f },
+        { "calc(1px - round(10%, 1px))", -7, -14 },
+        { "calc(round(up, 10%, 1px) * -1)", -8, -15 },
+        { "calc(round(down, 10%, 1px) * -1)", -7, -15 },
+        { "calc(mod(10%, 5px) * -2 + 1px)", -4, 1 },
+        { "calc(rem(-10%, 5px) * -2 + 1px)", 6, 1 },
+    };
+    for (size_t i = 0; i < sizeof responsive / sizeof *responsive; i++) {
+        Length value;
+        assert(css_parse_length(responsive[i].text, &value, 16, 16, NULL));
+        assert(len_math_stepped(value.mm));
+        assert(fabsf(len_resolve(value, 75) - responsive[i].at75) < .0001f);
+        assert(fabsf(len_resolve(value, 150) - responsive[i].at150) < .0001f);
+        checks += 2;
+    }
+    /* Unsupported nonlinear trees are rejected instead of approximated. */
+    const char *unrepresented[] = {
+        "round(round(10%, 1px), 2px)",
+        "calc(round(10%, 1px) + round(20%, 2px))",
+        "calc(round(10%, 1px) * 0)",
+        "calc(round(10%, 1px) * infinity)",
+    };
+    for (size_t i = 0; i < sizeof unrepresented / sizeof *unrepresented; i++) {
+        Length value; assert(!css_parse_length(unrepresented[i], &value, 16, 16, NULL)); checks++;
+    }
     ComputedStyle *style = style_new_default();
     css_apply_decl(style, NULL, "opacity", "round(0.6, 0.25)", NULL, NULL);
     assert(style->opacity == .5f); checks++;
@@ -76,6 +112,14 @@ int main(void) {
     assert(style->has_transform && style->transform[0] == 1); checks++;
     css_apply_decl(style, NULL, "transition-delay", "round(10ms, 6ms)", NULL, NULL);
     assert(fabsf(style->tr_delay - .012f) < .000001f); checks++;
+    css_apply_decl(style, NULL, "transform", "translateX(12px)", NULL, NULL);
+    assert(style->has_transform && style->transform[4] == 12); checks++;
+    css_apply_decl(style, NULL, "transform", "bogus(2)", NULL, NULL);
+    assert(style->has_transform && style->transform[4] == 12); checks++;
+    css_apply_decl(style, NULL, "transform", "scale() translateX(5px)", NULL, NULL);
+    assert(style->has_transform && style->transform[4] == 12); checks++;
+    css_apply_decl(style, NULL, "transform", "scale(2) garbage", NULL, NULL);
+    assert(style->has_transform && style->transform[4] == 12); checks++;
     style_free(style);
     printf("PASS css_stepped_math %d native boundary checks\n", checks);
     return 0;
