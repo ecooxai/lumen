@@ -1,0 +1,902 @@
+{
+  "schema": 4,
+  "candidate": 226,
+  "source_commit": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
+  "already_public_parent": "5c0e775cfad2084ab5b8107837fe98275d54b35e",
+  "proposed_public_branch": "gpt-6-astra-pro-builtin-rubywebterm-css-math-source226-20261030",
+  "scope": "Qualified selected non-URL engine scopes and exact640 regression; whole-browser/full-WPT goal remains unverified.",
+  "release_acceptance": "accepted_scoped_checkpoint_and_fresh640",
+  "source_file_count": 732,
+  "all_recorded_inputs_included_and_exact": true,
+  "original_binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
+  "recorded_input_count": 646,
+  "recorded_source_set_manifest_sha256": "c94d38938ed7c4e0981dd7edf70308c6fa15bfbc529695aba1a7fed71102b691",
+  "manual_new_source_path_review_sha256": "3f4a000b62462031aec7faae4f31c226bf18ee5ddd106941a02757ba54797692",
+  "export_rebuild_performed": false,
+  "whole_browser_assessment": "98/100 not achieved or certified",
+  "validation": {
+    "schema": 1,
+    "title": "Lumen Linux measured source checkpoint226",
+    "created_utc": "2026-10-30T16:12:45.651628+00:00",
+    "candidate": 226,
+    "session_iteration": 12,
+    "classification": "Curated public measurements; separate scopes, not full WPT or whole-browser certification.",
+    "native": {
+      "passed": 143,
+      "total": 143,
+      "actual_exit_code": 0,
+      "measurement_candidate": 226,
+      "original222_native_receipt": "142/143 retained; two new inherited-float expectations independently disproved. Test-only223 correction is explicit."
+    },
+    "wpt": {
+      "qa-css-stepped-math": {
+        "counts": {
+          "PASS": 594
+        },
+        "total": 594,
+        "files": 4,
+        "full": 4,
+        "harness": {
+          "OK": 4
+        },
+        "comparisons": {
+          "lumen214": {
+            "gains": 132,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen218": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen219": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen220": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen221": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen222": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen225": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          }
+        },
+        "manifest_sha256": "2e16553fa3883e4d5c50c45699e76d8b916c12d74111c1af0b447626154778c4",
+        "results_sha256": "ec84dfdf92918a3dc601c0ce544e9340d25efa4b6ab43bb5aa337138410a1cd1"
+      },
+      "qa-css-math-neighbors": {
+        "counts": {
+          "FAIL": 259,
+          "PASS": 173
+        },
+        "total": 432,
+        "files": 16,
+        "full": 3,
+        "harness": {
+          "OK": 16
+        },
+        "comparisons": {
+          "lumen214": {
+            "gains": 58,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen218": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen219": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen220": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen221": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen222": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen225": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          }
+        },
+        "manifest_sha256": "1407501f5df2b2e63e82dad1d9f2259eff650bd2d88f04fd4bea01b5e08c8c7c",
+        "results_sha256": "e364a4218c4172515f0b970ea6a5688a945aca30b503ddb04f98e331c04fca6d"
+      },
+      "qa-css-progress": {
+        "counts": {
+          "PASS": 138,
+          "FAIL": 1
+        },
+        "total": 139,
+        "files": 3,
+        "full": 2,
+        "harness": {
+          "OK": 3
+        },
+        "comparisons": {
+          "lumen214": {
+            "gains": 126,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen218": {
+            "gains": 122,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen219": {
+            "gains": 48,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen220": {
+            "gains": 48,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen221": {
+            "gains": 48,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen222": {
+            "gains": 48,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen225": {
+            "gains": 1,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          }
+        },
+        "manifest_sha256": "016bfa69e2a1e6c46f9d76828d4b3d45724b4001d3f01cb759540a848cce953b",
+        "results_sha256": "72583799605589ed42dbc84cdbc4419163fb11bb796413f9ce7e2b497efccc24"
+      },
+      "qa-css-stretch": {
+        "counts": {
+          "PASS": 1012
+        },
+        "total": 1012,
+        "files": 48,
+        "full": 48,
+        "harness": {
+          "OK": 48
+        },
+        "comparisons": {
+          "lumen219": {
+            "gains": 794,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen220": {
+            "gains": 50,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen221": {
+            "gains": 25,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen222": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen225": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          }
+        },
+        "manifest_sha256": "6ed770f46962944a02051dce5dac87de3bd17c575f4f0b9b1c3a9b0b9d6e1a94",
+        "results_sha256": "7880900d0d9ea83401d23bc8c361033984364b51919a875503101156906cff0f"
+      },
+      "qa-grid-percentage": {
+        "counts": {
+          "PASS": 29,
+          "FAIL": 15
+        },
+        "total": 44,
+        "files": 2,
+        "full": 1,
+        "harness": {
+          "OK": 2
+        },
+        "comparisons": {
+          "lumen223": {
+            "gains": 10,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen225": {
+            "gains": 0,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          }
+        },
+        "manifest_sha256": "7e984ff3faeb410bdd954b29ef2f9e3fee1af6c5cc90580a014300b1eca8aa88",
+        "results_sha256": "1343b5958b3d92ff4021ca060853c8cae43ebb549422fa86df9acbcbcc6194df"
+      },
+      "qa-insert-adjacent": {
+        "counts": {
+          "PASS": 71,
+          "FAIL": 1
+        },
+        "total": 72,
+        "files": 4,
+        "full": 3,
+        "harness": {
+          "OK": 4
+        },
+        "comparisons": {
+          "lumen223": {
+            "gains": 17,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          },
+          "lumen225": {
+            "gains": 1,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 0
+          }
+        },
+        "manifest_sha256": "748561dda61e4af722c3ed70fece90e1f60858661c7ece63a5a8719277cb9e56",
+        "results_sha256": "bad66e97b153aaeffcea1174448b36b3ef3dce66282dc0d82deed95cd009264f"
+      },
+      "qa-script-mime": {
+        "counts": {
+          "PASS": 87
+        },
+        "total": 87,
+        "files": 7,
+        "full": 7,
+        "harness": {
+          "OK": 7
+        },
+        "comparisons": {
+          "lumen221-safe6": {
+            "gains": 49,
+            "losses": 0,
+            "loss_details": [],
+            "missing": 0,
+            "added": 1,
+            "new_postfix_unsafe_before_coverage": [
+              [
+                "/fetch/nosniff/importscripts.html",
+                "Test importScripts()",
+                0
+              ]
+            ]
+          }
+        },
+        "manifest_sha256": "8229376d5bae8a90068b3bdd2ab9f6a8af0f8d86e8df975ef73657b61a5cbaad",
+        "results_sha256": "dabd942e6be9abaad24aed148cd468a12eba260bc948533bde85394380cc129f",
+        "qualification": "Native221 safe6 has86 assertions; unsafe importScripts was not executed. Candidate full7 must match all87 reference identities. The added importScripts assertion is new coverage, not a recovered old failure."
+      }
+    },
+    "reference156_followup_scopes": {
+      "qa-css-math-neighbors": {
+        "counts": {
+          "PASS": 430,
+          "FAIL": 2
+        },
+        "total": 432,
+        "files": 16,
+        "full": 15,
+        "harness": {
+          "OK": 16
+        },
+        "results_sha256": "800dee6e2623742b4fbc946faff5d52375a24d2945277a6b5260955261645410",
+        "version": "156.0.8078.80"
+      },
+      "qa-css-progress": {
+        "counts": {
+          "PASS": 99,
+          "FAIL": 40
+        },
+        "total": 139,
+        "files": 3,
+        "full": 1,
+        "harness": {
+          "OK": 3
+        },
+        "results_sha256": "ece4abdde4aa5cd1dab7b1a7c4c18e19845335800e04cb1e2ec4f3b456e80944",
+        "version": "156.0.8078.80"
+      },
+      "qa-grid-percentage": {
+        "counts": {
+          "PASS": 44
+        },
+        "total": 44,
+        "files": 2,
+        "full": 2,
+        "harness": {
+          "OK": 2
+        },
+        "results_sha256": "13ffb6df4611a8f6421b27b0e64f79101c52b1e04e32170f4f64cc30312ddbf0",
+        "version": "156.0.8078.80"
+      },
+      "qa-insert-adjacent": {
+        "counts": {
+          "PASS": 72
+        },
+        "total": 72,
+        "files": 4,
+        "full": 4,
+        "harness": {
+          "OK": 4
+        },
+        "results_sha256": "8d75b325072014900704b26e08325a85692969df8018ee76ce5c9dc21c564713",
+        "version": "156.0.8078.80"
+      }
+    },
+    "authored_controls": {
+      "qa-css-math-zero-percent-constants": {
+        "pass": 4,
+        "total": 4,
+        "receipt_sha256": "e6364054b08872560b9077078c38ec47699ab4e8018c9778c29b1d0174b0c3cf"
+      },
+      "qa-css-progress-context-v2": {
+        "pass": 33,
+        "total": 33,
+        "receipt_sha256": "5bec4d1162abdff590ca9b6bd63cd306da70168f3dfaabd54ce3a36c1d5b8cab"
+      },
+      "qa-insert-adjacent-authored": {
+        "pass": 29,
+        "total": 29,
+        "receipt_sha256": "3c7d12b16ea78b18c9356cce9fe468e683e62a285b6c07caf4981ad43209b9c0"
+      },
+      "qa-css-progress-authored": {
+        "pass": 36,
+        "total": 36,
+        "receipt_sha256": "b3a3b200e97f928a9237aa7e40cb62e228ddcc831df9aa6a08443e5074afa728"
+      },
+      "qa-css-progress-percentage-types": {
+        "pass": 8,
+        "total": 8,
+        "receipt_sha256": "94802e4484f6b336fe467c32453669a7fb1acb5877c5db41effc36189f9808d7"
+      },
+      "qa-css-progress-percentage-positive": {
+        "pass": 8,
+        "total": 8,
+        "receipt_sha256": "6b8ebe10f49ba4fed85b1b03cb2722e9aa6546aac4a0d660c93675320fab3e20"
+      },
+      "qa-css-math-authored": {
+        "pass": 62,
+        "total": 62,
+        "receipt_sha256": "e02bb18a57bd5807e3e7cfe4362d2b7f0171d17b1a9b1acc13712cac41bf9abe"
+      },
+      "qa-css-time-signed-zero": {
+        "pass": 12,
+        "total": 12,
+        "receipt_sha256": "333c261f7abfa9ae4b9df236ce7542a0a6ab67f71caa5794df79a71083305766"
+      },
+      "qa-css-math-boundaries": {
+        "pass": 20,
+        "total": 20,
+        "receipt_sha256": "5cb7fc6004a8f35c6e1f005da46fc39d989a921d8c233d4af2e27b4046cfdc85"
+      },
+      "qa-css-font-destination": {
+        "pass": 4,
+        "total": 4,
+        "receipt_sha256": "59705fa7fd1a341ae8f75c5bdcc6f4c2ccf3f9033724ad39ac13d2e0b8deded8"
+      },
+      "qa-css-transform-token-edges": {
+        "pass": 8,
+        "total": 8,
+        "receipt_sha256": "e3d9780a188735a146ba551c12c1fb99ddd3e5b14466541fd26a0a506a92c9e2"
+      },
+      "qa-css-font-basis-observation": {
+        "pass": 12,
+        "total": 12,
+        "receipt_sha256": "3511cd7d4dc2698a7461156a25fe3449474be53e0ad93d3ee59751fb81e3a2fe"
+      },
+      "qa-css-math-crash-smoke": {
+        "pass": 3,
+        "total": 3,
+        "receipt_sha256": "918176d36026fbebddb6063e3205a4f753ffb98ed4f3979051284f04e67fea91"
+      },
+      "qa-css-stretch-authored-v2": {
+        "pass": 32,
+        "total": 32,
+        "receipt_sha256": "bea2c6de31a3d04fc6c7d0683be49e32eebd78fb620e3142c77b1094878e250f"
+      },
+      "qa-css-stretch-abspos-direction": {
+        "pass": 12,
+        "total": 12,
+        "receipt_sha256": "1feea4dec3e3e2c04858ae3a14b9b5b578667f81525f7f094f6207156737fd21"
+      },
+      "qa-css-stretch-edge-contract": {
+        "pass": 12,
+        "total": 12,
+        "receipt_sha256": "2ab03f4a11101c1299c0010f6bb4377d10769db5f4cc65e4dbef284fb6710320"
+      },
+      "qa-css-stretch-float-observation": {
+        "pass": 9,
+        "total": 9,
+        "receipt_sha256": "217d996a9ecbde5a5d60051372736df6552bf0fc4ba1b275f6fadc38960c5b55"
+      },
+      "qa-css-stretch-paint-geometry": {
+        "pass": 32,
+        "total": 32,
+        "receipt_sha256": "7e2238acbbf284ea0b9372de0f74554dbf8a35845d8ff81b80fcf0faca25ad5b"
+      },
+      "qa-css-stretch-clearance-controls": {
+        "pass": 18,
+        "total": 18,
+        "receipt_sha256": "3be83235e2e24943aa28f61dca0f4e42cb66f2f3b77b6707e5899533832fb651"
+      },
+      "qa-css-stretch-static-float-controls": {
+        "pass": 20,
+        "total": 20,
+        "receipt_sha256": "e561a33810b80eecd6a107dcf471053338d91f67dde257143826a23eeed44abb"
+      },
+      "qa-script-mime-authored": {
+        "pass": 37,
+        "total": 37,
+        "receipt_sha256": "d2eec38656cc21ceb228479f23d34a8d29fce030894e965f1cbb6c2743d8b136"
+      },
+      "qa-script-mime-worker-authored": {
+        "pass": 13,
+        "total": 13,
+        "receipt_sha256": "f16360e1db6fdfa0d123514bd3febbd0acaa90ab3f96ac2e39bf0fafde9cdc32"
+      }
+    },
+    "diagnostics": {
+      "qa-insert-adjacent-context-boundaries": {
+        "pass": 1,
+        "total": 2,
+        "reference_pass": 2,
+        "baseline225_pass": 1,
+        "receipt_sha256": "f26166ee396ce9f1b6261a7320ad12a0df344cffd146173369f9e513e3021a4b",
+        "prior_svg_pass_preserved": true,
+        "failed": [
+          {
+            "label": "XML HTML namespace retains XML case",
+            "actual": false,
+            "expected": true
+          }
+        ],
+        "qualification": "The SVG namespace prior pass is mandatory. The retained XML case-preservation failure is a separate diagnostic in the deferred XML parser scope."
+      }
+    },
+    "observations": {
+      "qa-grid-zero-percent-observation-v2": {
+        "registered_observations": 10,
+        "reported_observations": 10,
+        "conformance_assertions": 0,
+        "matches_frozen_reference_observations": true,
+        "receipt_sha256": "e322fa2e4cd087f759806f39cee357396c8275133d8dedabbcdde7e4829185c6",
+        "reference_receipt_sha256": "1b91f98720fba110e74204f2d9f02866406249492e5649a3abaa2416cdd75f14"
+      }
+    },
+    "oracle_corrections": [
+      {
+        "sha256": "69aeae846feda602966e9ae6f4726b2c21d1c663c5db4fb1b5fcfd0fbc188d4e",
+        "original_fixture_sha256": "18e1b1bb8e300b1ad5fd87731ac3a3a4db6c761eb606fd0c5d49e46df6b9121a",
+        "corrected_fixture_sha256": "f9b518c99ee0665e53332b8622aceb9ab220f015f3b107fb95a1eda17fac24a4",
+        "changed_input_occurrences": 2,
+        "expected_values_changed": false,
+        "original_measurements_retained": [
+          {
+            "engine": "chrome156",
+            "receipt_sha256": "0e8fc99b7100daa6e44dea17875b977e840b289f656da0a1c8da7a2373cd66a8"
+          },
+          {
+            "engine": "lumen223",
+            "receipt_sha256": "6cb82f49467084c5fa878fe65c8667655121c793113a45a62222cef813d124f5"
+          },
+          {
+            "engine": "lumen225",
+            "receipt_sha256": "dcb7769faf03f241cdea0924346620ee50abb5f3e273efa66e0020768875f2a4"
+          }
+        ],
+        "reference_measurement": {
+          "registered_fields": 33,
+          "reported_fields": 33,
+          "passing_fields": 21,
+          "fixture_returncode": 1
+        },
+        "reference_receipt_sha256": "d27b299076f9652749c287dc7202bb7cbd07890140c9a0f7441714b94978d2c5"
+      }
+    ],
+    "rendering": {
+      "stretch_rendering": {
+        "created_utc": "2026-10-30T15:46:06.303425+00:00",
+        "candidate": 226,
+        "scope": "29 unchanged upstream stretch reftests, separate from assertion scopes; software800x600@1, not GPU certification",
+        "native_counts": {
+          "PASS": 29
+        },
+        "reference_counts": {
+          "PASS": 29
+        },
+        "actual_capture_exit_codes": {
+          "0": 58
+        },
+        "all_profiles_removed": true,
+        "pid_sets_match": true,
+        "capture_pid_sets_match": true,
+        "cleanup_joined": true,
+        "execution_integrity": true,
+        "all_required_passed": true,
+        "actual_interval": {
+          "started_utc": "2026-10-30T15:43:57.372109+00:00",
+          "finished_utc": "2026-10-30T15:45:57.718542+00:00",
+          "duration_s": 120.05974191099813
+        },
+        "actual_controller_exit": 0,
+        "actual_inner_exit": 0,
+        "source_pins_unchanged": true,
+        "results_sha256": "03e094bc8c8ba8b0e898c0667bb58f6835626fbd57ca1bc35b9bb9c9c06e177f",
+        "reference_results_sha256": "c82f09ff9939307933274439e5c5e768b01c8419479638d8b948e66243717cd2",
+        "selection_sha256": "0b101c6bbafba15f4f2e2ee0925471257e8abe0fa9757437a9c2253337196f30",
+        "pins_sha256": "20f2b20b0c6c44d862894d5f91c7182b766044c21437fd596979414301831da7",
+        "auditor_sha256": "aeea2af79b66ebca8c59d87e79088c90807cd05a82d6a7ec2ab14db67653d57c",
+        "prior_comparisons": {
+          "219": {
+            "counts": {
+              "FAIL": 28,
+              "PASS": 1
+            },
+            "gains": 28,
+            "losses": 0,
+            "exact_identities": true
+          },
+          "220": {
+            "counts": {
+              "PASS": 10,
+              "FAIL": 19
+            },
+            "gains": 19,
+            "losses": 0,
+            "exact_identities": true
+          },
+          "221": {
+            "counts": {
+              "PASS": 27,
+              "FAIL": 2
+            },
+            "gains": 2,
+            "losses": 0,
+            "exact_identities": true
+          }
+        }
+      },
+      "paint_rendering": {
+        "created_utc": "2026-10-30T15:46:06.878307+00:00",
+        "candidate": 226,
+        "scope": "11 unchanged upstream paint reftests, separate from assertion scopes; software800x600@1, not GPU certification",
+        "native_counts": {
+          "PASS": 11
+        },
+        "reference_counts": {
+          "PASS": 11
+        },
+        "actual_capture_exit_codes": {
+          "0": 22
+        },
+        "all_profiles_removed": true,
+        "pid_sets_match": true,
+        "capture_pid_sets_match": true,
+        "cleanup_joined": true,
+        "execution_integrity": true,
+        "all_required_passed": true,
+        "actual_interval": {
+          "started_utc": "2026-10-30T15:43:32.310306+00:00",
+          "finished_utc": "2026-10-30T15:44:20.630898+00:00",
+          "duration_s": 48.0673684229987
+        },
+        "actual_controller_exit": 0,
+        "actual_inner_exit": 0,
+        "source_pins_unchanged": true,
+        "results_sha256": "b54330d09c3972eb2838ba5c05db5b5204d4da2d4a6f483b6c239ca91c1bef7f",
+        "reference_results_sha256": "5016ceb6708c28f1d1b4726a3cc36cda75af116a78f61325df5dfee8264644b1",
+        "selection_sha256": "12158e59b40cc60a31e6c1859dea1a86f6bc7718362860868bc7a98c408a8f28",
+        "pins_sha256": "029425bdd28948c069535868e1211489a45ef9f449e6bb311a32421928af7f87",
+        "auditor_sha256": "aeea2af79b66ebca8c59d87e79088c90807cd05a82d6a7ec2ab14db67653d57c",
+        "prior_comparisons": {
+          "221": {
+            "counts": {
+              "PASS": 11
+            },
+            "gains": 0,
+            "losses": 0,
+            "exact_identities": true
+          }
+        }
+      }
+    },
+    "fixed640": {
+      "created_utc": "2026-10-30T16:00:22.440239+00:00",
+      "scope": "Exact unchanged non-URL640 sample; not the full WPT suite",
+      "candidate": "226",
+      "manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f",
+      "native": {
+        "files": 640,
+        "fully_passing_files": 411,
+        "assertions": {
+          "PASS": 9162,
+          "FAIL": 1340,
+          "TIMEOUT": 15,
+          "NOTRUN": 23
+        },
+        "total_assertions": 10540,
+        "harness_statuses": {
+          "OK": 624,
+          "TIMEOUT": 15,
+          "ERROR": 1
+        }
+      },
+      "baseline214": {
+        "files": 640,
+        "fully_passing_files": 401,
+        "assertions": {
+          "PASS": 8764,
+          "FAIL": 1738,
+          "TIMEOUT": 15,
+          "NOTRUN": 23
+        },
+        "total_assertions": 10540,
+        "harness_statuses": {
+          "OK": 624,
+          "TIMEOUT": 15,
+          "ERROR": 1
+        }
+      },
+      "chromium156": {
+        "files": 640,
+        "fully_passing_files": 560,
+        "assertions": {
+          "PASS": 9551,
+          "FAIL": 980,
+          "NOTRUN": 9,
+          "TIMEOUT": 12
+        },
+        "total_assertions": 10552,
+        "harness_statuses": {
+          "OK": 626,
+          "TIMEOUT": 13,
+          "ERROR": 1
+        }
+      },
+      "native_results_sha256": "ec00b3f4eaba4388f72fe6fb843798342a3fef5f146b1917d7a9d894f55cb9e9",
+      "baseline214_results_sha256": "dd5d5adb990f439e1feee5a693dbb9bdc6e576c4640fcbf65af52312508edaaf",
+      "reference_results_sha256": "cb62cc6e1414e04c9303928f42140f8ac939253498549b1d58bc32f33e7dbce8",
+      "vs214": {
+        "common_nonpass_to_pass": 398,
+        "prior_pass_losses": 0,
+        "missing_identities": 0,
+        "added_identities": 0,
+        "whole_file_gains": 10,
+        "whole_file_losses": 0,
+        "harness_changes": []
+      },
+      "reference_registration_differences": {
+        "native_only_identities": 2,
+        "reference_only_identities": 14
+      },
+      "identity_audit_sha256": "b740366e522b4e086eb56f5692c8bf8d68f22d8a59a55e2ca2e1da47a8c00026",
+      "qualification": "Actual controller/guard exits, cleanup, resource monitoring and source pins must independently pass; no overall98/100 readiness claim.",
+      "reference_strict_identity_comparison": {
+        "common_identities": 10538,
+        "shared_reference_pass_native_nonpass": 1198,
+        "shared_native_pass_reference_nonpass": 821,
+        "shared_both_pass": 8339,
+        "reference_only_identities": 14,
+        "native_only_identities": 2,
+        "reference_only_statuses": {
+          "PASS": 14
+        },
+        "native_only_statuses": {
+          "PASS": 2
+        },
+        "reference_identity_audit_sha256": "ed8d6b5c44e7d678458666c85b51771b8c337a1ea0b397769f31702418715edc"
+      },
+      "historical_residual_label_correction": "Sealed214 strict shared reference-PASS/native-nonPASS count is1585. Historical1599 included14 reference-only identities. Original raw receipts/pass totals remain unchanged; separate correction receipt retained."
+    },
+    "prior_pass_preservation": {
+      "prior_input_count": 49,
+      "required_prior_pass_identities": 9162,
+      "required_prior_fully_passing_urls": 411,
+      "actual_browser_pids": 640,
+      "lifecycle_integrity": true,
+      "preservation_and_lifecycle_accepted": true
+    },
+    "provenance": {
+      "working_source_commit": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
+      "final_private_handoff_commit": "b23bf7e41828309b858533c74039d1608883ee41",
+      "handoff_equivalence_receipt_sha256": "6fa1adc929487fa9fe674ac9524e7e308882ac6941236cac054e3ace38d9b2f3",
+      "recorded_input_digest": "1b26f13aa718584af4ac97126fe5367d32e01d9c1ee45430662c2c962500596b",
+      "binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
+      "actual_focused_measurement_candidate": 226,
+      "fresh_native_and640_candidate": 226,
+      "recorded_inputs": 646,
+      "source_manifest_sha256": "c94d38938ed7c4e0981dd7edf70308c6fa15bfbc529695aba1a7fed71102b691",
+      "reviewed_public_parent": "5c0e775cfad2084ab5b8107837fe98275d54b35e",
+      "proposed_public_branch": "gpt-6-astra-pro-builtin-rubywebterm-css-math-source226-20261030",
+      "export_independently_rebuilt": false,
+      "external_dependencies_included": false,
+      "portable_binary_distribution": false,
+      "evidence": {
+        "independent_checkpoint": {
+          "sha256": "ae3fcafa7f0901d918692761436dae75c4ae06aa6c20e2e1995075bc5b3f0b11",
+          "measurement_candidate": 226
+        },
+        "focused": {
+          "sha256": "07c0362063c77061bf8acb637eed5caaf02b3b413b51e073fedc4386e73e4600",
+          "measurement_candidate": 226
+        },
+        "stretch_rendering": {
+          "sha256": "f04ccd286afd9590449b3edfc993e475da09e1899acdc11b96c99c2f636aa5ee",
+          "measurement_candidate": 226
+        },
+        "paint_rendering": {
+          "sha256": "e652a0880f30d87cb4d652fbcb2231f6ccf4742102159762b788bc66cf78c4d6",
+          "measurement_candidate": 226
+        },
+        "native": {
+          "sha256": "7ad7f9dd0f18f399429b40da21e6614578a6d707770ca79b18122ada8ac1d3e8",
+          "measurement_candidate": 226
+        },
+        "broad_comparison": {
+          "sha256": "fe4e086aca5d941ec217804eb297542d0f645762d33d92216105e83bfdaaafa5",
+          "measurement_candidate": 226
+        },
+        "prior_pass_union": {
+          "sha256": "85658770e55822c7ecc4d9793d553ae4bb996497f3fa393d5339f43761852bd4",
+          "measurement_candidate": 226
+        },
+        "handoff": {
+          "sha256": "6fa1adc929487fa9fe674ac9524e7e308882ac6941236cac054e3ace38d9b2f3",
+          "measurement_candidate": 226
+        }
+      }
+    },
+    "implementation": [
+      "CSS stepped math now handles the measured round(), mod() and rem() cases with typed values, IEEE edge behavior and deferred percentages. The compact 28-byte Length remains allocation-free, with no retained expression tree or layout-time reparsing.",
+      "Stretch sizing resolves actual available space, margins and border-box floors across blocks, flex, grid, replaced elements, absolute positioning and float exclusions. The complete 48-file family includes 42 standard files (738 assertions) and 6 tentative alias files (274 assertions). All 29 unchanged rendering comparisons pass.",
+      "Classic script and stylesheet response boundaries share correct MIME/nosniff decisions while ordinary fetch/image behavior and strict worker/module rules remain distinct. importScripts owns diagnostic MIME bytes before response destruction, repairing a confirmed lifetime bug.",
+      "Painting now respects negative stacking contexts through non-context wrappers, and monochrome glyph blending uses correctly rounded source-over arithmetic. Original intermediate candidate 220 and final candidate 226 captures demonstrate the repaired red overlay; official pixel expectations and fuzziness are unchanged.",
+      "CSS progress serialization, scalar typing, current and root font contexts, and selected integer consumers are improved. Marked affine resolution uses double intermediates to avoid spurious overflow; constant zero-percent provenance is preserved and the existing atan2 dispatcher is reachable.",
+      "insertAdjacentHTML now validates receivers and outer parents with the required conversion and Trusted Types order, inserts through intrinsic DOM operations, and chooses the correct HTML fragment context. XML parsing and 3D transform composition remain outside this repair.",
+      "The explicit-track intrinsic grid helper preserves fixed-track sizes and each placed item's own contribution, including cyclic 0% typing. Complex unsupported track and span cases retain the existing path; full grid conformance is not claimed."
+    ],
+    "limitations": [
+      "The full WPT suite and whole-browser 98/100 goal remain unestablished. The fresh 640 result is a frozen non-URL assertion sample, with 624 harness OK, 15 TIMEOUT and 1 ERROR retained.",
+      "Complete focused families remain partial where reported: progress 138/139, DOM 71/72, grid percentage 29/44 and neighboring CSS math 173/432. One 3D rotate case, malformed XML fragments and broader layout/math gaps remain explicit.",
+      "The separate namespace diagnostic remains 1/2: its prior SVG context pass is preserved, while XML case preservation is a preexisting deferred parser failure.",
+      "Chromium 156 records 592/594 stepped assertions, 99/139 progress assertions and 21/33 corrected context controls. These reference nonpasses remain counted; draft feature differences do not justify changing upstream expectations.",
+      "All 22 mandatory authored fixtures pass 424 fields, including 3 ordinary crash smokes. These are not additional WPT assertions or formal WPT crashtest-protocol results.",
+      "URL conformance remains deferred by the user. Full WebDriver, manual, media, hardware GPU, platform and Test262 coverage is not established by these runs.",
+      "The raster arithmetic seam passed ASan/UBSan; worker/V8 was not sanitizer-instrumented. Worker lifetime evidence is bounded ownership review plus actual post-fix rejection, nonexecution and continuation.",
+      "One-second resource samples describe active workloads and can miss short-lived processes. Tree RSS can double-count shared pages, PSS is sampled separately, and no matched Chromium speed or idle-memory advantage is claimed.",
+      "The curated source export preserves 646 exact recorded inputs and reviewed public ancestry but was not independently rebuilt. External V8/wgpu/system dependencies and private validation setup are not bundled; this is not a portable browser binary.",
+      "The results walkthrough is rendered by Chromium and includes unedited original WPT images. It is not native Lumen desktop footage or GPU certification; no existing desktop process was restarted."
+    ],
+    "delivery": {
+      "status": "Reviewed source/build limits and exact provenance accompany the archive and measured report. Live telemetry is task-limited and feedback requires the existing session key. Surge remains unauthenticated, with no new Surge deployment.",
+      "live_preview": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz",
+      "source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-rubywebterm-css-math-source226-20261030",
+      "source_branch": "gpt-6-astra-pro-builtin-rubywebterm-css-math-source226-20261030",
+      "page_url": "https://ecooxai.github.io/lumen/",
+      "archive_url": "https://ecooxai.github.io/lumen/src.tar.gz",
+      "walkthrough_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.mp4",
+      "publication_receipt_pending": true
+    }
+  },
+  "excluded": [
+    "private working Git ancestry",
+    "agent/",
+    "agents/",
+    "AGENTS.md",
+    "devsummary.md",
+    "tools/promo/",
+    "raw operational receipts",
+    "protected guard/auth implementations",
+    "profiles/inbox/capabilities/credentials",
+    "build artifacts and dependency caches"
+  ],
+  "current_limits": [
+    "The full WPT suite and whole-browser 98/100 goal remain unestablished. The fresh 640 result is a frozen non-URL assertion sample, with 624 harness OK, 15 TIMEOUT and 1 ERROR retained.",
+    "Complete focused families remain partial where reported: progress 138/139, DOM 71/72, grid percentage 29/44 and neighboring CSS math 173/432. One 3D rotate case, malformed XML fragments and broader layout/math gaps remain explicit.",
+    "The separate namespace diagnostic remains 1/2: its prior SVG context pass is preserved, while XML case preservation is a preexisting deferred parser failure.",
+    "Chromium 156 records 592/594 stepped assertions, 99/139 progress assertions and 21/33 corrected context controls. These reference nonpasses remain counted; draft feature differences do not justify changing upstream expectations.",
+    "All 22 mandatory authored fixtures pass 424 fields, including 3 ordinary crash smokes. These are not additional WPT assertions or formal WPT crashtest-protocol results.",
+    "URL conformance remains deferred by the user. Full WebDriver, manual, media, hardware GPU, platform and Test262 coverage is not established by these runs.",
+    "The raster arithmetic seam passed ASan/UBSan; worker/V8 was not sanitizer-instrumented. Worker lifetime evidence is bounded ownership review plus actual post-fix rejection, nonexecution and continuation.",
+    "One-second resource samples describe active workloads and can miss short-lived processes. Tree RSS can double-count shared pages, PSS is sampled separately, and no matched Chromium speed or idle-memory advantage is claimed.",
+    "The curated source export preserves 646 exact recorded inputs and reviewed public ancestry but was not independently rebuilt. External V8/wgpu/system dependencies and private validation setup are not bundled; this is not a portable browser binary.",
+    "The results walkthrough is rendered by Chromium and includes unedited original WPT images. It is not native Lumen desktop footage or GPU certification; no existing desktop process was restarted."
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "candidate": 226,
+  "kind": "Measured results walkthrough rendered by Chromium, not native Lumen UI footage",
+  "duration_seconds": 36,
+  "dimensions": [
+    1024,
+    768
+  ],
+  "codec": "h264",
+  "video": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.mp4",
+  "video_sha256": "52d6958c48559f3d073c3814f669b8a635f04a1360a7731051eb12e8cd5f0244",
+  "video_bytes": 619695,
+  "poster": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.png",
+  "poster_sha256": "46a2df3c60ff578007449950f79cfe90afbfd45dde55d51a78b0cb0c65164025",
+  "capture_cleanup_complete": true,
+  "encoder_actual_exit": 0,
+  "encoder_monitor_joined": true,
+  "public_export_commit": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+  "archive_sha256": "4e28b1f5801d27a7cfb7012aef669d7800b875daa4b0d4d405e7b22e9b61eaf3",
+  "original_images": [
+    {
+      "file": "showcase226/chromium156-block-height-006.png",
+      "sha256": "f8ce9e7e1b351caf567b1f73763fe91d2ac3bb57792f2283d31b30343738238a"
+    },
+    {
+      "file": "showcase226/lumen-candidate220-block-height-006.png",
+      "sha256": "d58b9b2b311813f14833325b89c5c9327955681127e93fb3315c48b274e10e9d"
+    },
+    {
+      "file": "showcase226/lumen-candidate226-block-height-006.png",
+      "sha256": "ac05aea2c893e0a6dc821a51e444b665be76d632c1d812cf75659042eda9e7ce"
+    }
+  ],
+  "attribution": [
+    "GPT-6 Astra Pro",
+    "Built-in agents",
+    "RubyWebterm",
+    "Chromium",
+    "FFmpeg"
+  ]
+}

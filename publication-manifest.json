@@ -1,58 +1,53 @@
 {
-  "schema_version": 2,
-  "prepared_utc": "2026-10-28T23:07:28.737444+00:00",
-  "release": "Lumen Linux focused checkpoint163",
-  "source_commit": "1df07afad74459acae3d66cd5e9fd4225b593d1c",
-  "binary_sha256": "db0027c34c774bcfaea7269a208b26ae3d1ef66ec77213be218f87c173ceaef5",
-  "source_iteration": 163,
-  "media_iteration": 162,
-  "recorded_inputs_exact": 603,
-  "archive_regular_files": 697,
-  "scope": "Reviewed engine-only source plus public aggregate comparison and explicitly historical native media. Broad163 result pending.",
-  "verification": "Preparation facts are immutable; deployment verification is a separate later receipt.",
-  "files": {
-    "src.tar.gz": {
-      "bytes": 4438760,
-      "sha256": "d8b2247fb79cdb3ba6c02a1486fb05ba7cca8566ab543b3c301a71d13a0f91b0"
-    },
-    "source-inclusion-manifest.json": {
-      "bytes": 158967,
-      "sha256": "bf8694f867a854fab58fb49f647a654a36365632b263a67626047c2d6e5005b3"
-    },
-    "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-demo.mp4": {
-      "bytes": 232212,
-      "sha256": "2367c099b72af97c2eb06c290ad7efe33fa195569c183a00a8be4023b7dc1c1c"
-    },
-    "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-showcase.mp4": {
-      "bytes": 258733,
-      "sha256": "b0cdbd0a1f8cb9616a0537c40ec1e20d4cc71b9ff0d6ab757e788702160c25ee"
-    },
-    "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-media-manifest.json": {
-      "bytes": 2496,
-      "sha256": "8836f09545df8bcc069b93e27a860f6e541fd0e891d3427ffa4f247bc9fc3235"
-    },
-    "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-native-frame.png": {
-      "bytes": 287204,
-      "sha256": "1589be9963e37fa026cd17967cf73f6158e4979a87c112775d2216c08207b289"
-    },
-    "lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json": {
-      "bytes": 7365,
-      "sha256": "39ee702da1b81951569cae147185cf1a910c0c3e1d6c246e07b5d6691cd9aea3"
-    },
-    "index.html": {
-      "bytes": 5916,
-      "sha256": "0dda7e7d790c7323912f7a24f5339692704caaaddaf91e671f2bdb9490b27aa5"
-    },
-    ".nojekyll": {
-      "bytes": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    "publication-receipt.json": {
-      "bytes": 4621,
-      "sha256": "f8f1ef77d23a7f34389ae973038f58ca71261b3069fdceaeb06617e07fadd5ca"
-    }
+  "schema": 1,
+  "candidate": 226,
+  "prepared_utc": "2026-10-30T16:19:48.553128+00:00",
+  "source_export_commit": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+  "source_export_tree": "919defc65c7d85b993041ea2f1cfd560f0b8d35e",
+  "tested_engine_source": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
+  "engine_binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
+  "recorded_inputs": 646,
+  "source_branch": "gpt-6-astra-pro-builtin-rubywebterm-css-math-source226-20261030",
+  "pages_branch": "gpt-6-astra-builtin-agents-rubywebterm-showcase-20261028",
+  "archive": {
+    "path": "src.tar.gz",
+    "sha256": "4e28b1f5801d27a7cfb7012aef669d7800b875daa4b0d4d405e7b22e9b61eaf3",
+    "bytes": 9526948,
+    "self_contained_public_git_bundle": true,
+    "offline_restoration_verified": true,
+    "external_build_dependencies_bundled": false,
+    "portable_browser_binary": false
   },
-  "global_build_id": 163,
-  "session_iteration": 1,
-  "metadata_prepared_utc": "2026-10-28T23:12:54.920127+00:00"
+  "report": {
+    "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.json",
+    "sha256": "c37c8e129abf35843ec66b2e6ed170b007a90cddf8e6c1f75dff357879f011a7"
+  },
+  "video": {
+    "path": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.mp4",
+    "sha256": "52d6958c48559f3d073c3814f669b8a635f04a1360a7731051eb12e8cd5f0244",
+    "bytes": 619695,
+    "duration_seconds": 36,
+    "dimensions": [
+      1024,
+      768
+    ],
+    "method": "Chromium-rendered measured-results walkthrough, not native Lumen UI footage"
+  },
+  "broad": {
+    "whole_files": [
+      411,
+      640
+    ],
+    "assertions": [
+      9162,
+      10540
+    ],
+    "prior_pass_losses": 0,
+    "whole_wpt_certified": false
+  },
+  "native": [
+    143,
+    143
+  ],
+  "source_and_results_commits_are_separate": true
 }
