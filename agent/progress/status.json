@@ -1,50 +1,42 @@
 {
-  "title": "Lumen Linux \u00b7 parser options and script lifecycle",
-  "phase": "candidate 211: correct native child-tree cleanup before acceptance",
-  "iteration": 7,
-  "score": 100,
-  "iteration_quality": 100,
-  "score_note": "Candidate 210 template/adoption part: 50/50 assertions. Native138/140 blocks acceptance; 211 correction is being validated.",
+  "title": "Lumen Linux · parser options and script lifecycle",
+  "phase": "Candidate 212 source frozen: CSS variables and DOMParser regression correction; build pending",
+  "iteration": 12,
+  "score": 46.67,
+  "iteration_quality": 46.67,
+  "score_note": "CSS39 baseline: 154/330 reported assertions. This scoped score is not whole-browser conformance.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
-  "checkpoint": "210 creation64/64 and template50/50; native lifetime regression found and corrected in211; validation pending.",
-  "updated_utc": "2026-10-30T09:30:13.483410+00:00",
+  "checkpoint": "Candidate211 ca96ea6acc239fa91f47c84069b010f20ce09682: native140/140, but16 broad XML assertion regressions block acceptance.",
+  "updated_utc": "2026-10-30T09:57:00.397558+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
     [
-      "Retained parser-options part \u00b7 candidate205",
-      "1961/1961 assertions;18/18 whole upstream files;no losses or changed registrations;all exits0."
+      "Fixed non-URL640, candidate211",
+      "395/640 fully passing files;8700/10540 assertions;624OK/15TIMEOUT/1ERROR. All640 actual native exits0 and cleanup complete."
     ],
     [
-      "Ordinary script lifecycle \u00b7 candidate205",
-      "61/64 assertions;32/35 whole files;31 gained passes andzero prior WPT losses;five missing registrations recovered. Chromium156:64/64 and35/35."
+      "Current Chromium156 same640",
+      "560/640 fully passing files;9551/10552 assertions. Separate browser registrations retained."
     ],
     [
-      "Stable async subset",
-      "Candidate20512/12 assertions, matching current Chromium156."
+      "Regression blocker",
+      "16 prior-pass losses confined to DOMParser XML document identity/metadata. Candidate212 correction is untested until the next immutable build."
     ],
     [
-      "Latest native gate \u00b7 candidate205",
-      "140/140 non-URL tests;zero failures orskips;actualexit0 andunchanged binary."
+      "Completed important parts retained through210/211 focused gates",
+      "Parser options1961/1961; ordinary script scheduling64/64; template/adoption50/50; document creation64/64; native211140/140."
     ],
     [
-      "Document input validation \u00b7 candidate207",
-      "Build/startup passed with immutable binary; native140 and frozen ordinary cohorts are running. Two205 authored immediate-write regressions remain unclaimed until measured.72-file baseline:20517/73 assertions,14/72whole;Chromium15673/73,72/72."
+      "CSS39 frozen baseline",
+      "Candidate211154/330 reported assertions,10/39 whole files; Chromium156299/331,35/39. One native refresh timeout and registration differences are explicit."
     ],
     [
-      "Broader frozen non-URL640 baseline \u00b7 candidate200",
-      "380/640 whole files(59.375%);8324/10540 assertions. Not yet replayed on205."
-    ],
-    [
-      "Historical Chromium150 on640sample",
-      "544/640 whole files(85%);9516/10549 assertions. Current156 controls are recorded separately."
-    ],
-    [
-      "Scope and publication",
-      "FullWPT andwhole-browser98/100 are not certified. Reviewed205source is published on its separate publicbranch; downloadable Pages archive update is under review."
+      "Publication",
+      "Reviewed205 source/archive remain published. Candidate212 is not yet accepted or published."
     ]
   ],
-  "coverage": "Focused208: ordinary scripts35/35whole and64/64 assertions; document streaming71/72whole and72/73; parser options18/18 and1961/1961; native140/140. Custom-element parser4/13whole and24/50. These gains do not replace the pending640 result; known broad regressions are being fixed.",
+  "coverage": "Latest complete fixed non-URL640 sample:211395/640 full files and8700/10540 assertions. CurrentChromium156560/640 and9551/10552. FullWPT/whole-browser98 is not certified.",
   "findings": [
     "Current changes are not yet validated. Trusted Types parser-option enforcement is the bounded first target.",
     "The requested 98/100 whole-browser goal is not established by the selected sample or a focused result.",
@@ -144,7 +136,7 @@
     ]
   ],
   "historical": {
-    "label": "Retained experimental162 \u2014 previous completed session, all original combined-run losses retained",
+    "label": "Retained experimental162 — previous completed session, all original combined-run losses retained",
     "test_files": 4200,
     "comparison": "Lumen162: 1,627 fully passing URLs, 199,248/215,641 PASS reported subtests. Chromium: 3,534 fully passing URLs, 209,574/217,350 PASS reported subtests. Fixed selection, not full WPT.",
     "conservative_task_score": 19,
@@ -193,7 +185,7 @@
         "same_case_and_deadline_as_fresh162": true,
         "pid_absent": true,
         "profile_absent": true,
-        "classification": "Precisely correlated with the fixed hard deadline; retained as actual exit\u22129, not successful exit.",
+        "classification": "Precisely correlated with the fixed hard deadline; retained as actual exit−9, not successful exit.",
         "oom_inferred": false,
         "count": 1
       },
@@ -420,7 +412,7 @@
   "public_report_url": "https://ecooxai.github.io/lumen/",
   "session_iteration": 11,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 209,
+  "accepted_iteration": null,
   "accepted_focused_results": {
     "native": "140/140",
     "network": "317/317",
@@ -1033,11 +1025,11 @@
     ],
     [
       "Genuine native captures",
-      "Five full 800\u00d7640 build 168 frames are reviewed. The metadata capture observes 58/60 authored checks; two parser load callbacks are missing although request headers were observed. Capture wrappers retain exit 1/missing-marker FAIL and unknown child exits; these are artifacts, not fixture test passes."
+      "Five full 800×640 build 168 frames are reviewed. The metadata capture observes 58/60 authored checks; two parser load callbacks are missing although request headers were observed. Capture wrappers retain exit 1/missing-marker FAIL and unknown child exits; these are artifacts, not fixture test passes."
     ],
     [
       "Published experimental source and media",
-      "All12 reviewed Pages assets match their exact prepared hashes. Source-only Git snapshot2e04f123\u2026 contains699files with no development ancestry. The34-second native-capture walkthrough is build168 and preserves the full native frames. The live URL previews progress; Lumen remains a native Linux browser."
+      "All12 reviewed Pages assets match their exact prepared hashes. Source-only Git snapshot2e04f123… contains699files with no development ancestry. The34-second native-capture walkthrough is build168 and preserves the full native frames. The live URL previews progress; Lumen remains a native Linux browser."
     ]
   ],
   "scoped_wip_checkpoint": {
