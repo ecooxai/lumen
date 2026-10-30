@@ -1,0 +1,21 @@
+{
+  "label": "owned candidate216 build controller",
+  "started_utc": "2026-10-30T12:06:49.544901+00:00",
+  "finished_utc": "2026-10-30T12:07:16.545005+00:00",
+  "root_pid": 3764352,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 27,
+  "elapsed_seconds": 27.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 0.0,
+  "cpu_median": 49.519999999999996,
+  "cpu_max": 152.074,
+  "cpu_last10_median": 24.991500000000002,
+  "rss_peak_mb": 329.761,
+  "rss_final_mb": 41.828,
+  "pss_peak_mb": 227.341,
+  "csv": "agent/validation/linux-wpt-20261030-session8/build216/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

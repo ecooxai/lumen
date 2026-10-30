@@ -217,7 +217,7 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
         const char *q = p; while (is_ws((unsigned char)*q)) q++;
         for (int i = 0; i < 4; i++) { size_t n = strlen(st[i]); if (!strncasecmp(q, st[i], n) && (is_ws((unsigned char)q[n]) || q[n] == ',')) { q += n; while (is_ws((unsigned char)*q)) q++; if (*q == ',') { strat = i; p = q + 1; } break; } }
     }
-    Length v[4]; MathType types[4]; bool ang[4] = { 0 }; int n = 0;
+    Length v[4] = {{0}}; MathType types[4]; bool ang[4] = { 0 }; int n = 0;
     while (n < 4) {
         if (!calc_expr(&p, &v[n], c)) return false;
         types[n] = c->math_type;
@@ -235,7 +235,12 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
         ((f == 3 || (f >= 4 && f <= 10) || f == 13 || f == 16) && n != 1) ||
         (f == 15 && (n < 1 || n > 2))) return false;
     MathType result_type = types[0], number_type = math_type_unit(MATH_NUMBER);
-    if (f == 0 && n == 1 && !math_type_equal(types[0], number_type)) return false;
+    if (f == 0 && n == 1) {
+        if (!math_type_equal(types[0], number_type)) return false;
+        /* The default number interval is real initialized storage even when
+           dimensional division leaves the number dependent on percentages. */
+        v[1] = L_px(1); types[1] = number_type;
+    }
     if (f == 0 || f == 1 || f == 2 || f == 11 || f == 14) {
         for (int i = 1; i < n; i++) if (!math_type_equal(types[0], types[i])) return false;
         if (f == 11) result_type = math_type_unit(MATH_ANGLE);
@@ -253,7 +258,7 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
     uint8_t stepped = f == 1 ? LEN_MATH_MOD : f == 2 ? LEN_MATH_REM :
         strat == 1 ? LEN_MATH_UP : strat == 2 ? LEN_MATH_DOWN :
         strat == 3 ? LEN_MATH_TO_ZERO : LEN_MATH_ROUND;
-    if (f <= 2 && (v[0].pct || v[0].pctu || (n > 1 && (v[1].pct || v[1].pctu)))) {
+    if (f <= 2 && (v[0].pct || v[1].pct)) {
         /* A layout reference is required. Keep exact affine operands rather
            than substituting a guessed parent width at computed-value time. */
         l = v[0]; l.mm = stepped;
@@ -284,7 +289,9 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
     default: r = exp(a); break;
     }
     c->math_type = result_type;
-    l.px = (float)r; *out = l; *pp = p; return true;
+    l.px = (float)r;
+    if (f <= 2) l.pctu = v[0].pctu || v[1].pctu;
+    *out = l; *pp = p; return true;
 }
 static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     const char *p = *pp; while (is_ws((unsigned char)*p)) p++;
@@ -439,7 +446,8 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
     return true;
 }
 static bool css_parse_length_context(const char *s, Length *out, float em, float rem, const MediaCtx *mc,
-                                     const ComputedStyle *basis, bool actual, bool *used) {
+                                     const ComputedStyle *basis, bool actual, bool *used, MathType *type_out) {
+    if (type_out) *type_out = math_type_unit(MATH_LENGTH);
     while (is_ws((unsigned char)*s)) s++;
     if (str_istarts(s, "auto")) { *out = L_auto(); return true; }
     if (str_istarts(s, "none")) { *out = (Length){0, 0, LK_NONE}; return true; }
@@ -455,12 +463,13 @@ static bool css_parse_length_context(const char *s, Length *out, float em, float
         !math_type_equal(c.math_type, math_type_unit(MATH_NUMBER))) return false;
     while (is_ws((unsigned char)*p)) p++;
     if (*p) return false;
+    if (type_out) *type_out = c.math_type;
     *out = parsed;
     return true;
 }
 
 bool css_parse_length(const char *s, Length *out, float em, float rem, const MediaCtx *mc) {
-    return css_parse_length_context(s, out, em, rem, mc, NULL, false, NULL);
+    return css_parse_length_context(s, out, em, rem, mc, NULL, false, NULL, NULL);
 }
 
 /* Typed scalar consumers share the same evaluator as native length math. */
@@ -472,11 +481,11 @@ static bool css_scalar_math(const char *text, int unit, float em, float rem, flo
     if (*p) return false;
     *out = value.px; return true;
 }
-static bool css_transform_number(const char *text, float *out) {
+static bool css_transform_number(const char *text, float *out, bool percentage) {
     float value;
     if (!css_scalar_math(text, MATH_NUMBER, 16, 16, &value)) {
         char *end; value = strtof(text, &end);
-        if (end == text || *end != '%' || end[1]) return false;
+        if (!percentage || end == text || *end != '%' || end[1]) return false;
         value /= 100;
     }
     /* CSS applies range clamping after the complete calculation. */
@@ -766,8 +775,14 @@ static void free_toks(char **t, int n) { for (int i = 0; i < n; i++) free(t[i]);
 
 typedef struct { ComputedStyle *st; const ComputedStyle *par; StyleEngine *e; Node *el; float em, rem; const MediaCtx *mc; } ACtx;
 static bool alen(ACtx *c, const char *v, Length *out) {
-    return css_parse_length_context(v, out, c->em, c->rem, c->mc, c->st, true,
-                                    c->e ? &c->e->uses_font_units : NULL);
+    Length value; MathType type;
+    if (!css_parse_length_context(v, &value, c->em, c->rem, c->mc, c->st, true,
+                                  c->e ? &c->e->uses_font_units : NULL, &type)) return false;
+    /* Numeric internal callers use css_scalar_math. A length property cannot
+       consume a number-valued function, even when its storage contains %. */
+    if (value.kind == LK_LEN && strchr(v, '(') &&
+        math_type_equal(type, math_type_unit(MATH_NUMBER))) return false;
+    *out = value; return true;
 }
 /* Font declarations precede their length consumers. A winning line-height
    retains its existing value buffer until the final font is known. */
@@ -806,7 +821,13 @@ static bool alen_size(ACtx *c, const char *v, Length *out) {
     *out = value;
     return true;
 }
-static float alen_px(ACtx *c, const char *v, float def) { Length l; if (alen(c, v, &l) && l.kind == LK_LEN) return l.px; return def; }
+static float alen_px(ACtx *c, const char *v, float def) {
+    Length l;
+    if (!alen(c, v, &l) || l.kind != LK_LEN) return def;
+    /* This scalar-only consumer has no containing-block reference. */
+    if (len_math_stepped(l.mm)) return len_has_pct(l) ? def : len_resolve(l, 0);
+    return l.px;
+}
 
 static void set4(Length *dst, ACtx *c, const char *v) {
     char *t[4]; int n = split_ws(v, t, 4); Length l[4];
@@ -1446,7 +1467,18 @@ static void parse_transform(ACtx *c, const char *v) {
         const char *rp = lp + 1; for (int dp = 1; *rp; rp++) { if (*rp == '(') dp++; else if (*rp == ')' && !--dp) break; }
         if (!*rp) return;
         char *args = xstrndup(lp + 1, (size_t)(rp - lp - 1));
-        { int dp = 0; for (char *q = args; *q; q++) { if (*q == '(') dp++; else if (*q == ')') dp--; else if (*q == ',' && !dp) *q = ' '; } }
+        bool empty_argument = false, component = false, comma = false;
+        { int dp = 0;
+          for (char *q = args; *q; q++) {
+              if (*q == '(') { dp++; component = true; }
+              else if (*q == ')') dp--;
+              else if (*q == ',' && !dp) {
+                  if (!component) empty_argument = true;
+                  component = false; comma = true; *q = ' ';
+              } else if (!is_ws((unsigned char)*q)) component = true;
+          }
+        }
+        if (empty_argument || (comma && !component)) { free(args); return; }
         char *t[7]; int n = split_ws(args, t, 7);
         float a = 1, b = 0, cc = 0, d = 1, e = 0, f = 0;
         bool valid = true;
@@ -1459,22 +1491,35 @@ static void parse_transform(ACtx *c, const char *v) {
                 if (only_y) valid = alen(c, t[0], &ly);
                 else { valid = alen(c, t[0], &lx); if (valid && n > 1 && !only_x) valid = alen(c, t[1], &ly); }
             }
-            /* This transform path currently stores only affine translations. */
-            if (len_math_stepped(lx.mm) || len_math_stepped(ly.mm)) valid = false;
+            /* Keywords are not transform lengths; this path currently stores
+               only affine translations. */
+            if (lx.kind != LK_LEN || ly.kind != LK_LEN ||
+                len_math_stepped(lx.mm) || len_math_stepped(ly.mm)) valid = false;
+            if (valid && three) {
+                float z;
+                if (!css_scalar_math(t[2], MATH_LENGTH, c->em, c->rem, &z)) {
+                    char *end; z = strtof(t[2], &end);
+                    valid = end != t[2] && !*end && z == 0;
+                }
+            }
             if (valid) { e = lx.px; f = ly.px; pending[0].pct += lx.pct; pending[1].pct += ly.pct; }
         } else if (!strcmp(fn, "scale") || !strcmp(fn, "scale3d")) {
             valid = !strcmp(fn, "scale3d") ? n == 3 : n == 1 || n == 2;
-            if (valid) { valid = css_transform_number(t[0], &a); d = a; if (valid && n > 1) valid = css_transform_number(t[1], &d); }
-        } else if (!strcmp(fn, "scalex")) valid = n == 1 && css_transform_number(t[0], &a);
-        else if (!strcmp(fn, "scaley")) valid = n == 1 && css_transform_number(t[0], &d);
+            if (valid) {
+                valid = css_transform_number(t[0], &a, true); d = a;
+                if (valid && n > 1) valid = css_transform_number(t[1], &d, true);
+                if (valid && n == 3) { float z; valid = css_transform_number(t[2], &z, true); }
+            }
+        } else if (!strcmp(fn, "scalex")) valid = n == 1 && css_transform_number(t[0], &a, true);
+        else if (!strcmp(fn, "scaley")) valid = n == 1 && css_transform_number(t[0], &d, true);
         else if (!strcmp(fn, "rotate") || !strcmp(fn, "rotatez")) {
             float angle = 0; valid = n == 1 && transform_angle(c, t[0], &angle);
             if (valid) { float r = angle * (float)M_PI / 180; a = cosf(r); b = sinf(r); cc = -sinf(r); d = cosf(r); }
         } else if (!strcmp(fn, "matrix")) {
             valid = n == 6;
-            if (valid) valid = css_transform_number(t[0], &a) && css_transform_number(t[1], &b) &&
-                css_transform_number(t[2], &cc) && css_transform_number(t[3], &d) &&
-                css_transform_number(t[4], &e) && css_transform_number(t[5], &f);
+            if (valid) valid = css_transform_number(t[0], &a, false) && css_transform_number(t[1], &b, false) &&
+                css_transform_number(t[2], &cc, false) && css_transform_number(t[3], &d, false) &&
+                css_transform_number(t[4], &e, false) && css_transform_number(t[5], &f, false);
         } else if (!strcmp(fn, "skewx") || !strcmp(fn, "skewy")) {
             float angle = 0; valid = n == 1 && transform_angle(c, t[0], &angle);
             if (valid) { float skew = tanf(angle * (float)M_PI / 180); if (fn[4] == 'x') cc = skew; else b = skew; }
@@ -2475,7 +2520,7 @@ apply:
             if (k >= 0) st->font_size = szv[k];
             else if (str_ieq(val, "smaller")) st->font_size = pf / 1.2f;
             else if (str_ieq(val, "larger")) st->font_size = pf * 1.2f;
-            else if (css_parse_length_context(val, &l, pf, c.rem, c.mc, par, true, e ? &e->uses_font_units : NULL) && l.kind == LK_LEN) st->font_size = LMAX(0, l.px + l.pct * pf / 100);
+            else if (css_parse_length_context(val, &l, pf, c.rem, c.mc, par, true, e ? &e->uses_font_units : NULL, NULL) && l.kind == LK_LEN) st->font_size = LMAX(0, len_resolve(l, pf));
             c.em = st->font_size;
         }
         else if (!strcmp(P, "font-weight")) { if (str_ieq(val, "bold")) st->font_weight = 700; else if (str_ieq(val, "normal")) st->font_weight = 400; else if (str_ieq(val, "bolder")) st->font_weight = (int16_t)(par && par->font_weight >= 600 ? 900 : 700); else if (str_ieq(val, "lighter")) st->font_weight = 300; else { int w = atoi(val); if (w > 0) st->font_weight = (int16_t)w; } }
@@ -2551,8 +2596,11 @@ apply:
             char *end; float x = strtof(val, &end);
             if (str_ieq(val, "normal")) { st->line_height_normal = true; st->line_height_factor = 0; }
             else if (end != val && !*end) { st->line_height_normal = false; st->line_height_factor = x; st->line_height = x * st->font_size; }
-            else if (str_istarts(val, "calc(") && !strpbrk(val + 4, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%") && alen(&c, val, &l) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = l.px; st->line_height = l.px * st->font_size; }
-            else if (alen(&c, val, &l) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = 0; st->line_height = l.px + l.pct * st->font_size / 100; }
+            else if (css_scalar_math(val, MATH_NUMBER, c.em, c.rem, &x)) {
+                if (isnan(x) || x < 0) x = 0;
+                st->line_height_normal = false; st->line_height_factor = x; st->line_height = x * st->font_size;
+            }
+            else if (alen(&c, val, &l) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = 0; st->line_height = len_resolve(l, st->font_size); }
         }
         else if (!strcmp(P, "letter-spacing")) st->letter_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
         else if (!strcmp(P, "list-style-type") || !strcmp(P, "list-style")) {
@@ -2652,7 +2700,7 @@ apply:
         break;
     case 'v':
         if (!strcmp(P, "visibility")) st->visibility = str_ieq(val, "hidden") ? VIS_HIDDEN : str_ieq(val, "collapse") ? VIS_COLLAPSE : VIS_VISIBLE;
-        else if (!strcmp(P, "vertical-align")) { static const char *const va[] = { "baseline", "top", "middle", "bottom", "text-top", "text-bottom", "sub", "super", NULL }; k = kw(val, va); if (k >= 0) st->vertical_align = (uint8_t)k; else if (alen(&c, val, &l)) { st->vertical_align = VA_LENGTH; st->vertical_align_len = l.px + l.pct * st->font_size / 100; } }
+        else if (!strcmp(P, "vertical-align")) { static const char *const va[] = { "baseline", "top", "middle", "bottom", "text-top", "text-bottom", "sub", "super", NULL }; k = kw(val, va); if (k >= 0) st->vertical_align = (uint8_t)k; else if (alen(&c, val, &l)) { st->vertical_align = VA_LENGTH; st->vertical_align_len = len_resolve(l, st->line_height_normal ? st->font_size * 1.2f : st->line_height); } }
         break;
     case 'w':
         if (!strcmp(P, "width")) alen_size(&c, val, &st->width);
@@ -5710,7 +5758,7 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
                 if (u > end && length < 128 && !str_ieqn(end, "fr", (size_t)(u - end))) {
                     char token[128]; memcpy(token, p, length); token[length] = 0;
                     Length l;
-                    if (css_parse_length_context(token, &l, em, rem, mc, basis, true, used) && l.kind == LK_LEN) {
+                    if (css_parse_length_context(token, &l, em, rem, mc, basis, true, used, NULL) && l.kind == LK_LEN) {
                         len_str(&out, l, "auto"); p = u; continue;
                     }
                 }
@@ -5914,7 +5962,7 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         Length l = m ? s->margin[i] : s->padding[i];
         /* rendered: the used value (resolves %); not rendered: the computed value */
         if (el->box || !(l.pct || l.pctu)) sb_printf(&b, "%gpx", el->box && (l.pct || l.pctu) ? (m ? el->box->m[i] : el->box->p[i]) : l.px);
-        else if (l.kind == LK_AUTO || l.mm) sb_printf(&b, "%gpx", l.px); else len_str(&b, l, "auto");
+        else if (l.kind == LK_AUTO) sb_printf(&b, "%gpx", l.px); else len_str(&b, l, "auto");
     }
     else if (!strcmp(prop, "width") || !strcmp(prop, "height")) {
         bool W = prop[0] == 'w'; const Box *bx = el->box;

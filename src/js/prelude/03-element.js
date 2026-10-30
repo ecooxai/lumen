@@ -301,7 +301,7 @@ const MATH_UNITS = (() => {
     return m;
 })();
 const MATH_FNS = /^(calc|-webkit-calc|min|max|clamp|round|mod|rem|abs|sign|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp)$/;
-function mathType(src, strictUnits = false) {   /* returns [type | null (invalid) | undefined (unknown), end] */
+function mathType(src, strictUnits = false, percentageHint = '') {   /* returns [type | null (invalid) | undefined (unknown), end] */
     let i = 0, unknown = false;
     const ws = () => { const s = i; while (/\s/.test(src[i] || '')) i++; return i > s; };
     const dec = t => { const m = {}; if (t) for (const e of t.split(',')) { const [d, n] = e.split('^'); m[d] = +n; } return m; };
@@ -381,7 +381,7 @@ function mathType(src, strictUnits = false) {   /* returns [type | null (invalid
         if (m) {
             i += m[0].length;
             if (!m[3]) return '';
-            if (m[3] === '%') return '%^1';
+            if (m[3] === '%') return percentageHint ? percentageHint + '^1' : '%^1';
             const u = MATH_UNITS.get(m[3].toLowerCase());
             if (u === undefined) { if (strictUnits) return null; unknown = true; return '?'; }
             return u + '^1';
@@ -428,6 +428,36 @@ function transformAnglesValid(value) {
             if (arg.slice(end).trim() || type !== undefined && type !== 'angle^1') return false;
         }
         re.lastIndex = Math.max(start, i - 1);
+    }
+    return true;
+}
+/* Validate the typed arguments changed by native scalar math before a
+   CSSOM setter discards its previous valid declaration. */
+function transformComponentsValid(rawValue) {
+    const value = rawValue.includes('/*') ? rawValue.replace(/\/\*[\s\S]*?(?:\*\/|$)/g, ' ') : rawValue;
+    if (value.includes(String.fromCharCode(92))) return true;
+    const re = /(^|[\s)])(matrix(?:3d)?|scale(?:3d|[xyz])?|translate(?:3d|[xyz])?)\(/gi;
+    let m;
+    while ((m = re.exec(value))) {
+        const begin = re.lastIndex; let end = begin, depth = 1;
+        while (end < value.length && depth) { if (value[end] === '(') depth++; else if (value[end] === ')') depth--; end++; }
+        const args = tomSplitTop(value.slice(begin, depth ? value.length : end - 1), ',').map(x => x.trim());
+        if (args.some(x => !x)) return false;
+        const name = m[2].toLowerCase(), matrix = name.startsWith('matrix'), scale = name.startsWith('scale');
+        const three = name.endsWith('3d'), one = /[xyz]$/.test(name);
+        if (matrix ? args.length !== (three ? 16 : 6) : three ? args.length !== 3 : one ? args.length !== 1 : args.length < 1 || args.length > 2) return false;
+        for (let j = 0; j < args.length; j++) {
+            const arg = args[j], length = !matrix && !scale, z = length && (name === 'translatez' || three && j === 2);
+            const [type, consumed] = mathType(arg, true, length && !z ? 'length' : '');
+            if (arg.slice(consumed).trim()) return false;
+            if (type === undefined) continue;
+            if (matrix && type !== '') return false;
+            if (scale && type !== '' && type !== '%^1') return false;
+            if (length && type !== 'length^1') {
+                if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(arg) || Number(arg) !== 0) return false;
+            }
+        }
+        re.lastIndex = Math.max(begin, end - 1);
     }
     return true;
 }
@@ -542,13 +572,13 @@ function mathValid(p, v) {
         return /^\s*(inherit|initial|unset|revert|revert-layer|none|auto|base|base-select|textfield|menulist-button|button|checkbox|listbox|menulist|meter|progress-bar|radio|searchfield|textarea)\s*$/i.test(v);
     if (/-gradient\(/i.test(v) && !/var\(|env\(|attr\(/i.test(v) && !gradInterpValid(v)) return false;
     if (/var\(|env\(|attr\(|calc-size\(|anchor/i.test(v)) return true;
-    if (p === 'transform' && !transformAnglesValid(v)) return false;
+    if (p === 'transform' && (!transformAnglesValid(v) || !transformComponentsValid(v))) return false;
     if (/^background-position(?:-[xy])?$/.test(p) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return cssPositionParse(v, cssPositionAxis(p)) !== null;
     const re = /(^|[\s,(/])((?:-webkit-)?[a-z][a-z0-9-]*)\(/gi;
     let m;
     while ((m = re.exec(v))) {
         if (!MATH_FNS.test(m[2].toLowerCase())) continue;
-        const st = m.index + m[1].length, [t, n] = mathType(v.slice(st));
+        const st = m.index + m[1].length, [t, n] = mathType(v.slice(st), false, MATH_LEN_PROPS.test(p) ? 'length' : '');
         if (t === null) return false;
         re.lastIndex = st + Math.max(n, 1);
         if (t === undefined || st !== 0 && v.slice(0, st).trim()) continue;   /* only a whole-value function is checked against the property */

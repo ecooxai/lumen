@@ -91,6 +91,21 @@ int main(void) {
         assert(fabsf(len_resolve(value, 150) - responsive[i].at150) < .0001f);
         checks += 2;
     }
+    Length typed_default;
+    assert(css_parse_length("round(10% / 1px)", &typed_default, 16, 16, NULL));
+    assert(len_math_stepped(typed_default.mm));
+    assert(len_resolve(typed_default, 80) == 8);
+    assert(len_resolve(typed_default, 200) == 20); checks += 2;
+    const char *constant_nested[] = {
+        "min(10px, round(1px + 0%, 1px))",
+        "calc(round(1px + 0%, 1px) + round(2px + 0%, 1px))",
+        "round(round(1px + 0%, 1px), 2px)",
+    };
+    float nested_expected[] = { 1, 3, 2 };
+    for (size_t i = 0; i < sizeof constant_nested / sizeof *constant_nested; i++) {
+        Length value; assert(css_parse_length(constant_nested[i], &value, 16, 16, NULL));
+        assert(len_resolve(value, 80) == nested_expected[i]); checks++;
+    }
     /* Unsupported nonlinear trees are rejected instead of approximated. */
     const char *unrepresented[] = {
         "round(round(10%, 1px), 2px)",
@@ -120,6 +135,27 @@ int main(void) {
     assert(style->has_transform && style->transform[4] == 12); checks++;
     css_apply_decl(style, NULL, "transform", "scale(2) garbage", NULL, NULL);
     assert(style->has_transform && style->transform[4] == 12); checks++;
+    const char *malformed_transform[] = {
+        "translateX(auto)", "translate(none)",
+        "matrix(100%, 0, 0, 1, 0, 0)", "scale3d(1, 1, 2px)",
+        "translate3d(1px, 2px, 5%)", "translate(1px,,2px)"
+    };
+    for (size_t i = 0; i < sizeof malformed_transform / sizeof *malformed_transform; i++) {
+        css_apply_decl(style, NULL, "transform", malformed_transform[i], NULL, NULL);
+        assert(style->has_transform && style->transform[4] == 12); checks++;
+    }
+    css_apply_decl(style, NULL, "width", "7px", NULL, NULL);
+    css_apply_decl(style, NULL, "width", "round(10% / 1px)", NULL, NULL);
+    assert(!style->width.mm && style->width.px == 7); checks++;
+    css_apply_decl(style, NULL, "width", "calc(round(10% / 1px) * 1px)", NULL, NULL);
+    assert(len_math_stepped(style->width.mm));
+    assert(len_resolve(style->width, 80) == 8);
+    assert(len_resolve(style->width, 200) == 20); checks += 2;
+    css_apply_decl(style, NULL, "font-size", "round(110%, 3px)", NULL, NULL);
+    assert(style->font_size == 18); checks++;
+    css_apply_decl(style, NULL, "line-height", "20px", NULL, NULL);
+    css_apply_decl(style, NULL, "vertical-align", "round(50%, 3px)", NULL, NULL);
+    assert(style->vertical_align_len == 9); checks++;
     style_free(style);
     printf("PASS css_stepped_math %d native boundary checks\n", checks);
     return 0;

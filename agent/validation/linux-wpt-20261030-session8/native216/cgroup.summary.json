@@ -1,0 +1,13 @@
+{
+  "source": "Linux cgroup v2 cpu.stat usage_usec deltas",
+  "group": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/codex.slice/codex-lumen.slice/codex-lumen-compile.slice",
+  "interval_seconds": 1,
+  "cpu_one_core_equals_100": true,
+  "samples": 82,
+  "cpu_median": 26.436873,
+  "cpu_max": 109.72014,
+  "cpu_weighted_mean": 32.65626066202739,
+  "csv": "agent/validation/linux-wpt-20261030-session8/native216/cgroup.csv",
+  "scope": "All processes in this shared slice, including concurrent builds/tests; process-tree CPU remains an estimate and RSS/PSS are collected separately.",
+  "caveat": "A1-second window may cross fractional100msquota periods; sustained weighted use and rawperiod/throttling counters distinguish quota enforcement from window alignment."
+}

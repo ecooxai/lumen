@@ -1,0 +1,23 @@
+{
+  "started_utc": "2026-10-30T12:07:58.009314+00:00",
+  "finished_utc": "2026-10-30T12:09:20.089923+00:00",
+  "duration_minutes": 1.36801015,
+  "controller_pid": 3768035,
+  "exit_code": 0,
+  "monitors_joined": true,
+  "source_commit": "1c7bba1cf2d06cdff0233abea8d76253e8e4f903",
+  "command": [
+    "python3",
+    "tools/codex_compile.py",
+    "ctest",
+    "--test-dir",
+    "build/codex-native",
+    "-j",
+    "1",
+    "--output-on-failure",
+    "-E",
+    "^(url|url_host_nul|data_url)$",
+    "--output-junit",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/native216/ctest.xml"
+  ]
+}

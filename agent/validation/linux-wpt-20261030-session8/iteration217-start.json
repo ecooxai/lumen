@@ -1,0 +1,11 @@
+{
+  "iteration": 3,
+  "candidate": 217,
+  "started_utc": "2026-10-30T12:12:59.788778+00:00",
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Safe default interval, proper length context, retained constant nesting, strict transform grammar and actual-basis consumers"
+}

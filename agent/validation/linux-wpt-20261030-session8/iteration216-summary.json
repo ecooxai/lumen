@@ -1,0 +1,26 @@
+{
+  "iteration": 2,
+  "candidate": 216,
+  "started_utc": "2026-10-30T12:04:02.025240+00:00",
+  "finished_utc": "2026-10-30T12:11:24.571526+00:00",
+  "end_qualification": "Focused comparison receipt; additional source review makes this candidate ineligible for release",
+  "duration_minutes": 7.375771433333333,
+  "session_elapsed_minutes": 25.4761921,
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf",
+    "root"
+  ],
+  "scope_assertion_score": 100,
+  "release_quality_score": 80,
+  "release_accepted": false,
+  "focus": "594/594 assertions,4/4files",
+  "authored": "62/62",
+  "signed_zero_time": "12/12",
+  "crash_smoke": "3/3 separate authored-wrapper outcome",
+  "neighbors": "163/432,48gains,0priorpassloss",
+  "native": "141/141",
+  "blocking_finding": "One-argument round with a percentage-bearing dimension-cancelled NUMBER can reach deferred branch and read uninitialized second operand",
+  "additional_findings": "Native matrix percentage/third3Dargument validation; prior-pass zero-percent constant nested expressions must remain supported"
+}

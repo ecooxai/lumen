@@ -1,0 +1,21 @@
+{
+  "label": "owned candidate216 native non-URL tests",
+  "started_utc": "2026-10-30T12:07:58.051125+00:00",
+  "finished_utc": "2026-10-30T12:09:20.051253+00:00",
+  "root_pid": 3768035,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 82,
+  "elapsed_seconds": 82.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 0.0,
+  "cpu_median": 17.001,
+  "cpu_max": 76.002,
+  "cpu_last10_median": 2.5,
+  "rss_peak_mb": 227.586,
+  "rss_final_mb": 36.442,
+  "pss_peak_mb": 166.512,
+  "csv": "agent/validation/linux-wpt-20261030-session8/native216/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}
