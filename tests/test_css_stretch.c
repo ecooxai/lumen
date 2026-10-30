@@ -131,10 +131,19 @@ int main(void) {
       "<div style='float:left;width:100px;height:30px'></div>"
       "<div id='clear-parent' style='height:100px'>"
       "<div id='clear-wide' style='display:flow-root;width:200px;height:stretch;margin-top:50px'></div>"
+      "</div></div>"
+      "<div id='clear-stage-short' style='display:flow-root;width:200px'>"
+      "<div style='float:left;width:100px;height:30px'></div>"
+      "<div id='clear-parent-short' style='height:100px'>"
+      "<div id='clear-wide-short' style='display:flow-root;width:200px;height:stretch;margin-top:10px'></div>"
       "</div></div></body></html>";
     html_parse(d,regressions,strlen(regressions));e=style_engine_new(d);style_recalc(e,&d->node,true);l=layout_new();layout_run(l,d,800,600);
     size(d,"grid-static-size",55,43);size(d,"grid-static-max",55,43);
-    offset(d,"clear-stage","clear-parent",0,0);offset(d,"clear-stage","clear-wide",0,30);
+    /* Independently verified in Chromium156 and immutable222: the50px
+       collapsed margin already clears an external30px float; the10px case
+       still intersects it and must suppress collapse before moving below. */
+    offset(d,"clear-stage","clear-parent",0,50);offset(d,"clear-stage","clear-wide",0,50);
+    offset(d,"clear-stage-short","clear-parent-short",0,0);offset(d,"clear-stage-short","clear-wide-short",0,30);
     layout_free(l);style_engine_free(e);doc_free(d);
     d=doc_new("https://css-stretch.test/quirks");
     const char *quirks="<html><body style='margin:0'><div></div><iframe id='quirks-child' style='display:inline-block;width:40px;height:stretch;box-sizing:border-box;border:5px solid'></iframe></body></html>";

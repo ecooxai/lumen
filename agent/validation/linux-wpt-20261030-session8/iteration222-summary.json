@@ -1,0 +1,69 @@
+{
+  "iteration": 8,
+  "candidate": 222,
+  "started_utc": "2026-10-30T14:17:14.405101+00:00",
+  "ended_utc": "2026-10-30T14:34:08.346158+00:00",
+  "duration_minutes": 16.899017616666665,
+  "session_wall_minutes": 168.20576930000001,
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "coordinator": "root",
+  "source_commit": "f580a929395d03f6dc1a07796189c42f21ae46bf",
+  "binary_sha256": "f6d38f6339edd7ea7cf8253bb6b252f5cafab6c4b8bed110ce7c4b4d1f1e9a5c",
+  "source_manifest_sha256": "7d29d7b67ef5cbe1592bc92a5336d7d7c2238a7bc858ec2c64af06574344b126",
+  "native_ctest": {
+    "passed": 142,
+    "total": 143,
+    "stretch_passed": 111,
+    "stretch_total": 113,
+    "mime_checks_passed": 165,
+    "math_checks_passed": 145,
+    "raster_asan_ubsan": "PASS",
+    "worker_asan": "not instrumented; owned-string review plus real rejection/no-execution behavior"
+  },
+  "stretch_assertions": {
+    "passed": 1012,
+    "total": 1012,
+    "full_files": 48,
+    "files": 48,
+    "score_out_of_100": 100,
+    "gains_vs219": 794,
+    "gains_vs220": 50,
+    "gains_vs221": 25,
+    "prior_pass_losses": 0
+  },
+  "mime_assertions": {
+    "passed": 87,
+    "total": 87,
+    "full_files": 7,
+    "files": 7,
+    "score_out_of_100": 100,
+    "native_baseline_safe6": "37/86; unsafe old importScripts not run",
+    "shared_safe6_gains": 49,
+    "prior_pass_losses": 0
+  },
+  "stretch_rendering": {
+    "passed": 29,
+    "total": 29,
+    "score_out_of_100": 100,
+    "gains_vs221": 2,
+    "prior_pass_losses": 0
+  },
+  "paint_rendering": {
+    "passed": 11,
+    "total": 11,
+    "prior_pass_losses": 0
+  },
+  "authored": "All19 frozen fixtures passed, including37 execution/event and13 worker safety checks; two extra native-only worker message substring invariants passed.",
+  "independent_oracle_observation": "All8 native222 and Chromium156 fields match; original native50px expectation disproved independently.",
+  "earlier_scopes": {
+    "stepped_math": "594/594",
+    "math_neighbors": "173/432",
+    "progress": "90/139"
+  },
+  "acceptance": "Production focused scopes pass; release held until corrected native gate and exact640. Original222 native failure remains immutable.",
+  "broad_640": "Not rerun on222; no inferred broad rate."
+}

@@ -1,0 +1,32 @@
+{
+  "created_utc": "2026-10-30T14:36:12.574120+00:00",
+  "kind": "Correction of authored native oracle; no upstream expectations or production inputs changed",
+  "file": "tests/test_css_stretch.c",
+  "before_sha256": "4c2c1df6bb34b27a390dc35a7c273492066150e29c90f99ae93fb1f2fddb578f",
+  "after_sha256": "95111feed555e220cd3fba3fcb3d5b7ef527ebf84271f2052f24e110f3fdb5b5",
+  "original_candidate": 222,
+  "original_native_gate": "142/143, stretch111/113; immutable receipt preserved",
+  "original_expected_50px": {
+    "parent_top": 0,
+    "child_top": 30
+  },
+  "verified_expected_50px": {
+    "parent_top": 50,
+    "child_top": 50,
+    "child_height": 100
+  },
+  "added_verified_10px": {
+    "parent_top": 0,
+    "child_top": 30,
+    "child_height": 100
+  },
+  "reason": "The external preceding float remains at0..30 while the50px collapsed parent/child margin moves their border position below it. A10px collapsed position still intersects the float and needs clearance. An internal float instead moves with the parent, so its separate unchanged0/30 control remains valid.",
+  "independent_observation_source_sha256": "d70215abdbd62c6b9fdac51d248befc699d967328da6aed48ec2839aeb51e77a",
+  "reference_receipts": {
+    "qa-css-stretch-inherited-float-observation/chrome156/receipt.json": "7c9ed982a5f5f5c56015be605b0be9fbb69aef4d2c5c1e0c44c56fae3a66cbbb",
+    "qa-css-stretch-inherited-float-observation/lumen222/receipt.json": "0a114c9439017ef2080eac1ccfce14bf87c4fdd59c5b23a0b75c55f460ec3b2b"
+  },
+  "spec": "https://www.w3.org/TR/CSS22/visuren.html#flow-control",
+  "no_production_change": true,
+  "no_upstream_change": true
+}

@@ -1,0 +1,21 @@
+{
+  "created_utc": "2026-10-30T14:37:23.344000+00:00",
+  "baseline_candidate": 222,
+  "next_candidate": 223,
+  "recorded_input_count": 646,
+  "unchanged_recorded_inputs": 645,
+  "changed_inputs": {
+    "tests/test_css_stretch.c": {
+      "before": "4c2c1df6bb34b27a390dc35a7c273492066150e29c90f99ae93fb1f2fddb578f",
+      "after": "95111feed555e220cd3fba3fcb3d5b7ef527ebf84271f2052f24e110f3fdb5b5"
+    }
+  },
+  "baseline_manifest_sha256": "7d29d7b67ef5cbe1592bc92a5336d7d7c2238a7bc858ec2c64af06574344b126",
+  "baseline_manifest_file_sha256": "7d0636b23149f92a5e8027fda6b9d7b006570534cbf9e77226d89ef269a54679",
+  "production_inputs_unchanged": true,
+  "engine_binary_equality": "pending actual223 build; no focused/pixel result relabeling",
+  "required_new_gates": [
+    "native143 with corrected fixture",
+    "exact frozen640"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "iteration": 9,
+  "candidate": 223,
+  "started_utc": "2026-10-30T14:36:12.574120+00:00",
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Native authored-oracle correction only; production222 retained. Fresh native and exact640 checkpoint with explicit binary/input equivalence."
+}
