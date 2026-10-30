@@ -145,6 +145,37 @@ int main(void) {
     offset(d,"clear-stage","clear-parent",0,50);offset(d,"clear-stage","clear-wide",0,50);
     offset(d,"clear-stage-short","clear-parent-short",0,0);offset(d,"clear-stage-short","clear-wide-short",0,30);
     layout_free(l);style_engine_free(e);doc_free(d);
+    /* Fixed tracks contribute their own size during intrinsic measurement;
+       trimming trailing text whitespace must not accidentally change it. */
+    const char *grid_modes[] = { "float:left", "position:absolute", "width:max-content", "width:fit-content" };
+    for (size_t i = 0; i < sizeof grid_modes / sizeof *grid_modes; i++) {
+        d = doc_new("https://css-stretch.test/intrinsic-grid");
+        SB page; sb_init(&page);
+        sb_printf(&page, "<!doctype html><div style='position:relative;width:300px;height:20px'>"
+            "<div id='gp' style='display:grid;grid-template-columns:50%% 100px;%s'>"
+            "<div id='gp-first' style='grid-column:1;grid-row:1'></div>"
+            "<div id='gp-second' style='grid-column:2;grid-row:1'><div style='width:40px;height:10px'></div></div>"
+            "</div></div>", grid_modes[i]);
+        html_parse(d, page.s, strlen(page.s)); sb_free(&page);
+        e = style_engine_new(d); style_recalc(e, &d->node, true);
+        l = layout_new(); layout_run(l, d, 800, 600);
+        size(d, "gp", 100, 10); size(d, "gp-first", 50, 10);
+        offset(d, "gp", "gp-second", 50, 0);
+        layout_free(l); style_engine_free(e); doc_free(d);
+    }
+    for (int gap = 0; gap <= 7; gap += 7) {
+        d = doc_new("https://css-stretch.test/intrinsic-grid-contribution");
+        SB page; sb_init(&page);
+        sb_printf(&page, "<!doctype html><div id='gp' style='display:grid;width:max-content;grid-template-columns:50%% 100px;column-gap:%dpx'>"
+            "<div id='gp-first' style='grid-column:1;grid-row:1'><div style='width:40px;height:10px'></div></div>"
+            "<div id='gp-second' style='grid-column:2;grid-row:1'></div></div>", gap);
+        html_parse(d, page.s, strlen(page.s)); sb_free(&page);
+        e = style_engine_new(d); style_recalc(e, &d->node, true);
+        l = layout_new(); layout_run(l, d, 800, 600);
+        size(d, "gp", 140 + gap, 10); size(d, "gp-first", (140 + gap) / 2.f, 10);
+        offset(d, "gp", "gp-second", (140 + gap) / 2.f + gap, 0);
+        layout_free(l); style_engine_free(e); doc_free(d);
+    }
     d=doc_new("https://css-stretch.test/quirks");
     const char *quirks="<html><body style='margin:0'><div></div><iframe id='quirks-child' style='display:inline-block;width:40px;height:stretch;box-sizing:border-box;border:5px solid'></iframe></body></html>";
     html_parse(d,quirks,strlen(quirks));e=style_engine_new(d);style_recalc(e,&d->node,true);l=layout_new();layout_run(l,d,800,600);

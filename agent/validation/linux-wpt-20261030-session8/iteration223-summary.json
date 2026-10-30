@@ -1,0 +1,50 @@
+{
+  "iteration": 9,
+  "candidate": 223,
+  "started_utc": "2026-10-30T14:36:12.574120+00:00",
+  "finished_utc": "2026-10-30T14:56:02.024509+00:00",
+  "duration_minutes": 19.82417315,
+  "session_elapsed_minutes": 190.10040848333335,
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "source_commit": "4977d6a8814cd0bf7c03895fffc047a269ee3224",
+  "binary_sha256": "f6d38f6339edd7ea7cf8253bb6b252f5cafab6c4b8bed110ce7c4b4d1f1e9a5c",
+  "native": {
+    "passed": 143,
+    "total": 143,
+    "stretch_checks": 117,
+    "mime_checks": 165,
+    "math_checks": 145,
+    "actual_exit": 0
+  },
+  "focused_and_rendering": "Actual222 receipts retained with exact223production/binaryequivalence; no fresh223focused/pixel claim",
+  "fixed640": {
+    "whole_files_passed": 409,
+    "files": 640,
+    "assertions_passed": 9133,
+    "assertions": 10540,
+    "gains_vs214": 373,
+    "losses_vs214": 4,
+    "harness_OK": 624,
+    "harness_TIMEOUT": 15,
+    "harness_ERROR": 1,
+    "actual_browser_exits_0": 640
+  },
+  "measured_scores": {
+    "fixed640_whole_file_percent": 63.90625,
+    "fixed640_assertion_percent": 86.65085388994306,
+    "selected_three_families_percent": 100
+  },
+  "acceptance": "REJECTED: four prior-pass grid intrinsic-sizing regressions; no publication qualification",
+  "regression_url": "/css/css-grid/layout-algorithm/grid-container-percentage-001.html",
+  "lost_identities": [
+    ".grid 16",
+    ".grid 17",
+    ".grid 18",
+    ".grid 20"
+  ],
+  "next": "Independently verify geometry then repair real per-track intrinsic contributions; preserve corrected whitespace andallupstreamexpectations."
+}

@@ -96,6 +96,7 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
 float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 void grid_absolute_containing_block(const Box *cb, const Box *a, float *x, float *y, float *w, float *h);
+bool grid_intrinsic_explicit(Layout *L, Box *b, float *mn, float *mx);
 float grid_item_auto_min(Layout *L, Box *c, float maxlen);   /* contribution to a minmax(auto, maxlen) column */
 float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 void table_intrinsic(Layout *L, Box *b, float *mn, float *mx);

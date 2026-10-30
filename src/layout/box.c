@@ -490,20 +490,22 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
         }
         if (row && n > 1) { mx += st->column_gap * (n - 1); if (!st->flex_wrap) mn += st->column_gap * (n - 1); }
     } else if (b->fmt == FMT_GRID) {
-        int nc = LMAX(1, st->grid_ncols); bool fixed = st->grid_ncols > 0;
-        float fsum = 0;
-        for (int i = 0; i < st->grid_ncols; i++) {
-            const GridTrack *t = &st->grid_cols[i];
-            if (t->size.kind != LK_LEN || t->size.pct || t->fr) { fixed = false; continue; }
-            float w = t->size.px;
-            if (t->min.kind == LK_MIN_CONTENT && st->grid_ncols == 1) for (Box *c = b->first; c; c = c->next) if (in_flow(c)) w = LMAX(w, grid_item_auto_min(L, c, t->size.px));   /* minmax(auto, len); which items land in which of several columns is not known here */
-            fsum += w;
-        }
-        if (fixed) mn = mx = fsum + st->column_gap * (nc - 1);
-        else {
-            float cmx = 0, cmn = 0;
-            for (Box *c = b->first; c; c = c->next) { if (!in_flow(c)) continue; float a, z; intrinsic_outer(L, c, &a, &z); cmx = LMAX(cmx, z); cmn = LMAX(cmn, a); }
-            mx = cmx * nc + st->column_gap * (nc - 1); mn = cmn * nc + st->column_gap * (nc - 1);
+        if (!grid_intrinsic_explicit(L, b, &mn, &mx)) {
+            int nc = LMAX(1, st->grid_ncols); bool fixed = st->grid_ncols > 0;
+            float fsum = 0;
+            for (int i = 0; i < st->grid_ncols; i++) {
+                const GridTrack *t = &st->grid_cols[i];
+                if (t->size.kind != LK_LEN || t->size.pct || t->fr) { fixed = false; continue; }
+                float w = t->size.px;
+                if (t->min.kind == LK_MIN_CONTENT && st->grid_ncols == 1) for (Box *c = b->first; c; c = c->next) if (in_flow(c)) w = LMAX(w, grid_item_auto_min(L, c, t->size.px));   /* minmax(auto, len); which items land in which of several columns is not known here */
+                fsum += w;
+            }
+            if (fixed) mn = mx = fsum + st->column_gap * (nc - 1);
+            else {
+                float cmx = 0, cmn = 0;
+                for (Box *c = b->first; c; c = c->next) { if (!in_flow(c)) continue; float a, z; intrinsic_outer(L, c, &a, &z); cmx = LMAX(cmx, z); cmn = LMAX(cmn, a); }
+                mx = cmx * nc + st->column_gap * (nc - 1); mn = cmn * nc + st->column_gap * (nc - 1);
+            }
         }
     } else if (b->fmt == FMT_TABLE) {
         table_intrinsic(L, b, &mn, &mx);

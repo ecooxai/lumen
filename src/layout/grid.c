@@ -172,6 +172,51 @@ static GridPosition grid_axis_position(GridAxis axis, int explicit_tracks) {
     return (GridPosition){ LMAX(-1000, LMIN(start, 999)), span, first || last };
 }
 
+/* Cyclic percentage tracks are auto during intrinsic sizing. For explicit
+ * single-column items, their contributions belong to that column only; a
+ * neighboring fixed track contributes its own fixed size, not the widest
+ * child's size. Leave spans and implicit/flexible/minmax tracks to the
+ * existing path until their full distribution algorithm is available. */
+bool grid_intrinsic_explicit(Layout *L, Box *b, float *mn, float *mx) {
+    const ComputedStyle *s = b->st;
+    int nc = s->grid_ncols;
+    if (nc <= 0 || nc > 1000 || !s->grid_cols || s->grid_areas) return false;
+    bool percentage = false;
+    for (int i = 0; i < nc; i++) {
+        const GridTrack *t = &s->grid_cols[i];
+        if (t->size.kind != LK_LEN || t->size.mm || t->fr || t->min.kind != LK_AUTO) return false;
+        percentage |= t->size.pct != 0 || t->size.pctu;
+    }
+    if (!percentage) return false;
+    for (Box *c = b->first; c; c = c->next) {
+        if (!in_flow(c)) continue;
+        GridPosition p = grid_axis_position(c->st->grid_column, nc);
+        if (!p.definite || p.span != 1 || p.start < 0 || p.start >= nc) return false;
+    }
+    float *sizes = xcalloc((size_t)nc * 2, sizeof(float));
+    float *minimum = sizes, *maximum = sizes + nc;
+    for (int i = 0; i < nc; i++) {
+        Length size = s->grid_cols[i].size;
+        if (size.pct == 0 && !size.pctu) minimum[i] = maximum[i] = LMAX(0, size.px);
+    }
+    for (Box *c = b->first; c; c = c->next) {
+        if (!in_flow(c)) continue;
+        int col = grid_axis_position(c->st->grid_column, nc).start;
+        Length size = s->grid_cols[col].size;
+        if (size.pct == 0 && !size.pctu) continue;
+        float a, z;
+        intrinsic_outer(L, c, &a, &z);
+        minimum[col] = LMAX(minimum[col], a);
+        maximum[col] = LMAX(maximum[col], z);
+    }
+    float lo = s->column_gap * (nc - 1), hi = lo;
+    for (int i = 0; i < nc; i++) { lo += minimum[i]; hi += maximum[i]; }
+    free(sizes);
+    *mn = lo; *mx = LMAX(lo, hi);
+    return true;
+}
+
+
 /* CSS Grid 9.1: an absolutely positioned descendant uses the grid area of
    its containing block. Auto and nonexistent lines use the padding edge;
    out-of-flow placement must never create implicit tracks. */

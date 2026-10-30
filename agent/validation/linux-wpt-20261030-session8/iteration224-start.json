@@ -1,0 +1,11 @@
+{
+  "iteration": 10,
+  "candidate": 224,
+  "started_utc": "2026-10-30T15:04:14.610941+00:00",
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "First repair four measured grid intrinsic regressions with independent geometry; separate reviewed source checkpoint, then bounded progress and adjacent HTML improvements. No rotate3d/XML architecture."
+}

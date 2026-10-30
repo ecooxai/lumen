@@ -1,0 +1,45 @@
+{
+  "created_utc": "2026-10-30T14:41:56.217908+00:00",
+  "candidate": 223,
+  "source_commit": "4977d6a8814cd0bf7c03895fffc047a269ee3224",
+  "comparison_candidate": 222,
+  "comparison_source_commit": "f580a929395d03f6dc1a07796189c42f21ae46bf",
+  "recorded_inputs": 646,
+  "unchanged_recorded_inputs": 645,
+  "changed_recorded_inputs": {
+    "tests/test_css_stretch.c": {
+      "before": "4c2c1df6bb34b27a390dc35a7c273492066150e29c90f99ae93fb1f2fddb578f",
+      "after": "95111feed555e220cd3fba3fcb3d5b7ef527ebf84271f2052f24e110f3fdb5b5"
+    }
+  },
+  "source_manifest_before_sha256": "afeedd7b36606a163ff822bb3d87e6f74419fef42d80463e52d61071968307b0",
+  "source_manifest_after_sha256": "afeedd7b36606a163ff822bb3d87e6f74419fef42d80463e52d61071968307b0",
+  "source_inputs_unchanged_during_build": true,
+  "binary_sha256": {
+    "build/codex-native/lumen-astra-i222": "f6d38f6339edd7ea7cf8253bb6b252f5cafab6c4b8bed110ce7c4b4d1f1e9a5c",
+    "build/codex-native/lumen-astra-i223": "f6d38f6339edd7ea7cf8253bb6b252f5cafab6c4b8bed110ce7c4b4d1f1e9a5c",
+    "build/codex-native/lumen": "f6d38f6339edd7ea7cf8253bb6b252f5cafab6c4b8bed110ce7c4b4d1f1e9a5c"
+  },
+  "binary_byte_identical": true,
+  "production_build_inputs_byte_identical": true,
+  "commit_paths": [
+    "agent/validation/linux-wpt-20261030-session8/build222/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261030-session8/build222/receipt.json",
+    "agent/validation/linux-wpt-20261030-session8/build222/resources.summary.json",
+    "agent/validation/linux-wpt-20261030-session8/candidate223-native-oracle-correction.json",
+    "agent/validation/linux-wpt-20261030-session8/candidate223-prebuild-input-equivalence.json",
+    "agent/validation/linux-wpt-20261030-session8/iteration222-summary.json",
+    "agent/validation/linux-wpt-20261030-session8/iteration223-start.json",
+    "agent/validation/linux-wpt-20261030-session8/native222/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261030-session8/native222/receipt.json",
+    "agent/validation/linux-wpt-20261030-session8/native222/resources.summary.json",
+    "devsummary.md",
+    "tests/test_css_stretch.c"
+  ],
+  "native_receipt": "agent/validation/linux-wpt-20261030-session8/native223/receipt.json",
+  "native_receipt_sha256": "d20b0a6c10489ca564f6e08a8f3665d329a8a99dad2ee4130180f0deae28e580",
+  "native_tests": 143,
+  "native_failures": 0,
+  "reused_evidence_labels": "Actual candidate222 focused and pixel receipts remain labeled222. No fresh223 focused or pixel execution is claimed.",
+  "fresh_remaining_gate": "Exact frozen640 replay on immutable223; root and independent QA authorized test-only equivalence."
+}
