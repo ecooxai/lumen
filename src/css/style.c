@@ -197,8 +197,8 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c);
 /* CSS Values 4 math functions and constants on resolved (percentage-free) values; angles are in degrees, a
    trig argument without an angle unit in radians */
 static bool math_fn(const char **pp, Length *out, LCtx *c) {
-    const char *p = *pp; char id[8]; int k = 0;
-    while ((isalpha((unsigned char)*p) || (k && *p == '-')) && k < 7) id[k++] = (char)lc(*p++);
+    const char *p = *pp; char id[16]; int k = 0;
+    while ((isalpha((unsigned char)*p) || (k && *p == '-')) && k < (int)sizeof id - 1) id[k++] = (char)lc(*p++);
     id[k] = 0;
     Length l = { 0, 0, LK_LEN };
     if (*p != '(') {
@@ -229,7 +229,13 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
     }
     if (*p != ')') return false;
     p++;
+    /* Native stylesheets take this path without CSSOM's JS validator. */
+    if ((f == 0 && (n < 1 || n > 2)) ||
+        ((f == 1 || f == 2 || f == 11 || f == 12) && n != 2) ||
+        ((f == 3 || (f >= 4 && f <= 10) || f == 13 || f == 16) && n != 1) ||
+        (f == 15 && (n < 1 || n > 2))) return false;
     MathType result_type = types[0], number_type = math_type_unit(MATH_NUMBER);
+    if (f == 0 && n == 1 && !math_type_equal(types[0], number_type)) return false;
     if (f == 0 || f == 1 || f == 2 || f == 11 || f == 14) {
         for (int i = 1; i < n; i++) if (!math_type_equal(types[0], types[i])) return false;
         if (f == 11) result_type = math_type_unit(MATH_ANGLE);
@@ -245,15 +251,32 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
         result_type = number_type;
     }
     double a = v[0].px, b = n > 1 ? v[1].px : 1, r, rad = M_PI / 180;
-    switch (f) {
+    bool has_nan = false;
+    for (int i = 0; i < n; i++) has_nan |= isnan(v[i].px);
+    if (has_nan) r = NAN;
+    else switch (f) {
     case 0:
-        if (n == 1) b = 1;
+        b = fabs(b); /* A negative interval describes the same multiples. */
         if (b == 0 || (isinf(a) && isinf(b))) r = NAN;
         else if (isinf(a)) r = a;
         else if (isinf(b)) r = strat == 1 ? (a > 0 ? INFINITY : a < 0 ? -0.0 : a) : strat == 2 ? (a < 0 ? -INFINITY : a > 0 ? 0.0 : a) : copysign(0, a);
-        else { double q = a / b; q = strat == 1 ? ceil(q) : strat == 2 ? floor(q) : strat == 3 ? trunc(q) : floor(q + 0.5); r = q * b; }
+        else if (fmod(a, b) == 0) r = a;
+        else {
+            double q = a / b;
+            q = strat == 1 ? ceil(q) : strat == 2 ? floor(q) : strat == 3 ? trunc(q) : floor(q + 0.5);
+            r = q * b;
+            if (r == 0) r = copysign(0, a);
+        }
         break;
-    case 1: r = (b == 0 || isinf(a)) ? NAN : isinf(b) ? ((a >= 0) == (b > 0) ? a : NAN) : a - b * floor(a / b); break;
+    case 1:
+        if (b == 0 || isinf(a)) r = NAN;
+        else if (isinf(b)) r = signbit(a) == signbit(b) ? a : NAN;
+        else {
+            r = fmod(a, b);
+            if (r == 0) r = copysign(0, b);
+            else if (signbit(r) != signbit(b)) r += b;
+        }
+        break;
     case 2: r = (b == 0 || isinf(a)) ? NAN : isinf(b) ? a : fmod(a, b); break;
     case 3: r = fabs(a); break;
     case 4: r = a > 0 ? 1 : a < 0 ? -1 : a; break;
@@ -355,9 +378,12 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     *out = l; *pp = p; return true;
 }
 static void calc_scale(Length *value, float scale) {
-    value->px *= scale; value->pct *= scale;
-    if (value->mm) { value->px2 *= scale; value->pct2 *= scale; }
-    if (value->mm >= 3) { value->px3 *= scale; value->pct3 *= scale; }
+    value->px *= scale;
+    /* An absent percentage coefficient is not an authored zero operand:
+       multiplying it by infinity would manufacture a NaN dependency. */
+    if (value->pct || value->pctu) value->pct *= scale;
+    if (value->mm) { value->px2 *= scale; if (value->pct2 || (value->math_pct_mask & 2)) value->pct2 *= scale; }
+    if (value->mm >= 3) { value->px3 *= scale; if (value->pct3 || (value->math_pct_mask & 4)) value->pct3 *= scale; }
     if (scale < 0) value->mm = len_math_flip(value->mm);
 }
 static void calc_add_linear(Length *value, float px, float pct, bool pctu) {
@@ -379,8 +405,13 @@ static bool calc_term(const char **pp, Length *out, LCtx *c) {
                 if (!r.mm && !r.pct) { calc_scale(out, r.px); *pp = p; continue; }
                 out->mm = 0;
             }
-            if (op == '*') { float f = r.pct ? 1 : r.px; if (r.pct == 0 && out->pct == 0 && false) {} if (out->pct == 0 && out->px != 0 && r.pct) { float k = out->px; *out = r; out->px *= k; out->pct *= k; } else { out->px *= f; out->pct *= f; } }
-            else { if (r.px) calc_scale(out, 1.f / r.px); }
+            if (op == '*') {
+                if (r.pct || r.pctu) {
+                    if (out->pct || out->pctu || out->mm) return false;
+                    float k = out->px; *out = r; calc_scale(out, k);
+                } else calc_scale(out, r.px);
+            }
+            else { if (r.mm || r.pct) return false; calc_scale(out, 1.f / r.px); }
             *pp = p;
         } else break;
     }
@@ -418,16 +449,30 @@ static bool css_parse_length_context(const char *s, Length *out, float em, float
        numeric representation uses the same px slot. Preserve unitless callers. */
     if (!math_type_equal(c.math_type, math_type_unit(MATH_LENGTH)) &&
         !math_type_equal(c.math_type, math_type_unit(MATH_NUMBER))) return false;
-    if (str_istarts(s, "clamp(")) {
-        while (is_ws((unsigned char)*p)) p++;
-        if (*p) return false;
-    }
+    while (is_ws((unsigned char)*p)) p++;
+    if (*p) return false;
     *out = parsed;
     return true;
 }
 
 bool css_parse_length(const char *s, Length *out, float em, float rem, const MediaCtx *mc) {
     return css_parse_length_context(s, out, em, rem, mc, NULL, false, NULL);
+}
+
+/* Typed scalar consumers share the same evaluator as native length math. */
+static bool css_scalar_math(const char *text, int unit, float em, float rem, float *out) {
+    LCtx c = { em, rem, NULL }; Length value; const char *p = text;
+    if (!parse_dim(&p, &value, &c) || value.mm || value.pct || value.pctu ||
+        !math_type_equal(c.math_type, math_type_unit(unit))) return false;
+    while (is_ws((unsigned char)*p)) p++;
+    if (*p) return false;
+    *out = value.px; return true;
+}
+static float css_transform_number(const char *text, float fallback) {
+    float value;
+    if (!css_scalar_math(text, MATH_NUMBER, 16, 16, &value)) return fallback;
+    /* CSS applies range clamping after the complete calculation. */
+    return isnan(value) ? 0 : value;
 }
 
 /* ---------------- var() substitution ---------------- */
@@ -1367,11 +1412,13 @@ static void parse_transform(ACtx *c, const char *v) {
             if (!strcmp(fn, "translatey")) { if (n) alen(c, t[0], &ly); } else { if (n) alen(c, t[0], &lx); if (n > 1 && strcmp(fn, "translatex")) alen(c, t[1], &ly); }
             e = lx.px; f = ly.px;
             c->st->translate_pending[0].pct += lx.pct; c->st->translate_pending[1].pct += ly.pct;
-        } else if (!strcmp(fn, "scale") || !strcmp(fn, "scale3d")) { a = n ? strtof(t[0], NULL) : 1; d = n > 1 ? strtof(t[1], NULL) : a; }
-        else if (!strcmp(fn, "scalex")) a = n ? strtof(t[0], NULL) : 1;
-        else if (!strcmp(fn, "scaley")) d = n ? strtof(t[0], NULL) : 1;
+        } else if (!strcmp(fn, "scale") || !strcmp(fn, "scale3d")) { a = n ? css_transform_number(t[0], 1) : 1; d = n > 1 ? css_transform_number(t[1], 1) : a; }
+        else if (!strcmp(fn, "scalex")) a = n ? css_transform_number(t[0], 1) : 1;
+        else if (!strcmp(fn, "scaley")) d = n ? css_transform_number(t[0], 1) : 1;
         else if (!strcmp(fn, "rotate") || !strcmp(fn, "rotatez")) {
-            float ang = n ? strtof(t[0], NULL) : 0; if (n && strstr(t[0], "turn")) ang *= 360; else if (n && strstr(t[0], "rad")) ang *= 57.2958f;
+            float ang = 0;
+            if (n && !css_scalar_math(t[0], MATH_ANGLE, c->em, c->rem, &ang)) ang = 0;
+            if (isnan(ang)) ang = 0;
             float r = ang * (float)M_PI / 180; a = cosf(r); b = sinf(r); cc = -sinf(r); d = cosf(r);
         } else if (!strcmp(fn, "matrix") && n == 6) { a = strtof(t[0], NULL); b = strtof(t[1], NULL); cc = strtof(t[2], NULL); d = strtof(t[3], NULL); e = strtof(t[4], NULL); f = strtof(t[5], NULL); }
         else if (!strcmp(fn, "skewx")) { cc = tanf(strtof(t[0], NULL) * (float)M_PI / 180); }
@@ -1383,7 +1430,9 @@ static void parse_transform(ACtx *c, const char *v) {
         p = rp + 1;
     }
     memcpy(c->st->transform, m, sizeof m);
-    c->st->has_transform = !(m[0] == 1 && m[1] == 0 && m[2] == 0 && m[3] == 1 && m[4] == 0 && m[5] == 0) || c->st->translate_pending[0].pct || c->st->translate_pending[1].pct;
+    /* An explicitly specified identity transform still establishes a
+       transform and serializes as a matrix, rather than as none. */
+    c->st->has_transform = true;
 }
 static bool parse_one_shadow(ACtx *c, char *v, Shadow *sh) {
     char *t[7]; int n = split_ws(v, t, 7); float nums[4] = {0}; int nn = 0;
@@ -1743,10 +1792,7 @@ static int split_top(char *s, char sep, char **out, int max) {
     return n;
 }
 static bool css_time(const char *t, float *out) {
-    char *e; float v = strtof(t, &e);
-    if (e == t) return false;
-    if (str_ieq(e, "ms")) v /= 1000; else if (!str_ieq(e, "s")) return false;
-    *out = v; return true;
+    return css_scalar_math(t, MATH_TIME, 16, 16, out);
 }
 static bool anim_kw(const char *t) {
     static const char *const k[] = { "linear", "ease", "ease-in", "ease-out", "ease-in-out", "step-start", "step-end", "normal", "reverse", "alternate", "alternate-reverse", "forwards", "backwards", "both", "running", "paused", "allow-discrete" };
@@ -2473,7 +2519,15 @@ apply:
         else if (!strcmp(P, "max-height")) alen_size(&c, val, &st->max_height);
         break;
     case 'o':
-        if (!strcmp(P, "opacity")) { float x = strtof(val, NULL); if (strchr(val, '%')) x /= 100; st->opacity = LCLAMP(x, 0, 1); }
+        if (!strcmp(P, "opacity")) {
+            float x;
+            if (!css_scalar_math(val, MATH_NUMBER, c.em, c.rem, &x)) {
+                char *end; x = strtof(val, &end);
+                if (end == val || *end != '%' || end[1]) return;
+                x /= 100;
+            }
+            st->opacity = isnan(x) ? 0 : LCLAMP(x, 0, 1);
+        }
         else if (!strcmp(P, "overflow") || !strcmp(P, "overflow-x") || !strcmp(P, "overflow-y")) {
             static const char *const ov[] = { "visible", "hidden", "scroll", "auto", "clip", NULL };
             char *t[2]; int n = split_ws(val, t, 2);
@@ -5714,7 +5768,22 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     SB b; sb_init(&b);
     if (s && (!strncmp(prop, "transition-", 11) || !strncmp(prop, "animation-", 10))) {
         const GenProp *g = gen_prop(prop); const char *v = g ? gen_value(s, g) : NULL;
-        if (v) { sb_puts(&b, v); return sb_take(&b); }
+        if (v) {
+            if (strstr(prop, "-duration") || strstr(prop, "-delay")) {
+                char *copy = xstrdup(v), *parts[32]; int count = split_top(copy, ',', parts, 32);
+                bool valid = count > 0;
+                for (int i = 0; i < count; i++) {
+                    float value;
+                    if (!css_time(parts[i], &value)) { valid = false; break; }
+                    if (i) sb_puts(&b, ", ");
+                    sb_printf(&b, "%gs", isnan(value) ? 0.0 : (double)value);
+                }
+                free(copy);
+                if (valid) return sb_take(&b);
+                sb_free(&b); sb_init(&b);
+            }
+            sb_puts(&b, v); return sb_take(&b);
+        }
     }
     if (!s) return sb_take(&b);
     /* Resolve logical queries through the same cascaded physical slots.
@@ -5910,17 +5979,15 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         const GenProp *g = gen_prop(prop);
         const char *v = g ? gen_value(s, g) : NULL;
         if (!v && g) v = g->initial;
-        /* a single math function of numbers (scale) or angles (rotate) computes to its value */
-        if (v && (!strcmp(prop, "scale") || !strcmp(prop, "rotate")) && isalpha((unsigned char)v[0]) && strchr(v, '(')) {
-            LCtx lc = { s->font_size, 16, NULL }; const char *p = v; Length L;
-            if (parse_dim(&p, &L, &lc) && !L.pct && !L.mm) {
-                while (is_ws((unsigned char)*p)) p++;
-                if (!*p) {
-                    const char *u = prop[0] == 'r' ? "deg" : "";
-                    if (isnan(L.px)) sb_puts(&b, "calc(NaN)"); else if (isinf(L.px)) sb_printf(&b, L.px > 0 ? "calc(infinity%s)" : "calc(-infinity%s)", *u ? " * 1deg" : "");
-                    else sb_printf(&b, "%g%s", fabsf(L.px) < 1e-6f ? 0.0 : (double)L.px, u);
-                    return sb_take(&b);
-                }
+        /* Canonical numeric/angle values include both plain dimensions and math. */
+        if (v && (!strcmp(prop, "scale") || !strcmp(prop, "rotate"))) {
+            float value; int unit = prop[0] == 'r' ? MATH_ANGLE : MATH_NUMBER;
+            if (css_scalar_math(v, unit, s->font_size, 16, &value)) {
+                const char *u = unit == MATH_ANGLE ? "deg" : "";
+                if (isnan(value)) sb_puts(&b, *u ? "calc(NaN * 1deg)" : "calc(NaN)");
+                else if (isinf(value)) sb_printf(&b, value > 0 ? "calc(infinity%s)" : "calc(-infinity%s)", *u ? " * 1deg" : "");
+                else sb_printf(&b, "%g%s", value == 0 ? 0.0 : (double)value, u);
+                return sb_take(&b);
             }
         }
         if (v && !strcmp(v, "currentcolor") && g && !g->native) color_str(&b, s->color);

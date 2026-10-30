@@ -207,7 +207,12 @@ function mathEval(src) {
         const neg = id[1] ? -1 : 1;
         const K = { pi: Math.PI, e: Math.E, infinity: Infinity, nan: NaN };
         if (src[i] !== '(') { if (!(name in K)) fail(); return { v: neg * K[name], u: '' }; }
-        i++; const args = [sum()]; ws();
+        i++; let strategy = 'nearest';
+        if (name === 'round') {
+            const sm = /^\s*(nearest|up|down|to-zero)\s*,/i.exec(src.slice(i));
+            if (sm) { strategy = sm[1].toLowerCase(); i += sm[0].length; }
+        }
+        const args = [sum()]; ws();
         while (src[i] === ',') { i++; args.push(sum()); ws(); }
         if (src[i++] !== ')') fail();
         const n = a => { if (a.u) fail(); return a.v; }, ang = a => a.u === 'deg' ? a.v * Math.PI / 180 : n(a), D = r => ({ v: r * 180 / Math.PI, u: 'deg' });
@@ -217,9 +222,38 @@ function mathEval(src) {
             atan2: () => { same(args[0], args[1]); return D(Math.atan2(args[0].v, args[1].v)); },
             sqrt: () => ({ v: Math.sqrt(n(args[0])), u: '' }), exp: () => ({ v: Math.exp(n(args[0])), u: '' }), pow: () => ({ v: Math.pow(n(args[0]), n(args[1])), u: '' }),
             log: () => ({ v: args.length > 1 ? Math.log(n(args[0])) / Math.log(n(args[1])) : Math.log(n(args[0])), u: '' }),
+            round: () => {
+                if (args.length !== 1 && args.length !== 2) fail();
+                const a = args[0].v, u = args[0].u;
+                if (args.length === 1 && u) fail();
+                const b = args.length === 1 ? 1 : Math.abs((same(args[0], args[1]), args[1].v));
+                let v;
+                if (Number.isNaN(a) || Number.isNaN(b) || b === 0 || !isFinite(a) && !isFinite(b)) v = NaN;
+                else if (!isFinite(a)) v = a;
+                else if (!isFinite(b)) v = strategy === 'up' ? (a > 0 ? Infinity : a < 0 ? -0 : a) : strategy === 'down' ? (a < 0 ? -Infinity : a > 0 ? 0 : a) : (a < 0 || Object.is(a, -0) ? -0 : 0);
+                else if (a % b === 0) v = a;
+                else {
+                    const q = a / b;
+                    v = (strategy === 'up' ? Math.ceil(q) : strategy === 'down' ? Math.floor(q) : strategy === 'to-zero' ? Math.trunc(q) : Math.round(q)) * b;
+                    if (v === 0 && a < 0) v = -0;
+                }
+                return { v, u };
+            },
+            mod: () => {
+                if (args.length !== 2) fail();
+                const u = same(args[0], args[1]), a = args[0].v, b = args[1].v;
+                const negative = x => x < 0 || Object.is(x, -0);
+                let v = a % b;
+                if (Number.isNaN(a) || Number.isNaN(b) || b === 0 || !isFinite(a)) v = NaN;
+                else if (!isFinite(b)) v = negative(a) === negative(b) ? a : NaN;
+                else if (v === 0) v = negative(b) ? -0 : 0;
+                else if (negative(v) !== negative(b)) v += b;
+                return { v, u };
+            },
+            rem: () => { if (args.length !== 2) fail(); const u = same(args[0], args[1]); return { v: args[0].v % args[1].v, u }; },
         };
-        if (!F[name] || (name !== 'atan2' && name !== 'pow' && name !== 'log' && args.length !== 1)) fail();
-        const r = F[name](); r.v *= neg; return r;
+        if (!F[name] || !['atan2', 'pow', 'log', 'round', 'mod', 'rem'].includes(name) && args.length !== 1) fail();
+        const r = F[name](); if (args.some(a => Number.isNaN(a.v))) r.v = NaN; r.v *= neg; return r;
     }
     function prod() {
         let a = prim();
@@ -239,8 +273,19 @@ const mathSer = r => {
     return `calc(${String(+r.v.toPrecision(6)).replace(/^-0$/, '0')}${u})`;
 };
 function specFoldMath(t) {
-    return t.replace(/\b(?:sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log)\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/gi, m => { const r = mathEval(m); return r ? mathSer(r) : m; })
-        .replace(/\bcalc\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/gi, m => { const r = /calc\(.*calc\(/i.test(m) && mathEval(m); return r ? mathSer(r) : m; });
+    /* Evaluate an outer calculation before its children so a nested signed
+       zero or NaN is not clamped before division/multiplication consumes it. */
+    const re = /\b(?:calc|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem)\(/gi;
+    let out = '', previous = 0, match;
+    while ((match = re.exec(t))) {
+        let end = re.lastIndex, depth = 1;
+        while (end < t.length && depth) { if (t[end] === '(') depth++; else if (t[end] === ')') depth--; end++; }
+        if (depth) break;
+        const text = t.slice(match.index, end), result = mathEval(text);
+        out += t.slice(previous, match.index) + (result ? mathSer(result) : text);
+        previous = end; re.lastIndex = end;
+    }
+    return out + t.slice(previous);
 }
 /* CSS math functions (calc, min/max/clamp, round/mod/rem, trig, ...): a type check. Types are '' (number), '%',
    or a dimension kind; length + % is 'length%'. An unknown function, unit or var() makes the result unknown (no
@@ -346,6 +391,7 @@ function mathType(src, strictUnits = false) {   /* returns [type | null (invalid
         i += m[0].length;
         if (src[i] === '(') { i++; return fn(m[0]); }
         if (/^(-?infinity|pi|e|nan)$/i.test(m[0])) return '';
+        if (/^(nearest|up|down|to-zero)$/i.test(m[0])) return null;
         if (strictUnits) return /^none$/i.test(m[0]) ? 'none' : null;
         unknown = true; return '?';   /* e.g. a relative color's channel keyword */
     }
@@ -741,15 +787,16 @@ function specNormalize(p, v) {
         });
     if (p === 'position-area') { const n = posArea(v); if (n !== null) return n; }
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
+    const preserveMathZero = /\b(?:calc|round|mod|rem)\(/i.test(v);
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
         const n = Number(num + (exp || ''));
         if (!isFinite(n)) return m;
         const r = String(n);
-        return pre + (sign === '-' && n ? '-' : '') + r;
+        return pre + (sign === '-' && (n || preserveMathZero) ? '-' : '') + r;
     }).replace(/\s+/g, ' ');
     if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return CSS_POSITION.test(p) ? t.toLowerCase() : t;
     if (CSS_POSITION.test(p)) return cssPositionSpecified(t, cssPositionAxis(p)) || t;
-    if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log)\(/i.test(t)) t = specFoldMath(t);
+    if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem)\(/i.test(t)) t = specFoldMath(t);
     if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
     if (p === 'display') { const w = t.toLowerCase().split(' '); if (w.length === 2 && w.includes('list-item') && w.includes('flow')) t = 'list-item'; else if (w.length === 2 && w[1] === 'flow' && /^(block|inline|run-in)$/.test(w[0])) t = w[0]; else if (w.length === 2 && w[0] === 'block' && /^(flex|grid|table|flow-root|math)$/.test(w[1])) t = w[1]; else if (w.length === 2 && w[0] === 'inline' && w[1] === 'flow-root') t = 'inline-block'; else if (w.length === 2 && w[0] === 'inline' && /^(flex|grid|table)$/.test(w[1])) t = 'inline-' + w[1]; }
