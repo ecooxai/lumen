@@ -145,7 +145,7 @@ function replaceData(n, o, c, s) {
 function preInsertCheck(p, c, ref) {
     const pt = N.type(p), ct = N.type(c);
     if (pt !== 1 && pt !== 9 && pt !== 11) throw hre('Nodes of this type may not contain children.');
-    if (N.contains(c, p)) throw hre('The new child element contains the parent.');
+    if (N.hostContains(c, p)) throw hre('The new child element contains the parent.');
     if (ref != null && N.parent(ref) !== p) throw new DOMException('The node before which the new node is to be inserted is not a child of this node.', 'NotFoundError');
     if (ct === 9 || ct === 2) throw hre();
     if ((ct === 3 || ct === 4) && pt === 9) throw hre('Nodes of type \'#text\' may not be inserted inside nodes of type \'#document\'.');
@@ -279,7 +279,7 @@ function nodesToNode(ns) {
 function replaceCheck(p, node, child) {
     const pt = N.type(p), ct = N.type(node);
     if (pt !== 1 && pt !== 9 && pt !== 11) throw hre('Nodes of this type may not contain children.');
-    for (let x = p; x; x = N.parent(x) || (N.type(x) === 11 && N.host(x)) || null) if (x === node) throw hre('The new child element contains the parent.');
+    if (N.hostContains(node, p)) throw hre('The new child element contains the parent.');
     if (N.parent(child) !== p) throw new DOMException('The node to be replaced is not a child of this node.', 'NotFoundError');
     if (ct === 9 || ct === 2) throw hre();
     if ((ct === 3 || ct === 4) && pt === 9) throw hre();
@@ -297,7 +297,7 @@ function replaceCheck(p, node, child) {
 function movePreCheck(p, node, child) {
     const pt = N.type(p), ct = N.type(node);
     if (p.getRootNode({ composed: true }) !== node.getRootNode({ composed: true })) throw hre('The new parent is not in the same shadow-including tree as the node.');
-    for (let n = p; n; n = N.parent(n) || (N.type(n) === 11 && N.host(n)) || null) if (n === node) throw hre('The new child element contains the parent.');
+    if (N.hostContains(node, p)) throw hre('The new child element contains the parent.');
     if (child && N.parent(child) !== p) throw new DOMException('The node before which the new node is to be inserted is not a child of this node.', 'NotFoundError');
     if (ct !== 1 && ct !== 3 && ct !== 4 && ct !== 7 && ct !== 8) throw hre();
     if (ct === 3 && pt === 9) throw hre();
@@ -411,7 +411,7 @@ methods(Node.prototype, {
         notify('childList', this, { addedNodes: added, removedNodes: removed, previousSibling: prev, nextSibling: ref });
         return old;
     },
-    cloneNode(deep = false) { const r = N.clone(this, !!deep); cloneControls(this, r, !!deep); if (!N.inert(this)) ceUpgradeTree(r); return r; },
+    cloneNode(deep = false) { if (N.type(this) === 11 && N.host(this)) throw new DOMException('A shadow root cannot be cloned directly.', 'NotSupportedError'); const r = N.clone(this, !!deep); cloneControls(this, r, !!deep); if (!N.inert(this)) ceUpgradeTree(r); return r; },
     contains(o) { return o != null && N.isNode(o) && N.contains(this, o); },
 });
 /* HTML cloning steps: an input's or textarea's dirty value, an input's checkedness and indeterminate state */

@@ -223,7 +223,7 @@ function protoFor(type, tag, ns) {
     case 4: return CDATASection.prototype;
     case 8: return Comment.prototype;
     case 7: return ProcessingInstruction.prototype;
-    case 9: return ns === 3 ? XMLDocument.prototype : HTMLDocument.prototype;
+    case 9: return tag === '#document' ? Document.prototype : ns === 3 ? XMLDocument.prototype : HTMLDocument.prototype;
     case 10: return DocumentType.prototype;
     case 11: return tag === '#shadow' ? ShadowRoot.prototype : DocumentFragment.prototype;
     }
@@ -255,19 +255,25 @@ function ceDefinition(name, is) {
     const customized = is === null ? undefined : registry.byName.get(is);
     return customized && customized.ext === name ? customized : undefined;
 }
-function ceConstruct(nt) {
+function ceConstruct(nt, active) {
+    if (nt === active) illegal();
     const d = registry.byCtor.get(nt);
     if (!d) illegal();
+    const expected = d.ext === undefined ? HTMLElement : TAGS[d.ext] || HTMLElement;
+    if (active !== expected) throw new TypeError('The custom element does not extend the interface for its local name.');
+    /* Registration and interface checks precede the observable prototype get. */
+    let prototype = nt.prototype;
+    if (prototype === null || (typeof prototype !== 'object' && typeof prototype !== 'function')) prototype = active.prototype;
     if (d.stack.length) {
         const entry = d.stack[d.stack.length - 1];
         if (entry.constructed) throw new TypeError('The custom element has already been constructed.');
         entry.constructed = true;
-        Object.setPrototypeOf(entry.element, nt.prototype);
+        Object.setPrototypeOf(entry.element, prototype);
         return entry.element;
     }
     const el = N.create(d.ext === undefined ? d.name : d.ext, 0);
     if (d.ext !== undefined) N.ceIs(el, d.name);
-    Object.setPrototypeOf(el, nt.prototype);
+    Object.setPrototypeOf(el, prototype);
     def(el, '__ce', d);
     return el;
 }

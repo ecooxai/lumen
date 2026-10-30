@@ -1192,7 +1192,7 @@ unscopable(CharacterData, ['after', 'before', 'remove', 'replaceWith']);
 unscopable(DocumentType, ['after', 'before', 'remove', 'replaceWith']);
 unscopable(DocumentFragment, ['append', 'prepend', 'replaceChildren']);
 const makeStyle = (el) => new Proxy(new CSSStyleDeclaration(el), styleHandler);
-class HTMLElement extends Element { constructor() { return ceConstruct(new.target); } }
+class HTMLElement extends Element { constructor() { return ceConstruct(new.target, HTMLElement); } }
 reflectStr(HTMLElement.prototype, 'title', 'lang', 'accessKey', 'nonce', 'dir');
 reflectBool(HTMLElement.prototype, 'hidden', 'inert', 'autofocus');
 installHandlers(HTMLElement.prototype, true);

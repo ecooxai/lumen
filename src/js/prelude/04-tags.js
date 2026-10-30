@@ -1,5 +1,5 @@
 const H = {}, TAGS = Object.create(null);
-const mk = (name, base, tags, body) => { const C = { [name]: class extends base {} }[name]; if (body) body(C.prototype); H[name] = C; for (const t of tags) TAGS[t] = C; return C; };
+const mk = (name, base, tags, body) => { const C = { [name]: class extends base { constructor() { return ceConstruct(new.target, C); } } }[name]; if (body) body(C.prototype); H[name] = C; for (const t of tags) TAGS[t] = C; return C; };
 const formControl = (p) => methods(p, {
     get form() { return this.closest('form'); },
     get labels() { return nodeList(this.id ? N.query(document, `label[for="${CSS.escape(this.id)}"]`, true) : []); },

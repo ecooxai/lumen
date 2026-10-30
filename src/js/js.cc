@@ -99,7 +99,8 @@ static v8::Local<v8::Object> proto_for(JsCtx *c, Node *n) {
     v8::Isolate *iso = c->iso;
     if (c->protoFor.IsEmpty()) return {};
     /* a shadow root (a fragment with a host) is tagged "#shadow" */
-    const char *tag = n->type == NODE_ELEMENT ? n->tag : n->type == NODE_FRAGMENT && n->host ? "#shadow" : "";
+    const char *tag = n->type == NODE_ELEMENT ? n->tag : n->type == NODE_FRAGMENT && n->host ? "#shadow"
+        : n->type == NODE_DOCUMENT && ((Document *)n)->interface_kind == 2 ? "#document" : "";
     std::string key = std::to_string(n->type) + ":" + (tag ? tag : "") + ":" + std::to_string(n->ns);
     auto it = c->protos.find(key);
     if (it != c->protos.end()) return it->second.Get(iso);
@@ -1264,8 +1265,15 @@ JsCtx *js_ctx_of_window(uint32_t wid) {   /* the newest, while the old page ling
 }
 void js_set_window(JsCtx *c, uint32_t wid, uint32_t opener) { if (c) { c->wid = wid; c->opener = opener; } }
 JsCtx *owner_ctx(Document *d) {
+    if (!d) return nullptr;
     for (JsCtx *c : g_ctxs) if (c->doc == d) return c;
     for (JsCtx *c : g_ctxs) if (std::find(c->docs.begin(), c->docs.end(), d) != c->docs.end()) return c;
+    /* Associated template owners have the original document's realm, but no
+       browsing context. They are owned by that Document, never twice in docs. */
+    for (JsCtx *c : g_ctxs) {
+        if (c->doc && c->doc->template_contents_owner == d) return c;
+        for (Document *owned : c->docs) if (owned->template_contents_owner == d) return c;
+    }
     return nullptr;
 }
 bool js_read_blob(JsCtx *owner, const char *url, unsigned char **bytes_out, size_t *len_out, char **type_out) {
@@ -1533,6 +1541,8 @@ void js_free(JsCtx *c) {
     /* Same-origin frame bridges already retain shared contexts until their tab
      * retires. Keep that boundary explicit for callers other than js_tick. */
     if (c->parent && c->xref) { frame_kill(c); c->dead_at = 0; return; }
+    Document *root_document = c->doc;
+    const bool child_context = c->parent != nullptr;
     std::vector<Node *> roots;
     std::vector<Document *> docs;
     js_free_collect(c, roots, docs);
@@ -1542,8 +1552,13 @@ void js_free(JsCtx *c) {
      * detached-node release phase. The caller owns a top-level page document. */
     std::unordered_set<Node *> seen_roots;
     for (Node *n : roots) if (seen_roots.insert(n).second) node_free_tree(n);
-    std::unordered_set<Document *> seen_docs;
-    for (Document *d : docs) if (seen_docs.insert(d).second) doc_free(d);
+    /* The Page can keep its DOM while its JavaScript context sleeps. Nodes in
+     * that tree may still belong to an adopted auxiliary document, including
+     * a template's associated inert owner. Transfer those native documents to
+     * the root and let doc_free release the whole ownership graph in two
+     * phases; no owner metadata can disappear before another tree's nodes. */
+    for (Document *d : docs) if (d != root_document) doc_retire_owned(root_document, d);
+    if (child_context) doc_free(root_document);
 }
 
 /* Written inline scripts execute in the nested parser before write() returns.

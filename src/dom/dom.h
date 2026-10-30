@@ -93,6 +93,9 @@ typedef struct Document {
     char *base_url;               /* an about:blank or about:srcdoc frame's fallback base URL (its parent's), else NULL */
     char *title;
     char *content_type;           /* the response's MIME type of a loaded XML document, else NULL */
+    struct Document *template_contents_owner; /* associated inert owner; self marks a template-owner document */
+    VEC(struct Document *) retired_documents; /* metadata retained until this owner's final tree teardown */
+    uint8_t interface_kind;       /* 0 HTMLDocument, 1 XMLDocument, 2 Document; independent of mutable JS prototypes */
     char *csp, *csp_ro;           /* the response's Content-Security-Policy(-Report-Only) headers, joined; else NULL */
     char **parser_meta; int nparser_meta; bool parser_meta_captured; /* owned (http-equiv, content) head pairs */
     char *referrer_policy;        /* the response's Referrer-Policy header (or a <meta name=referrer> policy); else NULL */
@@ -134,6 +137,9 @@ static inline const char *doc_base(const Document *d) { return d->base_url ? d->
 
 Document *doc_new(const char *url);
 void doc_free(Document *d);
+Document *doc_template_contents_owner(Document *d);
+void doc_retire_owned(Document *owner, Document *retired);
+void node_adopt_document(Node *n, Document *d);
 void doc_capture_parser_meta(Document *target, const Document *parsed);
 Node *node_new_element(Document *d, const char *tag, int ns);
 Node *node_new_text(Document *d, const char *s, size_t n);
@@ -206,6 +212,7 @@ bool node_control_selection_get(Node *n, int *anchor, int *focus);
 void node_control_selection_set(Node *n, int anchor, int focus);
 void dom_dump(const Node *n, int depth, FILE *f);
 bool node_is_inclusive_ancestor(const Node *a, const Node *b);
+bool node_host_including_ancestor(const Node *ancestor, const Node *node);
 
 /* HTML parser */
 void html_parse(Document *d, const char *src, size_t len);

@@ -398,7 +398,8 @@ static bool san_skip_el(P, Node *n, Loc l, bool done) {
 static void insert_at(Loc l, Node *n) {
     if (l.parent->type == NODE_DOCUMENT && n->type == NODE_ELEMENT)
         for (Node *k = l.parent->first; k; k = k->next) if (k->type == NODE_ELEMENT) { if (!(n->flags & NF_SAN_MADE)) node_free_tree(n); return; }
-    for (Node *a = l.parent; a; a = a->parent ? a->parent : a->host) if (a == n) return;
+    if (node_host_including_ancestor(n, l.parent)) return;
+    if (n->doc != l.parent->doc) node_adopt_document(n, l.parent->doc);
     node_insert_before(l.parent, n, l.before);
 }
 static void stage_custom_element(P, Loc l, Node *n) {
@@ -429,7 +430,7 @@ static void insert_chars(P, const char *s, size_t n) {
     if (l.parent->type == NODE_DOCUMENT) return;
     Node *prev = l.before ? l.before->prev : l.parent->last;
     if (prev && prev->type == NODE_TEXT) node_text_append(prev, s, n);
-    else node_insert_before(l.parent, node_new_text(p->doc, s, n), l.before);
+    else node_insert_before(l.parent, node_new_text(l.parent->doc, s, n), l.before);
 }
 static Node *new_comment(P, Tok *t) {
     return t->type == T_PI ? node_new_pi(p->doc, t->target, t->data, t->len) : node_new_comment(p->doc, t->data, t->len);
@@ -465,7 +466,7 @@ static Node *create_el(P, Tok *t, int ns, const char *name) {
     if (ns == NS_HTML && name == A_script) e->flags |= NF_SCRIPT_NO_FORCE_ASYNC;
     if (p->san) { e->flags |= NF_SAN_MADE; vec_push(p->made, e); }
     if (ns == NS_HTML && name == A_template) {
-        e->template_content = node_new_fragment(p->doc); e->template_content->refcount = 1; e->template_content->flags |= NF_INERT;
+        e->template_content = node_new_fragment(doc_template_contents_owner(e->doc)); e->template_content->refcount = 1; e->template_content->flags |= NF_INERT;
     }
     if (ns == NS_HTML && name == K_selectedcontent) p->saw_selectedcontent = true;
     /* Only active document streams stage custom creation. Metadata, fragments
@@ -516,7 +517,7 @@ static void maybe_clone_selected(P, Node *opt) {
     }
     if (!sc || !(node_has_attr(opt, K_selected) || (!any_selected && first == opt))) return;
     while (sc->first) { Node *k = sc->first; node_remove(k); node_free_tree(k); }
-    for (Node *k = opt->first; k; k = k->next) node_append(sc, node_clone(k, true, p->doc));
+    for (Node *k = opt->first; k; k = k->next) node_append(sc, node_clone(k, true, sc->doc));
 }
 
 /* ---------------- the list of active formatting elements ---------------- */
@@ -758,7 +759,7 @@ static void template_for(P, Node *t) {
         }
     }
     Node *ref = mk->next;
-    for (Node *c = t->template_content->first; c; c = t->template_content->first) { node_remove(c); node_insert_before(par, c, ref); }
+    for (Node *c = t->template_content->first; c; c = t->template_content->first) { node_remove(c); if (c->doc != par->doc) node_adopt_document(c, par->doc); node_insert_before(par, c, ref); }
     node_remove(mk); node_free_tree(mk);
     if (t->parent) node_remove(t);
 }
@@ -2132,7 +2133,7 @@ Node *html_parser_complete_custom(HtmlParser *p, Node *replacement, Node **paren
     if (location.before && location.before->parent != location.parent) location.before = NULL;
     if (custom_template && template_host) {
         if (!element->template_content) {
-            element->template_content = node_new_fragment(element->doc);
+            element->template_content = node_new_fragment(doc_template_contents_owner(element->doc));
             element->template_content->refcount = 1; element->template_content->flags |= NF_INERT;
         }
         finish_template_start(p, element, template_host, template_host_root, location);

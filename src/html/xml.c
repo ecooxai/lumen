@@ -104,11 +104,24 @@ static const char *lookup(XP *p, const char *pfx) {
 }
 
 static Node *top(XP *p) { return p->open.n ? p->open.v[p->open.n - 1] : &p->d->node; }
+/* XML keeps template elements on the open-element stack for namespace and
+ * end-tag matching, while their children enter the inert content fragment. */
+static Node *insertion_target(XP *p) {
+    Node *n = top(p);
+    if (n->type == NODE_ELEMENT && n->ns == NS_HTML && n->tag == A_template) {
+        if (!n->template_content) {
+            n->template_content = node_new_fragment(doc_template_contents_owner(n->doc));
+            n->template_content->refcount = 1; n->template_content->flags |= NF_INERT;
+        }
+        return n->template_content;
+    }
+    return n;
+}
 
 static void add_text(XP *p, const char *s, size_t n) {
-    Node *t = top(p);
+    Node *t = insertion_target(p);
     if (t->last && t->last->type == NODE_TEXT) node_text_append(t->last, s, n);
-    else node_append(t, node_new_text(p->d, s, n));
+    else node_append(t, node_new_text(t->doc, s, n));
 }
 
 static bool doctype(XP *p) {
@@ -223,7 +236,12 @@ static bool start_tag(XP *p) {
             int ns = !uri ? NS_NONE : !strcmp(uri, XHTML_NS) ? NS_HTML : !strcmp(uri, SVG_NS) ? NS_SVG : !strcmp(uri, MATHML_NS) ? NS_MATHML : -1;
             /* SVG and MathML tags are lower-case atoms, as from createElementNS */
             const char *tag = ns == NS_SVG || ns == NS_MATHML ? atom_lower(local, ln) : atomn(local, ln);
-            el = node_new_element(p->d, tag, ns < 0 ? NS_NONE : ns);
+            Node *target = insertion_target(p);
+            el = node_new_element(target->doc, tag, ns < 0 ? NS_NONE : ns);
+            if (ns == NS_HTML && tag == A_template) {
+                el->template_content = node_new_fragment(doc_template_contents_owner(el->doc));
+                el->template_content->refcount = 1; el->template_content->flags |= NF_INERT;
+            }
             if (ns == NS_HTML && tag == A_script) el->flags |= NF_SCRIPT_NO_FORCE_ASYNC;
             if (ns < 0) el->xns = uri;
             if (*pfx) el->xpfx = pfx;
@@ -237,7 +255,7 @@ static bool start_tag(XP *p) {
                 } else if (qa == atom("xmlns")) auri = atom(XMLNS_NS);
                 node_set_attr_at(el, -1, qa, vals.v[k], auri, apfx);
             }
-            node_append(top(p), el);
+            node_append(target, el);
             if (!p->open.n) p->d->html = el;
             if (!empty) { vec_push(p->open, el); vec_push(p->marks, mark); }
         }
@@ -281,12 +299,14 @@ static void parse(XP *p) {
         if (at(p, "<!--")) {
             const char *e = strstr(p->s + p->i + 4, "-->");
             if (!e) { fail(p, "unterminated comment"); break; }
-            node_append(top(p), node_new_comment(p->d, p->s + p->i + 4, (size_t)(e - p->s - p->i - 4)));
+            Node *target = insertion_target(p);
+            node_append(target, node_new_comment(target->doc, p->s + p->i + 4, (size_t)(e - p->s - p->i - 4)));
             p->i = (size_t)(e - p->s) + 3;
         } else if (at(p, "<![CDATA[")) {
             const char *e = strstr(p->s + p->i + 9, "]]>");
             if (!e || !p->open.n) { fail(p, "bad CDATA section"); break; }
-            node_append(top(p), node_new_cdata(p->d, p->s + p->i + 9, (size_t)(e - p->s - p->i - 9)));
+            Node *target = insertion_target(p);
+            node_append(target, node_new_cdata(target->doc, p->s + p->i + 9, (size_t)(e - p->s - p->i - 9)));
             p->i = (size_t)(e - p->s) + 3;
         } else if (at(p, "<?")) {
             p->i += 2;
@@ -300,7 +320,8 @@ static void parse(XP *p) {
                 skip_ws(p);
                 size_t dl = (size_t)(e - p->s) > p->i ? (size_t)(e - p->s) - p->i : 0;
                 char *tg = xstrndup(t, tn);
-                node_append(top(p), node_new_pi(p->d, atom(tg), p->s + p->i, dl));
+                Node *target = insertion_target(p);
+                node_append(target, node_new_pi(target->doc, atom(tg), p->s + p->i, dl));
                 free(tg);
             }
             p->i = (size_t)(e - p->s) + 2;

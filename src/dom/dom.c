@@ -1,4 +1,5 @@
 #include "dom.h"
+#include "../base/url.h"
 #include <stdatomic.h>
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>
@@ -74,6 +75,36 @@ Document *doc_new(const char *url) {
     d->url = xstrdup(url ? url : "about:blank");
     d->node.refcount = 1;
     return d;
+}
+
+/* Template contents have a real inert node document shared by every template
+ * in the same owner document, including nested templates. */
+Document *doc_template_contents_owner(Document *d) {
+    if (!d) return NULL;
+    if (!d->template_contents_owner) {
+        Document *owner = doc_new("about:blank");
+        owner->node.ns = d->node.ns;
+        owner->interface_kind = 2;
+        owner->ready_state = 2;
+        owner->template_contents_owner = owner;
+        d->template_contents_owner = owner;
+    }
+    return d->template_contents_owner;
+}
+
+void node_adopt_document(Node *n, Document *d) {
+    if (!n || !d) return;
+    for (Node *x = n; x; x = node_next_in_tree(x, n)) {
+        if (x->doc != d) {
+            if (x->doc) x->doc->selector_version++;
+            d->selector_version++;
+            x->doc = d;
+            x->flags |= NF_STYLE_DIRTY | NF_LAYOUT_DIRTY;
+        }
+        if (x->shadow_root) node_adopt_document(x->shadow_root, d);
+        if (x->template_content && x->template_content != x->shadow_root)
+            node_adopt_document(x->template_content, doc_template_contents_owner(d));
+    }
 }
 
 long g_nodes_live;
@@ -392,18 +423,59 @@ void doc_capture_parser_meta(Document *target, const Document *parsed) {
         target->nparser_meta++;
     }
 }
-void doc_free(Document *d) {
-    for (int i = 0; i < d->ndimg; i++) node_release(d->dimg[i]);
-    free(d->dimg); d->dimg = NULL; d->ndimg = d->cdimg = 0;
-    if (d->selector_cache_free) d->selector_cache_free(d->selector_cache);
-    free(d->modals.v); d->modals.v = NULL; d->modals.n = d->modals.cap = 0;
-    for (int i = 0; i < 2; i++) if (d->sel[i]) { node_release(d->sel[i]); d->sel[i] = NULL; }
-    hm_free(&d->id_cache, NULL); hm_free(&d->id_dups, NULL);
-    Node *c = d->node.first;
-    while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
-    for (int i = 0; i < d->nparser_meta * 2; i++) free(d->parser_meta[i]);
-    free(d->parser_meta);
-    free(d->url); free(d->base_url); free(d->title); free(d->content_type); free(d->csp); free(d->csp_ro); free(d->referrer_policy); free(d);
+void doc_retire_owned(Document *owner, Document *retired) {
+    if (!owner || !retired || owner == retired) return;
+    for (int i = 0; i < owner->retired_documents.n; i++)
+        if (owner->retired_documents.v[i] == retired) return;
+    vec_push(owner->retired_documents, retired);
+}
+
+typedef VEC(Document *) DocumentList;
+static void doc_list_add(DocumentList *list, Document *d) {
+    if (!d) return;
+    for (int i = 0; i < list->n; i++) if (list->v[i] == d) return;
+    vec_push(*list, d);
+}
+void doc_free(Document *root) {
+    /* Adopted template contents can still be held by another document's tree.
+     * Keep every owner alive until all trees and retained node references in
+     * this retirement group have been released. Self/duplicate associations
+     * are harmless, and a sleeping Page keeps its DOM until the caller retires it. */
+    DocumentList documents = {0};
+    doc_list_add(&documents, root);
+    for (int i = 0; i < documents.n; i++) {
+        Document *d = documents.v[i];
+        doc_list_add(&documents, d->template_contents_owner);
+        for (int j = 0; j < d->retired_documents.n; j++) doc_list_add(&documents, d->retired_documents.v[j]);
+    }
+    for (int i = 0; i < documents.n; i++) {
+        Document *d = documents.v[i];
+        for (int j = 0; j < d->ndimg; j++) node_release(d->dimg[j]);
+        free(d->dimg); d->dimg = NULL; d->ndimg = d->cdimg = 0;
+        if (d->selector_cache_free) d->selector_cache_free(d->selector_cache);
+        d->selector_cache = NULL;
+        free(d->modals.v); d->modals.v = NULL; d->modals.n = d->modals.cap = 0;
+        for (int j = 0; j < 2; j++) if (d->sel[j]) { node_release(d->sel[j]); d->sel[j] = NULL; }
+        hm_free(&d->id_cache, NULL); hm_free(&d->id_dups, NULL);
+    }
+    for (int i = 0; i < documents.n; i++) {
+        Document *d = documents.v[i];
+        Node *c = d->node.first;
+        d->node.first = d->node.last = d->html = d->head = d->body = NULL;
+        while (c) {
+            Node *next = c->next;
+            c->parent = c->prev = c->next = NULL; c->refcount = 0; c->js = NULL;
+            node_free_tree(c); c = next;
+        }
+    }
+    for (int i = 0; i < documents.n; i++) {
+        Document *d = documents.v[i];
+        for (int j = 0; j < d->nparser_meta * 2; j++) free(d->parser_meta[j]);
+        free(d->parser_meta); free(d->retired_documents.v);
+        free(d->url); free(d->base_url); free(d->title); free(d->content_type);
+        free(d->csp); free(d->csp_ro); free(d->referrer_policy); free(d);
+    }
+    vec_free(documents);
 }
 
 /* attributes the engine reads by name (style, on*, href...): null-namespace ones and prefixed ones (xlink:href);
@@ -583,6 +655,37 @@ Node *node_next_deep(Node *n, Node *root) {
         n = p;
     }
 }
+static const Node *node_host_parent(const Node *n) { return n ? (n->parent ? n->parent : n->host) : NULL; }
+bool node_host_including_ancestor(const Node *ancestor, const Node *node) {
+    if (!ancestor || !node) return false;
+    const Node *root = node, *slow = node, *fast = node;
+    for (const Node *p = node; p; p = node_host_parent(p)) {
+        if (p == ancestor) return true;
+        root = p;
+        slow = node_host_parent(slow);
+        fast = node_host_parent(node_host_parent(fast));
+        if (slow && slow == fast) return true; /* reject an already malformed cycle */
+    }
+    /* Ordinary light/shadow ancestry stays allocation-free. Template contents
+     * retain their separate host representation, even after direct adoption. */
+    if (root->type != NODE_FRAGMENT || !(root->flags & NF_INERT) || root->host) return false;
+    VEC(const Node *) pending = {0}; HMap seen = {0}; bool found = false;
+    vec_push(pending, ancestor);
+    while (pending.n) {
+        const Node *n = pending.v[--pending.n];
+        if (n == node) { found = true; break; }
+        char key[2 * sizeof(void *) + 3]; snprintf(key, sizeof key, "%p", (const void *)n);
+        if (hm_get(&seen, key)) continue;
+        hm_put(&seen, key, (void *)n);
+        if (n->first) vec_push(pending, n->first);
+        if (n != ancestor && n->next) vec_push(pending, n->next);
+        if (n->shadow_root) vec_push(pending, n->shadow_root);
+        if (n->template_content) vec_push(pending, n->template_content);
+    }
+    hm_free(&seen, NULL); vec_free(pending);
+    return found;
+}
+
 bool node_is_inclusive_ancestor(const Node *a, const Node *b) { for (; b; b = b->parent) if (a == b) return true; return false; }
 
 static void text_rec(const Node *n, SB *b) {
@@ -630,6 +733,29 @@ void node_set_is_value(Node *n, const char *value, size_t length) {
 Node *node_clone(Node *n, bool deep, Document *d) {
     Node *c;
     switch (n->type) {
+    case NODE_DOCUMENT: {
+        const Document *source = (const Document *)n;
+        Document *copy = doc_new(source->url);
+        copy->node.ns = source->node.ns;
+        copy->interface_kind = source->interface_kind;
+        copy->charset = source->charset;
+        copy->quirks = source->quirks;
+        copy->ready_state = 2;
+        if (source->content_type) copy->content_type = xstrdup(source->content_type);
+        copy->base_url = xstrdup(doc_base(source));
+        /* Deep clones retain their base element and its original resolution
+         * context. A shallow clone has no such node, so preserve its value. */
+        if (!deep) for (Node *x = source->node.first; x; x = node_next_in_tree(x, (Node *)&source->node)) {
+            if (x->type != NODE_ELEMENT || x->ns != NS_HTML || x->tag != A_base) continue;
+            const char *href = node_attr(x, "href");
+            if (!href) continue;
+            char *base = url_join(doc_base(source), href);
+            if (base) { free(copy->base_url); copy->base_url = base; }
+            break;
+        }
+        d = copy; c = &copy->node;
+        break;
+    }
     case NODE_ELEMENT: c = node_new_element(d, n->tag, n->ns); c->xns = n->xns; c->xpfx = n->xpfx; c->xln = n->xln; for (int i = 0; i < n->nattrs; i++) node_set_attr_at(c, -1, n->attrs[i].name, n->attrs[i].value, n->attrs[i].ns, n->attrs[i].pfx); break;
     case NODE_TEXT: c = node_new_text(d, n->text, n->text_len); break;
     case NODE_COMMENT: c = node_new_comment(d, n->text, n->text_len); break;
@@ -640,8 +766,19 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     }
     if (n->type == NODE_ELEMENT && n->is_value) node_set_is_value(c, n->is_value, n->is_value_len);
     if (n->type == NODE_ELEMENT && n->tag == A_script) c->flags |= n->flags & NF_SCRIPT_STARTED;   /* "already started" is cloned */
-    if (n->template_content) { c->template_content = node_clone(n->template_content, true, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
+    if (n->template_content) {
+        c->template_content = node_clone(n->template_content, deep, doc_template_contents_owner(d));
+        c->template_content->refcount = 1; c->template_content->flags |= NF_INERT;
+    }
     if (deep) for (Node *k = n->first; k; k = k->next) node_append(c, node_clone(k, true, d));
+    if (n->type == NODE_DOCUMENT) {
+        for (Node *x = c->first; x; x = x->next) if (x->type == NODE_ELEMENT) { d->html = x; break; }
+        if (d->html) for (Node *x = d->html->first; x; x = x->next) {
+            if (x->type != NODE_ELEMENT || x->ns != NS_HTML) continue;
+            if (!d->head && x->tag == A_head) d->head = x;
+            if (!d->body && (x->tag == A_body || x->tag == A_frameset)) d->body = x;
+        }
+    }
     /* a clonable shadow root is cloned with its host, its children always */
     if (n->type == NODE_ELEMENT && n->shadow_root && (n->shadow_root->flags & NF_SR_CLONABLE)) {
         Node *sr = node_attach_shadow(c, n->shadow_root->flags & (NF_SR_CLOSED | NF_SR_DELEGATES | NF_SR_SERIALIZABLE | NF_SR_CLONABLE | NF_SR_MANUAL | NF_SR_DECLARATIVE));
