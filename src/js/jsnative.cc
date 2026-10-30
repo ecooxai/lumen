@@ -84,6 +84,79 @@ FN(attrBranded) {
     CTX;
     RET(a[0]->IsObject() && a[0].As<v8::Object>()->HasPrivate(ctx, attr_brand_key(iso)).FromMaybe(false));
 }
+/* Trusted Types payloads are isolate-private slots, shared by genuine values
+   across same-origin realms. The N object is a prelude closure argument and is
+   never installed on Window. No prototype, symbol or expando can mint a brand;
+   V8 traces the payload with its owner instead of keeping a global registry or
+   a raw context pointer alive. 1/2/3 are HTML/Script/ScriptURL strings, 4/5 are
+   private parser-option/Sanitizer configuration records. */
+static v8::Local<v8::Private> trusted_type_key(v8::Isolate *iso, int kind) {
+    static const char *const keys[] = { "", "lumen:trusted-html", "lumen:trusted-script",
+        "lumen:trusted-script-url", "lumen:trusted-parser-options", "lumen:trusted-sanitizer" };
+    return v8::Private::ForApi(iso, jstr(iso, keys[kind]));
+}
+FN(trustedBrand) {
+    CTX;
+    if (a.Length() < 3 || !a[0]->IsObject() || a[0]->IsProxy() || !a[1]->IsInt32()) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Invalid Trusted Types brand"))); return;
+    }
+    const int kind = a[1].As<v8::Int32>()->Value();
+    if (kind < 1 || kind > 5 || (kind <= 3 ? !a[2]->IsString() :
+        !a[2]->IsObject() || a[2]->IsProxy() || a[2]->IsArray() || a[2]->IsFunction())) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Invalid Trusted Types payload"))); return;
+    }
+    v8::Local<v8::Object> owner = a[0].As<v8::Object>();
+    v8::Local<v8::Private> key = trusted_type_key(iso, kind);
+    const v8::Maybe<bool> present = owner->HasPrivate(ctx, key);
+    if (present.IsNothing()) return;
+    if (present.FromJust()) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Trusted Types brand is already initialized"))); return;
+    }
+    const v8::Maybe<bool> stored = owner->SetPrivate(ctx, key, a[2]);
+    if (!stored.IsNothing() && !stored.FromJust())
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Trusted Types brand could not be initialized")));
+}
+FN(trustedData) {
+    CTX;
+    if (a.Length() < 2 || !a[0]->IsObject() || a[0]->IsProxy() || !a[1]->IsInt32()) return;
+    const int kind = a[1].As<v8::Int32>()->Value();
+    if (kind < 1 || kind > 5) return;
+    v8::Local<v8::Value> payload;
+    if (a[0].As<v8::Object>()->GetPrivate(ctx, trusted_type_key(iso, kind)).ToLocal(&payload)) RET(payload);
+}
+/* CSP inheritance uses a write-once primitive snapshot, never a page-visible
+   callback or parent object. Local-scheme children may have an opaque origin;
+   the prelude limits inheritance by document scheme, not script same-origin
+   access. Parent lifetime/isolate guards prevent stale or foreign handles. */
+static v8::Local<v8::Private> csp_snapshot_key(v8::Isolate *iso) {
+    return v8::Private::ForApi(iso, jstr(iso, "lumen:csp-snapshot"));
+}
+FN(cspSnapshot) {
+    CTX;
+    const v8::Local<v8::Private> key = csp_snapshot_key(iso);
+    if (a.Length()) {
+        if (a.Length() != 1 || !a[0]->IsString()) {
+            iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Invalid CSP snapshot"))); return;
+        }
+        v8::Local<v8::Object> global = ctx->Global();
+        const v8::Maybe<bool> present = global->HasPrivate(ctx, key);
+        if (present.IsNothing()) return;
+        if (present.FromJust()) {
+            iso->ThrowException(v8::Exception::TypeError(jstr(iso, "CSP snapshot is already initialized"))); return;
+        }
+        const v8::Maybe<bool> stored = global->SetPrivate(ctx, key, a[0]);
+        if (!stored.IsNothing() && !stored.FromJust())
+            iso->ThrowException(v8::Exception::TypeError(jstr(iso, "CSP snapshot could not be initialized")));
+        return;
+    }
+    JsCtx *parent = c->parent;
+    if (!parent || parent->dead || parent->ctx.IsEmpty() || parent->iso != iso) return;
+    v8::Local<v8::Context> parent_context = parent->ctx.Get(iso);
+    v8::Context::Scope parent_scope(parent_context);
+    v8::Local<v8::Value> snapshot;
+    if (parent_context->Global()->GetPrivate(parent_context, key).ToLocal(&snapshot) && snapshot->IsString())
+        RET(snapshot);
+}
 /* HTMLScriptElement's private force-async state survives wrapper changes and
    adoption, and cannot be forged by page-visible expando properties. */
 FN(scriptForceAsync) {
@@ -1565,7 +1638,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
     REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);
-    REG(scriptForceAsync);
+    REG(scriptForceAsync); REG(trustedBrand); REG(trustedData); REG(cspSnapshot);
     REG(templateContent); REG(tplHost); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(borders); REG(overflowSize); REG(scrollPos); REG(setScroll); REG(computed); REG(trTake); REG(setAnimStyle); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
     REG(modal); REG(popover); REG(fullscreen); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(docBase); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(internal); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);

@@ -1,35 +1,35 @@
 {
   "title": "Lumen Linux \u00b7 Trusted Types parser compatibility",
-  "phase": "Candidate 201: 1949/1961 parser checks; candidate202 fixes remaining async state",
-  "iteration": 202,
-  "score": null,
-  "iteration_quality": 99.38806731259562,
-  "score_note": "Parser focus201:1949/1961 assertions and17/18wholefiles. Broader selected640 baseline remains380/640; no overallquality score inferred.",
+  "phase": "candidate203-build",
+  "iteration": 3,
+  "score": 100,
+  "iteration_quality": 100,
+  "score_note": "Parser-options upstream focus:100/100 (1961/1961assertions,18/18wholefiles). Broader640baseline remains380/640; whole-browser98/100 is not certified.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
   "checkpoint": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
-  "updated_utc": "2026-10-30T06:43:24.753476+00:00",
+  "updated_utc": "2026-10-30T06:48:30.203087+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
     [
-      "Parser-option focus201",
-      "1,949/1,961 assertions (99.388%),17/18 wholefiles;941 newpasses,zero priorpasslosses."
+      "Complete declared upstream part",
+      "Candidate202:18/18wholefiles and1961/1961assertions pass;allharnessesOK andactual native exits0."
     ],
     [
-      "Remaining selected failures",
-      "12 external-script async-state checks; candidate202 general lifecycle repair building."
+      "Measured gain",
+      "953additional assertion passes versus200,zero lostpasses and unchanged test identities/deadlines."
     ],
     [
-      "Independent security controls",
-      "16/18 vsbaseline8/18; two preexisting fail-closed cross-realm rejections are under investigation."
+      "Ongoing security follow-on",
+      "Cross-realm values and private-state prototype poisoning receive independent adversarial coverage in203."
     ],
     [
-      "Native regression gate",
-      "140/140 non-URL tests pass,zero skips; one-second CPU/RAM evidence retained."
+      "Regression comparison",
+      "34 stable Trusted Types/script-lifecycle neighbors are being compared. Final640sample remains pending."
     ],
     [
-      "Broader frozen baseline",
-      "Candidate200:380/640 wholecases,8324/10540 assertions. Candidate201 has not yet had final640 comparison."
+      "Broader baseline",
+      "Candidate200:380/640wholecases (59.38%),8324/10540assertions. This is not fullWPT."
     ]
   ],
   "coverage": "Frozen selected 640 HTTP/window cases; URL conformance deferred. Chromium: 544/640 full cases and 9,516/10,549 assertions. This is not the complete WPT suite.",
@@ -39,9 +39,9 @@
     "URL conformance remains deferred. All failure denominators and reference differences remain visible.",
     "Surge currently has no authenticated session; existing HTTPS progress and reviewed GitHub Pages publication remain available."
   ],
-  "active_iteration": 202,
-  "accepted_binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
-  "accepted_binary_scope": "Candidate 200, exact final CPU/offscreen Linux build; full selected-cohort and scoped regression validation complete.",
+  "active_iteration": 203,
+  "accepted_binary_sha256": "6d6f52aefc972765306567062b78a5413f68acc5050fed336b30d1998aeb7bf8",
+  "accepted_binary_scope": "Candidate202,18wholeparser-optionfiles and1961assertions. Neighbor/security/broadcomparison remains separate.",
   "agent_session": "active",
   "showcase_url": "https://ecooxai.github.io/lumen/showcase.mp4",
   "candidate_binary_sha256": "03ac9e640989d4368510a098bc92bb75219704566d45044266e49c3bfd435e4d",
@@ -408,7 +408,7 @@
   "public_report_url": "https://ecooxai.github.io/lumen/",
   "session_iteration": 2,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 201,
+  "accepted_iteration": 202,
   "accepted_focused_results": {
     "native": "140/140",
     "network": "317/317",
@@ -536,7 +536,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 202,
+  "current_candidate": 203,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1212,7 +1212,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-29T21:14:52.039463+00:00",
+  "updated_at": "2026-10-30T06:58:11.568655+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1324,8 +1324,8 @@
   "session6_current": "Candidate 200 is accepted: 380/640 full selected cases, 8,324/10,540 assertions, 251 new assertion passes and no losses versus candidate 176.",
   "session6_current_summary": "Session finished after 229.084 elapsed wall minutes and 21 recorded iterations. Candidate 200 is published; the 98/100 whole-browser goal remains unmet.",
   "overall_assessment": "98/100 whole-browser goal unverified; current fixed sample baseline is 380/640 fully passing cases.",
-  "accepted_scope_label": "Trusted Types parser-options focus, candidate201",
-  "accepted_scope_pass": 1949,
+  "accepted_scope_label": "Frozen Trusted Types parser-options WPT focus, candidate202",
+  "accepted_scope_pass": 1961,
   "accepted_scope_total": 1961,
   "reviewed_source_checkpoint186": {
     "candidate": 186,
@@ -1361,21 +1361,23 @@
   },
   "session7_current": {
     "started_utc": "2026-10-30T06:26:11Z",
-    "iteration": 2,
-    "phase": "building",
+    "iteration": 3,
+    "phase": "private-brand-hardening",
     "baseline_candidate": 200,
     "current_source_commit": null,
     "focus": "Trusted Types parser options",
     "selected_whole_files": 18,
     "focus_result": null,
     "overall_goal_met": false,
-    "candidate": 202,
+    "candidate": 203,
     "source_commit": "1f5ad47ee5b12c50a9d0f878ab2d1fcc5b491c55",
     "binary_sha256": "03ac9e640989d4368510a098bc92bb75219704566d45044266e49c3bfd435e4d",
-    "focused_accepted_candidate": 201,
-    "focused_pass": 1949,
+    "focused_accepted_candidate": 202,
+    "focused_pass": 1961,
     "focused_total": 1961,
-    "focused_whole_pass": 17,
+    "focused_whole_pass": 18,
     "focused_whole_total": 18
-  }
+  },
+  "score_scope": "Candidate202 frozen parser-options part: 1961/1961 assertions,18/18 whole files; candidate203 security validation pending; overall browser conformance not certified.",
+  "current_work": "Build candidate203 private cross-realm brands and inherited CSP snapshot; retain202 complete fixed parser-options part."
 }

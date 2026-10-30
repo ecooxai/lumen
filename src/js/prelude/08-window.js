@@ -479,6 +479,10 @@ function structuredClone(v, options) {
 const PLATFORM_PROTOS = new WeakSet();   /* prototypes of the WebIDL interfaces; filled when the globals are shaped */
 function cloneValue(v, seen) {
     if (v === null || typeof v !== 'object') { if (typeof v === 'function' || typeof v === 'symbol') throw new DOMException('could not be cloned.', 'DataCloneError'); return v; }
+    // These platform objects are not serializable, including genuine values
+    // from another realm and values whose public prototype was removed.
+    for (let kind = 1; kind <= 5; kind++) if (N.trustedData(v, kind) !== undefined)
+        throw new DOMException('Trusted Types and Sanitizer objects could not be cloned.', 'DataCloneError');
     if (seen.has(v)) return seen.get(v);
     const moduleCopy = N.cloneWasm(v);
     if (moduleCopy !== undefined) { seen.set(v, moduleCopy); return moduleCopy; }
