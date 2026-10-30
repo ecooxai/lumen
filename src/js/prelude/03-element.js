@@ -578,12 +578,13 @@ function mathValid(p, v) {
     let m;
     while ((m = re.exec(v))) {
         if (!MATH_FNS.test(m[2].toLowerCase())) continue;
-        const st = m.index + m[1].length, [t, n] = mathType(v.slice(st), false, MATH_LEN_PROPS.test(p) ? 'length' : '');
+        const lengthDestination = MATH_LEN_PROPS.test(p) || p === 'font-size';
+        const st = m.index + m[1].length, [t, n] = mathType(v.slice(st), false, lengthDestination ? 'length' : '');
         if (t === null) return false;
         re.lastIndex = st + Math.max(n, 1);
         if (t === undefined || st !== 0 && v.slice(0, st).trim()) continue;   /* only a whole-value function is checked against the property */
         if (MATH_NUM_PROPS.test(p) && !(t === '' || (t === '%^1' && /opacity$/.test(p)))) return false;
-        if (MATH_LEN_PROPS.test(p) && n >= v.trim().length && !(t === 'length^1' || t === '%^1')) return false;
+        if (lengthDestination && n >= v.trim().length && !(t === 'length^1' || t === '%^1')) return false;
     }
     return true;
 }

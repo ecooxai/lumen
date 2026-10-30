@@ -156,7 +156,15 @@ int main(void) {
     css_apply_decl(style, NULL, "line-height", "20px", NULL, NULL);
     css_apply_decl(style, NULL, "vertical-align", "round(50%, 3px)", NULL, NULL);
     assert(style->vertical_align_len == 9); checks++;
-    style_free(style);
+    ComputedStyle *parent = style_new_default(); parent->font_size = 80;
+    css_apply_decl(style, parent, "font-size", "7px", NULL, NULL);
+    css_apply_decl(style, parent, "font-size", "round(10% / 1px)", NULL, NULL);
+    assert(style->font_size == 7); checks++;
+    css_apply_decl(style, parent, "font-size", "calc(round(10% / 1px) * 1px)", NULL, NULL);
+    assert(style->font_size == 8); checks++;
+    css_apply_decl(style, parent, "line-height", "round(1.5)", NULL, NULL);
+    assert(style->line_height_factor == 2 && style->line_height == 16); checks++;
+    style_free(parent); style_free(style);
     printf("PASS css_stepped_math %d native boundary checks\n", checks);
     return 0;
 }

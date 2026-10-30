@@ -1,0 +1,32 @@
+{
+  "iteration": 3,
+  "candidate": 217,
+  "started_utc": "2026-10-30T12:12:59.788778+00:00",
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Safe default interval, proper length context, retained constant nesting, strict transform grammar and actual-basis consumers",
+  "finished_utc": "2026-10-30T12:24:26.815000+00:00",
+  "duration_minutes": 11.450437033333333,
+  "session_elapsed_minutes": 38.51358333333334,
+  "source_commit": "24f95963eec6648c2de7eee56b4b9eee727fc42d",
+  "wpt": "594/594,4/4 whole files,+132 vs214,0 prior-pass loss/missing/added",
+  "neighbors": "173/432,+58 vs214,0 prior-pass loss/missing/added",
+  "authored": "62/62;12/12 signed-zero;20/20 boundaries;8/8 token edges;3/3 separate crash smoke",
+  "font_destination": "2/4, confirmed invalid native NUMBER destination prior-pass loss and unsupported valid CSSOM typed font",
+  "native": "141/141;104 stepped-math native boundary checks",
+  "test_scope_score": 100,
+  "release_quality_score": 90,
+  "acceptance": "rejected pending font destination correction and broad640 gate",
+  "resource_receipts": [
+    "build217/receipt.json",
+    "build217/resources.summary.json",
+    "build217/cgroup.summary.json",
+    "native217/receipt.json",
+    "native217/resources.summary.json",
+    "native217/cgroup.summary.json"
+  ],
+  "reference_font_discrepancy": "Chromium valid typed-font result10px versus specification-derived8px remains under context investigation; no bug claim"
+}

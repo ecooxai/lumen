@@ -1,0 +1,11 @@
+{
+  "iteration": 4,
+  "candidate": 218,
+  "started_utc": "2026-10-30T12:25:32.043061+00:00",
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Restore font-size destination typing while preserving legitimate numeric callers and typed percentage-to-length font expressions"
+}

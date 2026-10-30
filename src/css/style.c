@@ -2513,14 +2513,17 @@ apply:
         break;
     case 'f':
         if (!strcmp(P, "font-size")) {
-            float pf = par ? par->font_size : 16;
+            float pf = par ? par->font_size : 16; MathType font_type;
             static const char *const sz[] = { "xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large", "xxx-large", NULL };
             static const float szv[] = { 9, 10, 13, 16, 18, 24, 32, 48 };
             k = kw(val, sz);
             if (k >= 0) st->font_size = szv[k];
             else if (str_ieq(val, "smaller")) st->font_size = pf / 1.2f;
             else if (str_ieq(val, "larger")) st->font_size = pf * 1.2f;
-            else if (css_parse_length_context(val, &l, pf, c.rem, c.mc, par, true, e ? &e->uses_font_units : NULL, NULL) && l.kind == LK_LEN) st->font_size = LMAX(0, len_resolve(l, pf));
+            else if (css_parse_length_context(val, &l, pf, c.rem, c.mc, par, true,
+                     e ? &e->uses_font_units : NULL, &font_type) && l.kind == LK_LEN &&
+                     (!strchr(val, '(') || !math_type_equal(font_type, math_type_unit(MATH_NUMBER))))
+                st->font_size = LMAX(0, len_resolve(l, pf));
             c.em = st->font_size;
         }
         else if (!strcmp(P, "font-weight")) { if (str_ieq(val, "bold")) st->font_weight = 700; else if (str_ieq(val, "normal")) st->font_weight = 400; else if (str_ieq(val, "bolder")) st->font_weight = (int16_t)(par && par->font_weight >= 600 ? 900 : 700); else if (str_ieq(val, "lighter")) st->font_weight = 300; else { int w = atoi(val); if (w > 0) st->font_weight = (int16_t)w; } }

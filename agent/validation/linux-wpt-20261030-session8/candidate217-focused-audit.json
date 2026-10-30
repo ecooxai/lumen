@@ -1,0 +1,128 @@
+{
+  "created_utc": "2026-10-30T12:25:08.867223+00:00",
+  "candidate": 217,
+  "source": "24f95963eec6648c2de7eee56b4b9eee727fc42d",
+  "acceptance": "Blocked by confirmed native invalid font-size destination regression; no broad640 launch",
+  "wpt": {
+    "qa-css-stepped-math": {
+      "scope": "qa-css-stepped-math",
+      "candidate": 217,
+      "counts": {
+        "PASS": 594
+      },
+      "files": 4,
+      "full": 4,
+      "harness": {
+        "OK": 4
+      },
+      "gains": 132,
+      "losses": 0,
+      "missing": 0,
+      "added": 0,
+      "loss_rows": [],
+      "results_sha256": "b2e9ac049246e25054e8229a3a6cc1dc41e99f69060f91875cd7f46e5f3e9621",
+      "acceptance": "Blocked by confirmed native invalid font-size destination regression; no broad640 launch"
+    },
+    "qa-css-math-neighbors": {
+      "scope": "qa-css-math-neighbors",
+      "candidate": 217,
+      "counts": {
+        "FAIL": 259,
+        "PASS": 173
+      },
+      "files": 16,
+      "full": 3,
+      "harness": {
+        "OK": 16
+      },
+      "gains": 58,
+      "losses": 0,
+      "missing": 0,
+      "added": 0,
+      "loss_rows": [],
+      "results_sha256": "faf9c4b26eac5d443d43b241bfe7163c929e429cdad43c8dd8bf87c4eb1bbe60",
+      "acceptance": "Blocked by confirmed native invalid font-size destination regression; no broad640 launch"
+    }
+  },
+  "authored": {
+    "qa-css-math-authored": {
+      "registered_fields": 62,
+      "reported_fields": 62,
+      "passing_fields": 62,
+      "fixture_returncode": 0,
+      "sources_unchanged": true,
+      "binary_unchanged": true,
+      "cgroup_monitor_returncode": 0,
+      "failed_checks": [],
+      "receipt_sha256": "48c7369ebd35325ef86c77b6d151600bca69b2869f31a87028c53e08bc36509b"
+    },
+    "qa-css-time-signed-zero": {
+      "registered_fields": 12,
+      "reported_fields": 12,
+      "passing_fields": 12,
+      "fixture_returncode": 0,
+      "sources_unchanged": true,
+      "binary_unchanged": true,
+      "cgroup_monitor_returncode": 0,
+      "failed_checks": [],
+      "receipt_sha256": "2968f8f80d43e3cc2c466a8135674ff988dae618698deb27c09c516b4dab64f2"
+    },
+    "qa-css-math-boundaries": {
+      "registered_fields": 20,
+      "reported_fields": 20,
+      "passing_fields": 20,
+      "fixture_returncode": 0,
+      "sources_unchanged": true,
+      "binary_unchanged": true,
+      "cgroup_monitor_returncode": 0,
+      "failed_checks": [],
+      "receipt_sha256": "fe72596d6a046134a7c8852e1cb35d088d5ecf0e1c74a0abb8ef11b949e7e428"
+    },
+    "qa-css-math-crash-smoke": {
+      "registered_fields": 3,
+      "reported_fields": 3,
+      "passing_fields": 3,
+      "fixture_returncode": 0,
+      "sources_unchanged": true,
+      "binary_unchanged": true,
+      "cgroup_monitor_returncode": 0,
+      "failed_checks": [],
+      "receipt_sha256": "c41b8bbd5cbf09a55c1bfa0ee399ab156ebb58f1515cb744739f945170f9c743"
+    },
+    "qa-css-transform-token-edges": {
+      "registered_fields": 8,
+      "reported_fields": 8,
+      "passing_fields": 8,
+      "fixture_returncode": 0,
+      "sources_unchanged": true,
+      "binary_unchanged": true,
+      "cgroup_monitor_returncode": 0,
+      "failed_checks": [],
+      "receipt_sha256": "ee65342ab033b6f87ea365a7da1df0378cfbbac11d2cbe117b8ee932c6f7ac79"
+    },
+    "qa-css-font-destination": {
+      "registered_fields": 4,
+      "reported_fields": 4,
+      "passing_fields": 2,
+      "fixture_returncode": 1,
+      "sources_unchanged": true,
+      "binary_unchanged": true,
+      "cgroup_monitor_returncode": 0,
+      "failed_checks": [
+        {
+          "id": "stylesheet font-size round(10% / 1px)",
+          "actual": "8px",
+          "expected": "7px",
+          "pass": false
+        },
+        {
+          "id": "cssom font-size calc(round(10% / 1px) * 1px)",
+          "actual": "7px",
+          "expected": "8px",
+          "pass": false
+        }
+      ],
+      "receipt_sha256": "892bb1e7e6dc515014cd912271f119e16a0b7fc3648fdf522fd7753f07100702"
+    }
+  }
+}

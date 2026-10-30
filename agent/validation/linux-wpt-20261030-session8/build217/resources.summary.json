@@ -1,0 +1,21 @@
+{
+  "label": "gpt-6-astra-builtin-rubywebterm-build217",
+  "started_utc": "2026-10-30T12:21:10.789358+00:00",
+  "finished_utc": "2026-10-30T12:21:34.789501+00:00",
+  "root_pid": 3809847,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 24,
+  "elapsed_seconds": 24.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 0.0,
+  "cpu_median": 39.002,
+  "cpu_max": 197.951,
+  "cpu_last10_median": 5.4990000000000006,
+  "rss_peak_mb": 599.13,
+  "rss_final_mb": 41.779,
+  "pss_peak_mb": 496.172,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/build217/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}
