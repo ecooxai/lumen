@@ -1,5 +1,6 @@
 /* Native stylesheet math must agree with CSSOM without relying on JS folding. */
 #include "../src/css/css.h"
+#include "../src/text/font.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -23,7 +24,7 @@ static void equal(const char *text, float expected) {
     }
 }
 int main(void) {
-    dom_init();
+    dom_init(); font_init();
     equal("round(15px, -10px)", 20);
     equal("round(-15px, -10px)", -10);
     equal("round(up, -13px, -10px)", -10);
@@ -65,6 +66,38 @@ int main(void) {
     equal("progress(no-clamp 10px, 10px, 10px)", 0);
     equal("progress(no-clamp 100px, 10px, 10px)", INFINITY);
     equal("calc(10px * progress(50deg, 0deg, 100deg))", 5);
+    equal("progress(abs(5%), hypot(3%, 4%), 10%)", 0);
+    equal("progress(no-clamp abs(5%), hypot(3%, 4%), 10%)", 0);
+    equal("calc(1px * progress(abs(10%), (10% - 10%), 100% / 10))", 1);
+    equal("calc(1px * progress(no-clamp abs(10%), (10% - 10%), 100% / 10))", 1);
+    equal("calc(progress(50%, 100px, 100px) * 10px)", 0);
+    struct { const char *text; float at100, at200, at400; } progress_responsive[] = {
+        { "calc(progress(50%, 0px, 100px) * 10px)", 5, 10, 10 },
+        { "calc(progress(no-clamp 50%, 0px, 100px) * 10px)", 5, 10, 20 },
+        { "calc(progress(50%, 100px, 0px) * 10px)", 5, 0, 0 },
+        { "calc(-2 * progress(50%, 0px, 100px) * 10px + 1px)", -9, -19, -19 },
+        { "calc(progress(50%, calc(10% + 10px), calc(10% + 110px)) * 10px)", 3, 7, 10 },
+    };
+    for (size_t i = 0; i < sizeof progress_responsive / sizeof *progress_responsive; i++) {
+        Length value;
+        assert(css_parse_length(progress_responsive[i].text, &value, 16, 16, NULL));
+        assert(fabsf(len_resolve(value, 100) - progress_responsive[i].at100) < .0001f);
+        assert(fabsf(len_resolve(value, 200) - progress_responsive[i].at200) < .0001f);
+        assert(fabsf(len_resolve(value, 400) - progress_responsive[i].at400) < .0001f);
+        checks += 3;
+    }
+    const char *unrepresented_progress[] = {
+        "calc(progress(50%, 0px, calc(100px + 10%)) * 10px)",
+        "calc(progress(no-clamp 50%, 100px, 100px) * 10px)",
+        "calc(progress(50%, 0px, 100px) * infinity * 1px)",
+        "calc(progress(50%, 0px, 100px) / 0 * 1px)",
+        "calc(progress(50%, 0px, 100px) * 1px + infinity * 1px)",
+        "calc((progress(50%, 0px, 100px) + progress(25%, 0px, 100px)) * 1px)",
+        "min(10px, calc(progress(50%, 0px, 100px) * 1px))",
+    };
+    for (size_t i = 0; i < sizeof unrepresented_progress / sizeof *unrepresented_progress; i++) {
+        Length value; assert(!css_parse_length(unrepresented_progress[i], &value, 16, 16, NULL)); checks++;
+    }
     const char *nan[] = {
         "round(infinity, NaN)", "round(NaN, infinity)", "round(0, 0)",
         "round(infinity, infinity)", "mod(infinity, 2)", "mod(-0, infinity)",
@@ -211,6 +244,30 @@ int main(void) {
     assert(style->has_transform && style->transform[0] == .25f); checks++;
     css_apply_decl(style, parent, "width", "calc(round(10% / 1px) * 1px)", NULL, NULL);
     assert(len_resolve(style->width, 80) == 8 && len_resolve(style->width, 200) == 20); checks++;
+    css_apply_decl(style, parent, "order", "calc(2.5)", NULL, NULL);
+    assert(style->order == 3); checks++;
+    css_apply_decl(style, parent, "order", "calc(-1.5)", NULL, NULL);
+    assert(style->order == -1); checks++;
+    css_apply_decl(style, parent, "order", "2.5", NULL, NULL);
+    assert(style->order == -1); checks++;
+    css_apply_decl(style, parent, "order", "calc(2px)", NULL, NULL);
+    assert(style->order == -1); checks++;
+    css_apply_decl(style, parent, "order", "calc(progress(25px, 0px, 100px) * 10)", NULL, NULL);
+    assert(style->order == 3); checks++;
+    css_apply_decl(style, parent, "column-count", "calc(progress(50px, 0px, 100px) * 7)", NULL, NULL);
+    assert(!strcmp(custom_get(style->gen_n, "column-count"), "4")); checks++;
+    css_apply_decl(style, parent, "column-count", "0", NULL, NULL);
+    assert(!strcmp(custom_get(style->gen_n, "column-count"), "4")); checks++;
+    css_apply_decl(style, parent, "column-count", "calc(2px)", NULL, NULL);
+    assert(!strcmp(custom_get(style->gen_n, "column-count"), "4")); checks++;
+    css_apply_decl(style, parent, "column-count", "calc(-2)", NULL, NULL);
+    assert(!strcmp(custom_get(style->gen_n, "column-count"), "1")); checks++;
+    css_apply_decl(style, parent, "flex-grow", "progress(no-clamp 150px, 0px, 100px)", NULL, NULL);
+    assert(style->flex_grow == 1.5f); checks++;
+    css_apply_decl(style, parent, "flex-grow", "progress(1px, 0deg, 2px)", NULL, NULL);
+    assert(style->flex_grow == 1.5f); checks++;
+    assert(css_flex_valid("flex-grow", "progress(1rex, 0px, 2rex)")); checks++;
+    assert(!css_flex_valid("flex-grow", "progress(1rex, 0deg, 2rex)")); checks++;
     style_free(parent); style_free(style);
     printf("PASS css_stepped_math %d native boundary checks\n", checks);
     return 0;

@@ -15,6 +15,9 @@ enum {
     LEN_MATH_ROUND = 5, LEN_MATH_ROUND_LOWER, LEN_MATH_UP, LEN_MATH_DOWN,
     LEN_MATH_TO_ZERO, LEN_MATH_MOD, LEN_MATH_REM
 };
+/* High provenance bit: newly represented deferred progress accepts only
+   algebra that this compact affine/clamp value can preserve exactly. */
+enum { LEN_MATH_EXACT_PROGRESS = 128 };
 static inline bool len_math_stepped(uint8_t mm) { return mm >= LEN_MATH_ROUND && mm <= LEN_MATH_REM; }
 static inline double len_stepped_value(double a, double b, uint8_t mm) {
     if (isnan(a) || isnan(b)) return NAN;

@@ -1,0 +1,32 @@
+{
+  "candidate": 224,
+  "created_utc": "2026-10-30T15:17:07.297296+00:00",
+  "grid_repair_checkpoint": "a8c52017c8acabe612ea1a501968906ea9838e8b",
+  "reviewers": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "review_status": "Both independent reviewers ready; all browser baseline lanes drained at 15:16:55.155127 UTC. Source frozen for build/native/focused/rendering/broad gates; no runtime acceptance yet.",
+  "source_inputs": {
+    "src/css/css.h": "67299793eab7b37d3aa60a88d8be66ae594701ee56986fa3a78dddd961cca494",
+    "src/css/style.c": "0bc62ffaf66c117794622daf3b2c49244ecadeb5353253e3414e0328712b3d7a",
+    "src/css/numeric-count.h": "b411c068b8e834147cabe61e573bb254a337baaf6fc98fa5462541751d3e67dc",
+    "src/js/prelude/03-element.js": "c58d4f7f9eb0b041542684dcc6400aed128bf7d809c75a1943f5078db2576343",
+    "tests/test_css_stepped_math.c": "50306945f8a0acfda188e060c9de44ba9ed3add7b53daf64df1fec06297e5bf2"
+  },
+  "implementation": [
+    "Typed scalar progress grammar and specified folding; pure percentage abs/hypot preserve units.",
+    "Current/root font metrics borrowed on parser stack; existing font-generation invalidation reused.",
+    "Order and column-count perform typed numeric parsing, nearest integer rounding and destination range handling.",
+    "Mixed length/percentage progress only when the denominator is constant; existing affine/clamp storage plus a high provenance bit rejects unrepresentable nonlinear/nonfinite algebra.",
+    "insertAdjacentHTML local brand/conversion/context checks and intrinsic insertion preserve Trusted Types order."
+  ],
+  "limits": [
+    "Length remains 28-byte POD; no retained expression strings, heap AST, or layout reparsing.",
+    "Dependent denominators and general nonlinear nesting remain unsupported.",
+    "rotate3d and XML fragment parsing are explicitly outside this bounded follow-up.",
+    "Complete measured progress/DOM/grid cohorts must report actual remaining failures.",
+    "Fresh native, focused, rendering and exact640 prior-pass audit required before release."
+  ]
+}

@@ -417,7 +417,7 @@ function mathType(src, strictUnits = false, percentageHint = '') {   /* returns 
         i += m[0].length;
         if (src[i] === '(') { i++; return fn(m[0]); }
         if (/^(-?infinity|pi|e|nan)$/i.test(m[0])) return '';
-        if (/^(nearest|up|down|to-zero)$/i.test(m[0])) return null;
+        if (/^(nearest|up|down|to-zero|from|to|no-clamp)$/i.test(m[0])) return null;
         if (strictUnits) return /^none$/i.test(m[0]) ? 'none' : null;
         unknown = true; return '?';   /* e.g. a relative color's channel keyword */
     }
@@ -848,7 +848,7 @@ function specNormalize(p, v) {
         });
     if (p === 'position-area') { const n = posArea(v); if (n !== null) return n; }
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
-    const preserveMathZero = /\b(?:calc|round|mod|rem)\(/i.test(v);
+    const preserveMathZero = /\b(?:calc|round|mod|rem|progress)\(/i.test(v);
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
         const n = Number(num + (exp || ''));
         if (!isFinite(n)) return m;
@@ -857,7 +857,7 @@ function specNormalize(p, v) {
     }).replace(/\s+/g, ' ');
     if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return CSS_POSITION.test(p) ? t.toLowerCase() : t;
     if (CSS_POSITION.test(p)) return cssPositionSpecified(t, cssPositionAxis(p)) || t;
-    if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem)\(/i.test(t)) t = specFoldMath(t);
+    if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
     if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
     if (p === 'display') { const w = t.toLowerCase().split(' '); if (w.length === 2 && w.includes('list-item') && w.includes('flow')) t = 'list-item'; else if (w.length === 2 && w[1] === 'flow' && /^(block|inline|run-in)$/.test(w[0])) t = w[0]; else if (w.length === 2 && w[0] === 'block' && /^(flex|grid|table|flow-root|math)$/.test(w[1])) t = w[1]; else if (w.length === 2 && w[0] === 'inline' && w[1] === 'flow-root') t = 'inline-block'; else if (w.length === 2 && w[0] === 'inline' && /^(flex|grid|table)$/.test(w[1])) t = 'inline-' + w[1]; }
@@ -1079,7 +1079,33 @@ methods(Element.prototype, {
     set innerHTML(v) { const a = ttCompliantHTML(v == null ? '' : v, htmlSinkOptions(false), 'Element innerHTML', xmlDocOf(this)); setInner(this, a.html, a.options); },
     get outerHTML() { return xmlDocOf(this) ? xmlSer(this, null, Object.assign(Object.create(null), { xml: XML_NS })) : N.html(this, true); },
     set outerHTML(v) { const a = ttCompliantHTML(v == null ? '' : v, htmlSinkOptions(false), 'Element outerHTML', xmlDocOf(this)); const p = N.parent(this); if (!p) return; insertNode(p, legacyHTMLFragment(p, a.html, a.options, 'Element outerHTML'), this); removeNode(this); },
-    insertAdjacentHTML(pos, html) { const a = ttCompliantHTML(html, htmlSinkOptions(false), 'Element insertAdjacentHTML', xmlDocOf(this)); const ctx = /^(beforebegin|afterend)$/i.test(pos) ? N.parent(this) : this; if (ctx) this.insertAdjacentElement(pos, legacyHTMLFragment(ctx, a.html, a.options, 'Element insertAdjacentHTML')); },
+    insertAdjacentHTML(pos, html) {
+        if (!N.isNode(this) || N.type(this) !== 1) throw new TypeError("Failed to execute 'insertAdjacentHTML' on 'Element': Illegal invocation");
+        if (arguments.length < 2) throw argsErr('insertAdjacentHTML', this, 2);
+        // WebIDL converts position before the HTML input; Trusted Types then
+        // runs before any parent/context error or fragment parsing.
+        pos = `${pos}`;
+        const a = ttCompliantHTML(html, htmlSinkOptions(false), 'Element insertAdjacentHTML', xmlDocOf(this));
+        pos = pos.replace(/[A-Z]/g, c => c.toLowerCase());
+        let ctx;
+        switch (pos) {
+        case 'beforebegin': case 'afterend':
+            ctx = N.parent(this);
+            if (!ctx || N.type(ctx) === 9) throw new DOMException('The insertion position has no modifiable parent', 'NoModificationAllowedError');
+            break;
+        case 'afterbegin': case 'beforeend': ctx = this; break;
+        default: throw new DOMException('Invalid position', 'SyntaxError');
+        }
+        const fragment = legacyHTMLFragment(ctx, a.html, a.options, 'Element insertAdjacentHTML');
+        // The internal insertion algorithm must not dispatch an overridable
+        // public insertAdjacentElement method or coerce position a second time.
+        switch (pos) {
+        case 'beforebegin': insertNode(N.parent(this), fragment, this); break;
+        case 'afterbegin': insertNode(this, fragment, N.first(this)); break;
+        case 'beforeend': insertNode(this, fragment, null); break;
+        case 'afterend': insertNode(N.parent(this), fragment, N.next(this)); break;
+        }
+    },
     insertAdjacentElement(pos, el) {
         switch (String(pos).toLowerCase()) {
         case 'beforebegin': { const p = N.parent(this); if (p) insertNode(p, el, this); break; }
