@@ -92,6 +92,7 @@ typedef struct Document {
     char *title;
     char *content_type;           /* the response's MIME type of a loaded XML document, else NULL */
     char *csp, *csp_ro;           /* the response's Content-Security-Policy(-Report-Only) headers, joined; else NULL */
+    char **parser_meta; int nparser_meta; bool parser_meta_captured; /* owned (http-equiv, content) head pairs */
     char *referrer_policy;        /* the response's Referrer-Policy header (or a <meta name=referrer> policy); else NULL */
     int charset;   /* the document's encoding (base/encoding.h); 0 is UTF-8 */
     Node *html, *head, *body;
@@ -131,6 +132,7 @@ static inline const char *doc_base(const Document *d) { return d->base_url ? d->
 
 Document *doc_new(const char *url);
 void doc_free(Document *d);
+void doc_capture_parser_meta(Document *target, const Document *parsed);
 Node *node_new_element(Document *d, const char *tag, int ns);
 Node *node_new_text(Document *d, const char *s, size_t n);
 Node *node_new_comment(Document *d, const char *s, size_t n);
@@ -238,7 +240,9 @@ void html_parser_free(HtmlParser *p);
    run yields a completed script, or NULL at the current input/limit boundary.
    final supplies EOF only once all bytes up to the real stream end are consumed. */
 HtmlParser *html_parser_stream_new(Document *d);
+HtmlParser *html_parser_begin_document(Document *d, const char *source, size_t length, Node **first_script);
 Node *html_parser_run(HtmlParser *p, bool final, size_t limit);
+Node *html_parser_custom_element(const HtmlParser *p);
 size_t html_parser_offset(const HtmlParser *p);
 size_t html_parser_length(const HtmlParser *p);
 bool html_parser_done(const HtmlParser *p);

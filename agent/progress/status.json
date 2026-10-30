@@ -1,13 +1,13 @@
 {
   "title": "Lumen Linux \u00b7 parser options and script lifecycle",
-  "phase": "build-correction",
-  "iteration": 5,
+  "phase": "building",
+  "iteration": 7,
   "score": 100,
   "iteration_quality": 100,
-  "score_note": "Candidate205 retains the declared parser-options part:1961/1961 assertions and18/18 whole files. This100/100 is scoped. Ordinary script lifecycle is61/64 assertions and32/35 whole files; overall98/100 remains unmet.",
+  "score_note": "Candidate207 retains the declared parser-options part:1961/1961 assertions,18/18 whole files. Ordinary script cohort62/64,33/35 whole; document-streaming18/73,16/72. These are separate fixed scopes; overall98/fullWPT remains unverified.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
   "checkpoint": "2491c6ef792a713deeb7ccbdeb3df367120ad7f6",
-  "updated_utc": "2026-10-30T07:57:52.697619+00:00",
+  "updated_utc": "2026-10-30T08:00:51.573336+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
@@ -28,8 +28,8 @@
       "140/140 non-URL tests;zero failures orskips;actualexit0 andunchanged binary."
     ],
     [
-      "Remaining document input work \u00b7 candidate206",
-      "Two authored immediate-write regressions remain. Frozen72-file baseline20517/73 assertions and14/72 whole files;Chromium15673/73 and72/72.206 source work is in progress."
+      "Document input validation \u00b7 candidate207",
+      "Build/startup passed with immutable binary; native140 and frozen ordinary cohorts are running. Two205 authored immediate-write regressions remain unclaimed until measured.72-file baseline:20517/73 assertions,14/72whole;Chromium15673/73,72/72."
     ],
     [
       "Broader frozen non-URL640 baseline \u00b7 candidate200",
@@ -41,7 +41,7 @@
     ],
     [
       "Scope and publication",
-      "FullWPT andwhole-browser98/100 are not certified. The publicsource archive remains the earlier reviewed200 checkpoint."
+      "FullWPT andwhole-browser98/100 are not certified. Reviewed205source is published on its separate publicbranch; downloadable Pages archive update is under review."
     ]
   ],
   "coverage": "Frozen selected 640 HTTP/window cases; URL conformance deferred. Chromium: 544/640 full cases and 9,516/10,549 assertions. This is not the complete WPT suite.",
@@ -1224,7 +1224,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-30T07:22:54.169802+00:00",
+  "updated_at": "2026-10-30T08:15:17.105272+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1392,5 +1392,43 @@
     "overall_goal_met": false
   },
   "score_scope": "Verified candidate202 parser-options part100/100 (1961 assertions,18 files);203/204 further validation pending. Broad640 baseline59.375/100 whole files.",
-  "current_work": "Build205 corrects204 compilation linkage; ordinary script-conformance manifests and expected results remain frozen."
+  "current_work": "Build205 corrects204 compilation linkage; ordinary script-conformance manifests and expected results remain frozen.",
+  "session7_active_candidate": 208,
+  "session7_candidate207": {
+    "source_commit": "909f27b0d18dea80dd360fef7ee772a89817b326",
+    "binary_sha256": "b8d05213cfdb3f6698c8ec197b5cb630e9648d62ac6a664b8a1eef0f794a87dc",
+    "native": [
+      140,
+      140
+    ],
+    "parser_options_assertions": [
+      1961,
+      1961
+    ],
+    "parser_options_whole": [
+      18,
+      18
+    ],
+    "ordinary_script_assertions": [
+      62,
+      64
+    ],
+    "ordinary_script_whole": [
+      33,
+      35
+    ],
+    "document_streaming_assertions": [
+      18,
+      73
+    ],
+    "document_streaming_whole": [
+      16,
+      72
+    ],
+    "authored_fields": [
+      109,
+      112
+    ],
+    "overall_goal_certified": false
+  }
 }

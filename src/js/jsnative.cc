@@ -363,6 +363,17 @@ FN(csp) {
     v8::Local<v8::Value> v[3] = { nstr(iso, d ? d->csp : nullptr), nstr(iso, d ? d->csp_ro : nullptr), nstr(iso, d ? d->referrer_policy : nullptr) };
     RET(v8::Array::New(iso, v, 3));
 }
+/* Private bootstrap input: primitive copies from the unexposed native head parse. */
+FN(parserMeta) {
+    CTX; Document *d = c->doc;
+    if (!d || !d->parser_meta_captured) { RET(v8::Undefined(iso)); return; }
+    auto rows = v8::Array::New(iso, d->nparser_meta);
+    for (int i = 0; i < d->nparser_meta; i++) {
+        v8::Local<v8::Value> pair[2] = { nstr(iso, d->parser_meta[i * 2]), nstr(iso, d->parser_meta[i * 2 + 1]) };
+        (void)rows->CreateDataProperty(ctx, (uint32_t)i, v8::Array::New(iso, pair, 2));
+    }
+    RET(rows);
+}
 /* Trusted Types and CSP: string compilation goes through the ttEval hook (evalGuard), inline scripts through
    ttScript (ttOn); codeLike makes an object V8 treats as code (a TrustedScript) */
 FN(evalGuard) { CTX; ctx->AllowCodeGenerationFromStrings(!BOOL(0)); }
@@ -1771,7 +1782,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(isNode); REG(attrBrand); REG(attrBranded); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev); REG(index);
     (void)N->Set(ctx, jstr(iso, "fontFace"), v8::Function::New(ctx, n_fontFace).ToLocalChecked()); REG(c2dFill); REG(c2dClip); REG(c2dMeasure); REG(c2dSource); REG(c2dPresent); REG(fontsPending);
-    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(docWrite); REG(docClose); REG(docStreamWritePoint); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
+    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(parserMeta); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(docWrite); REG(docClose); REG(docStreamWritePoint); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
     REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);

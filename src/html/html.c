@@ -51,7 +51,7 @@ struct HtmlParser {
     bool scripting, quirks, stopped;
     bool streaming, normalized, feed_skip_lf;
     size_t offset;
-    Node *script_ready;
+    Node *script_ready, *custom_ready;
     VEC(Node *) pins;
     VEC(size_t) cr_lines; /* positions of normalized LFs originating from CR */
     /* tokenizer */
@@ -445,6 +445,9 @@ static Node *create_el(P, Tok *t, int ns, const char *name) {
         e->template_content = node_new_fragment(p->doc); e->template_content->refcount = 1; e->template_content->flags |= NF_INERT;
     }
     if (ns == NS_HTML && name == K_selectedcontent) p->saw_selectedcontent = true;
+    /* Yield only after the complete tree-builder token returns. Author code
+       must never run while tokenization holds raw input/state pointers. */
+    if (p->streaming && ns == NS_HTML && (strchr(name, '-') || node_has_attr(e, "is"))) p->custom_ready = e;
     return e;
 }
 static Node *insert_el(P, Tok *t, int ns, const char *name) {
@@ -1539,7 +1542,7 @@ static void tokenize(P, bool final, size_t limit) {
 #define READ() do { if (i >= n && !final) goto suspended; c = NEXT(); } while (0)
 #define RECONSUME() (i--)
 #define TO(st) (p->state = (st))
-    while (!p->stopped && !p->script_ready) {
+    while (!p->stopped && !p->script_ready && !p->custom_ready) {
         if (i >= n && !final) goto suspended;
         switch (p->state) {
         case S_DATA: {
@@ -2034,13 +2037,27 @@ HtmlParser *html_parser_stream_new(Document *d) {
     p->streaming = p->normalized = p->dsd = true;
     return p;
 }
+HtmlParser *html_parser_begin_document(Document *d, const char *source, size_t length, Node **first_script) {
+    HtmlParser *p = html_parser_stream_new(d);
+    if (!source) length = 0;
+    if (length >= 3 && (unsigned char)source[0] == 0xEF && (unsigned char)source[1] == 0xBB && (unsigned char)source[2] == 0xBF) {
+        source += 3; length -= 3;
+    }
+    html_parser_feed(p, source, length);
+    Node *script;
+    do { script = html_parser_run(p, true, SIZE_MAX); }
+    while (!script && p->custom_ready && !p->stopped);
+    if (first_script) *first_script = script;
+    return p;
+}
 Node *html_parser_run(HtmlParser *p, bool final, size_t limit) {
     normalize_input(p);
-    p->script_ready = NULL;
+    p->script_ready = p->custom_ready = NULL;
     tokenize(p, final, limit);
     parser_document_links(p);
     return p->script_ready;
 }
+Node *html_parser_custom_element(const HtmlParser *p) { return p->custom_ready; }
 size_t html_parser_offset(const HtmlParser *p) { return p->offset; }
 size_t html_parser_length(const HtmlParser *p) { return p->in.n; }
 bool html_parser_done(const HtmlParser *p) { return p->stopped; }

@@ -248,14 +248,25 @@ function ceUpgradeTree(root) {
     for (const el of N.ceScan(root)) if (!el.__ce) ceUpgrade(el);
 }
 
-function ceUpgrade(el) {
+let ceParserConstructionDepth = 0;
+function ceParserMarkupGuard() {
+    if (ceParserConstructionDepth) throw new DOMException('Dynamic markup insertion is unavailable inside a parser-created custom element constructor.', 'InvalidStateError');
+}
+function ceParserConnected(el) {
+    if (N.connected(el)) ceUpgrade(el, true);
+}
+function ceUpgrade(el, parserCreated = false) {
     if (el.__ce || N.type(el) !== 1 || N.ns(el) !== 0) return;
     const d = registry.byName.get(N.name(el)); if (!d) return;
     def(el, '__ce', d);
     registry.upgrading.push(el);
+    if (parserCreated) ++ceParserConstructionDepth;
     try { new d.ctor(); }
     catch (e) { report(e); Object.setPrototypeOf(el, d.ctor.prototype); }
-    finally { const i = registry.upgrading.indexOf(el); if (i >= 0) registry.upgrading.splice(i, 1); }
+    finally {
+        if (parserCreated) --ceParserConstructionDepth;
+        const i = registry.upgrading.indexOf(el); if (i >= 0) registry.upgrading.splice(i, 1);
+    }
     if (d.observed.length && typeof el.attributeChangedCallback === 'function')
         for (const a of d.observed) { const v = N.attr(el, a); if (v != null) { try { el.attributeChangedCallback(a, null, v, null); } catch (e) { report(e); } } }
     if (N.connected(el) && typeof el.connectedCallback === 'function') { try { el.connectedCallback(); } catch (e) { report(e); } }

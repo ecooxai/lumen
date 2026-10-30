@@ -256,6 +256,7 @@ void frames_inserted(JsCtx *c, Node *root);
 void frames_forget(JsCtx *c);
 void frames_parser_tick(JsCtx *c);
 void frames_parser_cancel(JsCtx *c);
+extern "C" void js_parser_custom_element(JsCtx *c, Node *element);
 void document_stream_tick(JsCtx *c);
 bool document_stream_write_point(JsCtx *c);
 void document_stream_cancel(JsCtx *c);

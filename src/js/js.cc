@@ -1624,6 +1624,14 @@ void js_document_open(JsCtx *c) {
     c->load_deferred = false; c->load_synced = false;
     js_set_ready_state(c, 0);
 }
+void js_parser_custom_element(JsCtx *c, Node *element) {
+    if (!c || c->dead || c->api.IsEmpty()) return;
+    JS_ENTER(c);
+    v8::Local<v8::Value> function, result;
+    if (!c->api.Get(iso)->Get(ctx, jstr(iso, "ceParserConnected")).ToLocal(&function) || !function->IsFunction()) return;
+    v8::Local<v8::Value> argument = jwrap(c, element);
+    (void)jcall(c, function.As<v8::Function>(), v8::Undefined(iso), 1, &argument).ToLocal(&result);
+}
 bool js_parser_script_closed(JsCtx *c, Node *script, const char *source, size_t length) {
     if (!c || c->dead) return false;
     if (c->tt_parser_script.IsEmpty()) return !c->tt_on;

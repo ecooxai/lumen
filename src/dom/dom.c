@@ -376,6 +376,22 @@ void node_free_tree(Node *n) {
     if (n->shadow_root) { n->shadow_root->host = NULL; n->shadow_root->refcount = 0; node_free_tree(n->shadow_root); }
     node_free_one(n);
 }
+/* Capture only actual direct head-child metadata from an unexposed native parse.
+   The live prefix DOM and its script/stylesheet owners are always separate. */
+void doc_capture_parser_meta(Document *target, const Document *parsed) {
+    for (int i = 0; i < target->nparser_meta * 2; i++) free(target->parser_meta[i]);
+    free(target->parser_meta); target->parser_meta = NULL; target->nparser_meta = 0;
+    target->parser_meta_captured = true;
+    for (Node *n = parsed && parsed->head ? parsed->head->first : NULL; n; n = n->next) {
+        if (n->type != NODE_ELEMENT || n->tag != A_meta) continue;
+        const char *equiv = node_attr(n, "http-equiv"), *content = node_attr(n, "content");
+        size_t index = (size_t)target->nparser_meta * 2;
+        target->parser_meta = xrealloc(target->parser_meta, (index + 2) * sizeof *target->parser_meta);
+        target->parser_meta[index] = equiv ? xstrdup(equiv) : NULL;
+        target->parser_meta[index + 1] = content ? xstrdup(content) : NULL;
+        target->nparser_meta++;
+    }
+}
 void doc_free(Document *d) {
     for (int i = 0; i < d->ndimg; i++) node_release(d->dimg[i]);
     free(d->dimg); d->dimg = NULL; d->ndimg = d->cdimg = 0;
@@ -385,6 +401,8 @@ void doc_free(Document *d) {
     hm_free(&d->id_cache, NULL); hm_free(&d->id_dups, NULL);
     Node *c = d->node.first;
     while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
+    for (int i = 0; i < d->nparser_meta * 2; i++) free(d->parser_meta[i]);
+    free(d->parser_meta);
     free(d->url); free(d->base_url); free(d->title); free(d->content_type); free(d->csp); free(d->csp_ro); free(d->referrer_policy); free(d);
 }
 
