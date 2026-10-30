@@ -1,13 +1,13 @@
 {
   "title": "Lumen Linux \u00b7 parser options and script lifecycle",
-  "phase": "building",
+  "phase": "Building candidate209 after the fixed640 regression audit",
   "iteration": 7,
   "score": 100,
   "iteration_quality": 100,
-  "score_note": "Candidate207 retains the declared parser-options part:1961/1961 assertions,18/18 whole files. Ordinary script cohort62/64,33/35 whole; document-streaming18/73,16/72. These are separate fixed scopes; overall98/fullWPT remains unverified.",
+  "score_note": "100/100 applies only to the completed18-file parser-options part; broader640 candidate208 result61.09375/100, whole-browser98 goal unmet.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
-  "checkpoint": "2491c6ef792a713deeb7ccbdeb3df367120ad7f6",
-  "updated_utc": "2026-10-30T08:00:51.573336+00:00",
+  "checkpoint": "909f27b0d18dea80dd360fef7ee772a89817b326",
+  "updated_utc": "2026-10-30T08:54:06.092509+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
@@ -44,14 +44,14 @@
       "FullWPT andwhole-browser98/100 are not certified. Reviewed205source is published on its separate publicbranch; downloadable Pages archive update is under review."
     ]
   ],
-  "coverage": "Frozen selected 640 HTTP/window cases; URL conformance deferred. Chromium: 544/640 full cases and 9,516/10,549 assertions. This is not the complete WPT suite.",
+  "coverage": "Focused208: ordinary scripts35/35whole and64/64 assertions; document streaming71/72whole and72/73; parser options18/18 and1961/1961; native140/140. Custom-element parser4/13whole and24/50. These gains do not replace the pending640 result; known broad regressions are being fixed.",
   "findings": [
     "Current changes are not yet validated. Trusted Types parser-option enforcement is the bounded first target.",
     "The requested 98/100 whole-browser goal is not established by the selected sample or a focused result.",
     "URL conformance remains deferred. All failure denominators and reference differences remain visible.",
     "Surge currently has no authenticated session; existing HTTPS progress and reviewed GitHub Pages publication remain available."
   ],
-  "active_iteration": 207,
+  "active_iteration": 209,
   "accepted_binary_sha256": "6d6f52aefc972765306567062b78a5413f68acc5050fed336b30d1998aeb7bf8",
   "accepted_binary_scope": "Candidate202,18wholeparser-optionfiles and1961assertions. Neighbor/security/broadcomparison remains separate.",
   "agent_session": "active",
@@ -152,7 +152,7 @@
   },
   "source_archive_iteration": 200,
   "source_archive_commit": "3b9a6a5fff8b925067a560367cccc00fb8098d67",
-  "source_archive_note": "The public source archive is the earlier reviewed candidate200 checkpoint; it does not yet contain candidates201\u2013204. Current source is preserved on the active Git branch while validation continues.",
+  "source_archive_note": "Public source/archive remain reviewed candidate205; candidate208 export held because broad regression findings are unresolved.",
   "fresh_chromium4200": {
     "completed_utc": "2026-10-28T17:36:29Z",
     "fully_passing_variants": 3534,
@@ -418,9 +418,9 @@
     "state": "build sealed; independent runtime acceptance pending"
   },
   "public_report_url": "https://ecooxai.github.io/lumen/",
-  "session_iteration": 7,
+  "session_iteration": 9,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 205,
+  "accepted_iteration": 207,
   "accepted_focused_results": {
     "native": "140/140",
     "network": "317/317",
@@ -1224,7 +1224,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-30T08:15:17.105272+00:00",
+  "updated_at": "2026-10-30T08:38:59.975099+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1346,8 +1346,8 @@
     "private_site": "https://lumen-linux-gpt6astra-agents-rubywebterm.my-team-8435.chatgpt.site",
     "scope": "692 exact source files plus five metadata files; clean public-history bundle is separately downloadable; no private working history."
   },
-  "overall_result_label": "98/100 whole-browser goal unmet",
-  "selected_case_score": 59.375,
+  "overall_result_label": "Fixed non-URL640: Lumen208391/640; Chromium156560/640. Three prior assertion losses and one timeout must be fixed.",
+  "selected_case_score": 61.09375,
   "source_archive_tested_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
   "final_release": {
     "source_branch": "gpt-6-astra-release-ops-linux-nonurl-source-20261029",
@@ -1373,27 +1373,27 @@
   },
   "session7_current": {
     "started_utc": "2026-10-30T06:26:11Z",
-    "iteration": 5,
-    "candidate": 205,
-    "phase": "build",
+    "iteration": 9,
+    "candidate": 209,
+    "phase": "source development with immutable208 broad validation",
     "baseline_candidate": 200,
     "current_source_commit": null,
-    "current_source_has_uncommitted204_changes": false,
-    "built_candidate": 203,
-    "built_source_commit": "fc436e145892665b8c9051a67528f28925f24ff6",
-    "built_binary_sha256": "8765ba505bbb14356caf830e9ec9c801a56c41b8aaf16de3420c3a8db0cf0a79",
-    "focused_accepted_candidate": 202,
-    "focused_source_commit": "caab079d33368e569c828fde86f6408ebf5e2a90",
-    "focused_binary_sha256": "6d6f52aefc972765306567062b78a5413f68acc5050fed336b30d1998aeb7bf8",
+    "built_candidate": 208,
+    "built_source_commit": "fd993c8976cb97002467fc15a7964749d38bafbc",
+    "built_binary_sha256": "384019839a7edea9dbd0d72b7c2dad470377ebde9c6a195a7609bd6083147f5a",
+    "focused_accepted_candidate": 207,
+    "focused_source_commit": "909f27b0d18dea80dd360fef7ee772a89817b326",
+    "focused_binary_sha256": "b8d05213cfdb3f6698c8ec197b5cb630e9648d62ac6a664b8a1eef0f794a87dc",
     "focused_pass": 1961,
     "focused_total": 1961,
     "focused_whole_pass": 18,
     "focused_whole_total": 18,
-    "overall_goal_met": false
+    "overall_goal_met": false,
+    "current_source_has_uncommitted_changes": true
   },
-  "score_scope": "Verified candidate202 parser-options part100/100 (1961 assertions,18 files);203/204 further validation pending. Broad640 baseline59.375/100 whole files.",
-  "current_work": "Build205 corrects204 compilation linkage; ordinary script-conformance manifests and expected results remain frozen.",
-  "session7_active_candidate": 208,
+  "score_scope": "100/100 applies only to the retained18-file parser-options part (1961/1961). Candidate207 ordinary35:62/64 assertions,33/35whole; document-streaming72:18/73,16/72whole. Overall98/fullWPT remains unverified.",
+  "current_work": "Immutable208 and currentChrome156 are replaying the unchanged640 non-URL cases. Three prior-pass assertion losses and one completion regression block broad208 acceptance.209 is correcting parser insertion rules and measured custom-element construction gaps.",
+  "session7_active_candidate": 209,
   "session7_candidate207": {
     "source_commit": "909f27b0d18dea80dd360fef7ee772a89817b326",
     "binary_sha256": "b8d05213cfdb3f6698c8ec197b5cb630e9648d62ac6a664b8a1eef0f794a87dc",
@@ -1430,5 +1430,41 @@
       112
     ],
     "overall_goal_certified": false
+  },
+  "session7_accepted_candidate": 207,
+  "session7_public_checkpoint": 205,
+  "session7_public_url": "https://ecooxai.github.io/lumen/",
+  "session7_public_archive_sha256": "56dd33ca4808da1dcc1f6b8ba0f377b8d855a660ef4dd0e704da2fdf6e3bacaf",
+  "session7_testing_candidate": 208,
+  "session7_broad208_blockers": {
+    "prior200_pass_assertions_lost_so_far": 3,
+    "previously_reported_failing_assertions_missing_so_far": 1,
+    "complete_result_pending": true
+  },
+  "testing_iteration": 208,
+  "fixed640_baseline200": {
+    "fully_passing_files": 380,
+    "files": 640,
+    "passing_assertions": 8324,
+    "reported_assertions": 10540
+  },
+  "fixed640_candidate208": {
+    "fully_passing_files": 391,
+    "files": 640,
+    "passing_assertions": 8707,
+    "reported_assertions": 10539,
+    "harness_OK": 623,
+    "harness_TIMEOUT": 16,
+    "harness_ERROR": 1
+  },
+  "fixed640_chromium156": {
+    "version": "156.0.8078.80",
+    "fully_passing_files": 560,
+    "files": 640,
+    "passing_assertions": 9551,
+    "reported_assertions": 10552,
+    "harness_OK": 626,
+    "harness_TIMEOUT": 13,
+    "harness_ERROR": 1
   }
 }

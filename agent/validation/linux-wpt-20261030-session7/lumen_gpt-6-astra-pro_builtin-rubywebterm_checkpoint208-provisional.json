@@ -1,0 +1,94 @@
+{
+  "schema": "lumen-public-checkpoint-v1",
+  "candidate": 208,
+  "saved_utc": "2026-10-30T08:49:11.224906+00:00",
+  "model": "GPT-6 Astra Pro",
+  "agents": "built-in collaboration agents",
+  "execution_tool": "RubyWebterm",
+  "source_commit": "fd993c8976cb97002467fc15a7964749d38bafbc",
+  "binary_sha256": "384019839a7edea9dbd0d72b7c2dad470377ebde9c6a195a7609bd6083147f5a",
+  "source_manifest_sha256": "364a7630ebfb2979676df5c7fb79990594a3513a663d2f1727a708ce5d580ec5",
+  "status": "focused milestone; broad acceptance blocked and full640 result pending",
+  "native_non_url": {
+    "passed": 140,
+    "total": 140,
+    "actual_exit": 0
+  },
+  "upstream_scopes": {
+    "parser_options": {
+      "whole_pass": 18,
+      "whole_total": 18,
+      "assertions_pass": 1961,
+      "assertions_total": 1961
+    },
+    "ordinary_scripts": {
+      "whole_pass": 35,
+      "whole_total": 35,
+      "assertions_pass": 64,
+      "assertions_total": 64,
+      "chrome156_assertions_pass": 64
+    },
+    "document_streaming": {
+      "whole_pass": 71,
+      "whole_total": 72,
+      "assertions_pass": 72,
+      "assertions_total": 73,
+      "chrome156_assertions_pass": 73,
+      "candidate207_assertions_pass": 18
+    },
+    "custom_element_parser": {
+      "whole_pass": 4,
+      "whole_total": 13,
+      "assertions_pass": 24,
+      "assertions_total": 50,
+      "chrome156_assertions_pass": 50,
+      "candidate207_assertions_pass": 19
+    }
+  },
+  "authored_controls_separate_from_wpt": {
+    "lifecycle": [
+      111,
+      112
+    ],
+    "opened_stream": [
+      22,
+      22
+    ],
+    "cr_boundaries_v2": [
+      5,
+      5
+    ],
+    "delayed_close": [
+      21,
+      21
+    ],
+    "minimal_parser_progress": [
+      12,
+      12
+    ]
+  },
+  "broad_regressions_observed_so_far": [
+    {
+      "file": "/html/syntax/parsing/insert-into-nonempty-document.html",
+      "candidate200_passed_assertions": 3,
+      "candidate208_passed_assertions": 1,
+      "total_assertions": 4,
+      "prior_passes_lost": 3,
+      "note": "The empty-document assertion is a gain; the three old passing insertion checks fail."
+    },
+    {
+      "file": "custom-element-reparenting-shadow-cycle.html",
+      "candidate200": "harnessOK with1failing assertion",
+      "candidate208": "external15s timeout with0reported assertions",
+      "actual_native_exit": -9,
+      "note": "Completion regression; not relabeled as a normal exit."
+    }
+  ],
+  "broad_whole_file_comparison_pending": true,
+  "overall_goal_certified": false,
+  "full_wpt_run": false,
+  "url_conformance_deferred": true,
+  "next_candidate": 209,
+  "next_work": "Correct document insertion rules and stage custom-element construction before actual tree insertion; preserve private creation state through clone/adopt/serialization.",
+  "publication": "No source208 publication has been performed; the public checkpoint remains205."
+}

@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "candidate": 208,
+  "status": "focused gains verified; broad acceptance blocked pending candidate209 regression fixes",
+  "recorded_utc": "2026-10-30T08:54:06.092509+00:00",
+  "source_commit": "fd993c8976cb97002467fc15a7964749d38bafbc",
+  "binary_sha256": "384019839a7edea9dbd0d72b7c2dad470377ebde9c6a195a7609bd6083147f5a",
+  "source_manifest_sha256": "364a7630ebfb2979676df5c7fb79990594a3513a663d2f1727a708ce5d580ec5",
+  "scope": "unchanged fixed 640-file non-URL WPT sample; not full WPT",
+  "baseline200": {
+    "fully_passing_files": 380,
+    "files": 640,
+    "passing_assertions": 8324,
+    "reported_assertions": 10540
+  },
+  "candidate208": {
+    "fully_passing_files": 391,
+    "files": 640,
+    "passing_assertions": 8707,
+    "reported_assertions": 10539,
+    "harness_OK": 623,
+    "harness_TIMEOUT": 16,
+    "harness_ERROR": 1
+  },
+  "chromium156": {
+    "version": "156.0.8078.80",
+    "fully_passing_files": 560,
+    "files": 640,
+    "passing_assertions": 9551,
+    "reported_assertions": 10552,
+    "harness_OK": 626,
+    "harness_TIMEOUT": 13,
+    "harness_ERROR": 1
+  },
+  "known_regressions": {
+    "prior_passing_assertions_lost": 3,
+    "insertion_file": "/html/syntax/parsing/insert-into-nonempty-document.html",
+    "lost_previously_reported_failing_identity": 1,
+    "completion_file": "custom-element-reparenting-shadow-cycle.html",
+    "completion_actual_exit": -9
+  },
+  "native_cleanup": {
+    "controller_actual_exit": 0,
+    "monitor_actual_exit": 0,
+    "launches": 640,
+    "launch_exit_zero": 639,
+    "launch_exit_minus9": 1,
+    "remaining_recorded_pids": 0,
+    "remaining_profiles": 0,
+    "pins_unchanged": true,
+    "independent_receipt_sha256": "9379ba989408c2d2e6e337273f3de471794817bcde6fbeba933ae57357d18916"
+  },
+  "reference_cleanup_receipt_sha256": "2acf450a96efc44eccfc580449d83a1c2753ca636b8676e8d89ae8f1e04b4c06",
+  "qualification": [
+    "Different reported assertion denominators are retained; exact identity comparison is required.",
+    "The public checkpoint remains candidate205.",
+    "No full-WPT or whole-browser98/100 certification.",
+    "No URL conformance work was added."
+  ]
+}

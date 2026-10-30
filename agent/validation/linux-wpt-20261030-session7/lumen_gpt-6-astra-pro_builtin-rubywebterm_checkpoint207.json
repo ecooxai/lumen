@@ -1,0 +1,104 @@
+{
+  "schema": "lumen-public-checkpoint-v1",
+  "model": "GPT-6 Astra Pro",
+  "agents": "built-in collaboration agents",
+  "execution_tool": "RubyWebterm",
+  "candidate": 207,
+  "saved_utc": "2026-10-30T08:18:54.097609+00:00",
+  "source_commit": "909f27b0d18dea80dd360fef7ee772a89817b326",
+  "binary_sha256": "b8d05213cfdb3f6698c8ec197b5cb630e9648d62ac6a664b8a1eef0f794a87dc",
+  "build_input_manifest_sha256": "70741d5b10212eb5c6ad8f36ae36e7c4db433b4c1766e217fea16193788b4a9f",
+  "reference_browser": "Chrome for Testing 156.0.8078.80",
+  "upstream_wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "scope_scores_are_separate": true,
+  "overall_goal_certified": false,
+  "full_wpt_run": false,
+  "url_conformance_deferred": true,
+  "changes": [
+    "Preserve real DOM element and text-node identity across document.open/write/close input streams.",
+    "Resume blocked external scripts and nested writes without blocking the event loop.",
+    "Retain parser insertion points through close-pending scripts and normalize cross-write CR/LF boundaries.",
+    "Preserve ordering of document-written deferred scripts and reset replaced-document handlers."
+  ],
+  "verified_results": {
+    "native_non_url": {
+      "passed": 140,
+      "total": 140,
+      "actual_exit": 0
+    },
+    "parser_options_upstream": {
+      "assertions_pass": 1961,
+      "assertions_total": 1961,
+      "whole_files_pass": 18,
+      "whole_files_total": 18,
+      "baseline200_assertions_pass": 1008,
+      "baseline200_whole_files_pass": 3
+    },
+    "ordinary_script_upstream": {
+      "assertions_pass": 62,
+      "assertions_total": 64,
+      "whole_files_pass": 33,
+      "whole_files_total": 35,
+      "chrome156_assertions_pass": 64,
+      "chrome156_whole_files_pass": 35,
+      "baseline203_assertions_pass": 30,
+      "baseline203_reported_assertions": 59,
+      "reference_assertions_missing_from_baseline203": 5,
+      "prior205_passes_lost": 0
+    },
+    "document_streaming_upstream": {
+      "assertions_pass": 18,
+      "assertions_total": 73,
+      "whole_files_pass": 16,
+      "whole_files_total": 72,
+      "chrome156_assertions_pass": 73,
+      "chrome156_whole_files_pass": 72,
+      "baseline205_assertions_pass": 17,
+      "prior205_passes_lost": 0
+    },
+    "authored_lifecycle_fields": {
+      "passed": 109,
+      "total": 112,
+      "chrome156_passed": 109,
+      "prior205_losses_recovered": 2
+    },
+    "opened_stream_fields": {
+      "passed": 22,
+      "total": 22,
+      "baseline205_passed": 9,
+      "chrome156_passed": 22
+    },
+    "cr_boundary_v2_fields": {
+      "passed": 5,
+      "total": 5,
+      "baseline205_passed": 3,
+      "chrome156_passed": 5
+    },
+    "delayed_close_fields": {
+      "passed": 21,
+      "total": 21,
+      "baseline205_passed": 13,
+      "chrome156_passed": 21
+    }
+  },
+  "remaining_limitations": [
+    "Initial document DOM still eagerly parsed in this candidate; subsequent candidate208 is under validation and is not included in these results.",
+    "Two ordinary insertion-point upstream assertions still differ by a trailing newline.",
+    "The broader72-file document-writing scope remains mostly failing and is not represented by the completed18-file part.",
+    "Historical640-file non-URL sample is still candidate200:380/640 whole files; these focused results do not update that broader rate."
+  ],
+  "timing_utc": {
+    "build_start": "2026-10-30T07:58:10.742853+00:00",
+    "build_end": "2026-10-30T07:58:56.835828+00:00",
+    "principal_qa_end": "2026-10-30T08:06:27.734967+00:00"
+  },
+  "resources": {
+    "monitor_interval_s": 1,
+    "build_elapsed_s": 46.093,
+    "build_cpu_median_percent": 121.51,
+    "build_cpu_peak_percent": 197,
+    "build_rss_peak_mb": 691.552,
+    "build_pss_peak_mb": 445.251
+  },
+  "publication_qualification": "Verified build artifact and declared tests only; a public source export must retain its own source mapping and export-rebuild qualification."
+}
