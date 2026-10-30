@@ -1,78 +1,62 @@
 {
   "schema": 1,
-  "candidate": 200,
-  "source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
-  "already_public_parent": "73fdea3e4e7fe09dd87d1b849f85c634f320f7c5",
-  "previous_reviewed_export_commit": "cfccb61082563409be18d0c8e9b981d2c68119e7",
-  "proposed_public_branch": "gpt-6-astra-release-ops-linux-nonurl-source-20261029",
-  "scope": "Reviewed Linux source checkpoint; no whole-browser conformance or portable binary claim",
-  "source_file_count": 710,
+  "candidate": 205,
+  "source_commit": "2491c6ef792a713deeb7ccbdeb3df367120ad7f6",
+  "already_public_parent": "3b9a6a5fff8b925067a560367cccc00fb8098d67",
+  "previous_reviewed_export_commit": "3b9a6a5fff8b925067a560367cccc00fb8098d67",
+  "proposed_public_branch": "gpt-6-astra-pro-builtin-integration-source205-20261030",
+  "scope": "Reviewed source-only Linux progress checkpoint; no whole-browser conformance or portable binary claim",
+  "source_file_count": 711,
   "all_recorded_inputs_included_and_exact": true,
-  "original_binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
+  "original_binary_sha256": "14f2db0e87e1107388c4d3a6c8acd6c10a8d0c3c1b849ba0ca42c94624debad4",
   "export_rebuild_performed": false,
-  "whole_browser_assessment": "Goal not achieved; whole-browser parity is not certified. Final selected non-URL sample: 380/640 complete cases (59.375/100 within this scope), versus Chromium 544/640 (85/100).",
+  "whole_browser_assessment": "98/100 not certified; historical640 non-URL sample remains200380/640 whole files;205 has not replayed that sample",
   "additive_metadata": [
-    "EXPORT-QUALIFICATION.json",
     "SOURCE-MANIFEST.json",
-    "docs/Linux-candidate200.md",
-    "docs/build-dependencies200.json",
-    "docs/performance195-summary.json",
-    "docs/performance200-summary.json",
-    "docs/style-phases-diagnostic-v2.html",
-    "docs/validation/SHA256SUMS",
-    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029.json",
-    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029.md",
-    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_changes.json",
-    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_performance.json",
-    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_wpt640_manifest.json",
-    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_wpt640_results.json",
-    "docs/wpt640-manifest.json"
+    "EXPORT-QUALIFICATION.json",
+    "docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint205.json",
+    "README checkpoint qualification"
   ],
   "excluded": [
+    "private working Git ancestry",
     "agent/",
     "agents/",
     "AGENTS.md",
     "devsummary.md",
-    "historical docs/",
+    "private historical docs/",
     "tools/promo/",
     "private validation outputs",
     "guard/auth implementations",
-    "profiles/inbox/capabilities",
+    "profiles/inbox/capabilities/credentials",
     "build artifacts and dependency caches"
   ],
-  "recorded_source_set_manifest_sha256": "3ba963997f731e4c447737f0ecccf566961be6ccf11951382419c164c3b76ecd",
+  "recorded_source_set_manifest_sha256": "4c676376ac04acf4835fd99ac8630d23c477d77e1fb6fd6a7c0efdc01dc355f6",
   "recorded_source_set_entries": 642,
-  "source_set_count_erratum": "Recorded source-set counts, including tracked fixtures: 176=617; 182/183=618; 184=622; 185/186=624; 187/188=627; 194=635; 195=636; 196=638; 200=642. Earlier prose using 618 for candidate 186 was stale; original receipts and immutable checkpoints remain preserved.",
-  "failed_candidate_preserved": "Candidate 193 failed one native zstd test and was repaired separately in 194. Candidate 197 introduced 16 authored geometry regressions and was withheld; candidate 198 restored them. Both failed provisional results remain recorded in the private working history and release report.",
-  "performance_scope": "Final 21 balanced measured trials on immutable 176, 200 and Chromium all passed 9,395 checks per trial. Before/after native timing ranges overlap, with mixed pair directions: no stable broad speedup claim. The separate 195 setter-specific improvement and subsequent attribute slowdown remain qualified.",
-  "final_broad_comparison": {
-    "cases": 640,
-    "baseline176_complete": 357,
-    "final200_complete": 380,
-    "chromium_complete": 544,
-    "baseline176_reported_assertions_pass": 8073,
-    "final200_reported_assertions_pass": 8324,
-    "lumen_reported_assertions_total": 10540,
-    "chromium_reported_assertions_pass": 9516,
-    "chromium_reported_assertions_total": 10549,
-    "full_case_gain_vs176": 23,
-    "semantic_pass_gain_vs176": 251,
-    "lost_assertion_identities": 0,
-    "all_native200_exits_zero": 640,
-    "all_native200_profiles_removed": 640,
-    "scope": "Same fixed public relative non-URL HTTP-document variants. URL conformance deferred; not all WPT."
+  "validation": {
+    "parser_options": {
+      "files_pass": 18,
+      "files_total": 18,
+      "assertions_pass": 1961,
+      "assertions_total": 1961
+    },
+    "ordinary_lifecycle": {
+      "files_pass": 32,
+      "files_total": 35,
+      "assertions_pass": 61,
+      "assertions_total": 64,
+      "prior_wpt_pass_losses": 0
+    },
+    "native_non_url": {
+      "pass": 140,
+      "total": 140
+    },
+    "authored_prior_pass_losses": 2
   },
-  "final_public_evidence": {
-    "status": "FINAL COMPLETE",
-    "directory": "docs/validation",
-    "files": {
-      "SHA256SUMS": "1af621b7a0a935429a8c267327b4fb7ae74c9583f67e3c5f885facf674cffa20",
-      "gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029.json": "22b5b1a468906169d103d135aa44280b9bb2bab1aa403d79a26bdd975baaaf47",
-      "gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029.md": "76fdd30c3fcbca202f504c387a12bf151fbb0612c03232f6c289417fbcde531f",
-      "gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_changes.json": "03947c8f77161efc45e7f340d4435bcb6d86981eb386c4b5efa6c13d2cd767d3",
-      "gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_performance.json": "11f40969099be21d2badbae4d1e95dddbc0fe3e4e161929a1706358b69d25898",
-      "gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_wpt640_manifest.json": "c7a3d26a0b69a013f012905edc1054d8ce04fcf4581d452db765bafe2679c1e1",
-      "gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_wpt640_results.json": "42cb9682263f9ac73b090cb0f5253d4e161743f221cbcf16bfa7d586b66e75a2"
-    }
-  }
+  "current_limits": [
+    "Two authored immediate-document-write checks regressed and are being fixed in candidate206.",
+    "Initial HTML is still parsed eagerly; future DOM visibility and some document-written token continuation remain incorrect.",
+    "The 640-file non-URL comparison has not been replayed on candidate205; its last measured Lumen200 whole-file result is380/640.",
+    "Scores apply only to declared cohorts. Full WPT and98/100 whole-browser conformance are not certified.",
+    "No additional security-probe acceptance is claimed. URL conformance remains deferred."
+  ]
 }

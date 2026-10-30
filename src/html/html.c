@@ -431,6 +431,7 @@ static Node *create_el(P, Tok *t, int ns, const char *name) {
         node_set_attr_at(e, -1, an, t->attrs[i].value, ans, apfx);
     }
     e->flags |= NF_PARSER_INSERTED;
+    if (ns == NS_HTML && name == A_script) e->flags |= NF_SCRIPT_NO_FORCE_ASYNC;
     if (p->san) { e->flags |= NF_SAN_MADE; vec_push(p->made, e); }
     if (ns == NS_HTML && name == A_template) {
         e->template_content = node_new_fragment(p->doc); e->template_content->refcount = 1; e->template_content->flags |= NF_INERT;

@@ -961,10 +961,10 @@ methods(Element.prototype, {
     },
     /* in an XML document the fragment serialization is XML's */
     get innerHTML() { return xmlDocOf(this) ? [...this.childNodes].map(c => xmlSer(c, null, Object.assign(Object.create(null), { xml: XML_NS }))).join('') : N.html(this, false); },
-    set innerHTML(v) { setInner(this, ttString(TrustedHTML, v == null ? '' : v, 'Element innerHTML')); },
+    set innerHTML(v) { const a = ttCompliantHTML(v == null ? '' : v, htmlSinkOptions(false), 'Element innerHTML', xmlDocOf(this)); setInner(this, a.html, a.options); },
     get outerHTML() { return xmlDocOf(this) ? xmlSer(this, null, Object.assign(Object.create(null), { xml: XML_NS })) : N.html(this, true); },
-    set outerHTML(v) { v = ttString(TrustedHTML, v == null ? '' : v, 'Element outerHTML'); const p = N.parent(this); if (!p) return; insertNode(p, N.parseFrag(p, v), this); removeNode(this); },
-    insertAdjacentHTML(pos, html) { html = ttString(TrustedHTML, html, 'Element insertAdjacentHTML'); const ctx = /^(beforebegin|afterend)$/i.test(pos) ? N.parent(this) : this; if (ctx) this.insertAdjacentElement(pos, N.parseFrag(ctx, String(html))); },
+    set outerHTML(v) { const a = ttCompliantHTML(v == null ? '' : v, htmlSinkOptions(false), 'Element outerHTML', xmlDocOf(this)); const p = N.parent(this); if (!p) return; insertNode(p, legacyHTMLFragment(p, a.html, a.options, 'Element outerHTML'), this); removeNode(this); },
+    insertAdjacentHTML(pos, html) { const a = ttCompliantHTML(html, htmlSinkOptions(false), 'Element insertAdjacentHTML', xmlDocOf(this)); const ctx = /^(beforebegin|afterend)$/i.test(pos) ? N.parent(this) : this; if (ctx) this.insertAdjacentElement(pos, legacyHTMLFragment(ctx, a.html, a.options, 'Element insertAdjacentHTML')); },
     insertAdjacentElement(pos, el) {
         switch (String(pos).toLowerCase()) {
         case 'beforebegin': { const p = N.parent(this); if (p) insertNode(p, el, this); break; }
@@ -1041,7 +1041,22 @@ methods(Element.prototype, {
     getAnimations(o) { const sub = !!(o && o.subtree); return waGetAnims(t => t === this || (sub && this.contains(t))); },
     checkVisibility() { return !!N.rect(this); },
 });
-function setInner(el, html) {
+/* Legacy HTML sinks use the same vetted parser options, but never enable declarative shadow roots. */
+function legacyHTMLFragment(context, html, o, m) {
+    const cfg = sanFromOptions(o, false, m);
+    if (!cfg && !o.runScripts) return N.parseFrag(context, html);
+    const cx = N.type(context) === 1 ? context : N.host(context) || ttRead(tplOwner, context) || null;
+    const fragment = N.parseFragEx(cx, html, cfg, false, !!o.runScripts);
+    if (fragment && o.runScripts && ttReq) ttSlotsFrom(fragment);
+    return fragment;
+}
+function setInner(el, html, o) {
+    if (o && (o.sanitizer !== undefined || o.runScripts)) {
+        const fragment = legacyHTMLFragment(el, html, o, 'set innerHTML');
+        ParentNode.replaceChildren.call(htmlTarget(el), fragment);
+        if (el.__ass) readopt(el);
+        return;
+    }
     const removed = kids(el);
     if (liveRanges.size || liveIters.size) for (let i = removed.length - 1; i >= 0; i--) rangePreRemove(removed[i]);
     for (const r of removed) ceConnected(r, false);

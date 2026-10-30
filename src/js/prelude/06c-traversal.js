@@ -385,10 +385,12 @@ class Range extends AbstractRange {
     cloneRange() { const r = new Range(); r._sc = this._sc; r._so = this._so; r._ec = this._ec; r._eo = this._eo; return r; }
     detach() {}
     createContextualFragment(html) {
-        html = ttString(TrustedHTML, html, 'Range createContextualFragment');
+        const doc = N.type(this._sc) === 9 ? this._sc : N.ownerDoc(this._sc);
+        const xml = !!doc && (N.ctype(doc) || (N.ns(doc) === 3 ? 'application/xml' : 'text/html')) !== 'text/html';
+        const a = ttCompliantHTML(html, htmlSinkOptions(true), 'Range createContextualFragment', xml);
         let el = this._sc; if (N.type(el) !== 1) el = N.parent(el);
         if (!el || N.type(el) !== 1 || N.name(el) === 'html') el = document.body;
-        return N.parseFrag(el, html);
+        return xml ? N.parseFrag(el, a.html) : legacyHTMLFragment(el, a.html, a.options, 'Range createContextualFragment');
     }
     /* CSSOM View: the border boxes of the elements the range contains (not those inside one of them) and the
        selected part of each Text node's boxes, a zero-width caret box where the range is collapsed in one */

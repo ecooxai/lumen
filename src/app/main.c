@@ -101,11 +101,18 @@ static float g_side_w = SIDEW, g_side_drag_x; static bool g_side_drag, g_dm_logo
 #define WSY0 (SIDEY + 8)
 #define WSRH 40.f
 
-typedef struct { Node *n; char *src; size_t len; char *name; bool module; char *ctype; } PScript;
+typedef struct {
+    Node *n; char *src; size_t len; char *name; bool module; char *ctype;
+    NetRequest *request; /* main-thread callback owner; cleared before teardown */
+    bool ready, external, entered, deferred, done, module_fetched;
+} PScript;
 typedef struct { Node *n; uint64_t h; size_t len; } SheetRef;   /* len: <style> text length, 0 for links */
 typedef struct Page {
     char *url; Document *d; StyleEngine *e; Layout *L; uint64_t gen; double load_ms;
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver, seen_sheet_ver, seen_paint_ver, seen_res; bool res_seen;
+    bool script_pipeline, script_pumping, scripts_complete; int script_pass, script_index;
+    uint64_t script_generation;
+    double script_started; Node **script_links; bool *script_link_ok; int nscript_links;
     bool sheets_pending; /* a fetched stylesheet was added: next restyle recomputes everything once */
     uint64_t link_generation; /* main-thread owner identity for native link completions */
     SheetRef *sref; int nsref;
@@ -392,7 +399,9 @@ typedef struct { char *url; uint64_t gen; float vw, vh, dpr; char *body; size_t 
 #endif
 static double g_load_trace_until;   /* main-loop stalls are logged until then */
 
-/* Downloads a page's blocking subresources concurrently, like a browser's preload scanner. */
+/* Downloads parser-blocking styles and module graphs before context creation.
+   Classic scripts use the bounded main-thread continuation below, so an async
+   completion can execute while a later blocking classic is still downloading. */
 static NetRequest *sheet_request(const Document *doc, const Node *link, const char *url) {
     NetRequest *rq = net_request_new("GET", url);
     /* The initiator is the document URL, never the attacker-controlled <base>.
@@ -471,15 +480,15 @@ static int loader(void *arg) {
     else html_parse(p->d, body, blen);
     free(decoded);
     double t_parse = now_ms();
-    /* Classic scripts and stylesheets in document order, fetched together; module scripts
-     * and modulepreloads with their whole static import graphs alongside. */
-    char **urls = NULL, **mods = NULL; Node **url_nodes = NULL; NetResponse **got = NULL; int nurl = 0, ui = 0, nmod = 0;
+    /* Stylesheets and module graphs keep the existing preload path. Classic
+     * fetches start after context creation and never join this blocking batch. */
+    char **urls = NULL, **mods = NULL; Node **url_nodes = NULL; NetResponse **got = NULL; int nurl = 0, nmod = 0;
     bool js = !getenv("LUMEN_NO_JS");
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT) continue;
         const char *rel = n->tag == A_link ? node_attr(n, "rel") : NULL, *href = NULL;
         bool module = false;
-        if (jsg_is_script(n) && js && (module = jsg_module_script(n), module || jsg_classic_script(n))) href = jsg_script_src(n);
+        if (jsg_is_script(n) && js && (module = jsg_module_script(n))) { href = jsg_script_src(n); if (href && !*href) href = NULL; }
         else if (rel && strstr(rel, "modulepreload")) { href = js ? node_attr(n, "href") : NULL; module = true; }
         else if (rel && strstr(rel, "stylesheet")) href = node_attr(n, "href");
         char *u = href ? url_join(doc_base(p->d), href) : NULL;
@@ -501,23 +510,16 @@ static int loader(void *arg) {
         if (!gen_live(rq->gen)) break;
         if (!jsg_is_script(n)) continue;
         bool mod = jsg_module_script(n);
-        if (!mod && !jsg_classic_script(n)) continue;
-        PScript sc = { n, NULL, 0, NULL, mod, NULL };
-        const char *src = jsg_script_src(n);
+        PScript sc = { .n = n, .module = mod };
+        const char *src = jsg_script_src(n); sc.external = src != NULL;
         if (src) {
-            sc.name = url_join(doc_base(p->d), src);
-            if (!sc.name) continue;
-            if (mod) {   /* prefetched above; js_run_module compiles it and its imports */
-                sc.src = js_module_take(sc.name, p->url, &sc.len, &sc.ctype);
-                p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;
-                continue;
-            }
-            NetResponse *sr = NULL;
-            for (int i = ui; i < nurl; i++) if (got[i] && urls[i] && !strcmp(urls[i], sc.name)) { sr = got[i]; got[i] = NULL; ui = i + 1; break; }
-            if (!sr) sr = net_fetch_sync(net_request_new("GET", sc.name));
-            if (sr && sr->status >= 200 && sr->status < 300) { sc.src = sr->body; sc.len = sr->body_len; sr->body = NULL; }
-            if (sr) net_response_free(sr);
-        } else { sc.src = node_text_content(n); sc.len = strlen(sc.src); sc.name = xstrdup(p->url); }
+            sc.name = *src ? url_join(doc_base(p->d), src) : NULL;
+            if (mod) {   /* preserve the prefetched module response, including failure */
+                if (sc.name) sc.src = js_module_take(sc.name, p->url, &sc.len, &sc.ctype);
+                sc.ready = sc.module_fetched = true;
+            } else if (!sc.name) sc.ready = true;
+        } else { sc.src = jsg_script_text(n, &sc.len); sc.name = xstrdup(p->url); sc.ready = true; }
+        node_retain(n); /* an earlier script may remove a later parser script */
         p->scripts = xrealloc(p->scripts, sizeof *p->scripts * (size_t)(p->nscripts + 1)); p->scripts[p->nscripts++] = sc;
     }
     double t_scripts = now_ms();
@@ -553,15 +555,35 @@ static int loader(void *arg) {
 
 static Page *g_loading_page;   /* the page whose load event may still be waiting for its images */
 static void link_forget_page(Page *p);
+/* net_poll and these owners run on the main thread. Detach the callback before
+   canceling: a completed response may already be queued and cancellation alone
+   does not remove that callback. No work/head/chunk callback uses this record. */
+static void parser_fetch_cancel(PScript *sc) {
+    if (!sc->request) return;
+    NetRequest *request = sc->request; sc->request = NULL;
+    request->done = NULL; request->ud = NULL;
+    net_cancel(request->id);
+}
+static void parser_abandon(Page *p) {
+    p->script_pipeline = false; p->scripts_complete = true;
+    for (int i = 0; i < p->nscripts; i++) {
+        parser_fetch_cancel(&p->scripts[i]);
+        free(p->scripts[i].src); p->scripts[i].src = NULL; p->scripts[i].len = 0;
+    }
+    for (int i = 0; i < p->nscript_links; i++) node_release(p->script_links[i]);
+    free(p->script_links); free(p->script_link_ok);
+    p->script_links = NULL; p->script_link_ok = NULL; p->nscript_links = 0;
+}
 static void page_free(Page *p) {
     if (!p) return;
     link_forget_page(p);
+    parser_abandon(p);
     if (g_loading_page == p) g_loading_page = NULL;
     js_free(p->js);
     release_page_images(p);
     hm_free(&p->img_fired, NULL);
     free(p->sref);
-    for (int i = 0; i < p->nscripts; i++) { free(p->scripts[i].src); free(p->scripts[i].name); free(p->scripts[i].ctype); }
+    for (int i = 0; i < p->nscripts; i++) { free(p->scripts[i].src); free(p->scripts[i].name); free(p->scripts[i].ctype); node_release(p->scripts[i].n); }
     free(p->scripts);
     if (p->L) layout_free(p->L);
     if (p->e) style_engine_free(p->e);
@@ -3774,11 +3796,130 @@ static void h_scroll_to(void *ud, float x, float y) { TAB_CALL(ud, h_scroll_to_i
 static Node *h_hit(void *ud, float x, float y) { Node *r = NULL; TAB_CALL(ud, r = h_hit_in(ud, x, y)); return r; }
 static bool h_caret_in(float x, float y, Node **n, int *off) { Page *p = g_app->t->cur; return p && p->L && tsel_caret_point(p->L, x, y + g_app->t->sy, g_app->t->sy, n, off); }
 static bool h_caret(void *ud, float x, float y, Node **n, int *off) { bool r = false; TAB_CALL(ud, r = h_caret_in(x, y, n, off)); return r; }
+/* Only publish readiness here. Executing a page from net_poll would re-enter
+   parser state and may run with another tab selected. The per-tab pump below
+   consumes completions in encounter order while independent async jobs run. */
+static void parser_script_done(NetRequest *request, NetResponse *response, void *ud) {
+    PScript *sc = ud;
+    if (sc->request != request) return;
+    sc->request = NULL; sc->ready = true;
+    if (response && !response->error && response->status >= 200 && response->status < 300) {
+        sc->len = response->body ? response->body_len : 0;
+        sc->src = response->body ? response->body : xstrdup("");
+        response->body = NULL; response->body_len = 0;
+    }
+}
+static void parser_fetch_start(Page *p, PScript *sc, int priority) {
+    if (sc->request || sc->ready || !sc->name) return;
+    NetRequest *request = net_request_new("GET", sc->name);
+    net_request_set_fetch_metadata(request, p->d->url, "script", node_attr(sc->n, "crossorigin") ? "cors" : "no-cors");
+    char referrer[4200];
+    if (doc_referrer(p->d, sc->name, node_attr(sc->n, "referrerpolicy"), referrer, sizeof referrer))
+        headers_add(&request->headers, "Referer", referrer);
+    request->priority = priority; request->done = parser_script_done; request->ud = sc;
+    sc->request = request; net_fetch(request);
+}
+static void parser_script_enter(Page *p, PScript *sc, int index) {
+    sc->entered = true;
+    if (sc->n->doc != p->d || !(sc->n->flags & NF_CONNECTED) || !js_prepare_script(sc->n)) {
+        parser_fetch_cancel(sc); sc->done = true; return;
+    }
+    bool was_module = sc->module, was_external = sc->external;
+    const char *source = jsg_script_src(sc->n);
+    sc->module = jsg_module_script(sc->n); sc->external = source != NULL;
+    bool async = node_attr(sc->n, "async") != NULL;
+    sc->deferred = sc->module ? !async : sc->external && !async && node_attr(sc->n, "defer") != NULL;
+    char *name = source ? (*source ? url_join(doc_base(p->d), source) : NULL) : xstrdup(p->url);
+    bool same = sc->name && name && !strcmp(sc->name, name);
+    if (!same || was_module != sc->module || was_external != sc->external) {
+        parser_fetch_cancel(sc); free(sc->src); sc->src = NULL; sc->len = 0;
+        free(sc->ctype); sc->ctype = NULL; sc->ready = false; sc->module_fetched = false;
+    }
+    free(sc->name); sc->name = name;
+    if (!sc->external) {
+        free(sc->src); sc->src = jsg_script_text(sc->n, &sc->len); sc->ready = true;
+    } else if (!sc->name) {
+        /* An empty/unresolvable src queues an error; it never fetches the
+           document itself or dispatches synchronously during preparation. */
+        parser_fetch_cancel(sc);
+        js_queue_classic_script(p->js, sc->n, NULL, false); sc->done = true;
+    } else if (sc->module) {
+        if (!sc->module_fetched) {
+            sc->src = js_module_take(sc->name, p->url, &sc->len, &sc->ctype);
+            sc->module_fetched = sc->src != NULL;
+        }
+        sc->ready = true;
+    } else if (async) {
+        parser_fetch_cancel(sc); free(sc->src); sc->src = NULL; sc->len = 0;
+        js_queue_classic_script(p->js, sc->n, sc->name, false);
+        sc->done = true;
+    } else parser_fetch_start(p, sc, index);
+}
+static void page_finish_js(App *a, Page *p) {
+    p->scripts_complete = true;
+    double t_dcl = now_ms();
+    js_dispatch(p->js, &p->d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    LOAD_TRACE("dcl_ms=%.0f", now_ms() - t_dcl);
+    if (js_parser_generation(p->js) != p->script_generation) { parser_abandon(p); return; }
+    for (int i = 0; i < p->nscript_links; i++) {
+        if (p->script_links[i]->flags & NF_CONNECTED)
+            js_dispatch(p->js, p->script_links[i], p->script_link_ok[i] ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
+        if (js_parser_generation(p->js) != p->script_generation) { parser_abandon(p); return; }
+    }
+    for (int i = 0; i < p->nscript_links; i++) node_release(p->script_links[i]);
+    free(p->script_links); free(p->script_link_ok); p->script_links = NULL; p->script_link_ok = NULL; p->nscript_links = 0;
+    p->load_t0 = now_ms(); g_loading_page = p; sync_images(p);   /* parser-inserted images delay the load event */
+    js_fire_load(p->js);   /* now, or once the page's iframes and images have loaded */
+    fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - p->script_started);
+#if defined(__ANDROID__) && !defined(NDEBUG)
+    __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "scripts=%d run_ms=%.0f", p->nscripts, now_ms() - p->script_started);   /* timing only, no URLs */
+#endif
+    restyle(a);
+}
+static void page_pump_scripts(App *a, Page *p) {
+    if (!p->script_pipeline || p->scripts_complete || p->script_pumping) return;
+    p->script_pumping = true;
+    for (;;) {
+        if (js_parser_generation(p->js) != p->script_generation) {
+            parser_abandon(p); break; /* document.open owns the replacement lifecycle */
+        }
+        if (p->script_index == p->nscripts) {
+            if (p->script_pass == 0) {
+                p->script_pass = 1; p->script_index = 0;
+                js_set_ready_state(p->js, 1); /* interactive before defer/module execution */
+                continue;
+            }
+            page_finish_js(a, p);
+            break;
+        }
+        int index = p->script_index;
+        PScript *sc = &p->scripts[index];
+        if (!sc->entered) parser_script_enter(p, sc, index);
+        if (sc->done || (p->script_pass == 0 && sc->deferred) || (p->script_pass == 1 && !sc->deferred)) {
+            p->script_index++; continue;
+        }
+        if (sc->n->doc != p->d) {
+            parser_fetch_cancel(sc); sc->done = true; p->script_index++; continue;
+        }
+        if (!sc->ready) break; /* resume from the main event loop, not a busy wait */
+        sc->done = true; p->script_index++;
+        double ts = now_ms(); size_t len = sc->len;
+        if (sc->module && !sc->module_fetched && sc->external && sc->name)
+            js_run_module(p->js, sc->n, NULL, 0, sc->name);
+        else if (sc->src) {
+            if (sc->module) js_run_module_fetched(p->js, sc->n, sc->src, sc->len, sc->name, sc->ctype);
+            else js_run_prepared_classic(p->js, sc->n, sc->src, sc->len, sc->name, sc->external, !sc->deferred);
+        } else js_dispatch(p->js, sc->n, "error", "Event", false, false, 0, 0, 0, NULL);
+        free(sc->src); sc->src = NULL; sc->len = 0;
+        if (now_ms() - ts >= 50) LOAD_TRACE("script=%d module=%d bytes=%zu ms=%.0f", index, sc->module, len, now_ms() - ts);
+    }
+    p->script_pumping = false;
+}
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
     JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close,
                  p->internal_ui || env_hook(ENV_TESTDRIVER) ? h_internal : NULL, h_fullscreen, p->internal_ui ? NULL : h_open_window, h_window_op, h_caret };
-    double t0 = now_ms();
+    double t0 = now_ms(); p->script_started = t0;
     sync_sheets(p, true);
     /* the stylesheets the loader fetched before any script ran: their load (or error) events come after
        DOMContentLoaded (x.com starts its app from a capturing listener for its sheet's load) */
@@ -3790,6 +3931,7 @@ static void page_start_js(App *a, Page *p) {
         n->refcount++; links[nlinks] = n; lok[nlinks++] = ok;
     }
     p->js = js_new(p->d, &h);
+    p->script_generation = js_parser_generation(p->js);
     js_set_window(p->js, a->t->wid, a->t->opener);
     LOAD_TRACE("js_new_ms=%.0f", now_ms() - t0);
     js_eval(p->js, "document.addEventListener('lumenmediactl',function(e){var v=e.target;if(!(v instanceof HTMLMediaElement))return;e.stopImmediatePropagation();"
@@ -3801,31 +3943,19 @@ static void page_start_js(App *a, Page *p) {
         char *src = xmalloc((size_t)n + 1); size_t got = fread(src, 1, (size_t)n, pf); src[got] = 0; fclose(pf);
         js_eval(p->js, src, "lumen:pre"); free(src);
     }
-    for (int pass = 0; pass < 2; pass++) for (int i = 0; i < p->nscripts; i++) {   /* module scripts are deferred */
+    p->script_links = links; p->script_link_ok = lok; p->nscript_links = nlinks;
+    p->script_pipeline = true;
+    if (js_parser_generation(p->js) != p->script_generation) { parser_abandon(p); return; }
+    /* The existing six-worker network pool bounds these preloads. An async
+       classic is submitted only when its parser encounter is reached. */
+    for (int i = 0; i < p->nscripts; i++) {
         PScript *sc = &p->scripts[i];
-        if (sc->module != (pass == 1) || (sc->n->flags & NF_SCRIPT_STARTED) || !(sc->n->flags & NF_CONNECTED)) continue;
-        if (sc->src) {
-            double ts = now_ms(); size_t len = sc->len;
-            if (sc->module) js_run_module_fetched(p->js, sc->n, sc->src, sc->len, sc->name, sc->ctype); else js_run_script(p->js, sc->n, sc->src, sc->len, sc->name);
-            free(sc->src); sc->src = NULL; sc->len = 0;
-            if (now_ms() - ts >= 50) LOAD_TRACE("script=%d module=%d bytes=%zu ms=%.0f", i, sc->module, len, now_ms() - ts);
-        }
-        else { sc->n->flags |= NF_SCRIPT_STARTED; js_dispatch(p->js, sc->n, "error", "Event", false, false, 0, 0, 0, NULL); }
+        if (sc->external && !sc->module && jsg_classic_script(sc->n) && !node_attr(sc->n, "async"))
+            parser_fetch_start(p, sc, i);
     }
-    double t_dcl = now_ms();
-    js_set_ready_state(p->js, 1);
-    js_dispatch(p->js, &p->d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
-    LOAD_TRACE("dcl_ms=%.0f", now_ms() - t_dcl);
-    for (int i = 0; i < nlinks; i++) { if (links[i]->flags & NF_CONNECTED) js_dispatch(p->js, links[i], lok[i] ? "load" : "error", "Event", false, false, 0, 0, 0, NULL); node_release(links[i]); }
-    free(links); free(lok);
-    p->load_t0 = now_ms(); g_loading_page = p; sync_images(p);   /* parser-inserted images delay the load event */
-    js_fire_load(p->js);   /* now, or once the page's iframes and images have loaded */
-    fprintf(stderr, "lumen: ran %d scripts in %.0fms\n", p->nscripts, now_ms() - t0);
-#if defined(__ANDROID__) && !defined(NDEBUG)
-    __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "scripts=%d run_ms=%.0f", p->nscripts, now_ms() - t0);   /* timing only, no URLs */
-#endif
-    restyle(a);
+    page_pump_scripts(a, p);
 }
+
 static void wake(void) { SDL_Event e; SDL_zero(e); e.type = EV_NET; SDL_PushEvent(&e); }
 
 static bool is_text_ctl(Node *n) {
@@ -7160,7 +7290,7 @@ int main(int argc, char **argv) {
         net_poll();
         if (a.t->cur && (a.t->cur->sheets_pending || style_font_metrics_dirty(a.t->cur->e))) restyle(&a);
         double lt1 = now_ms();
-        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); js_tick(a.t->cur->js); double c1 = now_ms(); restyle(&a); double c2 = now_ms(); fire_img_events(a.t->cur); double c = now_ms() - c0; tr_js += c1 - c0; tr_restyle += c2 - c1; tr_img += now_ms() - c2; a.t->cpu_ms += c; if (a.t != act) tr_bg += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
+        { Tab *act = a.t; double tn = now_ms(); for (int i = 0; i < a.ntabs; i++) { a.t = a.tabs[i]; if (a.t->limited) { a.t->budget = LMIN(a.t->budget + a.t->lim * (tn - a.t->bud_t), 100); a.t->bud_t = tn; if (a.t->budget < 0) continue; } if (a.t->cur && a.t->cur->js) { double c0 = now_ms(); page_pump_scripts(&a, a.t->cur); js_tick(a.t->cur->js); double c1 = now_ms(); restyle(&a); double c2 = now_ms(); fire_img_events(a.t->cur); double c = now_ms() - c0; tr_js += c1 - c0; tr_restyle += c2 - c1; tr_img += now_ms() - c2; a.t->cpu_ms += c; if (a.t != act) tr_bg += c; if (a.t->limited) a.t->budget -= c; } } a.t = act; if (a.t->cur && a.t->cur->js) frames_tick(&a); }
         edit_sel_sync(&a);
         double lt2 = now_ms();
         if (g_wpt_capture_path && g_wpt_capture_requested) { a.dirty = true; a.vonly = false; }

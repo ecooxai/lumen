@@ -230,7 +230,8 @@ methods(Document.prototype, {
         if (arguments.length > 2) return G.open(a, b, c);
         if (this !== document || docOpened.has(this)) return this;
         if (this.contentType !== 'text/html') throw new DOMException("Failed to execute 'open' on 'Document': Only HTML documents support open().", 'InvalidStateError');
-        if (N.currentScript() && N.readyState() === 0) return this;   /* the parser's own script */
+        if (N.parserWritePoint()) return this;   /* an active parser script has a nonzero nesting level */
+        N.docOpen();
         while (this.firstChild) this.removeChild(this.firstChild);
         docOpened.set(this, '');
         return this;
@@ -356,7 +357,8 @@ function docWriteTo(doc, html) {
     if (doc !== document) return;
     if (doc.contentType !== 'text/html') throw new DOMException("Failed to execute 'write' on 'Document': Only HTML documents support write().", 'InvalidStateError');
     if (docOpened.has(doc)) { docOpened.set(doc, docOpened.get(doc) + html); return; }
-    if (!N.currentScript() && N.readyState() === 2) {
+    if (N.ignoreWrites()) return;
+    if (!N.parserWritePoint()) {
         doc.open();
         docOpened.set(doc, html);
         setTimeout(() => doc.close());
@@ -367,7 +369,7 @@ function docWriteTo(doc, html) {
 /* Each script's writes follow one another: insert before what followed the script at its first write. */
 const docWriteRef = new WeakMap();
 function docWrite(html) {
-    const s = N.currentScript(), parent = s ? N.parent(s) : document.body;
+    const s = N.parserScript(), parent = s ? N.parent(s) : document.body;
     if (!parent) return;
     let ref = s ? N.next(s) : null;
     if (s) {
@@ -377,6 +379,7 @@ function docWrite(html) {
     const f = N.parseFrag(parent, html, !!s);
     if (ttReq) ttSlotsFrom(f);
     insertNode(parent, f, ref);
+    N.runWritten();
 }
 class DOMImplementation { constructor(key = undefined) { illegal(); } }
 methods(DOMImplementation.prototype, { hasFeature() { return true; }, createHTMLDocument(t = undefined) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), this._doc || document); },

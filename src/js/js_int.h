@@ -6,6 +6,8 @@
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
+#include <deque>
+#include <functional>
 #include <map>
 #include <set>
 #include <memory>
@@ -32,12 +34,25 @@ extern int g_log_level;
 struct JsCtx;
 class JsForegroundTasks;
 struct JsBroadcastContext;
+struct FrameScriptParser;
+/* A prepared external classic script. Ready ordered jobs keep their response
+   until every earlier job has executed; async jobs consume their response directly. */
+struct ClassicScriptJob {
+    Node *script = nullptr;
+    Document *document = nullptr;
+    uint64_t generation = 0;
+    std::string source, url;
+    bool ordered = false, ready = false, success = false;
+};
 struct Fetch {
     JsCtx *c;
     uint64_t id;
     v8::Global<v8::Function> cb;
     Node *script;
     v8::Global<v8::Function> head, chunk;
+    std::shared_ptr<ClassicScriptJob> script_job;
+    NetRequest *request = nullptr;
+    std::function<void(JsCtx *, NetResponse *)> native_done;
 };
 struct WsSock {
     JsCtx *c;
@@ -66,6 +81,7 @@ struct ModJob {
     std::string url;
     v8::Global<v8::Promise::Resolver> R;
     Node *script = nullptr;
+    uint64_t generation = 0;
     double at = 0;   /* when its fetch started */
 };
 /* import attributes (js.cc): module map keys for JSON/text/CSS modules and their synthetic modules */
@@ -136,6 +152,14 @@ struct JsCtx {
     double raf_run_t = 0, raf_act_t = 0;
     uint64_t raf_act_seen = 0;
     std::map<uint64_t, Fetch *> fetches;
+    std::deque<std::shared_ptr<ClassicScriptJob>> ordered_scripts;
+    size_t pending_scripts = 0;
+    bool draining_scripts = false;
+    unsigned ignore_destructive_writes = 0;
+    bool parser_write_point = false;
+    Node *parser_write_script = nullptr;
+    uint64_t parser_generation = 1;
+    std::shared_ptr<FrameScriptParser> frame_parser;
     std::map<uint32_t, struct WsSock *> sockets;
     uint32_t next_ws = 1;
     std::vector<Document *> docs;
@@ -216,6 +240,7 @@ bool jsprof_active(void);      /* the debug JS profile is running */
 void js_native_report(void);   /* log and reset per-native call counts and time */
 #endif
 void js_run_inserted(JsCtx *c, Node *root);
+extern "C" void js_run_dynamic_inline_script(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
 /* js_run_module for script-inserted modules: an external graph not loaded yet runs later, once fetched */
 extern "C" void js_run_module_inserted(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
 extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
@@ -226,6 +251,14 @@ std::string ctx_origin_key(JsCtx *c);   /* for same-origin checks: ctx_origin, b
 void frames_scan(JsCtx *c);
 void frames_inserted(JsCtx *c, Node *root);
 void frames_forget(JsCtx *c);
+void frames_parser_tick(JsCtx *c);
+void frames_parser_cancel(JsCtx *c);
+extern "C" void js_document_open(JsCtx *c);
+extern "C" void js_run_written_inline(JsCtx *c);
+void js_cancel_fetch(JsCtx *c, uint64_t id);
+void js_cancel_fetches(JsCtx *c, bool scripts_only = false);
+uint64_t js_fetch_parser_source(JsCtx *c, Node *script, const char *url,
+                               std::function<void(JsCtx *, NetResponse *)> done);
 void js_doc_reparse(JsCtx *k, const char *html, size_t n);   /* document.close() of a script-opened document */
 void frames_load_check(JsCtx *c);   /* fires a deferred window load once no frame delays it */
 void frame_kill(JsCtx *k);

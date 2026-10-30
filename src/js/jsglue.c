@@ -318,8 +318,21 @@ const char *jsg_script_src(Node *s) {
     const char *h = node_attr(s, "href");
     return h ? h : node_attr(s, "xlink:href");
 }
-bool jsg_classic_script(Node *s) {
-    if (node_has_attr(s, "nomodule")) return false;
+/* Script source is child text content, excluding text in descendant elements. */
+char *jsg_script_text(Node *script, size_t *length) {
+    size_t total = 0;
+    for (Node *n = script ? script->first : NULL; n; n = n->next)
+        if (n->type == NODE_TEXT || n->type == NODE_CDATA) total += n->text_len;
+    char *text = xmalloc(total + 1); size_t at = 0;
+    for (Node *n = script ? script->first : NULL; n; n = n->next)
+        if ((n->type == NODE_TEXT || n->type == NODE_CDATA) && n->text_len) {
+            memcpy(text + at, n->text, n->text_len); at += n->text_len;
+        }
+    text[total] = 0;
+    if (length) *length = total;
+    return text;
+}
+bool jsg_classic_script_type(Node *s) {
     const char *t = node_attr(s, "type"), *pre = "";
     if (!t) {
         t = s->ns == NS_HTML ? node_attr(s, "language") : NULL;
@@ -339,6 +352,8 @@ bool jsg_classic_script(Node *s) {
         if (strlen(ok[i]) == pl + n && !strncmp(ok[i], pre, pl) && !strncasecmp(ok[i] + pl, t, n)) return true;
     return false;
 }
+
+bool jsg_classic_script(Node *s) { return !node_has_attr(s, "nomodule") && jsg_classic_script_type(s); }
 
 static bool hidden_chain(Node *n) {
     for (; n && n->type == NODE_ELEMENT; n = n->parent) if (n->style && n->style->display == D_NONE) return true;

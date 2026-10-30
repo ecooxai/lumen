@@ -41,6 +41,7 @@ enum {
     NF_SR_MANUAL = 1 << 26, NF_SR_DECLARATIVE = 1 << 27,
     NF_SAN_MADE = 1 << 28,        /* made by a sanitizing parser, which frees it unless inserted */
     NF_IMG_REQUEST = 1u << 30,    /* source mutation starts a fresh image request, even for the same URL */
+    NF_SCRIPT_NO_FORCE_ASYNC = 1u << 31, /* inverse flag: newly created scripts start with force async true */
     NF_POPOVER_OPEN = 1u << 29,   /* a showing popover: :popover-open */
 };
 

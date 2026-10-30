@@ -1,5 +1,11 @@
 # Lumen browser (early preview)
 
+## Linux source checkpoint205 — 30 October2026
+
+This reviewed source snapshot retains18/18 selected parser-options WPT files (1961/1961 assertions) and140/140 non-URL native tests. A separate ordinary script-lifecycle cohort passes32/35 files and61/64 assertions; current Chromium156 passes35/35 and64/64. Two authored document-write regressions and broader incremental-parsing gaps remain under active work. Full WPT and98/100 whole-browser conformance are not certified. URL conformance work remains deferred.
+
+See [the measured checkpoint](docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint205.json) and `EXPORT-QUALIFICATION.json` for exact source/binary identifiers, cohort denominators and limitations. This source export has not been rebuilt independently and makes no portable-binary claim.
+
 ## Install on macOS
 
 1. Download `Lumen-0.1.0-preview.dmg` from the [Releases page](https://github.com/ecooxai/lumen/releases).

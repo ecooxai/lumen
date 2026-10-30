@@ -38,6 +38,9 @@ extern int (*jsg_img_request_hook)(Node *n);
 int jsg_img_request(Node *n);
 /* PNG, JPEG, WebP or GIF (first frame) bytes to malloc'd straight-alpha RGBA rows; any thread */
 uint8_t *jsg_decode_rgba(const uint8_t *d, size_t n, int *w, int *h);
+/* MIME recognition is separate from nomodule suppression during preparation. */
+char *jsg_script_text(Node *script, size_t *length);
+bool jsg_classic_script_type(Node *s);
 bool jsg_classic_script(Node *s);
 /* a script element Lumen runs (HTML or SVG) and its URL attribute (src; href or xlink:href for SVG) */
 bool jsg_is_script(const Node *n);

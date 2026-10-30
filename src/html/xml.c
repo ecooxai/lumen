@@ -224,6 +224,7 @@ static bool start_tag(XP *p) {
             /* SVG and MathML tags are lower-case atoms, as from createElementNS */
             const char *tag = ns == NS_SVG || ns == NS_MATHML ? atom_lower(local, ln) : atomn(local, ln);
             el = node_new_element(p->d, tag, ns < 0 ? NS_NONE : ns);
+            if (ns == NS_HTML && tag == A_script) el->flags |= NF_SCRIPT_NO_FORCE_ASYNC;
             if (ns < 0) el->xns = uri;
             if (*pfx) el->xpfx = pfx;
             if (tag != atomn(local, ln)) el->xln = atomn(local, ln);
