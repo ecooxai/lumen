@@ -5,10 +5,9 @@
 Image *(*paint_image_hook)(Node *n);
 Image *(*paint_url_image_hook)(const char *url);
 
-typedef struct { Box *b; float dx, dy; bool clip; float cx, cy, cw, ch; int order; const Box *mv, *mv_out; } Deferred;
-typedef VEC(Deferred) DefVec;
 typedef struct {
     DisplayList *dl; Layout *L;
+    const Node *canvas_color_owner; /* already painted once over the canvas */
     float dx, dy;               /* doc -> viewport translation */
     float sx, sy;               /* page scroll */
     bool clip; float cx, cy, cw, ch;
@@ -18,6 +17,9 @@ typedef struct {
     const Box *mv, *mv_out;       /* scroller painted items move with, and the one outside it (for sticky boxes) */
     bool cull; uint64_t gen;      /* skip normal-flow subtrees outside the viewport (box_ink extents of visual generation gen) */
 } PB;
+
+typedef struct { Box *b; PB state; int order; } Deferred;
+typedef VEC(Deferred) DefVec;
 
 static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; it.fixed = p->fixed; it.sticky = p->sticky; it.mv = p->mv; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
 static bool visible(PB *p, float x, float y, float w, float h) {
@@ -152,7 +154,7 @@ static void paint_rect_deco(PB *p, Box *b, float x, float y, float w, float h, b
     BgArea bg_clip = background_area(b, x, y, w, h, s->bg_clip, r, l_edge, r_edge);
     BgArea bg_origin = background_area(b, x, y, w, h, s->bg_origin, r, l_edge, r_edge);
     BgArea color_clip = background_area(b, x, y, w, h, s->bg_color_clip, r, l_edge, r_edge);
-    if (COLOR_A(s->bg_color) && color_clip.w > 0 && color_clip.h > 0) {
+    if ((!p->canvas_color_owner || b->node != p->canvas_color_owner) && COLOR_A(s->bg_color) && color_clip.w > 0 && color_clip.h > 0) {
         Color c = s->bg_color;
         /* backdrop-filter: blur() isn't rendered; blurred content behind a translucent surface reads as
            nearly flat, so approximate it by cutting the remaining transparency to a quarter. A strong blur
@@ -295,10 +297,18 @@ static void paint_replaced(PB *p, Box *b) {
 }
 
 static bool positioned(const Box *b) { return b->st && b->node && (b->st->position != P_STATIC || (!b->st->z_auto && b->parent && b->parent->st && (b->parent->fmt == FMT_FLEX || b->parent->fmt == FMT_GRID))); }
-static bool makes_layer(const Box *b) { return b->st && b->node && (b->st->opacity < 1 || b->st->has_transform || b->st->position != P_STATIC); }
+static bool makes_layer(const Box *b) { return b->st && b->node && (b->st->opacity < 1 || b->st->has_transform || b->st->isolation || b->st->position != P_STATIC); }
+static bool makes_context(const Box *b) {
+    if (!b->st || !b->node) return false;
+    const ComputedStyle *s = b->st;
+    return s->opacity < 1 || s->has_transform || s->isolation ||
+           s->position == P_FIXED || s->position == P_STICKY ||
+           (positioned(b) && !s->z_auto);
+}
+static int stack_level(const Box *b) { return positioned(b) && !b->st->z_auto ? b->st->z_index : 0; }
 
-static void paint_stacking(PB *p, Box *b);
-static void paint_flow(PB *p, Box *b, DefVec *defs);
+static void paint_stacking(PB *p, Box *b, bool context);
+static void paint_flow(PB *p, Box *b);
 
 /* Off-screen culling. box_ink() keeps, per box, the vertical extent of what paint_block_content
    paints for it (its box, normal-flow children, floats, line content; a clipping scroller only its
@@ -309,7 +319,7 @@ static void paint_flow(PB *p, Box *b, DefVec *defs);
 static void box_ink(Box *b, uint64_t gen);
 static void ink_inline(Box *ib, uint64_t gen, float *y0, float *y1, bool *defer) {
     for (Box *c = ib->first; c; c = c->next) {
-        if (positioned(c) || c->abs) { *defer = true; continue; }
+        if (positioned(c) || makes_layer(c) || c->abs) { *defer = true; continue; }
         if (c->kind != BX_INLINE) continue;
         for (int i = 0; i < c->nir; i++) { *y0 = LMIN(*y0, c->ir[i].y); *y1 = LMAX(*y1, c->ir[i].y + c->ir[i].h); }
         ink_inline(c, gen, y0, y1, defer);
@@ -354,16 +364,17 @@ static bool culled(PB *p, Box *c) {
 
 static void paint_inline_decos(PB *p, Box *ib) {
     for (Box *c = ib->first; c; c = c->next) {
-        if (c->kind != BX_INLINE || positioned(c)) continue;
+        if (c->kind != BX_INLINE || positioned(c) || makes_layer(c)) continue;
         if (c->st->visibility == VIS_VISIBLE) for (int i = 0; i < c->nir; i++) { IRect *r = &c->ir[i]; if (r->w > 0) paint_rect_deco(p, c, r->x + p->dx, r->y + p->dy, r->w, r->h, r->first, r->last); }
         paint_inline_decos(p, c);
     }
 }
-static void collect_inline_positioned(PB *p, Box *ib, DefVec *defs) {
-    for (Box *c = ib->first; c; c = c->next) {
-        if (positioned(c) || c->abs) { Deferred d = { c, p->dx, p->dy, p->clip, p->cx, p->cy, p->cw, p->ch, p->order++, p->mv, p->mv_out }; vec_push(*defs, d); continue; }
-        if (c->kind == BX_INLINE) collect_inline_positioned(p, c, defs);
-    }
+/* A fragment belongs to the nearest deferred inline/atomic owner, not to
+ * every block fragment list that happens to reference it. */
+static bool fragment_in_flow(const Box *box, const Box *owner) {
+    for (const Box *c = box; c && c != owner; c = c->parent)
+        if (positioned(c) || makes_layer(c)) return false;
+    return true;
 }
 
 bool dl_caret_on;
@@ -436,11 +447,18 @@ static bool is_edit_host(const Node *n) {
     return ce && strcmp(ce, "false");
 }
 
-/* paints a non-positioned box's own background and its normal-flow content */
-static void paint_block_content(PB *p, Box *b, DefVec *defs) {
+static void paint_own_deco(PB *p, Box *b) {
+    if (b->st->visibility != VIS_VISIBLE || !b->node || b->node == p->L->doc->html) return;
+    if (b->kind == BX_INLINE) {
+        for (int i = 0; i < b->nir; i++) { IRect *r = &b->ir[i]; if (r->w > 0) paint_rect_deco(p, b, r->x + p->dx, r->y + p->dy, r->w, r->h, r->first, r->last); }
+    } else paint_rect_deco(p, b, b->x + p->dx, b->y + p->dy, b->w, b->h, true, true);
+}
+/* A context's decoration is emitted before its negative descendants; ordinary
+ * flow boxes emit their decoration together with their content. */
+static void paint_block_content(PB *p, Box *b, bool decorate) {
     const ComputedStyle *s = b->st;
     bool vis = s->visibility == VIS_VISIBLE;
-    if (vis && b->node && b->kind != BX_INLINE && b->node != p->L->doc->html) paint_rect_deco(p, b, b->x + p->dx, b->y + p->dy, b->w, b->h, true, true);
+    if (decorate) paint_own_deco(p, b);
     if (b->fmt == FMT_REPLACED) { if (vis) paint_replaced(p, b); return; }
     bool clips = b->scroller && b->node && (s->overflow_x != OV_VISIBLE || s->overflow_y != OV_VISIBLE);
     PB saved = *p;
@@ -458,59 +476,89 @@ static void paint_block_content(PB *p, Box *b, DefVec *defs) {
         p->sb = b; p->outer = &saved; p->mv_out = p->mv; p->mv = b;
     }
     if (s->display == D_LIST_ITEM && vis) paint_marker(p, b);
-    paint_flow(p, b, defs);
+    paint_flow(p, b);
     if (vis && dl_caret_on && (b->ctl == CTL_TEXT || b->ctl == CTL_TEXTAREA) && b->node && (b->node->flags & NF_FOCUS)) paint_caret(p, b);
     else if (vis && dl_caret_on && b->node && (b->node->flags & NF_FOCUS) && is_edit_host(b->node)) paint_edit_caret(p, b);
     if (clips) { int order = p->order; *p = saved; p->order = order; emit(p, DO_POP_CLIP); }
 }
 
-static void paint_flow(PB *p, Box *b, DefVec *defs) {
-    /* block-level descendants */
+static void paint_flow(PB *p, Box *b) {
+    /* Positioned and layered descendants were collected before any flow paint. */
     for (Box *c = b->first; c; c = c->next) {
         if (c->kind == BX_TEXT || c->kind == BX_BR || c->kind == BX_INLINE) continue;
-        if (positioned(c) || makes_layer(c)) {
-            /* an abs box whose containing block is outside a scroller neither scrolls nor clips with it */
-            const PB *q = p; if (c->abs) while (q->sb && !box_within(c->cb, q->sb)) q = q->outer;
-            Deferred d = { c, q->dx, q->dy, q->clip, q->cx, q->cy, q->cw, q->ch, p->order++, q->mv, q->mv_out }; vec_push(*defs, d); continue; }
-        if (c->floated || c->kind == BX_ATOMIC || culled(p, c)) continue;
-        paint_block_content(p, c, defs);
+        if (positioned(c) || makes_layer(c) || c->floated || c->kind == BX_ATOMIC || culled(p, c)) continue;
+        paint_block_content(p, c, true);
     }
-    /* floats */
-    for (Box *c = b->first; c; c = c->next) if (c->floated && !positioned(c) && !makes_layer(c) && !culled(p, c)) { DefVec local = {0}; paint_block_content(p, c, &local); for (int i = 0; i < local.n; i++) vec_push(*defs, local.v[i]); vec_free(local); }
-    /* inline content */
+    for (Box *c = b->first; c; c = c->next)
+        if (c->floated && !positioned(c) && !makes_layer(c) && !culled(p, c)) paint_block_content(p, c, true);
     if (b->nfrags) {
         paint_inline_decos(p, b);
-        collect_inline_positioned(p, b, defs);
         for (int i = 0; i < b->nfrags; i++) {
             TextFrag *f = &b->frags[i];
+            if (!fragment_in_flow(f->box, b)) continue;
             if (f->box->kind == BX_TEXT) paint_text_frag(p, f);
-            else if (!positioned(f->box) && !makes_layer(f->box) && !f->box->floated && !culled(p, f->box)) { DefVec local = {0}; paint_block_content(p, f->box, &local); for (int k = 0; k < local.n; k++) vec_push(*defs, local.v[k]); vec_free(local); }
+            else if (!f->box->floated && !culled(p, f->box)) paint_block_content(p, f->box, true);
         }
     }
 }
 
+/* Collect membership in the nearest real stacking context. Relative/absolute
+ * z-index:auto boxes remain zero-level paint entries, while their descendants
+ * can participate in this same context. Scroller snapshots live in the display
+ * list's frame arena: deferred state never retains a pointer to this call stack. */
+static void collect_context(PB *p, Box *b, DefVec *defs) {
+    if (b->fmt == FMT_REPLACED || culled(p, b)) return;
+    PB saved = *p;
+    const ComputedStyle *s = b->st;
+    bool clips = b->scroller && b->node && (s->overflow_x != OV_VISIBLE || s->overflow_y != OV_VISIBLE);
+    if (clips) {
+        float x = b->x + p->dx + b->b[3], y = b->y + p->dy + b->b[0];
+        float w = b->w - b->b[1] - b->b[3], h = b->h - b->b[0] - b->b[2];
+        if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
+        PB *outer = arena_alloc(&p->dl->arena, sizeof *outer); *outer = saved;
+        p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
+        p->dx -= b->node->scroll_x; p->dy -= box_scroll_y(b);
+        p->sb = b; p->outer = outer; p->mv_out = p->mv; p->mv = b;
+    }
+    for (Box *c = b->first; c; c = c->next) {
+        if (c->kind == BX_TEXT || c->kind == BX_BR) continue;
+        if (positioned(c) || makes_layer(c)) {
+            const PB *q = p;
+            if (c->abs) while (q->sb && !box_within(c->cb, q->sb)) q = q->outer;
+            Deferred d = { .b = c, .state = *q, .order = p->order++ };
+            vec_push(*defs, d);
+            if (!makes_context(c)) {
+                PB child = *q; child.order = p->order;
+                collect_context(&child, c, defs);
+                p->order = child.order;
+            }
+        } else collect_context(p, c, defs);
+    }
+    int order = p->order; *p = saved; p->order = order;
+}
+
 static int def_cmp(const void *a, const void *b) {
     const Deferred *x = a, *y = b;
-    int zx = x->b->st->z_auto ? 0 : x->b->st->z_index, zy = y->b->st->z_auto ? 0 : y->b->st->z_index;
+    int zx = stack_level(x->b), zy = stack_level(y->b);
     if (zx != zy) return zx < zy ? -1 : 1;
     return x->order - y->order;
 }
 
 static void paint_deferred(PB *p, Deferred *d) {
     PB saved = *p;
-    if (d->b->fixed) { p->dx = -0.0f; p->dy = 0; p->clip = false; p->fixed = true; p->sticky = false; p->mv = p->mv_out = NULL; }
-    else {
-        p->dx = d->dx; p->dy = d->dy; p->mv = d->mv; p->mv_out = d->mv_out;
-        /* clips of scrollers apply only when the box's containing block is inside them */
-        p->clip = d->clip && !(d->b->abs && d->b->cb == p->L->root); p->cx = d->cx; p->cy = d->cy; p->cw = d->cw; p->ch = d->ch;
-    }
-    if (p->clip) { DItem *c = emit(p, DO_PUSH_CLIP); c->x = p->cx; c->y = p->cy; c->w = p->cw; c->h = p->ch; }
-    paint_stacking(p, d->b);
-    if (p->clip) emit(p, DO_POP_CLIP);
+    *p = d->state; p->order = saved.order;
+    if (d->b->fixed) {
+        p->dx = -0.0f; p->dy = 0; p->clip = false; p->fixed = true; p->sticky = false;
+        p->mv = p->mv_out = NULL; p->sb = NULL; p->outer = NULL;
+    } else if (d->b->abs && d->b->cb == p->L->root) p->clip = false;
+    bool clipped = p->clip;
+    if (clipped) { DItem *c = emit(p, DO_PUSH_CLIP); c->x = p->cx; c->y = p->cy; c->w = p->cw; c->h = p->ch; }
+    paint_stacking(p, d->b, makes_context(d->b));
+    if (clipped) emit(p, DO_POP_CLIP);
     int order = p->order; *p = saved; p->order = order;
 }
 
-static void paint_stacking(PB *p, Box *b) {
+static void paint_stacking(PB *p, Box *b, bool context) {
     const ComputedStyle *s = b->st;
     if (s->opacity <= 0.001f) return;
     float tx = 0, ty = 0;
@@ -531,14 +579,27 @@ static void paint_stacking(PB *p, Box *b) {
     bool layer = s->opacity < 0.999f;
     if (layer) { DItem *l = emit(p, DO_PUSH_LAYER); l->alpha = s->opacity; }
     DefVec defs = {0};
-    if (b->kind == BX_INLINE) {
-        if (s->visibility == VIS_VISIBLE) for (int i = 0; i < b->nir; i++) { IRect *r = &b->ir[i]; if (r->w > 0) paint_rect_deco(p, b, r->x + p->dx, r->y + p->dy, r->w, r->h, r->first, r->last); }
-        /* text of an inline positioned box lives in its block's frags: paint those belonging to it */
-        Box *blk = b->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
-        if (blk) for (int i = 0; i < blk->nfrags; i++) { TextFrag *f = &blk->frags[i]; Box *o = f->box; while (o && o != b && o != blk) o = o->parent; if (o == b) { if (f->box->kind == BX_TEXT) paint_text_frag(p, f); else paint_block_content(p, f->box, &defs); } }
-    } else paint_block_content(p, b, &defs);
+    if (context) collect_context(p, b, &defs);
     if (defs.n > 1) qsort(defs.v, (size_t)defs.n, sizeof(Deferred), def_cmp);
-    for (int i = 0; i < defs.n; i++) paint_deferred(p, &defs.v[i]);
+    paint_own_deco(p, b);
+    int first_nonnegative = 0;
+    while (first_nonnegative < defs.n && stack_level(defs.v[first_nonnegative].b) < 0)
+        paint_deferred(p, &defs.v[first_nonnegative++]);
+    if (b->kind == BX_INLINE) {
+        paint_inline_decos(p, b);
+        /* Inline owners share their block's fragment list, but nested deferred
+         * owners paint their own fragments in their context phase. */
+        Box *blk = b->parent; while (blk && blk->kind == BX_INLINE) blk = blk->parent;
+        if (blk) for (int i = 0; i < blk->nfrags; i++) {
+            TextFrag *f = &blk->frags[i]; Box *o = f->box;
+            while (o && o != b && o != blk) o = o->parent;
+            if (o == b && fragment_in_flow(f->box, b)) {
+                if (f->box->kind == BX_TEXT) paint_text_frag(p, f);
+                else if (!f->box->floated) paint_block_content(p, f->box, true);
+            }
+        }
+    } else paint_block_content(p, b, false);
+    for (int i = first_nonnegative; i < defs.n; i++) paint_deferred(p, &defs.v[i]);
     vec_free(defs);
     if (layer) emit(p, DO_POP_LAYER);
     if (fabsf(ksx - 1) > 1e-4f || fabsf(ksy - 1) > 1e-4f) {
@@ -578,10 +639,10 @@ void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float 
     Node *html = L->doc->html, *body = L->doc->body;
     Color bg = 0;
     if (html && html->style && COLOR_A(html->style->bg_color)) bg = html->style->bg_color;
-    else if (body && body->style && COLOR_A(body->style->bg_color)) bg = body->style->bg_color;
+    else if (body && body->style && COLOR_A(body->style->bg_color)) { bg = body->style->bg_color; p.canvas_color_owner = body; }
     /* the canvas fills the viewport wherever the page is scrolled: fixed for scroll signatures, not a fixed region */
     if (bg) { DItem *it = emit(&p, DO_RECT); it->x = 0; it->y = 0; it->w = vw; it->h = vh; it->color = bg; it->fixed = true; }
-    for (Box *c = L->root->first; c; c = c->next) paint_stacking(&p, c);
+    for (Box *c = L->root->first; c; c = c->next) paint_stacking(&p, c, true);
     /* Collect final coordinates after ancestor transforms have been applied. */
     for (int i = bg ? 1 : 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i];

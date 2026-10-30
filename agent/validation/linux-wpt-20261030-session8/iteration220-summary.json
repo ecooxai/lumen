@@ -1,0 +1,53 @@
+{
+  "iteration": 6,
+  "candidate": 220,
+  "started_utc": "2026-10-30T13:13:24.625405+00:00",
+  "ended_utc": "2026-10-30T13:36:14.657874+00:00",
+  "duration_minutes": 22.833874483333332,
+  "session_wall_minutes": 110.31096456666667,
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "coordinator": "root",
+  "source_commit": "666d7cfde11f67b93b69e1fced20731a6f0dcd08",
+  "binary_sha256": "a10d4857d07ed5e30d120f4f1f95c565566928bf7313a6819328fad0c363be4b",
+  "source_manifest_sha256": "54a01a41e31bdf4d0388668ecb53881a072b63a0d1df9814bd93fc8667aeab98",
+  "native_ctest": {
+    "passed": 141,
+    "total": 142,
+    "stretch_checks_passed": 55,
+    "stretch_checks_total": 58,
+    "math_checks_passed": 145
+  },
+  "stretch_assertions": {
+    "passed": 962,
+    "total": 1012,
+    "whole_files_passed": 28,
+    "whole_files_total": 48,
+    "score_out_of_100": 95.0592885375494,
+    "gains": 744,
+    "prior_pass_losses": 0
+  },
+  "stretch_rendering": {
+    "passed": 10,
+    "total": 29,
+    "score_out_of_100": 34.48275862068966,
+    "gains": 9,
+    "prior_pass_losses": 0
+  },
+  "independent_stretch_controls": {
+    "passed": 53,
+    "total": 56,
+    "prior_pass_losses": 0
+  },
+  "earlier_scopes": {
+    "stepped_math": "594/594",
+    "math_neighbors": "173/432",
+    "progress": "90/139",
+    "all_prior_authored_and_smoke": "unchanged passing"
+  },
+  "acceptance": "REJECTED",
+  "broad_640": "Not rerun on220; latest218 replay remains rejected, published214 remains fallback."
+}

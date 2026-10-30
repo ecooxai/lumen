@@ -72,6 +72,20 @@ int main(void) {
       "<div id='ltr-cb' style='position:relative;width:100px;height:80px;border:1px solid'><div id='ltr-floor' class='absfloor'></div></div>"
       "<div id='rtl-cb' style='position:relative;width:100px;height:80px;border:1px solid;direction:rtl'><div id='rtl-floor' class='absfloor'></div></div>"
       "<div id='vertical-cb' style='position:relative;width:100px;height:80px;border:1px solid;writing-mode:vertical-rl;direction:rtl'><div id='vertical-floor' class='absfloor'></div></div>"
+      "<div style='height:100px'><div id='plain-ratio' style='height:stretch;aspect-ratio:2/1'></div></div>"
+      "<div style='height:200px'><div id='float-ratio' style='float:left;height:stretch;aspect-ratio:2/1'></div></div>"
+      "<div id='static-cb' style='position:relative;width:50px;height:40px;padding:3px 5px;border:2px solid'><div id='static-size' style='position:absolute;width:stretch;height:20px;margin-left:2px;margin-right:3px;padding:2px;border:3px solid'></div></div>"
+      "<div style='width:200px'><div style='float:left;width:100px;height:100px'></div><canvas id='float-canvas' width='1' height='1' style='display:block;width:stretch'></canvas></div>"
+      "<div id='empty-cb' style='width:100px;height:100px'><div style='display:flow-root'></div><div id='after-bfc' style='height:stretch;margin:10px;border:3px solid'></div></div>"
+      "<div style='display:flex;width:50px;height:40px'><div id='flex-max' style='width:75px;max-width:stretch;margin:0 3px 0 2px;padding:2px;border:3px solid'><div style='width:100px;height:10px'></div></div></div>"
+      "<div style='display:flex;width:50px;height:40px'><div id='flex-explicit-min' style='width:75px;min-width:80px;max-width:stretch;padding:2px;border:3px solid'></div></div>"
+      "<div style='display:flex;width:200px;height:200px'><canvas id='flex-canvas-min' width='100' height='100' style='height:stretch;flex-basis:0'></canvas></div>"
+      "<div style='display:flex;width:200px;height:200px'><canvas id='flex-canvas-base' width='100' height='100' style='height:stretch;min-width:0;flex-basis:auto'></canvas></div>"
+      "<div id='static-rtl-cb' style='position:relative;width:100px;height:80px;padding:5px;border:3px solid;direction:rtl'><div id='static-rtl' style='position:absolute;width:stretch;height:stretch'></div></div>"
+      "<div id='static-v-cb' style='position:relative;width:100px;height:80px;padding:5px;border:3px solid;writing-mode:vertical-lr;direction:rtl'><div id='static-v' style='position:absolute;width:stretch;height:stretch'></div></div>"
+      "<div id='lower-cb' style='display:flow-root;width:200px'><div style='float:left;width:150px;height:20px'></div><div id='lower-slot' style='display:flow-root;width:stretch;height:10px;padding:0 50px'></div></div>"
+      "<div style='display:flow-root;width:100px'><div id='probe-parent' style='height:100px'><div style='float:left;width:30px;height:30px'></div><div id='probe-bfc' style='display:flow-root;position:relative;width:90px;height:stretch;margin-top:50px'><div id='probe-abs' style='position:absolute;left:0;top:0;width:5px;height:5px'></div></div></div></div>"
+      "<div style='display:flow-root'><span id='ws-a' style='float:left'>AA</span><span id='ws-tail' style='float:left'>AA </span><span id='ws-inner' style='float:left'>A A</span><span id='ws-pre' style='float:left;white-space:pre'>AA </span><span id='ws-boundary' style='float:left'>AA<span> </span></span><span id='ws-boundary-inner' style='float:left'>A<span> </span>A</span></div>"
       "</body></html>";
     const char *css="body{margin:0}.box{width:stretch;height:stretch;margin:10px 20px;border:2px solid;padding:3px}.canvas{height:stretch;margin:5px;border:2px solid;padding:3px}.bfc{display:flow-root;height:25px}.absfloor{position:absolute;left:70px;right:50px;top:60px;bottom:40px;margin:-30px -10px -10px -30px;padding:25px;width:stretch;height:stretch}";
     html_parse(d,html,strlen(html));StyleEngine *e=style_engine_new(d);
@@ -83,8 +97,34 @@ int main(void) {
     size(d,"ltr-floor",50,50);offset(d,"ltr-cb","ltr-floor",40,30);
     size(d,"rtl-floor",50,50);offset(d,"rtl-cb","rtl-floor",10,30);
     size(d,"vertical-floor",50,50);offset(d,"vertical-cb","vertical-floor",10,0);
+    size(d,"plain-ratio",200,100);size(d,"float-ratio",400,200);
+    size(d,"static-size",50,30);offset(d,"static-cb","static-size",7,3);
+    size(d,"float-canvas",100,100);size(d,"after-bfc",80,100);offset(d,"empty-cb","after-bfc",10,10);
+    same("flex automatic minimum capped",doc_get_element_by_id(d,"flex-max")->box->w,45);
+    same("explicit flex minimum wins",doc_get_element_by_id(d,"flex-explicit-min")->box->w,90);
+    size(d,"flex-canvas-min",200,200);size(d,"flex-canvas-base",200,200);
+    size(d,"static-rtl",105,85);offset(d,"static-rtl-cb","static-rtl",0,5);
+    size(d,"static-v",105,85);offset(d,"static-v-cb","static-v",5,0);
+    size(d,"lower-slot",200,10);offset(d,"lower-cb","lower-slot",0,20);
+    size(d,"probe-abs",5,5);offset(d,"probe-bfc","probe-abs",0,0);
+    int probe_regs=0;Box *probe_abs=doc_get_element_by_id(d,"probe-abs")->box;
+    for(int i=0;i<l->nalog;i++) if(l->alog[i]==probe_abs) probe_regs++;
+    same("probe absolute registered once",probe_regs,1);
+    same("probe flag restored",l->measure_only,0);
+    same("bounded probe layout calls",doc_get_element_by_id(d,"probe-bfc")->box->dcalls<=4,1);
+    float plain=doc_get_element_by_id(d,"ws-a")->box->w, interior=doc_get_element_by_id(d,"ws-inner")->box->w;
+    same("collapsible trailing space",doc_get_element_by_id(d,"ws-tail")->box->w,plain);
+    same("interior space remains",interior>plain,1);
+    same("preformatted trailing space remains",doc_get_element_by_id(d,"ws-pre")->box->w>plain,1);
+    same("trailing inline-boundary space",doc_get_element_by_id(d,"ws-boundary")->box->w,plain);
+    same("interior inline-boundary space",doc_get_element_by_id(d,"ws-boundary-inner")->box->w,interior);
     node_set_attr(doc_get_element_by_id(d,"parent"),"style","width:180px;height:140px;border:1px solid");
     style_recalc(e,&d->node,true);layout_run(l,d,800,1600);size(d,"normal",140,120);
+    layout_free(l);style_engine_free(e);doc_free(d);
+    d=doc_new("https://css-stretch.test/quirks");
+    const char *quirks="<html><body style='margin:0'><div></div><iframe id='quirks-child' style='display:inline-block;width:40px;height:stretch;box-sizing:border-box;border:5px solid'></iframe></body></html>";
+    html_parse(d,quirks,strlen(quirks));e=style_engine_new(d);style_recalc(e,&d->node,true);l=layout_new();layout_run(l,d,800,600);
+    same("quirks document",d->quirks,1);size(d,"quirks-child",40,600);
     layout_free(l);style_engine_free(e);doc_free(d);
     printf("CSS stretch: %u/%u native checks passed\n",checks-failures,checks);
     return failures?1:0;

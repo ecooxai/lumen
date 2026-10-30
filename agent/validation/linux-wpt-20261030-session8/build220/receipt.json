@@ -1,0 +1,20 @@
+{
+  "started_utc": "2026-10-30T13:28:56.099076+00:00",
+  "finished_utc": "2026-10-30T13:29:30.165565+00:00",
+  "duration_seconds": 34.06648755299102,
+  "command": [
+    "python3",
+    "tools/codex_compile.py",
+    "python3",
+    "agent/validation/build_candidate.py",
+    "--iteration",
+    "220",
+    "--jobs",
+    "2",
+    "--startup"
+  ],
+  "pid": 4076541,
+  "exit_code": 0,
+  "source_commit": "666d7cfde11f67b93b69e1fced20731a6f0dcd08",
+  "monitors_joined": true
+}

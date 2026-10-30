@@ -4415,7 +4415,8 @@ static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, No
     const char *v;
     char dim[48];
     bool marquee = el->tag && !strcmp(el->tag, "marquee"), imgin = el->tag == A_input && (v = node_attr(el, "type")) && !strcasecmp(v, "image");
-    bool replaced = el->tag == A_img || el->tag == A_video || el->tag == A_canvas || el->tag == A_iframe || el->tag == A_embed || el->tag == A_object || marquee || imgin;
+    /* Canvas attributes define its bitmap and intrinsic dimensions, not CSS sizing hints. */
+    bool replaced = el->tag == A_img || el->tag == A_video || el->tag == A_iframe || el->tag == A_embed || el->tag == A_object || marquee || imgin;
     bool cell = el->tag == A_td || el->tag == A_th;
     if ((v = node_attr_atom(el, A_width)) && (replaced || cell || el->tag == A_table || el->tag == A_hr || el->tag == A_col) && html_dimension(v, !cell && el->tag != A_table, dim, sizeof dim))
         css_apply_decl(st, par, "width", dim, e, el);

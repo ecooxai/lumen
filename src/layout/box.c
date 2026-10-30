@@ -71,10 +71,16 @@ static bool is_ws_text(const Box *b) { if (b->kind != BX_TEXT) return false; for
 static bool block_level(const Box *b) { return b->kind == BX_BLOCK && in_flow(b); }
 static bool inline_level(const Box *b) { return b->kind == BX_INLINE || b->kind == BX_TEXT || b->kind == BX_ATOMIC || b->kind == BX_BR; }
 
+bool layout_percentage_wrapper(const Box *box) {
+    /* Block-in-inline fixup changes the layout kind, not the containing-block
+       role. Flex/grid blockification sets bfc and must remain a real CB. */
+    return box->anon || box->kind == BX_INLINE ||
+        (box->kind == BX_BLOCK && box->st && box->st->display == D_INLINE && !box->bfc);
+}
 const Box *layout_percentage_cb(const Box *box) {
     if (box->abs && box->cb) return box->cb;
     const Box *cb = box->parent;
-    while (cb && (cb->anon || cb->kind == BX_INLINE)) cb = cb->parent;
+    while (cb && layout_percentage_wrapper(cb)) cb = cb->parent;
     return cb;
 }
 float layout_stretch_border_size(const Box *box, const Box *percentage_cb,
@@ -402,7 +408,7 @@ bool text_break_after(const Box *t, int gi) {
     return false;
 }
 
-typedef struct { float line, mx, word, mn, edge_prefix; unsigned contents; bool after_atomic; } IState;
+typedef struct { float line, mx, word, mn, edge_prefix, trailing_space; unsigned contents; bool after_atomic; } IState;
 static void inline_intrinsic(Layout *L, Box *b, IState *s) {
     for (Box *c = b->first; c; c = c->next) {
         if (c->abs) continue;
@@ -418,30 +424,35 @@ static void inline_intrinsic(Layout *L, Box *b, IState *s) {
             bool wrap = c->st->white_space != WS_NOWRAP && c->st->white_space != WS_PRE;
             for (int i = 0; i < c->sh.n; i++) {
                 char ch = c->text[c->sh.g[i].cluster];
-                if (ch == '\n' && c->st->white_space != WS_NORMAL && c->st->white_space != WS_NOWRAP) { s->mx = LMAX(s->mx, s->line); s->line = 0; s->mn = LMAX(s->mn, s->word); s->word = 0; continue; }
+                if (ch == '\n' && c->st->white_space != WS_NORMAL && c->st->white_space != WS_NOWRAP) { s->mx = LMAX(s->mx, s->line - s->trailing_space); s->line = s->trailing_space = 0; s->mn = LMAX(s->mn, s->word); s->word = 0; continue; }
                 float a = c->sh.g[i].adv;
                 s->line += a;
+                bool collapse_space = c->st->white_space == WS_NORMAL || c->st->white_space == WS_NOWRAP || c->st->white_space == WS_PRE_LINE;
+                if (ch == ' ' && collapse_space) s->trailing_space += a;
+                else s->trailing_space = 0;
                 if (ch == ' ' && wrap) { s->mn = LMAX(s->mn, s->word); s->word = 0; }
                 else { s->word += a; if (wrap && (c->st->word_break == 1 || text_break_after(c, i))) { s->mn = LMAX(s->mn, s->word); s->word = 0; } }
             }
-        } else if (c->kind == BX_BR) { s->mx = LMAX(s->mx, s->line); s->line = 0; s->mn = LMAX(s->mn, s->word); s->word = 0; s->edge_prefix = 0; s->after_atomic = false; s->contents++; }
+        } else if (c->kind == BX_BR) { s->mx = LMAX(s->mx, s->line - s->trailing_space); s->line = s->trailing_space = 0; s->mn = LMAX(s->mn, s->word); s->word = 0; s->edge_prefix = 0; s->after_atomic = false; s->contents++; }
         else if (c->kind == BX_INLINE) {
             compute_mbp(c, 0);
             float l = c->m[3] + c->b[3] + c->p[3], r = c->m[1] + c->b[1] + c->p[1];
             unsigned before = s->contents;
             s->line += l; s->word += l; s->edge_prefix += l;
+            if (l != 0) s->trailing_space = 0;
             inline_intrinsic(L, c, s);
             s->line += r; s->word += r;
+            if (r != 0) s->trailing_space = 0;
             if (s->contents == before) s->edge_prefix += r;
         } else {
             float mn, mx; intrinsic_outer(L, c, &mn, &mx);
-            if (c->floated) { s->mn = LMAX(s->mn, mn); s->line += mx; continue; }
+            if (c->floated) { s->mn = LMAX(s->mn, mn); s->line += mx; s->trailing_space = 0; continue; }
             /* An atomic inline permits a break on either side. Opening
                inline edges stay with this item; closing edges subsequently
                extend its contribution instead of disappearing at the break. */
             s->mn = LMAX(s->mn, LMAX(s->word - s->edge_prefix, 0));
             s->word = s->edge_prefix + mn; s->edge_prefix = 0;
-            s->after_atomic = true; s->contents++; s->line += mx;
+            s->after_atomic = true; s->contents++; s->line += mx; s->trailing_space = 0;
         }
     }
 }
@@ -466,7 +477,7 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
         if (st->width.kind == LK_LEN && st->width.pct) mn = 0;
     } else if (b->fmt == FMT_INLINE) {
         IState s = {0}; inline_intrinsic(L, b, &s);
-        mx = LMAX(s.mx, s.line); mn = LMAX(s.mn, s.word);
+        mx = LMAX(s.mx, s.line - s.trailing_space); mn = LMAX(s.mn, s.word);
         if (st->white_space == WS_NOWRAP || st->white_space == WS_PRE) mn = mx;
         if (b->ctl == CTL_SELECT) { mn += 20; mx += 20; }
     } else if (b->fmt == FMT_FLEX) {

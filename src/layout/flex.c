@@ -57,12 +57,34 @@ static float flex_cross_stretch_size(Layout *L, Box *c, const Box *cb, bool row,
     else if (ilo) size = LMAX(size, intrinsic_width_size(lo, mn, mx, available));
     return size;
 }
+/* Resolve percentage padding against the original containing block while
+ * finding a column item's natural cross width. Ordinary intrinsic() caches
+ * zero-basis edges, which cannot supply the used border-box width here. */
+static bool flex_column_stretch_intrinsic_width(Layout *L, Box *c, const Box *cb,
+                                                float cw, float available, float *width) {
+    const ComputedStyle *s = c->st;
+    if ((s->min_width.kind != LK_STRETCH && s->max_width.kind != LK_STRETCH) ||
+        (s->width.kind != LK_AUTO && !intrinsic_width_keyword(s->width)) ||
+        s->writing_mode || s->aspect_ratio > 0 || c->fmt == FMT_REPLACED) return false;
+    compute_mbp(c, cw);
+    float mn, mx;
+    intrinsic_content_width(L, c, cw, &mn, &mx);
+    float natural = intrinsic_width_size(s->width, mn, mx, available - c->m[1] - c->m[3]);
+    *width = flex_cross_stretch_size(L, c, cb, false, natural, cw, available);
+    return true;
+}
 /* A larger final line can relax a stretch maximum. Remeasure the preferred
  * size instead of clamping an already capped hypothetical size. Express the
  * resolved border-box limit in property units for the normal layout path;
  * percentage lengths still use the original containing-block basis. */
 static void flex_cross_remeasure_limits(Layout *L, Box *c, const Box *cb, bool row,
                                         float cw, float chdef, float linecross) {
+    float width;
+    if (!row && flex_column_stretch_intrinsic_width(L, c, cb, cw, linecross, &width)) {
+        c->memo = false;
+        layout_box(L, c, c->x, c->y, cw, chdef, NULL, SZ_FORCED, width, c->h);
+        return;
+    }
     ComputedStyle *original = c->st, resolved = *original;
     float size = layout_stretch_border_size(c, cb, !row, linecross, true);
     float bp = row ? vbp(c) : hbp(c);
@@ -112,6 +134,20 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         float mn, mx;
         if (row && content_basis) intrinsic_content_width(L, c, -1, &mn, &mx);
         else intrinsic(L, c, &mn, &mx);
+        if (row && c->fmt == FMT_REPLACED && cs->height.kind == LK_STRETCH && chdef >= 0) {
+            /* A definite cross size participates in replaced intrinsic sizing.
+             * Keep main-size constraints out of this content suggestion; the
+             * normal specified-size and min/max branches apply them below. */
+            ComputedStyle measured = *cs;
+            measured.width = L_auto(); measured.min_width = L_auto();
+            measured.max_width = (Length){ .kind = LK_NONE };
+            compute_mbp(c, cw);
+            float measured_w, measured_h;
+            c->st = &measured;
+            replaced_size(L, c, cw, chdef, -1, -1, &measured_w, &measured_h);
+            c->st = (ComputedStyle *)cs;
+            mn = mx = measured_w + hbp(c);
+        }
         float content_h = -1;
         if (fb.kind == LK_STRETCH && stretch >= 0) f->base = stretch;
         else if (len_def(fb, mainsz) && !(fb.pctu && mainsz < 0)) f->base = res(fb, mainsz) + (bs ? 0 : bp);
@@ -145,6 +181,10 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         f->mx = mxl.kind == LK_STRETCH ? (stretch >= 0 ? stretch : 1e30f) :
                 mxl.kind == LK_LEN && len_def(mxl, mainsz) ? res(mxl, mainsz) + (bs ? 0 : bp) :
                 ihi ? intrinsic_width_size(mxl, imn, imx, available) : 1e30f;
+        /* A definite maximum caps the content-based automatic minimum. An
+         * explicit minimum still wins when the two author limits conflict. */
+        if (mnl.kind == LK_AUTO && mxl.kind == LK_STRETCH && stretch >= 0)
+            f->mn = LMIN(f->mn, f->mx);
         if (f->mx < f->mn) f->mx = f->mn;
         f->hypo = LCLAMP(f->base, f->mn, f->mx);
     }
@@ -204,7 +244,8 @@ float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
                 bool stretch = !s->flex_wrap && (al == AL_STRETCH || al == AL_NORMAL) && cs->width.kind == LK_AUTO && cs->margin[1].kind != LK_AUTO && cs->margin[3].kind != LK_AUTO;
                 float w = cw - c->m[1] - c->m[3];
                 if (stretch) w = flex_cross_stretch_size(L, c, b, false, w, cw, cw);
-                layout_box(L, c, cx + c->m[3], cy + mpos, cw, chdef >= 0 ? chdef : -1, NULL, stretch ? SZ_FORCED : SZ_SHRINK, w, f->main);
+                bool intrinsic_stretch = !stretch && flex_column_stretch_intrinsic_width(L, c, b, cw, cw, &w);
+                layout_box(L, c, cx + c->m[3], cy + mpos, cw, chdef >= 0 ? chdef : -1, NULL, stretch || intrinsic_stretch ? SZ_FORCED : SZ_SHRINK, w, f->main);
                 f->cross = c->w + c->m[1] + c->m[3];
             }
             linecross = LMAX(linecross, f->cross);

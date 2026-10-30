@@ -1,0 +1,11 @@
+{
+  "iteration": 7,
+  "candidate": 221,
+  "started_utc": "2026-10-30T13:38:36.703614+00:00",
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Correct measured complete stretch family and native/independent failures; preserve all earlier math/progress behavior."
+}

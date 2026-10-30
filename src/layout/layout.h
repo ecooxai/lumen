@@ -57,6 +57,7 @@ typedef struct Layout {
     float vw, vh, dpr;
     float doc_w, doc_h;
     int nboxes;
+    bool measure_only; /* transient float preflight: no absolute registration or memo reuse */
     float inl_cbh;   /* containing-block height handed to layout_inline (floats/atomics resolve % heights against it) */
     double ms;
     struct Box **alog; int nalog, calog;   /* every add_abs of this run, so a reused subtree can re-register its abs boxes */
@@ -82,6 +83,7 @@ enum { SZ_FILL, SZ_SHRINK, SZ_FORCED };
 Box *build_box_tree(Layout *L, Document *d);
 void compute_mbp(Box *b, float cbw);
 /* Anonymous/inline wrappers do not establish the percentage containing block. */
+bool layout_percentage_wrapper(const Box *box);
 const Box *layout_percentage_cb(const Box *box);
 /* Final border-box stretch size; only an indefinite basis returns -1.
    Available space can be negative after absolute insets: subtract margins
