@@ -65,7 +65,7 @@ function cssFlexNumber(v) {
     return folded && !folded.u ? mathSer(folded) : specNormalize('flex-grow', v);
 }
 function cssFlexBasis(v) {
-    if (/^(auto|content|min-content|max-content|fit-content|stretch)$/i.test(v)) return v.toLowerCase();
+    if (/^(auto|content|min-content|max-content|fit-content|stretch|-webkit-fill-available)$/i.test(v)) return v.toLowerCase();
     const [type, end] = mathType(v), literal = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:e[+-]?\d+)?(?:%|[a-z]+)?$/i.test(v);
     if ((!literal && !/^[a-z-]+\(/i.test(v)) || end !== v.length || !(type === 'length^1' || type === '%^1' || type === '' && literal && +v === 0)) return null;
     if (literal && parseFloat(v) < 0) return null;
@@ -582,6 +582,10 @@ function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
     if (cssFlexRelevant(p)) return cssFlexParse(p, v) !== null;
     if (cssGridRelevant(p)) return cssGridParse(p, v) !== null;
+    // Sizing stretch is not a length accepted by margin, padding, insets or fonts.
+    // Alignment keywords and custom identifiers keep their separate grammars.
+    if (/^\s*(stretch|-webkit-fill-available)\s*$/i.test(v) &&
+        /^(?:(?:margin|padding|inset)(?:-(?:top|right|bottom|left|block(?:-start|-end)?|inline(?:-start|-end)?))?|top|right|bottom|left|font-size|line-height|letter-spacing|word-spacing|text-indent|vertical-align|(?:border(?:-(?:top|right|bottom|left))?|outline)-width|outline-offset|gap|row-gap|column-gap)$/.test(p)) return false;
     /* Only a leading minus, whitespace or non-ASCII prefix can become a
        negative literal after trim(). Ordinary positive sizes need no scan. */
     if ((v[0] === '-' || v[0] <= ' ' || v[0] > '\x7f') && MATH_LEN_PROPS.test(p)) {

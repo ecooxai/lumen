@@ -1,0 +1,33 @@
+{
+  "started_utc": "2026-10-30T13:03:22.170559+00:00",
+  "finished_utc": "2026-10-30T13:04:45.230435+00:00",
+  "duration_seconds": 83.05989129000227,
+  "command": [
+    "python3",
+    "tools/codex_compile.py",
+    "ctest",
+    "--test-dir",
+    "build/codex-native",
+    "-j1",
+    "--output-on-failure",
+    "-E",
+    "^(url|url_host_nul|data_url)$",
+    "--output-junit",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/native219/ctest.xml"
+  ],
+  "pid": 3977732,
+  "exit_code": 0,
+  "source_commit": "a75cbe83f955d51fbafa084214bd0d78f533c611",
+  "monitors_joined": true,
+  "tests": {
+    "name": "(empty)",
+    "tests": "141",
+    "failures": "0",
+    "disabled": "0",
+    "skipped": "0",
+    "hostname": "",
+    "time": "82",
+    "timestamp": "2026-10-30T06:03:22"
+  },
+  "stepped_math_native_output": "PASS css_stepped_math 145 native boundary checks"
+}

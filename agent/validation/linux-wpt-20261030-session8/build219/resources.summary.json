@@ -1,0 +1,21 @@
+{
+  "label": "session8-build219",
+  "started_utc": "2026-10-30T13:02:44.126938+00:00",
+  "finished_utc": "2026-10-30T13:03:08.127143+00:00",
+  "root_pid": 3975683,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 24,
+  "elapsed_seconds": 24.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 2.0,
+  "cpu_median": 37.003,
+  "cpu_max": 199.007,
+  "cpu_last10_median": 22.501,
+  "rss_peak_mb": 612.831,
+  "rss_final_mb": 41.689,
+  "pss_peak_mb": 509.229,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/build219/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

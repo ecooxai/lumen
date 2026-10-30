@@ -54,7 +54,7 @@ static void occ_mark(Occ *o, int r, int c, int rs, int cs) {
 float grid_item_auto_min(Layout *L, Box *c, float maxlen) {
     float a, z; intrinsic_outer(L, c, &a, &z);
     const ComputedStyle *s = c->st;
-    bool dep = s->width.kind == LK_AUTO || len_has_pct(s->width);
+    bool dep = s->width.kind == LK_AUTO || s->width.kind == LK_STRETCH || len_has_pct(s->width);
     bool minw = s->min_width.kind == LK_LEN && (s->min_width.px > 0 || s->min_width.pct);
     float m = (s->margin[1].pct ? 0 : s->margin[1].px) + (s->margin[3].pct ? 0 : s->margin[3].px);   /* the clamp is on the box, margins come on top */
     return dep && !minw ? LMIN(a - m, LMAX(0, maxlen - m)) + m : a;
@@ -119,13 +119,17 @@ static bool grid_stretches(const Box *c, bool horizontal, const char *alignment)
     if (!strcmp(alignment, "stretch")) return true;
     return (!strcmp(alignment, "normal") || !strcmp(alignment, "auto")) && c->fmt != FMT_REPLACED && s->aspect_ratio <= 0;
 }
-static float grid_stretch_size(const Box *c, bool horizontal, float available, float reference) {
+static float grid_stretch_size(const Box *c, const Box *cb, bool horizontal, float available, float reference) {
     const ComputedStyle *s = c->st;
     float bp = horizontal ? hbp(c) : vbp(c), extra = s->box_sizing == BOX_BORDER ? 0 : bp;
     Length lo = horizontal ? s->min_width : s->min_height, hi = horizontal ? s->max_width : s->max_height;
     float size = LMAX(bp, available);
-    if (len_def(hi, reference)) size = LMIN(size, LMAX(bp, res(hi, reference) + extra));
-    if (len_def(lo, reference)) size = LMAX(size, res(lo, reference) + extra);
+    float stretch = lo.kind == LK_STRETCH || hi.kind == LK_STRETCH ?
+        layout_stretch_border_size(c, cb, horizontal, reference, reference >= 0) : -1;
+    if (hi.kind == LK_STRETCH && stretch >= 0) size = LMIN(size, stretch);
+    else if (len_def(hi, reference)) size = LMIN(size, LMAX(bp, res(hi, reference) + extra));
+    if (lo.kind == LK_STRETCH && stretch >= 0) size = LMAX(size, stretch);
+    else if (len_def(lo, reference)) size = LMAX(size, res(lo, reference) + extra);
     return size;
 }
 static float grid_item_offset(Box *c, bool horizontal, const char *alignment, bool reverse, float area_size) {
@@ -384,8 +388,22 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         compute_mbp(c, w);
         char align_buf[64]; const char *ja = grid_self_alignment(c->st, s, true, align_buf);
         bool stretch = grid_stretches(c, true, ja);
-        float forced_w = grid_stretch_size(c, true, w - c->m[1] - c->m[3], w);
-        layout_box(L, c, cx + cx0[g->c] + c->m[3], cy, w, -1, NULL, stretch ? SZ_FORCED : SZ_SHRINK, forced_w, -1);
+        float forced_w = grid_stretch_size(c, b, true, w - c->m[1] - c->m[3], w);
+        float measure_height = -1;
+        bool sizing_height = c->st->height.kind == LK_STRETCH || c->st->min_height.kind == LK_STRETCH ||
+                             c->st->max_height.kind == LK_STRETCH;
+        if (sizing_height) {
+            float fixed_height = rg * LMAX(0, g->rs - 1); bool definite = true;
+            for (int r = g->r; r < g->r + g->rs; r++) {
+                float h = track_fixed(&rows[r], chdef);
+                if (h < 0) { definite = false; break; }
+                fixed_height += h;
+            }
+            if (definite) measure_height = fixed_height;
+        }
+        /* An intrinsic row remains indefinite while contributions are
+         * measured. Fixed spanned tracks already provide an area basis. */
+        layout_box(L, c, cx + cx0[g->c] + c->m[3], cy, w, measure_height, NULL, stretch ? SZ_FORCED : SZ_SHRINK, forced_w, -1);
         if (g->rs == 1 && track_fixed(&rows[g->r], chdef) < 0)
             rh[g->r] = LMAX(rh[g->r], c->h + c->m[0] + c->m[2]);
     }
@@ -439,9 +457,11 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         const char *ja = grid_self_alignment(c->st, s, true, justify_self_buf);
         const char *al = grid_self_alignment(c->st, s, false, align_self_buf);
         bool stretch_x = grid_stretches(c, true, ja), stretch_y = grid_stretches(c, false, al);
-        if (stretch_y || len_has_pct(c->st->height) || len_has_pct(c->st->min_height) || len_has_pct(c->st->max_height)) {
-            float fw = grid_stretch_size(c, true, w - c->m[1] - c->m[3], w);
-            float fh = stretch_y ? grid_stretch_size(c, false, hh - c->m[0] - c->m[2], hh) : -1;
+        bool sizing_height = c->st->height.kind == LK_STRETCH || c->st->min_height.kind == LK_STRETCH ||
+                             c->st->max_height.kind == LK_STRETCH;
+        if (stretch_y || sizing_height || len_has_pct(c->st->height) || len_has_pct(c->st->min_height) || len_has_pct(c->st->max_height)) {
+            float fw = grid_stretch_size(c, b, true, w - c->m[1] - c->m[3], w);
+            float fh = stretch_y ? grid_stretch_size(c, b, false, hh - c->m[0] - c->m[2], hh) : -1;
             layout_box(L, c, cx + cx0[g->c] + c->m[3], cy, w, hh, NULL, stretch_x ? SZ_FORCED : SZ_SHRINK, fw, fh);
         }
         float x = cx + xoff + (rtl ? grid_width - cx0[g->c] - w : cx0[g->c]);
@@ -521,8 +541,11 @@ float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef)
     col_widths(L, &g, mn, mx);
     float smn = 0, smx = 0; for (int k = 0; k < nc; k++) { smn += mn[k]; smx += mx[k]; }
     float avail = cw - spx * (nc + 1);
-    bool specified = b->st->width.kind == LK_LEN;
-    bool has_min = b->st->min_width.kind == LK_LEN && (b->st->min_width.px > 0 || b->st->min_width.pct > 0);   /* box width already honours min-width */
+    bool specified = b->st->width.kind == LK_LEN || b->st->width.kind == LK_STRETCH;
+    /* The outer sizing path already resolved stretch and minimum widths.
+     * Preserve that used width instead of shrinking columns to max-content. */
+    bool has_min = b->st->min_width.kind == LK_STRETCH ||
+                   (b->st->min_width.kind == LK_LEN && (b->st->min_width.px > 0 || b->st->min_width.pct > 0));
     float target = specified || has_min ? avail : LMIN(avail, smx);
     if (target < smn) target = smn;
     float *w = xcalloc((size_t)nc + 1, sizeof(float));

@@ -1,0 +1,38 @@
+{
+  "iteration": 5,
+  "candidate": 219,
+  "started_utc": "2026-10-30T12:53:13.325545+00:00",
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Bounded typed progress() correction for four prior-pass losses; no new deferred layout-expression representation",
+  "finished_utc": "2026-10-30T13:05:33.394077+00:00",
+  "source_commit": "a75cbe83f955d51fbafa084214bd0d78f533c611",
+  "binary_sha256": "bb53fd0ac42cea48627e58ce24b2028fa4c5b5abcbb7a12ca5d61e31a6878e59",
+  "source_manifest_sha256": "5600e91b986285305ed3634d46ae6c35d48f7c03c5154f08293528d6fa201025",
+  "stepped_math": "594/594, 4/4 files",
+  "neighbors": "173/432, unchanged from218; all prior passes preserved",
+  "progress": {
+    "pass": 90,
+    "assertions": 139,
+    "computed": "26/36",
+    "invalid": "28/35",
+    "serialization": "36/68",
+    "remaining_nonpass": 49,
+    "prior_losses_restored": 4,
+    "prior_pass_loss_missing_added": 0
+  },
+  "independent_progress": "36/36 absolute; 8/8 invalid percentage types; 8/8 positive percentage preservation",
+  "other_fixed_gates": "62/62;12/12 signed zero;20/20 boundaries;4/4 font;8/8 tokens;12/12 font context;3/3 separate crash smoke",
+  "native": "141/141;145 direct native boundary checks",
+  "browser_exit_receipts": "33 native exits0 with profile cleanup and unchanged source pins",
+  "provisional_quality_score": 95,
+  "acceptance": "provisional development baseline only; exact640 not rerun on219, published214 remains fallback",
+  "remaining_scope": "49 progress-family nonpasses remain explicit; no full progress or overall browser98 claim",
+  "focused_audit": "candidate219-focused-audit.json",
+  "focused_audit_sha256": "bee98d29932d895bad90360e4274079d7e548076a6f407ce185acfef08f21307",
+  "duration_minutes": 12.334475533333334,
+  "session_elapsed_minutes": 79.62323461666666
+}

@@ -4,7 +4,7 @@
 #include <math.h>
 
 /* ---------------- values ---------------- */
-enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT, LK_CONTENT };
+enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT, LK_CONTENT, LK_STRETCH };
 typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm, math_pct_mask; float px2, pct2, px3, pct3; } Length;
 /* pctu: written with % (so 0% != 0px). mm1/2 are two-arm min/max;
    mm3/4 are clamp and its negative-scaling dual. Stepped operators retain

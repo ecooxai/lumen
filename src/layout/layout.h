@@ -81,6 +81,13 @@ void layout_dump(Box *b, int depth, int maxdepth);
 enum { SZ_FILL, SZ_SHRINK, SZ_FORCED };
 Box *build_box_tree(Layout *L, Document *d);
 void compute_mbp(Box *b, float cbw);
+/* Anonymous/inline wrappers do not establish the percentage containing block. */
+const Box *layout_percentage_cb(const Box *box);
+/* Final border-box stretch size; only an indefinite basis returns -1.
+   Available space can be negative after absolute insets: subtract margins
+   before flooring the inner size. Callers must not apply box-sizing again. */
+float layout_stretch_border_size(const Box *box, const Box *percentage_cb,
+                                bool horizontal, float available, bool definite);
 void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
 float layout_inline(Layout *L, Box *b, float x0, float y0, float W, FloatCtx *fc);
 float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, FloatCtx *fc);

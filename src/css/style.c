@@ -835,7 +835,12 @@ static bool line_height_valid(const char *v) {
 /* Sizing math is range-clamped once its computed length is independent of a
  * percentage reference. Keep unresolved percentages/comparisons intact for
  * layout; margin and inset values deliberately use the unrestricted parser. */
+static bool sizing_stretch_keyword(const char *v) {
+    return str_ieq(v, "stretch") || str_ieq(v, "-webkit-fill-available");
+}
 static bool alen_size(ACtx *c, const char *v, Length *out) {
+    /* This keyword belongs to sizing destinations, never generic Length users. */
+    if (sizing_stretch_keyword(v)) { *out = (Length){ .kind = LK_STRETCH }; return true; }
     Length value = *out;
     if (!alen(c, v, &value)) return false;
     if (value.kind == LK_LEN) {
@@ -1625,6 +1630,7 @@ static bool flex_factor(ACtx *c, const char *v, float *out) {
     return true;
 }
 static bool flex_basis(ACtx *c, const char *v, Length *out) {
+    if (sizing_stretch_keyword(v)) return alen_size(c, v, out);
     if (str_ieq(v, "content")) { *out = (Length){ .kind = LK_CONTENT }; return true; }
     if (str_ieq(v, "auto") || str_ieq(v, "min-content") ||
         str_ieq(v, "max-content") || str_ieq(v, "fit-content")) return alen(c, v, out);
@@ -5595,6 +5601,7 @@ static void len_str(SB *b, Length l, const char *au) {
     else if (l.kind == LK_MAX_CONTENT) sb_puts(b, "max-content");
     else if (l.kind == LK_FIT_CONTENT) sb_puts(b, "fit-content");
     else if (l.kind == LK_CONTENT) sb_puts(b, "content");
+    else if (l.kind == LK_STRETCH) sb_puts(b, "stretch");
     else if (l.mm) bg_length_str(b, l);
     else if (l.pct && l.px) sb_printf(b, "calc(%g%% %c %gpx)", l.pct, l.px < 0 ? '-' : '+', fabsf(l.px));
     else if (l.pct || (l.pctu && !l.px)) sb_printf(b, "%g%%", l.pct);

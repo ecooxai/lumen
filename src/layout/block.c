@@ -315,7 +315,9 @@ static void flex_static_position(const Box *a, bool auto_x, bool auto_y, float *
 
 /* places one absolutely positioned box, with a position-area and flips (1 block, 2 inline) from its style or a
    position-try fallback; true when its margin box fits the containing block */
-static float clamph(const ComputedStyle *s, float h, float cbh, float bp);
+static float clampw_basis(Layout *L, Box *b, float w, float cbw, float bp, float available, bool definite);
+static float clamph_basis(Box *b, float h, float cbh, float bp, float available, bool definite);
+static float clamph(Box *b, float h, float cbh, float bp);
 /* Private absolute shrink mode: cbw remains the percentage containing-block
    width; fw is the available inset-constrained width, before margins. Existing
    memo keys include mode, cbw and fw, so the two inputs remain independent. */
@@ -349,13 +351,32 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
         if (af[0] >= 0) rA = true;
         if (af[1] >= 0) bA = true;
     }
-    g_imcb[0] = pw - (lA ? 0 : l) - (rA ? 0 : r); g_imcb[1] = ph - (tA ? 0 : t) - (bA ? 0 : bt);
+    /* CSS Position3 3.5.2: a stretch size uses a nonnegative inset-modified
+       rectangle. Reduce its weaker inset, retaining the same adjusted edges
+       for both sizing and final placement. An auto inset is always weaker;
+       otherwise the containing block's logical end edge is weaker. */
+    bool sizing_x = s->width.kind == LK_STRETCH || s->min_width.kind == LK_STRETCH || s->max_width.kind == LK_STRETCH;
+    bool sizing_y = s->height.kind == LK_STRETCH || s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH;
+    float remainder_x = pw - (lA ? 0 : l) - (rA ? 0 : r);
+    float remainder_y = ph - (tA ? 0 : t) - (bA ? 0 : bt);
+    bool weak_left = lA != rA ? lA : cb->st && static_axis_reverse(cb->st, true);
+    bool weak_top = tA != bA ? tA : cb->st && static_axis_reverse(cb->st, false);
+    if (sizing_x && remainder_x < 0) {
+        if (weak_left) l = (lA ? 0 : l) + remainder_x;
+        else r = (rA ? 0 : r) + remainder_x;
+    }
+    if (sizing_y && remainder_y < 0) {
+        if (weak_top) t = (tA ? 0 : t) + remainder_y;
+        else bt = (bA ? 0 : bt) + remainder_y;
+    }
+    g_imcb[0] = pw - (lA ? (sizing_x ? l : 0) : l) - (rA ? (sizing_x ? r : 0) : r);
+    g_imcb[1] = ph - (tA ? (sizing_y ? t : 0) : t) - (bA ? (sizing_y ? bt : 0) : bt);
     bool mlA = s->margin[FI(3)].kind == LK_AUTO, mrA = s->margin[FI(1)].kind == LK_AUTO, mtA = s->margin[FI(0)].kind == LK_AUTO, mbA = s->margin[FI(2)].kind == LK_AUTO;
 #undef FI
     int mode = SZ_SHRINK; float fw = 0, fh = -1;
-    bool wdef = len_def(s->width, pw);
+    bool wdef = len_def(s->width, pw) || s->width.kind == LK_STRETCH;
     if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) { mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */ fw = pw - l - r - a->m[1] - a->m[3]; }
-    float avail = pw - (lA ? 0 : l) - (rA ? 0 : r);
+    float avail = sizing_x ? g_imcb[0] : pw - (lA ? 0 : l) - (rA ? 0 : r);
     if (!len_def(s->height, ph) && !tA && !bA) {
         fh = ph - t - bt - a->m[0] - a->m[2];
         /* Preserve the old sizing path for non-stretch alignment and for
@@ -369,10 +390,20 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
                floor. Apply min/max before positioning and preserve the
                existing intrinsic, ratio and table sizing paths. */
             float bp = vbp(a);
-            fh = LMAX(bp, clamph(s, LMAX(bp, fh), ph, bp));
+            fh = LMAX(bp, clamph(a, LMAX(bp, fh), ph, bp));
         }
     }
     if (a->fmt == FMT_REPLACED) fh = -1;
+    float stretch_avail_h = sizing_y ? g_imcb[1] : ph - (tA ? 0 : t) - (bA ? 0 : bt);
+    if (s->width.kind == LK_STRETCH) {
+        mode = SZ_FORCED;
+        fw = layout_stretch_border_size(a, cb, true, avail, true);
+        fw = clampw_basis(L, a, fw, pw, hbp(a), avail, true);
+    }
+    if (s->height.kind == LK_STRETCH) {
+        fh = layout_stretch_border_size(a, cb, false, stretch_avail_h, true);
+        fh = clamph_basis(a, fh, ph, vbp(a), stretch_avail_h, true);
+    }
     if (s->anchor_sz[0] || s->anchor_sz[1]) {   /* anchor-size() widths and heights are border-box sizes here */
         float v; bool bs = s->box_sizing == BOX_BORDER;
         if (s->anchor_sz[0] && anchor_size(a, 0, pw, &v)) { mode = SZ_FORCED; fw = bs ? v : v + a->b[1] + a->b[3] + a->p[1] + a->p[3]; }
@@ -395,6 +426,30 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
        box's padding, margins and width limits. Other shrink callers retain
        their original sizing contract. */
     layout_box(L, a, 0, 0, mode == SZ_FORCED || mode == SZ_ABS_SHRINK || wdef || a->fmt == FMT_REPLACED ? pw : avail, ph, NULL, mode, fw, fh);
+    /* Limits-only stretch needs the natural size first. Bound width before
+       reading height: changing an automatic ratio-dependent width can change
+       that height. A later height limit can in turn change automatic width. */
+    bool stretch_width_limit = s->min_width.kind == LK_STRETCH || s->max_width.kind == LK_STRETCH;
+    bool stretch_height_limit = s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH;
+    if (stretch_width_limit) {
+        float bounded = clampw_basis(L, a, a->w, pw, hbp(a), avail, true);
+        if (fabsf(bounded - a->w) > .001f) {
+            mode = SZ_FORCED; fw = bounded;
+            layout_box(L, a, 0, 0, pw, ph, NULL, mode, fw, fh);
+        }
+    }
+    if (stretch_height_limit) {
+        float bounded = clamph_basis(a, a->h, ph, vbp(a), stretch_avail_h, true);
+        if (fabsf(bounded - a->h) > .001f) {
+            fh = bounded;
+            layout_box(L, a, 0, 0, pw, ph, NULL, mode, fw, fh);
+            if (stretch_width_limit) {
+                bounded = clampw_basis(L, a, a->w, pw, hbp(a), avail, true);
+                if (fabsf(bounded - a->w) > .001f)
+                    layout_box(L, a, 0, 0, pw, ph, NULL, SZ_FORCED, bounded, fh);
+            }
+        }
+    }
     float ow = a->w, oh = a->h;
     if (!lA && !rA && mlA && mrA) { float m = (pw - l - r - ow) / 2; a->m[1] = a->m[3] = LMAX(0, m); }
     if (!tA && !bA && mtA && mbA) {
@@ -425,6 +480,15 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
     if (!area) flex_static_position(a, lA && rA, tA && bA, &sx, &sy);
     if (!lA) x = px + l + a->m[3]; else if (!rA) x = px + pw - r - a->m[1] - ow; else x = sx + a->m[3];
     if (!tA) y = py + t + a->m[0]; else if (!bA) y = py + ph - bt - a->m[2] - oh; else y = sy + a->m[0];
+    /* Normal/stretch alignment keeps the stronger logical-start edge even
+       when a floor overflows, or a maximum leaves room in, the rectangle. */
+    bool vertical_cb = cb->st && cb->st->writing_mode;
+    int ax = vertical_cb ? s->align_self : s->justify_self;
+    int ay = vertical_cb ? s->justify_self : s->align_self;
+    if (sizing_x && weak_left && !rA &&
+        (ax == AL_AUTO || ax == AL_NORMAL || ax == AL_STRETCH)) x = px + pw - r - a->m[1] - ow;
+    if (sizing_y && weak_top && !bA &&
+        (ay == AL_AUTO || ay == AL_NORMAL || ay == AL_STRETCH)) y = py + ph - bt - a->m[2] - oh;
     if (area && af[0] >= 0) x += af[0] * (pw - l - r - ow - a->m[1] - a->m[3]);
     if (area && af[1] >= 0) y += af[1] * (ph - t - bt - oh - a->m[0] - a->m[2]);
     box_translate(a, x - a->x, y - a->y);
@@ -533,6 +597,21 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
         /* place so that the child's own margin is inside the collapsed amount */
         float own = c->collapse_top ? 0 : 0; (void)own;
         layout_box(L, c, cx + c->m[3], y, cw, cbh, c->bfc ? NULL : fc, SZ_FILL, 0, -1);
+        if (fc && fc->n && c->bfc && c->kind == BX_BLOCK && !b->st->writing_mode &&
+            (c->st->width.kind == LK_STRETCH || c->st->min_width.kind == LK_STRETCH || c->st->max_width.kind == LK_STRETCH)) {
+            /* A BFC's border box excludes floats. Margins may occupy already
+               excluded space; retain the original percentage-width reference. */
+            float ml = c->st->margin[3].kind == LK_AUTO ? 0 : c->m[3];
+            float mr = c->st->margin[1].kind == LK_AUTO ? 0 : c->m[1], left, right;
+            fc_avail(fc, y, LMAX(c->h, 1), cx + ml, cx + cw - mr, &left, &right);
+            float available = right - left + ml + mr;
+            float width = c->st->width.kind == LK_STRETCH ?
+                layout_stretch_border_size(c, b, true, available, true) : c->w;
+            width = clampw_basis(L, c, width, cw, hbp(c), available, true);
+            if (fabsf(width - c->w) > .001f)
+                layout_box(L, c, left, y, cw, cbh, NULL, SZ_FORCED, width, -1);
+            else if (fabsf(left - c->x) > .001f) box_translate(c, left - c->x, 0);
+        }
         if (c->collapse_top) { /* child's margins absorbed: nothing */ }
         bool empty = c->h == 0 && c->nlines == 0 && !c->first && c->fmt != FMT_REPLACED;
         if (empty) { pending = collapse2(collapse2(first && b->collapse_top ? 0 : pending, mt), c->m[2]); cursor = y - (first && b->collapse_top ? 0 : collapse2(0, 0)); if (!(first && b->collapse_top)) cursor = y - collapse2(pending, 0) + collapse2(pending, 0) - 0; cursor = LMIN(cursor, y); continue; }
@@ -548,33 +627,52 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
 }
 
 /* ---------------- generic box layout ---------------- */
-static float clampw(Layout *L, Box *b, float w, float cbw, float bp) {
+static float clampw_basis(Layout *L, Box *b, float w, float cbw, float bp, float stretch_available, bool definite) {
     const ComputedStyle *s = b->st;
     bool bs = s->box_sizing == BOX_BORDER;
     bool ilo = !s->writing_mode && intrinsic_width_keyword(s->min_width);
     bool ihi = !s->writing_mode && intrinsic_width_keyword(s->max_width);
     float mn = 0, mx = 0, available = cbw - b->m[1] - b->m[3];
     if (ilo || ihi) intrinsic_content_width(L, b, cbw, &mn, &mx);
+    float stretch = (s->min_width.kind == LK_STRETCH || s->max_width.kind == LK_STRETCH) ?
+        layout_stretch_border_size(b, layout_percentage_cb(b), true, stretch_available, definite) : -1;
     if (s->max_width.kind == LK_LEN && len_def(s->max_width, cbw)) { float v = res(s->max_width, cbw) + (bs ? 0 : bp); if (w > v) w = v; }
+    else if (s->max_width.kind == LK_STRETCH && stretch >= 0) w = LMIN(w, stretch);
     else if (ihi) w = LMIN(w, intrinsic_width_size(s->max_width, mn, mx, available));
     if (s->min_width.kind == LK_LEN && len_def(s->min_width, cbw)) { float v = res(s->min_width, cbw) + (bs ? 0 : bp); if (w < v) w = v; }
+    else if (s->min_width.kind == LK_STRETCH && stretch >= 0) w = LMAX(w, stretch);
     else if (ilo) w = LMAX(w, intrinsic_width_size(s->min_width, mn, mx, available));
-    return w;
+    return s->width.kind == LK_STRETCH || s->min_width.kind == LK_STRETCH || s->max_width.kind == LK_STRETCH ? LMAX(bp, w) : w;
 }
-static float clamph(const ComputedStyle *s, float h, float cbh, float bp) {
+static float clampw(Layout *L, Box *b, float w, float cbw, float bp) {
+    /* abs_place owns the distinct inset-modified stretch basis. */
+    return clampw_basis(L, b, w, cbw, bp, cbw, !b->abs && cbw >= 0);
+}
+static float clamph_basis(Box *b, float h, float cbh, float bp, float available, bool definite) {
+    const ComputedStyle *s = b->st;
     bool bs = s->box_sizing == BOX_BORDER;
+    float stretch = (s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH) ?
+        layout_stretch_border_size(b, layout_percentage_cb(b), false, available, definite) : -1;
     if (s->max_height.kind == LK_LEN && len_def(s->max_height, cbh)) { float v = res(s->max_height, cbh) + (bs ? 0 : bp); if (h > v) h = v; }
+    else if (s->max_height.kind == LK_STRETCH && stretch >= 0) h = LMIN(h, stretch);
     if (s->min_height.kind == LK_LEN && len_def(s->min_height, cbh)) { float v = res(s->min_height, cbh) + (bs ? 0 : bp); if (h < v) h = v; }
-    return h;
+    else if (s->min_height.kind == LK_STRETCH && stretch >= 0) h = LMAX(h, stretch);
+    return s->height.kind == LK_STRETCH || s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH ? LMAX(bp, h) : h;
+}
+static float clamph(Box *b, float h, float cbh, float bp) {
+    return clamph_basis(b, h, cbh, bp, cbh, !b->abs && cbh >= 0);
 }
 
 static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
 /* flex/grid measure a child and then lay it out again, often with identical inputs; nested containers made that exponential */
 int g_lb_calls, g_lb_hits;
-static bool pct_h(const ComputedStyle *s) { return s->height.pctu || s->height.pct || s->min_height.pctu || s->min_height.pct || s->max_height.pctu || s->max_height.pct; }
+static bool pct_h(const ComputedStyle *s) { return s->height.kind == LK_STRETCH || s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH || s->height.pctu || s->height.pct || s->min_height.pctu || s->min_height.pct || s->max_height.pctu || s->max_height.pct; }
 static bool hdep(const Box *b) {
     if (b->has_abs) return true;
-    for (const Box *c = b->first; c; c = c->next) if (c->st && pct_h(c->st)) return true;
+    for (const Box *c = b->first; c; c = c->next) {
+        if (c->st && pct_h(c->st)) return true;
+        if ((c->anon || c->kind == BX_INLINE) && hdep(c)) return true;
+    }
     return false;
 }
 void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh) {
@@ -611,6 +709,9 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     bool is_cell = s->display == D_TABLE_CELL;
     if (mode == SZ_FORCED) b->w = fw;
     else if (b->fmt == FMT_REPLACED) { float w, h; replaced_size(L, b, cbw, cbh, -1, fh, &w, &h); b->w = w + hb; }
+    else if (s->width.kind == LK_STRETCH && cbw >= 0 && !is_cell) {
+        b->w = clampw(L, b, layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true), cbw, hb);
+    }
     else if (len_def(s->width, cbw) && !is_cell) { b->w = clampw(L, b, res(s->width, cbw) + (bs ? 0 : hb), cbw, hb); if (b->w < hb) b->w = hb; }
     else if (mode == SZ_FILL && b->fmt != FMT_TABLE && s->width.kind != LK_FIT_CONTENT && s->width.kind != LK_MAX_CONTENT && s->width.kind != LK_MIN_CONTENT) b->w = clampw(L, b, cbw - b->m[1] - b->m[3], cbw, hb);
     else {
@@ -639,12 +740,15 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     float cx = b->x + b->b[3] + b->p[3], cy = b->y + b->b[0] + b->p[0], cw = LMAX(0, b->w - hb);
     float hdef = -1;
     if (fh >= 0) hdef = LMAX(0, fh - vb);
+    else if (s->height.kind == LK_STRETCH && cbh >= 0)
+        hdef = LMAX(0, layout_stretch_border_size(b, layout_percentage_cb(b), false, cbh, true) - vb);
     else if (len_def(s->height, cbh) && s->height.kind == LK_LEN) hdef = LMAX(0, res(s->height, cbh) - (bs ? vb : 0));
     else if (s->aspect_ratio > 0 && b->fmt != FMT_REPLACED && s->height.kind != LK_LEN) hdef = LMAX(0, (bs ? b->w : cw) / s->aspect_ratio - (bs ? vb : 0));
     /* children size against the used height: YouTube's theater player stretches in a flex row whose
        height:56.25vw is capped by max-height and then raised by min-height:480px */
-    if (hdef >= 0 && fh < 0) hdef = LMAX(0, clamph(s, hdef + vb, cbh, vb) - vb);
-    float ch_for_kids = hdef >= 0 ? hdef : -1;
+    if (hdef >= 0 && fh < 0) hdef = LMAX(0, clamph(b, hdef + vb, cbh, vb) - vb);
+    /* Anonymous wrappers do not replace their ancestor's percentage CB. */
+    float ch_for_kids = b->anon ? cbh : hdef >= 0 ? hdef : -1;
     FloatCtx own = {0};
     FloatCtx *f = b->bfc || !fc ? &own : fc;
     float ch = 0;
@@ -662,7 +766,7 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     free(own.v);
     float content_h = ch;
     float h = (hdef >= 0 && b->fmt != FMT_REPLACED ? hdef : ch) + vb;
-    if (fh < 0) h = clamph(s, h, cbh, vb);
+    if (fh < 0) h = clamph(b, h, cbh, vb);
     b->h = LMAX(0, h);
     if (b->fmt == FMT_REPLACED || (b->ctl && b->nlines)) b->has_baseline = b->ctl && b->nlines, b->baseline = b->nlines ? b->lines[0].base : b->y + b->h;
     /* a button's content is centred vertically in a taller box, as in Chrome (google.com's

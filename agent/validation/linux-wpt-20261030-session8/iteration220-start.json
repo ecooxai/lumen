@@ -1,0 +1,11 @@
+{
+  "iteration": 6,
+  "candidate": 220,
+  "started_utc": "2026-10-30T13:13:24.625405+00:00",
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Complete48 assertion/29 rendering CSS stretch family; common definite border-box sizing, native/CSSOM sizing destinations, block/absolute/replaced and independent flex/grid integration"
+}
