@@ -1,39 +1,39 @@
 {
   "title": "Lumen Linux · parser options and script lifecycle",
-  "phase": "Candidate212 compile declaration failure preserved; candidate213 linkage correction building",
-  "iteration": 13,
-  "score": 46.67,
-  "iteration_quality": 46.67,
-  "score_note": "CSS39 baseline: 154/330 reported assertions. This scoped score is not whole-browser conformance.",
+  "phase": "Candidate214 source frozen and building: bounded CSS regression fixes and iframe refresh",
+  "iteration": 14,
+  "score": 64.24,
+  "iteration_quality": 64.24,
+  "score_note": "CSS39 candidate213:212/330 reported assertions;60 gains and2 prior-pass losses. Scope only, acceptance blocked.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
-  "checkpoint": "Candidate211 ca96ea6acc239fa91f47c84069b010f20ce09682: native140/140, but16 broad XML assertion regressions block acceptance.",
-  "updated_utc": "2026-10-30T09:58:14.345174+00:00",
+  "checkpoint": "Candidate213 f709f5a7cea816a8757450789ce254fee82be93f: XML20/20, native140/140; CSS rollback losses remain under correction.",
+  "updated_utc": "2026-10-30T10:14:16.005456+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
     [
-      "Fixed non-URL640, candidate211",
-      "395/640 fully passing files;8700/10540 assertions;624OK/15TIMEOUT/1ERROR. All640 actual native exits0 and cleanup complete."
+      "Fixed non-URL640 latest complete211",
+      "395/640 full files;8700/10540 assertions. Its16 XML losses are all fixed by213 focused20/20, but213 has not replayed640."
     ],
     [
       "Current Chromium156 same640",
-      "560/640 fully passing files;9551/10552 assertions. Separate browser registrations retained."
+      "560/640 full files;9551/10552 assertions."
     ],
     [
-      "Regression blocker",
-      "16 prior-pass losses confined to DOMParser XML document identity/metadata. Candidate212 correction is untested until the next immutable build."
+      "Candidate213 CSS39",
+      "212/330 assertions;15/39 full files versus211154/330,10/39.60 gains,2 prior-pass losses,0 missing prior identities."
     ],
     [
-      "Completed important parts retained through210/211 focused gates",
-      "Parser options1961/1961; ordinary script scheduling64/64; template/adoption50/50; document creation64/64; native211140/140."
+      "Candidate213 completed regression gates",
+      "XML20/20;native140/140;creation64/64;template50/50;CE49/50;clone156/157;is26/26."
     ],
     [
-      "CSS39 frozen baseline",
-      "Candidate211154/330 reported assertions,10/39 whole files; Chromium156299/331,35/39. One native refresh timeout and registration differences are explicit."
+      "Next correction",
+      "Real CSS rule rollback and same-value iframe attribute navigation. Tests and expected values remain fixed."
     ],
     [
       "Publication",
-      "Reviewed205 source/archive remain published. Candidate212 is not yet accepted or published."
+      "Reviewed205 source/archive remain published. Latest source is still under regression acceptance."
     ]
   ],
   "coverage": "Latest complete fixed non-URL640 sample:211395/640 full files and8700/10540 assertions. CurrentChromium156560/640 and9551/10552. FullWPT/whole-browser98 is not certified.",
