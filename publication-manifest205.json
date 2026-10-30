@@ -1,0 +1,51 @@
+{
+  "candidate": 205,
+  "prepared_utc": "2026-10-30T07:59:08.579887+00:00",
+  "source_commit": "2491c6ef792a713deeb7ccbdeb3df367120ad7f6",
+  "public_source_commit": "0742c66b2c9b077c68006c9cb1b4413e281c328d",
+  "public_source_tree": "5411322738f6b57eebe0d921ee38114652c58e66",
+  "whole_browser_goal_achieved": false,
+  "export_rebuild_performed": false,
+  "files": [
+    {
+      "path": "index.html",
+      "bytes": 6786,
+      "sha256": "a0b7e945161ddf7f39c33e98f095f623159bfafda6c4ea6b0f9016a03900bf28"
+    },
+    {
+      "path": "candidate200.html",
+      "bytes": 16680,
+      "sha256": "a4c8fbfad1921aa0db862d7c40eddaf27d285ac51bee919d2b39382147631324"
+    },
+    {
+      "path": "src.tar.gz",
+      "bytes": 9359280,
+      "sha256": "56dd33ca4808da1dcc1f6b8ba0f377b8d855a660ef4dd0e704da2fdf6e3bacaf"
+    },
+    {
+      "path": "src-candidate200.tar.gz",
+      "bytes": 9316289,
+      "sha256": "cb396f9c3dc0a0b7cbb8a59dcaa073f5ce5bf902f54680c6cce317e23322989e"
+    },
+    {
+      "path": "source-inclusion-manifest.json",
+      "bytes": 183931,
+      "sha256": "e4da2d3bd5e8b59cf6ea76b6fb9b158d78bd8f300e124f90d8d5350f4de6720c"
+    },
+    {
+      "path": "source-inclusion-manifest200.json",
+      "bytes": 160424,
+      "sha256": "974621a3e114dd2170b9594067b60729a1090cc0b410903702b7e58bef7ba8cc"
+    },
+    {
+      "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint205.json",
+      "bytes": 4586,
+      "sha256": "781ddd3d7b0c430fcf20f171984442e589f1c1a825b130a885b9d9645963588f"
+    },
+    {
+      "path": "source-qualification205.json",
+      "bytes": 2535,
+      "sha256": "dfeee8ad856341a90ec5b850bc7263261cbc780e7c9cd65500256539aea4cb8b"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "candidate": 205,
+  "source_commit": "2491c6ef792a713deeb7ccbdeb3df367120ad7f6",
+  "already_public_parent": "3b9a6a5fff8b925067a560367cccc00fb8098d67",
+  "previous_reviewed_export_commit": "3b9a6a5fff8b925067a560367cccc00fb8098d67",
+  "proposed_public_branch": "gpt-6-astra-pro-builtin-integration-source205-20261030",
+  "scope": "Reviewed source-only Linux progress checkpoint; no whole-browser conformance or portable binary claim",
+  "source_file_count": 711,
+  "all_recorded_inputs_included_and_exact": true,
+  "original_binary_sha256": "14f2db0e87e1107388c4d3a6c8acd6c10a8d0c3c1b849ba0ca42c94624debad4",
+  "export_rebuild_performed": false,
+  "whole_browser_assessment": "98/100 not certified; historical640 non-URL sample remains200380/640 whole files;205 has not replayed that sample",
+  "additive_metadata": [
+    "SOURCE-MANIFEST.json",
+    "EXPORT-QUALIFICATION.json",
+    "docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint205.json",
+    "README checkpoint qualification"
+  ],
+  "excluded": [
+    "private working Git ancestry",
+    "agent/",
+    "agents/",
+    "AGENTS.md",
+    "devsummary.md",
+    "private historical docs/",
+    "tools/promo/",
+    "private validation outputs",
+    "guard/auth implementations",
+    "profiles/inbox/capabilities/credentials",
+    "build artifacts and dependency caches"
+  ],
+  "recorded_source_set_manifest_sha256": "4c676376ac04acf4835fd99ac8630d23c477d77e1fb6fd6a7c0efdc01dc355f6",
+  "recorded_source_set_entries": 642,
+  "validation": {
+    "parser_options": {
+      "files_pass": 18,
+      "files_total": 18,
+      "assertions_pass": 1961,
+      "assertions_total": 1961
+    },
+    "ordinary_lifecycle": {
+      "files_pass": 32,
+      "files_total": 35,
+      "assertions_pass": 61,
+      "assertions_total": 64,
+      "prior_wpt_pass_losses": 0
+    },
+    "native_non_url": {
+      "pass": 140,
+      "total": 140
+    },
+    "authored_prior_pass_losses": 2
+  },
+  "current_limits": [
+    "Two authored immediate-document-write checks regressed and are being fixed in candidate206.",
+    "Initial HTML is still parsed eagerly; future DOM visibility and some document-written token continuation remain incorrect.",
+    "The 640-file non-URL comparison has not been replayed on candidate205; its last measured Lumen200 whole-file result is380/640.",
+    "Scores apply only to declared cohorts. Full WPT and98/100 whole-browser conformance are not certified.",
+    "No additional security-probe acceptance is claimed. URL conformance remains deferred."
+  ]
+}
