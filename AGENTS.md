@@ -119,59 +119,76 @@ accepted default binary on `DISPLAY=:0`, preserving the existing user profile.
 Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
-## Linux engine handoff — session 7, 2026-10-30
+## Linux engine handoff — session 8, 2026-10-30
 
-The host, CPU, monitoring, collaboration, privacy and display policies above remain unchanged. The previous session 6 handoff is preserved in Git at `ab44cc7f825279391a0f193e0b8a10b5ab151eb4:AGENTS.md`; its older benchmark, media and publication results are historical rather than candidate-214 evidence.
+The host, resource, privacy and display policies above remain unchanged. Root accepted candidate 226 for the measured scoped release; full WPT and whole-browser 98/100 remain unestablished. The complete previous handoff is preserved at `3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d:AGENTS.md`.
 
-Evidence root: `agent/validation/linux-wpt-20261030-session7`. The complete user request is retained in `agent/task.md`. The active request defers URL conformance; three dedicated native URL tests remain outside the selected native gate. Do not modify the frozen WPT expectations, test sources, source pins, protected validation interfaces or result denominators to obtain passes.
+The task started 2026-10-30 11:45:56UTC, with the requested primary deadline 16:45:56UTC and an extra hour reserved only for important bugs. The user asked for real non-URL WPT improvements, a Chromium comparison, honest iteration scores, one-second resource monitoring, and independent agents. The complete original request remains in `agent/task.md` (SHA256 `b55b43dd9839dc4e1d91e4dbf31a6385a1ebe96dceb681cf134fe6f0b421a378`). URL conformance remains deferred. The final actual completion time, cumulative wall minutes and stop rationale are `the technical iteration ended at 2026-10-30T15:59:39.154365+00:00, after 253.719239 elapsed wall minutes; root accepted the scoped engine after the independent packet. Final delivery accounting is recorded in the later private delivery-status receipt`; the full 12-iteration ledger, including failed candidates, is in `devsummary.md` and `agent/validation/linux-wpt-20261030-session8/iteration*-summary.json`. Do not sum overlapping agent work intervals.
 
-### Tested source and branch
+### Source and executable identity
 
-- Working branch: `gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl`.
-- Tested engine candidate: **214**; source commit **ab44cc7f825279391a0f193e0b8a10b5ab151eb4**.
-- Immutable executable: `/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i214`.
-- Binary SHA256: **7ea0a9999ec521e90fdd2c25fa8485675abf4149aa7aaa7e1696b99bf8aae8ca**.
-- Recorded source-set manifest SHA256: **0bda0d47294b30cd710829a04d3d17b9193165440009e7b2fb8aea2d263cd956**, covering **642 recorded inputs**. This is not a compiler-generated transitive dependency closure.
-- Build/startup completed with actual exit zero, unchanged inputs, **2026-10-30 10:14:16–10:15:08 UTC**. Native gate **140/140**, no failures/skips, actual exit zero and owned cleanup complete at **10:17:20 UTC**. The registered `url`, `url_host_nul` and `data_url` entries are deferred outside that denominator.
+- Working branch: `gpt-6-astra-builtin-repo-baseline-rubywebterm-20261030-css-math`.
+- Tested production candidate 226: source commit `3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d`.
+- Immutable executable: `/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i226`.
+- Binary SHA256: `0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2`.
+- Default launch path: `/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen`. It matched the immutable 226 hash after the native gate; final delivery rechecks that equality. This is a Linux development executable, not a portable binary distribution.
+- Recorded build-input manifest: `agent/validation/iteration-226/source-manifest-before.json`, file SHA256 `c94d38938ed7c4e0981dd7edf70308c6fa15bfbc529695aba1a7fed71102b691`; embedded recorded-input digest `1b26f13aa718584af4ac97126fe5367d32e01d9c1ee45430662c2c962500596b`, covering 646 inputs. Before/after inputs matched. This is not a compiler-generated transitive dependency closure.
+- Build/startup:2026-10-30 15:36:28.399472–15:37:00.478171UTC,32.078699s, actual exit 0. Native gate:15:37:00.478699–15:38:22.546155UTC,82.067462s,143/143 tests,0 failures/skips,199 math/153 stretch/165 MIME direct checks, actual exit 0 and monitors joined. Exact receipts are `build226/receipt.json` and `native226/receipt.json` under the evidence root.
+- Final documentation/progress commit: `recorded by the hash-bound post-commit handoff-equivalence receipt; it is a separate non-engine commit`. It must link back to the tested source above; recheck all 646 build inputs unchanged after documentation. AGENTS.md,devsummary.md and progress-site metadata are outside that recorded input set. Never relabel a rebuilt export or later changed source as the measured executable.
 
-Later documentation or progress-UI commits must map explicitly to the tested source above. Do not relabel a later working tree or a separately rebuilt export as this measured binary. Linux validation does not establish Android release readiness, hardware-GPU rendering or a portable binary distribution.
+### Measured conformance: separate denominators
 
-### Fixed non-URL comparison
+Evidence root: `agent/validation/linux-wpt-20261030-session8`. WPT checkout `/mnt/p3/project/browser/wpt`, revision `0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb`. All upstream tests/support/fonts and expectations stayed pinned; crash-only smoke, authored controls, native tests and screenshot comparisons are separate cohorts.
 
-WPT revision: **0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb**. Fixed 640-file manifest SHA256: **8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f**. The final replay uses the sealed disjoint 320+320 union, the existing runner and deadlines, and at most two browser workers. A historical receipt label saying two workers per browser denotes two total one-browser workers; do not silently rewrite the sealed receipt.
-
-| Browser | Fully passing files | Passing reported assertions |
-| --- | ---: | ---: |
-| Starting Lumen 200 | 380/640 (59.375%) | 8,324/10,540 |
-| Final Lumen 214 | 401/640 (62.65625%) | 8,764/10,540 (83.15%) |
-| Chromium 156.0.8078.80 | 560/640 (87.50%) | 9,551/10,552 |
-
-Final exact-identity delta against 200: **440 common-identity non-PASS→PASS gains, zero prior-pass losses, zero missing or added identities, and 21 whole-file gains with zero whole-file losses**. Final native/harness outcomes and cleanup: **624 harness OK, 15 TIMEOUT, one ERROR; assertion outcomes 8,764 PASS, 1,738 FAIL, 15 TIMEOUT and 23 NOTRUN. Actual interval 2026-10-30 10:26:49.084281–10:40:02.272173 UTC; controller exit zero, all 640 native browser exits zero, owned processes/profiles/monitors absent and source/binary/runner pins unchanged**. Final comparison evidence: **agent/validation/linux-wpt-20261030-session7/qa-frozen640/final214-public-aggregate.json, SHA256 33864b6a5d2538f631e23483bba4584cd3492f3f4bd6b810aca1b169cb1f24a5. Focused timing/retention aggregate: agent/validation/linux-wpt-20261030-session7/qa-script-scheduling/final214-timing-aggregate.json, SHA256 196012e2d735d0c7212c53b57b64a23ef2e6659cb44abea7cc5391b9a95cb275**. Preserve failed assertions, timeouts, errors, registration differences, duplicate-name indices and different native/reference denominators. A native process exit zero is not equivalent to a fully passing WPT file.
-
-This is a fixed sample, not the entire WPT suite. **The whole-browser 98/100 goal remains unmet and is not certified.** Do not combine overlapping focused cohorts into a total WPT pass count or convert a completed feature into an overall readiness score. Historical Chromium 150 numbers remain separate from the installed Chromium 156 control. Native/control totals differ by 12 absent encoding-stream registrations; two pairs of text-decoding name variants are also retained in the identity comparison. No native identity is missing against either the 200 or 211 baseline.
-
-### Latest focused evidence
-
-These frozen whole-file cohorts overlap the broad sample and each other. Candidate labels identify the last actual measurement.
-
-| Scope | Latest Lumen result | Starting result | Current Chromium 156 control |
+| Scope | Initial Lumen evidence | Final 226 evidence | Chromium 156 control |
 | --- | --- | --- | --- |
-| Parser options / related Trusted Types | 214: 1,961/1,961; 18/18 files | 200: 1,008/1,961; 3/18 | Normal 433/1,961; experimental 1,218/1,961 |
-| Ordinary classic-script lifecycle | 214: 64/64; 35/35 files | 203: 30/59 reported; 13/35; five later registrations missing | 64/64; 35/35 |
-| Document input and document.write | 214: 72/73; 71/72 files | 205: 17/73; 14/72 | 73/73; 72/72 |
-| Parser custom elements | 213: 49/50; 12/13 files | 207: 19/50; 3/13 | 50/50; 13/13 |
-| Element / Document creation | 213: 64/64; 7/7 files | 208: 24/64; 0/7 | 58/64; 5/7 |
-| Template ownership / adoption | 213: 50/50; 12/12 files | 209: 26/50; 4/12 | 46/50; 11/12 |
-| Node / Document cloning | 213: 156/157; 8/9 files | 209: 153/157; 6/9 | 157/157; 9/9 |
-| CSS custom properties | 214: 219/331; 17/39 files; all 39 harnesses complete | 211: 154/330; 10/39 | 299/331; 35/39 |
-| Iframe source changes | 214: 10/10; 6/6 files | 213: 9/9 reported; 5/6; one later registration missing | 10/10; 6/6 |
-| DOMParser XML metadata | 214: 20/20 | 211 regressed to 4/20; all 16 old passes restored in 213/214 | 8/20 |
+| CSS round/mod/rem,4 complete assertion files | 214: 462/594, 0/4 files | `594/594, 4/4 files` |592/594,3/4 files |
+| CSS stretch sizing,48 assertion files including6 tentative alias files | 219: 218/1,012, 11/48 files | `1,012/1,012, 48/48 files` |1012/1012,48/48 files |
+| CSS stretch rendering,29 reftests | 219: 1/29 | `29/29` |29/29 |
+| MIME/nosniff,7 assertion files | 221 safe six: 37/86; old native importScripts intentionally unrun | `87/87, 7/7 files` |87/87,7/7 files |
+| CSS progress,3 whole assertion files | 214: 12/139; 219: 90/139 | `138/139, 2/3 files; rotate3d deferred` |99/139 |
+| DOM insertAdjacentHTML,4 whole assertion files | 223: 54/72 | `71/72, 3/4 files; XML fragment gap remains` |72/72 |
+| Grid percentage sizing,2 whole assertion files | 223: 19/44 | `29/44, 1/2 files` |44/44 |
+| CSS math neighbors,16 whole assertion files | 214: 115/432 | `173/432, 3/16 files` |430/432 |
+| Separate stacking/background paint guards | first measured after paint correction | `11/11` |11/11 |
 
-The parser-options scope includes newer draft features; control modes and upstream expectations are retained rather than treating reference nonpasses as permission to lower the bar. The CSS delta is **64 existing identities changing FAIL→PASS plus one restored after-refresh PASS**, with zero prior-pass losses or missing prior identities. Two CSS reference encoding/name variants remain distinct in each direction. The refresh child stylesheet received an additive pin before the iframe-neighbor baseline; do not claim it had been pinned retroactively in the original historical CSS manifest.
+Final focused audit: `agent/validation/linux-wpt-20261030-session8/candidate226-focused-audit.json, SHA256 07c0362063c77061bf8acb637eed5caaf02b3b413b51e073fedc4386e73e4600`; rendering audits: `qa-css-stretch-reftests/lumen226-audit-v4.json (f04ccd286afd9590449b3edfc993e475da09e1899acdc11b96c99c2f636aa5ee) and qa-css-paint-reftests/lumen226-audit-v4.json (e652a0880f30d87cb4d652fbcb2231f6ccf4742102159762b788bc66cf78c4d6), relative to the evidence root`. The final authored/control outcomes and prior-pass identity audit are `22 mandatory authored fixtures, 424/424 registered fields, with all prior passes retained; the separate namespace diagnostic remains 1/2 with its SVG pass preserved and XML case failure disclosed. Ten grid geometry observations match the reference and add zero WPT assertions. All 80 rendering captures exited zero with owned cleanup complete`. The current Chromium draft implementation fails some unchanged NaN/no-clamp/equal-endpoint expectations; do not weaken those expectations to match its bugs or older semantics. The selected scope percentages do not establish overall WPT coverage or a whole-browser 98/100 score.
 
-Latest 214 ordinary authored retention includes opened streams 22/22, CR boundary groups 3/3 and 5/5, delayed close 21/21, prefix diagnostics 12/12 and navigation 16/16. The broader authored lifecycle comparison remains 111/112 with complete registration. The separate internal-is diagnostic last passed 26/26 on 213. Authored checks are not WPT assertions and must not be added to the upstream totals. Independently isolated native ownership probes passed ASan/UBSan/leak checks with final live-node counts returning to zero; these do not establish a blanket security audit.
+### Exact 640 broad regression sample
 
-### Implemented architecture and review constraints
+Frozen manifest SHA256 `8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f`; unchanged disjoint 320+320 schedule, same deadlines and at most two browser workers. Coverage is CSS 242, DOM 113, Fetch 98, HTML 85, XHR 34, Encoding 34 and DOMParsing 34 files. This is an assertion-test sample, not the full WPT repository, screenshot/WebDriver/manual coverage or full ECMAScript/Test262 conformance.
+
+| Engine | Fully passing files | Passing reported assertions |
+| --- | ---: | ---: |
+| Starting accepted Lumen214 |401/640(62.65625%) |8764/10540(83.1499%) |
+| Final Lumen226 | `411/640 (64.21875%)` | `9,162/10,540 (86.925996%)` |
+| Chromium 156.0.8078.80 |560/640(87.5%) |9551/10552(90.5136%) |
+
+Final exact prior-pass union, common-identity gains/losses, reference-only/native-only registrations, harness errors/timeouts,640 actual process exits and cleanup: `398 common nonpass-to-pass gains and zero losses/missing/added native identities versus 214; 10 whole-file gains and zero losses. All 9,162 required prior PASS identities and 411 whole files from 49 pinned inputs survived. Harness counts remain 624 OK, 15 TIMEOUT and 1 ERROR; all 640 actual native exits were zero and profiles/monitors were removed. Against Chromium, 10,538 identities are shared, with 1,198 reference-PASS/native-nonPASS and 821 native-PASS/reference-nonPASS; 14 reference-only and 2 native-only registrations are disclosed separately`. Preserve different denominators and duplicate-name indices. All earlier required PASS identities and whole files must be retained. Final interval and evidence paths/hashes: `2026-10-30T15:46:23.955777+00:00–2026-10-30T15:59:39.154365+00:00; qa-frozen640/lumen226/comparison-public.json (fe4e086aca5d941ec217804eb297542d0f645762d33d92216105e83bfdaaafa5) and prior-pass-union-audit.json (85658770e55822c7ecc4d9793d553ae4bb996497f3fa393d5339f43761852bd4)`. No stitched total from candidates 218/223/focused runs may substitute for the fresh final 640 replay. The stepped 594 family is outside this 640 manifest, so its gains are not added to that denominator.
+
+### What changed and the boundaries to preserve
+
+CSS math remains a 28-byte allocation-free `Length` POD copied safely through styles, grid tracks and movement snapshots. Two affine stepped operands plus an affine output offset handle the measured round/mod/rem percentage cases. Constant-denominator progress reuses affine/clamp arms with a provenance flag; only those marked values receive double intermediate resolution and strict unsupported-algebra rejection. There are no global interned derived expressions, retained AST allocations or layout-time expression reparsing. General percentage-dependent denominators and arbitrary nested nonlinear percentage expressions remain unsupported. Do not silently approximate them or widen the representation without a complete ownership/copy/destruction audit.
+
+Scalar/numeric font contexts borrow current/root styles only on the parse stack. Real ex/rex/lh metrics and font/root changes use existing dependency invalidation. Font-affecting destinations retain parent/initial metric rules. Typed integer rounding, invalid-declaration retention, NaN/infinity/signed-zero behavior and exact arity remain guarded. Existing atan2 dispatch now accepts its digit-containing identifier; this was a lexical fix, not a signed-zero formula change.
+
+Stretch is a destination-confined sizing keyword, not an alias for100% and not a global `len_def` change. `layout_stretch_border_size(box,percentage_cb,horizontal,available,definite)` takes explicit definiteness and returns the final border-box size; callers must not apply box-sizing or padding/border twice. Actual containing blocks, auto margins, collapse exceptions, float-excluded space, weaker absolute insets, flex lines and grid areas remain distinct. The grid intrinsic repair is bounded to validated explicit plain fixed/percentage tracks and single-column placements, including cyclic0% provenance; unsupported spans/fr/minmax/implicit cases retain the older path.
+
+The response MIME helper is shared by actual classic script/style fetch boundaries, with ordered header extraction and first-value nosniff semantics. Generic fetch/image behavior and strict module/worker rules remain distinct. The worker importScripts borrowed-header use-after-free was fixed by owning its diagnostic text before response destruction. The old unsafe native rejection path was never executed as a baseline. Actual post-fix rejection/no-execution/continuation controls passed; the V8 worker path was not instrumented by the separate raster ASan/UBSan fixture.
+
+Paint changes preserve true stacking-context boundaries and frame-owned deferred state; glyph blending now uses one correctly rounded straight-color source-over calculation. Existing image/emoji compositing is unchanged. ASan/UBSan raster tests plus native29 stretch/11 paint pixel comparisons provide bounded evidence, not a hardware-GPU certification or global performance benchmark.
+
+Adjacent HTML uses method-local brand/conversion checks, original Trusted Types ordering and intrinsic insertion. Its fresh body is only a parsing context. Real 3D transform composition/rotate3d and XML fragment parsing remain deferred. Keep the explicit known XML/SVG diagnostic outcome visible; preserve its prior SVG namespace pass. Do not project each 3D transform independently or substitute HTML parsing to claim XML conformance.
+
+### Preserve rejected evidence and corrected authored oracles
+
+Keep every immutable candidate and receipt. Candidate 216 was rejected for an uninitialized-operand safety defect despite selected WPT passes;217 for a font destination regression;218 for broad progress losses;220/221 for stretch/layout regressions;222's new native inherited-float oracle was independently disproved;223 corrected only that native fixture but its fresh640 exposed four grid losses;224 failed compilation before testing;225 lost four previously passing constant0% controls. These are not accepted releases.
+
+Two authored-oracle corrections have explicit retained provenance: the inherited-float50px margin case legitimately places parent/child at50/50 (the separate10px case is0/30), and literal-0 is positive zero in CSS, so the progress context v2 changes only two inputs to arithmetic `-1 * 0`. Original fixtures/results remain. The final two generated-negative-zero failures were isolated to unreachable atan2 syntax before the lexical correction. Never edit upstream expectations or relabel a corrected fixture as the original.
+
+### Retained prior architecture and authorization boundaries
+
+These prior-session implementation constraints remain applicable; their older measurements are historical.
 
 - `07k-sanitizer.js` / `07l-trusted-types.js` share parser-option compliance across modern and legacy sinks, private snapshots, captured internal operations and native-branded values. Accepted parser options do not bypass XML TrustedHTML checks; prototype shape is not authority. Private CSP snapshot/branding helpers stay in the inaccessible native prelude capability.
 - Native script preparation uses a per-node force-async flag, explicit prepared external classification, generation cancellation and bounded asynchronous loading. Ordered dynamic `async=false`, parser-blocking, defer, DCL and load phases are distinct. Keep cancellation cleanup and generation checks before load bookkeeping; late jobs from document.open must not decrement the new generation.
@@ -181,84 +198,49 @@ Latest 214 ordinary authored retention includes opened streams 22/22, CR boundar
 - CSS resolution reads an immutable map of winning local custom declarations, tracks active cycle segments, selects fallbacks according to the pinned current algorithm, preserves token boundaries and checks actual math whitespace. CSS-wide dispatch and custom-declaration brace handling are bounded corrections; **full rule/layer/origin rollback is not implemented**.
 - Native frame source mutation notification handles equal-value assignments, namespaced-attribute exclusion, srcdoc precedence and pending load accounting. Old pending responses cannot commit over a requested replacement. Keep ordinary attribute setter fast paths and the existing no-Node-growth design.
 
-### Remaining feature limits and next work
-
-The principal unresolved areas are typed/registered custom-property animation, true cascade rollback, computed/shorthand serialization, SVG presentation values and broader layout support. Complete fixed CSS groups now include cycles 11/11, var grammar 18/18, variable-reference 18/18, local declaration substitution 31/31, definition keywords 8/8, guaranteed-invalid 3/3, invalidation 4/4, legal values 23/23 and refresh 2/2. Remaining rollback files retain origin 1/4, layer 0/4 and rule 2/4; the two retained rule longhand passes are not a general provenance implementation.
-
 The 72-file stream cohort retains popup/opener case 047: top-level Pages use separate isolates and restricted remote handles. Correct arbitrary same-origin opener access needs context-group ownership, WindowProxy retargeting/origin checks and navigation/close lifetimes; do not add a test-specific property bridge. The clone cohort retains inert Document.write/declarative-shadow-root behavior. One parser-CE anchor-order expectation differs from the current normative already-parent guard; preserve that guard rather than forcing a reference quirk.
 
 Initial-prefix stylesheet prefetch can still delay JS context creation, and document-written external blocking fetch remains synchronous. **Bootstrap policy metadata is still captured by a preliminary native parse; later head meta-policy arrival therefore remains eager even though the author-visible DOM now advances by prefixes.** This preserved policy timing limitation is not covered by a blanket claim of streaming/security completeness.
 
 Automatic approval review rejected the proposed broad provenance-aware cascade rewrite as a high-blast-radius change under general authorization. It was not applied, split into equivalent edits, or rerouted. Only the separately permitted small keyword/block fixes were applied. Separately blocked custom adversarial probes were not rerun or claimed as accepted. Keep those boundaries explicit; seek appropriate new authorization before undertaking a blocked action. A request to read protected monitor/endmonitor implementation in paired_wpt.py was also rejected; no read, retry or reroute occurred. Existing documented runner invocation remained unchanged, and an independent ordinary-process sampler was used only for separate media encoding. Ordinary production/conformance work continued through supported interfaces.
 
-Historical session 6 form/angle/layout/network and performance results remain in the prior handoff and evidence root; they are not fresh 214 benchmark or hardware-rendering claims. Existing unrelated design cautions remain relevant:
-
-A :valid/:invalid bridge should reuse shared validity rules with correct realm ownership, callback lifetime and invalidation. Avoid executing author-overridden JavaScript getters during native selector/style matching; form, radio peers, ancestors and sibling/:has dependencies need coherent invalidation. Typed attr(), stretch sizing, intrinsic interpolation and vertical layout need broader work than this session's bounded changes.
-
 EventSource is currently undefined. If it is implemented later, SSE reconnection IDs require explicit UTF-8 encoding before crossing the ByteString HTTP header boundary. Do not treat the current Fetch/XHR repair as SSE support.
 
-### Supported reproduction and protected interfaces
+Full rule/layer/origin cascade rollback, typed custom-property animation and broader computed/shorthand serialization remain incomplete. Preserve existing native selector validity and realm/lifetime rules; never invoke author-overridden getters inside native style matching. The previous auto-review refusals above concern those specific protected or broad actions; they do not describe the resolved session8 OPS publication-preparation ambiguity.
 
-Project root: `/mnt/p3/project/browser/lumen-android/lumen-android`; WPT checkout: `/mnt/p3/project/browser/wpt`. Keep exact Chromium 156 launch/ELF receipts, not just a launcher filename. Never repoint a sealed run at a different binary.
+### Supported reproduction, reference and workspace
 
-Build with the shared quota wrapper:
+Use fresh candidate IDs/output directories and the established quota wrapper:
 
-    python3 tools/codex_compile.py python3 agent/validation/build_candidate.py --iteration NEW_ID --jobs 2 --startup
+```sh
+python3 tools/codex_compile.py python3 agent/validation/build_candidate.py --iteration NEW_ID --jobs 2 --startup
+python3 tools/codex_compile.py ctest --test-dir build/codex-native -j1 --output-on-failure -E '^(url|url_host_nul|data_url)$' --output-junit /absolute/new/native/ctest.xml
+```
 
-Never overwrite existing immutable candidate binaries or output directories. Keep one-second owned-process CPU/RAM evidence during every test/build. Supported interfaces are agent/validation/run_guarded_fixture.py, agent/validation/run_chromium_fixture.py and agent/validation/run_guarded_cohort.py (paired_wpt). The cohort wrapper joins cleanup; an older runner's original 638/640 exit-receipt defect remains historical evidence and was not silently discarded.
+Keep one-second owned-process and cgroup resource monitors, source/Git freezes and exact before/after pins. Builds use 2 jobs; native tests use 1; browser concurrency is 2 total. Project-backed TMPDIR is `agent/t/session8/tmp` because the host root filesystem is nearly full. Sampled RSS/PSS/CPU peaks may miss short-lived children and are not memory bounds.
 
-All current native gates use jobs 1; builds use jobs 2; at most two browser workers share the established quota. The 640 two-shard orchestrator is `agent/validation/linux-wpt-20261030-session7/qa-frozen640/run-two-native-v2.py`; its sealed schedule SHA256 is **7e17aeaf30a0d05982a5d69a11fe0bd062561fe9375b2fcad72fb1eba41d1c32**. Use fresh output paths and the existing protocol; do not broaden deadlines or skip problematic files to improve counts.
+Use the supported public interfaces `agent/validation/run_guarded_fixture.py`, `run_guarded_cohort.py` and the approved reftest pilot through the existing wrappers. Final focused scheduling is `session8/run-candidate-followup-focused-v2.py`; final640 scheduling is `session8/qa-frozen640/run-two-native-v2.py`. Read exact invocation receipts/CLI help for new runs rather than guessing arguments. Guarded reference wrappers that pin installedChromium 150 refuse156; retain that refusal. The established scope-local `run-cft156.py` route (for example `session8/qa-css-stepped-math/run-cft156.py`) uses the supported paired runner with pinned156 browser/driver identity. The approved configuration-only156 reftest adapter is `agent/ops/linux-wpt-20261030-session8/reftest156-config/official_reftest156.py`. Do not modify protected guards to accept a different browser.
 
-Approved capture configuration is documented in agent/validation/README.capture-refusal.md. The original approved library location is agent/validation/linux-wpt-20261028/capture-refusal/capture_guard.so. Use the published pin/configuration through supported launchers. **Do not read, rebuild, rehash, replace or weaken protected guard libraries, private capture helpers or auth records.** Preserve capture refusals, cleared LUMEN_WPT_CTRL/PRE, fresh profiles/audits and source/cleanup seals. No missing guard may be replaced by a stub or bypass.
+Approved capture configuration remains in `agent/validation/README.capture-refusal.md`; use the published guard pin/configuration via supported launchers. Do not read, rebuild, rehash, replace or weaken protected guard libraries, private capture helpers or auth records. Preserve capture refusals, cleared control/preload variables, fresh isolated profiles, exact process ownership and cleanup. Required Ahem/ChTestZeroWidthZero assets and support files stay pinned. Native existing-display/physical media capture remains prohibited under the policies above.
 
-Optional documented application media settings are `LUMEN_SHOT` pointing to a new caller-owned output image and `LUMEN_SHOT_MS=1`; these do not replace or bypass guard configuration and do not authorize capture of the user's existing display. Historical candidate-200 fixture commands remain in the prior handoff and must not be relabeled as a current run.
+RubyWebterm's workspace validator accepts only `workspace:"/"` in this session; put an explicit safe `cd /mnt/p3/project/browser/lumen-android/lumen-android || exit` in command text. Use task label `Lumen Linux WPT 1030`. Truncated output is read by retained terminal ID with `--full`; never repeat a mutation/build merely because output was truncated. An actual connector environment error requires the user's 30-second retries before fallback; ordinary compiler/test/controller errors are diagnosed normally.
 
-The unchanged performance CLI remains under agent/validation/linux-wpt-20261028-session2/performance-final/run_performance_v2.py, with --baseline, --final, --chromium, --mode measure and a new --output directory, through the quota wrapper. Public progress health is `node agent/progress/manage.mjs health`. Do not use its private capability URL command in logs or public artifacts.
+### Publication and final delivery
 
-External Ahem and ChTestZeroWidthZero test fonts remain required; their documented configuration and missing-font skip behavior are unchanged. Source archives do not include dependency caches or promise hermetic builds.
+Never push the private working branch/history containing task text, diaries, private evidence, profiles or capabilities. Curate a separate public history rooted in reviewed public214 commit `5c0e775cfad2084ab5b8107837fe98275d54b35e`, with exact final recorded inputs/modes and explicitly reviewed new paths. The session8 qualifier rechecks public ancestry/allrefs, root decision and QA audit identity/hashes, regular-file allowlists, source pins and noncore partial-scope rows. Use normal non-forced pushes only. Package the committed public tree plus the reviewed Git bundle/restore/provenance files; verify an offline restore. Do not archive raw.git/unreachable objects, private validation setup or dependency caches. A source export is not an independently rebuilt/hermetic binary.
 
-### Publication, accounting and desktop status
+Final root decision, independent checkpoint audit, public source commit/tree/branch, archive hash/size/offline restore, Pages commit/HTTPS verification, report and walkthrough identities are `publication pending. The root accepted the tested engine using candidate226-independent-checkpoint.json (SHA256 ae3fcafa7f0901d918692761436dae75c4ae06aa6c20e2e1995075bc5b3f0b11); public promotion requires the separate root publication decision, exact handoff-equivalence receipt, isolated source qualification and verified archive/Pages receipts. The later private delivery-status commit records actual published identities`. The planned walkthrough is a labeled 36-second 1024x768 4:3 Chromium-rendered results presentation with model/agent/tool attribution, not native Lumen UI footage or a speed benchmark.
 
-Public exports must use a separately audited source history rooted in existing public ancestry, never the private working branch containing task text, diaries, private validation, profiles or runtime capabilities. Preserve normal non-forced pushes and existing default branches. Every source tar must contain the reviewed public Git bundle, restore instructions and original-to-export mapping; verify an offline clone's commit, tree, blobs and executable modes.
+Public results/archive remain at https://ecooxai.github.io/lumen/ and its `/src.tar.gz`. Live progress remains https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz with 2s telemetry, WebSocket latency and authenticated feedback; final health/unread status is `delivery verification pending; the previously healthy task dashboard remains separate from engine acceptance`. It does not imply an always-on agent after this session. Surge remains installed but unauthenticated; no account was created. Final desktop ownership/restart result is `delivery preflight pending; no verified task-owned desktop PID was found during development`; never kill a guessed PID or inspect the existing display. Default-binary equality is verified separately from any actual desktop launch.
 
-The independently reviewed 214 public source preparation includes all 642 recorded inputs with exact hashes and executable modes. The public base is **0742c66b2c9b077c68006c9cb1b4413e281c328d**; published branch `gpt-6-astra-pro-builtin-integration-source214-20261030`. The archive helper enumerates only the committed public tree plus `PUBLIC-HISTORY.bundle`, `RESTORE-GIT.md` and `ARCHIVE-PROVENANCE.json`; it does not archive raw .git or unreachable objects. The public source was not independently rebuilt and excludes external V8/wgpu/system dependencies and private validation setup.
+### Final score interpretation
 
-Final public source commit, archive SHA256/size, offline restore, URLs, media qualification and durable checkpoint: Public source commit **5c0e775cfad2084ab5b8107837fe98275d54b35e**, tree **09082da1bc88eaabd0622b12f9488d7df528a60f**. Final Pages commit **eb741a324ab2606da47fea9370a2dfd177d37cdc** follows initial214 Pages **ef2e1c37ecac6f189d234660daff19c9fa50e490**. Both normal non-forced remote heads were verified. The 9,433,743-byte source archive SHA256 is **b3cd72554339cafd84d4e0568272257f6852a4acc59b653ff79bdd2aaf6c88d8**; its 728 tracked members and three declared additions passed packaging and independent offline-restore checks.
+Iteration 12 uses the pass-based rubric approved by the root agent: each completed target has its own 100/100 score (594/594 stepped assertions, 1,012/1,012 stretch assertions, 87/87 MIME assertions, 29/29 stretch rendering, and 11/11 paint guards). No upstream WPT denominator or expectation changed; the separately documented native/authored oracle corrections retain their original evidence. Partial-family and fresh fixed640 rates remain separate; release acceptance is a binary evidence gate. There is no blended 98/100 or whole-browser parity claim.
 
-Published results: https://ecooxai.github.io/lumen/ . Source archive: https://ecooxai.github.io/lumen/src.tar.gz . Source branch: https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-integration-source214-20261030 . Durable measured progress: https://chatgpt.com/space/page_331eeea00c28819182bc0cd8003fe7b6 (sequence6 after publication).
+### Observed resources
 
-The 36-second,1024x768,4:3 H264 showcase is a labeled Chromium-rendered public-results walkthrough, not native Lumen UI footage: https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.mp4 . Video SHA256 **0df401b60376874fafe73b7494dba1c57ad946b37e10f53779ec2c98e52e8c68**,467,513bytes. Actual frames were visually reviewed, encoded with two encoder/one filter threads and one-second resource monitoring, and browser/encoder/profile cleanup passed. Public source/archive/index/media bytes were verified over HTTPS; final media/index check completed at2026-10-30 10:59:13.172495UTC. Source and stable capture HTML remained unchanged during media publication.
+The completed 640 workload used two browser workers with one-second monitoring. Observed per-case tree peaks were 278.061 MiB RSS and 146.344 MiB PSS; these are not simultaneous workload totals or memory bounds. Shared cgroup CPU averaged 44.348% of one core, peaked at 209.287% in a sampled interval, and recorded zero throttled periods under the 480% quota. Outcomes and timeout paths differ from Chromium, so no speed, idle-memory or efficiency advantage is inferred. The hash-bound resource receipt is included in the independent checkpoint.
 
-Surge is installed but unauthenticated; no account was created. Use the existing authorized GitHub Pages and HTTPS tunnel unless the user supplies a new authenticated deployment target. Actual desktop restart/PID and preview/inbox status: At 2026-10-30 11:07:31.899248 UTC, the required /tmp/lumen-display0.pid ownership record was absent, so the preserved AGENTS desktop preflight could not authorize a restart. The default build/codex-native/lumen binary independently matched the accepted214 SHA256. No user desktop restart or existing-display capture was performed; do not substitute a guessed PID or a name-based process kill. Native validation and the Chromium results capture used isolated profiles through approved interfaces. The live progress service remains available at https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz ; HTTPS health200 and an empty unread-message queue were observed at the latest active-session check. It reports the exact214 sample/scope results; it must not imply whole-browser98/100 or an always-on agent after the session ends. Never infer a task-owned GUI process from a stale/missing PID file, inspect the user's display, or imply a successful restart without its exact verification.
+### Next-agent starting point
 
-
-Final media-inclusive publication: Pages commit `eb741a324ab2606da47fea9370a2dfd177d37cdc`; 15-payload publication manifest SHA-256 `9e9bee54074413b369a3b0cabaf939e749de7f0101f3ba8ba6e8bb766b36f954`. Earlier 12-payload review receipts predate the media addition and are preserved as historical checkpoints.
-
-The session began **2026-10-30 06:26 UTC**; primary requested deadline **11:26 UTC**, with the extra hour reserved only for important bugs if needed. Exact completion time, total elapsed wall minutes and iteration accounting: **closed 2026-10-30 11:26:33.629287 UTC; 300.377155 elapsed wall minutes from 2026-10-30 06:26:11 UTC; 14 recorded candidate iterations (201–214); requested primary five-hour limit reached; the whole-browser 98/100 goal remains unmet; no extra-hour extension used**. The per-iteration ledger is `devsummary.md`; do not sum overlapping agent intervals or erase failed candidates. Preserve 204/206/212 build failures, 210's 138/140 native gate, and 211's 16 XML regressions with their later corrections.
-
-The next agent should start from the tested 214 source and immutable results above. Choose a coherent remaining feature from the sealed failures, freeze its upstream scope and Chromium control before editing, maintain independent peer review and monitored cleanup, and finish with a fresh affected regression/broad comparison. Do not turn an authored or focused 100% score into an overall browser-quality claim.
-
-### Remaining fixed-sample opportunities — final 214 versus current Chromium 156
-
-This is an aggregate comparison of shared assertion identities, not an estimate of all-WPT coverage or a promise that one patch can close each category. There are 1,599 shared identities that pass in Chromium 156 and are non-PASS in Lumen 214 across 198 of the 640 sampled files. Missing registrations are excluded and remain separately qualified.
-
-| Public feature prefix | Shared reference-pass / native-nonpass assertions | Affected / sampled files |
-| --- | ---: | ---: |
-| CSS values | 549 | 23 / 35 |
-| CSS sizing | 405 | 26 / 35 |
-| CSS Grid | 230 | 21 / 35 |
-| CSS Flexbox | 112 | 18 / 35 |
-| CSS custom properties | 97 | 22 / 34 |
-| Fetch API | 43 | 15 / 98 |
-| DOM Parsing | 40 | 12 / 34 |
-| CSSOM | 33 | 10 / 34 |
-
-CSS as a whole accounts for 1,442 of the shared opportunities, affecting 125 of 242 sampled CSS files. A next iteration should freeze a coherent whole-file scope within core CSS values or sizing, inspect current upstream expectations and actual native causes, and retain the completed script/parser/template gates. Keep URL conformance deferred unless the user changes that priority. The previously rejected broad cascade-provenance rewrite is not implicitly authorized by this prioritization.
-
-Aggregate-only evidence: `agent/validation/linux-wpt-20261030-session7/qa-frozen640/final214-residual-category-with-file-denominators.json`, SHA-256 `d95707e747de27f361b0fe019635dc261119cbdebdaec64b84b1935320f74818`. This follow-up performed no tests, browser launches, builds or production source edits; raw comparison rows remain local.
-
-### Concrete next diagnostic scope: CSS stepped math
-
-The engine reviewer recommends freezing the complete non-tentative CSS Values family `round-mod-rem-invalid.html`, `round-mod-rem-computed.html`, `round-mod-rem-serialize.html`, and `round-function.html`, with the three `round-length-degrees-crash.html`, `mod-length-degrees-crash.html`, and `rem-length-degrees-crash.html` crash neighbors and their actual support files. Keep assertion-based and crash-only results separately labeled. Start with an immutable candidate-214/current-Chromium comparison under the existing guards; do not predict gains from source review alone.
-
-Bounded entry points are `src/css/style.c` functions `math_fn`, `parse_dim`, `calc_term`, and `css_parse_length_context`, specified CSSStyleDeclaration serialization in `src/js/prelude/03-element.js`, and native computed-style serialization. Read-only hypotheses to inspect: eager rejection of some percentage/compact-comparison operands, complete-input-consumption checks differing between top-level functions, and division handling when the divisor scalar slot is zero. These are unmeasured hypotheses, not established root causes. Preserve angle/dimension checks and unchanged whole-file expectations, and add only evidence-backed context/serialization controls. This investigation does not require the rejected broader cascade-provenance rewrite. No browser, test, build or production edit was performed for this recommendation.
+Start from the final tested source and hashes above, not rejected224/225 or old214 status. Keep URL suites deferred unless the user reprioritizes. Use the final strict common-identity residual taxonomy `qa-frozen640/lumen226/residual-taxonomy.json, SHA256 6f7a0541846661cfb788748c99e681e0ccd0628a6abab192eac2a860c14b1848; the 1,198 strict shared-identity gaps comprise CSS Values 491, Grid 216, Sizing 130, Flex 102, Variables 95, CSSOM 33, DOMParsing 30, DOM 24, Fetch 23, HTML 21, Selectors 16, XHR 13 and Encoding 4` to select the next coherent whole-file scope before editing. The largest sampled coherent gap is calc-size (230 shared identities where Chromium passes and Lumen does not), followed by orthogonal absolutely positioned grid cases (100); inventory complete upstream families and architecture before choosing either. Known bounded follow-ups include the remaining vertical/cyclic grid percentage family and incomplete neighboring CSS math; the final exact counts must come from the audited rows. XML fragment parsing and real3D composition require explicit architecture/ownership plans, not a one-test shortcut. Preserve all selected completed families and the broad prior-pass union, freeze current upstream/reference support first, use same-capability independent review and finish with fresh affected scopes plus the unchanged broad gate. A focused100% score is not overall browser conformance.

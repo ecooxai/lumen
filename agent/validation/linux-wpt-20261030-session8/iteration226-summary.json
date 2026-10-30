@@ -1,0 +1,589 @@
+{
+  "iteration": 12,
+  "candidate": 226,
+  "started_utc": "2026-10-30T15:28:51+00:00",
+  "finished_utc": "2026-10-30T15:59:39.154365+00:00",
+  "duration_minutes": 30.802572750000003,
+  "cumulative_minutes": 253.71923941666668,
+  "time_scope": "Technical iteration ends at actual final broad controller completion; later delivery wall time is accounted separately.",
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "source_commit": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
+  "binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
+  "acceptance": "ACCEPTED by root for measured scoped engine release after independent checkpoint; publication pending. Full WPT and whole-browser98/100 are not established.",
+  "native": {
+    "tests": 143,
+    "passing": 143,
+    "math_boundary_checks": 199,
+    "stretch_checks": 153,
+    "MIME_policy_checks": 165,
+    "interval": {
+      "started_utc": "2026-10-30T15:37:00.478699+00:00",
+      "finished_utc": "2026-10-30T15:38:22.546155+00:00",
+      "duration_seconds": 82.0674621979997
+    }
+  },
+  "wpt": {
+    "qa-css-stepped-math": {
+      "native": {
+        "files": 4,
+        "fully_passing_files": 4,
+        "assertions": {
+          "PASS": 594
+        },
+        "total_assertions": 594,
+        "harness_statuses": {
+          "OK": 4
+        }
+      },
+      "chromium156": {
+        "files": 4,
+        "fully_passing_files": 3,
+        "assertions": {
+          "PASS": 592,
+          "FAIL": 2
+        },
+        "total_assertions": 594,
+        "harness_statuses": {
+          "OK": 4
+        }
+      },
+      "prior_pass_losses": 0,
+      "result_sha256": "ec84dfdf92918a3dc601c0ce544e9340d25efa4b6ab43bb5aa337138410a1cd1",
+      "reference_result_sha256": "6712573a06ab371fe07d76bb8fc418dd42e884d4d9da8256cd9f8b4dfe1cc556"
+    },
+    "qa-css-math-neighbors": {
+      "native": {
+        "files": 16,
+        "fully_passing_files": 3,
+        "assertions": {
+          "FAIL": 259,
+          "PASS": 173
+        },
+        "total_assertions": 432,
+        "harness_statuses": {
+          "OK": 16
+        }
+      },
+      "chromium156": {
+        "files": 16,
+        "fully_passing_files": 15,
+        "assertions": {
+          "PASS": 430,
+          "FAIL": 2
+        },
+        "total_assertions": 432,
+        "harness_statuses": {
+          "OK": 16
+        }
+      },
+      "prior_pass_losses": 0,
+      "result_sha256": "e364a4218c4172515f0b970ea6a5688a945aca30b503ddb04f98e331c04fca6d",
+      "reference_result_sha256": "800dee6e2623742b4fbc946faff5d52375a24d2945277a6b5260955261645410"
+    },
+    "qa-css-progress": {
+      "native": {
+        "files": 3,
+        "fully_passing_files": 2,
+        "assertions": {
+          "PASS": 138,
+          "FAIL": 1
+        },
+        "total_assertions": 139,
+        "harness_statuses": {
+          "OK": 3
+        }
+      },
+      "chromium156": {
+        "files": 3,
+        "fully_passing_files": 1,
+        "assertions": {
+          "PASS": 99,
+          "FAIL": 40
+        },
+        "total_assertions": 139,
+        "harness_statuses": {
+          "OK": 3
+        }
+      },
+      "prior_pass_losses": 0,
+      "result_sha256": "72583799605589ed42dbc84cdbc4419163fb11bb796413f9ce7e2b497efccc24",
+      "reference_result_sha256": "ece4abdde4aa5cd1dab7b1a7c4c18e19845335800e04cb1e2ec4f3b456e80944"
+    },
+    "qa-css-stretch": {
+      "native": {
+        "files": 48,
+        "fully_passing_files": 48,
+        "assertions": {
+          "PASS": 1012
+        },
+        "total_assertions": 1012,
+        "harness_statuses": {
+          "OK": 48
+        }
+      },
+      "chromium156": {
+        "files": 48,
+        "fully_passing_files": 48,
+        "assertions": {
+          "PASS": 1012
+        },
+        "total_assertions": 1012,
+        "harness_statuses": {
+          "OK": 48
+        }
+      },
+      "prior_pass_losses": 0,
+      "result_sha256": "7880900d0d9ea83401d23bc8c361033984364b51919a875503101156906cff0f",
+      "reference_result_sha256": "9f4388479970492837c59bd71fd6db259a4e166f20c9054842a6cd90e6f08c45",
+      "subscopes": {
+        "standard_assertion_files": {
+          "native": {
+            "files": 42,
+            "fully_passing_files": 42,
+            "assertions": {
+              "PASS": 738
+            },
+            "total_assertions": 738,
+            "harness_statuses": {
+              "OK": 42
+            }
+          },
+          "chromium156": {
+            "files": 42,
+            "fully_passing_files": 42,
+            "assertions": {
+              "PASS": 738
+            },
+            "total_assertions": 738,
+            "harness_statuses": {
+              "OK": 42
+            }
+          }
+        },
+        "tentative_alias_assertion_files": {
+          "native": {
+            "files": 6,
+            "fully_passing_files": 6,
+            "assertions": {
+              "PASS": 274
+            },
+            "total_assertions": 274,
+            "harness_statuses": {
+              "OK": 6
+            }
+          },
+          "chromium156": {
+            "files": 6,
+            "fully_passing_files": 6,
+            "assertions": {
+              "PASS": 274
+            },
+            "total_assertions": 274,
+            "harness_statuses": {
+              "OK": 6
+            }
+          }
+        }
+      }
+    },
+    "qa-grid-percentage": {
+      "native": {
+        "files": 2,
+        "fully_passing_files": 1,
+        "assertions": {
+          "PASS": 29,
+          "FAIL": 15
+        },
+        "total_assertions": 44,
+        "harness_statuses": {
+          "OK": 2
+        }
+      },
+      "chromium156": {
+        "files": 2,
+        "fully_passing_files": 2,
+        "assertions": {
+          "PASS": 44
+        },
+        "total_assertions": 44,
+        "harness_statuses": {
+          "OK": 2
+        }
+      },
+      "prior_pass_losses": 0,
+      "result_sha256": "1343b5958b3d92ff4021ca060853c8cae43ebb549422fa86df9acbcbcc6194df",
+      "reference_result_sha256": "13ffb6df4611a8f6421b27b0e64f79101c52b1e04e32170f4f64cc30312ddbf0"
+    },
+    "qa-insert-adjacent": {
+      "native": {
+        "files": 4,
+        "fully_passing_files": 3,
+        "assertions": {
+          "PASS": 71,
+          "FAIL": 1
+        },
+        "total_assertions": 72,
+        "harness_statuses": {
+          "OK": 4
+        }
+      },
+      "chromium156": {
+        "files": 4,
+        "fully_passing_files": 4,
+        "assertions": {
+          "PASS": 72
+        },
+        "total_assertions": 72,
+        "harness_statuses": {
+          "OK": 4
+        }
+      },
+      "prior_pass_losses": 0,
+      "result_sha256": "bad66e97b153aaeffcea1174448b36b3ef3dce66282dc0d82deed95cd009264f",
+      "reference_result_sha256": "8d75b325072014900704b26e08325a85692969df8018ee76ce5c9dc21c564713"
+    },
+    "qa-script-mime": {
+      "native": {
+        "files": 7,
+        "fully_passing_files": 7,
+        "assertions": {
+          "PASS": 87
+        },
+        "total_assertions": 87,
+        "harness_statuses": {
+          "OK": 7
+        }
+      },
+      "chromium156": {
+        "files": 7,
+        "fully_passing_files": 7,
+        "assertions": {
+          "PASS": 87
+        },
+        "total_assertions": 87,
+        "harness_statuses": {
+          "OK": 7
+        }
+      },
+      "prior_pass_losses": 0,
+      "result_sha256": "dabd942e6be9abaad24aed148cd468a12eba260bc948533bde85394380cc129f",
+      "reference_result_sha256": "f722a0b5e147391801c2aa935c36e06bdfa3220cc61c1805f2e494e2d4b6163e"
+    }
+  },
+  "rendering": {
+    "stretch": {
+      "native": {
+        "PASS": 29
+      },
+      "chromium156": {
+        "PASS": 29
+      },
+      "actual_captures": 58,
+      "actual_capture_exit_codes": {
+        "0": 58
+      },
+      "interval": {
+        "started_utc": "2026-10-30T15:43:57.372109+00:00",
+        "finished_utc": "2026-10-30T15:45:57.718542+00:00",
+        "duration_s": 120.05974191099813
+      },
+      "prior_losses": {
+        "219": [],
+        "220": [],
+        "221": []
+      }
+    },
+    "paint": {
+      "native": {
+        "PASS": 11
+      },
+      "chromium156": {
+        "PASS": 11
+      },
+      "actual_captures": 22,
+      "actual_capture_exit_codes": {
+        "0": 22
+      },
+      "interval": {
+        "started_utc": "2026-10-30T15:43:32.310306+00:00",
+        "finished_utc": "2026-10-30T15:44:20.630898+00:00",
+        "duration_s": 48.0673684229987
+      },
+      "prior_losses": {
+        "221": []
+      }
+    }
+  },
+  "fixed640": {
+    "native": {
+      "files": 640,
+      "fully_passing_files": 411,
+      "assertions": {
+        "PASS": 9162,
+        "FAIL": 1340,
+        "TIMEOUT": 15,
+        "NOTRUN": 23
+      },
+      "total_assertions": 10540,
+      "harness_statuses": {
+        "OK": 624,
+        "TIMEOUT": 15,
+        "ERROR": 1
+      }
+    },
+    "baseline214": {
+      "files": 640,
+      "fully_passing_files": 401,
+      "assertions": {
+        "PASS": 8764,
+        "FAIL": 1738,
+        "TIMEOUT": 15,
+        "NOTRUN": 23
+      },
+      "total_assertions": 10540,
+      "harness_statuses": {
+        "OK": 624,
+        "TIMEOUT": 15,
+        "ERROR": 1
+      }
+    },
+    "chromium156": {
+      "files": 640,
+      "fully_passing_files": 560,
+      "assertions": {
+        "PASS": 9551,
+        "FAIL": 980,
+        "NOTRUN": 9,
+        "TIMEOUT": 12
+      },
+      "total_assertions": 10552,
+      "harness_statuses": {
+        "OK": 626,
+        "TIMEOUT": 13,
+        "ERROR": 1
+      }
+    },
+    "vs214": {
+      "common_nonpass_to_pass": 398,
+      "prior_pass_losses": 0,
+      "missing_identities": 0,
+      "added_identities": 0,
+      "whole_file_gains": 10,
+      "whole_file_losses": 0,
+      "harness_changes": []
+    },
+    "strict_reference_identity_comparison": {
+      "common_identities": 10538,
+      "shared_reference_pass_native_nonpass": 1198,
+      "shared_native_pass_reference_nonpass": 821,
+      "shared_both_pass": 8339,
+      "reference_only_identities": 14,
+      "native_only_identities": 2,
+      "reference_only_statuses": {
+        "PASS": 14
+      },
+      "native_only_statuses": {
+        "PASS": 2
+      },
+      "reference_identity_audit_sha256": "ed8d6b5c44e7d678458666c85b51771b8c337a1ea0b397769f31702418715edc"
+    }
+  },
+  "preservation": {
+    "required_prior_PASS_identities": 9162,
+    "required_prior_fully_passing_files": 411,
+    "prior_input_count": 49,
+    "prior_pass_losses": 0,
+    "prior_whole_file_losses": 0
+  },
+  "scores": {
+    "rubric": "Each named scope is actual passes divided by unchanged registered denominator times100. Scores are not blended into whole-browser quality. Release readiness is an accepted/rejected evidence gate.",
+    "completed_targets": {
+      "stepped_assertions": 100,
+      "stretch_assertions": 100,
+      "mime_assertions": 100,
+      "stretch_rendering": 100,
+      "paint_guards": 100
+    },
+    "partial_scopes": {
+      "progress": 99.28057553956835,
+      "adjacent_HTML": 98.61111111111111,
+      "grid_percentage": 65.9090909090909,
+      "math_neighbors": 40.0462962962963
+    },
+    "fixed640_assertion_percent": 86.92599620493358,
+    "fixed640_whole_file_percent": 64.21875,
+    "whole_browser_98_established": false
+  },
+  "authored_targets": {
+    "fixtures": 22,
+    "registered_fields": 424,
+    "all_passed": true,
+    "mandatory_final_scopes": {
+      "qa-css-progress-context-v2": 33,
+      "qa-insert-adjacent-authored": 29,
+      "qa-css-math-zero-percent-constants": 4
+    },
+    "three_crash_smokes_are_not_formal_WPT_crashtest_protocol": true
+  },
+  "diagnostics": {
+    "namespace": [
+      1,
+      2
+    ],
+    "XML_failure_preexisting": true,
+    "SVG_prior_pass_preserved": true,
+    "grid_observations": 10,
+    "observation_WPT_assertions": 0
+  },
+  "evidence": {
+    "focused": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/candidate226-focused-audit.json",
+      "sha256": "07c0362063c77061bf8acb637eed5caaf02b3b413b51e073fedc4386e73e4600",
+      "measurement_candidate": 226
+    },
+    "native": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/native226/receipt.json",
+      "sha256": "7ad7f9dd0f18f399429b40da21e6614578a6d707770ca79b18122ada8ac1d3e8",
+      "measurement_candidate": 226
+    },
+    "build": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/build226/receipt.json",
+      "sha256": "74cdfc784cf502bb05bc163db8fbdb2e3d49d8e724c69b7d7e6b594440760136",
+      "measurement_candidate": 226
+    },
+    "stretch_rendering": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-css-stretch-reftests/lumen226-audit-v4.json",
+      "sha256": "f04ccd286afd9590449b3edfc993e475da09e1899acdc11b96c99c2f636aa5ee",
+      "measurement_candidate": 226
+    },
+    "paint_rendering": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-css-paint-reftests/lumen226-audit-v4.json",
+      "sha256": "e652a0880f30d87cb4d652fbcb2231f6ccf4742102159762b788bc66cf78c4d6",
+      "measurement_candidate": 226
+    },
+    "broad_comparison": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen226/comparison-public.json",
+      "sha256": "fe4e086aca5d941ec217804eb297542d0f645762d33d92216105e83bfdaaafa5",
+      "measurement_candidate": 226
+    },
+    "broad_raw_results": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen226/results.jsonl",
+      "sha256": "ec00b3f4eaba4388f72fe6fb843798342a3fef5f146b1917d7a9d894f55cb9e9",
+      "measurement_candidate": 226
+    },
+    "prior_pass_union": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen226/prior-pass-union-audit.json",
+      "sha256": "85658770e55822c7ecc4d9793d553ae4bb996497f3fa393d5339f43761852bd4",
+      "measurement_candidate": 226
+    },
+    "broad_controller": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen226-controller-receipt.json",
+      "sha256": "69f5389e47a6f8906155002022c075c5ab31f24455676ea0d0fc5af758217366",
+      "measurement_candidate": 226
+    },
+    "broad_cleanup": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen226/cleanup-aggregate.json",
+      "sha256": "548636e5050fa6320ea181ad090e224afde0632bb85f6b459594ba70d63de96f",
+      "measurement_candidate": 226
+    },
+    "outer_terminal_observation": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen226-outer-terminal-observation.json",
+      "sha256": "40ebb1393ad31ab706f6ce525df26af8ae52dcf95c6f6ce27cb93a24d9e00b23",
+      "measurement_candidate": 226
+    },
+    "resources": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/linux-wpt-20261030-session8/broad226-resource-summary.json",
+      "sha256": "1d8365bc75e2d32bdf412146d15a71278280376310be2df96c18f6d9ecc90f32",
+      "measurement_candidate": 226
+    },
+    "source_manifest_before": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-226/source-manifest-before.json",
+      "sha256": "c94d38938ed7c4e0981dd7edf70308c6fa15bfbc529695aba1a7fed71102b691",
+      "measurement_candidate": 226
+    },
+    "source_manifest_after": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-226/source-manifest-after.json",
+      "sha256": "c94d38938ed7c4e0981dd7edf70308c6fa15bfbc529695aba1a7fed71102b691",
+      "measurement_candidate": 226
+    },
+    "focused_execution": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/candidate226-focused-execution.json",
+      "sha256": "1f3f2d0a6d47b01a5113af0d79b1cd23d9981081155f5aec3466f6bd78b598d6",
+      "measurement_candidate": 226
+    },
+    "residual_taxonomy": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen226/residual-taxonomy.json",
+      "sha256": "6f7a0541846661cfb788748c99e681e0ccd0628a6abab192eac2a860c14b1848",
+      "measurement_candidate": 226
+    },
+    "prior_pass_pins": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/prior-pass-union-through226.json",
+      "sha256": "f39b50bd6038ae538bfcc9dcd97a242ad8c9d816bec93f8adfd0e78ea26b5b95",
+      "measurement_candidate": 226
+    },
+    "prior_pass_identities": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/required-prior-pass-identities-through226.json",
+      "sha256": "bc25a54ee620c02e7d962a2befefd2c7ae7174de044a7cfa7d4a405b755541d4",
+      "measurement_candidate": 226
+    },
+    "oracle_correction": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-css-progress-context-v2/oracle-correction.json",
+      "sha256": "69aeae846feda602966e9ae6f4726b2c21d1c663c5db4fb1b5fcfd0fbc188d4e",
+      "measurement_candidate": null
+    },
+    "namespace_diagnostic": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-insert-adjacent-context-boundaries/lumen226/receipt.json",
+      "sha256": "f26166ee396ce9f1b6261a7320ad12a0df344cffd146173369f9e513e3021a4b",
+      "measurement_candidate": 226
+    },
+    "reference_qa-css-stepped-math": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-css-stepped-math/chrome156-reference-normal/results.jsonl",
+      "sha256": "6712573a06ab371fe07d76bb8fc418dd42e884d4d9da8256cd9f8b4dfe1cc556",
+      "measurement_candidate": "Chromium156.0.8078.80"
+    },
+    "reference_qa-css-math-neighbors": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-css-math-neighbors/chrome156-reference-normal/results.jsonl",
+      "sha256": "800dee6e2623742b4fbc946faff5d52375a24d2945277a6b5260955261645410",
+      "measurement_candidate": "Chromium156.0.8078.80"
+    },
+    "reference_qa-css-progress": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-css-progress/chrome156-reference-normal/results.jsonl",
+      "sha256": "ece4abdde4aa5cd1dab7b1a7c4c18e19845335800e04cb1e2ec4f3b456e80944",
+      "measurement_candidate": "Chromium156.0.8078.80"
+    },
+    "reference_qa-css-stretch": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-css-stretch/chrome156-reference-normal/results.jsonl",
+      "sha256": "9f4388479970492837c59bd71fd6db259a4e166f20c9054842a6cd90e6f08c45",
+      "measurement_candidate": "Chromium156.0.8078.80"
+    },
+    "reference_qa-grid-percentage": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-grid-percentage/chrome156-reference-normal/results.jsonl",
+      "sha256": "13ffb6df4611a8f6421b27b0e64f79101c52b1e04e32170f4f64cc30312ddbf0",
+      "measurement_candidate": "Chromium156.0.8078.80"
+    },
+    "reference_qa-insert-adjacent": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-insert-adjacent/chrome156-reference-normal/results.jsonl",
+      "sha256": "8d75b325072014900704b26e08325a85692969df8018ee76ce5c9dc21c564713",
+      "measurement_candidate": "Chromium156.0.8078.80"
+    },
+    "reference_qa-script-mime": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-script-mime/chrome156-reference-normal/results.jsonl",
+      "sha256": "f722a0b5e147391801c2aa935c36e06bdfa3220cc61c1805f2e494e2d4b6163e",
+      "measurement_candidate": "Chromium156.0.8078.80"
+    },
+    "chromium156_binary_receipt": {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/receipt.json",
+      "sha256": "20027aced7c9f4694701dfb9a6b90c00caa683c86dd3e935ffce09c4464fa533",
+      "measurement_candidate": "Chromium156.0.8078.80"
+    }
+  },
+  "independent_checkpoint": {
+    "path": "agent/validation/linux-wpt-20261030-session8/candidate226-independent-checkpoint.json",
+    "sha256": "ae3fcafa7f0901d918692761436dae75c4ae06aa6c20e2e1995075bc5b3f0b11"
+  },
+  "delivery": "Publication pending; verified URLs/hashes and final task elapsed time will be recorded by a later non-engine handoff commit."
+}
