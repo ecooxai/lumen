@@ -54,6 +54,7 @@ struct Box;
 
 typedef struct Node {
     uint8_t type, ns;
+    int8_t checked_override;       /* 0 unset, 1 checked, -1 unchecked */
     uint32_t flags;
     struct Node *parent, *first, *last, *prev, *next;
     struct Document *doc;
@@ -62,6 +63,7 @@ typedef struct Node {
     const char *id;                /* cached id attr (points into attrs) */
     const char *class_name;        /* cached class attr (points into attrs) */
     const char **classes; int nclasses;
+    uint32_t refcount;             /* JS keeps nodes alive */
     uint64_t class_bits;           /* negative filter; positive hits compare atoms */
     Attr *attrs; int nattrs, attrcap;
     char *text; size_t text_len;   /* text / comment / doctype name */
@@ -76,13 +78,13 @@ typedef struct Node {
     struct Node *shadow_root;      /* attached shadow root (FRAGMENT with host) */
     struct Node *host;             /* for shadow roots */
     char *value_override;          /* form control value set by user/script */
-    int8_t checked_override;       /* 0 unset, 1 checked, -1 unchecked */
+    size_t is_value_len;           /* byte length; creation state can contain NUL */
     struct Node *template_content; /* for <template> */
     char *inline_style_src;        /* cached style="" for change detection */
     void *inline_decls;            /* parsed CSS declarations for style attr */
     void *anim_decls;              /* Web Animations effect values (above inline style, below !important) */
     void *match_memo;              /* style engine: matched rules, valid per selector_version */
-    uint32_t refcount;             /* JS keeps nodes alive */
+    char *is_value;                /* owned custom-element creation state, independent of attributes */
 } Node;
 
 typedef struct Document {
@@ -147,6 +149,7 @@ void node_free_tree(Node *n);   /* free subtree if not referenced by JS */
 void node_retain(Node *n);
 void node_release(Node *n);
 Node *node_clone(Node *n, bool deep, Document *into);
+void node_set_is_value(Node *n, const char *value, size_t length);
 
 /* Caller supplies an interned name, ASCII lowercase for HTML. */
 const char *node_attr_atom(const Node *n, const char *name);
@@ -181,6 +184,7 @@ void node_set_text_content(Node *n, const char *s);
 void node_set_character_data(Node *n, const char *s, size_t len);
 void node_text_append(Node *n, const char *s, size_t len);
 char *node_serialize(const Node *n, bool outer);  /* innerHTML/outerHTML */
+char *node_serialize_n(const Node *n, bool outer, size_t *length);
 /* the Referer for a request from d to url under policy (NULL/"": the document's, then strict-origin-when-cross-origin):
    written to out, or false for none (Referrer Policy § 8.3) */
 bool doc_referrer(const Document *d, const char *url, const char *policy, char *out, size_t n);
@@ -230,6 +234,7 @@ Node *node_attach_shadow(Node *host, uint32_t flags);
 bool node_valid_shadow_host(const Node *n);
 /* the HTML fragment serialization with shadow roots: serializable ones, and those in roots[] */
 char *node_serialize_ex(const Node *n, bool outer, bool serializable, Node *const *roots, int nroots);
+char *node_serialize_ex_n(const Node *n, bool outer, bool serializable, Node *const *roots, int nroots, size_t *length);
 /* Incremental parser for document.write & streaming */
 typedef struct HtmlParser HtmlParser;
 HtmlParser *html_parser_new(Document *d, Node *fragment_context);
@@ -243,6 +248,9 @@ HtmlParser *html_parser_stream_new(Document *d);
 HtmlParser *html_parser_begin_document(Document *d, const char *source, size_t length, Node **first_script);
 Node *html_parser_run(HtmlParser *p, bool final, size_t limit);
 Node *html_parser_custom_element(const HtmlParser *p);
+void html_parser_enable_custom_elements(HtmlParser *p);
+Node *html_parser_custom_parent(const HtmlParser *p);
+Node *html_parser_complete_custom(HtmlParser *p, Node *replacement, Node **parent, Node **previous, Node **next);
 size_t html_parser_offset(const HtmlParser *p);
 size_t html_parser_length(const HtmlParser *p);
 bool html_parser_done(const HtmlParser *p);

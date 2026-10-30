@@ -332,6 +332,19 @@ FN(newDoc) {
 }
 FN(remove) { CTX; ARGN(ch, 0); Node *parent = ch->parent; node_remove(ch); if (parent && jsg_is_script(parent)) js_run_inserted(c, parent); }
 FN(create) { CTX; ADOC(2); std::string t = S(0); RET(jwrap(c, node_new_element(od, atom(t.c_str()), a[1]->Int32Value(ctx).FromMaybe(0)))); }
+/* Creation state is private and never follows later content-attribute edits. */
+FN(ceIs) {
+    CTX; ARGN(n, 0);
+    if (n->type != NODE_ELEMENT) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "custom-element creation state requires an Element"))); return; }
+    if (a.Length() > 1) {
+        if (a[1]->IsNull()) node_set_is_value(n, nullptr, 0);
+        else {
+            if (!a[1]->IsString()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "custom-element creation state requires a converted string"))); return; }
+            std::string value = wtf8(iso, a[1]); node_set_is_value(n, value.data(), value.size());
+        }
+    }
+    if (n->is_value) RET(jstr_wtf8(iso, n->is_value, (int)n->is_value_len)); else RET(v8::Null(iso));
+}
 FN(textNode) { CTX; ADOC(1); std::string s = wtf8(iso, a[0]); RET(jwrap(c, node_new_text(od, s.data(), s.size()))); }
 FN(comment) { CTX; ADOC(1); std::string s = wtf8(iso, a[0]); RET(jwrap(c, node_new_comment(od, s.data(), s.size()))); }
 FN(frag) { CTX; ADOC(0); RET(jwrap(c, node_new_fragment(od))); }
@@ -407,7 +420,7 @@ FN(parseXml) {
     mark_started(n);
 }
 FN(ownerDoc) { CTX; ARGN(n, 0); RET(n->type == NODE_DOCUMENT || !n->doc ? v8::Local<v8::Value>(v8::Null(iso)) : jwrap(c, &n->doc->node)); }
-FN(html) { CTX; ARGN(n, 0); char *s = node_serialize(n, BOOL(1)); RET(jstr(iso, s ? s : "")); free(s); }
+FN(html) { CTX; ARGN(n, 0); size_t length = 0; char *s = node_serialize_n(n, BOOL(1), &length); RET(jstr_wtf8(iso, s ? s : "", (int)length)); free(s); }
 FN(setHTML) {
     CTX; ARGN(n, 0); std::string s = S(1);
     Node *target = n;
@@ -538,8 +551,8 @@ FN(getHTML) {
         v8::Local<v8::Array> r = a[2].As<v8::Array>();
         for (uint32_t i = 0; i < r->Length(); i++) { v8::Local<v8::Value> v; if (r->Get(ctx, i).ToLocal(&v)) if (Node *x = junwrap(v)) roots.push_back(x); }
     }
-    char *s = node_serialize_ex(n, false, BOOL(1), roots.data(), (int)roots.size());
-    RET(jstr(iso, s ? s : "")); free(s);
+    size_t length = 0; char *s = node_serialize_ex_n(n, false, BOOL(1), roots.data(), (int)roots.size(), &length);
+    RET(jstr_wtf8(iso, s ? s : "", (int)length)); free(s);
 }
 /* a canonical config from the Sanitizer prelude: lists of names are flat [namespace|null, name, ...] arrays, elements
    [namespace|null, name, attributes|null, removeAttributes|null, ...], processing instructions [target, ...] */
@@ -1346,7 +1359,7 @@ FN(ceScan) {
     v8::Local<v8::Array> r = v8::Array::New(iso);
     uint32_t k = 0;
     for (Node *x = root; x; x = node_next_in_tree(x, root))
-        if (x->type == NODE_ELEMENT && x->ns == NS_HTML && x->tag && strchr(x->tag, '-')) (void)r->Set(ctx, k++, jwrap(c, x));
+        if (x->type == NODE_ELEMENT && x->ns == NS_HTML && (x->is_value || (x->tag && strchr(x->tag, '-')))) (void)r->Set(ctx, k++, jwrap(c, x));
     RET(r);
 }
 FN(readyState) { CTX; RET(c->doc->ready_state); }
@@ -1783,7 +1796,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev); REG(index);
     (void)N->Set(ctx, jstr(iso, "fontFace"), v8::Function::New(ctx, n_fontFace).ToLocalChecked()); REG(c2dFill); REG(c2dClip); REG(c2dMeasure); REG(c2dSource); REG(c2dPresent); REG(fontsPending);
     REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(parserMeta); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(docWrite); REG(docClose); REG(docStreamWritePoint); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
-    REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
+    REG(create); REG(ceIs); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
     REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);
     REG(scriptForceAsync); REG(trustedBrand); REG(trustedData); REG(cspSnapshot);

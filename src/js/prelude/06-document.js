@@ -127,19 +127,18 @@ methods(Document.prototype, {
     createElement(tag, opts) {
         tag = String(tag); if (!validLocalName(tag)) throw new DOMException(`The tag name provided ('${tag}') is not a valid name.`, 'InvalidCharacterError');
         /* XML documents keep the case; only XHTML ones make HTML elements */
-        const xml = N.ns(this) === 3, html = !xml || this.contentType === 'application/xhtml+xml', name = xml ? tag : asciiLower(tag), el = N.create(name, html ? 0 : 3, this); if (N.name(el) !== name) def(el, '__ln', name);
-        if (opts && typeof opts === 'object' && opts.is) N.setAttr(el, 'is', String(opts.is));
-        if (html && registry.byName.has(name)) ceUpgrade(el);
+        const xml = N.ns(this) === 3, html = !xml || this.contentType === 'application/xhtml+xml', name = xml ? tag : asciiLower(tag);
+        const el = ceCreateElement(name, html ? 0 : 3, this, ceIsOption(opts));
+        if (N.name(el) !== name) def(el, '__ln', name);
         return el;
     },
-    createElementNS(ns, q) {
+    createElementNS(ns, q, opts) {
         let pfx, l; [ns, pfx, l] = nsExtract(ns, q, false);
-        const n = NSURI.indexOf(ns), el = N.create(n === 1 || n === 2 ? asciiLower(l) : l, n < 0 ? 3 : n, this);
+        const n = NSURI.indexOf(ns), el = ceCreateElement(n === 1 || n === 2 ? asciiLower(l) : l, n < 0 ? 3 : n, this, ceIsOption(opts), pfx);
         if (N.name(el) !== l) def(el, '__ln', l);
         if (n < 0) def(el, '__nsu', ns);
         if (pfx !== null) def(el, '__pfx', pfx);
         if (n < 0 || pfx !== null || N.name(el) !== l) N.xname(el, n < 0 ? ns : null, pfx, N.name(el) !== l ? l : null);   /* clones keep them */
-        if (n === 0 && pfx === null && registry.byName.has(l)) ceUpgrade(el);
         return el;
     },
     createAttribute(n) {
@@ -230,7 +229,7 @@ methods(Document.prototype, {
         if (arguments.length > 2) return G.open(a, b, c);
         if (this !== document) return this;
         if (this.contentType !== 'text/html') throw new DOMException("Failed to execute 'open' on 'Document': Only HTML documents support open().", 'InvalidStateError');
-        ceParserMarkupGuard();
+        ceParserMarkupGuard(this);
         if (N.parserWritePoint()) return this;   /* an active parser script has a nonzero nesting level */
         resetOpenedDocumentEvents(this);
         N.docOpen();
@@ -240,7 +239,7 @@ methods(Document.prototype, {
     },
     close() {
         if (this !== document) return;
-        ceParserMarkupGuard();
+        ceParserMarkupGuard(this);
         if (!docOpened.has(this)) return;
         docOpened.delete(this);
         N.docClose();
@@ -383,7 +382,7 @@ function execData(cmd, val) {
 function docWriteTo(doc, html) {
     if (doc !== document) return;
     if (doc.contentType !== 'text/html') throw new DOMException("Failed to execute 'write' on 'Document': Only HTML documents support write().", 'InvalidStateError');
-    ceParserMarkupGuard();
+    ceParserMarkupGuard(doc);
     if (docOpened.has(doc) || N.docStreamWritePoint()) { N.docWrite(html); return; }
     if (N.ignoreWrites()) return;
     if (!N.parserWritePoint()) {

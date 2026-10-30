@@ -361,6 +361,7 @@ static std::shared_ptr<DocumentStream> document_stream(JsCtx *c) {
     auto state = std::make_shared<DocumentStream>();
     state->document = c->doc; state->generation = c->parser_generation;
     state->parser = html_parser_stream_new(c->doc);
+    html_parser_enable_custom_elements(state->parser);
     state->end = stream_mark(state, 0);
     c->input_stream = state; c->load_deferred = true;
     return state;
@@ -451,7 +452,11 @@ static void stream_consume(JsCtx *c, const std::shared_ptr<DocumentStream> &stat
         if (!script) {
             Node *custom = html_parser_custom_element(state->parser);
             if (!custom) break;
-            if (custom->doc == state->document) js_parser_custom_element(c, custom);
+            Node *replacement = js_parser_custom_element(c, custom, html_parser_custom_parent(state->parser));
+            if (!stream_live(c, state)) break;
+            Node *parent = nullptr, *previous = nullptr, *next = nullptr;
+            Node *element = html_parser_complete_custom(state->parser, replacement, &parent, &previous, &next);
+            if (element && parent) js_parser_custom_inserted(c, element, parent, previous, next);
             if (!stream_live(c, state)) break;
             continue;
         }
@@ -504,6 +509,7 @@ void js_start_parser(JsCtx *c, HtmlParser *parser, Node *first_script) {
     auto state = std::make_shared<DocumentStream>();
     state->document = c->doc; state->generation = c->parser_generation;
     state->parser = parser; state->closed = true; state->script_created = false;
+    html_parser_enable_custom_elements(parser);
     state->initial_script = first_script;
     state->end = stream_mark(state, html_parser_length(parser));
     c->input_stream = state; c->load_deferred = true;

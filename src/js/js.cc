@@ -1624,13 +1624,38 @@ void js_document_open(JsCtx *c) {
     c->load_deferred = false; c->load_synced = false;
     js_set_ready_state(c, 0);
 }
-void js_parser_custom_element(JsCtx *c, Node *element) {
-    if (!c || c->dead || c->api.IsEmpty()) return;
-    JS_ENTER(c);
+Node *js_parser_custom_element(JsCtx *c, Node *element, Node *intended_parent) {
+    if (!c || c->dead || !element || !intended_parent) return nullptr;
+    for (Node *node = intended_parent; node; node = node->parent ? node->parent : node->host)
+        if (node->flags & NF_INERT) return nullptr;
+    JsCtx *owner = owner_ctx(intended_parent->doc);
+    if (!owner || owner->dead || owner->api.IsEmpty()) return nullptr;
+    JS_ENTER(owner);
     v8::Local<v8::Value> function, result;
-    if (!c->api.Get(iso)->Get(ctx, jstr(iso, "ceParserConnected")).ToLocal(&function) || !function->IsFunction()) return;
-    v8::Local<v8::Value> argument = jwrap(c, element);
-    (void)jcall(c, function.As<v8::Function>(), v8::Undefined(iso), 1, &argument).ToLocal(&result);
+    if (!owner->api.Get(iso)->Get(ctx, jstr(iso, "ceParserCreate")).ToLocal(&function) || !function->IsFunction()) return nullptr;
+    auto attributes = v8::Array::New(iso, element->nattrs);
+    for (int i = 0; i < element->nattrs; ++i) {
+        const Attr &attribute = element->attrs[i];
+        v8::Local<v8::Value> pair[2] = { jstr(iso, attribute.name), jstr(iso, attribute.value) };
+        (void)attributes->CreateDataProperty(ctx, (uint32_t)i, v8::Array::New(iso, pair, 2));
+    }
+    v8::Local<v8::Value> args[4] = { jstr(iso, element->tag),
+        element->is_value ? v8::Local<v8::Value>(jsrc(iso, element->is_value, element->is_value_len)) : v8::Local<v8::Value>(v8::Null(iso)),
+        jwrap(owner, &intended_parent->doc->node), attributes };
+    if (!jcall(owner, function.As<v8::Function>(), v8::Undefined(iso), 4, args).ToLocal(&result)) return nullptr;
+    return junwrap(result);
+}
+void js_parser_custom_inserted(JsCtx *c, Node *element, Node *parent, Node *previous, Node *next) {
+    if (!c || c->dead || !element || !parent) return;
+    JsCtx *owner = owner_ctx(parent->doc);
+    if (!owner || owner->dead || owner->api.IsEmpty()) return;
+    JS_ENTER(owner);
+    v8::Local<v8::Value> function, result;
+    if (!owner->api.Get(iso)->Get(ctx, jstr(iso, "ceParserInserted")).ToLocal(&function) || !function->IsFunction()) return;
+    v8::Local<v8::Value> args[4] = { jwrap(owner, element), jwrap(owner, parent),
+        previous ? v8::Local<v8::Value>(jwrap(owner, previous)) : v8::Local<v8::Value>(v8::Null(iso)),
+        next ? v8::Local<v8::Value>(jwrap(owner, next)) : v8::Local<v8::Value>(v8::Null(iso)) };
+    (void)jcall(owner, function.As<v8::Function>(), v8::Undefined(iso), 4, args).ToLocal(&result);
 }
 bool js_parser_script_closed(JsCtx *c, Node *script, const char *source, size_t length) {
     if (!c || c->dead) return false;

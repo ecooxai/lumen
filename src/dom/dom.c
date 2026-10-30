@@ -359,7 +359,7 @@ __attribute__((weak)) void box_detach_node(Node *n) { n->box = NULL; }
 static void node_free_one(Node *n) {
     if (n->doc && n->doc->csel_n == n) n->doc->csel_n = NULL;
     for (int i = 0; i < n->nattrs; i++) free(n->attrs[i].value);
-    free(n->attrs); free(n->text); free(n->inline_style_src); free(n->classes);
+    free(n->attrs); free(n->text); free(n->inline_style_src); free(n->classes); free(n->is_value);
     node_free_inline_style(n);
     if (n->ext && n->ext_free) n->ext_free(n->ext);
     if (n->style) style_free(n->style);
@@ -622,6 +622,11 @@ void node_text_append(Node *n, const char *s, size_t len) {
     if (len && n->doc) mark_sheet_content(n->doc, n);
 }
 
+void node_set_is_value(Node *n, const char *value, size_t length) {
+    char *copy = value ? xstrndup(value, length) : NULL;
+    free(n->is_value); n->is_value = copy; n->is_value_len = value ? length : 0;
+}
+
 Node *node_clone(Node *n, bool deep, Document *d) {
     Node *c;
     switch (n->type) {
@@ -633,6 +638,7 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     case NODE_CDATA: c = node_new_cdata(d, n->text, n->text_len); break;
     default: c = node_new_fragment(d); break;
     }
+    if (n->type == NODE_ELEMENT && n->is_value) node_set_is_value(c, n->is_value, n->is_value_len);
     if (n->type == NODE_ELEMENT && n->tag == A_script) c->flags |= n->flags & NF_SCRIPT_STARTED;   /* "already started" is cloned */
     if (n->template_content) { c->template_content = node_clone(n->template_content, true, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
     if (deep) for (Node *k = n->first; k; k = k->next) node_append(c, node_clone(k, true, d));
@@ -704,6 +710,12 @@ static void ser(const Node *n, SB *b) {
     switch (n->type) {
     case NODE_ELEMENT: {
         sb_putc(b, '<'); sb_puts(b, n->tag);
+        if (n->is_value) {
+            bool has_is = false;
+            for (int i = 0; i < n->nattrs; i++)
+                if (!n->attrs[i].ns && !strcmp(n->attrs[i].name, "is")) { has_is = true; break; }
+            if (!has_is) { sb_puts(b, " is=\""); esc(b, n->is_value, n->is_value_len, true); sb_putc(b, '"'); }
+        }
         for (int i = 0; i < n->nattrs; i++) { sb_putc(b, ' '); sb_puts(b, n->attrs[i].name); sb_puts(b, "=\""); esc(b, n->attrs[i].value, strlen(n->attrs[i].value), true); sb_putc(b, '"'); }
         sb_putc(b, '>');
         if (n->ns == NS_HTML && html_is_void(n->tag)) return;
@@ -719,17 +731,22 @@ static void ser(const Node *n, SB *b) {
     default: for (const Node *c = n->first; c; c = c->next) ser(c, b);
     }
 }
-char *node_serialize(const Node *n, bool outer) {
+char *node_serialize_n(const Node *n, bool outer, size_t *length) {
     SB b; sb_init(&b);
     if (outer) ser(n, &b);
     else ser_children(n, n->template_content ? n->template_content : n, &b);
+    if (length) *length = b.n;
     return sb_take(&b);
 }
-char *node_serialize_ex(const Node *n, bool outer, bool serializable, Node *const *roots, int nroots) {
+char *node_serialize(const Node *n, bool outer) { return node_serialize_n(n, outer, NULL); }
+char *node_serialize_ex_n(const Node *n, bool outer, bool serializable, Node *const *roots, int nroots, size_t *length) {
     g_ser.on = true; g_ser.serializable = serializable; g_ser.roots = roots; g_ser.nroots = nroots;
-    char *s = node_serialize(n, outer);
+    char *s = node_serialize_n(n, outer, length);
     memset(&g_ser, 0, sizeof g_ser);
     return s;
+}
+char *node_serialize_ex(const Node *n, bool outer, bool serializable, Node *const *roots, int nroots) {
+    return node_serialize_ex_n(n, outer, serializable, roots, nroots, NULL);
 }
 
 Node *doc_get_element_by_id(Document *d, const char *id) {

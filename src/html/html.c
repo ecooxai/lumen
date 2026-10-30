@@ -52,6 +52,9 @@ struct HtmlParser {
     bool streaming, normalized, feed_skip_lf;
     size_t offset;
     Node *script_ready, *custom_ready;
+    Node *custom_parent, *custom_before;
+    int custom_open_n;
+    bool custom_elements, custom_pending, custom_foster, custom_template;
     VEC(Node *) pins;
     VEC(size_t) cr_lines; /* positions of normalized LFs originating from CR */
     /* tokenizer */
@@ -398,9 +401,24 @@ static void insert_at(Loc l, Node *n) {
     for (Node *a = l.parent; a; a = a->parent ? a->parent : a->host) if (a == n) return;
     node_insert_before(l.parent, n, l.before);
 }
+static void stage_custom_element(P, Loc l, Node *n) {
+    /* Keep this token's provisional node out of the exposed DOM. The
+       constructor may return another element and may move the parent. */
+    l = adjust_loc(p, l);
+    p->custom_parent = l.parent; p->custom_before = l.before;
+    if (l.parent) { node_retain(l.parent); vec_push(p->pins, l.parent); }
+    if (l.before) { node_retain(l.before); vec_push(p->pins, l.before); }
+    p->custom_open_n = p->open.n;
+    if (p->custom_open_n && p->open.v[p->custom_open_n - 1] == n) --p->custom_open_n;
+    p->custom_foster = p->foster; p->custom_pending = true;
+}
 /* insert an element at the adjusted insertion location */
 static void insert_el_at(P, Loc l, Node *n, bool done) {
     l = adjust_loc(p, l);
+    if (p->custom_elements && p->custom_ready == n) {
+        stage_custom_element(p, l, n);
+        return;
+    }
     if (n->parent) return;
     if (san_skip_el(p, n, l, done)) return;
     insert_at(l, n);
@@ -425,7 +443,8 @@ static void append_comment_to(P, Tok *t, Node *parent) { if (!san_drops(p, t)) n
 
 static Node *create_el(P, Tok *t, int ns, const char *name) {
     Node *e = node_new_element(p->doc, name, ns);
-    if (p->streaming) { node_retain(e); vec_push(p->pins, e); }
+    /* A rejected document root still remains on the open-element stack. */
+    if (p->streaming || (!p->ctx && ns == NS_HTML && name == A_html)) { node_retain(e); vec_push(p->pins, e); }
     for (int i = 0; t && i < t->nattrs; i++) {
         const char *an = t->attrs[i].name, *ans = NULL, *apfx = NULL;
         if (ns == NS_SVG) an = svg_attr_name(an);
@@ -438,6 +457,10 @@ static Node *create_el(P, Tok *t, int ns, const char *name) {
         }
         node_set_attr_at(e, -1, an, t->attrs[i].value, ans, apfx);
     }
+    if (ns == NS_HTML) {
+        const char *is = node_attr(e, "is");
+        if (is) node_set_is_value(e, is, strlen(is));
+    }
     e->flags |= NF_PARSER_INSERTED;
     if (ns == NS_HTML && name == A_script) e->flags |= NF_SCRIPT_NO_FORCE_ASYNC;
     if (p->san) { e->flags |= NF_SAN_MADE; vec_push(p->made, e); }
@@ -445,9 +468,9 @@ static Node *create_el(P, Tok *t, int ns, const char *name) {
         e->template_content = node_new_fragment(p->doc); e->template_content->refcount = 1; e->template_content->flags |= NF_INERT;
     }
     if (ns == NS_HTML && name == K_selectedcontent) p->saw_selectedcontent = true;
-    /* Yield only after the complete tree-builder token returns. Author code
-       must never run while tokenization holds raw input/state pointers. */
-    if (p->streaming && ns == NS_HTML && (strchr(name, '-') || node_has_attr(e, "is"))) p->custom_ready = e;
+    /* Only active document streams stage custom creation. Metadata, fragments
+       and the pre-context prefix keep their existing immediate native parse. */
+    if (p->streaming && p->custom_elements && ns == NS_HTML && (strchr(name, '-') || node_has_attr(e, "is"))) p->custom_ready = e;
     return e;
 }
 static Node *insert_el(P, Tok *t, int ns, const char *name) {
@@ -463,6 +486,7 @@ static Node *clone_el(P, Node *n) {
     Node *e = node_new_element(p->doc, n->tag, n->ns);
     if (p->streaming) { node_retain(e); vec_push(p->pins, e); }
     for (int i = 0; i < n->nattrs; i++) node_set_attr_at(e, -1, n->attrs[i].name, n->attrs[i].value, n->attrs[i].ns, n->attrs[i].pfx);
+    if (n->is_value) node_set_is_value(e, n->is_value, n->is_value_len);
     e->flags |= NF_PARSER_INSERTED;
     if (p->san) { e->flags |= NF_SAN_MADE; vec_push(p->made, e); }
     return e;
@@ -660,7 +684,10 @@ static void m_initial(P, Tok *t) {
         Node *dt = node_new_doctype(p->doc, p->dt_has_name && p->dt_name.s ? p->dt_name.s : "");
         if (p->dt_has_pub) node_set_attr(dt, K_publicId, p->dt_pub.s ? p->dt_pub.s : "");
         if (p->dt_has_sys) node_set_attr(dt, K_systemId, p->dt_sys.s ? p->dt_sys.s : "");
-        node_append(&p->doc->node, dt);
+        bool append = true;
+        for (Node *child = p->doc->node.first; child; child = child->next)
+            if (child->type == NODE_DOCTYPE || child->type == NODE_ELEMENT) { append = false; break; }
+        if (append) node_append(&p->doc->node, dt); else node_free_tree(dt);
         doctype_quirks(p);
         p->mode = M_BEFORE_HTML;
         return;
@@ -674,11 +701,11 @@ static void m_before_html(P, Tok *t) {
     case T_COMMENT: case T_PI: append_comment_to(p, t, &p->doc->node); return;
     case T_CHARS: if (t->cls == C_WS) return; break;
     case T_START:
-        if (t->name == A_html) { Node *e = create_el(p, t, NS_HTML, A_html); node_append(&p->doc->node, e); vec_push(p->open, e); p->mode = M_BEFORE_HEAD; return; }
+        if (t->name == A_html) { Node *e = create_el(p, t, NS_HTML, A_html); insert_el_at(p, (Loc){ &p->doc->node, NULL }, e, false); vec_push(p->open, e); p->mode = M_BEFORE_HEAD; return; }
         break;
     case T_END: if (t->name != A_head && t->name != A_body && t->name != A_html && t->name != A_br) return; break;
     }
-    Node *e = create_el(p, NULL, NS_HTML, A_html); node_append(&p->doc->node, e); vec_push(p->open, e);
+    Node *e = create_el(p, NULL, NS_HTML, A_html); insert_el_at(p, (Loc){ &p->doc->node, NULL }, e, false); vec_push(p->open, e);
     p->mode = M_BEFORE_HEAD; reprocess(p, t);
 }
 static void m_before_head(P, Tok *t) {
@@ -743,15 +770,8 @@ static void end_template(P) {
     reset_mode(p);
     if (t) template_for(p, t);
 }
-/* a template start tag: a declarative shadow root, or a template element */
-static void template_start(P, Tok *t) {
-    vec_push(p->fmt, (Node *)NULL); p->frameset_ok = false;
-    p->mode = M_IN_TEMPLATE; vec_push(p->tmpl_modes, M_IN_TEMPLATE);
-    Node *host = cur(p);
-    bool host_root = host == p->open.v[0];
-    Node *tp = create_el(p, t, NS_HTML, A_template);
-    Loc il = insertion_loc(p, NULL);
-    vec_push(p->open, tp);
+/* Complete template insertion only after any custom constructor has run. */
+static void finish_template_start(P, Node *tp, Node *host, bool host_root, Loc il) {
     if (p->san && el_action(p->san, tp) != SA_KEEP) return;
     const char *mode = node_attr(tp, K_shadowrootmode);
     bool closed = mode && str_ieq(mode, "closed");
@@ -766,9 +786,25 @@ static void template_start(P, Tok *t) {
     const char *rt = node_attr(tp, "shadowrootreferencetarget");
     if (rt) { free(sr->text); sr->text = xstrdup(rt); sr->text_len = strlen(rt); }
     Node *old = tp->template_content;
-    old->refcount = 0; node_free_tree(old);
+    node_release(old);
     tp->template_content = sr;
     vec_push(p->dsd_tmpls, tp);
+}
+/* a template start tag: a declarative shadow root, or a template element */
+static void template_start(P, Tok *t) {
+    vec_push(p->fmt, (Node *)NULL); p->frameset_ok = false;
+    p->mode = M_IN_TEMPLATE; vec_push(p->tmpl_modes, M_IN_TEMPLATE);
+    Node *host = cur(p);
+    bool host_root = host == p->open.v[0];
+    Node *tp = create_el(p, t, NS_HTML, A_template);
+    Loc il = insertion_loc(p, NULL);
+    if (p->custom_elements && p->custom_ready == tp) {
+        stage_custom_element(p, il, tp); p->custom_template = true;
+        vec_push(p->open, tp);
+        return;
+    }
+    vec_push(p->open, tp);
+    finish_template_start(p, tp, host, host_root, il);
 }
 static void m_in_head(P, Tok *t) {
     switch (t->type) {
@@ -2051,13 +2087,64 @@ HtmlParser *html_parser_begin_document(Document *d, const char *source, size_t l
     return p;
 }
 Node *html_parser_run(HtmlParser *p, bool final, size_t limit) {
+    if (p->custom_pending) return NULL;
     normalize_input(p);
     p->script_ready = p->custom_ready = NULL;
     tokenize(p, final, limit);
     parser_document_links(p);
     return p->script_ready;
 }
+void html_parser_enable_custom_elements(HtmlParser *p) { p->custom_elements = true; }
 Node *html_parser_custom_element(const HtmlParser *p) { return p->custom_ready; }
+Node *html_parser_custom_parent(const HtmlParser *p) { return p->custom_parent; }
+Node *html_parser_complete_custom(HtmlParser *p, Node *replacement, Node **parent, Node **previous, Node **next) {
+    if (parent) *parent = NULL;
+    if (previous) *previous = NULL;
+    if (next) *next = NULL;
+    Node *old = p->custom_ready;
+    if (!old || !p->custom_pending) return NULL;
+    Node *element = replacement ? replacement : old;
+    /* The token has already updated insertion mode/open-element bookkeeping.
+       Recompute its insertion place with the pre-insertion stack and foster
+       mode, then restore the completed token's stack before author callbacks. */
+    int open_n = p->open.n;
+    bool foster = p->foster;
+    p->open.n = p->custom_open_n < open_n ? p->custom_open_n : open_n;
+    p->foster = p->custom_foster;
+    Loc location = p->open.n ? adj_loc(p, NULL) : (Loc){ p->custom_parent, p->custom_before };
+    Node *template_host = p->open.n ? cur(p) : NULL;
+    bool template_host_root = p->open.n && template_host == p->open.v[0];
+    p->open.n = open_n; p->foster = foster;
+    bool custom_template = p->custom_template;
+    if (element != old) {
+        node_retain(element); vec_push(p->pins, element);
+        element->flags |= NF_PARSER_INSERTED;
+        if (element->ns == NS_HTML && element->tag == A_script) element->flags |= NF_SCRIPT_NO_FORCE_ASYNC;
+        for (int i = 0; i < p->open.n; i++) if (p->open.v[i] == old) p->open.v[i] = element;
+        for (int i = 0; i < p->fmt.n; i++) if (p->fmt.v[i] == old) p->fmt.v[i] = element;
+        if (p->head_el == old) p->head_el = element;
+        if (p->form_el == old) p->form_el = element;
+        if (p->root == old) p->root = element;
+    }
+    p->custom_ready = NULL; p->custom_pending = p->custom_template = false;
+    p->custom_parent = p->custom_before = NULL;
+    bool was_inserted = element->parent != NULL;
+    if (location.before && location.before->parent != location.parent) location.before = NULL;
+    if (custom_template && template_host) {
+        if (!element->template_content) {
+            element->template_content = node_new_fragment(element->doc);
+            element->template_content->refcount = 1; element->template_content->flags |= NF_INERT;
+        }
+        finish_template_start(p, element, template_host, template_host_root, location);
+    } else if (!element->parent && location.parent) insert_el_at(p, location, element, false);
+    if (!was_inserted && element->parent) {
+        if (parent) *parent = element->parent;
+        if (previous) *previous = element->prev;
+        if (next) *next = element->next;
+    }
+    parser_document_links(p);
+    return element;
+}
 size_t html_parser_offset(const HtmlParser *p) { return p->offset; }
 size_t html_parser_length(const HtmlParser *p) { return p->in.n; }
 bool html_parser_done(const HtmlParser *p) { return p->stopped; }
