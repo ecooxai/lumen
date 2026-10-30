@@ -49,5 +49,10 @@
     143,
     143
   ],
-  "source_and_results_commits_are_separate": true
+  "source_and_results_commits_are_separate": true,
+  "publication_verified": true,
+  "verified_utc": "2026-10-30T16:23:04.917756+00:00",
+  "verified_artifact_content_pages_commit": "d52fa381d467498b98d78bd6c08bb8f2ddde8af4",
+  "verified_delivery_receipt": "publication-receipt226.json",
+  "verified_delivery_receipt_sha256": "1b59f311255da1cca7cf70e47256991103a69696603ccc9ac0494df1a3a9f56d"
 }

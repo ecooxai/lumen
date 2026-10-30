@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "candidate": 226,
+  "publication_verified": true,
+  "verified_utc": "2026-10-30T16:23:04.917756+00:00",
+  "source_export_commit": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+  "source_export_tree": "919defc65c7d85b993041ea2f1cfd560f0b8d35e",
+  "tested_engine_source": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
+  "engine_binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
+  "verified_artifact_content_pages_commit": "d52fa381d467498b98d78bd6c08bb8f2ddde8af4",
+  "source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-rubywebterm-css-math-source226-20261030",
+  "results_url": "https://ecooxai.github.io/lumen/",
+  "source_branch": "gpt-6-astra-pro-builtin-rubywebterm-css-math-source226-20261030",
+  "pages_branch": "gpt-6-astra-builtin-agents-rubywebterm-showcase-20261028",
+  "non_forced_pushes_verified": true,
+  "canonical_urls_without_query": true,
+  "verified_artifacts": [
+    {
+      "path": "src.tar.gz",
+      "canonical_url": "https://ecooxai.github.io/lumen/src.tar.gz",
+      "actual_http_status": 200,
+      "bytes": 9526948,
+      "actual_sha256": "4e28b1f5801d27a7cfb7012aef669d7800b875daa4b0d4d405e7b22e9b61eaf3",
+      "pass": true
+    },
+    {
+      "path": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.mp4",
+      "canonical_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.mp4",
+      "actual_http_status": 200,
+      "bytes": 619695,
+      "actual_sha256": "52d6958c48559f3d073c3814f669b8a635f04a1360a7731051eb12e8cd5f0244",
+      "pass": true
+    },
+    {
+      "path": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.png",
+      "canonical_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.png",
+      "actual_http_status": 200,
+      "bytes": 117082,
+      "actual_sha256": "46a2df3c60ff578007449950f79cfe90afbfd45dde55d51a78b0cb0c65164025",
+      "pass": true
+    },
+    {
+      "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.json",
+      "canonical_url": "https://ecooxai.github.io/lumen/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.json",
+      "actual_http_status": 200,
+      "bytes": 30059,
+      "actual_sha256": "c37c8e129abf35843ec66b2e6ed170b007a90cddf8e6c1f75dff357879f011a7",
+      "pass": true
+    },
+    {
+      "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.md",
+      "canonical_url": "https://ecooxai.github.io/lumen/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.md",
+      "actual_http_status": 200,
+      "bytes": 9899,
+      "actual_sha256": "2d99fb27a645c5c8a0465b27d730893740311ccf5a9eac7d5a3d57557cf4aaab",
+      "pass": true
+    },
+    {
+      "path": "source-qualification226.json",
+      "canonical_url": "https://ecooxai.github.io/lumen/source-qualification226.json",
+      "actual_http_status": 200,
+      "bytes": 35190,
+      "actual_sha256": "268ccc9ef198b3a903afc921c50d4c40706ebfe4d9a48a0b080a4261a8148f4b",
+      "pass": true
+    },
+    {
+      "path": "showcase226/index.html",
+      "canonical_url": "https://ecooxai.github.io/lumen/showcase226/index.html",
+      "actual_http_status": 200,
+      "bytes": 6206,
+      "actual_sha256": "247d685b0bb3a8ef8e1adb9154fc00de0f7e621ac8bd3c92e727367c300276fd",
+      "pass": true
+    }
+  ],
+  "archive_offline_restore": {
+    "self_contained_public_git_bundle": true,
+    "tested_without_network": true,
+    "commit": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+    "tree": "919defc65c7d85b993041ea2f1cfd560f0b8d35e",
+    "all_committed_blob_ids_and_modes_identical": true,
+    "recorded_build_inputs_exact": 646,
+    "external_build_dependencies_bundled": false,
+    "portable_browser_binary": false
+  },
+  "video": {
+    "duration_seconds": 36,
+    "dimensions": [
+      1024,
+      768
+    ],
+    "method": "Chromium-rendered measured-results walkthrough with unedited original WPT captures; not native Lumen desktop footage"
+  },
+  "qualification_snapshot_note": "The measured report retains its prepublication qualification-time publication_receipt_pending field. This verified delivery receipt supersedes that delivery status; measured test evidence is unchanged. A later Pages metadata-only commit adds this receipt and link while preserving all source archive, measured report and video bytes.",
+  "whole_wpt_certified": false,
+  "whole_browser_98_established": false,
+  "canonical_results_page_verification": {
+    "url": "https://ecooxai.github.io/lumen/",
+    "verified_utc": "2026-10-30T16:23:04.917756+00:00",
+    "candidate": 226,
+    "displayed_whole_files": "411/640",
+    "displayed_assertions": "9162/10540",
+    "note": "The page was verified with the same accepted source/archive identities. This metadata-only follow-up adds the delivery-proof link; the canonical page is checked again afterward."
+  }
+}
