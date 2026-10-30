@@ -1500,8 +1500,9 @@ static void js_free_collect(JsCtx *c, std::vector<Node *> &roots, std::vector<Do
         v8::Isolate::Scope is(c->iso);
         js_broadcast_deactivate(c->broadcast);
         v8::HandleScope hs(c->iso);
-        for (auto &kv : c->fetches) { net_cancel(kv.first); kv.second->c = nullptr; kv.second->cb.Reset(); kv.second->head.Reset(); kv.second->chunk.Reset(); }
-        c->fetches.clear(); for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
+        js_cancel_fetches(c);
+        c->ordered_scripts.clear(); c->pending_scripts = 0;
+        for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
         c->timer_clear();
         c->rafs.clear();
         c->video_frame_pump.Reset(); c->resize_pump.Reset(); c->intersection_pump.Reset(); c->media_pump.Reset();
@@ -1544,27 +1545,58 @@ void js_free(JsCtx *c) {
     for (Document *d : docs) if (seen_docs.insert(d).second) doc_free(d);
 }
 
-/* The scripts a script wrote with document.write() run right after it, in order, as the parser
-   would reach them: external ones block on the network like parser scripts (tdl's tdl.require). */
+/* Written inline scripts execute in the nested parser before write() returns.
+   A pending external blocking script still follows the existing synchronous
+   document-write fetch path after the enclosing script returns. */
+static void run_written_script(JsCtx *c, Node *script) {
+    if (!js_prepare_script(script)) return;
+    const char *src = jsg_script_src(script);
+    char *url = src && *src ? url_join(doc_base(c->doc), src) : nullptr;
+    if (jsg_module_script(script)) {
+        size_t length = 0; char *text = src ? nullptr : jsg_script_text(script, &length);
+        js_run_module_inserted(c, script, src ? nullptr : text, length, src ? (url ? url : "") : c->doc->url);
+        free(text); free(url); return;
+    }
+    if (!src) {
+        size_t length = 0; char *text = jsg_script_text(script, &length);
+        js_run_prepared_classic(c, script, text ? text : "", length, c->doc->url, false, true);
+        free(text); return;
+    }
+    if (node_has_attr(script, "async")) {
+        js_queue_classic_script(c, script, url, false); free(url); return;
+    }
+    NetResponse *response = nullptr;
+    if (url) {
+        NetRequest *request = net_request_new("GET", url);
+        net_request_set_fetch_metadata(request, c->doc->url, "script", node_has_attr(script, "crossorigin") ? "cors" : "no-cors");
+        char ref[4200];
+        if (doc_referrer(c->doc, url, node_attr(script, "referrerpolicy"), ref, sizeof ref)) headers_add(&request->headers, "Referer", ref);
+        response = net_fetch_sync(request);
+    }
+    if (response && !response->error && response->status >= 200 && response->status < 300)
+        js_run_prepared_classic(c, script, response->body ? response->body : "", response->body ? response->body_len : 0,
+                                response->url ? response->url : url, true, true);
+    else { JS_ENTER(c); jfire(c, script, "error"); }
+    if (response) net_response_free(response);
+    free(url);
+}
 static void run_written(JsCtx *c, size_t from) {
+    if (from >= c->written.size()) return;
     std::vector<Node *> list(c->written.begin() + (std::ptrdiff_t)from, c->written.end());
     c->written.resize(from);
-    for (Node *s : list) {
-        if (c->dead) return;
-        if (!(s->flags & NF_CONNECTED)) continue;
-        const char *src = node_attr(s, "src");
-        if (!src) { char *t = node_text_content(s); js_run_script(c, s, t ? t : "", t ? strlen(t) : 0, c->doc->url); free(t); continue; }
-        char *u = *src ? url_join(doc_base(c->doc), src) : nullptr;
-        NetResponse *r = nullptr;
-        if (u) {
-            NetRequest *rq = net_request_new("GET", u);
-            { char ref[4200]; if (doc_referrer(c->doc, u, NULL, ref, sizeof ref)) headers_add(&rq->headers, "Referer", ref); }
-            r = net_fetch_sync(rq);
-        }
-        if (r && r->status >= 200 && r->status < 300) js_run_script(c, s, r->body ? r->body : "", r->body_len, u);
-        else { JS_ENTER(c); jfire(c, s, "error"); }
-        if (r) net_response_free(r);
-        free(u);
+    const uint64_t generation = c->parser_generation;
+    for (Node *script : list) {
+        if (c->dead || generation != c->parser_generation) return;
+        run_written_script(c, script);
+    }
+}
+void js_run_written_inline(JsCtx *c) {
+    const uint64_t generation = c->parser_generation;
+    while (!c->dead && generation == c->parser_generation && !c->written.empty()) {
+        Node *script = c->written.front();
+        if (jsg_module_script(script) || (jsg_script_src(script) && !node_has_attr(script, "async"))) break;
+        c->written.erase(c->written.begin());
+        run_written_script(c, script);
     }
 }
 /* Trusted Types: an inline script runs its script text slot's value (the ttScript hook); false when blocked */
@@ -1577,29 +1609,88 @@ static bool tt_script_text(JsCtx *c, Node *script, const char *&src, size_t &n, 
     buf = jcstr(iso, r); src = buf.c_str(); n = buf.size();
     return true;
 }
-void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name) {
-    if (!c) return;
-    if (script) script->flags |= NF_SCRIPT_STARTED;
+uint64_t js_parser_generation(JsCtx *c) { return c ? c->parser_generation : 0; }
+void js_document_open(JsCtx *c) {
+    ++c->parser_generation;
+    frames_parser_cancel(c);
+    js_cancel_fetches(c, true);
+    c->ordered_scripts.clear(); c->pending_scripts = 0;
+    c->written.clear();
+    c->load_deferred = false; c->load_synced = false;
+    js_set_ready_state(c, 0);
+}
+/* HTML preparation clears parser state before its early returns. An empty or
+   unsupported parser script can therefore be populated and run dynamically later. */
+bool js_prepare_script(Node *script) {
+    if (!script || !jsg_is_script(script) || (script->flags & NF_SCRIPT_STARTED)) return false;
+    const bool parser = (script->flags & NF_PARSER_INSERTED) != 0;
+    script->flags &= ~NF_PARSER_INSERTED;
+    if (parser && !node_has_attr(script, "async")) script->flags &= ~NF_SCRIPT_NO_FORCE_ASYNC;
+    bool text = false;
+    for (Node *n = script->first; n && !text; n = n->next)
+        text = (n->type == NODE_TEXT || n->type == NODE_CDATA) && n->text_len != 0;
+    if (!jsg_script_src(script) && !text) return false;
+    if (!(script->flags & NF_CONNECTED)) return false;
+    const bool module = jsg_module_script(script), classic = jsg_classic_script_type(script);
+    if (!module && !classic) return false;
+    if (parser) script->flags |= NF_PARSER_INSERTED | NF_SCRIPT_NO_FORCE_ASYNC;
+    script->flags |= NF_SCRIPT_STARTED;
+    if (classic && node_has_attr(script, "nomodule")) return false;
+    return true;
+}
+/* Parser execution retains its insertion point through the element load event.
+   The destructive-write counter covers script evaluation, not that event. */
+static void run_classic_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name,
+                               bool parser_point, bool external, bool preserve_anchor = false) {
+    if (!c || c->dead) return;
+    if (script && !(script->flags & NF_SCRIPT_STARTED) && !js_prepare_script(script)) return;
+    if (script) { JS_ENTER(c); jwrap(c, script); } // open() may retire the parser record during evaluation.
     std::string tt_buf;
-    if (!tt_script_text(c, script, src, n, tt_buf)) return;
+    if (!external && !tt_script_text(c, script, src, n, tt_buf)) return;
     Node *prev = c->current_script;
+    const bool previous_point = c->parser_write_point;
+    Node *previous_anchor = c->parser_write_script;
+    if (!preserve_anchor) c->parser_write_script = parser_point ? script : nullptr;
     size_t written = c->written.size();
-    c->current_script = script;
-    run_source(c, src, n, name, script && node_attr(script, "src"));
+    c->current_script = script; c->parser_write_point = parser_point;
+    if (external) c->ignore_destructive_writes++;
+    run_source(c, src, n, name, external);
     c->current_script = prev;
     if (c->written.size() > written) run_written(c, written);
-    if (script && node_attr(script, "src")) {
+    if (external) c->ignore_destructive_writes--;
+    if (!c->dead && script && external) {
         JS_ENTER(c);
         jfire(c, script, "load");
     }
+    if (c->written.size() > written) run_written(c, written);
+    c->parser_write_point = previous_point;
+    c->parser_write_script = previous_anchor;
+}
+void js_run_prepared_classic(JsCtx *c, Node *script, const char *src, size_t n, const char *url,
+                              bool external, bool parser_point) {
+    run_classic_script(c, script, src, n, url, parser_point, external);
+}
+void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name) {
+    run_classic_script(c, script, src, n, name, true, script && jsg_script_src(script));
+}
+/* A dynamically inserted inline script shares an existing parser insertion
+   point, but does not create one or suppress writes merely by being inline. */
+void js_run_dynamic_inline_script(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
+    run_classic_script(c, script, src, n, url, c && c->parser_write_point, false, true);
+}
+/* Without a parser insertion point an external/deferred script cannot implicitly
+   reopen the document through document.write(). Explicit document.open still works. */
+void js_run_deferred_script(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
+    run_classic_script(c, script, src, n, url, false, true);
 }
 
 /* may_defer: an external module whose graph is not loaded yet is fetched in the
    background and run from tick_one, instead of blocking the page on the network. */
 static void module_script_run(JsCtx *c, Node *script, const char *src, size_t n, const char *url, bool may_defer,
                               bool fetched = false, const char *ctype = nullptr) {
-    if (!c) return;
-    if (script) script->flags |= NF_SCRIPT_STARTED;
+    if (!c || c->dead) return;
+    if (script && !(script->flags & NF_SCRIPT_STARTED) && !js_prepare_script(script)) return;
+    if (script) { JS_ENTER(c); jwrap(c, script); }
     bool ext = script && node_attr(script, "src"), load_failure = false;
     std::string tt_buf;
     if (!tt_script_text(c, script, src, n, tt_buf)) return;
@@ -1607,10 +1698,13 @@ static void module_script_run(JsCtx *c, Node *script, const char *src, size_t n,
         { JS_ENTER(c); jwrap(c, script); }
         auto j = std::make_unique<ModJob>();
         j->url = url;
-        j->script = script;
+        j->script = script; j->generation = c->parser_generation;
         mod_job_start(c, std::move(j));
         return;
     }
+    const bool previous_point = c->parser_write_point;
+    c->parser_write_point = false;
+    c->ignore_destructive_writes++;
     {
         JS_ENTER(c);
         v8::TryCatch tc(iso);
@@ -1646,7 +1740,9 @@ static void module_script_run(JsCtx *c, Node *script, const char *src, size_t n,
         if (load_failure) tc.Reset();
         settle(c);
     }
-    if (script && (ext || load_failure)) { JS_ENTER(c); jfire(c, script, load_failure ? "error" : "load"); }
+    c->ignore_destructive_writes--;
+    c->parser_write_point = previous_point;
+    if (!c->dead && script && (ext || load_failure)) { JS_ENTER(c); jfire(c, script, load_failure ? "error" : "load"); }
 }
 void js_run_module(JsCtx *c, Node *script, const char *src, size_t n, const char *url) {
     module_script_run(c, script, src, n, url, false);
@@ -1666,7 +1762,11 @@ static void mod_jobs_finish(JsCtx *c) {
     for (auto &j : ready) {
         if (c->dead) return;
         if (g_log_level < 3) fprintf(stderr, "lumen: module graph %s fetched after %.0fms\n", mod_cache_name(j->url).c_str(), now_ms() - j->at);
-        if (j->script) { module_script_run(c, j->script, nullptr, 0, j->url.c_str(), false); continue; }
+        if (j->script) {
+            if (j->generation == c->parser_generation && j->script->doc == c->doc)
+                module_script_run(c, j->script, nullptr, 0, j->url.c_str(), false);
+            continue;
+        }
         JS_ENTER(c);
         js_enter(c);
         import_finish(c, j->R.Get(iso), j->url);
@@ -1972,6 +2072,8 @@ static void tick_one(JsCtx *c) {
     if (c->foreground_tasks) while (c->foreground_tasks->RunOne()) iso->PerformMicrotaskCheckpoint();
     TICK_MARK(0);
     if (!c->mod_jobs.empty()) { mod_jobs_finish(c); settle(c); }
+    frames_parser_tick(c);
+    if (c->dead) return;
     TICK_MARK(1);
     pick_deliver(c);
     xmsg_deliver(c);

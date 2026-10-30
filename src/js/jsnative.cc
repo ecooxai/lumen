@@ -235,10 +235,12 @@ FN(setText) {
     CTX; ARGN(n, 0); std::string s = wtf8(iso, a[1]);
     if (is_textish(n)) {
         node_set_character_data(n, s.data(), s.size());
+        if (n->parent && jsg_is_script(n->parent)) js_run_inserted(c, n->parent);
         return;
     }
     clear_children(n);
-    if (!s.empty()) node_append(n, node_new_text(c->doc, s.data(), s.size()));
+    if (!s.empty()) node_append(n, node_new_text(n->doc, s.data(), s.size()));
+    if (jsg_is_script(n)) js_run_inserted(c, n);
 }
 FN(attr) { CTX; ARGN(n, 0); std::string k = S(1); RET(nstr(iso, n->type == NODE_ELEMENT || n->type == NODE_DOCTYPE ? node_attr(n, k.c_str()) : nullptr)); }
 /* an attribute value as a C string: U+0000 becomes C0 80, which jstr turns back */
@@ -247,7 +249,7 @@ static std::string aval(v8::Isolate *iso, v8::Local<v8::Value> v) {
     for (size_t i = s.find('\0'); i != std::string::npos; i = s.find('\0', i + 2)) s.replace(i, 1, "\xC0\x80");
     return s;
 }
-FN(setAttr) { CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]); node_set_attr(n, atom(k.c_str()), v.c_str()); }
+FN(setAttr) { CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]); node_set_attr(n, atom(k.c_str()), v.c_str()); if (jsg_is_script(n) && (k == "src" || k == "href" || k == "xlink:href")) js_run_inserted(c, n); }
 FN(rmAttr) { CTX; ARGN(n, 0); std::string k = S(1); if (node_has_attr(n, k.c_str())) node_remove_attr(n, k.c_str()); }
 /* the DOM's exact attribute lookups (qualified name without case folding, or namespace + local name); an ns of null
    or "" is no namespace */
@@ -259,7 +261,7 @@ static const char *ns_atom(v8::Isolate *iso, v8::Local<v8::Value> v) {
 static bool attr_host(Node *n) { return n->type == NODE_ELEMENT || n->type == NODE_DOCTYPE; }
 FN(attrQ) { CTX; ARGN(n, 0); std::string k = S(1); int i = attr_host(n) ? node_attr_qindex(n, k.c_str()) : -1; RET(nstr(iso, i >= 0 ? n->attrs[i].value : nullptr)); }
 FN(attrNS) { CTX; ARGN(n, 0); std::string l = S(2); int i = attr_host(n) ? node_attr_ns_index(n, ns_atom(iso, a[1]), l.c_str()) : -1; RET(nstr(iso, i >= 0 ? n->attrs[i].value : nullptr)); }
-FN(setAttrQ) { CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]); if (attr_host(n)) node_set_attr_at(n, node_attr_qindex(n, k.c_str()), atom(k.c_str()), v.c_str(), nullptr, nullptr); }
+FN(setAttrQ) { CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]); if (attr_host(n)) node_set_attr_at(n, node_attr_qindex(n, k.c_str()), atom(k.c_str()), v.c_str(), nullptr, nullptr); if (jsg_is_script(n) && (k == "src" || k == "href" || k == "xlink:href")) js_run_inserted(c, n); }
 FN(setAttrNS) {   /* (el, ns, prefix, local, value): an existing attribute keeps its prefix */
     CTX; ARGN(n, 0);
     if (!attr_host(n)) return;
@@ -268,6 +270,7 @@ FN(setAttrNS) {   /* (el, ns, prefix, local, value): an existing attribute keeps
     const char *pfx = a[2]->IsNullOrUndefined() ? nullptr : atom(S(2).c_str());
     if (pfx) q = std::string(pfx) + ":" + l;
     node_set_attr_at(n, node_attr_ns_index(n, ns, l.c_str()), atom(q.c_str()), v.c_str(), ns, pfx);
+    if (jsg_is_script(n) && ((!ns && (l == "src" || l == "href")) || (ns && !strcmp(ns, "http://www.w3.org/1999/xlink") && l == "href"))) js_run_inserted(c, n);
 }
 FN(rmAttrQ) { CTX; ARGN(n, 0); std::string k = S(1); int i = attr_host(n) ? node_attr_qindex(n, k.c_str()) : -1; if (i >= 0) node_remove_attr_at(n, i); RET(i >= 0); }
 FN(rmAttrNS) {   /* returns the removed attribute's qualified name, or null */
@@ -309,7 +312,8 @@ FN(insert) {
     /* the inserted nodes are adopted; a fragment itself keeps its node document */
     for (Node *x : added) if (x->doc != p->doc) adopt_tree(x, p->doc);
     node_insert_before(p, ch, ref && ref->parent == p ? ref : nullptr);
-    for (Node *x : added) js_run_inserted(c, x);
+    if (jsg_is_script(p)) js_run_inserted(c, p);
+    else for (Node *x : added) js_run_inserted(c, x);
 }
 FN(adopt) { CTX; ARGN(n, 0); ARGN(d, 1); adopt_tree(n, d->doc); }
 FN(newDoc) {
@@ -326,7 +330,7 @@ FN(newDoc) {
     c->docs.push_back(nd);
     RET(jwrap(c, &nd->node));
 }
-FN(remove) { CTX; ARGN(ch, 0); node_remove(ch); }
+FN(remove) { CTX; ARGN(ch, 0); Node *parent = ch->parent; node_remove(ch); if (parent && jsg_is_script(parent)) js_run_inserted(c, parent); }
 FN(create) { CTX; ADOC(2); std::string t = S(0); RET(jwrap(c, node_new_element(od, atom(t.c_str()), a[1]->Int32Value(ctx).FromMaybe(0)))); }
 FN(textNode) { CTX; ADOC(1); std::string s = wtf8(iso, a[0]); RET(jwrap(c, node_new_text(od, s.data(), s.size()))); }
 FN(comment) { CTX; ADOC(1); std::string s = wtf8(iso, a[0]); RET(jwrap(c, node_new_comment(od, s.data(), s.size()))); }
@@ -408,17 +412,20 @@ FN(setHTML) {
     node_append(target, f);
     node_free_tree(f);
 }
-/* (context, html, written): written, from document.write() inside a script, queues the
-   fragment's classic scripts to run after that script (js_run_script) */
+/* Written fragments retain parser state until their inserted scripts are prepared. */
 FN(parseFrag) {
     CTX; Node *cx = junwrap(a[0]); std::string s = S(1);
     if (!cx || cx->type != NODE_ELEMENT) cx = c->doc->body;
     Node *f = html_parse_fragment(c->doc, cx, s.data(), s.size());
     if (!f) { RET(jwrap(c, f)); return; }
-    if (a.Length() > 2 && a[2]->IsTrue() && c->current_script)
+    if (a.Length() > 2 && a[2]->IsTrue() && c->parser_write_point) {
         for (Node *x = f; x; x = node_next_in_tree(x, f))
-            if (x->type == NODE_ELEMENT && x->tag == A_script && x->ns == NS_HTML && jsg_classic_script(x)) { jwrap(c, x); c->written.push_back(x); }
-    mark_started(f);
+            if (jsg_is_script(x)) {
+                x->flags &= ~NF_SCRIPT_STARTED;
+                x->flags |= NF_PARSER_INSERTED | NF_SCRIPT_NO_FORCE_ASYNC;
+                jwrap(c, x); c->written.push_back(x);
+            }
+    } else mark_started(f);
     RET(jwrap(c, f));
 }
 FN(docReparse) { CTX; std::string s = S(0); js_doc_reparse(c, s.data(), s.size()); }
@@ -875,9 +882,33 @@ static void resp_args(v8::Isolate *iso, NetResponse *r, v8::Local<v8::Value> out
     out[4] = mkab(iso, r && r->body ? r->body : "", r && r->body ? r->body_len : 0);
     out[5] = err ? v8::Local<v8::Value>(jstr(iso, r && r->error ? r->error : "network error")) : v8::Local<v8::Value>(v8::False(iso));
 }
+/* Network completion is a task on the context's thread. Removed scripts still
+   execute; a script adopted away from its preparation document does not. */
+static void classic_script_finish(JsCtx *c, const std::shared_ptr<ClassicScriptJob> &job,
+                                  const char *body = nullptr, size_t length = 0, const char *url = nullptr) {
+    if (job->generation != c->parser_generation) return;
+    if (!c->dead && job->script->doc == job->document) {
+        if (job->success) js_run_deferred_script(c, job->script,
+            body ? body : job->source.data(), body ? length : job->source.size(), url ? url : job->url.c_str());
+        else { JS_ENTER(c); jfire(c, job->script, "error"); }
+    }
+    if (job->generation == c->parser_generation && c->pending_scripts) c->pending_scripts--;
+}
+static void classic_scripts_drain(JsCtx *c) {
+    if (c->draining_scripts) return;
+    c->draining_scripts = true;
+    while (!c->dead && !c->ordered_scripts.empty() && c->ordered_scripts.front()->ready) {
+        auto job = c->ordered_scripts.front();
+        c->ordered_scripts.pop_front();
+        classic_script_finish(c, job);
+    }
+    c->draining_scripts = false;
+    js_load_recheck(c);
+}
 static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
     (void)req;
     Fetch *f = static_cast<Fetch *>(ud);
+    if (!f) return;
     JsCtx *c = f->c;
     if (!c) { delete f; return; }
     c->fetches.erase(f->id);
@@ -886,8 +917,25 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
     struct Slow { double t = now_ms(); bool script; size_t kb; ~Slow() { if (now_ms() - t >= 200) __android_log_print(ANDROID_LOG_INFO, "LumenLoad", "fetch_done script=%d kb=%zu ms=%.0f", script, kb, now_ms() - t); } }
         slow{ now_ms(), f->script != nullptr, r && r->body ? r->body_len >> 10 : 0 };
 #endif
-    if (f->script) {
-        if (r && !r->error && r->status >= 200 && r->status < 300) js_run_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
+    if (f->native_done) {
+        f->native_done(c, r);
+    } else if (f->script_job) {
+        auto job = f->script_job;
+        job->ready = true;
+        job->success = r && !r->error && r->status >= 200 && r->status < 300;
+        if (job->ordered) {
+            if (job->success) {
+                job->source.assign(r->body ? r->body : "", r->body ? r->body_len : 0);
+                if (r->url) job->url = r->url;
+            }
+            classic_scripts_drain(c);
+        } else {
+            classic_script_finish(c, job, r && r->body ? r->body : "", r && r->body ? r->body_len : 0,
+                                  r && r->url ? r->url : job->url.c_str());
+            js_load_recheck(c);
+        }
+    } else if (f->script) {
+        if (r && !r->error && r->status >= 200 && r->status < 300) js_run_deferred_script(c, f->script, r->body ? r->body : "", r->body ? r->body_len : 0, r->url ? r->url : "");
         else jfire(c, f->script, "error");
     } else {
         v8::Local<v8::Value> argv[6];
@@ -900,6 +948,7 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
 static void fetch_head(NetRequest *req, NetResponse *r, void *ud) {
     (void)req;
     Fetch *f = static_cast<Fetch *>(ud);
+    if (!f) return;
     JsCtx *c = f->c;
     if (!c || f->head.IsEmpty()) return;
     JS_ENTER(c);
@@ -910,6 +959,7 @@ static void fetch_head(NetRequest *req, NetResponse *r, void *ud) {
 static void fetch_chunk(NetRequest *req, const char *d, size_t n, void *ud) {
     (void)req;
     Fetch *f = static_cast<Fetch *>(ud);
+    if (!f) return;
     JsCtx *c = f->c;
     if (!c || f->chunk.IsEmpty()) return;
     JS_ENTER(c);
@@ -919,9 +969,62 @@ static void fetch_chunk(NetRequest *req, const char *d, size_t n, void *ud) {
 static uint64_t start_fetch(JsCtx *c, NetRequest *rq, Fetch *f) {
     rq->done = fetch_done;
     rq->ud = f;
+    f->request = rq;
     f->id = net_fetch(rq);
     c->fetches[f->id] = f;
     return f->id;
+}
+/* Fetch callbacks run on the main thread; these requests never install a worker
+   work/sink callback. Detaching userdata also covers already-queued completions,
+   which net_cancel alone cannot find once a worker has left the running list. */
+void js_cancel_fetch(JsCtx *c, uint64_t id) {
+    auto it = c->fetches.find(id);
+    if (it == c->fetches.end()) return;
+    Fetch *f = it->second;
+    c->fetches.erase(it);
+    if (f->request) f->request->ud = nullptr;
+    net_cancel(id);
+    delete f;
+}
+void js_cancel_fetches(JsCtx *c, bool scripts_only) {
+    for (auto it = c->fetches.begin(); it != c->fetches.end();) {
+        Fetch *f = it->second;
+        const uint64_t id = it->first;
+        ++it;
+        if (!scripts_only || f->script_job || f->native_done || f->script) js_cancel_fetch(c, id);
+    }
+}
+static NetRequest *script_request(JsCtx *c, Node *script, const char *url) {
+    NetRequest *rq = net_request_new("GET", url ? url : "");
+    if (!url || !*url) {
+        rq->prepared_response = (NetResponse *)xcalloc(1, sizeof(NetResponse));
+        rq->prepared_response->error = xstrdup("Invalid script URL");
+    } else {
+        net_request_set_fetch_metadata(rq, c->doc->url, "script", node_has_attr(script, "crossorigin") ? "cors" : "no-cors");
+        char ref[4200];
+        if (doc_referrer(c->doc, url, node_attr(script, "referrerpolicy"), ref, sizeof ref)) headers_add(&rq->headers, "Referer", ref);
+    }
+    return rq;
+}
+uint64_t js_fetch_parser_source(JsCtx *c, Node *script, const char *url,
+                               std::function<void(JsCtx *, NetResponse *)> done) {
+    Fetch *f = new Fetch{ c, 0, {}, script };
+    f->native_done = std::move(done);
+    return start_fetch(c, script_request(c, script, url), f);
+}
+void js_queue_classic_script(JsCtx *c, Node *script, const char *url, bool ordered) {
+    if (!c || c->dead || !script) return;
+    if (!(script->flags & NF_SCRIPT_STARTED) && !js_prepare_script(script)) return;
+    auto job = std::make_shared<ClassicScriptJob>();
+    job->script = script; job->document = script->doc; job->generation = c->parser_generation;
+    job->url = url ? url : ""; job->ordered = ordered;
+    { JS_ENTER(c); jwrap(c, script); } // Context-owned wrapper keeps a detached script alive.
+    if (ordered) c->ordered_scripts.push_back(job);
+    c->pending_scripts++;
+    NetRequest *rq = script_request(c, script, url);
+    Fetch *fetch = new Fetch{ c, 0, {}, script };
+    fetch->script_job = job;
+    start_fetch(c, rq, fetch);
 }
 #define MP                                                        \
     auto mpit = c->players.find((uint32_t)NUM(0));                \
@@ -1138,14 +1241,7 @@ FN(fetchSync) {
     RET(v8::Array::New(iso, out, 6));
 }
 FN(fetchPause) { CTX; (void)c; net_pause((uint64_t)NUM(0), BOOL(1)); }
-FN(abort) {
-    CTX; uint64_t id = (uint64_t)NUM(0);
-    auto it = c->fetches.find(id);
-    if (it == c->fetches.end()) return;
-    net_cancel(id);
-    it->second->c = nullptr; it->second->cb.Reset(); it->second->head.Reset(); it->second->chunk.Reset();
-    c->fetches.erase(it);
-}
+FN(abort) { CTX; js_cancel_fetch(c, (uint64_t)NUM(0)); }
 /* errPos(error): [script URL, line, column] for reportError's event: where an Error was made, else the innermost
    page script frame calling (the prelude's own frames skipped) */
 FN(errPos) {
@@ -1218,6 +1314,11 @@ FN(ceScan) {
 FN(readyState) { CTX; RET(c->doc->ready_state); }
 FN(quirks) { CTX; RET(c->doc->quirks); }
 FN(currentScript) { CTX; RET(jwrap(c, c->current_script)); }
+FN(ignoreWrites) { CTX; RET(c->ignore_destructive_writes != 0 && !c->parser_write_point); }
+FN(parserWritePoint) { CTX; RET(c->parser_write_point); }
+FN(parserScript) { CTX; RET(jwrap(c, c->parser_write_script)); }
+FN(docOpen) { CTX; js_document_open(c); }
+FN(runWritten) { CTX; js_run_written_inline(c); }
 FN(hidden) { CTX; RET(v8::Boolean::New(iso, c->bg)); }
 FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str())); }
 FN(mediaValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_media_valid(q.c_str()))); }
@@ -1387,37 +1488,46 @@ FN(makeAll) {
 FN(cpus) { CTX; (void)iso; RET((int)std::max(1u, std::thread::hardware_concurrency())); }
 
 void js_run_inserted(JsCtx *c, Node *root) {
-    if (!(root->flags & NF_CONNECTED)) return;
+    if (!root || !(root->flags & NF_CONNECTED)) return;
+    // Inert documents have no browsing context; adopted nodes execute in their
+    // current document's context, independently of the method's creation realm.
+    JsCtx *owner = owner_ctx(root->doc);
+    if (!owner || owner->dead || owner->doc != root->doc) return;
+    c = owner;
+    const uint64_t generation = c->parser_generation;
     std::vector<Node *> list;
-    for (Node *x = root; x; x = node_next_in_tree(x, root))
-        if (jsg_is_script(x) && !(x->flags & NF_SCRIPT_STARTED)) list.push_back(x);
+    {
+        JS_ENTER(c);
+        jwrap(c, root);
+        for (Node *x = root; x; x = node_next_in_tree(x, root))
+            if (jsg_is_script(x) && !(x->flags & (NF_SCRIPT_STARTED | NF_PARSER_INSERTED))) { jwrap(c, x); list.push_back(x); }
+    }
     for (Node *s : list) {
-        s->flags |= NF_SCRIPT_STARTED;
+        if (c->dead || generation != c->parser_generation) return;
+        if (s->doc != c->doc || !js_prepare_script(s)) continue;
         bool mod = jsg_module_script(s);
-        if (!mod && !jsg_classic_script(s)) continue;
         const char *src = jsg_script_src(s);
         if (mod) {
-            char *t = src ? nullptr : node_text_content(s), *u = src && *src ? url_join(doc_base(c->doc), src) : nullptr;
-            if (src && !u) jfire(c, s, "error");
-            else js_run_module_inserted(c, s, t ? t : (src ? nullptr : ""), t ? strlen(t) : 0, u ? u : c->doc->url);
+            size_t length = 0;
+            char *t = src ? nullptr : jsg_script_text(s, &length), *u = src && *src ? url_join(doc_base(c->doc), src) : nullptr;
+            if (src && !u) js_queue_classic_script(c, s, nullptr, false);
+            else js_run_module_inserted(c, s, t ? t : (src ? nullptr : ""), length, u ? u : c->doc->url);
             free(t); free(u);
             continue;
         }
         if (!src) {
-            char *t = node_text_content(s);
-            js_run_script(c, s, t ? t : "", t ? strlen(t) : 0, c->doc->url);
+            size_t length = 0; char *t = jsg_script_text(s, &length);
+            js_run_dynamic_inline_script(c, s, t ? t : "", length, c->doc->url);
             free(t);
             continue;
         }
         char *u = *src ? url_join(doc_base(c->doc), src) : nullptr;
-        if (!u) { jfire(c, s, "error"); continue; }
-        jwrap(c, s);
-        NetRequest *rq = net_request_new("GET", u);
-        { char ref[4200]; if (doc_referrer(c->doc, u, node_attr(s, "referrerpolicy"), ref, sizeof ref)) headers_add(&rq->headers, "Referer", ref); }
-        start_fetch(c, rq, new Fetch{ c, 0, {}, s });
+        const bool ordered = (s->flags & NF_SCRIPT_NO_FORCE_ASYNC) && !node_has_attr(s, "async");
+        js_queue_classic_script(c, s, u, ordered);
         free(u);
     }
-    frames_inserted(c, root);
+    if (!c->dead && generation == c->parser_generation && root->doc == c->doc && (root->flags & NF_CONNECTED))
+        frames_inserted(c, root);
 }
 
 /* ---- canvas 2D (paint/canvas2d.c) ---- */
@@ -1646,7 +1756,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(errPos); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(caret); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
-    REG(currentScript); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
+    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
     REG(heap); REG(imgWatch); REG(imgSize); REG(imgDone); REG(imgRequest); REG(imgSrc); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);

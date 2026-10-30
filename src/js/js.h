@@ -58,6 +58,15 @@ void js_free(JsCtx *c);
 void js_debug_profile(JsCtx *c);   /* debug Android: restart the armed JS profile (no-op otherwise) */
 /* run a parser-inserted script (sets document.currentScript) */
 void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char *name);
+/* Prepare once at parser encounter or dynamic insertion. False means already
+   started or ineligible; valid scripts are marked started before fetching. */
+bool js_prepare_script(Node *script);
+uint64_t js_parser_generation(JsCtx *c);
+/* These accept a just-prepared node. ordered is only for dynamic async=false. */
+void js_queue_classic_script(JsCtx *c, Node *script, const char *url, bool ordered);
+void js_run_deferred_script(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
+/* Execute using the classification captured at preparation, not live attributes. */
+void js_run_prepared_classic(JsCtx *c, Node *script, const char *src, size_t n, const char *url, bool external, bool parser_point);
 void js_eval(JsCtx *c, const char *src, const char *name);
 /* Runs src as a classic script; returns its completion value as text (NULL for undefined), or the
    exception message with *failed set. Caller frees. */

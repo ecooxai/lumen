@@ -1,0 +1,210 @@
+{
+  "created_utc": "2026-10-30T07:09:09.595682+00:00",
+  "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "parent_async_manifest": "agent/validation/linux-wpt-20261030-session7/qa-parser-options/neighbors/manifest.json",
+  "parent_async_manifest_sha256": "5a152e356880ef11f4e368ef62bf0f36851bf9d4a3f4d72bbbfe382bfba2c1c9",
+  "count": 35,
+  "selection_rule": "All11ordinary async_001..011 files from original manifest plus24whole files selected before203/204 results to cover defer ordering, empty lifecycle, load/error, document.write insertion, removal/adoption and small module/nomodule retention. Every assertion and harness status retained. No separate security probes.",
+  "timeout_seconds": 15,
+  "rows": [
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_001.htm",
+      "group": "script_async",
+      "source_sha256": "203624bc117cca23fc3ed68696b9ed46a051f6a8566c3b40bc8352ee10bc57fe"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_002.htm",
+      "group": "script_async",
+      "source_sha256": "cbbabfe484fc3031d997947f0ca08f396469dc9edbf21d80497bd6f74b4cc0f6"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_003.htm",
+      "group": "script_async",
+      "source_sha256": "c1b0822901123c555b3cab6e99f9a998a3f4e1d74ccdddd407c861383065c122"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_004.htm",
+      "group": "script_async",
+      "source_sha256": "5cab62acf501a017202b0605e713bdd62ee37e213024f365622ea4e9737e8571"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_005.htm",
+      "group": "script_async",
+      "source_sha256": "eeb78f3afda33d60a01d73d7f0f39504cfb044c54e881a72c6b5bbcb86d77c1e"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_006.htm",
+      "group": "script_async",
+      "source_sha256": "85f5e427b43c52409cd5923514f22f74dd0a9619434e6bc72a86574e4f615d25"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_007.htm",
+      "group": "script_async",
+      "source_sha256": "8b875ddd5d8f9b168920563c691352b5556660f2ef744a4a36d555e7df9fb4d0"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_008.htm",
+      "group": "script_async",
+      "source_sha256": "6e79c482156fa39eb1a44ef179d9360049b9382c6d0d659cc893786face00020"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_009.htm",
+      "group": "script_async",
+      "source_sha256": "8ba8194140d6fda549c67ef6a89ffc2f298d0c7e33b0ca8c62249584809663c8"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_010.htm",
+      "group": "script_async",
+      "source_sha256": "1af2647ff89f3b6826d8346e4b468927dbb5b6e63c2edccde0b00b86adcbdb1a"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/async_011.htm",
+      "group": "script_async",
+      "source_sha256": "faa66f087c9c1e26375ad521a1780f90e052afb42047ec541c127c23a309907f"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/dynamically-created-defer-script.html",
+      "group": "lifecycle",
+      "source_sha256": "dda0b49255a5535fb09e31012ffdfab93a357e879cf6323876c0721800f54433",
+      "title": "Dynamically created defer scripts inserted after DOMContentLoaded"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/emptyish-script-elements.html",
+      "group": "empty_lifecycle",
+      "source_sha256": "96481ad6ccb64ae9764fea694e66f7401175ce10ce70a32e9a4fe2b6accf7608",
+      "title": "Treatment of various empty-ish script elements"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/load-error-events-1.html",
+      "group": "load_error",
+      "source_sha256": "bbb3080697e47e9c06672875d537e44f20e449a55b46adff460a65ce449cd367",
+      "title": "load/error events for classic scripts"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/script-defer.html",
+      "group": "defer",
+      "source_sha256": "b79d5cbf57f4c0b081bb4ef799c9758fd27c597c6ebe09bf74f1b7ab325d865c",
+      "title": "HTML Test: HTMLScriptElement - defer"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/script-error-status-fires-error.html",
+      "group": "load_error",
+      "source_sha256": "771c818672796ecc81e496a41413f7ee8b725d855d7cf2bdc9205ef0faa61aee",
+      "title": "script with error HTTP status should fire error event and not execute"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/src-empty-or-invalid-error-event-queued.html",
+      "group": "load_error",
+      "source_sha256": "bb4aaa98193dc5ff55263426bda56d1f5e37ba9369042325af37eb0c24cf7c55",
+      "title": "Error events for script elements with an empty or invalid src are fired from a queued task"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/script-onload-insertion-point.html",
+      "group": "document_write",
+      "source_sha256": "54c594415a2a2c0660a9f6c699a4cc8d2b43c9bff2a955c53ed256a8acf2e208",
+      "title": "Test that the insertion point is defined in the load event of a parser-inserted script."
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/script-onerror-insertion-point-1.html",
+      "group": "document_write",
+      "source_sha256": "5dccfb3c7fce3fa3314f109ede566ad5cb356310d479c33f4b244b7a22a5e4fe",
+      "title": "Test that the insertion point is defined in the error event of a parser-inserted script that actually started a fetch (but just had it fail)."
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/005.html",
+      "group": "document_write",
+      "source_sha256": "9bd1fd07f05da69e2c96b37db8fa9a5c4c0850b80d3b298c702d04e6b03c9ade",
+      "title": "scheduler: document.write inline in markup"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/007.html",
+      "group": "document_write",
+      "source_sha256": "d10f6a3aedc6019257df37eb0bacc0870947a852e7bf8a8cbcbf917d14478f0c",
+      "title": "scheduler: document.write external"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/085.html",
+      "group": "ordering",
+      "source_sha256": "e43abb71993d899b81cf77d4ea70a34b51e9ef481fc9c83dafea9dfb1213a4a8",
+      "title": "scheduler: async script and slow-loading defer script"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/087.html",
+      "group": "ordering",
+      "source_sha256": "ae45e05975b6ef428ccfac125d52f6783c01b5f2a921d2004b9e47771eab5d69",
+      "title": "scheduler: multiple defer scripts, one slow loading"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/088.html",
+      "group": "ordering",
+      "source_sha256": "897c70c90ff6f4ac71f3d58fb25e977f3ef1a61a77bc1777f601392ae91cb18c",
+      "title": "scheduler: multiple scripts with defer and async attributes"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/089.html",
+      "group": "ordering",
+      "source_sha256": "b4dc65520401c43857f636732b18d483b393aa1e0ce097476760e7b33208c841",
+      "title": "scheduler: async attribute on inline script"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/090.html",
+      "group": "ordering",
+      "source_sha256": "6a4c77302dd53758f81a94d07f0b22c93093f5e6b93c9385a34805a922dc2d22",
+      "title": "scheduler: defer attribute on inline script"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/092.html",
+      "group": "ordering",
+      "source_sha256": "82d5e92564390d619cd6499facd7d6a61720bd84700cd57893e4ede4caa3c09b",
+      "title": "scheduler: defer script and slow-loading non-async external script"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/095.html",
+      "group": "load",
+      "source_sha256": "9a4dfb142923c3c0526c52867b2288156d86580813a64e731d2d28e4da96457d",
+      "title": "scheduler: slow-loading script added from defer blocking load event"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/096.html",
+      "group": "document_write",
+      "source_sha256": "1ce54ef388ac9c2c63cb053d2b26f50b68c4f9d6976e81b2588291c00f0072f0",
+      "title": "scheduler: defer script added from document.write relative to DOMContentLoaded"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/execution-timing/110.html",
+      "group": "removal",
+      "source_sha256": "e5c530307ac2839c00eb7dc7887e3f258eb00751c43febaa03f01bdf33b52f36",
+      "title": "scheduler: removing defer script at runtime"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/nomodule-set-on-inline-classic-scripts.html",
+      "group": "nomodule_retention",
+      "source_sha256": "90d51cde13669844333aa93ec6dd3a8ba308728a470c425a8673fc630a58848b",
+      "title": "Inline classic scripts with nomodule content attribute must not run"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/nomodule-set-on-async-classic-script.html",
+      "group": "nomodule_retention",
+      "source_sha256": "90300c77590e244e7ce8647eaef3b1a5c58db59366b4b94bb7ef4da1d6b1df94",
+      "title": "External classic scripts with nomodule content attribute must not run"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/module/inline-defer-onload.html",
+      "group": "module_retention",
+      "source_sha256": "455f2dfda627fd692b0b80d09a6c007a542477c7673bc967404e319a1ad85326",
+      "title": "Inline defer module script without external deps onload blocking"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/module/inline-async-onload.html",
+      "group": "module_retention",
+      "source_sha256": "0b71a48e08b90db55f0a0e516acd7eb4b00db234b01df56979addd086ad2405a",
+      "title": "Inline async module script without external deps onload blocking"
+    },
+    {
+      "url": "/html/semantics/scripting-1/the-script-element/moving-between-documents/after-prepare-createHTMLDocument-fetch-error-external-classic.html",
+      "group": "adoption",
+      "source_sha256": "457a21338cd30b11f6a322c92ca00862e3e2c78a304fbf5818865f2c82672411",
+      "title": "Moving script elements between documents"
+    }
+  ]
+}
