@@ -1,0 +1,45 @@
+{
+  "iteration": 4,
+  "candidate": 218,
+  "started_utc": "2026-10-30T12:25:32.043061+00:00",
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Restore font-size destination typing while preserving legitimate numeric callers and typed percentage-to-length font expressions",
+  "finished_utc": "2026-10-30T12:45:02.925014+00:00",
+  "source_commit": "5b4868e846d69933723305d6a8389d6f772e6607",
+  "binary_sha256": "971e0bb648783a7401fd00a76ebc3662660476f40af6fd102ec3d941629692a5",
+  "source_manifest_sha256": "46cc71ea50544123f1de727ffb07531441997faea9e1f596eb9d254c7b557463",
+  "wpt": "594/594, 4/4 whole files; no prior-pass loss/missing/added",
+  "neighbors": "173/432; +58 versus214, no prior-pass losses",
+  "authored": "62/62; 12/12 signed zero; 20/20 boundaries; 8/8 tokens; 4/4 font destination; 12/12 font basis diagnostic; 3/3 separate crash smoke",
+  "native": "141/141; 107 direct native boundary checks",
+  "broad": {
+    "whole_files_pass": 402,
+    "files": 640,
+    "assertions_pass": 8798,
+    "assertions": 10540,
+    "prior_pass_losses": 2,
+    "gains": 36,
+    "harness_ok": 624,
+    "harness_timeout": 15,
+    "harness_error": 1
+  },
+  "test_scope_score": 100,
+  "release_quality_score": 90,
+  "acceptance": "rejected: two strict common-identity prior-pass losses in progress-computed.html; publication remains on214",
+  "resource_receipts": [
+    "build218/receipt.json",
+    "build218/resources.summary.json",
+    "build218/cgroup.summary.json",
+    "native218/receipt.json",
+    "native218/resources.summary.json",
+    "native218/cgroup.summary.json"
+  ],
+  "broad_receipt": "qa-frozen640/lumen218-controller-receipt.json",
+  "followup_scope": "Three complete progress() assertion files reveal four prior-pass losses versus214; restore genuine typed scalar semantics rather than permissive numeric fallback",
+  "duration_minutes": 19.514699216666667,
+  "session_elapsed_minutes": 59.1154169
+}

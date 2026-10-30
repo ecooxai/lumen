@@ -193,21 +193,25 @@ const SPEC_BOX = new SSet(['margin', 'padding', 'inset', 'border-width', 'border
 /* constant folding of math functions whose arguments are all numbers or same-type dimensions (Chrome folds these when parsing) */
 const MATH_UNIT = { deg: ['deg', 1], rad: ['deg', 180 / Math.PI], grad: ['deg', 0.9], turn: ['deg', 360], s: ['s', 1], ms: ['s', 0.001], px: ['px', 1], '': ['', 1] };
 function mathEval(src) {
-    let i = 0;
+    let i = 0, progressDepth = 0;
     const ws = () => { while (/\s/.test(src[i])) i++; };
     const fail = () => { throw 0; };
     const same = (a, b) => { if (a.u !== b.u) fail(); return a.u; };
     function prim() {
         ws();
         if (src[i] === '(') { i++; const r = sum(); ws(); if (src[i++] !== ')') fail(); return r; }
-        const m = /^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)([a-z]*)/i.exec(src.slice(i));
-        if (m) { const u = MATH_UNIT[m[2].toLowerCase()]; if (!u) fail(); i += m[0].length; return { v: +m[1] * u[1], u: u[0] }; }
+        const m = /^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(%|[a-z]*)/i.exec(src.slice(i));
+        if (m) {
+            if (m[2] === '%') { if (!progressDepth) fail(); i += m[0].length; return { v: +m[1], u: '%' }; }
+            const u = MATH_UNIT[m[2].toLowerCase()]; if (!u) fail(); i += m[0].length; return { v: +m[1] * u[1], u: u[0] };
+        }
         const id = /^(-?)([a-z][a-z0-9-]*)/i.exec(src.slice(i)); if (!id) fail();
         const name = id[2].toLowerCase(); i += id[0].length;
         const neg = id[1] ? -1 : 1;
         const K = { pi: Math.PI, e: Math.E, infinity: Infinity, nan: NaN };
         if (src[i] !== '(') { if (!(name in K)) fail(); return { v: neg * K[name], u: '' }; }
-        i++; let strategy = 'nearest';
+        i++; let strategy = 'nearest', noClamp = false;
+        if (name === 'progress') { const pm = /^\s*no-clamp\s+/i.exec(src.slice(i)); if (pm) { noClamp = true; i += pm[0].length; } progressDepth++; }
         if (name === 'round') {
             const sm = /^\s*(nearest|up|down|to-zero)\s*,/i.exec(src.slice(i));
             if (sm) { strategy = sm[1].toLowerCase(); i += sm[0].length; }
@@ -215,6 +219,7 @@ function mathEval(src) {
         const args = [sum()]; ws();
         while (src[i] === ',') { i++; args.push(sum()); ws(); }
         if (src[i++] !== ')') fail();
+        if (name === 'progress') progressDepth--;
         const n = a => { if (a.u) fail(); return a.v; }, ang = a => a.u === 'deg' ? a.v * Math.PI / 180 : n(a), D = r => ({ v: r * 180 / Math.PI, u: 'deg' });
         const F = {
             calc: () => args[0], sin: () => ({ v: Math.sin(ang(args[0])), u: '' }), cos: () => ({ v: Math.cos(ang(args[0])), u: '' }), tan: () => ({ v: Math.tan(ang(args[0])), u: '' }),
@@ -251,8 +256,15 @@ function mathEval(src) {
                 return { v, u };
             },
             rem: () => { if (args.length !== 2) fail(); const u = same(args[0], args[1]); return { v: args[0].v % args[1].v, u }; },
+            progress: () => {
+                if (args.length !== 3) fail(); same(args[0], args[1]); same(args[1], args[2]);
+                const a = args[0].v, start = args[1].v, end = args[2].v;
+                let v = start === end ? (!noClamp || a === start ? 0 : a < start ? -Infinity : Infinity) : (a - start) / (end - start);
+                if (!noClamp && !Number.isNaN(v)) v = Math.max(0, Math.min(1, v));
+                return { v, u: '' };
+            },
         };
-        if (!F[name] || !['atan2', 'pow', 'log', 'round', 'mod', 'rem'].includes(name) && args.length !== 1) fail();
+        if (!F[name] || !['atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
         const r = F[name](); if (args.some(a => Number.isNaN(a.v))) r.v = NaN; r.v *= neg; return r;
     }
     function prod() {
@@ -275,7 +287,7 @@ const mathSer = r => {
 function specFoldMath(t) {
     /* Evaluate an outer calculation before its children so a nested signed
        zero or NaN is not clamped before division/multiplication consumes it. */
-    const re = /\b(?:calc|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem)\(/gi;
+    const re = /\b(?:calc|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/gi;
     let out = '', previous = 0, match;
     while ((match = re.exec(t))) {
         let end = re.lastIndex, depth = 1;
@@ -300,9 +312,9 @@ const MATH_UNITS = (() => {
     m.set('fr', 'flex');
     return m;
 })();
-const MATH_FNS = /^(calc|-webkit-calc|min|max|clamp|round|mod|rem|abs|sign|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp)$/;
+const MATH_FNS = /^(calc|-webkit-calc|min|max|clamp|round|mod|rem|abs|sign|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp|progress)$/;
 function mathType(src, strictUnits = false, percentageHint = '') {   /* returns [type | null (invalid) | undefined (unknown), end] */
-    let i = 0, unknown = false;
+    let i = 0, unknown = false, scalarProgressDepth = 0;
     const ws = () => { const s = i; while (/\s/.test(src[i] || '')) i++; return i > s; };
     const dec = t => { const m = {}; if (t) for (const e of t.split(',')) { const [d, n] = e.split('^'); m[d] = +n; } return m; };
     const enc = m => Object.keys(m).filter(d => m[d]).sort().map(d => d + '^' + m[d]).join(',');
@@ -312,6 +324,7 @@ function mathType(src, strictUnits = false, percentageHint = '') {   /* returns 
         if (a === null || b === null || a === 'none' || b === 'none') return null;
         if (a === '?' || b === '?') return '?';
         if (a === b) return a;
+        if (scalarProgressDepth) return null;
         return pl(a) === pl(b) && pl(a) === 'length^1' ? 'length^1' : null;
     };
     function sum() {
@@ -350,7 +363,12 @@ function mathType(src, strictUnits = false, percentageHint = '') {   /* returns 
         }
         let strat = false;
         if (name === 'round') { const m = /^\s*(nearest|up|down|to-zero)\s*,/i.exec(src.slice(i)); if (m) { i += m[0].length; strat = true; } }
-        const a = args(); if (a === null || name !== 'clamp' && a.includes('none')) return null;
+        if (name === 'progress') { const pm = /^\s*no-clamp\s+/i.exec(src.slice(i)); if (pm) i += pm[0].length; }
+        const scalarProgress = name === 'progress' && !percentageHint;
+        if (scalarProgress) scalarProgressDepth++;
+        const a = args();
+        if (scalarProgress) scalarProgressDepth--;
+        if (a === null || name !== 'clamp' && a.includes('none')) return null;
         const same = () => a.reduce((x, y) => x === '?' || y === '?' ? '?' : x === null ? null : add(x, y));
         const num = t => t === '' || t === '?';
         switch (name) {
@@ -364,6 +382,14 @@ function mathType(src, strictUnits = false, percentageHint = '') {   /* returns 
         case 'round': if (a.length === 1) return strat || num(a[0]) || a[0] === '?' ? (num(a[0]) ? a[0] : null) : null;
             return a.length === 2 ? same() : null;
         case 'mod': case 'rem': return a.length === 2 ? same() : null;
+        case 'progress': {
+            if (a.length !== 3) return null;
+            // Without a destination hint, percentages are their own dimension,
+            // including percentages buried inside nested sums.
+            const t = scalarProgress ? a.reduce((x, y) => x === '?' || y === '?' ? '?' : x === y ? x : null) : same();
+            if (t === null || t !== '' && t !== '?' && !/^[a-z%]+\^1$/.test(t)) return null;
+            return '';
+        }
         case 'sign': return a.length === 1 ? '' : null;
         case 'sin': case 'cos': case 'tan': return a.length === 1 && (num(a[0]) || a[0] === 'angle^1') ? '' : null;
         case 'asin': case 'acos': case 'atan': return a.length === 1 && num(a[0]) ? 'angle^1' : null;

@@ -157,14 +157,14 @@ bool css_parse_color(const char *in, Color *out, Color current) {
 /* ---------------- lengths ---------------- */
 /* Temporary calculation types: values keep their compact affine storage.
    Tracking exponents also preserves unit cancellation in products/quotients. */
-enum { MATH_NUMBER = -1, MATH_LENGTH, MATH_ANGLE, MATH_TIME, MATH_FLEX };
-typedef struct { int8_t power[4]; } MathType;
+enum { MATH_NUMBER = -1, MATH_LENGTH, MATH_ANGLE, MATH_TIME, MATH_FLEX, MATH_PERCENT, MATH_DIMENSIONS };
+typedef struct { int8_t power[MATH_DIMENSIONS]; } MathType;
 static MathType math_type_unit(int unit) {
     MathType type = {{0}}; if (unit >= 0) type.power[unit] = 1; return type;
 }
 static bool math_type_equal(MathType a, MathType b) { return !memcmp(&a, &b, sizeof a); }
 static bool math_type_product(MathType a, MathType b, int sign, MathType *out) {
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < MATH_DIMENSIONS; i++) {
         int power = a.power[i] + sign * b.power[i];
         if (power < INT8_MIN || power > INT8_MAX) return false;
         out->power[i] = (int8_t)power;
@@ -175,6 +175,9 @@ typedef struct {
     float em, rem; const MediaCtx *mc;
     const ComputedStyle *font_basis; bool actual_font; bool *used_font_units;
     MathType math_type;
+    /* Scalar destinations have no length percentage hint. Keep even zero
+       percentage tokens distinct through nested expressions and ratios. */
+    bool scalar_percentage_type;
 } LCtx;
 static float ch_advance(LCtx *c) {
     if (c->used_font_units) *c->used_font_units = true;
@@ -207,11 +210,18 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
         c->math_type = math_type_unit(MATH_NUMBER);
         *out = l; *pp = p; return true;
     }
-    static const char *const fns[] = { "round", "mod", "rem", "abs", "sign", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp" };
+    static const char *const fns[] = { "round", "mod", "rem", "abs", "sign", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp", "progress" };
     int f = -1; for (int i = 0; i < (int)ARRLEN(fns); i++) if (!strcmp(id, fns[i])) f = i;
     if (f < 0) return false;
     p++;
     int strat = 0;   /* round: nearest, up, down, to-zero */
+    bool no_clamp = false;
+    if (f == 17) {
+        const char *q = p; while (is_ws((unsigned char)*q)) q++;
+        if (!strncasecmp(q, "no-clamp", 8) && is_ws((unsigned char)q[8])) {
+            no_clamp = true; p = q + 8;
+        }
+    }
     if (f == 0) {
         static const char *const st[] = { "nearest", "up", "down", "to-zero" };
         const char *q = p; while (is_ws((unsigned char)*q)) q++;
@@ -222,7 +232,7 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
         if (!calc_expr(&p, &v[n], c)) return false;
         types[n] = c->math_type;
         ang[n] = math_type_equal(types[n], math_type_unit(MATH_ANGLE));
-        if (v[n].mm || (f > 2 && v[n].pct)) return false;
+        if (v[n].mm || (f > 2 && f != 17 && v[n].pct)) return false;
         n++; while (is_ws((unsigned char)*p)) p++;
         if (*p == ',') { p++; continue; }
         break;
@@ -233,7 +243,7 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
     if ((f == 0 && (n < 1 || n > 2)) ||
         ((f == 1 || f == 2 || f == 11 || f == 12) && n != 2) ||
         ((f == 3 || (f >= 4 && f <= 10) || f == 13 || f == 16) && n != 1) ||
-        (f == 15 && (n < 1 || n > 2))) return false;
+        (f == 15 && (n < 1 || n > 2)) || (f == 17 && n != 3)) return false;
     MathType result_type = types[0], number_type = math_type_unit(MATH_NUMBER);
     if (f == 0 && n == 1) {
         if (!math_type_equal(types[0], number_type)) return false;
@@ -241,9 +251,18 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
            dimensional division leaves the number dependent on percentages. */
         v[1] = L_px(1); types[1] = number_type;
     }
-    if (f == 0 || f == 1 || f == 2 || f == 11 || f == 14) {
+    if (f == 0 || f == 1 || f == 2 || f == 11 || f == 14 || f == 17) {
         for (int i = 1; i < n; i++) if (!math_type_equal(types[0], types[i])) return false;
         if (f == 11) result_type = math_type_unit(MATH_ANGLE);
+        if (f == 17) {
+            int dimensions = 0;
+            for (int i = 0; i < MATH_DIMENSIONS; i++) {
+                if (types[0].power[i] && types[0].power[i] != 1) return false;
+                dimensions += types[0].power[i] != 0;
+            }
+            if (dimensions > 1) return false;
+            result_type = number_type;
+        }
     } else if (f == 4) result_type = number_type;
     else if (f >= 5 && f <= 7) {
         if (!ang[0] && !math_type_equal(types[0], number_type)) return false;
@@ -267,9 +286,15 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
         l.pctu = v[0].pctu || v[1].pctu;
         c->math_type = result_type; *out = l; *pp = p; return true;
     }
-    double a = v[0].px, b = n > 1 ? v[1].px : 1, r, rad = M_PI / 180;
+    double a = v[0].px, b = n > 1 ? v[1].px : 1, end = n > 2 ? v[2].px : 0, r, rad = M_PI / 180;
     bool has_nan = false;
-    for (int i = 0; i < n; i++) has_nan |= isnan(v[i].px);
+    for (int i = 0; i < n; i++) has_nan |= isnan(v[i].px) || (f == 17 && isnan(v[i].pct));
+    if (f == 17 && !has_nan && (v[0].pct || v[1].pct || v[2].pct)) {
+        /* A common pure percentage factor cancels in this ratio. Mixed
+           percentage/length ratios still require a deferred representation. */
+        for (int i = 0; i < 3; i++) if (v[i].px != 0) return false;
+        a = v[0].pct; b = v[1].pct; end = v[2].pct;
+    }
     if (has_nan) r = NAN;
     else switch (f) {
     case 0: case 1: case 2: r = len_stepped_value(a, b, stepped); break;
@@ -286,7 +311,14 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
     case 13: r = sqrt(a); break;
     case 14: { double s = 0; for (int i = 0; i < n; i++) s += (double)v[i].px * v[i].px; r = sqrt(s); break; }
     case 15: r = n > 1 ? log(a) / log(b) : log(a); break;
-    default: r = exp(a); break;
+    case 16: r = exp(a); break;
+    default: /* progress(): apply NaN propagation before endpoint shortcuts. */
+        if (b == end) r = !no_clamp || a == b ? 0 : a < b ? -INFINITY : INFINITY;
+        else {
+            r = (a - b) / (end - b);
+            if (!no_clamp && !isnan(r)) r = fmax(0, fmin(1, r));
+        }
+        break;
     }
     c->math_type = result_type;
     l.px = (float)r;
@@ -344,7 +376,7 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     Length l = { 0, 0, LK_LEN };
     char u[8] = {0}; int k = 0; while (isalpha((unsigned char)*p) && k < 7) u[k++] = (char)lc(*p++);
     int unit = MATH_LENGTH;
-    if (*p == '%') { l.pct = v; l.pctu = true; p++; }
+    if (*p == '%') { l.pct = v; l.pctu = true; if (c->scalar_percentage_type) unit = MATH_PERCENT; p++; }
     else if (!k || !strcmp(u, "px")) { l.px = v; if (!k) unit = MATH_NUMBER; }
     else if (!strcmp(u, "em")) l.px = v * c->em;
     else if (!strcmp(u, "rem")) l.px = v * c->rem;
@@ -474,16 +506,17 @@ bool css_parse_length(const char *s, Length *out, float em, float rem, const Med
 
 /* Typed scalar consumers share the same evaluator as native length math. */
 static bool css_scalar_math(const char *text, int unit, float em, float rem, float *out) {
-    LCtx c = { em, rem, NULL }; Length value; const char *p = text;
+    LCtx c = { .em = em, .rem = rem, .scalar_percentage_type = true };
+    Length value; const char *p = text;
     if (!parse_dim(&p, &value, &c) || value.mm || value.pct || value.pctu ||
         !math_type_equal(c.math_type, math_type_unit(unit))) return false;
     while (is_ws((unsigned char)*p)) p++;
     if (*p) return false;
     *out = value.px; return true;
 }
-static bool css_transform_number(const char *text, float *out, bool percentage) {
+static bool css_transform_number(const char *text, float *out, bool percentage, float em, float rem) {
     float value;
-    if (!css_scalar_math(text, MATH_NUMBER, 16, 16, &value)) {
+    if (!css_scalar_math(text, MATH_NUMBER, em, rem, &value)) {
         char *end; value = strtof(text, &end);
         if (!percentage || end == text || *end != '%' || end[1]) return false;
         value /= 100;
@@ -1506,20 +1539,20 @@ static void parse_transform(ACtx *c, const char *v) {
         } else if (!strcmp(fn, "scale") || !strcmp(fn, "scale3d")) {
             valid = !strcmp(fn, "scale3d") ? n == 3 : n == 1 || n == 2;
             if (valid) {
-                valid = css_transform_number(t[0], &a, true); d = a;
-                if (valid && n > 1) valid = css_transform_number(t[1], &d, true);
-                if (valid && n == 3) { float z; valid = css_transform_number(t[2], &z, true); }
+                valid = css_transform_number(t[0], &a, true, c->em, c->rem); d = a;
+                if (valid && n > 1) valid = css_transform_number(t[1], &d, true, c->em, c->rem);
+                if (valid && n == 3) { float z; valid = css_transform_number(t[2], &z, true, c->em, c->rem); }
             }
-        } else if (!strcmp(fn, "scalex")) valid = n == 1 && css_transform_number(t[0], &a, true);
-        else if (!strcmp(fn, "scaley")) valid = n == 1 && css_transform_number(t[0], &d, true);
+        } else if (!strcmp(fn, "scalex")) valid = n == 1 && css_transform_number(t[0], &a, true, c->em, c->rem);
+        else if (!strcmp(fn, "scaley")) valid = n == 1 && css_transform_number(t[0], &d, true, c->em, c->rem);
         else if (!strcmp(fn, "rotate") || !strcmp(fn, "rotatez")) {
             float angle = 0; valid = n == 1 && transform_angle(c, t[0], &angle);
             if (valid) { float r = angle * (float)M_PI / 180; a = cosf(r); b = sinf(r); cc = -sinf(r); d = cosf(r); }
         } else if (!strcmp(fn, "matrix")) {
             valid = n == 6;
-            if (valid) valid = css_transform_number(t[0], &a, false) && css_transform_number(t[1], &b, false) &&
-                css_transform_number(t[2], &cc, false) && css_transform_number(t[3], &d, false) &&
-                css_transform_number(t[4], &e, false) && css_transform_number(t[5], &f, false);
+            if (valid) valid = css_transform_number(t[0], &a, false, c->em, c->rem) && css_transform_number(t[1], &b, false, c->em, c->rem) &&
+                css_transform_number(t[2], &cc, false, c->em, c->rem) && css_transform_number(t[3], &d, false, c->em, c->rem) &&
+                css_transform_number(t[4], &e, false, c->em, c->rem) && css_transform_number(t[5], &f, false, c->em, c->rem);
         } else if (!strcmp(fn, "skewx") || !strcmp(fn, "skewy")) {
             float angle = 0; valid = n == 1 && transform_angle(c, t[0], &angle);
             if (valid) { float skew = tanf(angle * (float)M_PI / 180); if (fn[4] == 'x') cc = skew; else b = skew; }

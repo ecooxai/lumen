@@ -1,0 +1,11 @@
+{
+  "iteration": 5,
+  "candidate": 219,
+  "started_utc": "2026-10-30T12:53:13.325545+00:00",
+  "agents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Bounded typed progress() correction for four prior-pass losses; no new deferred layout-expression representation"
+}

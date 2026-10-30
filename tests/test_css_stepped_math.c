@@ -49,17 +49,40 @@ int main(void) {
     equal("round(up, 1, infinity)", INFINITY);
     equal("round(down, -1, infinity)", -INFINITY);
     equal("calc(-1 * round(-1, infinity))", 0);
+    equal("progress(50px, 0px, 100px)", .5f);
+    equal("progress(150px, 0px, 100px)", 1);
+    equal("progress(-50px, 0px, 100px)", 0);
+    equal("progress(25deg, 100deg, 0deg)", .75f);
+    equal("progress(50ms, 0s, 0.1s)", .5f);
+    equal("progress(50%, 0%, 100%)", .5f);
+    equal("progress(no-clamp 25%, 50%, 100%)", -.5f);
+    equal("progress(1px, 10px, 10px)", 0);
+    equal("progress(10px, 10px, 10px)", 0);
+    equal("progress(100px, 10px, 10px)", 0);
+    equal("progress(no-clamp 150px, 0px, 100px)", 1.5f);
+    equal("progress(no-clamp -50px, 0px, 100px)", -.5f);
+    equal("progress(no-clamp 1px, 10px, 10px)", -INFINITY);
+    equal("progress(no-clamp 10px, 10px, 10px)", 0);
+    equal("progress(no-clamp 100px, 10px, 10px)", INFINITY);
+    equal("calc(10px * progress(50deg, 0deg, 100deg))", 5);
     const char *nan[] = {
         "round(infinity, NaN)", "round(NaN, infinity)", "round(0, 0)",
         "round(infinity, infinity)", "mod(infinity, 2)", "mod(-0, infinity)",
         "mod(0, -infinity)", "rem(infinity, 2)", "calc(0 / 0)",
         "calc(-1 * round(infinity, NaN))", "calc(0 * infinity)",
+        "progress(NaN, 1, 1)", "progress(1, NaN, NaN)",
+        "progress(infinity, -infinity, infinity)",
+        "progress(NaN * 1px, 0%, 0px)",
     };
     for (size_t i = 0; i < sizeof nan / sizeof *nan; i++) assert(isnan(parse(nan[i])));
     const char *invalid[] = {
         "round(0px)", "round(1px, 2deg)", "round(1px, 2px, 3px)",
         "mod(1px)", "rem(1px, 2px, 3px)", "round(1px, 1px) garbage",
         "calc(round(1px, 1px)) trailing", "round(1px, nearest)",
+        "progress()", "progress(1, 0)", "progress(1, 0, 1, 2)",
+        "progress(1px, 0deg, 2px)", "progress(1px, 0, 2px)",
+        "progress(1px * 1px, 0px * 0px, 2px * 2px)",
+        "progress(no-clamp, 1, 0, 1)", "progress(1, 0, 1) trailing",
     };
     for (size_t i = 0; i < sizeof invalid / sizeof *invalid; i++) {
         Length value; checks++;
@@ -164,6 +187,30 @@ int main(void) {
     assert(style->font_size == 8); checks++;
     css_apply_decl(style, parent, "line-height", "round(1.5)", NULL, NULL);
     assert(style->line_height_factor == 2 && style->line_height == 16); checks++;
+    css_apply_decl(style, parent, "transform", "translateX(12px)", NULL, NULL);
+    css_apply_decl(style, parent, "transform", "scale(progress(1px, 0deg, 2px))", NULL, NULL);
+    assert(style->has_transform && style->transform[4] == 12); checks++;
+    css_apply_decl(style, parent, "transform", "scale(progress(0em, 0rem, 0em))", NULL, NULL);
+    assert(style->has_transform && style->transform[0] == 0 && style->transform[3] == 0); checks++;
+    css_apply_decl(style, parent, "transform", "scale(progress(no-clamp 2em, 0px, 1rem))", NULL, NULL);
+    assert(style->has_transform && style->transform[0] == 1 && style->transform[3] == 1); checks++;
+    css_apply_decl(style, parent, "opacity", "calc(0.5 * progress(-100px, 0px, 100px))", NULL, NULL);
+    assert(style->opacity == 0); checks++;
+    css_apply_decl(style, parent, "transform", "translateX(12px)", NULL, NULL);
+    const char *mixed_progress[] = {
+        "scale(progress(10%, 0px, 100%))",
+        "scale(progress(0px, 0%, 0px))",
+        "scale(progress(calc(10% + 0px), 0px, 100px))",
+        "scale(progress(calc(0% + 0px), 0px, 100px))"
+    };
+    for (size_t i = 0; i < sizeof mixed_progress / sizeof *mixed_progress; i++) {
+        css_apply_decl(style, parent, "transform", mixed_progress[i], NULL, NULL);
+        assert(style->has_transform && style->transform[4] == 12); checks++;
+    }
+    css_apply_decl(style, parent, "transform", "scale(progress(25%, 0%, 100%))", NULL, NULL);
+    assert(style->has_transform && style->transform[0] == .25f); checks++;
+    css_apply_decl(style, parent, "width", "calc(round(10% / 1px) * 1px)", NULL, NULL);
+    assert(len_resolve(style->width, 80) == 8 && len_resolve(style->width, 200) == 20); checks++;
     style_free(parent); style_free(style);
     printf("PASS css_stepped_math %d native boundary checks\n", checks);
     return 0;
