@@ -1,13 +1,13 @@
 {
   "title": "Lumen Linux · parser options and script lifecycle",
-  "phase": "Candidate 212 source frozen: CSS variables and DOMParser regression correction; build pending",
-  "iteration": 12,
+  "phase": "Candidate212 compile declaration failure preserved; candidate213 linkage correction building",
+  "iteration": 13,
   "score": 46.67,
   "iteration_quality": 46.67,
   "score_note": "CSS39 baseline: 154/330 reported assertions. This scoped score is not whole-browser conformance.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
   "checkpoint": "Candidate211 ca96ea6acc239fa91f47c84069b010f20ce09682: native140/140, but16 broad XML assertion regressions block acceptance.",
-  "updated_utc": "2026-10-30T09:57:00.397558+00:00",
+  "updated_utc": "2026-10-30T09:58:14.345174+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
