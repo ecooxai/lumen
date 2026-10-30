@@ -1398,6 +1398,7 @@ FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str()));
 FN(mediaValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_media_valid(q.c_str()))); }
 FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
 FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
+extern "C" bool css_var_syntax_valid(const char *value);
 FN(cssVarValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_var_syntax_valid(q.c_str()))); }
 /* the computed serialization of a CSS colour (currentcolor as black), or null when it doesn't parse */
 FN(cssColor) { CTX; (void)c; std::string q = S(0); CssColor col; if (!css_color_parse(q.c_str(), &col, NULL)) { RET(v8::Null(iso)); return; } char b[200]; css_color_serialize(&col, b, sizeof b); RET(nstr(iso, b)); }
