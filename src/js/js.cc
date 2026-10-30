@@ -99,7 +99,8 @@ static v8::Local<v8::Object> proto_for(JsCtx *c, Node *n) {
     v8::Isolate *iso = c->iso;
     if (c->protoFor.IsEmpty()) return {};
     /* a shadow root (a fragment with a host) is tagged "#shadow" */
-    const char *tag = n->type == NODE_ELEMENT ? n->tag : n->type == NODE_FRAGMENT && n->host ? "#shadow" : "";
+    const char *tag = n->type == NODE_ELEMENT ? n->tag : n->type == NODE_FRAGMENT && n->host ? "#shadow"
+        : n->type == NODE_DOCUMENT && ((Document *)n)->interface_kind == 2 ? "#document" : "";
     std::string key = std::to_string(n->type) + ":" + (tag ? tag : "") + ":" + std::to_string(n->ns);
     auto it = c->protos.find(key);
     if (it != c->protos.end()) return it->second.Get(iso);
@@ -1264,8 +1265,15 @@ JsCtx *js_ctx_of_window(uint32_t wid) {   /* the newest, while the old page ling
 }
 void js_set_window(JsCtx *c, uint32_t wid, uint32_t opener) { if (c) { c->wid = wid; c->opener = opener; } }
 JsCtx *owner_ctx(Document *d) {
+    if (!d) return nullptr;
     for (JsCtx *c : g_ctxs) if (c->doc == d) return c;
     for (JsCtx *c : g_ctxs) if (std::find(c->docs.begin(), c->docs.end(), d) != c->docs.end()) return c;
+    /* Associated template owners have the original document's realm, but no
+       browsing context. They are owned by that Document, never twice in docs. */
+    for (JsCtx *c : g_ctxs) {
+        if (c->doc && c->doc->template_contents_owner == d) return c;
+        for (Document *owned : c->docs) if (owned->template_contents_owner == d) return c;
+    }
     return nullptr;
 }
 bool js_read_blob(JsCtx *owner, const char *url, unsigned char **bytes_out, size_t *len_out, char **type_out) {
@@ -1396,6 +1404,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
         get("report", c->report);
         get("viewportChanged", c->viewportChanged);
         get("ttScript", c->tt_script);
+        get("ttParserScript", c->tt_parser_script);
         get("ttEval", c->tt_eval);
         /* the document's CSP: after protoFor, since reading the <meta> elements wraps nodes */
         v8::Local<v8::Value> ti;
@@ -1501,7 +1510,7 @@ static void js_free_collect(JsCtx *c, std::vector<Node *> &roots, std::vector<Do
         js_broadcast_deactivate(c->broadcast);
         v8::HandleScope hs(c->iso);
         js_cancel_fetches(c);
-        c->ordered_scripts.clear(); c->pending_scripts = 0;
+        c->ordered_scripts.clear(); c->written_deferred.clear(); c->pending_scripts = 0;
         for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
         c->timer_clear();
         c->rafs.clear();
@@ -1509,7 +1518,7 @@ static void js_free_collect(JsCtx *c, std::vector<Node *> &roots, std::vector<Do
         c->anims.clear();
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset(); c->pick_cb.Reset(); c->rejs.clear();   /* before Dispose: ~JsCtx must not release handles */
-        c->tt_script.Reset(); c->tt_eval.Reset(); c->code_like.Reset();
+        c->tt_script.Reset(); c->tt_parser_script.Reset(); c->tt_eval.Reset(); c->code_like.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
         c->mods.clear(); c->mod_errors.clear(); c->mod_url.clear(); c->mod_jobs.clear(); c->code_refresh.clear(); if (!c->parent) mod_synth_drop(c->iso);
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
@@ -1532,6 +1541,8 @@ void js_free(JsCtx *c) {
     /* Same-origin frame bridges already retain shared contexts until their tab
      * retires. Keep that boundary explicit for callers other than js_tick. */
     if (c->parent && c->xref) { frame_kill(c); c->dead_at = 0; return; }
+    Document *root_document = c->doc;
+    const bool child_context = c->parent != nullptr;
     std::vector<Node *> roots;
     std::vector<Document *> docs;
     js_free_collect(c, roots, docs);
@@ -1541,8 +1552,16 @@ void js_free(JsCtx *c) {
      * detached-node release phase. The caller owns a top-level page document. */
     std::unordered_set<Node *> seen_roots;
     for (Node *n : roots) if (seen_roots.insert(n).second) node_free_tree(n);
-    std::unordered_set<Document *> seen_docs;
-    for (Document *d : docs) if (seen_docs.insert(d).second) doc_free(d);
+    /* The Page can keep its DOM while its JavaScript context sleeps. Nodes in
+     * that tree may still belong to an adopted auxiliary document, including
+     * a template's associated inert owner. Transfer those native documents to
+     * the root and let doc_free release the whole ownership graph in two
+     * phases; no owner metadata can disappear before another tree's nodes. */
+    for (Document *d : docs) if (d != root_document) doc_retire_owned(root_document, d);
+    /* Drain every retired document's native resource references before any
+     * retired tree is released; the Page's own DOM/resources remain alive. */
+    doc_clear_retired_trees(root_document);
+    if (child_context) doc_free(root_document);
 }
 
 /* Written inline scripts execute in the nested parser before write() returns.
@@ -1565,6 +1584,9 @@ static void run_written_script(JsCtx *c, Node *script) {
     if (node_has_attr(script, "async")) {
         js_queue_classic_script(c, script, url, false); free(url); return;
     }
+    if (node_has_attr(script, "defer")) {
+        js_queue_written_deferred(c, script, url); free(url); return;
+    }
     NetResponse *response = nullptr;
     if (url) {
         NetRequest *request = net_request_new("GET", url);
@@ -1576,7 +1598,7 @@ static void run_written_script(JsCtx *c, Node *script) {
     if (response && !response->error && response->status >= 200 && response->status < 300)
         js_run_prepared_classic(c, script, response->body ? response->body : "", response->body ? response->body_len : 0,
                                 response->url ? response->url : url, true, true);
-    else { JS_ENTER(c); jfire(c, script, "error"); }
+    else js_parser_script_error(c, script, true);
     if (response) net_response_free(response);
     free(url);
 }
@@ -1594,7 +1616,7 @@ void js_run_written_inline(JsCtx *c) {
     const uint64_t generation = c->parser_generation;
     while (!c->dead && generation == c->parser_generation && !c->written.empty()) {
         Node *script = c->written.front();
-        if (jsg_module_script(script) || (jsg_script_src(script) && !node_has_attr(script, "async"))) break;
+        if (jsg_module_script(script) || (jsg_script_src(script) && !node_has_attr(script, "async") && !node_has_attr(script, "defer"))) break;
         c->written.erase(c->written.begin());
         run_written_script(c, script);
     }
@@ -1611,13 +1633,55 @@ static bool tt_script_text(JsCtx *c, Node *script, const char *&src, size_t &n, 
 }
 uint64_t js_parser_generation(JsCtx *c) { return c ? c->parser_generation : 0; }
 void js_document_open(JsCtx *c) {
-    ++c->parser_generation;
+    ++c->parser_generation; c->parser_defer_next = 0;
     frames_parser_cancel(c);
     js_cancel_fetches(c, true);
-    c->ordered_scripts.clear(); c->pending_scripts = 0;
+    c->ordered_scripts.clear(); c->written_deferred.clear(); c->pending_scripts = 0;
     c->written.clear();
+    c->doc->html = c->doc->head = c->doc->body = nullptr;
     c->load_deferred = false; c->load_synced = false;
     js_set_ready_state(c, 0);
+}
+Node *js_parser_custom_element(JsCtx *c, Node *element, Node *intended_parent) {
+    if (!c || c->dead || !element || !intended_parent) return nullptr;
+    for (Node *node = intended_parent; node; node = node->parent ? node->parent : node->host)
+        if (node->flags & NF_INERT) return nullptr;
+    JsCtx *owner = owner_ctx(intended_parent->doc);
+    if (!owner || owner->dead || owner->api.IsEmpty()) return nullptr;
+    JS_ENTER(owner);
+    v8::Local<v8::Value> function, result;
+    if (!owner->api.Get(iso)->Get(ctx, jstr(iso, "ceParserCreate")).ToLocal(&function) || !function->IsFunction()) return nullptr;
+    auto attributes = v8::Array::New(iso, element->nattrs);
+    for (int i = 0; i < element->nattrs; ++i) {
+        const Attr &attribute = element->attrs[i];
+        v8::Local<v8::Value> pair[2] = { jstr(iso, attribute.name), jstr(iso, attribute.value) };
+        (void)attributes->CreateDataProperty(ctx, (uint32_t)i, v8::Array::New(iso, pair, 2));
+    }
+    v8::Local<v8::Value> args[4] = { jstr(iso, element->tag),
+        element->is_value ? v8::Local<v8::Value>(jsrc(iso, element->is_value, element->is_value_len)) : v8::Local<v8::Value>(v8::Null(iso)),
+        jwrap(owner, &intended_parent->doc->node), attributes };
+    if (!jcall(owner, function.As<v8::Function>(), v8::Undefined(iso), 4, args).ToLocal(&result)) return nullptr;
+    return junwrap(result);
+}
+void js_parser_custom_inserted(JsCtx *c, Node *element, Node *parent, Node *previous, Node *next) {
+    if (!c || c->dead || !element || !parent) return;
+    JsCtx *owner = owner_ctx(parent->doc);
+    if (!owner || owner->dead || owner->api.IsEmpty()) return;
+    JS_ENTER(owner);
+    v8::Local<v8::Value> function, result;
+    if (!owner->api.Get(iso)->Get(ctx, jstr(iso, "ceParserInserted")).ToLocal(&function) || !function->IsFunction()) return;
+    v8::Local<v8::Value> args[4] = { jwrap(owner, element), jwrap(owner, parent),
+        previous ? v8::Local<v8::Value>(jwrap(owner, previous)) : v8::Local<v8::Value>(v8::Null(iso)),
+        next ? v8::Local<v8::Value>(jwrap(owner, next)) : v8::Local<v8::Value>(v8::Null(iso)) };
+    (void)jcall(owner, function.As<v8::Function>(), v8::Undefined(iso), 4, args).ToLocal(&result);
+}
+bool js_parser_script_closed(JsCtx *c, Node *script, const char *source, size_t length) {
+    if (!c || c->dead) return false;
+    if (c->tt_parser_script.IsEmpty()) return !c->tt_on;
+    JS_ENTER(c);
+    v8::TryCatch caught(iso);
+    v8::Local<v8::Value> args[2] = { jwrap(c, script), jsrc(iso, source ? source : "", source ? length : 0) }, result;
+    return c->tt_parser_script.Get(iso)->Call(ctx, v8::Undefined(iso), 2, args).ToLocal(&result);
 }
 /* HTML preparation clears parser state before its early returns. An empty or
    unsupported parser script can therefore be populated and run dynamically later. */
@@ -1664,6 +1728,18 @@ static void run_classic_script(JsCtx *c, Node *script, const char *src, size_t n
     }
     if (c->written.size() > written) run_written(c, written);
     c->parser_write_point = previous_point;
+    c->parser_write_script = previous_anchor;
+}
+void js_parser_script_error(JsCtx *c, Node *script, bool parser_point) {
+    if (!c || c->dead || !script) return;
+    Node *previous_script = c->current_script, *previous_anchor = c->parser_write_script;
+    const bool previous_point = c->parser_write_point;
+    const size_t written = c->written.size();
+    c->current_script = nullptr; c->parser_write_point = parser_point;
+    c->parser_write_script = parser_point ? script : nullptr;
+    { JS_ENTER(c); jwrap(c, script); jfire(c, script, "error"); }
+    if (c->written.size() > written) run_written(c, written);
+    c->current_script = previous_script; c->parser_write_point = previous_point;
     c->parser_write_script = previous_anchor;
 }
 void js_run_prepared_classic(JsCtx *c, Node *script, const char *src, size_t n, const char *url,
@@ -2073,6 +2149,7 @@ static void tick_one(JsCtx *c) {
     TICK_MARK(0);
     if (!c->mod_jobs.empty()) { mod_jobs_finish(c); settle(c); }
     frames_parser_tick(c);
+    document_stream_tick(c);
     if (c->dead) return;
     TICK_MARK(1);
     pick_deliver(c);

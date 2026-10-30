@@ -2260,3 +2260,15 @@ uint32_t html_entity_lookup(const char *name, size_t n, uint32_t *second, size_t
     if (!be) { *consumed = 0; return 0; }
     *consumed = best; if (second) *second = be->b; return be->a;
 }
+
+/* Whether more input can still complete a named reference. Keep the generated
+   table unchanged and use the same byte ordering as the complete-name lookup. */
+bool html_entity_has_prefix(const char *name, size_t n) {
+    size_t low = 0, high = sizeof ents / sizeof ents[0];
+    while (low < high) {
+        size_t mid = low + (high - low) / 2;
+        if (strncmp(ents[mid].name, name, n) < 0) low = mid + 1;
+        else high = mid;
+    }
+    return low < sizeof ents / sizeof ents[0] && strlen(ents[low].name) >= n && !memcmp(ents[low].name, name, n);
+}

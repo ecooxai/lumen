@@ -589,6 +589,8 @@ for (const t of WINDOW_FWD) {
     const k = 'on' + t, d = Object.getOwnPropertyDescriptor(G, k);
     if (!d) continue;
     acc(G, k, function () {
+        const cleared = openedHandlerGet(openedHandlerState, this);
+        if (cleared && !openedHandlerHas(cleared, k)) return null;
         const own = this.__on && this.__on[k];
         if (own !== undefined) return own;
         const d = this === G && document, b = d && d.body;
@@ -1081,5 +1083,5 @@ function fireAnim(t, type, name, elapsed, anim) {
     Object.defineProperty(globalThis, 'Temporal', { get: load, set(v) { Object.defineProperty(globalThis, 'Temporal', { value: v, writable: true, configurable: true }); }, configurable: true });
     Object.defineProperty(Date.prototype, 'toTemporalInstant', { value: function toTemporalInstant() { load(); return Date.prototype.toTemporalInstant.call(this); }, writable: true, configurable: true });
 }
-return { ttInit, ttScript, ttEval, queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { ttInit, ttScript, ttParserScript, ttEval, queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, ceParserCreate, ceParserInserted, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

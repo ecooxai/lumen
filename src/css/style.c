@@ -495,32 +495,207 @@ static bool cm_any(const CustomMask *a, const CustomMask *b) {
     return ((a->w[0] & b->w[0]) | (a->w[1] & b->w[1]) | (a->w[2] & b->w[2]) | (a->w[3] & b->w[3])) != 0;
 }
 static void cm_or(CustomMask *a, const CustomMask *b) { for (int i = 0; i < 4; i++) a->w[i] |= b->w[i]; }
-static char *subst_vars(const char *v, ComputedStyle *st, int depth) {
-    if (!strstr(v, "var(") || depth > 16) return xstrdup(v);
-    SB b; sb_init(&b);
-    const char *p = v;
-    while (*p) {
-        const char *q = strstr(p, "var(");
-        if (!q) { sb_puts(&b, p); break; }
-        sb_put(&b, p, (size_t)(q - p));
-        const char *a = q + 4; int d = 1; const char *e = a;
-        while (*e && d) { if (*e == '(') d++; else if (*e == ')') d--; if (d) e++; }
-        char *inner = xstrndup(a, (size_t)(e - a));
-        char *comma = NULL; int dd = 0; for (char *c = inner; *c; c++) { if (*c == '(') dd++; else if (*c == ')') dd--; else if (*c == ',' && !dd) { comma = c; break; } }
-        if (comma) *comma = 0;
-        char *name = str_trim(inner);
-        cm_add_name(&st->custom_dependencies, name);
-        const char *val = custom_get(st->custom, name);
-        if (!val) val = css_property_initial(name);
-        char *r = val && *val ? subst_vars(val, st, depth + 1) : comma ? subst_vars(str_trim(comma + 1), st, depth + 1) : NULL;
-        free(inner);
-        /* unresolvable or runaway expansion: declaration is invalid at computed-value time */
-        if (!r || b.n + strlen(r) > (1u << 16)) { free(r); sb_free(&b); return NULL; }
-        sb_puts(&b, r); free(r);
-        p = *e ? e + 1 : e;
-    }
-    return sb_take(&b);
+/* Immutable custom-property resolution. Only selected fallbacks add edges. */
+#define VAR_EXPANSION_LIMIT (1u << 16)
+#define VAR_RECURSION_LIMIT 256
+typedef struct VarEntry {
+    const char *name, *raw;
+    char *value;
+    unsigned state;
+    bool cycle;
+} VarEntry;
+typedef struct VarResolver {
+    ComputedStyle *style;
+    const ComputedStyle *parent;
+    const CustomProps *origin_base;
+    HMap entries;
+    VEC(VarEntry *) stack;
+} VarResolver;
+typedef struct VarOutput {
+    SB text;
+    size_t last_start, last_length;
+    int last_type;
+    bool have_token, separated;
+} VarOutput;
+static bool var_boundary_merges(const VarOutput *out, const CTok *first) {
+    SB joined = {0};
+    sb_put(&joined, out->text.s + out->last_start, out->last_length);
+    sb_put(&joined, first->start, first->len);
+    CLexer l; clex_init(&l, joined.s, joined.n);
+    CTok a = clex_next(&l), b = clex_next(&l);
+    bool merges = a.start != joined.s || a.type != out->last_type ||
+        a.len != out->last_length || b.type != first->type ||
+        b.start != joined.s + out->last_length || b.len != first->len;
+    free(a.str); free(b.str); sb_free(&joined);
+    return merges;
 }
+static bool var_append(VarOutput *out, const char *source, size_t length) {
+    if (!length) return true;
+    CLexer l; clex_init(&l, source, length);
+    CTok first = {0}, last = {0}; bool have = false;
+    for (;;) {
+        CTok t = clex_next(&l); int type = t.type;
+        if (type != CT_EOF && type != CT_WS) {
+            if (!have) first = t;
+            last = t; have = true;
+        }
+        free(t.str);
+        if (type == CT_EOF) break;
+    }
+    bool separator = have && out->have_token && !out->separated &&
+        first.start == source && var_boundary_merges(out, &first);
+    if (out->text.n + length + (separator ? 4 : 0) > VAR_EXPANSION_LIMIT) return false;
+    if (separator) sb_puts(&out->text, "/**/");
+    size_t start = out->text.n; sb_put(&out->text, source, length);
+    if (have) {
+        out->have_token = true;
+        out->last_start = start + (size_t)(last.start - source);
+        out->last_length = last.len; out->last_type = last.type;
+        out->separated = (size_t)(last.start - source) + last.len < length;
+    } else out->separated = true;
+    return true;
+}
+static char *var_substitute(VarResolver *, VarEntry *, const char *, unsigned);
+static const char *var_resolve_entry(VarResolver *r, VarEntry *entry, unsigned depth) {
+    if (entry->state == 2) return entry->value;
+    if (entry->state == 1) {
+        bool cycle = false;
+        for (int i = 0; i < r->stack.n; i++) {
+            if (r->stack.v[i] == entry) cycle = true;
+            if (cycle) r->stack.v[i]->cycle = true;
+        }
+        return NULL;
+    }
+    if (depth > VAR_RECURSION_LIMIT) { entry->state = 2; return NULL; }
+    entry->state = 1; vec_push(r->stack, entry);
+    char *value = var_substitute(r, entry, entry->raw, depth + 1);
+    r->stack.n--;
+    if (entry->cycle) { free(value); value = NULL; }
+    if (value) {
+        CLexer l; clex_init(&l, value, strlen(value)); CTok keyword, after;
+        do { keyword = clex_next(&l); if (keyword.type == CT_WS) free(keyword.str); } while (keyword.type == CT_WS);
+        do { after = clex_next(&l); if (after.type == CT_WS) free(after.str); } while (after.type == CT_WS);
+        if (keyword.type == CT_IDENT && keyword.str && after.type == CT_EOF) {
+            if (str_ieq(keyword.str, "initial")) { free(value); value = NULL; }
+            else if (str_ieq(keyword.str, "inherit") || str_ieq(keyword.str, "unset") || str_ieq(keyword.str, "revert")) {
+                cm_add_name(&r->style->custom_dependencies, entry->name);
+                const char *parent = str_ieq(keyword.str, "revert") ? custom_get(r->origin_base, entry->name) :
+                    r->parent ? custom_get(r->parent->custom, entry->name) : NULL;
+                free(value); value = parent && *parent ? xstrdup(parent) : NULL;
+            }
+        }
+        free(keyword.str); free(after.str);
+    }
+    if (value && !*value) { free(value); value = xstrdup(" "); }
+    entry->value = value; entry->state = 2; return value;
+}
+static const char *var_lookup(VarResolver *r, const char *name, unsigned depth) {
+    cm_add_name(&r->style->custom_dependencies, name);
+    VarEntry *entry = hm_get(&r->entries, name);
+    if (entry) return var_resolve_entry(r, entry, depth);
+    const char *value = custom_get(r->style->custom, name);
+    if (!value) value = css_property_initial(name);
+    return value && *value ? value : NULL;
+}
+static char *var_substitute(VarResolver *r, VarEntry *owner, const char *source, unsigned depth) {
+    if (depth > VAR_RECURSION_LIMIT) return NULL;
+    if (!css_value_has_var(source)) return xstrdup(source);
+    CLexer l; clex_init(&l, source, strlen(source));
+    VarOutput out = {0}; size_t copied = 0; bool invalid = false;
+    for (;;) {
+        CTok t = clex_next(&l); int type = t.type;
+        bool is_var = type == CT_FUNC && t.str && str_ieq(t.str, "var");
+        free(t.str);
+        if (type == CT_EOF) break;
+        if (!is_var) continue;
+        size_t start = (size_t)(t.start - source), argument_start = l.i;
+        if (!var_append(&out, source + copied, start - copied)) invalid = true;
+        size_t argument_end, fallback, content_end;
+        if (!css_var_arguments(&l, &argument_end, &fallback, &content_end)) { invalid = true; break; }
+        copied = l.i;
+        char *argument = css_var_argument(source + argument_start, argument_end - argument_start, false);
+        char *name_value = argument ? var_substitute(r, owner, argument, depth + 1) : NULL;
+        free(argument); char *name = NULL;
+        if (name_value) {
+            CLexer names; clex_init(&names, name_value, strlen(name_value)); CTok first, end;
+            do { first = clex_next(&names); if (first.type == CT_WS) free(first.str); } while (first.type == CT_WS);
+            do { end = clex_next(&names); if (end.type == CT_WS) free(end.str); } while (end.type == CT_WS);
+            if (first.type == CT_IDENT && first.str && first.str[0] == '-' && first.str[1] == '-' && first.str[2] && end.type == CT_EOF) {
+                name = first.str; first.str = NULL;
+            }
+            free(first.str); free(end.str);
+        }
+        free(name_value);
+        const char *value = name ? var_lookup(r, name, depth + 1) : NULL;
+        char *owned = NULL;
+        /* Continue direct siblings after invalidity. A cycle-marked owner
+         * must not introduce new edges through a fallback. */
+        if (!value && !(owner && owner->cycle) && fallback != SIZE_MAX) {
+            char *raw = css_var_argument(source + fallback, content_end - fallback, true);
+            owned = raw ? var_substitute(r, owner, raw, depth + 1) : NULL;
+            free(raw); value = owned;
+        }
+        if (!value || (owner && owner->cycle)) invalid = true;
+        else if (!var_append(&out, value, strlen(value))) invalid = true;
+        free(owned); free(name);
+    }
+    if (!var_append(&out, source + copied, strlen(source) - copied)) invalid = true;
+    if (invalid) { sb_free(&out.text); return NULL; }
+    return sb_take(&out.text);
+}
+static char *subst_vars(const char *value, ComputedStyle *style, int depth) {
+    VarResolver r = { .style = style };
+    return var_substitute(&r, NULL, value, (unsigned)depth);
+}
+static void custom_resolve_values(ComputedStyle *style, const ComputedStyle *parent, const CustomProps *origin_base) {
+    if (!style->custom || (parent && style->custom == parent->custom)) return;
+    VarResolver r = { .style = style, .parent = parent, .origin_base = origin_base };
+    VEC(VarEntry *) values = {0};
+    hm_foreach(&style->custom->map, item) {
+        const char *raw = item->val;
+        if (!css_value_has_var(raw)) continue;
+        VarEntry *entry = xcalloc(1, sizeof *entry); entry->name = item->key; entry->raw = raw;
+        hm_put(&r.entries, item->key, entry); vec_push(values, entry);
+    }
+    for (int i = 0; i < values.n; i++) var_resolve_entry(&r, values.v[i], 0);
+    for (int i = 0; i < values.n; i++) {
+        VarEntry *entry = values.v[i];
+        char *old = hm_get(&style->custom->map, entry->name);
+        hm_put(&style->custom->map, entry->name, entry->value ? entry->value : xstrdup(""));
+        free(old); free(entry);
+    }
+    hm_free(&r.entries, NULL); vec_free(values); vec_free(r.stack);
+}
+/* CSS-wide values are dispatched by the existing keyword paths, not by the
+ * invalid-at-computed-value fallback. Full rule/layer rollback still requires
+ * cascade provenance beyond this value parser. */
+static const char *var_wide_keyword(const char *value) {
+    static const char *const names[] = { "initial", "inherit", "unset", "revert", "revert-layer", "revert-rule" };
+    CLexer l; clex_init(&l, value, strlen(value)); CTok first, end;
+    do { first = clex_next(&l); if (first.type == CT_WS) free(first.str); } while (first.type == CT_WS);
+    do { end = clex_next(&l); if (end.type == CT_WS) free(end.str); } while (end.type == CT_WS);
+    const char *keyword = NULL;
+    if (first.type == CT_IDENT && first.str && end.type == CT_EOF)
+        for (size_t i = 0; i < sizeof names / sizeof names[0]; i++)
+            if (str_ieq(first.str, names[i])) { keyword = names[i]; break; }
+    free(first.str); free(end.str); return keyword;
+}
+/* Convert tokenizer-skipped comments into spaces for native value parsers;
+ * this preserves distinct tokens after var() substitution. */
+static char *var_parser_text(const char *value) {
+    CLexer l; clex_init(&l, value, strlen(value)); SB out = {0}; size_t copied = 0;
+    for (;;) {
+        CTok t = clex_next(&l); int type = t.type;
+        size_t offset = (size_t)(t.start - value);
+        if (offset > copied) sb_putc(&out, ' ');
+        if (type != CT_EOF) sb_put(&out, t.start, t.len);
+        copied = l.i; free(t.str);
+        if (type == CT_EOF) break;
+    }
+    return sb_take(&out);
+}
+
+
 
 /* ---------------- property application ---------------- */
 static int kw(const char *v, const char *const *list) { for (int i = 0; list[i]; i++) if (str_ieq(v, list[i])) return i; return -1; }
@@ -1775,15 +1950,20 @@ static void apply_logical_edge_pair(ACtx *c, const char *value, int group, bool 
 }
 
 static bool custom_defer;
+static _Thread_local const CustomProps *custom_origin_base;
 static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop);
 static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc, const ComputedStyle *basis, bool *used);
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
         char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
         /* CSS-wide keywords: "" is the guaranteed-invalid value */
-        if (str_ieq(k, "inherit") || str_ieq(k, "unset") || str_ieq(k, "revert") || str_ieq(k, "revert-layer")) {
+        if (str_ieq(k, "inherit") || str_ieq(k, "unset") || str_ieq(k, "revert-layer")) {
             cm_add_name(&st->custom_dependencies, prop);
             const char *pv = par ? custom_get(par->custom, prop) : NULL; v = xstrdup(pv ? pv : "");
+        } else if (str_ieq(k, "revert")) {
+            cm_add_name(&st->custom_dependencies, prop);
+            const char *pv = custom_origin_base ? custom_get(custom_origin_base, prop) : par ? custom_get(par->custom, prop) : NULL;
+            v = xstrdup(pv ? pv : "");
         } else if (str_ieq(k, "initial")) v = xstrdup("");
         else if (!*k) v = xstrdup(" ");   /* valid empty value, unlike "" */
         else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, 0);
@@ -1792,7 +1972,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         /* Re-declaring the value already in effect (Tailwind's universal --tw-* resets on every
            element) changes nothing: keep sharing the inherited map instead of copying it. */
         const char *cur = custom_get(st->custom, prop);
-        if (cur && !strcmp(cur, v) && !strstr(v, "var(")) { free(v); return; }
+        if (cur && !strcmp(cur, v) && !css_value_has_var(v)) { free(v); return; }
         /* custom property: copy-on-write map */
         if (!st->custom || st->custom->refs > 1 || (par && st->custom == par->custom)) {
             CustomProps *n = xcalloc(1, sizeof *n); n->refs = 1;
@@ -1817,12 +1997,15 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
-    if (strstr(v, "var(")) {
+    if (css_value_has_var(v)) {
         subst = subst_vars(v, st, 0);
-        if (!subst) {
-            if (flow_basis_prop(prop) || !strcmp(prop, "flex") || !strcmp(prop, "flex-grow") || !strcmp(prop, "flex-shrink") || !strcmp(prop, "flex-basis")) css_apply_decl(st, par, prop, "unset", e, el);
-            return;
-        }
+        if (subst && !css_math_spacing_valid(subst)) { free(subst); subst = NULL; }
+        /* A failed substitution or property grammar takes unset; recognized
+         * CSS-wide keywords keep their existing dedicated dispatch. */
+        const char *wide = subst ? var_wide_keyword(subst) : NULL;
+        if (!wide) css_apply_decl(st, par, prop, "unset", e, el);
+        if (!subst) return;
+        char *parsed = wide ? xstrdup(wide) : var_parser_text(subst); free(subst); subst = parsed;
         v = subst;
     }
     char *vbuf = xstrdup(v); char *val = str_trim(vbuf);
@@ -1934,8 +2117,11 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (inherit || initial || unset) {
         static ComputedStyle *def; if (!def) def = style_new_default();
         const ComputedStyle *src = inherit ? (par ? par : def) : def;
-        /* unset: inherited props inherit, others initial -- approximate: inherit color/font/text props */
-        if (unset && par && (strstr(P, "color") == P || strstr(P, "font") || strstr(P, "text") || strstr(P, "line-height") || strstr(P, "white-space") || strstr(P, "visibility") || strstr(P, "cursor") || strstr(P, "letter"))) src = par;
+        /* Native longhands use their actual inheritance metadata. Keep the
+         * existing shorthand inheritance path for compound declarations. */
+        bool inherited_unset = gp && gp->native ? gp->inherited :
+            (strstr(P, "color") == P || strstr(P, "font") || strstr(P, "text") || strstr(P, "line-height") || strstr(P, "white-space") || strstr(P, "visibility") || strstr(P, "cursor") || strstr(P, "letter"));
+        if (unset && par && inherited_unset) src = par;
         if (!strcmp(P, "color")) { st->color = src->color; st->color_ser = src->color_ser; }
         else if (!strcmp(P, "font-size")) st->font_size = src->font_size;
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
@@ -4166,17 +4352,17 @@ static void apply_font_declarations(ComputedStyle *st, const ComputedStyle *par,
 static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el, bool author) {
     /* Dependencies precede their consumers: custom values, writing-mode/direction/text-orientation,
        font-size (em basis), color, then the remaining cascade in its order. */
+    CustomProps *origin_base = custom_ref(st->custom);
+    const CustomProps *previous_origin = custom_origin_base;
+    custom_origin_base = origin_base;
     custom_defer = true;
     for (int i = 0; i < n; i++) if (v[i].d->prop[0] == '-' && v[i].d->prop[1] == '-') css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
     custom_defer = false;
-    /* var() in custom properties resolves against the element's final cascaded values */
-    for (int i = 0; i < n && st->custom && (!par || st->custom != par->custom); i++) {
-        const char *p = v[i].d->prop; if (p[0] != '-' || p[1] != '-') continue;
-        char *raw = hm_get(&st->custom->map, p);
-        if (!raw || !strstr(raw, "var(")) continue;
-        char *r = subst_vars(raw, st, 0);
-        hm_put(&st->custom->map, p, r ? r : xstrdup("")); free(raw);
-    }
+    /* Resolve every winning local against one immutable map, then commit.
+     * Inherited values are already computed; revert uses the earlier origin. */
+    custom_resolve_values(st, par, origin_base);
+    custom_origin_base = previous_origin;
+    custom_unref(origin_base);
     /* CSS Logical Properties requires the element's computed writing mode
        before corresponding logical/physical dimensions cascade together. */
     for (int i = 0; i < n; i++) if (flow_basis_prop(v[i].d->prop)) css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);

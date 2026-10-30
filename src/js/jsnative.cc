@@ -40,7 +40,7 @@ static bool bytes_of(v8::Local<v8::Value> v, const char **p, size_t *n) {
     return false;
 }
 static bool is_textish(Node *n) { return n->type == NODE_TEXT || n->type == NODE_COMMENT || n->type == NODE_CDATA || n->type == NODE_PI; }
-static void adopt_tree(Node *n, Document *d) { for (Node *x = n; x; x = node_next_in_tree(x, n)) x->doc = d; }
+static void adopt_tree(Node *n, Document *d) { node_adopt_document(n, d); }
 #define ADOC(i) Document *od = c->doc; if (a.Length() > (i)) if (Node *dn_ = junwrap(a[i])) if (dn_->type == NODE_DOCUMENT) od = (Document *)dn_
 static void clear_children(Node *n) {
     while (n->first) { Node *ch = n->first; node_remove(ch); node_free_tree(ch); }
@@ -249,8 +249,25 @@ static std::string aval(v8::Isolate *iso, v8::Local<v8::Value> v) {
     for (size_t i = s.find('\0'); i != std::string::npos; i = s.find('\0', i + 2)) s.replace(i, 1, "\xC0\x80");
     return s;
 }
-FN(setAttr) { CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]); node_set_attr(n, atom(k.c_str()), v.c_str()); if (jsg_is_script(n) && (k == "src" || k == "href" || k == "xlink:href")) js_run_inserted(c, n); }
-FN(rmAttr) { CTX; ARGN(n, 0); std::string k = S(1); if (node_has_attr(n, k.c_str())) node_remove_attr(n, k.c_str()); }
+FN(setAttr) {
+    CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]);
+    node_set_attr(n, atom(k.c_str()), v.c_str());
+    if (n->type == NODE_ELEMENT && n->ns == NS_HTML && (n->tag == A_iframe || n->tag == A_frame)) {
+        int i = node_attr_qindex(n, k.c_str());
+        if (i >= 0) frames_attribute_changed(n, n->attrs[i].name, n->attrs[i].ns);
+    }
+    if (jsg_is_script(n) && (k == "src" || k == "href" || k == "xlink:href")) js_run_inserted(c, n);
+}
+FN(rmAttr) {
+    CTX; ARGN(n, 0); std::string k = S(1);
+    if (node_has_attr(n, k.c_str())) {
+        int i = node_attr_qindex(n, k.c_str());
+        const char *name = i >= 0 ? n->attrs[i].name : k.c_str();
+        const char *ns = i >= 0 ? n->attrs[i].ns : nullptr;
+        node_remove_attr(n, k.c_str());
+        frames_attribute_changed(n, name, ns);
+    }
+}
 /* the DOM's exact attribute lookups (qualified name without case folding, or namespace + local name); an ns of null
    or "" is no namespace */
 static const char *ns_atom(v8::Isolate *iso, v8::Local<v8::Value> v) {
@@ -261,7 +278,17 @@ static const char *ns_atom(v8::Isolate *iso, v8::Local<v8::Value> v) {
 static bool attr_host(Node *n) { return n->type == NODE_ELEMENT || n->type == NODE_DOCTYPE; }
 FN(attrQ) { CTX; ARGN(n, 0); std::string k = S(1); int i = attr_host(n) ? node_attr_qindex(n, k.c_str()) : -1; RET(nstr(iso, i >= 0 ? n->attrs[i].value : nullptr)); }
 FN(attrNS) { CTX; ARGN(n, 0); std::string l = S(2); int i = attr_host(n) ? node_attr_ns_index(n, ns_atom(iso, a[1]), l.c_str()) : -1; RET(nstr(iso, i >= 0 ? n->attrs[i].value : nullptr)); }
-FN(setAttrQ) { CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]); if (attr_host(n)) node_set_attr_at(n, node_attr_qindex(n, k.c_str()), atom(k.c_str()), v.c_str(), nullptr, nullptr); if (jsg_is_script(n) && (k == "src" || k == "href" || k == "xlink:href")) js_run_inserted(c, n); }
+FN(setAttrQ) {
+    CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]);
+    if (attr_host(n)) {
+        node_set_attr_at(n, node_attr_qindex(n, k.c_str()), atom(k.c_str()), v.c_str(), nullptr, nullptr);
+        if (n->type == NODE_ELEMENT && n->ns == NS_HTML && (n->tag == A_iframe || n->tag == A_frame)) {
+            int i = node_attr_qindex(n, k.c_str());
+            if (i >= 0) frames_attribute_changed(n, n->attrs[i].name, n->attrs[i].ns);
+        }
+    }
+    if (jsg_is_script(n) && (k == "src" || k == "href" || k == "xlink:href")) js_run_inserted(c, n);
+}
 FN(setAttrNS) {   /* (el, ns, prefix, local, value): an existing attribute keeps its prefix */
     CTX; ARGN(n, 0);
     if (!attr_host(n)) return;
@@ -270,15 +297,26 @@ FN(setAttrNS) {   /* (el, ns, prefix, local, value): an existing attribute keeps
     const char *pfx = a[2]->IsNullOrUndefined() ? nullptr : atom(S(2).c_str());
     if (pfx) q = std::string(pfx) + ":" + l;
     node_set_attr_at(n, node_attr_ns_index(n, ns, l.c_str()), atom(q.c_str()), v.c_str(), ns, pfx);
+    frames_attribute_changed(n, l.c_str(), ns);
     if (jsg_is_script(n) && ((!ns && (l == "src" || l == "href")) || (ns && !strcmp(ns, "http://www.w3.org/1999/xlink") && l == "href"))) js_run_inserted(c, n);
 }
-FN(rmAttrQ) { CTX; ARGN(n, 0); std::string k = S(1); int i = attr_host(n) ? node_attr_qindex(n, k.c_str()) : -1; if (i >= 0) node_remove_attr_at(n, i); RET(i >= 0); }
+FN(rmAttrQ) {
+    CTX; ARGN(n, 0); std::string k = S(1);
+    int i = attr_host(n) ? node_attr_qindex(n, k.c_str()) : -1;
+    if (i >= 0) {
+        const char *name = n->attrs[i].name, *ns = n->attrs[i].ns;
+        node_remove_attr_at(n, i);
+        frames_attribute_changed(n, name, ns);
+    }
+    RET(i >= 0);
+}
 FN(rmAttrNS) {   /* returns the removed attribute's qualified name, or null */
     CTX; ARGN(n, 0); std::string l = S(2);
     int i = attr_host(n) ? node_attr_ns_index(n, ns_atom(iso, a[1]), l.c_str()) : -1;
     if (i < 0) { a.GetReturnValue().SetNull(); return; }
-    const char *q = n->attrs[i].name;
+    const char *q = n->attrs[i].name, *ns = n->attrs[i].ns;
     node_remove_attr_at(n, i);
+    frames_attribute_changed(n, l.c_str(), ns);
     RET(jstr(iso, q));
 }
 FN(attrsNS) {   /* [qualified name, value, namespace, prefix, ...] */
@@ -332,6 +370,19 @@ FN(newDoc) {
 }
 FN(remove) { CTX; ARGN(ch, 0); Node *parent = ch->parent; node_remove(ch); if (parent && jsg_is_script(parent)) js_run_inserted(c, parent); }
 FN(create) { CTX; ADOC(2); std::string t = S(0); RET(jwrap(c, node_new_element(od, atom(t.c_str()), a[1]->Int32Value(ctx).FromMaybe(0)))); }
+/* Creation state is private and never follows later content-attribute edits. */
+FN(ceIs) {
+    CTX; ARGN(n, 0);
+    if (n->type != NODE_ELEMENT) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "custom-element creation state requires an Element"))); return; }
+    if (a.Length() > 1) {
+        if (a[1]->IsNull()) node_set_is_value(n, nullptr, 0);
+        else {
+            if (!a[1]->IsString()) { iso->ThrowException(v8::Exception::TypeError(jstr(iso, "custom-element creation state requires a converted string"))); return; }
+            std::string value = wtf8(iso, a[1]); node_set_is_value(n, value.data(), value.size());
+        }
+    }
+    if (n->is_value) RET(jstr_wtf8(iso, n->is_value, (int)n->is_value_len)); else RET(v8::Null(iso));
+}
 FN(textNode) { CTX; ADOC(1); std::string s = wtf8(iso, a[0]); RET(jwrap(c, node_new_text(od, s.data(), s.size()))); }
 FN(comment) { CTX; ADOC(1); std::string s = wtf8(iso, a[0]); RET(jwrap(c, node_new_comment(od, s.data(), s.size()))); }
 FN(frag) { CTX; ADOC(0); RET(jwrap(c, node_new_fragment(od))); }
@@ -344,8 +395,17 @@ FN(doctype) {
     RET(jwrap(c, d));
 }
 FN(newXmlDoc) {
-    CTX; Document *nd = doc_new("about:blank");
+    CTX;
+    /* DOMParser creates an inert Document in its relevant global's context.
+     * Ordinary Document/XMLDocument construction keeps its own default URL. */
+    const char *url = a.Length() > 2 && a[2]->IsTrue() && c->doc && c->doc->url
+        ? c->doc->url : "about:blank";
+    Document *nd = doc_new(url);
     nd->node.ns = NS_NONE;
+    nd->interface_kind = a.Length() > 1 && a[1]->IsTrue() ? 2 : 1;
+    std::string type = a.Length() > 0 && a[0]->IsString() ? S(0) : "application/xml";
+    nd->content_type = xstrdup(type.c_str());
+    nd->ready_state = 2;
     c->docs.push_back(nd);
     RET(jwrap(c, &nd->node));
 }
@@ -362,6 +422,17 @@ FN(csp) {
     Document *d = n->type == NODE_DOCUMENT ? (Document *)n : n->doc;
     v8::Local<v8::Value> v[3] = { nstr(iso, d ? d->csp : nullptr), nstr(iso, d ? d->csp_ro : nullptr), nstr(iso, d ? d->referrer_policy : nullptr) };
     RET(v8::Array::New(iso, v, 3));
+}
+/* Private bootstrap input: primitive copies from the unexposed native head parse. */
+FN(parserMeta) {
+    CTX; Document *d = c->doc;
+    if (!d || !d->parser_meta_captured) { RET(v8::Undefined(iso)); return; }
+    auto rows = v8::Array::New(iso, d->nparser_meta);
+    for (int i = 0; i < d->nparser_meta; i++) {
+        v8::Local<v8::Value> pair[2] = { nstr(iso, d->parser_meta[i * 2]), nstr(iso, d->parser_meta[i * 2 + 1]) };
+        (void)rows->CreateDataProperty(ctx, (uint32_t)i, v8::Array::New(iso, pair, 2));
+    }
+    RET(rows);
 }
 /* Trusted Types and CSP: string compilation goes through the ttEval hook (evalGuard), inline scripts through
    ttScript (ttOn); codeLike makes an object V8 treats as code (a TrustedScript) */
@@ -396,17 +467,19 @@ FN(parseXml) {
     mark_started(n);
 }
 FN(ownerDoc) { CTX; ARGN(n, 0); RET(n->type == NODE_DOCUMENT || !n->doc ? v8::Local<v8::Value>(v8::Null(iso)) : jwrap(c, &n->doc->node)); }
-FN(html) { CTX; ARGN(n, 0); char *s = node_serialize(n, BOOL(1)); RET(jstr(iso, s ? s : "")); free(s); }
+FN(html) { CTX; ARGN(n, 0); size_t length = 0; char *s = node_serialize_n(n, BOOL(1), &length); RET(jstr_wtf8(iso, s ? s : "", (int)length)); free(s); }
 FN(setHTML) {
     CTX; ARGN(n, 0); std::string s = S(1);
+    Document *od = n->doc ? n->doc : c->doc;
     Node *target = n;
-    if (n->type == NODE_ELEMENT && n->tag == A_template) {
-        if (!n->template_content) { n->template_content = node_new_fragment(c->doc); n->template_content->refcount = 1; n->template_content->flags |= NF_INERT; }
+    if (n->type == NODE_ELEMENT && n->ns == NS_HTML && n->tag == A_template) {
+        if (!n->template_content) { n->template_content = node_new_fragment(doc_template_contents_owner(od)); n->template_content->refcount = 1; n->template_content->flags |= NF_INERT; }
         target = n->template_content;
     }
     clear_children(target);
     Node *ctxn = n->type == NODE_ELEMENT ? n : n->host ? n->host : nullptr;
-    Node *f = html_parse_fragment(c->doc, ctxn ? ctxn : c->doc->body, s.data(), s.size());
+    Document *parsed_doc = target->doc ? target->doc : od;
+    Node *f = html_parse_fragment(parsed_doc, ctxn ? ctxn : od->body, s.data(), s.size());
     if (!f) return;
     mark_started(f);
     node_append(target, f);
@@ -415,10 +488,12 @@ FN(setHTML) {
 /* Written fragments retain parser state until their inserted scripts are prepared. */
 FN(parseFrag) {
     CTX; Node *cx = junwrap(a[0]); std::string s = S(1);
-    if (!cx || cx->type != NODE_ELEMENT) cx = c->doc->body;
-    Node *f = html_parse_fragment(c->doc, cx, s.data(), s.size());
+    Document *od = cx && cx->doc ? cx->doc : c->doc;
+    if (!cx || cx->type != NODE_ELEMENT) cx = od->body;
+    Document *parsed_doc = cx && cx->ns == NS_HTML && cx->tag == A_template ? doc_template_contents_owner(od) : od;
+    Node *f = html_parse_fragment(parsed_doc, cx, s.data(), s.size());
     if (!f) { RET(jwrap(c, f)); return; }
-    if (a.Length() > 2 && a[2]->IsTrue() && c->parser_write_point) {
+    if (a.Length() > 2 && a[2]->IsTrue() && c->parser_write_point && parsed_doc == c->doc) {
         for (Node *x = f; x; x = node_next_in_tree(x, f))
             if (jsg_is_script(x)) {
                 x->flags &= ~NF_SCRIPT_STARTED;
@@ -429,6 +504,9 @@ FN(parseFrag) {
     RET(jwrap(c, f));
 }
 FN(docReparse) { CTX; std::string s = S(0); js_doc_reparse(c, s.data(), s.size()); }
+FN(docWrite) { CTX; std::string s = S(0); js_doc_write(c, s.data(), s.size()); }
+FN(docClose) { CTX; js_doc_close(c); }
+FN(docStreamWritePoint) { CTX; RET(v8::Boolean::New(iso, document_stream_write_point(c))); }
 FN(parseDoc) {
     CTX; std::string s = S(0);
     Document *nd = doc_new(c->doc->url);
@@ -470,9 +548,17 @@ FN(byId) {   /* in the document node given as the second argument, else this rea
     Document *d = dn && dn->type == NODE_DOCUMENT && dn->doc ? dn->doc : c->doc;
     RET(jwrap(c, doc_get_element_by_id(d, id.c_str())));
 }
-FN(clone) { CTX; ARGN(n, 0); RET(jwrap(c, node_clone(n, BOOL(1), c->doc))); }
+FN(clone) {
+    CTX; ARGN(n, 0);
+    Node *into = a.Length() > 2 ? junwrap(a[2]) : nullptr;
+    Document *od = into && into->type == NODE_DOCUMENT ? into->doc : n->doc ? n->doc : c->doc;
+    Node *copy = node_clone(n, BOOL(1), od);
+    if (copy && copy->type == NODE_DOCUMENT) c->docs.push_back(copy->doc);
+    RET(jwrap(c, copy));
+}
 FN(doc) { CTX; RET(jwrap(c, &c->doc->node)); }
 FN(contains) { CTX; ARGN(x, 0); ARGN(y, 1); RET(node_is_inclusive_ancestor(x, y)); }
+FN(hostContains) { CTX; ARGN(x, 0); ARGN(y, 1); RET(node_host_including_ancestor(x, y)); }
 FN(version) { CTX; ARGN(n, 0); RET(v8::Number::New(iso, n->doc ? (double)n->doc->dom_version : 0)); }
 FN(inert) { CTX; ARGN(n, 0); while (n->parent) n = n->parent; RET((n->flags & NF_INERT) != 0); }
 FN(connected) { CTX; ARGN(n, 0); RET(n->type == NODE_DOCUMENT || (n->flags & NF_CONNECTED) != 0); }
@@ -524,8 +610,8 @@ FN(getHTML) {
         v8::Local<v8::Array> r = a[2].As<v8::Array>();
         for (uint32_t i = 0; i < r->Length(); i++) { v8::Local<v8::Value> v; if (r->Get(ctx, i).ToLocal(&v)) if (Node *x = junwrap(v)) roots.push_back(x); }
     }
-    char *s = node_serialize_ex(n, false, BOOL(1), roots.data(), (int)roots.size());
-    RET(jstr(iso, s ? s : "")); free(s);
+    size_t length = 0; char *s = node_serialize_ex_n(n, false, BOOL(1), roots.data(), (int)roots.size(), &length);
+    RET(jstr_wtf8(iso, s ? s : "", (int)length)); free(s);
 }
 /* a canonical config from the Sanitizer prelude: lists of names are flat [namespace|null, name, ...] arrays, elements
    [namespace|null, name, attributes|null, removeAttributes|null, ...], processing instructions [target, ...] */
@@ -567,10 +653,12 @@ static SanCfg *san_from_js(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Loc
 /* parseFragEx(context, html, config|null, allowDeclarativeShadowRoots): the fragment for setHTML() and its kin */
 FN(parseFragEx) {
     CTX; Node *cx = junwrap(a[0]); std::string s = S(1);
-    if (!cx || cx->type != NODE_ELEMENT) cx = c->doc->body;
+    Document *od = cx && cx->doc ? cx->doc : c->doc;
+    if (!cx || cx->type != NODE_ELEMENT) cx = od->body;
+    Document *parsed_doc = cx && cx->ns == NS_HTML && cx->tag == A_template ? doc_template_contents_owner(od) : od;
     SanCfg *san = san_from_js(iso, ctx, a[2]);
     HtmlOpts o = { san, BOOL(3) };
-    Node *f = html_parse_fragment_ex(c->doc, cx, s.data(), s.size(), &o);
+    Node *f = html_parse_fragment_ex(parsed_doc, cx, s.data(), s.size(), &o);
     san_free(san);
     if (f && !BOOL(4)) mark_started(f);
     else if (f) {
@@ -599,7 +687,7 @@ FN(parseDocEx) {
 }
 FN(templateContent) {
     CTX; ARGN(n, 0);
-    if (!n->template_content) { n->template_content = node_new_fragment(c->doc); n->template_content->refcount = 1; n->template_content->flags |= NF_INERT; }
+    if (!n->template_content) { n->template_content = node_new_fragment(doc_template_contents_owner(n->doc ? n->doc : c->doc)); n->template_content->refcount = 1; n->template_content->flags |= NF_INERT; }
     RET(jwrap(c, n->template_content));
 }
 FN(tplHost) { CTX; ARGN(n, 0); RET(n->type == NODE_FRAGMENT && !n->host && (n->flags & NF_INERT) != 0); }
@@ -796,8 +884,8 @@ FN(focus) {
 FN(active) { CTX; RET(jwrap(c, c->doc->focus)); }
 FN(cookie) { CTX; char *s = cookies_get_document(c->doc->url); RET(jstr(iso, s ? s : "")); free(s); }
 FN(setCookie) { CTX; std::string s = S(0); cookies_set_document(c->doc->url, s.c_str()); }
-FN(url) { CTX; RET(jstr(iso, c->doc->url ? c->doc->url : "about:blank")); }
-FN(docBase) { CTX; RET(jstr(iso, c->doc->url ? doc_base(c->doc) : "about:blank")); }
+FN(url) { CTX; ADOC(0); RET(jstr(iso, od->url ? od->url : "about:blank")); }
+FN(docBase) { CTX; ADOC(0); RET(jstr(iso, od->url ? doc_base(od) : "about:blank")); }
 FN(setUrl) {
     CTX; std::string u = S(0);
     free(c->doc->url); c->doc->url = xstrdup(u.c_str());
@@ -923,12 +1011,12 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
         auto job = f->script_job;
         job->ready = true;
         job->success = r && !r->error && r->status >= 200 && r->status < 300;
-        if (job->ordered) {
+        if (job->ordered || job->deferred) {
             if (job->success) {
                 job->source.assign(r->body ? r->body : "", r->body ? r->body_len : 0);
                 if (r->url) job->url = r->url;
             }
-            classic_scripts_drain(c);
+            if (!job->deferred) classic_scripts_drain(c);
         } else {
             classic_script_finish(c, job, r && r->body ? r->body : "", r && r->body ? r->body_len : 0,
                                   r && r->url ? r->url : job->url.c_str());
@@ -1025,6 +1113,30 @@ void js_queue_classic_script(JsCtx *c, Node *script, const char *url, bool order
     Fetch *fetch = new Fetch{ c, 0, {}, script };
     fetch->script_job = job;
     start_fetch(c, rq, fetch);
+}
+/* One encounter-order clock interleaves native document-written defers with
+   parser records retained by the main document and frame loaders. */
+uint64_t js_parser_defer_order(JsCtx *c) { return ++c->parser_defer_next; }
+void js_queue_written_deferred(JsCtx *c, Node *script, const char *url) {
+    if (!url || !*url) { js_queue_classic_script(c, script, nullptr, false); return; }
+    auto job = std::make_shared<ClassicScriptJob>();
+    job->script = script; job->document = script->doc; job->generation = c->parser_generation;
+    job->url = url; job->deferred = true; job->defer_order = js_parser_defer_order(c);
+    { JS_ENTER(c); jwrap(c, script); }
+    c->written_deferred.push_back(job); ++c->pending_scripts;
+    Fetch *fetch = new Fetch{ c, 0, {}, script }; fetch->script_job = job;
+    start_fetch(c, script_request(c, script, url), fetch);
+}
+bool js_parser_run_deferred_before(JsCtx *c, uint64_t next_order) {
+    const uint64_t generation = c->parser_generation;
+    while (!c->dead && generation == c->parser_generation && !c->written_deferred.empty()) {
+        auto job = c->written_deferred.front();
+        if (job->defer_order >= next_order) return true;
+        if (!job->ready) return false;
+        c->written_deferred.pop_front();
+        classic_script_finish(c, job);
+    }
+    return !c->dead && generation == c->parser_generation;
 }
 #define MP                                                        \
     auto mpit = c->players.find((uint32_t)NUM(0));                \
@@ -1308,11 +1420,11 @@ FN(ceScan) {
     v8::Local<v8::Array> r = v8::Array::New(iso);
     uint32_t k = 0;
     for (Node *x = root; x; x = node_next_in_tree(x, root))
-        if (x->type == NODE_ELEMENT && x->ns == NS_HTML && x->tag && strchr(x->tag, '-')) (void)r->Set(ctx, k++, jwrap(c, x));
+        if (x->type == NODE_ELEMENT && x->ns == NS_HTML && (x->is_value || (x->tag && strchr(x->tag, '-')))) (void)r->Set(ctx, k++, jwrap(c, x));
     RET(r);
 }
 FN(readyState) { CTX; RET(c->doc->ready_state); }
-FN(quirks) { CTX; RET(c->doc->quirks); }
+FN(quirks) { CTX; ADOC(0); RET(od->quirks); }
 FN(currentScript) { CTX; RET(jwrap(c, c->current_script)); }
 FN(ignoreWrites) { CTX; RET(c->ignore_destructive_writes != 0 && !c->parser_write_point); }
 FN(parserWritePoint) { CTX; RET(c->parser_write_point); }
@@ -1324,6 +1436,8 @@ FN(media) { CTX; std::string q = S(0); RET(jsg_media(c->host.media, q.c_str()));
 FN(mediaValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_media_valid(q.c_str()))); }
 FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
 FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
+extern "C" bool css_var_syntax_valid(const char *value);
+FN(cssVarValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_var_syntax_valid(q.c_str()))); }
 /* the computed serialization of a CSS colour (currentcolor as black), or null when it doesn't parse */
 FN(cssColor) { CTX; (void)c; std::string q = S(0); CssColor col; if (!css_color_parse(q.c_str(), &col, NULL)) { RET(v8::Null(iso)); return; } char b[200]; css_color_serialize(&col, b, sizeof b); RET(nstr(iso, b)); }
 extern "C" void css_register_property(const char *name, const char *initial);
@@ -1744,9 +1858,9 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(isNode); REG(attrBrand); REG(attrBranded); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev); REG(index);
     (void)N->Set(ctx, jstr(iso, "fontFace"), v8::Function::New(ctx, n_fontFace).ToLocalChecked()); REG(c2dFill); REG(c2dClip); REG(c2dMeasure); REG(c2dSource); REG(c2dPresent); REG(fontsPending);
-    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
-    REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
-    REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
+    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(parserMeta); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(docWrite); REG(docClose); REG(docStreamWritePoint); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
+    REG(create); REG(ceIs); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
+    REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(hostContains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
     REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);
     REG(scriptForceAsync); REG(trustedBrand); REG(trustedData); REG(cspSnapshot);
     REG(templateContent); REG(tplHost); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(borders); REG(overflowSize); REG(scrollPos); REG(setScroll); REG(computed); REG(trTake); REG(setAnimStyle); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
@@ -1756,7 +1870,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(errPos); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(caret); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
-    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
+    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
     REG(heap); REG(imgWatch); REG(imgSize); REG(imgDone); REG(imgRequest); REG(imgSrc); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);

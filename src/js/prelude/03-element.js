@@ -6,6 +6,9 @@ const camelToKebab = (p) => {
     if (kebabCache.size < 4096) kebabCache.set(p, r);
     return r;
 };
+/* Pending substitution has one grammar in the native declaration parser and
+ * CSSOM. Ordinary values avoid crossing into the tokenizer. */
+function cssVarSyntax(value) { return !/var|\\/i.test(value) || N.cssVarValid(value); }
 function parseDecls(s) {
     const m = new SMap(); if (!s) return m;
     let depth = 0, q = '', colon = -1, name = ''; const parts = [];
@@ -44,7 +47,7 @@ function parseDecls(s) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
 /* Flex declarations are stored as their longhands, so enumeration, removal,
@@ -474,6 +477,7 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
     return null;
 }
 function mathValid(p, v) {
+    if (!cssVarSyntax(v)) return false;
     if (cssFlexRelevant(p)) return cssFlexParse(p, v) !== null;
     if (cssGridRelevant(p)) return cssGridParse(p, v) !== null;
     /* Only a leading minus, whitespace or non-ASCII prefix can become a
@@ -852,6 +856,9 @@ class CSSStyleDeclaration {
     getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); return e ? e[0] : shorthandPart(m, p); }
     getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p); return e ? e[1] : ''; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
+        v = v == null ? '' : String(v);
+        pri = pri == null ? '' : String(pri);
+        if (v !== '' && ((pri && !/^important$/i.test(pri)) || !cssVarSyntax(v))) return;
         if (cssFlexRelevant(p)) {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri), m = new SMap(this._m());
             if (value === '') cssFlexRemove(m, p);
@@ -1139,10 +1146,20 @@ function compileHandler(el, k, src) {
 }
 /* an on* content attribute set or removed: it replaces a handler the IDL attribute set; on <body> and <frameset> the
    window's events' handlers are the window's */
+/* document.open deactivates handlers without deleting content attributes or
+   depending on whether the page has frozen a platform-object wrapper. */
+const openedHandlerState = new WeakMap(), OpenedHandlerSet = Set;
+const openedHandlerGet = Function.prototype.call.bind(WeakMap.prototype.get);
+const openedHandlerSet = Function.prototype.call.bind(WeakMap.prototype.set);
+const openedHandlerHas = Function.prototype.call.bind(Set.prototype.has);
+const openedHandlerAdd = Function.prototype.call.bind(Set.prototype.add);
+function resetOpenedHandlers(target) { openedHandlerSet(openedHandlerState, target, new OpenedHandlerSet()); }
+function reactivateOpenedHandler(target, key) { const state = openedHandlerGet(openedHandlerState, target); if (state) openedHandlerAdd(state, key); }
 function handlerAttr(el, k, src) {
     if (el.__on && k in el.__on) delete el.__on[k];
     if (el.__hc) delete el.__hc[k];
     const target = eventHandlerTarget(el, k);
+    if (target) reactivateOpenedHandler(target, k);
     if (target && target !== el) {
         if (!target.__on) def(target, '__on', {});
         target.__on[k] = src == null ? null : compileHandler(el, k, src);
@@ -1155,6 +1172,8 @@ function installHandlers(proto, attrBacked, list = EVENT_HANDLERS) {
             const target = eventHandlerTarget(this, k);
             if (!target) return null;
             if (target !== this) return target[k];
+            const cleared = openedHandlerGet(openedHandlerState, target);
+            if (cleared && !openedHandlerHas(cleared, k)) return null;
             const own = this.__on && this.__on[k];
             if (own !== undefined) return own;
             if (attrBacked) { const src = N.attr(this, k); if (src != null) return compileHandler(this, k, src); }
@@ -1165,6 +1184,7 @@ function installHandlers(proto, attrBacked, list = EVENT_HANDLERS) {
             if (target !== this) { target[k] = v; return; }
             if (!this.__on) def(this, '__on', {});
             this.__on[k] = typeof v === 'function' ? v : null;
+            reactivateOpenedHandler(this, k);
         });
     }
 }
@@ -1179,7 +1199,7 @@ unscopable(CharacterData, ['after', 'before', 'remove', 'replaceWith']);
 unscopable(DocumentType, ['after', 'before', 'remove', 'replaceWith']);
 unscopable(DocumentFragment, ['append', 'prepend', 'replaceChildren']);
 const makeStyle = (el) => new Proxy(new CSSStyleDeclaration(el), styleHandler);
-class HTMLElement extends Element { constructor() { return ceConstruct(new.target); } }
+class HTMLElement extends Element { constructor() { return ceConstruct(new.target, HTMLElement); } }
 reflectStr(HTMLElement.prototype, 'title', 'lang', 'accessKey', 'nonce', 'dir');
 reflectBool(HTMLElement.prototype, 'hidden', 'inert', 'autofocus');
 installHandlers(HTMLElement.prototype, true);

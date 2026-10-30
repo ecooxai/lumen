@@ -1,4 +1,5 @@
 #include "dom.h"
+#include "../base/url.h"
 #include <stdatomic.h>
 #if defined(__ANDROID__) && !defined(NDEBUG)
 #include <android/log.h>
@@ -74,6 +75,36 @@ Document *doc_new(const char *url) {
     d->url = xstrdup(url ? url : "about:blank");
     d->node.refcount = 1;
     return d;
+}
+
+/* Template contents have a real inert node document shared by every template
+ * in the same owner document, including nested templates. */
+Document *doc_template_contents_owner(Document *d) {
+    if (!d) return NULL;
+    if (!d->template_contents_owner) {
+        Document *owner = doc_new("about:blank");
+        owner->node.ns = d->node.ns;
+        owner->interface_kind = 2;
+        owner->ready_state = 2;
+        owner->template_contents_owner = owner;
+        d->template_contents_owner = owner;
+    }
+    return d->template_contents_owner;
+}
+
+void node_adopt_document(Node *n, Document *d) {
+    if (!n || !d) return;
+    for (Node *x = n; x; x = node_next_in_tree(x, n)) {
+        if (x->doc != d) {
+            if (x->doc) x->doc->selector_version++;
+            d->selector_version++;
+            x->doc = d;
+            x->flags |= NF_STYLE_DIRTY | NF_LAYOUT_DIRTY;
+        }
+        if (x->shadow_root) node_adopt_document(x->shadow_root, d);
+        if (x->template_content && x->template_content != x->shadow_root)
+            node_adopt_document(x->template_content, doc_template_contents_owner(d));
+    }
 }
 
 long g_nodes_live;
@@ -359,7 +390,7 @@ __attribute__((weak)) void box_detach_node(Node *n) { n->box = NULL; }
 static void node_free_one(Node *n) {
     if (n->doc && n->doc->csel_n == n) n->doc->csel_n = NULL;
     for (int i = 0; i < n->nattrs; i++) free(n->attrs[i].value);
-    free(n->attrs); free(n->text); free(n->inline_style_src); free(n->classes);
+    free(n->attrs); free(n->text); free(n->inline_style_src); free(n->classes); free(n->is_value);
     node_free_inline_style(n);
     if (n->ext && n->ext_free) n->ext_free(n->ext);
     if (n->style) style_free(n->style);
@@ -376,16 +407,92 @@ void node_free_tree(Node *n) {
     if (n->shadow_root) { n->shadow_root->host = NULL; n->shadow_root->refcount = 0; node_free_tree(n->shadow_root); }
     node_free_one(n);
 }
-void doc_free(Document *d) {
-    for (int i = 0; i < d->ndimg; i++) node_release(d->dimg[i]);
+/* Capture only actual direct head-child metadata from an unexposed native parse.
+   The live prefix DOM and its script/stylesheet owners are always separate. */
+void doc_capture_parser_meta(Document *target, const Document *parsed) {
+    for (int i = 0; i < target->nparser_meta * 2; i++) free(target->parser_meta[i]);
+    free(target->parser_meta); target->parser_meta = NULL; target->nparser_meta = 0;
+    target->parser_meta_captured = true;
+    for (Node *n = parsed && parsed->head ? parsed->head->first : NULL; n; n = n->next) {
+        if (n->type != NODE_ELEMENT || n->tag != A_meta) continue;
+        const char *equiv = node_attr(n, "http-equiv"), *content = node_attr(n, "content");
+        size_t index = (size_t)target->nparser_meta * 2;
+        target->parser_meta = xrealloc(target->parser_meta, (index + 2) * sizeof *target->parser_meta);
+        target->parser_meta[index] = equiv ? xstrdup(equiv) : NULL;
+        target->parser_meta[index + 1] = content ? xstrdup(content) : NULL;
+        target->nparser_meta++;
+    }
+}
+void doc_retire_owned(Document *owner, Document *retired) {
+    if (!owner || !retired || owner == retired) return;
+    for (int i = 0; i < owner->retired_documents.n; i++)
+        if (owner->retired_documents.v[i] == retired) return;
+    vec_push(owner->retired_documents, retired);
+}
+
+typedef VEC(Document *) DocumentList;
+static void doc_list_add(DocumentList *list, Document *d) {
+    if (!d) return;
+    for (int i = 0; i < list->n; i++) if (list->v[i] == d) return;
+    vec_push(*list, d);
+}
+static DocumentList doc_owned_documents(Document *root) {
+    DocumentList documents = {0};
+    doc_list_add(&documents, root);
+    for (int i = 0; i < documents.n; i++) {
+        Document *d = documents.v[i];
+        doc_list_add(&documents, d->template_contents_owner);
+        for (int j = 0; j < d->retired_documents.n; j++) doc_list_add(&documents, d->retired_documents.v[j]);
+    }
+    return documents;
+}
+static void doc_release_resources(Document *d) {
+    for (int j = 0; j < d->ndimg; j++) node_release(d->dimg[j]);
     free(d->dimg); d->dimg = NULL; d->ndimg = d->cdimg = 0;
-    if (d->selector_cache_free) d->selector_cache_free(d->selector_cache);
+    if (d->selector_cache && d->selector_cache_free) d->selector_cache_free(d->selector_cache);
+    d->selector_cache = NULL;
     free(d->modals.v); d->modals.v = NULL; d->modals.n = d->modals.cap = 0;
-    for (int i = 0; i < 2; i++) if (d->sel[i]) { node_release(d->sel[i]); d->sel[i] = NULL; }
+    for (int j = 0; j < 2; j++) if (d->sel[j]) { node_release(d->sel[j]); d->sel[j] = NULL; }
     hm_free(&d->id_cache, NULL); hm_free(&d->id_dups, NULL);
+}
+static void doc_release_tree(Document *d, bool final) {
     Node *c = d->node.first;
-    while (c) { Node *nx = c->next; c->parent = NULL; c->refcount = 0; c->js = NULL; node_free_tree(c); c = nx; }
-    free(d->url); free(d->base_url); free(d->title); free(d->content_type); free(d->csp); free(d->csp_ro); free(d->referrer_policy); free(d);
+    d->node.first = d->node.last = d->html = d->head = d->body = NULL;
+    while (c) {
+        Node *next = c->next;
+        c->parent = c->prev = c->next = NULL; c->js = NULL;
+        if (final) { c->refcount = 0; node_free_tree(c); }
+        else node_release(c); /* release only the old document-parent reference */
+        c = next;
+    }
+}
+void doc_clear_retired_trees(Document *root) {
+    /* Context retirement releases child/auxiliary trees promptly, after all
+     * wrappers are gone. The Page may be sleeping, so its own tree/resources
+     * stay alive. Retain every document's metadata for nodes adopted into it. */
+    DocumentList documents = doc_owned_documents(root);
+    for (int i = 0; i < documents.n; i++)
+        if (documents.v[i] != root) doc_release_resources(documents.v[i]);
+    for (int i = 0; i < documents.n; i++)
+        if (documents.v[i] != root) doc_release_tree(documents.v[i], false);
+    vec_free(documents);
+}
+void doc_free(Document *root) {
+    /* Adopted template contents can still be held by another document's tree.
+     * Keep every owner alive until all trees and retained node references in
+     * this retirement group have been released. Self/duplicate associations
+     * are harmless; the release phases also tolerate an already-cleared tree. */
+    DocumentList documents = doc_owned_documents(root);
+    for (int i = 0; i < documents.n; i++) doc_release_resources(documents.v[i]);
+    for (int i = 0; i < documents.n; i++) doc_release_tree(documents.v[i], true);
+    for (int i = 0; i < documents.n; i++) {
+        Document *d = documents.v[i];
+        for (int j = 0; j < d->nparser_meta * 2; j++) free(d->parser_meta[j]);
+        free(d->parser_meta); free(d->retired_documents.v);
+        free(d->url); free(d->base_url); free(d->title); free(d->content_type);
+        free(d->csp); free(d->csp_ro); free(d->referrer_policy); free(d);
+    }
+    vec_free(documents);
 }
 
 /* attributes the engine reads by name (style, on*, href...): null-namespace ones and prefixed ones (xlink:href);
@@ -565,6 +672,37 @@ Node *node_next_deep(Node *n, Node *root) {
         n = p;
     }
 }
+static const Node *node_host_parent(const Node *n) { return n ? (n->parent ? n->parent : n->host) : NULL; }
+bool node_host_including_ancestor(const Node *ancestor, const Node *node) {
+    if (!ancestor || !node) return false;
+    const Node *root = node, *slow = node, *fast = node;
+    for (const Node *p = node; p; p = node_host_parent(p)) {
+        if (p == ancestor) return true;
+        root = p;
+        slow = node_host_parent(slow);
+        fast = node_host_parent(node_host_parent(fast));
+        if (slow && slow == fast) return true; /* reject an already malformed cycle */
+    }
+    /* Ordinary light/shadow ancestry stays allocation-free. Template contents
+     * retain their separate host representation, even after direct adoption. */
+    if (root->type != NODE_FRAGMENT || !(root->flags & NF_INERT) || root->host) return false;
+    VEC(const Node *) pending = {0}; HMap seen = {0}; bool found = false;
+    vec_push(pending, ancestor);
+    while (pending.n) {
+        const Node *n = pending.v[--pending.n];
+        if (n == node) { found = true; break; }
+        char key[2 * sizeof(void *) + 3]; snprintf(key, sizeof key, "%p", (const void *)n);
+        if (hm_get(&seen, key)) continue;
+        hm_put(&seen, key, (void *)n);
+        if (n->first) vec_push(pending, n->first);
+        if (n != ancestor && n->next) vec_push(pending, n->next);
+        if (n->shadow_root) vec_push(pending, n->shadow_root);
+        if (n->template_content) vec_push(pending, n->template_content);
+    }
+    hm_free(&seen, NULL); vec_free(pending);
+    return found;
+}
+
 bool node_is_inclusive_ancestor(const Node *a, const Node *b) { for (; b; b = b->parent) if (a == b) return true; return false; }
 
 static void text_rec(const Node *n, SB *b) {
@@ -604,9 +742,37 @@ void node_text_append(Node *n, const char *s, size_t len) {
     if (len && n->doc) mark_sheet_content(n->doc, n);
 }
 
+void node_set_is_value(Node *n, const char *value, size_t length) {
+    char *copy = value ? xstrndup(value, length) : NULL;
+    free(n->is_value); n->is_value = copy; n->is_value_len = value ? length : 0;
+}
+
 Node *node_clone(Node *n, bool deep, Document *d) {
     Node *c;
     switch (n->type) {
+    case NODE_DOCUMENT: {
+        const Document *source = (const Document *)n;
+        Document *copy = doc_new(source->url);
+        copy->node.ns = source->node.ns;
+        copy->interface_kind = source->interface_kind;
+        copy->charset = source->charset;
+        copy->quirks = source->quirks;
+        copy->ready_state = 2;
+        if (source->content_type) copy->content_type = xstrdup(source->content_type);
+        copy->base_url = xstrdup(doc_base(source));
+        /* Deep clones retain their base element and its original resolution
+         * context. A shallow clone has no such node, so preserve its value. */
+        if (!deep) for (Node *x = source->node.first; x; x = node_next_in_tree(x, (Node *)&source->node)) {
+            if (x->type != NODE_ELEMENT || x->ns != NS_HTML || x->tag != A_base) continue;
+            const char *href = node_attr(x, "href");
+            if (!href) continue;
+            char *base = url_join(doc_base(source), href);
+            if (base) { free(copy->base_url); copy->base_url = base; }
+            break;
+        }
+        d = copy; c = &copy->node;
+        break;
+    }
     case NODE_ELEMENT: c = node_new_element(d, n->tag, n->ns); c->xns = n->xns; c->xpfx = n->xpfx; c->xln = n->xln; for (int i = 0; i < n->nattrs; i++) node_set_attr_at(c, -1, n->attrs[i].name, n->attrs[i].value, n->attrs[i].ns, n->attrs[i].pfx); break;
     case NODE_TEXT: c = node_new_text(d, n->text, n->text_len); break;
     case NODE_COMMENT: c = node_new_comment(d, n->text, n->text_len); break;
@@ -615,9 +781,21 @@ Node *node_clone(Node *n, bool deep, Document *d) {
     case NODE_CDATA: c = node_new_cdata(d, n->text, n->text_len); break;
     default: c = node_new_fragment(d); break;
     }
+    if (n->type == NODE_ELEMENT && n->is_value) node_set_is_value(c, n->is_value, n->is_value_len);
     if (n->type == NODE_ELEMENT && n->tag == A_script) c->flags |= n->flags & NF_SCRIPT_STARTED;   /* "already started" is cloned */
-    if (n->template_content) { c->template_content = node_clone(n->template_content, true, d); c->template_content->refcount = 1; c->template_content->flags |= NF_INERT; }
+    if (n->template_content) {
+        c->template_content = node_clone(n->template_content, deep, doc_template_contents_owner(d));
+        c->template_content->refcount = 1; c->template_content->flags |= NF_INERT;
+    }
     if (deep) for (Node *k = n->first; k; k = k->next) node_append(c, node_clone(k, true, d));
+    if (n->type == NODE_DOCUMENT) {
+        for (Node *x = c->first; x; x = x->next) if (x->type == NODE_ELEMENT) { d->html = x; break; }
+        if (d->html) for (Node *x = d->html->first; x; x = x->next) {
+            if (x->type != NODE_ELEMENT || x->ns != NS_HTML) continue;
+            if (!d->head && x->tag == A_head) d->head = x;
+            if (!d->body && (x->tag == A_body || x->tag == A_frameset)) d->body = x;
+        }
+    }
     /* a clonable shadow root is cloned with its host, its children always */
     if (n->type == NODE_ELEMENT && n->shadow_root && (n->shadow_root->flags & NF_SR_CLONABLE)) {
         Node *sr = node_attach_shadow(c, n->shadow_root->flags & (NF_SR_CLOSED | NF_SR_DELEGATES | NF_SR_SERIALIZABLE | NF_SR_CLONABLE | NF_SR_MANUAL | NF_SR_DECLARATIVE));
@@ -686,6 +864,12 @@ static void ser(const Node *n, SB *b) {
     switch (n->type) {
     case NODE_ELEMENT: {
         sb_putc(b, '<'); sb_puts(b, n->tag);
+        if (n->is_value) {
+            bool has_is = false;
+            for (int i = 0; i < n->nattrs; i++)
+                if (!n->attrs[i].ns && !strcmp(n->attrs[i].name, "is")) { has_is = true; break; }
+            if (!has_is) { sb_puts(b, " is=\""); esc(b, n->is_value, n->is_value_len, true); sb_putc(b, '"'); }
+        }
         for (int i = 0; i < n->nattrs; i++) { sb_putc(b, ' '); sb_puts(b, n->attrs[i].name); sb_puts(b, "=\""); esc(b, n->attrs[i].value, strlen(n->attrs[i].value), true); sb_putc(b, '"'); }
         sb_putc(b, '>');
         if (n->ns == NS_HTML && html_is_void(n->tag)) return;
@@ -701,17 +885,22 @@ static void ser(const Node *n, SB *b) {
     default: for (const Node *c = n->first; c; c = c->next) ser(c, b);
     }
 }
-char *node_serialize(const Node *n, bool outer) {
+char *node_serialize_n(const Node *n, bool outer, size_t *length) {
     SB b; sb_init(&b);
     if (outer) ser(n, &b);
     else ser_children(n, n->template_content ? n->template_content : n, &b);
+    if (length) *length = b.n;
     return sb_take(&b);
 }
-char *node_serialize_ex(const Node *n, bool outer, bool serializable, Node *const *roots, int nroots) {
+char *node_serialize(const Node *n, bool outer) { return node_serialize_n(n, outer, NULL); }
+char *node_serialize_ex_n(const Node *n, bool outer, bool serializable, Node *const *roots, int nroots, size_t *length) {
     g_ser.on = true; g_ser.serializable = serializable; g_ser.roots = roots; g_ser.nroots = nroots;
-    char *s = node_serialize(n, outer);
+    char *s = node_serialize_n(n, outer, length);
     memset(&g_ser, 0, sizeof g_ser);
     return s;
+}
+char *node_serialize_ex(const Node *n, bool outer, bool serializable, Node *const *roots, int nroots) {
+    return node_serialize_ex_n(n, outer, serializable, roots, nroots, NULL);
 }
 
 Node *doc_get_element_by_id(Document *d, const char *id) {

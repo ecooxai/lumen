@@ -223,21 +223,57 @@ function protoFor(type, tag, ns) {
     case 4: return CDATASection.prototype;
     case 8: return Comment.prototype;
     case 7: return ProcessingInstruction.prototype;
-    case 9: return ns === 3 ? XMLDocument.prototype : HTMLDocument.prototype;
+    case 9: return tag === '#document' ? Document.prototype : ns === 3 ? XMLDocument.prototype : HTMLDocument.prototype;
     case 10: return DocumentType.prototype;
     case 11: return tag === '#shadow' ? ShadowRoot.prototype : DocumentFragment.prototype;
     }
     return Node.prototype;
 }
 
-const registry = { byName: new SMap(), byCtor: new SMap(), waiting: new SMap(), upgrading: [] };
-const validCEName = (n) => /^[a-z][^\0\t\n\f\r />A-Z]*$/.test(n) && n.includes('-') && !/^(annotation-xml|color-profile|font-face|font-face-src|font-face-uri|font-face-format|font-face-name|missing-glyph)$/.test(n);
-function ceConstruct(nt) {
-    if (registry.upgrading.length) { const el = registry.upgrading.pop(); Object.setPrototypeOf(el, nt.prototype); return el; }
+const registry = { byName: new SMap(), byCtor: new SMap(), waiting: new SMap() };
+const validCEName = (n) => /^[a-z][^\0\t\n\f\r />A-Z]*$/.test(n) && n.includes('-') && !/^(annotation-xml|color-profile|font-face|font-face-src|font-face-format|font-face-name|missing-glyph)$/.test(n);
+const ceFailed = new WeakSet(), ceUpgrading = new WeakSet(), ceParserCounters = new WeakMap();
+let ceReactionQueue = null;
+function ceReaction(el, callback, args) {
+    if (typeof callback !== 'function') return;
+    if (ceReactionQueue) { ceReactionQueue.push({el, callback, args}); return; }
+    try { callback.apply(el, args); } catch (e) { report(e); }
+}
+function ceInvoke(queue) {
+    const previous = ceReactionQueue;
+    ceReactionQueue = null;
+    try {
+        for (let i = 0; i < queue.length; ++i) {
+            const r = queue[i];
+            if (!ceFailed.has(r.el)) ceReaction(r.el, r.callback, r.args);
+        }
+    } finally { ceReactionQueue = previous; }
+}
+function ceDefinition(name, is) {
+    const autonomous = registry.byName.get(name);
+    if (autonomous && autonomous.ext === undefined) return autonomous;
+    const customized = is === null ? undefined : registry.byName.get(is);
+    return customized && customized.ext === name ? customized : undefined;
+}
+function ceConstruct(nt, active) {
+    if (nt === active) illegal();
     const d = registry.byCtor.get(nt);
     if (!d) illegal();
-    const el = N.create(d.name, 0);
-    Object.setPrototypeOf(el, nt.prototype);
+    const expected = d.ext === undefined ? HTMLElement : TAGS[d.ext] || HTMLElement;
+    if (active !== expected) throw new TypeError('The custom element does not extend the interface for its local name.');
+    /* Registration and interface checks precede the observable prototype get. */
+    let prototype = nt.prototype;
+    if (prototype === null || (typeof prototype !== 'object' && typeof prototype !== 'function')) prototype = active.prototype;
+    if (d.stack.length) {
+        const entry = d.stack[d.stack.length - 1];
+        if (entry.constructed) throw new TypeError('The custom element has already been constructed.');
+        entry.constructed = true;
+        Object.setPrototypeOf(entry.element, prototype);
+        return entry.element;
+    }
+    const el = N.create(d.ext === undefined ? d.name : d.ext, 0);
+    if (d.ext !== undefined) N.ceIs(el, d.name);
+    Object.setPrototypeOf(el, prototype);
     def(el, '__ce', d);
     return el;
 }
@@ -247,34 +283,114 @@ function ceUpgradeTree(root) {
     if (t !== 1 && t !== 11) return;
     for (const el of N.ceScan(root)) if (!el.__ce) ceUpgrade(el);
 }
-
-function ceUpgrade(el) {
-    if (el.__ce || N.type(el) !== 1 || N.ns(el) !== 0) return;
-    const d = registry.byName.get(N.name(el)); if (!d) return;
+function ceParserMarkupGuard(doc) {
+    if (ceParserCounters.get(doc)) throw new DOMException('Dynamic markup insertion is unavailable while a parser-created custom element is being constructed.', 'InvalidStateError');
+}
+function ceUpgrade(el, forceRegistry = false) {
+    if (el.__ce || ceFailed.has(el) || N.type(el) !== 1 || N.ns(el) !== 0) return;
+    if (!forceRegistry && N.ownerDoc(el) !== document) return;
+    const d = ceDefinition(N.name(el), N.ceIs(el)); if (!d) return;
+    const queue = [], previous = ceReactionQueue;
+    ceReactionQueue = queue;
     def(el, '__ce', d);
-    registry.upgrading.push(el);
-    try { new d.ctor(); }
-    catch (e) { report(e); Object.setPrototypeOf(el, d.ctor.prototype); }
-    finally { const i = registry.upgrading.indexOf(el); if (i >= 0) registry.upgrading.splice(i, 1); }
-    if (d.observed.length && typeof el.attributeChangedCallback === 'function')
-        for (const a of d.observed) { const v = N.attr(el, a); if (v != null) { try { el.attributeChangedCallback(a, null, v, null); } catch (e) { report(e); } } }
-    if (N.connected(el) && typeof el.connectedCallback === 'function') { try { el.connectedCallback(); } catch (e) { report(e); } }
+    if (d.observed.length) {
+        const attributes = N.attrs(el);
+        for (let i = 0; i < attributes.length; i += 2)
+            if (d.observed.includes(attributes[i])) ceReaction(el, d.attributeChanged, [attributes[i], null, attributes[i + 1], null]);
+    }
+    if (N.connected(el)) ceReaction(el, d.connected, []);
+    const entry = {element:el, constructed:false};
+    d.stack.push(entry); ceUpgrading.add(el);
+    try {
+        if (new d.ctor() !== el) throw new TypeError('A custom element upgrade must return the element being upgraded.');
+    } catch (e) {
+        ceFailed.add(el); queue.length = 0; report(e);
+    } finally {
+        ceUpgrading.delete(el); d.stack.pop(); ceReactionQueue = previous;
+    }
+    if (ceFailed.has(el)) return;
+    ceInvoke(queue);
+}
+/* A creation dictionary's is member is creation state, never a content
+   attribute. The legacy string overload is intentionally ignored. */
+function ceIsOption(options) {
+    if (options === null || (typeof options !== 'object' && typeof options !== 'function')) return null;
+    const value = options.is;
+    if (value === undefined) return null;
+    if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
+    return String(value);
+}
+function ceCreateElement(name, namespace, doc, is = null, prefix = null) {
+    const d = namespace === 0 && doc === document ? ceDefinition(name, is) : undefined;
+    let el;
+    if (d && d.ext === undefined) {
+        try {
+            el = new d.ctor();
+            if (!N.isNode(el) || N.type(el) !== 1 || N.ns(el) !== 0)
+                throw new TypeError('A custom element constructor must return an HTMLElement.');
+            if (N.attrs(el).length || N.first(el) || N.parent(el) || N.ownerDoc(el) !== doc || N.name(el) !== name)
+                throw new DOMException('The constructed custom element has unexpected attributes, children, parent, document, or local name.', 'NotSupportedError');
+            N.ceIs(el, null);
+        } catch (e) {
+            report(e);
+            el = N.create(name, 0, doc);
+            Object.setPrototypeOf(el, H.HTMLUnknownElement.prototype);
+            ceFailed.add(el);
+        }
+        /* Fresh autonomous construction starts with a null prefix. Apply the
+           requested prefix only to the successfully returned/fallback node. */
+        N.xname(el, null, prefix, null);
+        if (prefix !== null || el.__pfx !== undefined) def(el, '__pfx', prefix);
+        return el;
+    }
+    el = N.create(name, namespace, doc);
+    if (is !== null) N.ceIs(el, is);
+    if (namespace === 0 && prefix !== null) { N.xname(el, null, prefix, null); def(el, '__pfx', prefix); }
+    if (d) ceUpgrade(el);
+    return el;
+}
+/* Called only from the suspended native document parser. The provisional C
+   node remains private until this constructor and attribute-reaction phase
+   finishes; a constructor's returned element can replace that provisional node. */
+function ceParserCreate(name, is, doc, attributes) {
+    if (doc !== document) return null;
+    const d = ceDefinition(name, is); if (!d) return null;
+    const depth = ceParserCounters.get(doc) || 0;
+    ceParserCounters.set(doc, depth + 1);
+    const previous = ceReactionQueue, queue = [];
+    ceReactionQueue = queue;
+    let el;
+    try {
+        el = ceCreateElement(name, 0, doc, is);
+        for (let i = 0; i < attributes.length; ++i) attrSetQ(el, attributes[i][0], attributes[i][1]);
+        ceReactionQueue = previous;
+        ceInvoke(queue);
+        return el;
+    } finally {
+        ceReactionQueue = previous;
+        if (depth) ceParserCounters.set(doc, depth); else ceParserCounters.delete(doc);
+    }
+}
+function ceParserInserted(el, parent, previousSibling, nextSibling) {
+    if (liveRanges.size) rangeInserted(parent, idxOf(el), 1);
+    notify('childList', parent, {addedNodes:[el], previousSibling, nextSibling});
+    ceConnected(el, true);
 }
 function ceConnected(root, connected, moved) {
     if (!registry.byName.size) return;
     const t = N.type(root); if (t !== 1 && t !== 11) return;
     for (const el of N.ceScan(root)) {
+        if (ceFailed.has(el) || ceUpgrading.has(el)) continue;
         if (!el.__ce) { if (!moved && N.connected(el)) ceUpgrade(el); continue; }
         if (!moved && connected !== N.connected(el)) continue;
-        const cb = connected ? el.connectedCallback : el.disconnectedCallback;
-        if (typeof cb === 'function') { try { cb.call(el); } catch (e) { report(e); } }
+        ceReaction(el, connected ? el.__ce.connected : el.__ce.disconnected, []);
     }
 }
 function ceMoved(root) {
     if (!registry.byName.size) return;
     const t = N.type(root); if (t !== 1 && t !== 11) return;
     for (const el of N.ceScan(root)) {
-        if (!el.__ce) continue;
+        if (!el.__ce || ceFailed.has(el)) continue;
         const run = cb => { if (typeof cb === 'function') { try { cb.call(el); } catch (e) { report(e); } } };
         if (typeof el.connectedMoveCallback === 'function') run(el.connectedMoveCallback);
         else { run(el.disconnectedCallback); run(el.connectedCallback); }
@@ -283,8 +399,8 @@ function ceMoved(root) {
 function ceAttr(el, name, old, v, ns = null) {
     if (name === 'type' && ns === null && old !== v && oprOf.has(el)) oprDisconnectAll(el);
     if (ns === null && N.ns(el) === 0) { formAttr(el, name, old, v); if (name === 'popover') popAttrChanged(el, old, v); }
-    const d = el.__ce; if (!d || !d.observed.includes(name) || typeof el.attributeChangedCallback !== 'function') return;
-    try { el.attributeChangedCallback(name, old, v, ns); } catch (e) { report(e); }
+    const d = el.__ce; if (!d || ceFailed.has(el) || !d.observed.includes(name)) return;
+    ceReaction(el, d.attributeChanged, [name, old, v, ns]);
 }
 class CustomElementRegistry {
     define(name, ctor, opts) {
@@ -293,10 +409,19 @@ class CustomElementRegistry {
         if (!validCEName(name)) throw new DOMException(`"${name}" is not a valid custom element name`, 'SyntaxError');
         if (registry.byName.has(name)) throw new DOMException(`the name "${name}" has already been used with this registry`, 'NotSupportedError');
         if (registry.byCtor.has(ctor)) throw new DOMException('this constructor has already been used with this registry', 'NotSupportedError');
-        const oa = ctor.observedAttributes;
-        const d = { name, ctor, observed: oa ? [...oa].map(String) : [], ext: opts && opts.extends };
+        const prototype = ctor.prototype;
+        if (prototype === null || (typeof prototype !== 'object' && typeof prototype !== 'function')) throw new TypeError('The custom element constructor must have an object prototype.');
+        const connected = prototype.connectedCallback, disconnected = prototype.disconnectedCallback, attributeChanged = prototype.attributeChangedCallback;
+        for (const callback of [connected, disconnected, attributeChanged])
+            if (callback !== undefined && typeof callback !== 'function') throw new TypeError('A custom element lifecycle callback must be a function.');
+        const oa = attributeChanged === undefined ? undefined : ctor.observedAttributes;
+        const extension = opts == null ? undefined : opts.extends;
+        const ext = extension === undefined ? undefined : String(extension);
+        if (ext !== undefined && (validCEName(ext) || (!TAGS[ext] && !PLAIN.has(ext))))
+            throw new DOMException('The extended element must be a supported built-in HTML element.', 'NotSupportedError');
+        const d = { name, ctor, observed: oa ? [...oa].map(String) : [], ext, stack:[], connected, disconnected, attributeChanged };
         registry.byName.set(name, d); registry.byCtor.set(ctor, d);
-        for (const el of N.query(document, CSS.escape(name), true)) ceUpgrade(el);
+        for (const el of N.query(document, CSS.escape(ext === undefined ? name : ext), true)) ceUpgrade(el);
         const w = registry.waiting.get(name); if (w) { registry.waiting.delete(name); w.resolve(ctor); }
     }
     get(name) { const d = registry.byName.get(String(name)); return d ? d.ctor : undefined; }
@@ -309,5 +434,5 @@ class CustomElementRegistry {
         if (!w) { let resolve; const promise = new Promise(r => resolve = r); w = { promise, resolve }; registry.waiting.set(name, w); }
         return w.promise;
     }
-    upgrade(root) { for (const el of N.ceScan(root)) ceUpgrade(el); }
+    upgrade(root) { for (const el of N.ceScan(root)) ceUpgrade(el, true); }
 }

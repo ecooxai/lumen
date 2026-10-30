@@ -45,6 +45,11 @@ typedef struct JsHost {
     int (*window_op)(void *ud, uint32_t wid, int op, const char *arg);
     /* the text node and UTF-16 offset nearest viewport point (x, y), false when there is none */
     bool (*caret)(void *ud, float x, float y, Node **n, int *off);
+    /* Discover encountered sheets and yield blocking parser scripts while a
+       relevant sheet is pending. Async scripts do not consult this gate. */
+    bool (*parser_blocked)(void *ud, Document *d);
+    /* After DOMContentLoaded, before load: host resource/event bookkeeping. */
+    void (*parser_complete)(void *ud, Document *d);
 } JsHost;
 
 void js_global_init(const char *argv0);
@@ -61,7 +66,15 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
 /* Prepare once at parser encounter or dynamic insertion. False means already
    started or ineligible; valid scripts are marked started before fetching. */
 bool js_prepare_script(Node *script);
+/* Transfer an actual prefix parser after context/bootstrap hooks are ready.
+   first_script was closed before js_new and must retain its original slot. */
+void js_start_parser(JsCtx *c, HtmlParser *parser, Node *first_script);
 uint64_t js_parser_generation(JsCtx *c);
+uint64_t js_parser_defer_order(JsCtx *c);
+bool js_parser_run_deferred_before(JsCtx *c, uint64_t next_order);
+void js_parser_script_error(JsCtx *c, Node *script, bool parser_point);
+/* Only a newly closed script yielded by the native document parser may call this. */
+bool js_parser_script_closed(JsCtx *c, Node *script, const char *source, size_t length);
 /* These accept a just-prepared node. ordered is only for dynamic async=false. */
 void js_queue_classic_script(JsCtx *c, Node *script, const char *url, bool ordered);
 void js_run_deferred_script(JsCtx *c, Node *script, const char *src, size_t n, const char *url);

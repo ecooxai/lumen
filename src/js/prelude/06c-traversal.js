@@ -540,7 +540,7 @@ class Selection {
 const selection = new Selection();
 const XML_TYPES = ['text/xml', 'application/xml', 'application/xhtml+xml', 'image/svg+xml'];
 function parseXML(src, type) {
-    const doc = N.newXmlDoc(); Object.setPrototypeOf(doc, Document.prototype); def(doc, '__ct', type);
+    const doc = N.newXmlDoc(type, true, true);
     N.parseXml(doc, src);
     return doc;
 }

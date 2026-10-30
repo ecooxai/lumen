@@ -105,6 +105,7 @@ typedef struct {
     Node *n; char *src; size_t len; char *name; bool module; char *ctype;
     NetRequest *request; /* main-thread callback owner; cleared before teardown */
     bool ready, external, entered, deferred, done, module_fetched;
+    uint64_t defer_order; /* shared parser encounter order, including document.write */
 } PScript;
 typedef struct { Node *n; uint64_t h; size_t len; } SheetRef;   /* len: <style> text length, 0 for links */
 typedef struct Page {
@@ -112,6 +113,7 @@ typedef struct Page {
     JsCtx *js; PScript *scripts; int nscripts; uint64_t seen_ver, lay_ver, seen_sheet_ver, seen_paint_ver, seen_res; bool res_seen;
     bool script_pipeline, script_pumping, scripts_complete; int script_pass, script_index;
     uint64_t script_generation;
+    HtmlParser *initial_parser; Node *first_parser_script; /* transferred to the native stream after bootstrap */
     double script_started; Node **script_links; bool *script_link_ok; int nscript_links;
     bool sheets_pending; /* a fetched stylesheet was added: next restyle recomputes everything once */
     uint64_t link_generation; /* main-thread owner identity for native link completions */
@@ -469,7 +471,7 @@ static int loader(void *arg) {
     p->url = xstrdup(r && r->url ? r->url : rq->url);
     p->d = doc_new(p->url);
     if (r && r->status > 0 && !rq->html) { p->d->csp = headers_join(&r->headers, "content-security-policy"); p->d->csp_ro = headers_join(&r->headers, "content-security-policy-report-only"); p->d->referrer_policy = headers_join(&r->headers, "referrer-policy"); }
-    bool xml = xml_mime(ctype);
+    bool xml = xml_mime(ctype), js = !getenv("LUMEN_NO_JS");
     char *decoded = NULL;
     if (!rq->html && !errbuf) {   /* the document's encoding; anything but UTF-8 is decoded to UTF-8 first */
         int enc; size_t dn = 0;
@@ -477,13 +479,19 @@ static int loader(void *arg) {
         p->d->charset = enc;
     }
     if (xml) { xml_parse(p->d, body, blen); p->d->content_type = mime_essence(ctype); }
-    else html_parse(p->d, body, blen);
+    else if (js) {
+        /* Keep the existing head-policy bootstrap, but expose only the real
+           parser prefix. No nodes or resource owners survive the metadata pass. */
+        Document *metadata = doc_new(p->url);
+        html_parse(metadata, body, blen);
+        doc_capture_parser_meta(p->d, metadata); doc_free(metadata);
+        p->initial_parser = html_parser_begin_document(p->d, body, blen, &p->first_parser_script);
+    } else html_parse(p->d, body, blen);
     free(decoded);
     double t_parse = now_ms();
     /* Stylesheets and module graphs keep the existing preload path. Classic
      * fetches start after context creation and never join this blocking batch. */
     char **urls = NULL, **mods = NULL; Node **url_nodes = NULL; NetResponse **got = NULL; int nurl = 0, nmod = 0;
-    bool js = !getenv("LUMEN_NO_JS");
     for (Node *n = p->d->node.first; n; n = node_next_deep(n, &p->d->node)) {
         if (n->type != NODE_ELEMENT) continue;
         const char *rel = n->tag == A_link ? node_attr(n, "rel") : NULL, *href = NULL;
@@ -506,7 +514,7 @@ static int loader(void *arg) {
         if (mt) SDL_WaitThread(mt, NULL);
     }
     double t_batch = now_ms();
-    if (!getenv("LUMEN_NO_JS")) for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
+    if (js && !p->initial_parser) for (Node *n = p->d->node.first; n; n = node_next_in_tree(n, &p->d->node)) {
         if (!gen_live(rq->gen)) break;
         if (!jsg_is_script(n)) continue;
         bool mod = jsg_module_script(n);
@@ -566,6 +574,7 @@ static void parser_fetch_cancel(PScript *sc) {
 }
 static void parser_abandon(Page *p) {
     p->script_pipeline = false; p->scripts_complete = true;
+    if (p->initial_parser) { html_parser_free(p->initial_parser); p->initial_parser = NULL; p->first_parser_script = NULL; }
     for (int i = 0; i < p->nscripts; i++) {
         parser_fetch_cancel(&p->scripts[i]);
         free(p->scripts[i].src); p->scripts[i].src = NULL; p->scripts[i].len = 0;
@@ -3016,12 +3025,12 @@ static bool css_rule_boundary(const char *s, size_t n) {
     return depth == 0 && last == '}';
 }
 static bool is_sheet_link(Node *n) { const char *r = node_attr(n, "rel"); return n->tag == A_link && r && strstr(r, "stylesheet") && node_attr(n, "href"); }
-typedef struct LinkLoad { uint64_t gen; Node *n; struct LinkLoad *next; } LinkLoad;
+typedef struct LinkLoad { uint64_t gen; Node *n; bool complete; struct LinkLoad *next; } LinkLoad;
 static uint64_t g_link_generation;
 static LinkLoad *g_link_loads;
 static LinkLoad *link_load_new(Page *p, Node *n) {
     if (!p->link_generation) p->link_generation = ++g_link_generation;
-    LinkLoad *l = xmalloc(sizeof *l); l->gen = p->link_generation; l->n = n; n->refcount++;
+    LinkLoad *l = xmalloc(sizeof *l); l->gen = p->link_generation; l->n = n; l->complete = false; n->refcount++;
     l->next = g_link_loads; g_link_loads = l;
     return l;
 }
@@ -3057,19 +3066,36 @@ static Page *link_owner(const LinkLoad *l) {
 static JsCtx *link_context(Page *p) {
     return p && p->frame_el ? js_frame_ctx(p->frame_el) : p ? p->js : NULL;
 }
+/* A parser waits only for applicable, enabled stylesheets. Load still waits
+   for enabled nonmatching-media/alternate fetches, but never for preloads. */
+static bool page_pending_sheets(Page *p, bool parser) {
+    if (!p || !p->e || !p->link_generation) return false;
+    for (LinkLoad *l = g_link_loads; l; l = l->next) {
+        Node *n = l->n;
+        if (l->complete || l->gen != p->link_generation || !n || n->doc != p->d || !(n->flags & NF_CONNECTED) || !is_sheet_link(n)) continue;
+        if (node_attr(n, "disabled")) continue;
+        if (parser) {
+            const char *rel = node_attr(n, "rel"), *media = node_attr(n, "media");
+            if (rel && strstr(rel, "alternate")) continue;
+            if (media && *media && !css_media_matches(media, &p->e->media)) continue;
+        }
+        return true;
+    }
+    return false;
+}
 
 static bool is_preload_link(Node *n) {
     const char *r = node_attr(n, "rel");
     return n->tag == A_link && r && strstr(r, "preload") && node_attr(n, "href");
 }
 static void preload_done(NetRequest *rq, NetResponse *r, void *ud) {
-    (void)rq; LinkLoad *l = ud; Page *p = link_owner(l); JsCtx *js = link_context(p);
+    (void)rq; LinkLoad *l = ud; l->complete = true; Page *p = link_owner(l); JsCtx *js = link_context(p);
     if (js)
         js_dispatch(js, l->n, r && r->status >= 200 && r->status < 300 ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
     link_load_release(l);
 }
 static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
-    (void)rq; LinkLoad *l = ud; Page *p = link_owner(l);
+    (void)rq; LinkLoad *l = ud; l->complete = true; Page *p = link_owner(l);
     /* Completion can still notify a detached link, but its stylesheet must
        not become active in a live document after the link was removed. */
     if (p && (l->n->flags & NF_CONNECTED) && is_sheet_link(l->n) && r && r->status == 200 && r->body) {
@@ -3083,7 +3109,11 @@ static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
     JsCtx *js = link_context(p);
     if (js)
         js_dispatch(js, l->n, r && r->status == 200 && r->body ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
+    /* A handler may detach or replace the owner. Resolve it again while the
+       callback record is still registered, then retire this load before recheck. */
+    JsCtx *live = link_context(link_owner(l));
     link_load_release(l);
+    if (live) js_load_recheck(live);
 }
 typedef struct { uint64_t gen; char *u; Image *im; } ImgLoad;
 /* bitmaps decode on the fetching thread, off the main loop; SVG decodes in img_done */
@@ -3171,8 +3201,15 @@ static bool img_fetch_done(Node *n) {
 }
 /* the current page's load event waits for its images (capped at 10 s) */
 static bool h_load_blocked(JsCtx *c) {
-    Page *p = g_loading_page;
-    if (!p || p->js != c || !p->d || now_ms() - p->load_t0 >= 10000) return false;
+    Page *p = g_loading_page && link_context(g_loading_page) == c ? g_loading_page : NULL;
+    if (!p) for (Page *frame = g_frames; frame; frame = frame->fnext) if (link_context(frame) == c) { p = frame; break; }
+    if (!p && g_app) for (int i = 0; i < g_app->ntabs; i++) {
+        Page *page = g_app->tabs[i]->cur;
+        if (page && page->js == c) { p = page; break; }
+    }
+    if (!p || !p->d) return false;
+    if (page_pending_sheets(p, false)) return true;
+    if (p->load_t0 <= 0 || now_ms() - p->load_t0 >= 10000) return false;
     bool busy = false;
     SDL_LockMutex(icache_mu);
     for (Node *n = p->d->node.first; n && !busy; n = node_next_in_tree(n, &p->d->node)) {
@@ -3312,7 +3349,7 @@ static void fire_img_events(Page *p) {
     p->d->ndimg = keep;
     for (int i = 0; i < ne; i++) { js_dispatch(p->js, ev[i], ok[i] ? "load" : "error", "Event", false, false, 0, 0, 0, NULL); node_release(ev[i]); }
     free(ev); free(ok);
-    if (g_loading_page == p && p->js) js_load_recheck(p->js);   /* after the images' own load events */
+    if (p->js) js_load_recheck(p->js);   /* after this document's own image events, including frames */
 }
 /* Reconcile engine sheets with <style>/<link rel=stylesheet> currently in the tree; seed only records them. */
 static bool sync_sheets(Page *p, bool seed) {
@@ -3363,6 +3400,13 @@ static bool frame_restyle(Page *p) {
     p->frelayout = true;
     return true;
 }
+static bool h_parser_blocked(void *ud, Document *d) {
+    (void)ud; Page *p = d ? image_page(&d->node) : NULL;
+    if (!p) return false;
+    if (sync_sheets(p, false)) p->sheets_pending = true;
+    return page_pending_sheets(p, true);
+}
+static void h_parser_complete(void *ud, Document *d);
 static float frame_scale(Page *p) { return g_app->scale * tab_zoom(tab_of_doc(g_app, p->d)); }
 static void frame_layout(Page *p) {
     if (page_viewport(p, p->fw, p->fh, frame_scale(p))) p->frelayout = true;
@@ -3531,7 +3575,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
     if (p->fh < 1) p->fh = 150;
     p->e = style_engine_new(d); p->e->media.vw = p->fw; p->e->media.vh = p->fh;
     p->e->media.dpr = g_app->scale * tab_zoom(tab_of_doc(g_app, f->doc));
-    for (Node *n = d->node.first; n; n = node_next_deep(n, &d->node)) {
+    if (!d->parser_meta_captured) for (Node *n = d->node.first; n; n = node_next_deep(n, &d->node)) {
         if (n->type != NODE_ELEMENT || n->ns != NS_HTML) continue;
         if (n->tag == A_style) {
             char *t = node_text_content(n); StyleSheet *sh = css_parse_sheet(t, strlen(t), d->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); free(t);
@@ -3543,12 +3587,14 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
             free(u);
         }
     }
-    sync_sheets(p, true);
+    /* Prefix HTML discovers its real sheet owners asynchronously. XML keeps
+       the existing completed-document initialization above. */
+    sync_sheets(p, !d->parser_meta_captured);
     style_recalc(p->e, &d->node, true);
     sync_images(p);
     p->seen_ver = d->dom_version; p->frelayout = true;
     p->fnext = g_frames; g_frames = p;
-    *ch = (JsHost){ .ud = p, .media = &p->e->media, .viewport = hf_viewport, .scroll_to = hf_scroll_to, .hit = hf_hit, .caret = hf_caret, .sync = hf_sync, .frame_open = h_frame_open, .frame_close = h_frame_close };
+    *ch = (JsHost){ .ud = p, .media = &p->e->media, .viewport = hf_viewport, .scroll_to = hf_scroll_to, .hit = hf_hit, .caret = hf_caret, .sync = hf_sync, .frame_open = h_frame_open, .frame_close = h_frame_close, .parser_blocked = h_parser_blocked, .parser_complete = h_parser_complete };
 }
 static void h_frame_close(void *ud) {
     Page *p = ud;
@@ -3829,6 +3875,7 @@ static void parser_script_enter(Page *p, PScript *sc, int index) {
     sc->module = jsg_module_script(sc->n); sc->external = source != NULL;
     bool async = node_attr(sc->n, "async") != NULL;
     sc->deferred = sc->module ? !async : sc->external && !async && node_attr(sc->n, "defer") != NULL;
+    if (sc->deferred) sc->defer_order = js_parser_defer_order(p->js);
     char *name = source ? (*source ? url_join(doc_base(p->d), source) : NULL) : xstrdup(p->url);
     bool same = sc->name && name && !strcmp(sc->name, name);
     if (!same || was_module != sc->module || was_external != sc->external) {
@@ -3876,6 +3923,33 @@ static void page_finish_js(App *a, Page *p) {
 #endif
     restyle(a);
 }
+/* The native stream has already dispatched DOMContentLoaded. Preserve the
+   top-level initial-sheet event ordering, then establish image/load ownership. */
+static void h_parser_complete(void *ud, Document *d) {
+    (void)ud; Page *p = d ? image_page(&d->node) : NULL;
+    JsCtx *js = link_context(p);
+    if (!p || !js) return;
+    uint64_t generation = js_parser_generation(js);
+    p->script_pipeline = false; p->scripts_complete = true;
+    if (generation == p->script_generation) for (int i = 0; i < p->nscript_links; i++) {
+        Node *link = p->script_links[i];
+        if (link->doc == d && (link->flags & NF_CONNECTED) && is_sheet_link(link))
+            js_dispatch(js, link, p->script_link_ok[i] ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
+        if (js_parser_generation(js) != generation) break;
+    }
+    for (int i = 0; i < p->nscript_links; i++) node_release(p->script_links[i]);
+    free(p->script_links); free(p->script_link_ok); p->script_links = NULL; p->script_link_ok = NULL; p->nscript_links = 0;
+    if (js_parser_generation(js) != generation) return;
+    if (sync_sheets(p, false)) p->sheets_pending = true;
+    p->load_t0 = now_ms();
+    if (!p->frame_el) g_loading_page = p;
+    sync_images(p);
+    if (p->frame_el) { p->frelayout = true; g_app->dirty = true; }
+    else {
+        Tab *tab = tab_of_doc(g_app, d), *previous = g_app->t;
+        if (tab) { g_app->t = tab; restyle(g_app); g_app->t = previous; }
+    }
+}
 static void page_pump_scripts(App *a, Page *p) {
     if (!p->script_pipeline || p->scripts_complete || p->script_pumping) return;
     p->script_pumping = true;
@@ -3889,6 +3963,9 @@ static void page_pump_scripts(App *a, Page *p) {
                 js_set_ready_state(p->js, 1); /* interactive before defer/module execution */
                 continue;
             }
+            bool drained = js_parser_run_deferred_before(p->js, UINT64_MAX);
+            if (js_parser_generation(p->js) != p->script_generation) { parser_abandon(p); break; }
+            if (!drained) break;
             page_finish_js(a, p);
             break;
         }
@@ -3897,6 +3974,11 @@ static void page_pump_scripts(App *a, Page *p) {
         if (!sc->entered) parser_script_enter(p, sc, index);
         if (sc->done || (p->script_pass == 0 && sc->deferred) || (p->script_pass == 1 && !sc->deferred)) {
             p->script_index++; continue;
+        }
+        if (p->script_pass == 1) {
+            bool drained = js_parser_run_deferred_before(p->js, sc->defer_order);
+            if (js_parser_generation(p->js) != p->script_generation) { parser_abandon(p); break; }
+            if (!drained) break;
         }
         if (sc->n->doc != p->d) {
             parser_fetch_cancel(sc); sc->done = true; p->script_index++; continue;
@@ -3909,7 +3991,7 @@ static void page_pump_scripts(App *a, Page *p) {
         else if (sc->src) {
             if (sc->module) js_run_module_fetched(p->js, sc->n, sc->src, sc->len, sc->name, sc->ctype);
             else js_run_prepared_classic(p->js, sc->n, sc->src, sc->len, sc->name, sc->external, !sc->deferred);
-        } else js_dispatch(p->js, sc->n, "error", "Event", false, false, 0, 0, 0, NULL);
+        } else js_parser_script_error(p->js, sc->n, !sc->module && !sc->deferred);
         free(sc->src); sc->src = NULL; sc->len = 0;
         if (now_ms() - ts >= 50) LOAD_TRACE("script=%d module=%d bytes=%zu ms=%.0f", index, sc->module, len, now_ms() - ts);
     }
@@ -3918,7 +4000,8 @@ static void page_pump_scripts(App *a, Page *p) {
 static void page_start_js(App *a, Page *p) {
     if (getenv("LUMEN_NO_JS")) return;
     JsHost h = { a->t, &p->e->media, h_navigate, h_set_url, h_history_go, h_viewport, h_scroll_to, h_hit, h_history_len, h_navigate_post, h_sync, h_frame_open, h_frame_close,
-                 p->internal_ui || env_hook(ENV_TESTDRIVER) ? h_internal : NULL, h_fullscreen, p->internal_ui ? NULL : h_open_window, h_window_op, h_caret };
+                 p->internal_ui || env_hook(ENV_TESTDRIVER) ? h_internal : NULL, h_fullscreen, p->internal_ui ? NULL : h_open_window, h_window_op, h_caret,
+                 h_parser_blocked, h_parser_complete };
     double t0 = now_ms(); p->script_started = t0;
     sync_sheets(p, true);
     /* the stylesheets the loader fetched before any script ran: their load (or error) events come after
@@ -3946,6 +4029,13 @@ static void page_start_js(App *a, Page *p) {
     p->script_links = links; p->script_link_ok = lok; p->nscript_links = nlinks;
     p->script_pipeline = true;
     if (js_parser_generation(p->js) != p->script_generation) { parser_abandon(p); return; }
+    if (p->initial_parser) {
+        HtmlParser *parser = p->initial_parser; Node *first = p->first_parser_script;
+        p->initial_parser = NULL; p->first_parser_script = NULL;
+        p->script_pipeline = false; /* the native stream owns HTML execution */
+        js_start_parser(p->js, parser, first);
+        return;
+    }
     /* The existing six-worker network pool bounds these preloads. An async
        classic is submitted only when its parser encounter is reached. */
     for (int i = 0; i < p->nscripts; i++) {

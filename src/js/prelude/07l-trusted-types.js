@@ -55,12 +55,23 @@ function cspList() {
     const [h, ro] = N.csp(document);
     if (h) for (const t of h.split(',')) cspParse(t, false, out, false);
     if (ro) for (const t of ro.split(',')) cspParse(t, true, out, false);
-    const head = document.head;
-    if (head) for (let n = N.first(head); n; n = N.next(n))
-        if (N.type(n) === 1 && N.name(n) === 'meta' && (N.attr(n, 'http-equiv') || '').trim().toLowerCase() === 'content-security-policy') {
-            const c = N.attr(n, 'content');
-            if (c) cspParse(c, false, out, true);
+    const parsedMeta = N.parserMeta();
+    if (parsedMeta !== undefined) {
+        /* Preserve the existing eager head-policy bootstrap while the live DOM
+           is prefix-parsed. These are copied strings, never live meta nodes. */
+        for (let i = 0; i < parsedMeta.length; i++) {
+            const pair = parsedMeta[i];
+            if ((pair[0] || '').trim().toLowerCase() === 'content-security-policy' && pair[1])
+                cspParse(pair[1], false, out, true);
         }
+    } else {
+        const head = document.head;
+        if (head) for (let n = N.first(head); n; n = N.next(n))
+            if (N.type(n) === 1 && N.name(n) === 'meta' && (N.attr(n, 'http-equiv') || '').trim().toLowerCase() === 'content-security-policy') {
+                const c = N.attr(n, 'content');
+                if (c) cspParse(c, false, out, true);
+            }
+    }
     cspPolicies = out;
     /* Inheritance reads a browser-owned snapshot. A page-visible Symbol, a
        replacement JSON method or an inherited toJSON cannot become authority. */
@@ -443,6 +454,8 @@ function ttWriteText(texts, ln) {
    differs runs only what the default policy makes of it */
 const ttSlot = new WeakMap();
 function ttSlotsFrom(root) { const scripts = N.query(root, 'script', true); for (let i = 0; i < scripts.length; i++) ttStore(ttSlot, scripts[i], N.text(scripts[i])); }
+/* Native parser-only callback: capture original text at script-close, before author callbacks. */
+function ttParserScript(el, text) { ttStore(ttSlot, el, text); }
 {
     const nodeText = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
     const setScript = (el, v, sink) => { const s = ttString(TrustedScript, v, sink); ttStore(ttSlot, el, s); nodeText.set.call(el, s); };

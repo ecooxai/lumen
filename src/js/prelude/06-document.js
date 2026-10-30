@@ -1,7 +1,7 @@
 const allColl = new WeakMap(), allMeta = new WeakMap();
 const baseURICache = new WeakMap();
 function documentBaseURI(doc) {
-    const version = N.version(doc), url = doc === document || doc.__url != null ? N.docBase() : N.url(), cached = baseURICache.get(doc);
+    const version = N.version(doc), url = N.docBase(doc), cached = baseURICache.get(doc);
     if (cached && cached.version === version && cached.url === url) return cached.value;
     const base = N.query(doc, 'base[href]', false);
     const parsed = base && N.urlParse(N.attr(base, 'href'), url);
@@ -49,7 +49,7 @@ function imageMapHit(el, x, y) {
    DOMString conversion, and do nothing when the document has no HTML body. */
 const docColorGet = (doc, attr) => { const b = doc.body; return b && b.namespaceURI === NSURI[0] && b.localName === 'body' ? N.attr(b, attr) ?? '' : ''; };
 const docColorSet = (doc, attr, value) => { if (typeof value === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string'); value = value === null ? '' : String(value); const b = doc.body; if (b && b.namespaceURI === NSURI[0] && b.localName === 'body') reflectSetAttr(b, attr, value); };
-class Document extends Node { constructor() { if (new.target === HTMLDocument) illegal(); const d = N.newXmlDoc(); Object.setPrototypeOf(d, new.target.prototype); def(d, '__url', 'about:blank'); return d; } }
+class Document extends Node { constructor() { if (new.target === HTMLDocument) illegal(); const d = N.newXmlDoc(undefined, true); Object.setPrototypeOf(d, new.target.prototype); def(d, '__url', 'about:blank'); return d; } }
 unscopable(Document, ['append', 'fullscreen', 'prepend', 'replaceChildren']);
 class HTMLDocument extends Document {}
 class XMLDocument extends Document { constructor() { illegal(); } }
@@ -101,7 +101,7 @@ methods(Document.prototype, {
     get doctype() { for (let c = N.first(this); c; c = N.next(c)) if (N.type(c) === 10) return c; return null; },
     get title() { const t = N.query(this, 'title', false); return t ? N.text(t).replace(/\s+/g, ' ').trim() : ''; },
     set title(v) { let t = N.query(this, 'title', false); if (!t) { const h = this.head; if (!h) return; t = N.create('title', 0); insertNode(h, t, null); } t.textContent = v; },
-    get URL() { return this.__url ?? N.url(); }, get documentURI() { return this.__url ?? N.url(); },
+    get URL() { return this.__url ?? N.url(this); }, get documentURI() { return this.__url ?? N.url(this); },
     get baseURI() { return documentBaseURI(this); },
     get location() { return this === document ? location : null; }, set location(v) { if (this === document) location.href = v; },
     get domain() { const r = N.urlParse(N.url(), null); return r ? r[5] : ''; }, set domain(v) {},
@@ -109,7 +109,7 @@ methods(Document.prototype, {
     get cookie() { return N.cookie(); }, set cookie(v) { v = String(v); if (!/[\x00-\x08\x0a-\x1f\x7f]/.test(v)) N.setCookie(v); },
     get readyState() { return ['loading', 'interactive', 'complete'][N.readyState()]; },
     get characterSet() { return N.charset(this); }, get charset() { return N.charset(this); }, get inputEncoding() { return N.charset(this); }, get contentType() { return this.__ct ?? N.ctype(this) ?? (N.ns(this) === 3 ? 'application/xml' : 'text/html'); },
-    get compatMode() { return N.quirks() ? 'BackCompat' : 'CSS1Compat'; },
+    get compatMode() { return N.quirks(this) ? 'BackCompat' : 'CSS1Compat'; },
     get visibilityState() { return N.hidden() ? 'hidden' : 'visible'; }, get hidden() { return N.hidden(); }, get webkitHidden() { return N.hidden(); }, get prerendering() { return false; },
     get defaultView() { return this === document ? G : null; }, get activeElement() { return N.active() || this.body; },
     get currentScript() { return N.currentScript(); }, get scrollingElement() { return this.documentElement; },
@@ -127,19 +127,18 @@ methods(Document.prototype, {
     createElement(tag, opts) {
         tag = String(tag); if (!validLocalName(tag)) throw new DOMException(`The tag name provided ('${tag}') is not a valid name.`, 'InvalidCharacterError');
         /* XML documents keep the case; only XHTML ones make HTML elements */
-        const xml = N.ns(this) === 3, html = !xml || this.contentType === 'application/xhtml+xml', name = xml ? tag : asciiLower(tag), el = N.create(name, html ? 0 : 3, this); if (N.name(el) !== name) def(el, '__ln', name);
-        if (opts && typeof opts === 'object' && opts.is) N.setAttr(el, 'is', String(opts.is));
-        if (html && registry.byName.has(name)) ceUpgrade(el);
+        const xml = N.ns(this) === 3, html = !xml || this.contentType === 'application/xhtml+xml', name = xml ? tag : asciiLower(tag);
+        const el = ceCreateElement(name, html ? 0 : 3, this, ceIsOption(opts));
+        if (N.name(el) !== name) def(el, '__ln', name);
         return el;
     },
-    createElementNS(ns, q) {
+    createElementNS(ns, q, opts) {
         let pfx, l; [ns, pfx, l] = nsExtract(ns, q, false);
-        const n = NSURI.indexOf(ns), el = N.create(n === 1 || n === 2 ? asciiLower(l) : l, n < 0 ? 3 : n, this);
+        const n = NSURI.indexOf(ns), el = ceCreateElement(n === 1 || n === 2 ? asciiLower(l) : l, n < 0 ? 3 : n, this, ceIsOption(opts), pfx);
         if (N.name(el) !== l) def(el, '__ln', l);
         if (n < 0) def(el, '__nsu', ns);
         if (pfx !== null) def(el, '__pfx', pfx);
         if (n < 0 || pfx !== null || N.name(el) !== l) N.xname(el, n < 0 ? ns : null, pfx, N.name(el) !== l ? l : null);   /* clones keep them */
-        if (n === 0 && pfx === null && registry.byName.has(l)) ceUpgrade(el);
         return el;
     },
     createAttribute(n) {
@@ -165,7 +164,7 @@ methods(Document.prototype, {
     createNodeIterator(root, what = 0xFFFFFFFF, filter = null) { return mkTraversal(NodeIterator, root, what, filter); },
     getElementById(id) { return N.byId(String(id), this); },
     getElementsByName(n) { return nodeList(N.query(this, `[name="${CSS.escape(String(n))}"]`, true)); },
-    importNode(n, deep = undefined) { const r = N.clone(n, !!deep); ceUpgradeTree(r); return r; }, adoptNode(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'adoptNode' on 'Document': parameter 1 is not of type 'Node'."); if (N.type(n) === 9) throw new DOMException('The node provided is a document, which may not be adopted.', 'NotSupportedError'); if (N.type(n) === 11 && N.host(n)) throw new DOMException('The node provided is a shadow root, which may not be adopted.', 'HierarchyRequestError'); if (N.parent(n)) removeNode(n); N.adopt(n, this); return n; },
+    importNode(n, deep = undefined) { if (!N.isNode(n)) throw new TypeError('The imported value must be a Node.'); if (N.type(n) === 9 || (N.type(n) === 11 && N.host(n))) throw new DOMException('A document or shadow root cannot be imported.', 'NotSupportedError'); const r = N.clone(n, !!deep, this); ceUpgradeTree(r); return r; }, adoptNode(n) { if (!N.isNode(n)) throw new TypeError("Failed to execute 'adoptNode' on 'Document': parameter 1 is not of type 'Node'."); if (N.type(n) === 9) throw new DOMException('The node provided is a document, which may not be adopted.', 'NotSupportedError'); if (N.type(n) === 11 && N.host(n)) throw new DOMException('The node provided is a shadow root, which may not be adopted.', 'HierarchyRequestError'); if (N.parent(n)) removeNode(n); N.adopt(n, this); return n; },
     hasFocus() { return true; }, getAnimations() { return waGetAnims(t => N.doc(t) === this && t.isConnected); },
     elementFromPoint(x, y) { hitArgs(arguments, 'elementFromPoint', 'Document'); if (!this.documentElement || this !== document) return null; return hitRetarget(imageMapHit(N.hit(+x, +y), +x, +y), this); },
     caretPositionFromPoint(x, y, opts) {
@@ -228,25 +227,52 @@ methods(Document.prototype, {
     set designMode(v) { const s = String(v).toLowerCase(); if (s === 'on' || s === 'off') designModes.set(this, s); },
     open(a, b, c) {
         if (arguments.length > 2) return G.open(a, b, c);
-        if (this !== document || docOpened.has(this)) return this;
+        if (this !== document) return this;
         if (this.contentType !== 'text/html') throw new DOMException("Failed to execute 'open' on 'Document': Only HTML documents support open().", 'InvalidStateError');
+        ceParserMarkupGuard(this);
         if (N.parserWritePoint()) return this;   /* an active parser script has a nonzero nesting level */
+        resetOpenedDocumentEvents(this);
         N.docOpen();
         while (this.firstChild) this.removeChild(this.firstChild);
-        docOpened.set(this, '');
+        docOpened.set(this, {});
         return this;
     },
     close() {
-        if (this !== document || !docOpened.has(this)) return;
-        const html = docOpened.get(this);
+        if (this !== document) return;
+        ceParserMarkupGuard(this);
+        if (!docOpened.has(this)) return;
         docOpened.delete(this);
-        N.docReparse(html);
+        N.docClose();
     },
     write(...s) { docWriteTo(this, ttWriteText(s, false)); }, writeln(...s) { docWriteTo(this, ttWriteText(s, true)); },
 });
-/* a document script opened (document.open(), or a write once it has loaded): the markup written so far, parsed
-   when it is closed. A write that opened it implicitly closes it in a later task if the script does not. */
+/* Script-created documents keep one live tokenizer across writes. An implicit
+   open closes in a later task unless the script closes or replaces it first. */
 const docOpened = new WeakMap(), designModes = new WeakMap();
+const openedOwnDescriptor = Object.getOwnPropertyDescriptor;
+const openedMapValues = Function.prototype.call.bind(SMap.prototype.values);
+const openedMapClear = Function.prototype.call.bind(SMap.prototype.clear);
+function resetOpenedDocumentEvents(doc) {
+    const nodes = [G, doc];
+    for (let i = 1; i < nodes.length; i++) {
+        const node = nodes[i];
+        for (let child = N.first(node); child; child = N.next(child)) apush(nodes, child);
+        if (N.type(node) === 1) { const shadow = N.shadowOf(node); if (shadow) apush(nodes, shadow); }
+    }
+    for (let i = 0; i < nodes.length; i++) {
+        const target = nodes[i], descriptor = openedOwnDescriptor(target, '__ls');
+        const listeners = descriptor && descriptor.value;
+        if (listeners instanceof SMap) {
+            for (const records of openedMapValues(listeners))
+                for (let j = 0; j < records.length; j++) records[j].removed = true;
+            openedMapClear(listeners);
+        }
+        const realm = N.realmOf(target);
+        if (realm && realm !== REALM) realm.resetOpenedHandlers(target);
+        else resetOpenedHandlers(target);
+    }
+}
+
 /* Text-control commands use the existing selection splice, not the contenteditable engine.
    maxlength limits UTF-16 code units; a truncation must not create half a surrogate pair. */
 function execControlInsert(el, cmd, value) {
@@ -356,12 +382,14 @@ function execData(cmd, val) {
 function docWriteTo(doc, html) {
     if (doc !== document) return;
     if (doc.contentType !== 'text/html') throw new DOMException("Failed to execute 'write' on 'Document': Only HTML documents support write().", 'InvalidStateError');
-    if (docOpened.has(doc)) { docOpened.set(doc, docOpened.get(doc) + html); return; }
+    ceParserMarkupGuard(doc);
+    if (docOpened.has(doc) || N.docStreamWritePoint()) { N.docWrite(html); return; }
     if (N.ignoreWrites()) return;
     if (!N.parserWritePoint()) {
         doc.open();
-        docOpened.set(doc, html);
-        setTimeout(() => doc.close());
+        const opened = docOpened.get(doc);
+        N.docWrite(html);
+        setTimeout(() => { if (docOpened.get(doc) === opened) doc.close(); });
         return;
     }
     docWrite(html);
@@ -383,7 +411,7 @@ function docWrite(html) {
 }
 class DOMImplementation { constructor(key = undefined) { illegal(); } }
 methods(DOMImplementation.prototype, { hasFeature() { return true; }, createHTMLDocument(t = undefined) { const d = N.newDoc(t === undefined ? null : String(t)); Object.setPrototypeOf(d, HTMLDocument.prototype); def(d, '__url', 'about:blank'); return d; }, createDocumentType(n, p, s) { n = String(n); if (/[\t\n\f\r >\x00]/.test(n)) throw new DOMException(`The qualified name provided ('${n}') contains the invalid name-start character.`, 'InvalidCharacterError'); return N.doctype(n, String(p), String(s), this._doc || document); },
-    createDocument(ns, q, dt = null) { const d = N.newXmlDoc(); def(d, '__url', 'about:blank'); if (ns === NSURI[0]) def(d, '__ct', 'application/xhtml+xml'); else if (ns === NSURI[1]) def(d, '__ct', 'image/svg+xml'); q = q == null ? '' : String(q); const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null; if (dt) insertNode(d, dt, null); if (el) insertNode(d, el, null); return d; } });
+    createDocument(ns, q, dt = null) { ns = ns == null || ns === '' ? null : String(ns); const d = N.newXmlDoc(ns === NSURI[0] ? 'application/xhtml+xml' : ns === NSURI[1] ? 'image/svg+xml' : 'application/xml'); def(d, '__url', 'about:blank'); q = q == null ? '' : String(q); const el = q ? Document.prototype.createElementNS.call(d, ns, q) : null; if (dt) insertNode(d, dt, null); if (el) insertNode(d, el, null); return d; } });
 const implementation = Object.create(DOMImplementation.prototype, { _doc: { get() { return document; } } });
 /* a DOMImplementation from another (same-origin) realm makes its nodes and documents in that realm */
 for (const k of ['createHTMLDocument', 'createDocumentType', 'createDocument']) {
