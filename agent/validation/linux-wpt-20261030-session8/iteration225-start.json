@@ -1,0 +1,11 @@
+{
+  "iteration": 11,
+  "candidate": 225,
+  "started_utc": "2026-10-30T15:18:59.793564+00:00",
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Candidate224 local compile type correction; all previously reviewed grid/progress/DOM changes and validation obligations unchanged."
+}

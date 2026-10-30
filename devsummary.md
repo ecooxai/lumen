@@ -1812,3 +1812,9 @@ The fresh native gate passed 143/143 tests, including 117 stretch, 165 MIME and 
 The fresh exact 640-file sample passed 409/640 whole files (63.90625/100) and 9,133/10,540 assertions (86.650854/100), with 373 gains and four prior-pass losses versus 214. All 640 browser exits were zero; harness status remained 624 OK, 15 TIMEOUT and one ERROR. Acceptance is REJECTED: grid-container-percentage-001.html cases 16, 17, 18 and 20 lost accidental passes after correct trailing-whitespace trimming exposed a preexisting fixed-track intrinsic-width bug. Independent resource-valid geometry observations confirmed 80px instead of 100px. Upstream expectations remain unchanged.
 
 Detailed evidence is in session8/iteration223-summary.json, candidate223-production-equivalence.json and qa-frozen640/lumen223. These measured scope percentages are not whole-browser certification.
+
+## Iteration 10 — candidate 224, compile gate rejected
+
+Started 2026-10-30T15:04:14.610941+00:00; ended 2026-10-30T15:17:55.831584+00:00; 13.687011 minutes. Cumulative wall time: 211.997193 minutes. Subagents: repo_baseline, wpt_review, delivery_perf.
+
+The grid regression repair was separately committed at a8c52017 before bounded progress and adjacent-HTML changes at fb44caff. Peer review completed, but the compiler caught a missing local type conversion for the public void-pointer stylesheet field. The build gate scored 0/100 (0/1); no native, WPT or rendering conformance score exists for candidate 224. Source pins remained unchanged, monitors joined, and the original failed build receipt/log are retained. Candidate 225 makes only the local type correction before the same planned validation gates.

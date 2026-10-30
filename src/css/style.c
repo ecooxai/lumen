@@ -6259,10 +6259,11 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
             float value; int unit = prop[0] == 'r' ? MATH_ANGLE : MATH_NUMBER;
             const ComputedStyle *root = el && el->doc && el->doc->html ? el->doc->html->style : NULL;
             if (el && el->doc && el == el->doc->html) root = s;
+            StyleEngine *engine = el && el->doc ? el->doc->stylesheets : NULL;
             LCtx context = { .em = s->font_size, .rem = root ? root->font_size : 16,
                 .font_basis = s, .actual_font = true, .root_font_basis = root,
                 .resolve_font_metrics = true,
-                .used_font_units = el && el->doc && el->doc->stylesheets ? &el->doc->stylesheets->uses_font_units : NULL };
+                .used_font_units = engine ? &engine->uses_font_units : NULL };
             if (css_scalar_math_context(v, unit, context, &value)) {
                 const char *u = unit == MATH_ANGLE ? "deg" : "";
                 if (isnan(value)) sb_printf(&b, "0%s", u);

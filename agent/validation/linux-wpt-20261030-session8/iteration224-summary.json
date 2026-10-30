@@ -1,0 +1,23 @@
+{
+  "iteration": 10,
+  "candidate": 224,
+  "started_utc": "2026-10-30T15:04:14.610941+00:00",
+  "finished_utc": "2026-10-30T15:17:55.831584+00:00",
+  "duration_minutes": 13.687010716666666,
+  "cumulative_minutes": 211.99719306666665,
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "source_commit": "fb44caff2b5e67617245eee5306411b5633a13db",
+  "acceptance": "REJECTED: compile-time void pointer member access; no native or browser tests executed.",
+  "build_gate_score": {
+    "passed": 0,
+    "total": 1,
+    "score_out_of_100": 0
+  },
+  "conformance_score": "Unmeasured for this candidate; previous rejected223 broad sample remains 9133/10540.",
+  "evidence": "build224/receipt.json; ../iteration-224/build.log",
+  "correction": "Use local typed StyleEngine pointer with the existing document/null guard; preserve all failed224 receipts."
+}
