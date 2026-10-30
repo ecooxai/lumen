@@ -4,40 +4,44 @@
   "iteration": 5,
   "score": 100,
   "iteration_quality": 100,
-  "score_note": "Accepted candidate202 parser-options focus:1961/1961 assertions and18/18 whole files. This100/100 applies only to that declared part. The broad640sample last measured380/640; the98/100 whole-browser goal remains unmet.",
+  "score_note": "Candidate205 retains the declared parser-options part:1961/1961 assertions and18/18 whole files. This100/100 is scoped. Ordinary script lifecycle is61/64 assertions and32/35 whole files; overall98/100 remains unmet.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
-  "checkpoint": "caab079d33368e569c828fde86f6408ebf5e2a90",
-  "updated_utc": "2026-10-30T07:22:54.169802+00:00",
+  "checkpoint": "2491c6ef792a713deeb7ccbdeb3df367120ad7f6",
+  "updated_utc": "2026-10-30T07:37:29.704646+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
     [
-      "Accepted parser-options part \u00b7 candidate202",
-      "1961/1961 assertions;18/18 whole upstream files;953 gains vs200;zero losses or changed registrations"
+      "Retained parser-options part \u00b7 candidate205",
+      "1961/1961 assertions;18/18 whole upstream files;no losses or changed registrations;all exits0."
+    ],
+    [
+      "Ordinary script lifecycle \u00b7 candidate205",
+      "61/64 assertions;32/35 whole files;31 gained passes andzero prior WPT losses;five missing registrations recovered. Chromium156:64/64 and35/35."
+    ],
+    [
+      "Stable async subset",
+      "Candidate20512/12 assertions, matching current Chromium156."
+    ],
+    [
+      "Latest native gate \u00b7 candidate205",
+      "140/140 non-URL tests;zero failures orskips;actualexit0 andunchanged binary."
+    ],
+    [
+      "Remaining document input work \u00b7 candidate206",
+      "Two authored immediate-write regressions remain. Frozen72-file baseline20517/73 assertions and14/72 whole files;Chromium15673/73 and72/72.206 source work is in progress."
     ],
     [
       "Broader frozen non-URL640 baseline \u00b7 candidate200",
-      "380/640 whole files (59.375%);8324/10540 assertions. Full-suite coverage and whole-browser98/100 are not certified."
+      "380/640 whole files(59.375%);8324/10540 assertions. Not yet replayed on205."
     ],
     [
-      "Historical Chromium150 on the same640sample",
-      "544/640 whole files (85%);9516/10549 assertions. Current156 controls are recorded separately."
+      "Historical Chromium150 on640sample",
+      "544/640 whole files(85%);9516/10549 assertions. Current156 controls are recorded separately."
     ],
     [
-      "Stable async001\u2013011 reference",
-      "Candidate2024/12 assertions; Chromium15612/12. A35-file ordinary lifecycle cohort is frozen for baseline203 and candidate204."
-    ],
-    [
-      "Candidate203",
-      "Sourcefc436e1; immutable build/startup passed; additional security-probe work was stopped by automated screening and is not claimed validated."
-    ],
-    [
-      "Candidate204",
-      "Resumable blocking parser, async/defer/load lifecycle, cancellation and preparation snapshots are under peer review. No candidate204 test result yet."
-    ],
-    [
-      "Latest complete native gate \u00b7 candidate201",
-      "140/140 non-URL tests; later candidates still require their appropriate final gate."
+      "Scope and publication",
+      "FullWPT andwhole-browser98/100 are not certified. The publicsource archive remains the earlier reviewed200 checkpoint."
     ]
   ],
   "coverage": "Frozen selected 640 HTTP/window cases; URL conformance deferred. Chromium: 544/640 full cases and 9,516/10,549 assertions. This is not the complete WPT suite.",
@@ -47,7 +51,7 @@
     "URL conformance remains deferred. All failure denominators and reference differences remain visible.",
     "Surge currently has no authenticated session; existing HTTPS progress and reviewed GitHub Pages publication remain available."
   ],
-  "active_iteration": 205,
+  "active_iteration": 206,
   "accepted_binary_sha256": "6d6f52aefc972765306567062b78a5413f68acc5050fed336b30d1998aeb7bf8",
   "accepted_binary_scope": "Candidate202,18wholeparser-optionfiles and1961assertions. Neighbor/security/broadcomparison remains separate.",
   "agent_session": "active",
@@ -414,9 +418,9 @@
     "state": "build sealed; independent runtime acceptance pending"
   },
   "public_report_url": "https://ecooxai.github.io/lumen/",
-  "session_iteration": 5,
+  "session_iteration": 6,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 202,
+  "accepted_iteration": 205,
   "accepted_focused_results": {
     "native": "140/140",
     "network": "317/317",
@@ -1342,7 +1346,7 @@
     "private_site": "https://lumen-linux-gpt6astra-agents-rubywebterm.my-team-8435.chatgpt.site",
     "scope": "692 exact source files plus five metadata files; clean public-history bundle is separately downloadable; no private working history."
   },
-  "overall_result_label": "98/100 goal unmet",
+  "overall_result_label": "98/100 whole-browser goal unmet",
   "selected_case_score": 59.375,
   "source_archive_tested_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
   "final_release": {

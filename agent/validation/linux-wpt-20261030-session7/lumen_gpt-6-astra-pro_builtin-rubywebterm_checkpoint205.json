@@ -1,0 +1,137 @@
+{
+  "title": "Lumen Linux candidate205 measured non-URL checkpoint",
+  "created_utc": "2026-10-30T07:37:29.704646+00:00",
+  "model": "GPT-6 Astra Pro",
+  "agents": [
+    "builtin integration",
+    "builtin engine_review",
+    "builtin async_conformance"
+  ],
+  "tools": [
+    "RubyWebterm",
+    "guarded native WPT runner",
+    "Chrome for Testing156"
+  ],
+  "source_commit": "2491c6ef792a713deeb7ccbdeb3df367120ad7f6",
+  "binary_sha256": "14f2db0e87e1107388c4d3a6c8acd6c10a8d0c3c1b849ba0ca42c94624debad4",
+  "source_manifest_sha256": "4c676376ac04acf4835fd99ac8630d23c477d77e1fb6fd6a7c0efdc01dc355f6",
+  "build": {
+    "exit_code": 0,
+    "startup_exit_code": 0,
+    "started_utc": "2026-10-30T07:22:54.261806+00:00",
+    "finished_utc": "2026-10-30T07:23:44.346790+00:00",
+    "duration_seconds": 50.085,
+    "source_unchanged": true,
+    "resource_samples_1s": 49,
+    "cpu_percent_median": 155.442,
+    "cpu_percent_max": 199,
+    "peak_summed_rss_mb": 744.554
+  },
+  "native_non_url": {
+    "pass": 140,
+    "total": 140,
+    "fail": 0,
+    "skip": 0,
+    "exit_code": 0,
+    "duration_seconds": 81.063,
+    "resource_samples_1s": 80,
+    "cpu_percent_median": 13.994,
+    "cpu_percent_max": 54,
+    "peak_summed_rss_mb": 229.093
+  },
+  "upstream_parser_options_retention": {
+    "whole_files_pass": 18,
+    "whole_files_total": 18,
+    "assertions_pass": 1961,
+    "assertions_total": 1961,
+    "prior_pass_losses": 0,
+    "missing_or_added_registrations": 0,
+    "completed_utc": "2026-10-30T07:28:15.414997+00:00"
+  },
+  "upstream_ordinary_script_lifecycle": {
+    "manifest_sha256": "090324ac9aaec4ae3525aee281adb1ddecb79b0fddbb4db13a15558e5ee113c7",
+    "baseline203": {
+      "whole_files_pass": 13,
+      "whole_files_total": 35,
+      "assertions_pass": 30,
+      "reported_assertions": 59,
+      "missing_registrations": 5
+    },
+    "candidate205": {
+      "whole_files_pass": 32,
+      "whole_files_total": 35,
+      "assertions_pass": 61,
+      "assertions_total": 64
+    },
+    "chromium156": {
+      "version": "156.0.8078.80",
+      "whole_files_pass": 35,
+      "whole_files_total": 35,
+      "assertions_pass": 64,
+      "assertions_total": 64
+    },
+    "exact_gained_passes": 31,
+    "prior_pass_losses": 0,
+    "recovered_registrations": 5,
+    "comparison_sha256": "43a7c7a2e84ec44c71ec6cccc8ef5a75224ee0e06e12bf96360fc1e5ad43c44a",
+    "original_async_subset": {
+      "candidate205": 12,
+      "chromium156": 12,
+      "total": 12
+    }
+  },
+  "separate_authored_diagnostics": {
+    "baseline203": {
+      "pass": 89,
+      "total": 112
+    },
+    "candidate205": {
+      "pass": 105,
+      "total": 112
+    },
+    "chromium156": {
+      "pass": 109,
+      "total": 112
+    },
+    "candidate205_prior_pass_losses": 2,
+    "minimal_parser_progress": {
+      "baseline203": 9,
+      "candidate205": 10,
+      "chromium156": 12,
+      "total": 12
+    },
+    "navigation_positive_and_cancellation_controls": {
+      "candidate205": 16,
+      "chromium156": 16,
+      "total": 16
+    }
+  },
+  "new_frozen_document_streaming_baseline": {
+    "whole_files": 72,
+    "assertions": 73,
+    "candidate205_whole_files_pass": 14,
+    "candidate205_assertions_pass": 17,
+    "chromium156_whole_files_pass": 72,
+    "chromium156_assertions_pass": 73,
+    "manifest_sha256": "2d0c8c16252d89cf92a5b5ba60750a2197efad28731b88bbc5973b161b58fa84"
+  },
+  "important_changes": [
+    "Classic script fetches yield to the event loop through the existing bounded network pool.",
+    "Async and ordered dynamic scripts, load gates and iframe continuations use generation-aware lifecycle handling.",
+    "Preparation snapshots preserve source classification; obsolete document generations cancel requests and cannot affect replacement loading."
+  ],
+  "remaining_limits": [
+    "Two authored immediate-document-write checks regressed and are being fixed in candidate206.",
+    "Initial HTML is still parsed eagerly; future DOM visibility and some document-written token continuation remain incorrect.",
+    "The 640-file non-URL comparison has not been replayed on candidate205; its last measured Lumen200 whole-file result is380/640.",
+    "Scores apply only to declared cohorts. Full WPT and98/100 whole-browser conformance are not certified.",
+    "No additional security-probe acceptance is claimed. URL conformance remains deferred."
+  ],
+  "validation_integrity": {
+    "immutable_candidate": true,
+    "upstream_sources_unchanged": true,
+    "profiles_removed": true,
+    "actual_native_exit_codes_recorded": true,
+    "no_owned_test_or_monitor_processes_remaining": true
+  }
+}
