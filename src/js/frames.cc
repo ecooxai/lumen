@@ -552,7 +552,7 @@ static bool frames_loading(JsCtx *c) {
     for (const auto &job : c->mod_jobs) if (job->script && job->generation == c->parser_generation) return true;
     if (js_load_blocked && js_load_blocked(c)) return true;
     for (FrameLoad *l : g_loads) if (l->p == c) for (JsCtx *k : c->kids) if (!k->dead && k->id == l->kid && k->frame_el == l->f) return true;
-    for (JsCtx *k : c->kids) if (!k->dead && k->load_deferred) return true;
+    for (JsCtx *k : c->kids) if (!k->dead && (k->frame_reload_pending || k->load_deferred)) return true;
     return false;
 }
 void js_fire_load(JsCtx *c) {
@@ -581,7 +581,7 @@ static void frame_done(NetRequest *rq, NetResponse *r, void *ud) {
     FrameLoad *l = static_cast<FrameLoad *>(ud);
     g_loads.erase(std::remove(g_loads.begin(), g_loads.end(), l), g_loads.end());
     JsCtx *p = l->p, *blank = nullptr;
-    if (p && !p->dead) for (JsCtx *k : p->kids) if (!k->dead && k->id == l->kid && k->frame_el == l->f) blank = k;
+    if (p && !p->dead) for (JsCtx *k : p->kids) if (!k->dead && !k->frame_reload_pending && k->id == l->kid && k->frame_el == l->f) blank = k;
     if (blank) {
         std::string key = blank->frame_src;
         bool ok = r && r->status > 0;
@@ -696,12 +696,28 @@ static void collect_iframes(Node *root, std::vector<Node *> &out) {
     }
 }
 
+/* Setting a source attribute is a navigation request, including an equal-value
+   set. Keep it separate from the source text used to detect DOM-tree changes.
+   Work is queued for the ordinary frame scan; no author callback runs inside
+   an attribute mutation, and an obsolete response cannot commit meanwhile. */
+void frames_attribute_changed(Node *frame, const char *name, const char *ns) {
+    if (!frame || ns || !is_iframe(frame) || !(frame->flags & NF_CONNECTED) || !frame->doc) return;
+    bool source = !strcmp(name, "src"), source_document = !strcmp(name, "srcdoc");
+    if (!source && !source_document) return;
+    if (source_document && frame->tag != A_iframe) return;
+    if (source && frame->tag == A_iframe && node_has_attr(frame, "srcdoc")) return;
+    if (JsCtx *child = js_frame_ctx(frame)) {
+        child->frame_reload_pending = true;
+        frame->doc->frame_version++;
+    }
+}
+
 void frames_scan(JsCtx *c) {
     /* Not per DOM version: a page animating thousands of nodes would walk the whole tree every tick. */
     if (c->dead || c->doc->frame_version == c->frame_scan_ver) return;
     c->frame_scan_ver = c->doc->frame_version;
     for (JsCtx *k : std::vector<JsCtx *>(c->kids))
-        if (!k->dead && (!(k->frame_el->flags & NF_CONNECTED) || k->frame_el->doc != c->doc || src_key(c, k->frame_el) != k->frame_src)) frame_kill(k);
+        if (!k->dead && (k->frame_reload_pending || !(k->frame_el->flags & NF_CONNECTED) || k->frame_el->doc != c->doc || src_key(c, k->frame_el) != k->frame_src)) frame_kill(k);
     std::vector<Node *> todo;
     collect_iframes(&c->doc->node, todo);
     for (Node *n : todo) if (!js_frame_ctx(n)) frame_start(c, n);

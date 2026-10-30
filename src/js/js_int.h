@@ -195,6 +195,7 @@ struct JsCtx {
     uint64_t frame_scan_ver = ~0ull;
     void *host_ud = nullptr;          /* child host data returned by frame_open */
     std::string frame_src;
+    bool frame_reload_pending = false; /* an attribute assignment starts navigation even when its value is unchanged */
     std::unordered_map<std::string, v8::Global<v8::Module>> mods;   /* ES module map, keyed by URL */
     ModErrorMap mod_errors;
     std::unordered_multimap<int, std::string> mod_url;              /* module identity hash -> key */
@@ -252,6 +253,7 @@ bool js_context_fully_active(JsCtx *c);
 std::string ctx_origin(JsCtx *c);
 std::string ctx_origin_key(JsCtx *c);   /* for same-origin checks: ctx_origin, but each file: document is its own origin, as in Chrome */
 void frames_scan(JsCtx *c);
+void frames_attribute_changed(Node *frame, const char *name, const char *ns);
 void frames_inserted(JsCtx *c, Node *root);
 void frames_forget(JsCtx *c);
 void frames_parser_tick(JsCtx *c);

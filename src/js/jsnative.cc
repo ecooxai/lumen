@@ -249,8 +249,25 @@ static std::string aval(v8::Isolate *iso, v8::Local<v8::Value> v) {
     for (size_t i = s.find('\0'); i != std::string::npos; i = s.find('\0', i + 2)) s.replace(i, 1, "\xC0\x80");
     return s;
 }
-FN(setAttr) { CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]); node_set_attr(n, atom(k.c_str()), v.c_str()); if (jsg_is_script(n) && (k == "src" || k == "href" || k == "xlink:href")) js_run_inserted(c, n); }
-FN(rmAttr) { CTX; ARGN(n, 0); std::string k = S(1); if (node_has_attr(n, k.c_str())) node_remove_attr(n, k.c_str()); }
+FN(setAttr) {
+    CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]);
+    node_set_attr(n, atom(k.c_str()), v.c_str());
+    if (n->type == NODE_ELEMENT && n->ns == NS_HTML && (n->tag == A_iframe || n->tag == A_frame)) {
+        int i = node_attr_qindex(n, k.c_str());
+        if (i >= 0) frames_attribute_changed(n, n->attrs[i].name, n->attrs[i].ns);
+    }
+    if (jsg_is_script(n) && (k == "src" || k == "href" || k == "xlink:href")) js_run_inserted(c, n);
+}
+FN(rmAttr) {
+    CTX; ARGN(n, 0); std::string k = S(1);
+    if (node_has_attr(n, k.c_str())) {
+        int i = node_attr_qindex(n, k.c_str());
+        const char *name = i >= 0 ? n->attrs[i].name : k.c_str();
+        const char *ns = i >= 0 ? n->attrs[i].ns : nullptr;
+        node_remove_attr(n, k.c_str());
+        frames_attribute_changed(n, name, ns);
+    }
+}
 /* the DOM's exact attribute lookups (qualified name without case folding, or namespace + local name); an ns of null
    or "" is no namespace */
 static const char *ns_atom(v8::Isolate *iso, v8::Local<v8::Value> v) {
@@ -261,7 +278,17 @@ static const char *ns_atom(v8::Isolate *iso, v8::Local<v8::Value> v) {
 static bool attr_host(Node *n) { return n->type == NODE_ELEMENT || n->type == NODE_DOCTYPE; }
 FN(attrQ) { CTX; ARGN(n, 0); std::string k = S(1); int i = attr_host(n) ? node_attr_qindex(n, k.c_str()) : -1; RET(nstr(iso, i >= 0 ? n->attrs[i].value : nullptr)); }
 FN(attrNS) { CTX; ARGN(n, 0); std::string l = S(2); int i = attr_host(n) ? node_attr_ns_index(n, ns_atom(iso, a[1]), l.c_str()) : -1; RET(nstr(iso, i >= 0 ? n->attrs[i].value : nullptr)); }
-FN(setAttrQ) { CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]); if (attr_host(n)) node_set_attr_at(n, node_attr_qindex(n, k.c_str()), atom(k.c_str()), v.c_str(), nullptr, nullptr); if (jsg_is_script(n) && (k == "src" || k == "href" || k == "xlink:href")) js_run_inserted(c, n); }
+FN(setAttrQ) {
+    CTX; ARGN(n, 0); std::string k = S(1), v = aval(iso, a[2]);
+    if (attr_host(n)) {
+        node_set_attr_at(n, node_attr_qindex(n, k.c_str()), atom(k.c_str()), v.c_str(), nullptr, nullptr);
+        if (n->type == NODE_ELEMENT && n->ns == NS_HTML && (n->tag == A_iframe || n->tag == A_frame)) {
+            int i = node_attr_qindex(n, k.c_str());
+            if (i >= 0) frames_attribute_changed(n, n->attrs[i].name, n->attrs[i].ns);
+        }
+    }
+    if (jsg_is_script(n) && (k == "src" || k == "href" || k == "xlink:href")) js_run_inserted(c, n);
+}
 FN(setAttrNS) {   /* (el, ns, prefix, local, value): an existing attribute keeps its prefix */
     CTX; ARGN(n, 0);
     if (!attr_host(n)) return;
@@ -270,15 +297,26 @@ FN(setAttrNS) {   /* (el, ns, prefix, local, value): an existing attribute keeps
     const char *pfx = a[2]->IsNullOrUndefined() ? nullptr : atom(S(2).c_str());
     if (pfx) q = std::string(pfx) + ":" + l;
     node_set_attr_at(n, node_attr_ns_index(n, ns, l.c_str()), atom(q.c_str()), v.c_str(), ns, pfx);
+    frames_attribute_changed(n, l.c_str(), ns);
     if (jsg_is_script(n) && ((!ns && (l == "src" || l == "href")) || (ns && !strcmp(ns, "http://www.w3.org/1999/xlink") && l == "href"))) js_run_inserted(c, n);
 }
-FN(rmAttrQ) { CTX; ARGN(n, 0); std::string k = S(1); int i = attr_host(n) ? node_attr_qindex(n, k.c_str()) : -1; if (i >= 0) node_remove_attr_at(n, i); RET(i >= 0); }
+FN(rmAttrQ) {
+    CTX; ARGN(n, 0); std::string k = S(1);
+    int i = attr_host(n) ? node_attr_qindex(n, k.c_str()) : -1;
+    if (i >= 0) {
+        const char *name = n->attrs[i].name, *ns = n->attrs[i].ns;
+        node_remove_attr_at(n, i);
+        frames_attribute_changed(n, name, ns);
+    }
+    RET(i >= 0);
+}
 FN(rmAttrNS) {   /* returns the removed attribute's qualified name, or null */
     CTX; ARGN(n, 0); std::string l = S(2);
     int i = attr_host(n) ? node_attr_ns_index(n, ns_atom(iso, a[1]), l.c_str()) : -1;
     if (i < 0) { a.GetReturnValue().SetNull(); return; }
-    const char *q = n->attrs[i].name;
+    const char *q = n->attrs[i].name, *ns = n->attrs[i].ns;
     node_remove_attr_at(n, i);
+    frames_attribute_changed(n, l.c_str(), ns);
     RET(jstr(iso, q));
 }
 FN(attrsNS) {   /* [qualified name, value, namespace, prefix, ...] */

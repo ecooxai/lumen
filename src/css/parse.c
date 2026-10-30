@@ -1061,19 +1061,40 @@ bool css_supports(const char *cond) {
 /* ---------------- stylesheets ---------------- */
 typedef struct { StyleSheet *sh; const MediaCtx *mc; uint32_t order; ContainerCond *cq; MediaCond *mq; } PCtx;
 
-static size_t skip_block(const char *s, size_t i, size_t n) {
-    /* s[i] == '{' ; returns index after matching '}' */
-    int depth = 0; char q = 0;
-    for (; i < n; i++) {
-        char c = s[i];
-        if (q) { if (c == '\\') i++; else if (c == q) q = 0; continue; }
-        if (c == '/' && i + 1 < n && s[i + 1] == '*') { const char *e = NULL; for (size_t k = i + 2; k + 1 < n; k++) if (s[k] == '*' && s[k + 1] == '/') { e = s + k; break; } i = e ? (size_t)(e - s) + 1 : n; continue; }
-        if (c == '\\') { i++; continue; }
-        if (c == '"' || c == '\'') q = c;
-        else if (c == '{') depth++;
-        else if (c == '}') { if (--depth == 0) return i + 1; }
+/* Consume a CSS simple block, respecting the nesting of every block type.
+ * An unmatched closing token inside a different block is not its terminator. */
+static size_t skip_component_block(CLexer *l, int closing) {
+    VEC(int) ends = {0}; vec_push(ends, closing);
+    while (ends.n) {
+        CTok t = clex_next(l); int type = t.type; free(t.str);
+        if (type == CT_EOF) break;
+        if (type == CT_FUNC || type == CT_LPAREN) vec_push(ends, CT_RPAREN);
+        else if (type == CT_LBRACK) vec_push(ends, CT_RBRACK);
+        else if (type == CT_LBRACE) vec_push(ends, CT_RBRACE);
+        else if (type == ends.v[ends.n - 1]) ends.n--;
     }
-    return n;
+    vec_free(ends); return l->i;
+}
+static size_t skip_block(const char *s, size_t i, size_t n) {
+    CLexer l; clex_init(&l, s, n); l.i = i + 1;
+    return skip_component_block(&l, CT_RBRACE);
+}
+/* A custom property's value can contain curly blocks. They belong to the
+ * declaration and must not be interpreted as nested qualified rules. */
+static size_t custom_declaration_end(const char *body, size_t start, size_t n) {
+    CLexer l; clex_init(&l, body, n); l.i = start; CTok t;
+    do { t = clex_next(&l); if (t.type == CT_WS) free(t.str); } while (t.type == CT_WS);
+    bool custom = t.type == CT_IDENT && t.str && t.str[0] == '-' && t.str[1] == '-';
+    free(t.str); if (!custom) return start;
+    do { t = clex_next(&l); if (t.type == CT_WS) free(t.str); } while (t.type == CT_WS);
+    bool colon = t.type == CT_COLON; free(t.str); if (!colon) return start;
+    for (;;) {
+        t = clex_next(&l); int type = t.type; free(t.str);
+        if (type == CT_EOF || type == CT_SEMI) return l.i;
+        if (type == CT_FUNC || type == CT_LPAREN) skip_component_block(&l, CT_RPAREN);
+        else if (type == CT_LBRACK) skip_component_block(&l, CT_RBRACK);
+        else if (type == CT_LBRACE) skip_component_block(&l, CT_RBRACE);
+    }
 }
 
 static void add_rules(PCtx *c, const char *prelude, DeclList *decls) {
@@ -1119,7 +1140,15 @@ static void parse_style_block(PCtx *c, const char *sel, const char *body, size_t
     SB decls; sb_init(&decls);
     size_t i = 0, st = 0;
     while (i < bn) {
+        if (i == st) {
+            size_t end = custom_declaration_end(body, st, bn);
+            if (end > st) { sb_put(&decls, body + st, end - st); i = st = end; continue; }
+        }
         char ch = body[i];
+        if (ch == '/' && i + 1 < bn && body[i + 1] == '*') {
+            i += 2; while (i + 1 < bn && !(body[i] == '*' && body[i + 1] == '/')) i++;
+            i = i + 1 < bn ? i + 2 : bn; continue;
+        }
         if (ch == '\\') { i += 2; continue; }
         if (ch == '"' || ch == '\'') { char q = ch; i++; while (i < bn && body[i] != q) { if (body[i] == '\\') i++; i++; } i++; continue; }
         if (ch == '(') { i = find_close_paren(body, i + 1, bn) + 1; continue; }

@@ -666,6 +666,20 @@ static void custom_resolve_values(ComputedStyle *style, const ComputedStyle *par
     }
     hm_free(&r.entries, NULL); vec_free(values); vec_free(r.stack);
 }
+/* CSS-wide values are dispatched by the existing keyword paths, not by the
+ * invalid-at-computed-value fallback. Full rule/layer rollback still requires
+ * cascade provenance beyond this value parser. */
+static const char *var_wide_keyword(const char *value) {
+    static const char *const names[] = { "initial", "inherit", "unset", "revert", "revert-layer", "revert-rule" };
+    CLexer l; clex_init(&l, value, strlen(value)); CTok first, end;
+    do { first = clex_next(&l); if (first.type == CT_WS) free(first.str); } while (first.type == CT_WS);
+    do { end = clex_next(&l); if (end.type == CT_WS) free(end.str); } while (end.type == CT_WS);
+    const char *keyword = NULL;
+    if (first.type == CT_IDENT && first.str && end.type == CT_EOF)
+        for (size_t i = 0; i < sizeof names / sizeof names[0]; i++)
+            if (str_ieq(first.str, names[i])) { keyword = names[i]; break; }
+    free(first.str); free(end.str); return keyword;
+}
 /* Convert tokenizer-skipped comments into spaces for native value parsers;
  * this preserves distinct tokens after var() substitution. */
 static char *var_parser_text(const char *value) {
@@ -1986,11 +2000,12 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     if (css_value_has_var(v)) {
         subst = subst_vars(v, st, 0);
         if (subst && !css_math_spacing_valid(subst)) { free(subst); subst = NULL; }
-        /* A winning pending-substitution declaration replaces lower cascade
-         * values even when substitution or its final property grammar fails. */
-        css_apply_decl(st, par, prop, "unset", e, el);
+        /* A failed substitution or property grammar takes unset; recognized
+         * CSS-wide keywords keep their existing dedicated dispatch. */
+        const char *wide = subst ? var_wide_keyword(subst) : NULL;
+        if (!wide) css_apply_decl(st, par, prop, "unset", e, el);
         if (!subst) return;
-        char *parsed = var_parser_text(subst); free(subst); subst = parsed;
+        char *parsed = wide ? xstrdup(wide) : var_parser_text(subst); free(subst); subst = parsed;
         v = subst;
     }
     char *vbuf = xstrdup(v); char *val = str_trim(vbuf);
