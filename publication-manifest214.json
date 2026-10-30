@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "candidate": 214,
+  "parent_pages_commit": "92408349535787e3c6d16632c7678799dc144930",
+  "public_source_commit": "5c0e775cfad2084ab5b8107837fe98275d54b35e",
+  "public_source_tree": "09082da1bc88eaabd0622b12f9488d7df528a60f",
+  "tested_source_commit": "ab44cc7f825279391a0f193e0b8a10b5ab151eb4",
+  "archive_sha256": "b3cd72554339cafd84d4e0568272257f6852a4acc59b653ff79bdd2aaf6c88d8",
+  "archive_bytes": 9433743,
+  "offline_bundle_verified": true,
+  "export_rebuild_performed": false,
+  "source_qualification_sha256": "2b56bc0e41564b20035155c8d8f88b42fc9fa3562943f11d0d4f5b0cd0ee3625",
+  "files": [
+    {
+      "path": "candidate205.html",
+      "sha256": "2eda54e095417a51b4bfcd33ae884bc72ce81cb23b7e6dec77d11de68ace73f7",
+      "bytes": 6802
+    },
+    {
+      "path": "index.html",
+      "sha256": "04ede4c165bb678e8f95091fe3ae16fe82d9235b191fcd0c1f4c945553feaeac",
+      "bytes": 12542
+    },
+    {
+      "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint214.json",
+      "sha256": "a2f0408112b65889015f5a19be4b54ce309f02a019b17d093a041485edc6d572",
+      "bytes": 14204
+    },
+    {
+      "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_nonurl640_final214.json",
+      "sha256": "33864b6a5d2538f631e23483bba4584cd3492f3f4bd6b810aca1b169cb1f24a5",
+      "bytes": 5312
+    },
+    {
+      "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_report214.md",
+      "sha256": "3db97168e1f4075e9a83b9e8acc286894b6a63f4e0d2d90c44da1042f5fe28ac",
+      "bytes": 7140
+    },
+    {
+      "path": "lumen_gpt-6-astra-pro_builtin-rubywebterm_source214.tar.gz",
+      "sha256": "b3cd72554339cafd84d4e0568272257f6852a4acc59b653ff79bdd2aaf6c88d8",
+      "bytes": 9433743
+    },
+    {
+      "path": "showcase214.html",
+      "sha256": "04ede4c165bb678e8f95091fe3ae16fe82d9235b191fcd0c1f4c945553feaeac",
+      "bytes": 12542
+    },
+    {
+      "path": "source-inclusion-manifest.json",
+      "sha256": "506383179c3667536bc4c9411868dec7c1264b41c8f0a6c012b469dacfe567ae",
+      "bytes": 184331
+    },
+    {
+      "path": "source-inclusion-manifest205.json",
+      "sha256": "e4da2d3bd5e8b59cf6ea76b6fb9b158d78bd8f300e124f90d8d5350f4de6720c",
+      "bytes": 183931
+    },
+    {
+      "path": "source-qualification214.json",
+      "sha256": "2b56bc0e41564b20035155c8d8f88b42fc9fa3562943f11d0d4f5b0cd0ee3625",
+      "bytes": 11853
+    },
+    {
+      "path": "src-candidate205.tar.gz",
+      "sha256": "56dd33ca4808da1dcc1f6b8ba0f377b8d855a660ef4dd0e704da2fdf6e3bacaf",
+      "bytes": 9359280
+    },
+    {
+      "path": "src.tar.gz",
+      "sha256": "b3cd72554339cafd84d4e0568272257f6852a4acc59b653ff79bdd2aaf6c88d8",
+      "bytes": 9433743
+    }
+  ],
+  "capture_video_pending": true,
+  "created_utc": "2026-10-30T10:44:32.127731+00:00"
+}
