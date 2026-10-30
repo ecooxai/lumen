@@ -1555,3 +1555,15 @@ Scope frozen before production edits in complete upstream clone (9 files) and te
 Isolated native ownership probe ran 2026-10-30 09:17:13.471441–09:17:20.552051 UTC (7.081 s): compilation and execution exit 0, AddressSanitizer and UndefinedBehaviorSanitizer with leak detection enabled; all source hashes unchanged. Directly adopted template fragments, nested templates, shadow descendants, cloned documents, duplicate retirement and host ancestry passed; live nodes returned from 0 to 0. This probe is separate from the unchanged 140-test native denominator. Fixture SHA256 869f015b6f9c5923f3cad826208482cfc8d969e7d08852340b3dc66ac130191a. Source peer reviews complete; build and WPT results pending. Scoped quality is unscored until measured.
 
 Ledger update UTC: 2026-10-30T09:20:31.855490+00:00. Elapsed session minutes: 174.348.
+
+### Iteration 10 measured outcome — acceptance blocked
+
+Candidate 210 source 04787efb7cd2f3965d1dadbe7d3bd70290ba9cac; executable SHA256 33779e33e35bc23267a46dc80b062e9c7c6c37fcd93f88ab985258039ce7feba; source manifest 5ca5a29559e4cb12824dc3dfd0e8210d1f07e2e243ed5843b1c75d33dd5eca6e. Build/startup 2026-10-30 09:20:54.241583–09:22:19.356746 UTC, 85.115 s, both exits 0 and workers drained. Independent upstream gates: both prior regressions 5/5, custom-element parser 49/50 and 12/13 whole files, creation 64/64 and 7/7, internal is-state 26/26, clone 156/157 and 8/9, template/adoption 50/50 and 12/12. No prior passing assertion or registration lost in these cohorts. The selected template/adoption scope scores 100/100; this is not whole-browser acceptance.
+
+Native gate 09:23:06.845177–09:24:48.926009 UTC, 102.081 s, exit 8: 138/140 passed. Both failures are existing js_node_lifetime_root/child assertions requiring retired child-tree release before js_free returns. Candidate 210 is not accepted. Full failed receipts remain immutable. Automatic approval review rejected printing complete internal build receipts; permitted field-level hash/status/time checks succeeded without exporting those private payloads.
+
+## Iteration 11 — restore prompt native retirement cleanup
+
+A narrow three-file correction separates retired document resources/trees from metadata lifetime. It first retires every document on the Page, releases all non-root resource references, then detaches retired trees by releasing only their parent ownership references. The Page tree/resources survive sleep; metadata survives until final graph destruction. No tests or expectations changed. Independent peer review and a separate ASan/UBSan/leak probe verify a Page-held reference to a retired node, repeated cleanup, prompt tree-release callbacks, and final live nodes 0→0. Probe 09:29:22.583411–09:29:27.694696 UTC, 5.111 s, compile/run exits 0, source hashes unchanged; fixture SHA256 44d7d724c1b7853d814538825788d59c4576516b23d893805dd96f73b64dea76. Build/native/WPT acceptance pending. Agents remain integration, engine_review and async_conformance.
+
+Ledger update UTC: 2026-10-30T09:30:13.483410+00:00.

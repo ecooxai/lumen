@@ -1,13 +1,13 @@
 {
   "title": "Lumen Linux \u00b7 parser options and script lifecycle",
-  "phase": "building candidate 210: native document and template ownership",
+  "phase": "candidate 211: correct native child-tree cleanup before acceptance",
   "iteration": 7,
-  "score": 96,
+  "score": 100,
   "iteration_quality": 100,
-  "score_note": "Candidate 209 parser custom-element scope: 48/50 assertions. Overall 98/100 is not established.",
+  "score_note": "Candidate 210 template/adoption part: 50/50 assertions. Native138/140 blocks acceptance; 211 correction is being validated.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
-  "checkpoint": "Candidate 209 targeted gates verified; 210 ownership sanitizer probe passed; browser validation pending.",
-  "updated_utc": "2026-10-30T09:20:31.855490+00:00",
+  "checkpoint": "210 creation64/64 and template50/50; native lifetime regression found and corrected in211; validation pending.",
+  "updated_utc": "2026-10-30T09:30:13.483410+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
@@ -51,7 +51,7 @@
     "URL conformance remains deferred. All failure denominators and reference differences remain visible.",
     "Surge currently has no authenticated session; existing HTTPS progress and reviewed GitHub Pages publication remain available."
   ],
-  "active_iteration": 210,
+  "active_iteration": 211,
   "accepted_binary_sha256": "6d6f52aefc972765306567062b78a5413f68acc5050fed336b30d1998aeb7bf8",
   "accepted_binary_scope": "Candidate202,18wholeparser-optionfiles and1961assertions. Neighbor/security/broadcomparison remains separate.",
   "agent_session": "active",
@@ -418,7 +418,7 @@
     "state": "build sealed; independent runtime acceptance pending"
   },
   "public_report_url": "https://ecooxai.github.io/lumen/",
-  "session_iteration": 10,
+  "session_iteration": 11,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
   "accepted_iteration": 209,
   "accepted_focused_results": {
@@ -1441,7 +1441,7 @@
     "previously_reported_failing_assertions_missing_so_far": 1,
     "complete_result_pending": true
   },
-  "testing_iteration": 210,
+  "testing_iteration": 211,
   "fixed640_baseline200": {
     "fully_passing_files": 380,
     "files": 640,
