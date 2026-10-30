@@ -1558,6 +1558,9 @@ void js_free(JsCtx *c) {
      * the root and let doc_free release the whole ownership graph in two
      * phases; no owner metadata can disappear before another tree's nodes. */
     for (Document *d : docs) if (d != root_document) doc_retire_owned(root_document, d);
+    /* Drain every retired document's native resource references before any
+     * retired tree is released; the Page's own DOM/resources remain alive. */
+    doc_clear_retired_trees(root_document);
     if (child_context) doc_free(root_document);
 }
 

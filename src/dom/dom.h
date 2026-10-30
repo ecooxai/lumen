@@ -139,6 +139,7 @@ Document *doc_new(const char *url);
 void doc_free(Document *d);
 Document *doc_template_contents_owner(Document *d);
 void doc_retire_owned(Document *owner, Document *retired);
+void doc_clear_retired_trees(Document *root);
 void node_adopt_document(Node *n, Document *d);
 void doc_capture_parser_meta(Document *target, const Document *parsed);
 Node *node_new_element(Document *d, const char *tag, int ns);

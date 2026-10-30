@@ -436,11 +436,7 @@ static void doc_list_add(DocumentList *list, Document *d) {
     for (int i = 0; i < list->n; i++) if (list->v[i] == d) return;
     vec_push(*list, d);
 }
-void doc_free(Document *root) {
-    /* Adopted template contents can still be held by another document's tree.
-     * Keep every owner alive until all trees and retained node references in
-     * this retirement group have been released. Self/duplicate associations
-     * are harmless, and a sleeping Page keeps its DOM until the caller retires it. */
+static DocumentList doc_owned_documents(Document *root) {
     DocumentList documents = {0};
     doc_list_add(&documents, root);
     for (int i = 0; i < documents.n; i++) {
@@ -448,26 +444,47 @@ void doc_free(Document *root) {
         doc_list_add(&documents, d->template_contents_owner);
         for (int j = 0; j < d->retired_documents.n; j++) doc_list_add(&documents, d->retired_documents.v[j]);
     }
-    for (int i = 0; i < documents.n; i++) {
-        Document *d = documents.v[i];
-        for (int j = 0; j < d->ndimg; j++) node_release(d->dimg[j]);
-        free(d->dimg); d->dimg = NULL; d->ndimg = d->cdimg = 0;
-        if (d->selector_cache_free) d->selector_cache_free(d->selector_cache);
-        d->selector_cache = NULL;
-        free(d->modals.v); d->modals.v = NULL; d->modals.n = d->modals.cap = 0;
-        for (int j = 0; j < 2; j++) if (d->sel[j]) { node_release(d->sel[j]); d->sel[j] = NULL; }
-        hm_free(&d->id_cache, NULL); hm_free(&d->id_dups, NULL);
+    return documents;
+}
+static void doc_release_resources(Document *d) {
+    for (int j = 0; j < d->ndimg; j++) node_release(d->dimg[j]);
+    free(d->dimg); d->dimg = NULL; d->ndimg = d->cdimg = 0;
+    if (d->selector_cache && d->selector_cache_free) d->selector_cache_free(d->selector_cache);
+    d->selector_cache = NULL;
+    free(d->modals.v); d->modals.v = NULL; d->modals.n = d->modals.cap = 0;
+    for (int j = 0; j < 2; j++) if (d->sel[j]) { node_release(d->sel[j]); d->sel[j] = NULL; }
+    hm_free(&d->id_cache, NULL); hm_free(&d->id_dups, NULL);
+}
+static void doc_release_tree(Document *d, bool final) {
+    Node *c = d->node.first;
+    d->node.first = d->node.last = d->html = d->head = d->body = NULL;
+    while (c) {
+        Node *next = c->next;
+        c->parent = c->prev = c->next = NULL; c->js = NULL;
+        if (final) { c->refcount = 0; node_free_tree(c); }
+        else node_release(c); /* release only the old document-parent reference */
+        c = next;
     }
-    for (int i = 0; i < documents.n; i++) {
-        Document *d = documents.v[i];
-        Node *c = d->node.first;
-        d->node.first = d->node.last = d->html = d->head = d->body = NULL;
-        while (c) {
-            Node *next = c->next;
-            c->parent = c->prev = c->next = NULL; c->refcount = 0; c->js = NULL;
-            node_free_tree(c); c = next;
-        }
-    }
+}
+void doc_clear_retired_trees(Document *root) {
+    /* Context retirement releases child/auxiliary trees promptly, after all
+     * wrappers are gone. The Page may be sleeping, so its own tree/resources
+     * stay alive. Retain every document's metadata for nodes adopted into it. */
+    DocumentList documents = doc_owned_documents(root);
+    for (int i = 0; i < documents.n; i++)
+        if (documents.v[i] != root) doc_release_resources(documents.v[i]);
+    for (int i = 0; i < documents.n; i++)
+        if (documents.v[i] != root) doc_release_tree(documents.v[i], false);
+    vec_free(documents);
+}
+void doc_free(Document *root) {
+    /* Adopted template contents can still be held by another document's tree.
+     * Keep every owner alive until all trees and retained node references in
+     * this retirement group have been released. Self/duplicate associations
+     * are harmless; the release phases also tolerate an already-cleared tree. */
+    DocumentList documents = doc_owned_documents(root);
+    for (int i = 0; i < documents.n; i++) doc_release_resources(documents.v[i]);
+    for (int i = 0; i < documents.n; i++) doc_release_tree(documents.v[i], true);
     for (int i = 0; i < documents.n; i++) {
         Document *d = documents.v[i];
         for (int j = 0; j < d->nparser_meta * 2; j++) free(d->parser_meta[j]);
