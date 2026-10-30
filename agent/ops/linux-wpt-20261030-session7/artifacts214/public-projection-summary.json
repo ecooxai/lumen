@@ -1,0 +1,16 @@
+{
+  "archive_sha256": "b3cd72554339cafd84d4e0568272257f6852a4acc59b653ff79bdd2aaf6c88d8",
+  "archive_bytes": 9433743,
+  "public_source_commit": "5c0e775cfad2084ab5b8107837fe98275d54b35e",
+  "public_source_tree": "09082da1bc88eaabd0622b12f9488d7df528a60f",
+  "public_history_bundle_sha256": "3bcd5277e3cbfff744267d3af6ce6a7e8c8c797246dd83f8b07a0ca83dee13c9",
+  "tracked_source_members": 728,
+  "archive_member_count": 731,
+  "pages_payloads": 12,
+  "pages_manifest_sha256": "9e9bee54074413b369a3b0cabaf939e749de7f0101f3ba8ba6e8bb766b36f954",
+  "showcase_html_sha256": "04ede4c165bb678e8f95091fe3ae16fe82d9235b191fcd0c1f4c945553feaeac",
+  "public_link_check_passed": true,
+  "persistent_showcase_credit_added": true,
+  "final_pages_commit": "eb741a324ab2606da47fea9370a2dfd177d37cdc",
+  "media_published_and_live_verified": true
+}

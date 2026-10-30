@@ -1603,3 +1603,108 @@ Automatic approval review rejected a larger cascade-provenance rewrite as too br
 The iframe correction queues a native per-context reload request for actual null-namespace source attribute set/remove operations, including equal-value assignments. Source-document precedence is preserved; old responses cannot commit while replacement is pending. The Node structure and ordinary element setter fast path are unchanged. The frozen six-file neighbor manifest is b095b341e96bcf5f48d02ced187366b2198c93b07a87fd5f788639233af23926. Baseline213 passes five whole files and9/9 reported assertions; one after-refresh assertion is missing. Chromium156 passes6/6 and10/10. Both baselines fully drained with monitors, hashes and cleanup intact. The refresh child stylesheet was missing from the earlier CSS39 leaf pin list; its bytes match the pinned WPT source, and the new six-file runs verify it before/after. This is an additive qualification, not a retroactive historical verification claim.
 
 Candidate214 source is frozen for a monitored jobs2 build. All tests, expected values, guarded launchers and quotas remain unchanged. The broader source rewrite remains a future approval-dependent task, not a completed feature.
+
+### Candidate 214 build and native gate — 2026-10-30T10:19:08.878697+00:00
+
+Source ab44cc7f825279391a0f193e0b8a10b5ab151eb4; binary SHA256 7ea0a9999ec521e90fdd2c25fa8485675abf4149aa7aaa7e1696b99bf8aae8ca; recorded build-input manifest SHA256 0bda0d47294b30cd710829a04d3d17b9193165440009e7b2fb8aea2d263cd956. Monitored jobs2 build/startup ran10:14:16.140041–10:15:08.243875 UTC (0.868 minutes), both exit0; source unchanged and all build/monitor processes drained. Unchanged native140 ran10:15:59.039709–10:17:20.147839 UTC (1.352 minutes),140/140,exit0,no skips, no remaining owned/monitor process, unchanged canonical binary and no overlapping compilation. Focused/broad WPT acceptance is still pending.
+
+Independent public-source boundary review by /root/engine_review verified all642 exact recorded source hashes and executable modes, public parent0742c66b2c9b077c68006c9cb1b4413e281c328d, public-only reachable history and no forbidden task/ops/instruction files. Export214 is uncommitted/unpublished until qualification and final validation. The reusable helper now reads the allowlist directly from that immutable public parent. The requested Surge CLI was installed successfully at10:13UTC; a fresh whoami check exited1 and confirmed no authenticated account. No credentials were printed or new account created. Existing approved Pages and HTTPS tunnel remain available.
+
+
+### Iteration 14 — final focused gates and broad replay
+
+Candidate 214 completed CSS39 at 10:16:23.564923–10:17:48.668542 UTC: 219/331 assertions, 17/39 whole files and 39/39 harnesses OK. Relative to immutable 211, 64 existing assertion identities gained PASS and one after-refresh PASS registration was restored; no prior passes or identities were lost. This is 66.16/100 on the scoped assertion metric, not whole-browser quality. Iframe6 completed at 10:17:48.773147–10:18:03.864243 with 10/10 assertions and 6/6 whole files. The recovered XML file remains 20/20.
+
+Latest-candidate retention is sealed: ordinary35 ran 10:18:03.702835–10:19:57.213246 and passed 64/64; document72 ran 10:19:57.847121–10:22:41.924935 and passed 72/73 across 71/72 whole files, retaining the existing popup limitation; parser18 ran 10:22:42.024802–10:23:24.103229 and passed 1,961/1,961 across 18/18 whole files. No prior-pass loss or missing identity occurred. Frozen authored lifecycle controls remained 111/112; opened-stream 22/22, CR controls 3/3 and 5/5, delayed-close 21/21, minimal progress 12/12, and separate navigation execution/cancellation controls 8/8 each. These overlapping authored/scoped counts are not summed. All owned processes/profiles were removed, actual control exits were 0, and source/binary pins were unchanged.
+
+Independent same-model conformance agent /root/engine_review/async_conformance launched the final exact two-shard 640 replay at 10:26:49.084281 UTC. It remains pending at this entry; no final broad result is inferred from focused passes. Integration and engine-review agents prepared the public source/qualification/Pages boundaries while the two browser lanes remain reserved.
+
+
+Final publication preparation preserves the prior public candidate-205 archive and page. The public-214 source mapping includes all 642 recorded inputs exactly and retains only previously reviewed public Git ancestry; its source bundle enumerates committed blobs and reachable branch history, not raw .git storage or unreachable objects. Independent engine review accepted those boundaries. No final214 publication occurred before the broad result. A read of a protected validation monitor implementation was rejected by automatic approval review; it was not retried or reconstructed. The ordinary showcase encoder instead uses its own one-second Linux process-group sampler and leaves supported validation interfaces unchanged.
+
+
+### Iteration 14 — final exact 640 comparison accepted
+
+The unchanged two-shard 320+320 replay ran from 2026-10-30 10:26:49.084281 to 10:40:02.272173 UTC (13.2198 minutes). Candidate 214 passes 401/640 whole files (62.65625/100 on this sample metric) and 8,764/10,540 reported assertions (83.15%). Assertion outcomes retain 1,738 FAIL, 15 TIMEOUT and 23 NOTRUN; harness outcomes retain 624 OK, 15 TIMEOUT and 1 ERROR. Against the original candidate200 sample, exactly 440 common identities gained PASS, zero prior passes were lost, zero identities were missing or added, and 21 whole files gained a complete pass with zero whole-file losses. Against211,64 common identities gained PASS with zero losses/missing/added identities. Current Chromium156 remains560/640 whole files and9,551/10,552 assertions; separate denominators and reference nonpasses remain explicit.
+
+The outer controller exited0; all640 native browser launches have actual exit0; independent process/profile/monitor cleanup passed, the frozen schedule and all source/runner pins were unchanged, and the binary remains7ea0a9999ec521e90fdd2c25fa8485675abf4149aa7aaa7e1696b99bf8aae8ca. This qualifies the tested progress checkpoint and the named complete subscopes; it does not satisfy or certify the full-WPT/98/100 whole-browser goal. No URL conformance scope was added. The final source remainsab44cc7f825279391a0f193e0b8a10b5ab151eb4; later documentation and publication changes must preserve that distinction.
+
+Same-model agents used: /root/integration (integration, code ownership, build and release), /root/engine_review (engine implementation and peer review), /root/engine_review/async_conformance (independent ordinary conformance and cleanup). The errored original root/audit lanes were not used to reroute blocked security work. Post-validation public source/archive/report/showcase and final handoff remain in progress.
+
+Iteration14 earliest retained frame-patch receipt is 2026-10-30T10:08:59.780083+00:00; final validation ended 2026-10-30T10:40:02.272173+00:00. The observed implementation-to-validation interval is 31.0415 minutes. This is a recorded receipt interval, not an invented exact planning start.
+
+The final independent public aggregate is qa-frozen640/final214-public-aggregate.json (SHA25633864b6a5d2538f631e23483bba4584cd3492f3f4bd6b810aca1b169cb1f24a5). The actual cohort timing aggregate is qa-script-scheduling/final214-timing-aggregate.json (SHA256196012e2d735d0c7212c53b57b64a23ef2e6659cb44abea7cc5391b9a95cb275). Both are under the session7 validation root. Final replay monitoring retains640 resource files and1,436 one-second samples;639 files yield796 CPU intervals, median21.999% and maximum166.01% where one core=100%. Peak owned RSS290.882MiB and PSS149.668MiB. Shared cgroup793samples have median44.306%,maximum207.801%,weighted mean42.269%,below the existing480%quota. These are active conformance-run costs, not idle memory or browser-speed comparisons. The Chromium denominator differs through12 missing native encoding-stream registrations and two text-decoding name pairs; there was no loss of any prior native identity.
+
+
+### Final publication and showcase
+
+Reviewed public source commit5c0e775cfad2084ab5b8107837fe98275d54b35e (tree09082da1bc88eaabd0622b12f9488d7df528a60f, parent0742c66b2c9b077c68006c9cb1b4413e281c328d) was pushed on gpt-6-astra-pro-builtin-integration-source214-20261030. It maps all642 recorded build inputs exactly and preserves only reviewed public ancestry. Archive9433743bytes, SHA256b3cd72554339cafd84d4e0568272257f6852a4acc59b653ff79bdd2aaf6c88d8, contains728 tracked files plus the declared public-history bundle/restore/provenance additions. Both the packaging helper and independent QA restored and checked the documented offline Git clone, tree, blob IDs and executable modes. The public source export was not independently rebuilt; no hermetic/portable-binary claim is made.
+
+Initial Pages commit ef2e1c37ecac6f189d234660daff19c9fa50e490 was published at10:51:47.590057UTC; final media Pages commit eb741a324ab2606da47fea9370a2dfd177d37cdc was published at10:58:30.290612UTC. Both normal non-forced remote pushes were verified. The public source archive and aggregate were downloaded and checked byte-for-byte at10:56:16.801894UTC. Final index,video,poster,media provenance and publication manifest were all HTTP200 and exact at10:59:13.172495UTC. Stable captured showcase214.html remainsSHA04ede4c165bb678e8f95091fe3ae16fe82d9235b191fcd0c1f4c945553feaeac.
+
+The requested showcase is an explicitly labeled Chromium-rendered public-results walkthrough, not native Lumen UI footage. Five actual1024x768 PNGs were visually reviewed; the persistent white-on-black model/agent/tool credit is visible. FFmpeg encoded36.000000seconds of4:3 H264/yuv420p/SAR1:1 video with2encoder/1filter threads and11 one-second resource samples, actual exit0 and no remaining owned process or monitor. Video467513bytes, SHA2560df401b60376874fafe73b7494dba1c57ad946b37e10f53779ec2c98e52e8c68; frame02 comparison poster104829bytes, SHAb657f755672af4a599da78408b028b121b3cfeeb2bddebb8eabbf6a2b178218c. Input frame/concat identities remained unchanged. No image generation was used.
+
+Final public URLs: https://ecooxai.github.io/lumen/ ; https://ecooxai.github.io/lumen/src.tar.gz ; https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.mp4 . Durable measured progress Page is https://chatgpt.com/space/page_331eeea00c28819182bc0cd8003fe7b6, now updated through sequence6 with final counts and publication links. Prior205/200 artifacts remain accessible. Surge installation succeeded but its account is unauthenticated; the existing authorized GitHub Pages and HTTPS tunnel provide the deployment.
+
+
+### Session 7 — supplemental per-candidate timing and agent accounting
+
+This append-only table supplies explicit minute values for the recorded build/startup receipt intervals that were previously expressed only in seconds or alongside total-session elapsed time. It preserves all original implementation, validation, failure and score entries. These are **qualified build/startup intervals, not invented full implementation durations**; source work and independent QA can overlap other iterations. Do not sum overlapping intervals to compute the session duration.
+
+All timestamps below are UTC on **2026-10-30**. Elapsed minutes are calculated from the two recorded timestamps. The existing scoped score for each iteration remains unchanged; the failed candidates remain failed.
+
+| Iteration | Candidate | Recorded UTC start | Recorded UTC end | Elapsed minutes | Agents used | Recorded outcome |
+| ---: | ---: | --- | --- | ---: | --- | --- |
+| 7 | 207 | 07:58:10.742853 | 07:58:56.835828 | 0.768216 | `engine_review`, `integration`, `engine_review/async_conformance` | Build/startup passed after the isolated namespace correction. |
+| 8 | 208 | 08:15:31.037722 | 08:17:02.159589 | 1.518698 | `engine_review`, `integration`, `engine_review/async_conformance` | Build/startup passed; later broad regressions remained provisional until corrected. |
+| 9 | 209 | 08:54:33.200056 | 08:55:57.284849 | 1.401413 | `engine_review`, `integration`, `engine_review/async_conformance` | Build/startup passed; focused and native gates followed. |
+| 10 | 210 | 09:20:54.241583 | 09:22:19.356746 | 1.418586 | `engine_review`, `integration`, `engine_review/async_conformance` | Build/startup passed; the later 138/140 native gate rejected this candidate. |
+| 12 | 212 | 09:57:21.714978 | 09:57:34.818632 | 0.218394 | `engine_review`, `integration`, `engine_review/async_conformance` | Compile exited 2; missing declaration; no accepted binary or startup result. |
+| 13 | 213 | 09:58:14.456408 | 09:58:38.523343 | 0.401116 | `engine_review`, `integration`, `engine_review/async_conformance` | Build/startup passed; the two later CSS prior-pass losses were corrected in 214. |
+
+Candidate 210's agent attribution is made explicit here; it was absent from that candidate's earlier outcome paragraphs. All listed agents were the built-in same-model implementation, integration and independent QA team. Exact final session elapsed time must be calculated separately from the recorded accounting start **2026-10-30 06:26:11 UTC** to the actual closing timestamp.
+
+
+
+Desktop preflight was checked read-only at2026-10-30 11:07:31.899248UTC. /tmp/lumen-display0.pid is absent. AGENTS.md requires that record and a live executable match before restarting this repository's browser on DISPLAY=:0; therefore no desktop process was stopped, no guessed PID/launcher was used and no existing display was inspected or captured. The canonical build/codex-native/lumen SHA256 matches accepted214. The missing verified ownership record is the concrete remaining desktop-delivery blocker; isolated validation/capture and public deployment remain complete.
+
+### Remaining fixed-sample opportunities — final 214 versus current Chromium 156
+
+This is an aggregate comparison of shared assertion identities, not an estimate of all-WPT coverage or a promise that one patch can close each category. There are 1,599 shared identities that pass in Chromium 156 and are non-PASS in Lumen 214 across 198 of the 640 sampled files. Missing registrations are excluded and remain separately qualified.
+
+| Public feature prefix | Shared reference-pass / native-nonpass assertions | Affected / sampled files |
+| --- | ---: | ---: |
+| CSS values | 549 | 23 / 35 |
+| CSS sizing | 405 | 26 / 35 |
+| CSS Grid | 230 | 21 / 35 |
+| CSS Flexbox | 112 | 18 / 35 |
+| CSS custom properties | 97 | 22 / 34 |
+| Fetch API | 43 | 15 / 98 |
+| DOM Parsing | 40 | 12 / 34 |
+| CSSOM | 33 | 10 / 34 |
+
+CSS as a whole accounts for 1,442 of the shared opportunities, affecting 125 of 242 sampled CSS files. A next iteration should freeze a coherent whole-file scope within core CSS values or sizing, inspect current upstream expectations and actual native causes, and retain the completed script/parser/template gates. Keep URL conformance deferred unless the user changes that priority. The previously rejected broad cascade-provenance rewrite is not implicitly authorized by this prioritization.
+
+Aggregate-only evidence: `agent/validation/linux-wpt-20261030-session7/qa-frozen640/final214-residual-category-with-file-denominators.json`, SHA-256 `d95707e747de27f361b0fe019635dc261119cbdebdaec64b84b1935320f74818`. This follow-up performed no tests, browser launches, builds or production source edits; raw comparison rows remain local.
+
+### Concrete next diagnostic scope: CSS stepped math
+
+The engine reviewer recommends freezing the complete non-tentative CSS Values family `round-mod-rem-invalid.html`, `round-mod-rem-computed.html`, `round-mod-rem-serialize.html`, and `round-function.html`, with the three `round-length-degrees-crash.html`, `mod-length-degrees-crash.html`, and `rem-length-degrees-crash.html` crash neighbors and their actual support files. Keep assertion-based and crash-only results separately labeled. Start with an immutable candidate-214/current-Chromium comparison under the existing guards; do not predict gains from source review alone.
+
+Bounded entry points are `src/css/style.c` functions `math_fn`, `parse_dim`, `calc_term`, and `css_parse_length_context`, specified CSSStyleDeclaration serialization in `src/js/prelude/03-element.js`, and native computed-style serialization. Read-only hypotheses to inspect: eager rejection of some percentage/compact-comparison operands, complete-input-consumption checks differing between top-level functions, and division handling when the divisor scalar slot is zero. These are unmeasured hypotheses, not established root causes. Preserve angle/dimension checks and unchanged whole-file expectations, and add only evidence-backed context/serialization controls. This investigation does not require the rejected broader cascade-provenance rewrite. No browser, test, build or production edit was performed for this recommendation.
+
+
+## Final session close — candidate 214
+
+- Actual close: **2026-10-30 11:26:33.629287 UTC**.
+- Recorded start: **2026-10-30 06:26:11 UTC**.
+- Elapsed wall time: **300.377155 minutes** (18022.629287 seconds). Overlapping agent/build/test intervals are not summed.
+- Fourteen candidate iterations, 201–214, retain their separate recorded UTC intervals, scoped scores, failures and agent attribution.
+- Stop reason: the requested primary five-hour work limit. The overall 98/100/full-WPT goal remains unmet; no extra-hour exception was used.
+- Final fixed non-URL sample: **401/640 wholly passing files (62.65625%)**, **8,764/10,540 assertions**, **440 common-identity gains**, **zero prior-pass losses or missing native identities** against candidate 200. This is not an all-WPT score.
+- Completed bounded parser scope: **18/18 files and 1,961/1,961 assertions**, a scoped 100/100 result. Native non-URL gate: **140/140**. Other retained scopes and candidate labels are recorded above.
+- Final tested source `ab44cc7f825279391a0f193e0b8a10b5ab151eb4` and binary SHA `7ea0a9999ec521e90fdd2c25fa8485675abf4149aa7aaa7e1696b99bf8aae8ca` remain unchanged. This closing commit contains only documentation, progress state and reviewed release helpers/receipts.
+- Public source `5c0e775cfad2084ab5b8107837fe98275d54b35e`; final Pages `eb741a324ab2606da47fea9370a2dfd177d37cdc`; 15-payload manifest SHA `9e9bee54074413b369a3b0cabaf939e749de7f0101f3ba8ba6e8bb766b36f954`. Source archive, independent offline Git restoration, public results and 36-second 4:3 Chromium results walkthrough are verified.
+- Existing desktop instance was not restarted: the current preflight could not find the verified task-owned PID record required by AGENTS.md. The default build binary does match tested candidate 214.
+- Whole-browser gaps, restricted cascade rewrite, omitted adversarial security acceptance, Surge authentication and Fileharbor limitations remain explicitly recorded. No rejected action was rerouted.
+- Work by GPT-6 Astra Pro built-in integration, engine-review and conformance agents using Rubywebterm, Chromium and FFmpeg.

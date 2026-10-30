@@ -1,0 +1,41 @@
+{
+  "checked_utc": "2026-10-30T10:59:13.172495+00:00",
+  "all_live_media_bytes_match": true,
+  "checks": [
+    {
+      "file": "index.html",
+      "http_status": 200,
+      "bytes": 13164,
+      "sha256": "ced1cc0fb504f18be765e8466fb180b34dba7f47dca67ce7442736c6bc6c850c",
+      "matches_reviewed": true
+    },
+    {
+      "file": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.mp4",
+      "http_status": 200,
+      "bytes": 467513,
+      "sha256": "0df401b60376874fafe73b7494dba1c57ad946b37e10f53779ec2c98e52e8c68",
+      "matches_reviewed": true
+    },
+    {
+      "file": "lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.png",
+      "http_status": 200,
+      "bytes": 104829,
+      "sha256": "b657f755672af4a599da78408b028b121b3cfeeb2bddebb8eabbf6a2b178218c",
+      "matches_reviewed": true
+    },
+    {
+      "file": "lumen_gpt-6-astra-pro_builtin-rubywebterm_showcase214.json",
+      "http_status": 200,
+      "bytes": 1989,
+      "sha256": "5ae12527f5c94a784edd7b0e9f327cf7cbefae6323b2acb9f87d78bdfa8fe698",
+      "matches_reviewed": true
+    },
+    {
+      "file": "publication-manifest214.json",
+      "http_status": 200,
+      "bytes": 3843,
+      "sha256": "9e9bee54074413b369a3b0cabaf939e749de7f0101f3ba8ba6e8bb766b36f954",
+      "matches_reviewed": true
+    }
+  ]
+}

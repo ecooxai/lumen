@@ -1,0 +1,30 @@
+{
+  "source_export_commit": "5c0e775cfad2084ab5b8107837fe98275d54b35e",
+  "pages_commit": "eb741a324ab2606da47fea9370a2dfd177d37cdc",
+  "source_branch": "gpt-6-astra-pro-builtin-integration-source214-20261030",
+  "pages_branch": "gpt-6-astra-builtin-agents-rubywebterm-showcase-20261028",
+  "source_remote_verified": true,
+  "pages_remote_verified": true,
+  "non_forced_pushes": true,
+  "archive_sha256": "b3cd72554339cafd84d4e0568272257f6852a4acc59b653ff79bdd2aaf6c88d8",
+  "archive_bytes": 9433743,
+  "source_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-integration-source214-20261030",
+  "page_url": "https://ecooxai.github.io/lumen/",
+  "archive_url": "https://ecooxai.github.io/lumen/src.tar.gz",
+  "showcase_html_url": "https://ecooxai.github.io/lumen/showcase214.html",
+  "showcase_html_sha256": "04ede4c165bb678e8f95091fe3ae16fe82d9235b191fcd0c1f4c945553feaeac",
+  "published_utc": "2026-10-30T10:51:47.590057+00:00",
+  "video_pending": false,
+  "initial_pages_commit": "ef2e1c37ecac6f189d234660daff19c9fa50e490",
+  "video_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.mp4",
+  "poster_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint214.png",
+  "showcase_manifest_url": "https://ecooxai.github.io/lumen/lumen_gpt-6-astra-pro_builtin-rubywebterm_showcase214.json",
+  "video_sha256": "0df401b60376874fafe73b7494dba1c57ad946b37e10f53779ec2c98e52e8c68",
+  "video_bytes": 467513,
+  "video_duration_seconds": 36,
+  "video_dimensions": [
+    1024,
+    768
+  ],
+  "media_published_utc": "2026-10-30T10:58:30.290612+00:00"
+}

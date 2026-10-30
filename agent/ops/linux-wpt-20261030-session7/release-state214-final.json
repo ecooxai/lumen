@@ -1,0 +1,427 @@
+{
+  "schema": 1,
+  "candidate": 214,
+  "recorded_utc": "2026-10-30T10:42:22.102178+00:00",
+  "tested_source_commit": "ab44cc7f825279391a0f193e0b8a10b5ab151eb4",
+  "tested_binary_sha256": "7ea0a9999ec521e90fdd2c25fa8485675abf4149aa7aaa7e1696b99bf8aae8ca",
+  "recorded_source_manifest_sha256": "0bda0d47294b30cd710829a04d3d17b9193165440009e7b2fb8aea2d263cd956",
+  "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "fixed640_manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f",
+  "chromium_version": "156.0.8078.80",
+  "release_acceptance": "qualified_frozen_scopes_and_latest_nonurl640",
+  "whole_browser_goal": "98/100 not achieved or certified; fixed non-URL samples and named focused scopes only",
+  "broad_baseline": {
+    "candidate": 200,
+    "files_pass": 380,
+    "files_total": 640,
+    "assertions_pass": 8324,
+    "assertions_total": 10540
+  },
+  "broad_last_complete": {
+    "candidate": 211,
+    "files_pass": 395,
+    "files_total": 640,
+    "assertions_pass": 8700,
+    "assertions_total": 10540,
+    "acceptance": "16 XML prior-pass losses subsequently recovered in candidate213/214 focused20/20"
+  },
+  "broad_current": {
+    "candidate": 214,
+    "files_pass": 401,
+    "files_total": 640,
+    "assertions_pass": 8764,
+    "assertions_total": 10540,
+    "assertion_outcomes": {
+      "PASS": 8764,
+      "FAIL": 1738,
+      "TIMEOUT": 15,
+      "NOTRUN": 23
+    },
+    "harness": {
+      "OK": 624,
+      "TIMEOUT": 15,
+      "ERROR": 1
+    },
+    "comparison_to200": {
+      "common_identity_pass_gains": 440,
+      "prior_pass_losses": 0,
+      "missing_previous_identities": 0,
+      "restored_passing_registrations": 0,
+      "added_registrations": 0,
+      "whole_file_gains": 21,
+      "whole_file_losses": 0
+    },
+    "comparison_to211": {
+      "common_identity_pass_gains": 64,
+      "prior_pass_losses": 0,
+      "missing_previous_identities": 0,
+      "added_registrations": 0
+    },
+    "started_utc": "2026-10-30T10:26:49.084281Z",
+    "finished_utc": "2026-10-30T10:40:02.272173Z",
+    "actual_controller_exit_code": 0,
+    "actual_browser_exit_counts": {
+      "0": 640
+    },
+    "owned_cleanup_complete": true,
+    "source_binary_unchanged": true,
+    "runner_source_pins_unchanged": true,
+    "execution_schedule_sha256": "7e17aeaf30a0d05982a5d69a11fe0bd062561fe9375b2fcad72fb1eba41d1c32",
+    "actual_total_browser_workers": 2,
+    "performance_qualification": "Conformance runs with different outcome mixes and browser concurrency are not a comparative speed benchmark."
+  },
+  "chromium_fixed640": {
+    "files_pass": 560,
+    "files_total": 640,
+    "assertions_pass": 9551,
+    "assertions_total": 10552,
+    "harness": {
+      "OK": 626,
+      "TIMEOUT": 13,
+      "ERROR": 1
+    }
+  },
+  "focused": {
+    "parser_options": {
+      "candidate": 214,
+      "files_pass": 18,
+      "files_total": 18,
+      "assertions_pass": 1961,
+      "assertions_total": 1961,
+      "baseline": {
+        "candidate": 200,
+        "files_pass": 3,
+        "files_total": 18,
+        "assertions_pass": 1008,
+        "assertions_total": 1961
+      },
+      "chromium_normal": {
+        "files_pass": 1,
+        "files_total": 18,
+        "assertions_pass": 433,
+        "assertions_total": 1961
+      },
+      "chromium_experimental": {
+        "files_pass": 3,
+        "files_total": 18,
+        "assertions_pass": 1218,
+        "assertions_total": 1961
+      },
+      "qualification": "Newer draft parser-options scope; control modes differ from normal stable API coverage.",
+      "started_utc": "2026-10-30T10:22:42.024802Z",
+      "finished_utc": "2026-10-30T10:23:24.103229Z",
+      "owned_cleanup_complete": true,
+      "source_binary_unchanged": true
+    },
+    "ordinary_scripts": {
+      "candidate": 214,
+      "files_pass": 35,
+      "files_total": 35,
+      "assertions_pass": 64,
+      "assertions_total": 64,
+      "baseline": {
+        "candidate": 203,
+        "files_pass": 13,
+        "files_total": 35,
+        "assertions_pass": 30,
+        "assertions_total": 59,
+        "missing_later_registered_assertions": 5
+      },
+      "chromium": {
+        "files_pass": 35,
+        "files_total": 35,
+        "assertions_pass": 64,
+        "assertions_total": 64
+      },
+      "started_utc": "2026-10-30T10:18:03.702835Z",
+      "finished_utc": "2026-10-30T10:19:57.213246Z",
+      "owned_cleanup_complete": true,
+      "source_binary_unchanged": true
+    },
+    "document_streaming": {
+      "candidate": 214,
+      "files_pass": 71,
+      "files_total": 72,
+      "assertions_pass": 72,
+      "assertions_total": 73,
+      "baseline": {
+        "candidate": 205,
+        "files_pass": 14,
+        "files_total": 72,
+        "assertions_pass": 17,
+        "assertions_total": 73
+      },
+      "chromium": {
+        "files_pass": 72,
+        "files_total": 72,
+        "assertions_pass": 73,
+        "assertions_total": 73
+      },
+      "started_utc": "2026-10-30T10:19:57.847121Z",
+      "finished_utc": "2026-10-30T10:22:41.924935Z",
+      "owned_cleanup_complete": true,
+      "source_binary_unchanged": true
+    },
+    "custom_element_parser": {
+      "candidate": 213,
+      "files_pass": 12,
+      "files_total": 13,
+      "assertions_pass": 49,
+      "assertions_total": 50,
+      "baseline": {
+        "candidate": 207,
+        "files_pass": 3,
+        "files_total": 13,
+        "assertions_pass": 19,
+        "assertions_total": 50
+      },
+      "chromium": {
+        "files_pass": 13,
+        "files_total": 13,
+        "assertions_pass": 50,
+        "assertions_total": 50
+      },
+      "qualification": "One anchors-order expectation conflicts with the current existing-parent insertion rule, which Lumen retains."
+    },
+    "document_creation": {
+      "candidate": 213,
+      "files_pass": 7,
+      "files_total": 7,
+      "assertions_pass": 64,
+      "assertions_total": 64,
+      "baseline": {
+        "candidate": 208,
+        "files_pass": 0,
+        "files_total": 7,
+        "assertions_pass": 24,
+        "assertions_total": 64
+      },
+      "chromium": {
+        "files_pass": 5,
+        "files_total": 7,
+        "assertions_pass": 58,
+        "assertions_total": 64
+      }
+    },
+    "template_ownership": {
+      "candidate": 213,
+      "files_pass": 12,
+      "files_total": 12,
+      "assertions_pass": 50,
+      "assertions_total": 50,
+      "baseline": {
+        "candidate": 209,
+        "files_pass": 4,
+        "files_total": 12,
+        "assertions_pass": 26,
+        "assertions_total": 50
+      },
+      "chromium": {
+        "files_pass": 11,
+        "files_total": 12,
+        "assertions_pass": 46,
+        "assertions_total": 50
+      },
+      "qualification": "Four reference nonpasses concern the inert owner Document interface; expected values were retained."
+    },
+    "cloning": {
+      "candidate": 213,
+      "files_pass": 8,
+      "files_total": 9,
+      "assertions_pass": 156,
+      "assertions_total": 157,
+      "baseline": {
+        "candidate": 209,
+        "files_pass": 6,
+        "files_total": 9,
+        "assertions_pass": 153,
+        "assertions_total": 157
+      },
+      "chromium": {
+        "files_pass": 9,
+        "files_total": 9,
+        "assertions_pass": 157,
+        "assertions_total": 157
+      }
+    },
+    "css_variables": {
+      "candidate": 214,
+      "files_pass": 17,
+      "files_total": 39,
+      "assertions_pass": 219,
+      "assertions_total": 331,
+      "harness": {
+        "OK": 39
+      },
+      "baseline": {
+        "candidate": 211,
+        "files_pass": 10,
+        "files_total": 39,
+        "assertions_pass": 154,
+        "assertions_total": 330
+      },
+      "chromium": {
+        "files_pass": 35,
+        "files_total": 39,
+        "assertions_pass": 299,
+        "assertions_total": 331
+      },
+      "common_identity_pass_gains": 64,
+      "restored_passing_registrations": 1,
+      "prior_pass_losses": 0,
+      "missing_previous_identities": 0,
+      "reference_encoding_name_differences_each_direction": 2,
+      "qualification": "The refresh child stylesheet received an additive source pin before the iframe-neighbor baseline; no retroactive historical verification is claimed.",
+      "started_utc": "2026-10-30T10:16:23.564923Z",
+      "finished_utc": "2026-10-30T10:17:48.668542Z",
+      "owned_cleanup_complete": true,
+      "source_binary_unchanged": true
+    },
+    "iframe_source_changes": {
+      "candidate": 214,
+      "files_pass": 6,
+      "files_total": 6,
+      "assertions_pass": 10,
+      "assertions_total": 10,
+      "baseline": {
+        "candidate": 213,
+        "files_pass": 5,
+        "files_total": 6,
+        "assertions_pass": 9,
+        "assertions_total": 9,
+        "missing_later_registered_assertions": 1
+      },
+      "chromium": {
+        "files_pass": 6,
+        "files_total": 6,
+        "assertions_pass": 10,
+        "assertions_total": 10
+      },
+      "started_utc": "2026-10-30T10:17:48.773147Z",
+      "finished_utc": "2026-10-30T10:18:03.864243Z",
+      "owned_cleanup_complete": true,
+      "source_binary_unchanged": true
+    },
+    "domparser_xml": {
+      "candidate": 214,
+      "files_pass": 1,
+      "files_total": 1,
+      "assertions_pass": 20,
+      "assertions_total": 20,
+      "regressed_candidate211_pass": 4,
+      "prior_passes_restored": 16,
+      "chromium_assertions_pass": 8,
+      "chromium_assertions_total": 20
+    }
+  },
+  "authored_checks": {
+    "internal_is_state": {
+      "candidate": 213,
+      "pass": 26,
+      "total": 26
+    },
+    "opened_stream": {
+      "candidate": 214,
+      "pass": 22,
+      "total": 22
+    },
+    "carriage_return_controls": {
+      "candidate": 214,
+      "original_pass": 3,
+      "original_total": 3,
+      "extended_pass": 5,
+      "extended_total": 5
+    },
+    "delayed_close": {
+      "candidate": 214,
+      "pass": 21,
+      "total": 21
+    },
+    "parser_progress": {
+      "candidate": 214,
+      "pass": 12,
+      "total": 12
+    },
+    "lifecycle": {
+      "candidate": 214,
+      "pass": 111,
+      "total": 112,
+      "qualification": "One existing sessionStorage navigation-started control remains nonpassing; server-backed navigation controls independently pass."
+    },
+    "navigation_execution": {
+      "candidate": 214,
+      "pass": 8,
+      "total": 8
+    },
+    "navigation_cancellation": {
+      "candidate": 214,
+      "pass": 8,
+      "total": 8
+    },
+    "qualification": "Authored diagnostics are separate from WPT and are not added to cohort denominators; all prior passes and registrations retained."
+  },
+  "native": {
+    "candidate": 214,
+    "pass": 140,
+    "total": 140,
+    "failures": 0,
+    "skipped": 0,
+    "deferred_url_tests": 3,
+    "started_utc": "2026-10-30T10:15:59.039709Z",
+    "finished_utc": "2026-10-30T10:17:20.147839Z",
+    "actual_exit_code": 0,
+    "owned_cleanup_complete": true
+  },
+  "build": {
+    "started_utc": "2026-10-30T10:14:16.140041Z",
+    "finished_utc": "2026-10-30T10:15:08.243875Z",
+    "build_exit_code": 0,
+    "startup_exit_code": 0,
+    "source_inputs_unchanged": true
+  },
+  "changes": [
+    "Shared Trusted Types parser-option handling across modern and legacy HTML sinks, with private configuration snapshots.",
+    "Asynchronous classic-script scheduling, preparation state, ordered dynamic execution, parser/defer/load ordering and document-generation cancellation.",
+    "Persistent document.write streams and genuine initial-document prefix parsing, including token and newline boundaries.",
+    "Staged custom-element parser creation, native interface validation and exact-length internal is values without increasing the measured 304-byte Node structure.",
+    "Real inert template-owner Documents, import/clone ownership, Document metadata and safe two-phase retirement.",
+    "Token-aware CSS variable grammar and substitution, selected fallback cycle detection, computed-invalid resets, math whitespace and custom declaration block handling.",
+    "Same-value iframe source assignments queue a real navigation while preserving srcdoc precedence and pending-load accounting."
+  ],
+  "limitations": [
+    "The full WPT suite was not run; the 98/100 whole-browser goal remains unmet.",
+    "URL conformance work and three dedicated native URL tests remain deferred as requested.",
+    "Ordinary cascade origin/layer/rule rollback remains incomplete; the implemented CSS keyword correction does not provide full cascade rollback.",
+    "The document-streaming scope retains a popup/opener context-group limitation.",
+    "The clone scope retains inert Document.write/declarative-shadow-root behavior that is not implemented.",
+    "A custom-element anchors expectation differs from the current existing-parent insertion rule; Chromium also differs from a related final-parent expectation.",
+    "Initial prefix stylesheet prefetch can delay context creation, and document-written external blocking fetch remains synchronous.",
+    "Bootstrap policy metadata is captured by a preliminary native parse, so policy arrival timing remains eager while author-visible DOM construction advances by prefixes.",
+    "No blanket security audit or complete adversarial-security validation is claimed.",
+    "Export source is mapped to the tested working inputs, but the public export was not independently rebuilt and is not a hermetic or portable-binary distribution."
+  ],
+  "credits": {
+    "model": "GPT-6 Astra Pro",
+    "agents": "Built-in integration, engine review and independent conformance agents",
+    "tools": [
+      "RubyWebterm",
+      "Chromium for Testing",
+      "FFmpeg"
+    ]
+  },
+  "publication": {
+    "source_branch": "gpt-6-astra-pro-builtin-integration-source214-20261030",
+    "public_parent": "0742c66b2c9b077c68006c9cb1b4413e281c328d",
+    "export_rebuild_performed": false,
+    "private_operational_records_excluded": true
+  },
+  "retention214": {
+    "ordinary_scripts": "35/35 files,64/64 assertions",
+    "parser_options": "18/18 files,1961/1961 assertions",
+    "document_streaming": "71/72 files,72/73 assertions; unchanged popup limitation",
+    "prior_pass_losses": 0,
+    "missing_previous_identities": 0,
+    "source_binary_unchanged": true,
+    "owned_cleanup_complete": true
+  }
+}

@@ -1,41 +1,26 @@
 {
   "title": "Lumen Linux · parser options and script lifecycle",
-  "phase": "Candidate214 source frozen and building: bounded CSS regression fixes and iframe refresh",
+  "phase": "Session closed at the five-hour limit; candidate 214 verified, whole-browser 98/100 goal unmet",
   "iteration": 14,
-  "score": 64.24,
+  "score": 62.65625,
   "iteration_quality": 64.24,
-  "score_note": "CSS39 candidate213:212/330 reported assertions;60 gains and2 prior-pass losses. Scope only, acceptance blocked.",
+  "score_note": "401/640 wholly passing files in the fixed non-URL sample; not an overall browser quality score",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
-  "checkpoint": "Candidate213 f709f5a7cea816a8757450789ce254fee82be93f: XML20/20, native140/140; CSS rollback losses remain under correction.",
-  "updated_utc": "2026-10-30T10:14:16.005456+00:00",
+  "checkpoint": "Candidate214 ab44cc7f825279391a0f193e0b8a10b5ab151eb4; immutable binary7ea0a9999ec521e90fdd2c25fa8485675abf4149aa7aaa7e1696b99bf8aae8ca; broader acceptance pending.",
+  "updated_utc": "2026-10-30T11:26:33.629287+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
-  "current_evidence": [
-    [
-      "Fixed non-URL640 latest complete211",
-      "395/640 full files;8700/10540 assertions. Its16 XML losses are all fixed by213 focused20/20, but213 has not replayed640."
-    ],
-    [
-      "Current Chromium156 same640",
-      "560/640 full files;9551/10552 assertions."
-    ],
-    [
-      "Candidate213 CSS39",
-      "212/330 assertions;15/39 full files versus211154/330,10/39.60 gains,2 prior-pass losses,0 missing prior identities."
-    ],
-    [
-      "Candidate213 completed regression gates",
-      "XML20/20;native140/140;creation64/64;template50/50;CE49/50;clone156/157;is26/26."
-    ],
-    [
-      "Next correction",
-      "Real CSS rule rollback and same-value iframe attribute navigation. Tests and expected values remain fixed."
-    ],
-    [
-      "Publication",
-      "Reviewed205 source/archive remain published. Latest source is still under regression acceptance."
-    ]
-  ],
+  "current_evidence": {
+    "candidate": 214,
+    "broad640": "401/640 whole files; 8764/10540 assertions; +440 gains, zero prior-pass losses or missing identities",
+    "chromium156": "560/640 whole files; 9551/10552 assertions",
+    "css_variables": "219/331 assertions; 17/39 whole files",
+    "ordinary_scripts": "64/64; 35/35 files",
+    "parser_options": "1961/1961; 18/18 files",
+    "document_streaming": "72/73; 71/72 files",
+    "native": "140/140; dedicated URL tests deferred",
+    "whole_browser_goal": "98/100 remains unmet"
+  },
   "coverage": "Latest complete fixed non-URL640 sample:211395/640 full files and8700/10540 assertions. CurrentChromium156560/640 and9551/10552. FullWPT/whole-browser98 is not certified.",
   "findings": [
     "Current changes are not yet validated. Trusted Types parser-option enforcement is the bounded first target.",
@@ -412,7 +397,7 @@
   "public_report_url": "https://ecooxai.github.io/lumen/",
   "session_iteration": 11,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": null,
+  "accepted_iteration": 14,
   "accepted_focused_results": {
     "native": "140/140",
     "network": "317/317",
@@ -1216,7 +1201,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-30T08:38:59.975099+00:00",
+  "updated_at": "2026-10-30T11:26:33.629287+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1361,7 +1346,12 @@
       193,
       197
     ],
-    "tested_source": "a4c26febf736ef6334f05421e1c0d69b24e5a411"
+    "tested_source": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+    "closed_utc": "2026-10-30T11:26:33.629287+00:00",
+    "elapsed_wall_minutes": 300.3771547833333,
+    "candidate_iterations": 14,
+    "stop_reason": "requested_primary_five_hour_limit",
+    "whole_browser_goal_achieved": false
   },
   "session7_current": {
     "started_utc": "2026-10-30T06:26:11Z",
@@ -1383,8 +1373,8 @@
     "overall_goal_met": false,
     "current_source_has_uncommitted_changes": true
   },
-  "score_scope": "100/100 applies only to the retained18-file parser-options part (1961/1961). Candidate207 ordinary35:62/64 assertions,33/35whole; document-streaming72:18/73,16/72whole. Overall98/fullWPT remains unverified.",
-  "current_work": "Immutable208 and currentChrome156 are replaying the unchanged640 non-URL cases. Three prior-pass assertion losses and one completion regression block broad208 acceptance.209 is correcting parser insertion rules and measured custom-element construction gaps.",
+  "score_scope": "Wholly passing files in the fixed non-URL640 sample; not full WPT or overall product quality",
+  "current_work": "Final source, results and video are published; local handoff is complete. Follow-up priorities and explicit limits are recorded.",
   "session7_active_candidate": 209,
   "session7_candidate207": {
     "source_commit": "909f27b0d18dea80dd360fef7ee772a89817b326",
@@ -1458,5 +1448,8 @@
     "harness_OK": 626,
     "harness_TIMEOUT": 13,
     "harness_ERROR": 1
-  }
+  },
+  "session_status": "closed_time_limit",
+  "completed_utc": "2026-10-30T11:26:33.629287+00:00",
+  "goal_achieved": false
 }

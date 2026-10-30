@@ -1,0 +1,35 @@
+{
+  "source_archive": "lumen_gpt-6-astra-pro_builtin-rubywebterm_release-helper-snapshots214.tar.gz",
+  "source_archive_sha256": "bb5dabc78aaadc9f9d30360ad2e67d6b738682710bb1475a29e5e268eeec23a2",
+  "qualification": "Pre-format helper snapshots. The encoder snapshot is the exact executed/reviewed332a51add\u2026 source. No general execution claim is made for other helper snapshots. Engine inputs, published content and validation receipts are unchanged.",
+  "files": [
+    {
+      "file": "prepare_reviewed_public_snapshot.py",
+      "preformat_snapshot_sha256": "81d905677921c33f4aba138c13fba3392af7591e59f40e94f9ab37f0ed23b469",
+      "maintained_file_sha256": "29edfd2c1a778abc2ff6d7757194e99b204a38160bd8cc97bff805a0ce0b5016",
+      "change": "Trailing blank lines only; parsed Python AST unchanged",
+      "executed_encoder_version": false
+    },
+    {
+      "file": "qualify_public_snapshot.py",
+      "preformat_snapshot_sha256": "2d7abb220743488ecdee2727547b32120ae62f60aa6bac8f8dafe6df3cdfbf24",
+      "maintained_file_sha256": "7501d0666fad97aaeaee2dfbf664b10d7824858832aec685562280b73562458d",
+      "change": "Trailing blank lines only; parsed Python AST unchanged",
+      "executed_encoder_version": false
+    },
+    {
+      "file": "render_public_results.py",
+      "preformat_snapshot_sha256": "28a885aacb22fe71a32675c90b6ee2eeb82d506fea2d9990b092b46ebf1f520d",
+      "maintained_file_sha256": "55f72cf2cd5e65b9ee6a7d0580e21cbd39a00d4d2fb4b55b8e0ac0ebad6b7b4e",
+      "change": "Trailing blank lines only; parsed Python AST unchanged",
+      "executed_encoder_version": false
+    },
+    {
+      "file": "showcase/encode-public-results.py",
+      "preformat_snapshot_sha256": "332a51addcc7a285202803c9c88ef617420988f52016dcd05799f9039e59cf2e",
+      "maintained_file_sha256": "dae8a7d606d94640e02dd2ee2365cc3be82c58605352a45d90c547e75521be5a",
+      "change": "Trailing blank lines only; parsed Python AST unchanged",
+      "executed_encoder_version": true
+    }
+  ]
+}

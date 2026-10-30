@@ -1,0 +1,8 @@
+{
+  "observed_utc": "2026-10-30T11:24:50.126803+00:00",
+  "required_pid_file": "/tmp/lumen-display0.pid",
+  "present": false,
+  "restart_attempted": false,
+  "source_binary_already_verified214": true,
+  "reason": "AGENTS.md requires verified task-owned PID ownership before replacing the displayed browser; no process was guessed or killed by name."
+}

@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "session_started_utc": "2026-10-30T06:26:11+00:00",
+  "primary_deadline_utc": "2026-10-30T11:26:11+00:00",
+  "closed_utc": "2026-10-30T11:26:33.629287+00:00",
+  "elapsed_wall_seconds": 18022.629287,
+  "elapsed_wall_minutes": 300.3771547833333,
+  "candidate_iterations": 14,
+  "candidate_ids": [
+    201,
+    202,
+    203,
+    204,
+    205,
+    206,
+    207,
+    208,
+    209,
+    210,
+    211,
+    212,
+    213,
+    214
+  ],
+  "stop_reason": "requested_primary_five_hour_limit",
+  "whole_browser_goal_score": 98,
+  "whole_browser_goal_achieved": false,
+  "extra_hour_used": false,
+  "source_commit": "ab44cc7f825279391a0f193e0b8a10b5ab151eb4",
+  "binary_sha256": "7ea0a9999ec521e90fdd2c25fa8485675abf4149aa7aaa7e1696b99bf8aae8ca",
+  "source_files_rechecked_unchanged": 709,
+  "fixed_non_url_files": {
+    "pass": 401,
+    "total": 640,
+    "rate_percent": 62.65625
+  },
+  "fixed_non_url_assertions": {
+    "pass": 8764,
+    "total": 10540
+  },
+  "baseline_common_pass_gains": 440,
+  "baseline_prior_pass_losses": 0,
+  "baseline_missing_identities": 0,
+  "public_source_commit": "5c0e775cfad2084ab5b8107837fe98275d54b35e",
+  "pages_commit": "eb741a324ab2606da47fea9370a2dfd177d37cdc",
+  "public_payloads": 15,
+  "publication_manifest_sha256": "9e9bee54074413b369a3b0cabaf939e749de7f0101f3ba8ba6e8bb766b36f954",
+  "desktop_restarted": false,
+  "desktop_restart_block": "required_verified_PID_file_absent_at_current_preflight",
+  "policy_prefix_sha256": "443b33087067fcae89f3aa2e60ca6a31af4c221dc96e25ef03c81fc917cc2a1f"
+}

@@ -1,0 +1,26 @@
+{
+  "page": {
+    "url": "https://ecooxai.github.io/lumen/showcase214.html",
+    "sha256": "04ede4c165bb678e8f95091fe3ae16fe82d9235b191fcd0c1f4c945553feaeac"
+  },
+  "shots": [
+    "top",
+    "#results",
+    "#scopes",
+    "#engineering",
+    "#credits"
+  ],
+  "credit_selector": "#credits",
+  "ready_selector": "#results",
+  "duration_seconds": 36,
+  "assets": [
+    {
+      "url": "https://ecooxai.github.io/lumen/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint214.json",
+      "sha256": "a2f0408112b65889015f5a19be4b54ce309f02a019b17d093a041485edc6d572"
+    },
+    {
+      "url": "https://ecooxai.github.io/lumen/lumen_gpt-6-astra-pro_builtin-rubywebterm_nonurl640_final214.json",
+      "sha256": "33864b6a5d2538f631e23483bba4584cd3492f3f4bd6b810aca1b169cb1f24a5"
+    }
+  ]
+}

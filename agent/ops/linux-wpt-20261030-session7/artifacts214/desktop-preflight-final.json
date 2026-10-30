@@ -1,0 +1,9 @@
+{
+  "checked_utc": "2026-10-30T11:07:31.899248+00:00",
+  "pid_file_exists": false,
+  "desktop_inspected": false,
+  "restart_performed": false,
+  "expected_default_binary": "build/codex-native/lumen",
+  "expected_binary_matches214": true,
+  "restart_blocker": "AGENTS.md requires a live task-owned PID from /tmp/lumen-display0.pid before restarting DISPLAY=:0; that ownership record is absent."
+}
