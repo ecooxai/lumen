@@ -1,0 +1,21 @@
+{
+  "started_utc": "2026-10-30T06:31:39.897Z",
+  "url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz",
+  "session": "20261030-0626",
+  "credential_values_printed": false,
+  "telemetry_utc": [
+    "2026-10-30T06:31:39.123Z",
+    "2026-10-30T06:31:41.124Z",
+    "2026-10-30T06:31:43.125Z"
+  ],
+  "rtt_ms": 214,
+  "message_id": "366342c4-e7c6-43af-bd98-4e452ee6e78d",
+  "reply_observed": true,
+  "public_can_post": false,
+  "authorized_can_post": true,
+  "disk_count": 6,
+  "ram_gb": 41.95579904,
+  "other_unread": [],
+  "completed_utc": "2026-10-30T06:31:44.136Z",
+  "ok": true
+}

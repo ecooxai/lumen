@@ -1,0 +1,11 @@
+{
+  "checked_utc": "2026-10-30T06:30:02.714337+00:00",
+  "cli_exists": true,
+  "account_status_command": "surge whoami",
+  "identity_output_suppressed": true,
+  "login_attempted": false,
+  "account_created": false,
+  "exit_code": 1,
+  "existing_session_authenticated": false,
+  "output_bytes": 33
+}

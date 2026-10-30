@@ -5,6 +5,8 @@ const SAN_HTML = NSURI[0], SAN_SVG = NSURI[1], SAN_MATHML = NSURI[2];
 const sanErr = (m, what) => new TypeError(`Failed to ${m}: ${what}`);
 const sanStr = (v, m) => { if (typeof v === 'symbol') throw sanErr(m, 'Cannot convert a Symbol value to a string.'); return String(v); };
 const sanIsObj = v => v !== null && (typeof v === 'object' || typeof v === 'function');
+const sanObjectCreate = Object.create, sanObjectKeys = Object.keys, sanOwnDescriptor = Object.getOwnPropertyDescriptor;
+const sanDefine = Object.defineProperty, sanArrayIsArray = Array.isArray;
 function sanSeq(v, m, name, each) {
     if (!sanIsObj(v) || typeof v[Symbol.iterator] !== 'function') throw sanErr(m, `The provided value cannot be converted to a sequence (${name}).`);
     const out = [];
@@ -74,7 +76,19 @@ const sanPIDups = l => { for (let i = 0; i < l.length; i++) for (let j = i + 1; 
 const sanMeets = (a, b) => !!a && !!b && a.some(x => sanHas(b, x));
 const sanIsData = a => a.namespace === null && a.name.startsWith('data-');
 const SAN_NON_REPLACEABLE = [{ name: 'html', namespace: SAN_HTML }, { name: 'svg', namespace: SAN_SVG }, { name: 'math', namespace: SAN_MATHML }];
-const sanClone = c => JSON.parse(JSON.stringify(c));
+/* Configurations here contain only converted own data. Never serialize through
+   author-replaceable JSON methods or inherited toJSON: either could rewrite or
+   disclose a policy's already-vetted private sanitizer configuration. */
+function sanClone(value) {
+    if (value === null || typeof value !== 'object') return value;
+    const out = sanArrayIsArray(value) ? [] : {};
+    for (const key of sanObjectKeys(value)) {
+        const desc = sanOwnDescriptor(value, key);
+        if (desc && 'value' in desc)
+            sanDefine(out, key, { value: sanClone(desc.value), writable: true, enumerable: true, configurable: true });
+    }
+    return out;
+}
 
 /* canonicalize the configuration (its items already are, from sanDict or a canonical config) */
 function sanCanon(c, permissive) {
@@ -178,7 +192,7 @@ const sanPICompare = (a, b) => a.target < b.target ? -1 : a.target > b.target ? 
 
 const SAN_KEY = Symbol('sanitizer');
 const sanCfgs = new WeakMap();
-function sanOf(s, m) { const c = sanCfgs.get(s); if (!c) throw new TypeError(`Failed to execute '${m}' on 'Sanitizer': Illegal invocation`); return c; }
+function sanOf(s, m) { const c = ttRead(sanCfgs, s); if (!c) throw new TypeError(`Failed to execute '${m}' on 'Sanitizer': Illegal invocation`); return c; }
 /* configure: a fresh canonical copy, or a TypeError */
 function sanConfigure(input, permissive, m) {
     const c = sanCanon(sanClone(input), permissive);
@@ -194,7 +208,7 @@ class Sanitizer {
             if (s !== 'default') throw sanErr(m, `The provided value '${s}' is not a valid enum value of type SanitizerPresets.`);
             input = sanDefault();
         } else input = sanDict(configuration, m);
-        sanCfgs.set(this, sanConfigure(input, true, m));
+        ttStore(sanCfgs, this, sanConfigure(input, true, m));
     }
     get() {
         const c = sanClone(sanOf(this, 'get'));
@@ -331,13 +345,13 @@ Object.defineProperty(Sanitizer.prototype, Symbol.toStringTag, { value: 'Sanitiz
 
 /* SetHTMLOptions / SetHTMLUnsafeOptions: { sanitizer, runScripts } */
 function sanOptions(o, m, unsafe) {
-    if (o == null) return {};
+    if (o == null) return sanObjectCreate(null);
     if (!sanIsObj(o)) throw sanErr(m, "The provided value is not of type 'SetHTMLOptions'.");
-    const r = {};
+    const r = sanObjectCreate(null);
     if (unsafe) r.runScripts = !!o.runScripts;
     const s = o.sanitizer;
     if (s === undefined) return r;
-    if (sanCfgs.has(s)) r.sanitizer = s;
+    if (!!ttRead(sanCfgs, s)) r.sanitizer = s;
     else if (s === null || sanIsObj(s)) r.sanitizer = sanDict(s, m);
     else {
         const v = sanStr(s, m);
@@ -356,7 +370,7 @@ function sanFromOptions(o, safe, m) {
         return sanSafeDefault;
     }
     if (input === 'default') input = sanDefault();
-    else if (sanCfgs.has(input)) input = sanCfgs.get(input);
+    else if (!!ttRead(sanCfgs, input)) input = ttRead(sanCfgs, input);
     const c = sanConfigure(input, !safe, m);
     if (safe) sanRemoveUnsafe(c);
     return sanFlat(c);
@@ -375,7 +389,11 @@ function htmlForInsertion(target, html, o, safe, m) {
     const cfg = 'cfg' in o ? o.cfg : sanFromOptions(o, safe, m);
     const cx = N.type(target) === 1 ? target : N.host(target) || tplOwner.get(target) || null;
     if (safe && cx && N.type(cx) === 1 && cx.localName === 'script' && (cx.namespaceURI === SAN_HTML || cx.namespaceURI === SAN_SVG)) return null;
-    return N.parseFragEx(cx, html, cfg, true, !!o.runScripts);
+    const f = N.parseFragEx(cx, html, cfg, true, !!o.runScripts);
+    /* Parsing establishes each new script's trusted text before insertion can
+       prepare it. Later author text mutations still pass through ttScript. */
+    if (f && ttReq && o.runScripts) ttSlotsFrom(f);
+    return f;
 }
 /* a template's contents stand for it as the parser context */
 const tplOwner = new WeakMap();
@@ -395,15 +413,13 @@ const isHtmlRoot = p => isHtmlEl(p, 'html');
 function htmlArgs(args, safe, m, tt = !safe) {
     if (!args.length) throw sanErr(m, '1 argument required, but only 0 present.');
     if (!tt) return [sanStr(args[0], m), sanOptions(args[1], m, !safe)];
-    /* the Unsafe sinks take TrustedHTML, and options a policy made (TrustedHTMLParserOptions) */
-    const po = ttParserOpts(args[1]);
-    if (po) return [sanStr(args[0], m), po];
-    const [, fn, on] = /'(\w+)' on '(\w+)'/.exec(m), sink = on + ' ' + fn;
-    /* a required-Trusted-Types document's default policy makes the parser options first */
-    const dp = ttReq && ttDefault && ttPolicies.get(ttDefault).fns.createParserOptions;
-    const o = dp ? ttOptsOf.get(TrustedTypePolicy.prototype.createParserOptions.call(ttDefault, args[1], 'TrustedHTMLParserOptions', sink)) : sanOptions(args[1], m, !safe);
+    /* Convert the markup and dictionary once, then vet options before markup.
+       A branded options object is recognized by its private slot, not prototype. */
     const html = ttIsHTML(args[0]) ? args[0] : sanStr(args[0], m);
-    return [ttString(TrustedHTML, html, sink), o];
+    const options = ttParserOpts(args[1]) ? args[1] : sanOptions(args[1], m, !safe);
+    const [, fn, on] = /'(\w+)' on '(\w+)'/.exec(m);
+    const sink = (/^(before|after|replaceWith)HTMLUnsafe$/.test(fn) ? 'Node' : on) + ' ' + fn;
+    return ttCompliantHTML(html, options, sink, false, true);
 }
 function htmlSet(target, [html, o], safe, m) {
     const f = htmlForInsertion(target, html, o, safe, m);
@@ -466,8 +482,16 @@ for (const proto of [Element.prototype, CharacterData.prototype]) for (const u o
    non-streaming method, once the stream closes */
 function htmlStream(self, name, safe, options, apply) {
     const on = /^stream(Before|After|ReplaceWith)/.test(name) ? 'Node' : self instanceof ShadowRoot ? 'ShadowRoot' : 'Element';
-    const m = `execute '${name}' on '${on}'`, [, o] = htmlArgs(['', options], safe, m);
-    /* bad options, Trusted Types and the sanitizer config are settled now; later changes to them don't count */
+    const m = `execute '${name}' on '${on}'`;
+    let o;
+    if (safe) o = sanOptions(options, m, false);
+    else {
+        const converted = ttParserOpts(options) ? options : sanOptions(options, m, true);
+        const compliant = ttCompliantParserOptions(converted, on + ' ' + name, true);
+        o = ttParserOpts(compliant) || compliant;
+    }
+    /* Streaming cannot vet future chunks with createHTML. The parser policy and
+       configuration are settled now, before any tree changes or writer exists. */
     const a = Object.assign({}, o, { cfg: sanFromOptions(o, safe, m) });
     let buf = '';
     return new WritableStream({ write(c) { buf += String(c); }, close() { apply([buf, a], m); } });

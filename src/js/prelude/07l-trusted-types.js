@@ -123,9 +123,13 @@ function cspMatch(list, url) {
 /* Trusted Types */
 const ttRequiredBy = p => { const v = p.lc.get('require-trusted-types-for'); return !!v && v.includes("'script'"); };
 const ttEnforced = () => cspList().some(p => !p.report && ttRequiredBy(p));
+const ttApply = Reflect.apply, ttObjectCreate = Object.create, ttObjectKeys = Object.keys, ttObjectDefine = Object.defineProperty;
+const ttWeakGet = WeakMap.prototype.get, ttWeakSet = WeakMap.prototype.set;
+const ttRead = (map, key) => ttApply(ttWeakGet, map, [key]);
+const ttStore = (map, key, value) => ttApply(ttWeakSet, map, [key, value]);
 const ttData = new WeakMap();   /* trusted value -> [its interface, its data] */
-const ttOwn = (o, C) => { const d = ttData.get(o); if (!d || d[0] !== C) throw new TypeError('Illegal invocation'); return d[1]; };
-function ttIsHTML(v) { const d = ttData.get(v); return !!d && d[0] === TrustedHTML; }
+const ttOwn = (o, C) => { const d = ttRead(ttData, o); if (!d || d[0] !== C) throw new TypeError('Illegal invocation'); return d[1]; };
+function ttIsHTML(v) { const d = ttRead(ttData, v); return !!d && d[0] === TrustedHTML; }
 /* fromLiteral: a template literal without substitutions */
 function ttLiteral(args, C) {
     const t = args[0];
@@ -157,15 +161,15 @@ function ttMake(C, s) {
     let o;
     if (C === TrustedScript) { o = N.codeLike(); Object.setPrototypeOf(o, TrustedScript.prototype); }
     else o = Object.create(C.prototype);
-    ttData.set(o, [C, s]);
+    ttStore(ttData, o, [C, s]);
     return o;
 }
 const ttOptsOf = new WeakMap();   /* TrustedHTMLParserOptions -> { runScripts, sanitizer } */
 class TrustedHTMLParserOptions { constructor() { illegal(); } }
-function ttParserOpts(v) { return v !== null && typeof v === 'object' && ttOptsOf.get(v) || null; }
+function ttParserOpts(v) { return ttRead(ttOptsOf, v) || null; }
 
 const ttPolicies = new WeakMap();   /* TrustedTypePolicy -> { name, fns } */
-const ttPolOf = p => { const r = ttPolicies.get(p); if (!r) throw new TypeError('Illegal invocation'); return r; };
+const ttPolOf = p => { const r = ttRead(ttPolicies, p); if (!r) throw new TypeError('Illegal invocation'); return r; };
 const TT_FN = new SMap([[TrustedHTML, 'createHTML'], [TrustedScript, 'createScript'], [TrustedScriptURL, 'createScriptURL']]);
 const ttDOMString = (v, m) => { if (typeof v === 'symbol') throw new TypeError(`Failed to execute '${m}': Cannot convert a Symbol value to a string.`); return String(v); };
 function ttCreate(pol, C, args) {
@@ -187,13 +191,10 @@ class TrustedTypePolicy {
     createParserOptions(options = undefined, ...args) {
         const p = ttPolOf(this), m = "execute 'createParserOptions' on 'TrustedTypePolicy'";
         if (!p.fns.createParserOptions) throw new TypeError(`Failed to ${m}: Policy ${p.name}'s TrustedTypePolicyOptions did not specify a 'createParserOptions' member.`);
-        const o = sanOptions(options, m, true), arg = { runScripts: !!o.runScripts };
-        if (o.sanitizer != null) arg.sanitizer = o.sanitizer;
-        const r = p.fns.createParserOptions.call(undefined, arg, ...args);
+        const o = sanOptions(options, m, true);
+        const r = ttApply(p.fns.createParserOptions, undefined, [ttParserCallbackArg(o, m), ...args]);
         if (r == null) throw new TypeError(`Failed to ${m}: The policy's createParserOptions returned null.`);
-        const po = Object.create(TrustedHTMLParserOptions.prototype);
-        ttOptsOf.set(po, sanOptions(r, m, true));
-        return po;
+        return ttMakeParserOptions(sanOptions(r, m, true), m);
     }
 }
 const ttNames = [];
@@ -224,14 +225,14 @@ class TrustedTypePolicyFactory {
         if (blocked) throw new TypeError(`Failed to ${m}: Policy "${name}" disallowed.`);
         if (name === 'default' && ttDefault) throw new TypeError(`Failed to ${m}: Policy "default" already exists.`);
         const pol = Object.create(TrustedTypePolicy.prototype);
-        ttPolicies.set(pol, { name, fns });
+        ttStore(ttPolicies, pol, { name, fns });
         if (name === 'default') ttDefault = pol;
         ttNames.push(name);
         return pol;
     }
     isHTML(value) { return ttIsHTML(value); }
-    isScript(value) { const d = ttData.get(value); return !!d && d[0] === TrustedScript; }
-    isScriptURL(value) { const d = ttData.get(value); return !!d && d[0] === TrustedScriptURL; }
+    isScript(value) { const d = ttRead(ttData, value); return !!d && d[0] === TrustedScript; }
+    isScriptURL(value) { const d = ttRead(ttData, value); return !!d && d[0] === TrustedScriptURL; }
     get emptyHTML() { return ttEmptyHTML || (ttEmptyHTML = ttMake(TrustedHTML, '')); }
     get emptyScript() { return ttEmptyScript || (ttEmptyScript = ttMake(TrustedScript, '')); }
     getAttributeType(tagName, attribute, elementNs = '', attrNs = '') {
@@ -257,6 +258,69 @@ for (const C of [TrustedHTML, TrustedScript, TrustedScriptURL, TrustedTypePolicy
 for (const C of [TrustedHTML, TrustedScript, TrustedScriptURL]) Object.defineProperty(C, 'fromLiteral', { enumerable: true });
 const ttFactory = Object.create(TrustedTypePolicyFactory.prototype);
 
+/* Parser-option policies receive a new Sanitizer, never the caller's mutable
+   object. Trusted options then retain a second private configuration copy, so
+   later policy/caller mutation cannot change an already-vetted operation. */
+function ttSanitizerConfig(input, m) {
+    if (input === undefined) return null;
+    const known = ttRead(sanCfgs, input);
+    return sanConfigure(input === 'default' ? sanDefault() : known || input, true, m);
+}
+function ttParserCallbackArg(o, m) {
+    const arg = { runScripts: !!o.runScripts }, cfg = ttSanitizerConfig(o.sanitizer, m);
+    if (cfg) {
+        const sanitizer = ttObjectCreate(Sanitizer.prototype);
+        ttStore(sanCfgs, sanitizer, cfg);
+        ttObjectDefine(arg, 'sanitizer', { value: sanitizer, writable: true, enumerable: true, configurable: true });
+    }
+    return arg;
+}
+function ttMakeParserOptions(o, m) {
+    const data = ttObjectCreate(null);
+    data.runScripts = !!o.runScripts;
+    const cfg = ttSanitizerConfig(o.sanitizer, m);
+    if (cfg) data.sanitizer = cfg;
+    const po = ttObjectCreate(TrustedHTMLParserOptions.prototype);
+    ttStore(ttOptsOf, po, data);
+    return po;
+}
+/* An explicitly present config member needs vetting even when its sequence is
+   empty. Only an empty converted SanitizerConfig is exempt; Sanitizer objects
+   and presets always need policy review. */
+function ttOptionsNeedVetting(o) {
+    const s = o.sanitizer;
+    return !!o.runScripts || (s !== undefined &&
+        (s === 'default' || !!ttRead(sanCfgs, s) || ttObjectKeys(s).length !== 0));
+}
+/* Get Trusted Type compliant parser options. Report-only rejection retains the
+   original converted dictionary; author callback exceptions always propagate.
+   Streaming callers require a parser policy even for a vetting-free dictionary. */
+function ttCompliantParserOptions(options, sink, throwIfMissing = false, optionsFromAuthor = true) {
+    if (ttParserOpts(options) || !ttReq) return options;
+    const f = ttDefault && ttPolOf(ttDefault).fns.createParserOptions;
+    const required = throwIfMissing || (optionsFromAuthor && ttOptionsNeedVetting(options));
+    if (!f) {
+        if (required && ttMismatch(sink, '')) throw new TypeError(`Failed to set '${sink}': This document requires 'TrustedHTMLParserOptions'.`);
+        return options;
+    }
+    const m = `execute '${sink.slice(sink.indexOf(' ') + 1)}' on '${sink.split(' ')[0]}'`;
+    const r = ttApply(f, undefined, [ttParserCallbackArg(options, m), 'TrustedHTMLParserOptions', sink]);
+    if (r == null) {
+        if (ttMismatch(sink, '')) throw new TypeError(`Failed to set '${sink}': The default createParserOptions policy rejected the options.`);
+        return options;
+    }
+    return ttMakeParserOptions(sanOptions(r, m, true), m);
+}
+/* Shared HTML injection algorithm. Legacy sinks pass their own converted
+   options and optionsFromAuthor=false; XML sinks always vet the string. */
+function ttCompliantHTML(value, options, sink, xml = false, optionsFromAuthor = false) {
+    const input = ttIsHTML(value) ? value : ttDOMString(value, sink);
+    const compliant = xml ? options : ttCompliantParserOptions(options, sink, false, optionsFromAuthor);
+    const po = !xml && ttParserOpts(compliant);
+    if (po) return [ttIsHTML(input) ? ttOwn(input, TrustedHTML) : input, po];
+    return [ttString(TrustedHTML, input, sink), compliant];
+}
+
 /* the event handler content attributes, as the sanitizer knows them, and the media element's encrypted-media ones */
 let ttEventNames = null;
 const ttEvents = () => ttEventNames || (ttEventNames = new SSet([...SAN_EVENT_ATTRS.map(a => a.name), 'onencrypted', 'onwaitingforkey']));
@@ -273,12 +337,12 @@ function ttAttrData(ln, ns, a, ans) {
 /* "get Trusted Type compliant string": v's data if it is a C, else (when required) what the default policy makes of
    it; a rejected value is reported, and throws unless every requiring policy is report-only */
 function ttString(C, v, sink) {
-    const d = ttData.get(v);
+    const d = ttRead(ttData, v);
     if (d && d[0] === C) return d[1];
     const s = `${v}`;
     if (!ttReq) return s;
     let r = null;
-    const f = ttDefault && ttPolicies.get(ttDefault).fns[TT_FN.get(C)];
+    const f = ttDefault && ttPolOf(ttDefault).fns[TT_FN.get(C)];
     if (f) r = f.call(undefined, s, C.name, sink);
     if (r != null) { const o = `${r}`; return C === TrustedScriptURL ? o.toWellFormed() : o; }
     if (ttMismatch(sink, s)) throw new TypeError(`Failed to set '${sink}': This document requires '${C.name}' assignment.`);
@@ -299,13 +363,13 @@ function ttAttr(el, ans, ln, v) {
     if (!ttReq) return typeof v === 'string' ? v : `${v}`;
     const t = ttAttrData(el.localName, el.namespaceURI, ln, ans === '' ? null : ans);
     if (t) return ttString(t[0], v, t[1]);
-    const d = ttData.get(v);
+    const d = ttRead(ttData, v);
     return d ? d[1] : `${v}`;
 }
 /* document.write(): the texts joined, TrustedHTML only when they all are */
 function ttWriteText(texts, ln) {
     const all = texts.length > 0 && texts.every(ttIsHTML);
-    let s = texts.map(t => all ? ttData.get(t)[1] : `${t}`).join('');
+    let s = texts.map(t => all ? ttRead(ttData, t)[1] : `${t}`).join('');
     if (ln) s += '\n';
     return all ? s : ttString(TrustedHTML, s, ln ? 'Document writeln' : 'Document write');
 }
@@ -313,10 +377,10 @@ function ttWriteText(texts, ln) {
 /* a script element's "script text": what the parser or a trusted setter put there; an inline script whose child text
    differs runs only what the default policy makes of it */
 const ttSlot = new WeakMap();
-function ttSlotsFrom(root) { for (const s of N.query(root, 'script', true)) ttSlot.set(s, N.text(s)); }
+function ttSlotsFrom(root) { for (const s of N.query(root, 'script', true)) ttStore(ttSlot, s, N.text(s)); }
 {
     const nodeText = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
-    const setScript = (el, v, sink) => { const s = ttString(TrustedScript, v, sink); ttSlot.set(el, s); nodeText.set.call(el, s); };
+    const setScript = (el, v, sink) => { const s = ttString(TrustedScript, v, sink); ttStore(ttSlot, el, s); nodeText.set.call(el, s); };
     const sp = H.HTMLScriptElement.prototype;
     acc(sp, 'text', function () { return N.text(this); }, function (v) { setScript(this, v, 'HTMLScriptElement text'); });
     acc(sp, 'textContent', function () { return nodeText.get.call(this); }, function (v) { setScript(this, v == null ? '' : v, 'HTMLScriptElement textContent'); });
@@ -324,10 +388,10 @@ function ttSlotsFrom(root) { for (const s of N.query(root, 'script', true)) ttSl
 }
 /* the native side's hook for an inline script about to run: the text to run, or null when blocked */
 function ttScript(el, text) {
-    if (ttSlot.get(el) === text) return text;
+    if (ttRead(ttSlot, el) === text) return text;
     try {
         const s = ttString(TrustedScript, text, el.namespaceURI === SAN_SVG ? 'SVGScriptElement text' : 'HTMLScriptElement text');
-        ttSlot.set(el, s);
+        ttStore(ttSlot, el, s);
         return s;
     } catch (e) { return null; }
 }
@@ -337,7 +401,7 @@ let ttTimerSrc = null;
 const TT_FN_FRAME = /^[^\n]*\n[^\n]*\n\s+at (?:new )?(?:Async)?(?:Generator)?Function \(/;
 function ttEval(source, isCodeLike) {
     if (typeof source !== 'string') {
-        const d = ttData.get(source);
+        const d = ttRead(ttData, source);
         if (!d || d[0] !== TrustedScript) return undefined;
         if (ttInternal) return d[1];
         /* an argument of the Function constructor: the whole function's text comes next */
@@ -360,7 +424,7 @@ function runJsURL(href) {
     let code = href.slice(11);
     if (ttReq) {
         let r = null;
-        const f = ttDefault && ttPolicies.get(ttDefault).fns.createScript;
+        const f = ttDefault && ttPolOf(ttDefault).fns.createScript;
         try { if (f) r = f.call(undefined, code, 'TrustedScript', 'Location href'); } catch (e) { r = null; }
         if (r == null) { if (ttMismatch('Location href', code)) return; }
         else { const u = URL.parse('javascript:' + r); if (!u) return; code = u.href.slice(11); }

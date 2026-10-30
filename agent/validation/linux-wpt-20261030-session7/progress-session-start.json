@@ -1,0 +1,18 @@
+{
+  "updated_utc": "2026-10-30T06:31:06.548342+00:00",
+  "stale_recorded_pid": 2555334,
+  "old_pid": 22209,
+  "new_pid": 2330020,
+  "owner_verified": true,
+  "command": [
+    "node",
+    "agent/progress/server.mjs"
+  ],
+  "new_session_id": "20261030-0626",
+  "health": {
+    "status": 200,
+    "body": "{\"ok\":true,\"service\":\"lumen-wpt-progress\"}"
+  },
+  "authentication_values_read_or_printed": false,
+  "tunnel_restarted": false
+}

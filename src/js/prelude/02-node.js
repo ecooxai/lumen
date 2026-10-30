@@ -613,7 +613,7 @@ class ShadowRoot extends DocumentFragment { constructor() { illegal(); } }
 methods(ShadowRoot.prototype, {
     getAnimations() { return []; },
     get host() { return N.host(this); }, get mode() { return N.srFlags(this) & 1 ? 'closed' : 'open'; },
-    get innerHTML() { return N.html(this, false); }, set innerHTML(v) { setInner(this, ttString(TrustedHTML, v == null ? '' : v, 'ShadowRoot innerHTML')); },
+    get innerHTML() { return N.html(this, false); }, set innerHTML(v) { const [html, o] = ttCompliantHTML(v == null ? '' : v, { runScripts: false }, 'ShadowRoot innerHTML', xmlDocOf(this)); setInner(this, html, o); },
     get activeElement() { return null; }, get delegatesFocus() { return !!(N.srFlags(this) & 2); },
     get clonable() { return !!(N.srFlags(this) & 8); }, get serializable() { return !!(N.srFlags(this) & 4); },
     get slotAssignment() { return N.srFlags(this) & 16 ? 'manual' : 'named'; },

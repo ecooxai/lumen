@@ -1,51 +1,47 @@
 {
-  "title": "Lumen Linux \u00b7 active Ruby engine development",
-  "phase": "Session finished; verified candidate 200 source and showcase published",
-  "iteration": 200,
+  "title": "Lumen Linux \u00b7 Trusted Types parser compatibility",
+  "phase": "Session 7: fresh parser-option baseline and implementation",
+  "iteration": 201,
   "score": null,
   "iteration_quality": null,
-  "score_note": "Historical 19/100 was not a reproducible current assessment. Selected 640-case full-case pass rate is 59.38/100; no overall score is inferred.",
-  "branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
+  "score_note": "Candidate 200 measured baseline: 59.38/100 fully passing selected cases; no overall browser score inferred.",
+  "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
   "checkpoint": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
-  "updated_utc": "2026-10-29T21:14:52.039463+00:00",
-  "session_started_utc": "2026-10-29T17:25:47Z",
-  "deadline_utc": "2026-10-29T21:25:47Z",
+  "updated_utc": "2026-10-30T06:31:06.548342+00:00",
+  "session_started_utc": "2026-10-30T06:26:11Z",
+  "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
     [
-      "Accepted final candidate 200",
-      "380/640 full selected cases and 8,324/10,540 assertions. The same Chromium reference passes 544/640 and 9,516/10,549."
+      "Verified baseline200",
+      "380/640 fully passing cases (59.38%); 8,324/10,540 assertion passes (78.98%). Existing binary identity verified."
     ],
     [
-      "Measured gain from original candidate 176",
-      "23 more full cases and 251 more semantic assertion passes, with zero lost, missing or added identities and no completion/status changes."
+      "Chromium reference",
+      "544/640 fully passing cases; 9,516/10,549 assertion passes. Fresh focus rerun uses the same installed Chromium150."
     ],
     [
-      "Retained focused correctness",
-      "140/140 non-URL native tests; all 14 authored cohorts retained; network 317/317 and upstream forms 647/649."
+      "Selected important part",
+      "Trusted Types parser options: 18 whole upstream files frozen before implementation; fresh Lumen200 and Chromium runs underway."
     ],
     [
-      "Final performance qualification",
-      "All 21 trials passed 9,395 checks each. Native timing ranges overlap; no broad speedup is claimed. All owned profiles and processes were cleaned."
-    ],
-    [
-      "Published release provenance",
-      "Tested production a4c26feb maps to public export 3b9a6a5f. The final source archive, embedded Git bundle, report and native showcase are published and verified."
+      "Source preservation",
+      "Original source preserved; new GPT-6 Astra Pro built-in integration branch, full task saved; no URL conformance work."
     ]
   ],
   "coverage": "Frozen selected 640 HTTP/window cases; URL conformance deferred. Chromium: 544/640 full cases and 9,516/10,549 assertions. This is not the complete WPT suite.",
   "findings": [
-    "The requested 98/100 whole-browser goal was not reached. The 59.38/100 full-case score applies only to the frozen selected 640-case cohort; URL conformance remains deferred.",
-    "The largest remaining Chromium-pass gaps are CSS values, sizing, grid, DOM parsing, variables and flex. Failed provisional candidates 193 and 197 remain documented, with separate verified repairs.",
-    "Actual Lumen hardware rendering and ordinary desktop-close behavior remain unverified. The verified build and media use CPU/offscreen rendering.",
-    "The earlier local feedback endpoint remains offline: no verified launch recipe was recovered, and reduced-privilege isolation for a safe help query was unavailable. Its authentication state was left unchanged. The current Ruby telemetry page remains live."
+    "Current changes are not yet validated. Trusted Types parser-option enforcement is the bounded first target.",
+    "The requested 98/100 whole-browser goal is not established by the selected sample or a focused result.",
+    "URL conformance remains deferred. All failure denominators and reference differences remain visible.",
+    "Surge currently has no authenticated session; existing HTTPS progress and reviewed GitHub Pages publication remain available."
   ],
-  "active_iteration": 200,
+  "active_iteration": 201,
   "accepted_binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
   "accepted_binary_scope": "Candidate 200, exact final CPU/offscreen Linux build; full selected-cohort and scoped regression validation complete.",
   "agent_session": "active",
   "showcase_url": "https://ecooxai.github.io/lumen/showcase.mp4",
   "candidate_binary_sha256": null,
-  "publication_status": "Existing reviewed source and showcase belong to accepted historical build168; a new accepted checkpoint will be identified separately.",
+  "publication_status": "Historical accepted candidate 200 remains published; next reviewed source checkpoint will be linked after validation.",
   "showcase_note": "Actual native candidate 200 CPU/offscreen frames; final published video and poster bytes were independently downloaded and verified.",
   "source_archive_url": "https://ecooxai.github.io/lumen/src.tar.gz",
   "source_archive_sha256": "cb396f9c3dc0a0b7cbb8a59dcaa073f5ce5bf902f54680c6cce317e23322989e",
@@ -54,9 +50,9 @@
   "clean_demo_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-ffmpeg-i168-experimental-clean.mp4",
   "source_archive_scope": "Reviewed candidate 200 source and embedded public Git-history bundle; no portable executable claim.",
   "cloud_snapshot_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-agents-rubywebterm-linux-engine-experimental-source-20261029",
-  "session_active": false,
-  "session_id": "20261029-1725",
-  "session_deadline_utc": "2026-10-29T21:25:47Z",
+  "session_active": true,
+  "session_id": "20261030-0626",
+  "session_deadline_utc": "2026-10-30T11:26:11Z",
   "previous_session_evidence": [
     [
       "Accepted combined source 150",
@@ -151,7 +147,7 @@
     "freshness_note": "Historical previous-session comparator, not a new session 4 replay."
   },
   "source_archive_available": true,
-  "session_response_availability": "This work session has finished. Messages may remain queued, but replies require a new active session; there are no unattended replies.",
+  "session_response_availability": "Active built-in agents poll task messages during this session; no unattended replies promised after deadline.",
   "selected_wpt": {
     "selected_urls": 4200,
     "native162": {
@@ -349,7 +345,7 @@
     "fresh_all162_render100_replay": false,
     "summary_sha256": "0745aabf33a07a7c5a7609d5c52e0a1ba057631019df1ed627fb8c1138075ef5"
   },
-  "session_active_until": "2026-10-29T21:25:47Z",
+  "session_active_until": "2026-10-30T11:26:11Z",
   "retained_session3_evidence": {
     "label": "Historical experimental162; previous completed work session",
     "selected_wpt": {
@@ -398,15 +394,15 @@
       "source": "https://ecooxai.github.io/lumen/src.tar.gz"
     }
   },
-  "work_session_id": "20261029-1725",
-  "work_session_number": 5,
+  "work_session_id": "20261030-0626",
+  "work_session_number": 7,
   "historical_public_report_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-agents-rubywebterm-chromium-public-report.json",
   "candidate_focused_results": {
     "iteration": 187,
     "state": "build sealed; independent runtime acceptance pending"
   },
   "public_report_url": "https://ecooxai.github.io/lumen/",
-  "session_iteration": 21,
+  "session_iteration": 1,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
   "accepted_iteration": 200,
   "accepted_focused_results": {
@@ -536,7 +532,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": 200,
+  "current_candidate": null,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -990,7 +986,6 @@
       "qualification": "These selected outcomes do not establish that the entire API is absent."
     }
   ],
-  "feedback_polling_closed_utc": "2026-10-29T21:14:52.039463+00:00",
   "previous_session4_evidence": [
     [
       "Measured fixed selection",
@@ -1324,10 +1319,10 @@
   },
   "session6_current": "Candidate 200 is accepted: 380/640 full selected cases, 8,324/10,540 assertions, 251 new assertion passes and no losses versus candidate 176.",
   "session6_current_summary": "Session finished after 229.084 elapsed wall minutes and 21 recorded iterations. Candidate 200 is published; the 98/100 whole-browser goal remains unmet.",
-  "overall_assessment": "The 98/100 whole-browser goal is not reached. Measured non-URL progress is reported by scope.",
-  "accepted_scope_label": "Selected WPT assertions",
-  "accepted_scope_pass": 8324,
-  "accepted_scope_total": 10540,
+  "overall_assessment": "98/100 whole-browser goal unverified; current fixed sample baseline is 380/640 fully passing cases.",
+  "accepted_scope_label": "Historical frozen non-URL WPT sample, candidate 200",
+  "accepted_scope_pass": 380,
+  "accepted_scope_total": 640,
   "reviewed_source_checkpoint186": {
     "candidate": 186,
     "source_url": "https://2b6886734b41e997.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
@@ -1349,7 +1344,6 @@
     "offline_restore_verified_tracked_paths": 725,
     "private_working_history_published": false
   },
-  "session_completed_utc": "2026-10-29T21:14:52.039463+00:00",
   "final_accounting": {
     "completed_utc": "2026-10-29T21:14:52.039463+00:00",
     "elapsed_minutes": 229.084,
@@ -1360,5 +1354,16 @@
       197
     ],
     "tested_source": "a4c26febf736ef6334f05421e1c0d69b24e5a411"
+  },
+  "session7_current": {
+    "started_utc": "2026-10-30T06:26:11Z",
+    "iteration": 1,
+    "phase": "baseline",
+    "baseline_candidate": 200,
+    "current_source_commit": null,
+    "focus": "Trusted Types parser options",
+    "selected_whole_files": 18,
+    "focus_result": null,
+    "overall_goal_met": false
   }
 }
