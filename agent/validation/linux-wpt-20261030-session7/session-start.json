@@ -1,0 +1,14 @@
+{
+  "session_start_utc": "2026-10-30T06:26:11+00:00",
+  "prepared_utc": "2026-10-30T06:28:31.647717+00:00",
+  "original_branch": "gpt-6-astra-engine-lead-ruby-restored-nonurl-20261029-1759",
+  "original_head": "4fc358f2f8fdf8afa7a3b865bfc1dd5167a7a9a0",
+  "source_candidate": 200,
+  "source_commit": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
+  "prior_untracked_entries": 563,
+  "prior_work_preserved": true,
+  "task_sha256": "fa92f5bc4c6b3b8719b59a4d4f3006deacb031e42bdc213cf9698e6e5f97b8e3",
+  "baseline_report_sha256": "42cb9682263f9ac73b090cb0f5253d4e161743f221cbcf16bfa7d586b66e75a2",
+  "source_changes_before_start": false,
+  "connectivity_workaround": "workspace=/ with explicit cd; absolute nested workspace rejected by connector schema"
+}
