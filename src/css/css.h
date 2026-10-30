@@ -390,4 +390,9 @@ typedef struct { int type; const char *start; size_t len; double num; char unit[
 typedef struct { const char *s; size_t n, i; } CLexer;
 void clex_init(CLexer *l, const char *s, size_t n);
 CTok clex_next(CLexer *l); /* tok.str must be freed when non-NULL */
+bool css_var_arguments(CLexer *l, size_t *argument_end, size_t *fallback, size_t *content_end);
+char *css_var_argument(const char *source, size_t length, bool fallback); /* caller owns result */
+bool css_var_syntax_valid(const char *value);
+bool css_value_has_var(const char *value);
+bool css_math_spacing_valid(const char *value);
 #endif

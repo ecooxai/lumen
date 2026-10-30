@@ -127,6 +127,227 @@ done:
     return t;
 }
 
+static int css_var_closing(int type) {
+    if (type == CT_FUNC || type == CT_LPAREN) return CT_RPAREN;
+    if (type == CT_LBRACK) return CT_RBRACK;
+    if (type == CT_LBRACE) return CT_RBRACE;
+    return 0;
+}
+/* The lexer consumed var(. EOF closes otherwise valid open blocks. */
+bool css_value_has_var(const char *value) {
+    if (!strchr(value, '(')) return false;
+    CLexer l; clex_init(&l, value, strlen(value));
+    for (;;) {
+        CTok t = clex_next(&l); int type = t.type;
+        bool found = type == CT_FUNC && t.str && str_ieq(t.str, "var");
+        free(t.str);
+        if (found) return true;
+        if (type == CT_EOF) return false;
+    }
+}
+static bool css_math_function(const char *name) {
+    static const char *const names[] = { "calc", "-webkit-calc", "min", "max", "clamp",
+        "round", "mod", "rem", "abs", "sign", "sin", "cos", "tan", "asin", "acos",
+        "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp", "progress", NULL };
+    for (int i = 0; names[i]; i++) if (str_ieq(name, names[i])) return true;
+    return false;
+}
+bool css_math_spacing_valid(const char *value) {
+    CLexer l; clex_init(&l, value, strlen(value));
+    bool math[256]; int closes[256], depth = 0, previous = CT_EOF;
+    for (;;) {
+        CTok t = clex_next(&l); int type = t.type;
+        if (type == CT_EOF) { free(t.str); return true; }
+        if (depth && math[depth - 1] && type == CT_DELIM && (*t.start == '+' || *t.start == '-')) {
+            CLexer look = l; CTok next = clex_next(&look);
+            bool valid = previous == CT_WS && next.type == CT_WS;
+            free(next.str);
+            if (!valid) { free(t.str); return false; }
+        }
+        int close = css_var_closing(type);
+        if (close) {
+            if (depth == 256) { free(t.str); return false; }
+            math[depth] = type == CT_FUNC ? t.str && css_math_function(t.str) :
+                type == CT_LPAREN && depth && math[depth - 1];
+            closes[depth++] = close;
+        } else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
+            if (!depth || closes[--depth] != type) { free(t.str); return false; }
+        }
+        previous = type; free(t.str);
+    }
+}
+
+
+bool css_var_arguments(CLexer *l, size_t *argument_end, size_t *fallback, size_t *content_end) {
+    int closes[256], depth = 0;
+    *fallback = SIZE_MAX; *argument_end = *content_end = l->n;
+    for (;;) {
+        CTok t = clex_next(l); int type = t.type;
+        size_t offset = (size_t)(t.start - l->s); free(t.str);
+        if (type == CT_EOF) return true;
+        int close = css_var_closing(type);
+        if (close) {
+            if (depth == 256) return false;
+            closes[depth++] = close;
+        } else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
+            if (depth) { if (closes[--depth] != type) return false; }
+            else if (type == CT_RPAREN) {
+                *content_end = offset;
+                if (*fallback == SIZE_MAX) *argument_end = offset;
+                return true;
+            } else return false;
+        } else if (!depth && type == CT_COMMA && *fallback == SIZE_MAX) {
+            *argument_end = offset; *fallback = l->i;
+        } else if (!depth && (type == CT_SEMI || (type == CT_DELIM && *t.start == '!'))) return false;
+    }
+}
+/* A braced argument is one complete block. The first argument is strict;
+ * a legacy unbraced fallback can contain commas and curly blocks. */
+char *css_var_argument(const char *source, size_t length, bool fallback) {
+    CLexer l; clex_init(&l, source, length); CTok first;
+    do { first = clex_next(&l); if (first.type == CT_WS) free(first.str); } while (first.type == CT_WS);
+    int type = first.type; size_t begin = (size_t)(first.start - source);
+    free(first.str);
+    if (type == CT_EOF) return fallback ? xstrdup("") : NULL;
+    bool braced = type == CT_LBRACE, content = false, closed = false;
+    int closes[256], depth = 0; size_t end = length;
+    if (braced) { begin = l.i; closes[depth++] = CT_RBRACE; } else l.i = 0;
+    for (;;) {
+        CTok t = clex_next(&l); type = t.type;
+        size_t offset = (size_t)(t.start - source); free(t.str);
+        if (type == CT_EOF) break;
+        if (closed) { if (type != CT_WS) return NULL; continue; }
+        int close = css_var_closing(type);
+        bool top = depth == (braced ? 1 : 0);
+        if (top && (type == CT_SEMI || (type == CT_DELIM && *t.start == '!'))) return NULL;
+        if (!depth && !fallback && type == CT_LBRACE) return NULL;
+        if (close) {
+            if (depth == 256) return NULL;
+            closes[depth++] = close;
+        } else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
+            if (!depth || closes[--depth] != type) return NULL;
+            if (braced && !depth) { end = offset; closed = true; continue; }
+        }
+        if (type != CT_WS) content = true;
+    }
+    if (!fallback && !content) return NULL;
+    char *copy = xstrndup(source + begin, end - begin), *trimmed = str_trim(copy);
+    if (trimmed != copy) memmove(copy, trimmed, strlen(trimmed) + 1);
+    return copy;
+}
+
+
+static bool css_string_closed(const CTok *token) {
+    if (token->len < 2 || token->start[token->len - 1] != *token->start) return false;
+    size_t slashes = 0, i = token->len - 1;
+    while (i && token->start[i - 1] == '\\') { slashes++; i--; }
+    return !(slashes & 1);
+}
+bool css_var_syntax_valid(const char *value) {
+    CLexer l; clex_init(&l, value, strlen(value));
+    int closes[256], depth = 0;
+    for (;;) {
+        CTok t = clex_next(&l); int type = t.type;
+        bool is_var = type == CT_FUNC && t.str && str_ieq(t.str, "var");
+        if (type == CT_STRING) {
+            bool terminated = css_string_closed(&t);
+            if (!terminated && l.i < l.n) { free(t.str); return false; }
+            for (size_t i = 1; i < t.len; i++) {
+                if (t.start[i] == '\\') { if (i + 1 < t.len && t.start[i + 1] == '\r' && i + 2 < t.len && t.start[i + 2] == '\n') i++; i++; }
+                else if (t.start[i] == '\n' || t.start[i] == '\r' || t.start[i] == '\f') { free(t.str); return false; }
+            }
+        }
+        free(t.str);
+        if (type == CT_EOF) return true;
+        if (is_var) {
+            CLexer look = l; size_t end, fallback, content_end;
+            if (!css_var_arguments(&look, &end, &fallback, &content_end)) return false;
+            char *argument = css_var_argument(l.s + l.i, end - l.i, false);
+            if (!argument) return false;
+            free(argument);
+            if (fallback != SIZE_MAX) {
+                argument = css_var_argument(l.s + fallback, content_end - fallback, true);
+                if (!argument) return false;
+                free(argument);
+            }
+        }
+        int close = css_var_closing(type);
+        if (close) {
+            if (depth == 256) return false;
+            closes[depth++] = close;
+        } else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
+            if (!depth || closes[--depth] != type) return false;
+        } else if (!depth && (type == CT_SEMI || (type == CT_DELIM && *t.start == '!'))) return false;
+    }
+}
+/* Preserve custom-property token text. Native ordinary-value parsers need
+ * comment gaps represented by whitespace. Complete valid EOF-open tokens so
+ * later substitution cannot absorb a following token into an unfinished block. */
+static char *css_declaration_text(const char *source, size_t length, bool custom) {
+    CLexer l; clex_init(&l, source, length); SB out = {0};
+    int closes[256], depth = 0; size_t copied = 0;
+    for (;;) {
+        CTok t = clex_next(&l); int type = t.type;
+        size_t offset = (size_t)(t.start - source);
+        if (offset > copied) {
+            if (custom) {
+                sb_put(&out, source + copied, offset - copied);
+                if (type == CT_EOF) {
+                    const char *gap = source + copied;
+                    while (gap < source + offset) {
+                        if (gap + 1 < source + offset && gap[0] == '/' && gap[1] == '*') {
+                            const char *end = NULL;
+                            for (const char *scan = gap + 2; scan + 1 < source + offset; scan++)
+                                if (scan[0] == '*' && scan[1] == '/') { end = scan; break; }
+                            if (!end) { sb_puts(&out, "*/"); break; }
+                            gap = end + 2;
+                        } else gap++;
+                    }
+                }
+            } else sb_putc(&out, ' ');
+        }
+        if (type == CT_EOF) { free(t.str); break; }
+        if (type == CT_STRING && l.i == length && !css_string_closed(&t)) {
+            char quote = *t.start; sb_putc(&out, quote);
+            for (const char *q = t.str ? t.str : ""; *q; q++) {
+                if (*q == '\n') sb_puts(&out, "\\a ");
+                else if (*q == '\r') sb_puts(&out, "\\d ");
+                else if (*q == '\f') sb_puts(&out, "\\c ");
+                else { if (*q == quote || *q == '\\') sb_putc(&out, '\\'); sb_putc(&out, *q); }
+            }
+            sb_putc(&out, quote);
+        } else sb_put(&out, t.start, t.len);
+        int close = css_var_closing(type);
+        if (close && depth < 256) closes[depth++] = close;
+        else if ((type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) && depth && closes[depth - 1] == type) depth--;
+        copied = l.i; free(t.str);
+    }
+    while (depth) {
+        int close = closes[--depth];
+        sb_putc(&out, close == CT_RPAREN ? ')' : close == CT_RBRACK ? ']' : '}');
+    }
+    return sb_take(&out);
+}
+static char *css_important_start(char *value) {
+    CLexer l; clex_init(&l, value, strlen(value));
+    int depth = 0; char *bang = NULL; bool keyword = false, other = false;
+    for (;;) {
+        CTok t = clex_next(&l); int type = t.type;
+        if (type == CT_EOF) { free(t.str); break; }
+        int close = css_var_closing(type);
+        if (!depth && type == CT_DELIM && *t.start == '!') { bang = (char *)t.start; keyword = other = false; }
+        else if (!depth && bang && type != CT_WS) {
+            if (!keyword && type == CT_IDENT && t.str && str_ieq(t.str, "important")) keyword = true;
+            else other = true;
+        }
+        if (close) depth++;
+        else if ((type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) && depth) depth--;
+        free(t.str);
+    }
+    return bang && keyword && !other ? bang : NULL;
+}
+
+
 /* ---------------- selectors ---------------- */
 typedef struct { const char *s; size_t i, n; bool query; } SP;   /* query: querySelector's grammar (no @namespace prefixes, only known pseudos) */
 /* the pseudo-classes and pseudo-elements Chrome parses; querySelector rejects others */
@@ -503,21 +724,29 @@ DeclList *css_parse_decls(const char *s, size_t n) {
             else if (c == ';' && !depth) break;
             i++;
         }
-        char *val = xstrndup(s + vs, i - vs);
-        /* strip comments in value */
-        char *cm; while ((cm = strstr(val, "/*"))) { char *e = strstr(cm + 2, "*/"); if (!e) { *cm = 0; break; } memmove(cm, e + 2, strlen(e + 2) + 1); }
-        char *v = str_trim(val);
-        bool imp = false;
-        size_t vl = strlen(v);
-        if (vl >= 10) {
-            char *bang = strrchr(v, '!');
-            if (bang) { char *k = bang + 1; while (is_ws((unsigned char)*k)) k++; if (str_ieq(k, "important")) { imp = true; *bang = 0; v = str_trim(v); } }
+        CLexer names; clex_init(&names, s + ns, ne - ns);
+        CTok name = clex_next(&names), name_end = clex_next(&names);
+        while (name_end.type == CT_WS) { free(name_end.str); name_end = clex_next(&names); }
+        bool name_valid = name.type == CT_IDENT && name.str && name_end.type == CT_EOF;
+        bool custom = name_valid && name.str[0] == '-' && name.str[1] == '-' && name.str[2];
+        char *val = css_declaration_text(s + vs, i - vs, true);
+        char *v = str_trim(val), *bang = css_important_start(v);
+        bool imp = bang != NULL;
+        if (bang) { *bang = 0; v = str_trim(v); }
+        bool pending = css_value_has_var(v);
+        /* Comments do not supply whitespace tokens in calc grammar. Defer
+         * this typed check until substitution when the value is pending. */
+        bool math_valid = custom || pending || css_math_spacing_valid(v);
+        if (!custom && !pending) {
+            char *text = css_declaration_text(v, strlen(v), false);
+            free(val); val = text; v = str_trim(val);
         }
-        bool custom = ne - ns > 2 && s[ns] == '-' && s[ns + 1] == '-';
-        Decl dc; dc.prop = custom ? atomn(s + ns, ne - ns) : atom_lower(s + ns, ne - ns); dc.value = xstrdup(v); dc.important = imp;
+        const char *property = name_valid ? custom ? atom(name.str) : atom_lower(name.str, strlen(name.str)) : NULL;
+        free(name.str); free(name_end.str);
+        Decl dc; dc.prop = property; dc.value = xstrdup(v); dc.important = imp;
         /* A stray closing token invalidates the declaration, not just its
            suffix. Continue to the next semicolon so later declarations survive. */
-        if (!bad_close && (custom || v[0])) vec_push(*d, dc); else free(dc.value);
+        if (name_valid && !bad_close && math_valid && (custom || v[0]) && css_var_syntax_valid(v)) vec_push(*d, dc); else free(dc.value);
         free(val);
     }
     return d;
