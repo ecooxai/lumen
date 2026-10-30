@@ -198,7 +198,8 @@ static void frame_parser_fetch(JsCtx *c, const std::shared_ptr<FrameScriptParser
             auto &item = parser->scripts[index];
             if (item.serial != serial) return;
             item.request = 0; item.ready = true;
-            item.success = response && !response->error && response->status >= 200 && response->status < 300;
+            item.success = response && !response->error && response->status >= 200 && response->status < 300 &&
+                net_response_mime_allowed(response, NET_MIME_SCRIPT);
             if (item.success) {
                 item.source.assign(response->body ? response->body : "", response->body ? response->body_len : 0);
                 item.fetched_url = response->url ? response->url : item.url;
@@ -423,7 +424,8 @@ static FrameParserScript *stream_prepare(JsCtx *c, const std::shared_ptr<Documen
         auto parser = weak.lock();
         if (!parser || !stream_live(context, parser)) return;
         item->request = 0; item->ready = true;
-        item->success = response && !response->error && response->status >= 200 && response->status < 300;
+        item->success = response && !response->error && response->status >= 200 && response->status < 300 &&
+                net_response_mime_allowed(response, NET_MIME_SCRIPT);
         if (item->success) {
             item->source.assign(response->body ? response->body : "", response->body ? response->body_len : 0);
             item->fetched_url = response->url ? response->url : item->url;

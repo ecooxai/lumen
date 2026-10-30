@@ -18,7 +18,7 @@ typedef struct {
     uint32_t *px;
     int origin_x, origin_y, stride, height; /* tightly bounded storage for opacity groups */
     bool quiet;                             /* a band after the first: leaves the canvas' punch results alone */
-    uint32_t lut[256]; Color lut_color; bool lut_ok;
+    uint8_t lut[256]; Color lut_color; bool lut_ok;
 } R;
 
 static inline uint32_t *raster_row(R *r, int y) {
@@ -43,6 +43,23 @@ static inline void over(uint32_t *d, uint32_t s) {
     if (sa == 255) { *d = s; return; }
     if (!sa && !s) return;
     *d = s + scale_px(*d, 256 - sa - (sa >> 7));
+}
+/* Straight-color coverage must be combined with the destination before
+   quantization. Separately truncating premultiplied source and destination
+   darkens text even when both colors are identical. Each packed 16-bit lane
+   is at most 255*255, so this is exact nearest division by 255 without carry. */
+static inline uint32_t round_255_pair(uint32_t v) {
+    v += 0x00800080u;
+    return ((v + ((v >> 8) & 0x00ff00ffu)) >> 8) & 0x00ff00ffu;
+}
+static inline void over_color_coverage(uint32_t *d, Color color, uint32_t a) {
+    if (!a) return;
+    color |= 0xff000000u;
+    if (a == 255) { *d = color; return; }
+    uint32_t inv = 255 - a, dst = *d;
+    uint32_t rb = (color & 0x00ff00ffu) * a + (dst & 0x00ff00ffu) * inv;
+    uint32_t ag = ((color >> 8) & 0x00ff00ffu) * a + ((dst >> 8) & 0x00ff00ffu) * inv;
+    *d = round_255_pair(rb) | (round_255_pair(ag) << 8);
 }
 /* Keep constant-color spans independent of raster/clip metadata. Besides
    avoiding repeated alpha branches, these loops can be vectorized without
@@ -382,11 +399,11 @@ static void gradient(R *r, const DItem *it) {
     free(xs);
 }
 
-/* premultiplied pixel per glyph coverage for one text color (same values premul() gives) */
-static const uint32_t *text_lut(R *r, Color color) {
+/* Effective alpha per glyph coverage; retain straight RGB until source-over. */
+static const uint8_t *text_lut(R *r, Color color) {
     if (r->lut_ok && r->lut_color == color) return r->lut;
     uint32_t ca = COLOR_A(color);
-    for (uint32_t a = 0; a < 256; a++) r->lut[a] = premul(color | 0xff000000u, (a * ca / 255) / 255.f);
+    for (uint32_t a = 0; a < 256; a++) r->lut[a] = (uint8_t)(a * ca / 255);
     r->lut_color = color; r->lut_ok = true; return r->lut;
 }
 /* a text item whose fragment box, padded by twice its font size for ink overflow, misses [x0,x1)x[y0,y1) device px */
@@ -399,7 +416,7 @@ static void text(R *r, const DItem *it) {
     float s = r->s; const Clip *c = clip(r);
     if (text_outside(it, s, c->x0, c->y0, c->x1, c->y1)) return;
     uint32_t ca = COLOR_A(it->color);
-    const uint32_t *lut = NULL;
+    const uint8_t *lut = NULL;
     for (int i = 0; i < it->ng; i++) {
         const DGlyph *dg = &it->g[i];
         if (!dg->font) continue;
@@ -413,7 +430,7 @@ static void text(R *r, const DItem *it) {
             for (int y = LMAX(0, c->y0 - oy); y < gl->h && oy + y < c->y1; y++) {
                 uint32_t *row = raster_row(r, oy + y) + ox - r->origin_x;
                 const uint8_t *src = gl->alpha + y * gl->w;
-                for (int x = xs; x < xe; x++) { uint32_t a = src[x]; if (a) over(&row[x], lut[a]); }
+                for (int x = xs; x < xe; x++) { uint32_t a = src[x]; if (a) over_color_coverage(&row[x], it->color, lut[a]); }
             }
             continue;
         }
@@ -422,7 +439,7 @@ static void text(R *r, const DItem *it) {
             for (int x = xs; x < xe; x++) {
                 float cc = c->round ? clip_cov(r, ox + x + 0.5f, oy + y + 0.5f) : 1;
                 if (gl->color && gl->rgba) { uint32_t p = gl->rgba[y * gl->w + x]; if (p >> 24) over(&row[ox + x - r->origin_x], cc < 1 ? scale_px(p, (uint32_t)(cc * 256)) : p); }
-                else if (gl->alpha) { uint32_t a = gl->alpha[y * gl->w + x]; if (a) { a = a * ca / 255; over(&row[ox + x - r->origin_x], premul(it->color | 0xff000000u, a / 255.f * cc)); } }
+                else if (gl->alpha) { uint32_t a = gl->alpha[y * gl->w + x]; if (a) { a = a * ca / 255; a = (uint32_t)(a * cc + 0.5f); over_color_coverage(&row[ox + x - r->origin_x], it->color, a); } }
             }
         }
     }

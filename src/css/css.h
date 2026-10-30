@@ -1,18 +1,79 @@
 #ifndef LUMEN_CSS_H
 #define LUMEN_CSS_H
 #include "../dom/dom.h"
+#include <math.h>
 
 /* ---------------- values ---------------- */
-enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT, LK_CONTENT };
+enum { LK_LEN, LK_AUTO, LK_NONE, LK_MIN_CONTENT, LK_MAX_CONTENT, LK_FIT_CONTENT, LK_CONTENT, LK_STRETCH };
 typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm, math_pct_mask; float px2, pct2, px3, pct3; } Length;
-/* pctu: written with % (so 0% != 0px). mm1/2 are two-arm min/max.
-   mm3 is max(arm2,min(arm1,arm3)); mm4 is its min/max dual after
-   negative scaling. math_pct_mask retains each arm's written percentage
-   type for serialization without using additional structure padding. */
-/* Length value = px + pct/100 * reference */  /* value = px + pct/100 * reference */
+/* pctu: written with % (so 0% != 0px). mm1/2 are two-arm min/max;
+   mm3/4 are clamp and its negative-scaling dual. Stepped operators retain
+   two affine operands in the first two pairs and an affine result offset
+   in the third. This remains a 28-byte, allocation-free value type, copied
+   safely by styles, grid tracks and movement snapshots. */
+enum {
+    LEN_MATH_ROUND = 5, LEN_MATH_ROUND_LOWER, LEN_MATH_UP, LEN_MATH_DOWN,
+    LEN_MATH_TO_ZERO, LEN_MATH_MOD, LEN_MATH_REM
+};
+/* High provenance bit: newly represented deferred progress accepts only
+   algebra that this compact affine/clamp value can preserve exactly. */
+enum { LEN_MATH_EXACT_PROGRESS = 128 };
+static inline bool len_math_stepped(uint8_t mm) { return mm >= LEN_MATH_ROUND && mm <= LEN_MATH_REM; }
+static inline double len_stepped_value(double a, double b, uint8_t mm) {
+    if (isnan(a) || isnan(b)) return NAN;
+    if (mm == LEN_MATH_MOD) {
+        if (b == 0 || isinf(a)) return NAN;
+        if (isinf(b)) return !!signbit(a) == !!signbit(b) ? a : NAN;
+        double r = fmod(a, b);
+        if (r == 0) return copysign(0, b);
+        return !!signbit(r) != !!signbit(b) ? r + b : r;
+    }
+    if (mm == LEN_MATH_REM) return b == 0 || isinf(a) ? NAN : isinf(b) ? a : fmod(a, b);
+    b = fabs(b);
+    if (b == 0 || (isinf(a) && isinf(b))) return NAN;
+    if (isinf(a)) return a;
+    if (isinf(b)) {
+        if (mm == LEN_MATH_UP) return a > 0 ? INFINITY : a < 0 ? -0.0 : a;
+        if (mm == LEN_MATH_DOWN) return a < 0 ? -INFINITY : a > 0 ? 0.0 : a;
+        return copysign(0, a);
+    }
+    if (fmod(a, b) == 0) return a;
+    double q = a / b;
+    q = mm == LEN_MATH_UP ? ceil(q) : mm == LEN_MATH_DOWN ? floor(q) :
+        mm == LEN_MATH_TO_ZERO ? trunc(q) : mm == LEN_MATH_ROUND_LOWER ? ceil(q - .5) : floor(q + .5);
+    double r = q * b;
+    return r == 0 ? copysign(0, a) : r;
+}
 static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
 static inline Length L_auto(void) { Length l = { 0, 0, LK_AUTO }; return l; }
+static inline double len_affine_operand(float px, float pct, bool pctu, float ref) {
+    if (!pctu && !pct) return px;
+    double p = (double)pct * ref / 100;
+    /* Pure percentages have no implicit 0px term participating in IEEE math. */
+    return px == 0 ? p : px + p;
+}
 static inline float len_resolve(Length l, float ref) {
+    if (len_math_stepped(l.mm)) {
+        double a = len_affine_operand(l.px, l.pct, l.math_pct_mask & 1, ref);
+        double b = len_affine_operand(l.px2, l.pct2, l.math_pct_mask & 2, ref);
+        double r = len_stepped_value(a, b, l.mm);
+        if (l.px3 || l.pct3 || (l.math_pct_mask & 4))
+            r += len_affine_operand(l.px3, l.pct3, l.math_pct_mask & 4, ref);
+        return (float)r;
+    }
+    if (l.math_pct_mask & LEN_MATH_EXACT_PROGRESS) {
+        /* Keep finite affine intermediates in double: pct * ref can exceed
+           float range even when its division by 100 is representable. */
+        double a = len_affine_operand(l.px, l.pct, l.mm ? (l.math_pct_mask & 1) : l.pctu, ref);
+        if (!l.mm || isnan(a)) return (float)a;
+        double b = len_affine_operand(l.px2, l.pct2, l.math_pct_mask & 2, ref);
+        if (isnan(b)) return NAN;
+        if (l.mm == 1) return (float)fmin(a, b);
+        if (l.mm == 2) return (float)fmax(a, b);
+        double c = len_affine_operand(l.px3, l.pct3, l.math_pct_mask & 4, ref);
+        if (isnan(c)) return NAN;
+        return (float)(l.mm == 3 ? fmax(b, fmin(a, c)) : fmin(b, fmax(a, c)));
+    }
     float a = l.px + l.pct * ref / 100.f;
     if (!l.mm) return a;
     float b = l.px2 + l.pct2 * ref / 100.f;
@@ -21,7 +82,14 @@ static inline float len_resolve(Length l, float ref) {
     float c = l.px3 + l.pct3 * ref / 100.f;
     return l.mm == 3 ? LMAX(b, LMIN(a, c)) : LMIN(b, LMAX(a, c));
 }
-static inline uint8_t len_math_flip(uint8_t mm) { return mm ? (uint8_t)((mm <= 2 ? 3 : 7) - mm) : 0; }
+static inline uint8_t len_math_flip(uint8_t mm) {
+    if (mm == LEN_MATH_ROUND) return LEN_MATH_ROUND_LOWER;
+    if (mm == LEN_MATH_ROUND_LOWER) return LEN_MATH_ROUND;
+    if (mm == LEN_MATH_UP) return LEN_MATH_DOWN;
+    if (mm == LEN_MATH_DOWN) return LEN_MATH_UP;
+    if (len_math_stepped(mm)) return mm;
+    return mm ? (uint8_t)((mm <= 2 ? 3 : 7) - mm) : 0;
+}
 static inline bool len_is_auto(Length l) { return l.kind == LK_AUTO; }
 static inline bool len_has_pct(Length l) { return l.kind == LK_LEN && (l.pct != 0 || (l.mm && l.pct2 != 0) || (l.mm >= 3 && l.pct3 != 0)); }
 

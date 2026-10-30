@@ -542,7 +542,7 @@ static int loader(void *arg) {
             NetResponse *cr = NULL;
             for (int i = 0; u && i < nurl; i++) if (got[i] && urls[i] && !strcmp(urls[i], u)) { cr = got[i]; got[i] = NULL; break; }
             if (!cr && u) cr = net_fetch_sync(sheet_request(p->d, n, u));
-            if (cr && cr->status == 200) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
+            if (cr && !cr->error && cr->status == 200 && net_response_mime_allowed(cr, NET_MIME_STYLE)) { StyleSheet *s = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); s->owner = n; style_engine_add_sheet(p->e, s); }
             if (cr) net_response_free(cr); free(u);
         }   /* images load asynchronously once the page is shown (sync_images) */
     }
@@ -3098,7 +3098,9 @@ static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
     (void)rq; LinkLoad *l = ud; l->complete = true; Page *p = link_owner(l);
     /* Completion can still notify a detached link, but its stylesheet must
        not become active in a live document after the link was removed. */
-    if (p && (l->n->flags & NF_CONNECTED) && is_sheet_link(l->n) && r && r->status == 200 && r->body) {
+    bool allowed = r && !r->error && r->status == 200 && r->body &&
+        net_response_mime_allowed(r, NET_MIME_STYLE);
+    if (p && (l->n->flags & NF_CONNECTED) && is_sheet_link(l->n) && allowed) {
         StyleSheet *s = css_parse_sheet(r->body, r->body_len, r->url, 1, &p->e->media); s->owner = l->n; style_engine_add_sheet(p->e, s);
         /* sheets arriving together share one full recalc (restyle runs after net_poll or on a JS style read) */
         p->sheets_pending = true;
@@ -3108,7 +3110,7 @@ static void link_done(NetRequest *rq, NetResponse *r, void *ud) {
     }
     JsCtx *js = link_context(p);
     if (js)
-        js_dispatch(js, l->n, r && r->status == 200 && r->body ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
+        js_dispatch(js, l->n, allowed ? "load" : "error", "Event", false, false, 0, 0, 0, NULL);
     /* A handler may detach or replace the owner. Resolve it again while the
        callback record is still registered, then retire this load before recheck. */
     JsCtx *live = link_context(link_owner(l));
@@ -3582,7 +3584,7 @@ static void h_frame_open(void *ud, Node *f, Document *d, JsHost *ch) {
         } else if (is_sheet_link(n)) {
             char *u = url_join(doc_base(d), node_attr(n, "href"));
             NetResponse *cr = u ? net_fetch_sync(sheet_request(d, n, u)) : NULL;
-            if (cr && cr->status == 200 && cr->body) { StyleSheet *sh = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
+            if (cr && !cr->error && cr->status == 200 && cr->body && net_response_mime_allowed(cr, NET_MIME_STYLE)) { StyleSheet *sh = css_parse_sheet(cr->body, cr->body_len, cr->url, 1, &p->e->media); sh->owner = n; style_engine_add_sheet(p->e, sh); }
             if (cr) net_response_free(cr);
             free(u);
         }
@@ -3849,7 +3851,8 @@ static void parser_script_done(NetRequest *request, NetResponse *response, void 
     PScript *sc = ud;
     if (sc->request != request) return;
     sc->request = NULL; sc->ready = true;
-    if (response && !response->error && response->status >= 200 && response->status < 300) {
+    if (response && !response->error && response->status >= 200 && response->status < 300 &&
+        net_response_mime_allowed(response, NET_MIME_SCRIPT)) {
         sc->len = response->body ? response->body_len : 0;
         sc->src = response->body ? response->body : xstrdup("");
         response->body = NULL; response->body_len = 0;

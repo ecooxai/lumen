@@ -65,7 +65,7 @@ function cssFlexNumber(v) {
     return folded && !folded.u ? mathSer(folded) : specNormalize('flex-grow', v);
 }
 function cssFlexBasis(v) {
-    if (/^(auto|content|min-content|max-content|fit-content|stretch)$/i.test(v)) return v.toLowerCase();
+    if (/^(auto|content|min-content|max-content|fit-content|stretch|-webkit-fill-available)$/i.test(v)) return v.toLowerCase();
     const [type, end] = mathType(v), literal = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)(?:e[+-]?\d+)?(?:%|[a-z]+)?$/i.test(v);
     if ((!literal && !/^[a-z-]+\(/i.test(v)) || end !== v.length || !(type === 'length^1' || type === '%^1' || type === '' && literal && +v === 0)) return null;
     if (literal && parseFloat(v) < 0) return null;
@@ -193,23 +193,33 @@ const SPEC_BOX = new SSet(['margin', 'padding', 'inset', 'border-width', 'border
 /* constant folding of math functions whose arguments are all numbers or same-type dimensions (Chrome folds these when parsing) */
 const MATH_UNIT = { deg: ['deg', 1], rad: ['deg', 180 / Math.PI], grad: ['deg', 0.9], turn: ['deg', 360], s: ['s', 1], ms: ['s', 0.001], px: ['px', 1], '': ['', 1] };
 function mathEval(src) {
-    let i = 0;
+    let i = 0, progressDepth = 0;
     const ws = () => { while (/\s/.test(src[i])) i++; };
     const fail = () => { throw 0; };
     const same = (a, b) => { if (a.u !== b.u) fail(); return a.u; };
     function prim() {
         ws();
         if (src[i] === '(') { i++; const r = sum(); ws(); if (src[i++] !== ')') fail(); return r; }
-        const m = /^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)([a-z]*)/i.exec(src.slice(i));
-        if (m) { const u = MATH_UNIT[m[2].toLowerCase()]; if (!u) fail(); i += m[0].length; return { v: +m[1] * u[1], u: u[0] }; }
+        const m = /^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(%|[a-z]*)/i.exec(src.slice(i));
+        if (m) {
+            if (m[2] === '%') { if (!progressDepth) fail(); i += m[0].length; return { v: +m[1], u: '%' }; }
+            const u = MATH_UNIT[m[2].toLowerCase()]; if (!u) fail(); i += m[0].length; return { v: +m[1] * u[1], u: u[0] };
+        }
         const id = /^(-?)([a-z][a-z0-9-]*)/i.exec(src.slice(i)); if (!id) fail();
         const name = id[2].toLowerCase(); i += id[0].length;
         const neg = id[1] ? -1 : 1;
         const K = { pi: Math.PI, e: Math.E, infinity: Infinity, nan: NaN };
         if (src[i] !== '(') { if (!(name in K)) fail(); return { v: neg * K[name], u: '' }; }
-        i++; const args = [sum()]; ws();
+        i++; let strategy = 'nearest', noClamp = false;
+        if (name === 'progress') { const pm = /^\s*no-clamp\s+/i.exec(src.slice(i)); if (pm) { noClamp = true; i += pm[0].length; } progressDepth++; }
+        if (name === 'round') {
+            const sm = /^\s*(nearest|up|down|to-zero)\s*,/i.exec(src.slice(i));
+            if (sm) { strategy = sm[1].toLowerCase(); i += sm[0].length; }
+        }
+        const args = [sum()]; ws();
         while (src[i] === ',') { i++; args.push(sum()); ws(); }
         if (src[i++] !== ')') fail();
+        if (name === 'progress') progressDepth--;
         const n = a => { if (a.u) fail(); return a.v; }, ang = a => a.u === 'deg' ? a.v * Math.PI / 180 : n(a), D = r => ({ v: r * 180 / Math.PI, u: 'deg' });
         const F = {
             calc: () => args[0], sin: () => ({ v: Math.sin(ang(args[0])), u: '' }), cos: () => ({ v: Math.cos(ang(args[0])), u: '' }), tan: () => ({ v: Math.tan(ang(args[0])), u: '' }),
@@ -217,9 +227,45 @@ function mathEval(src) {
             atan2: () => { same(args[0], args[1]); return D(Math.atan2(args[0].v, args[1].v)); },
             sqrt: () => ({ v: Math.sqrt(n(args[0])), u: '' }), exp: () => ({ v: Math.exp(n(args[0])), u: '' }), pow: () => ({ v: Math.pow(n(args[0]), n(args[1])), u: '' }),
             log: () => ({ v: args.length > 1 ? Math.log(n(args[0])) / Math.log(n(args[1])) : Math.log(n(args[0])), u: '' }),
+            round: () => {
+                if (args.length !== 1 && args.length !== 2) fail();
+                const a = args[0].v, u = args[0].u;
+                if (args.length === 1 && u) fail();
+                const b = args.length === 1 ? 1 : Math.abs((same(args[0], args[1]), args[1].v));
+                let v;
+                if (Number.isNaN(a) || Number.isNaN(b) || b === 0 || !isFinite(a) && !isFinite(b)) v = NaN;
+                else if (!isFinite(a)) v = a;
+                else if (!isFinite(b)) v = strategy === 'up' ? (a > 0 ? Infinity : a < 0 ? -0 : a) : strategy === 'down' ? (a < 0 ? -Infinity : a > 0 ? 0 : a) : (a < 0 || Object.is(a, -0) ? -0 : 0);
+                else if (a % b === 0) v = a;
+                else {
+                    const q = a / b;
+                    v = (strategy === 'up' ? Math.ceil(q) : strategy === 'down' ? Math.floor(q) : strategy === 'to-zero' ? Math.trunc(q) : Math.round(q)) * b;
+                    if (v === 0 && a < 0) v = -0;
+                }
+                return { v, u };
+            },
+            mod: () => {
+                if (args.length !== 2) fail();
+                const u = same(args[0], args[1]), a = args[0].v, b = args[1].v;
+                const negative = x => x < 0 || Object.is(x, -0);
+                let v = a % b;
+                if (Number.isNaN(a) || Number.isNaN(b) || b === 0 || !isFinite(a)) v = NaN;
+                else if (!isFinite(b)) v = negative(a) === negative(b) ? a : NaN;
+                else if (v === 0) v = negative(b) ? -0 : 0;
+                else if (negative(v) !== negative(b)) v += b;
+                return { v, u };
+            },
+            rem: () => { if (args.length !== 2) fail(); const u = same(args[0], args[1]); return { v: args[0].v % args[1].v, u }; },
+            progress: () => {
+                if (args.length !== 3) fail(); same(args[0], args[1]); same(args[1], args[2]);
+                const a = args[0].v, start = args[1].v, end = args[2].v;
+                let v = start === end ? (!noClamp || a === start ? 0 : a < start ? -Infinity : Infinity) : (a - start) / (end - start);
+                if (!noClamp && !Number.isNaN(v)) v = Math.max(0, Math.min(1, v));
+                return { v, u: '' };
+            },
         };
-        if (!F[name] || (name !== 'atan2' && name !== 'pow' && name !== 'log' && args.length !== 1)) fail();
-        const r = F[name](); r.v *= neg; return r;
+        if (!F[name] || !['atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
+        const r = F[name](); if (args.some(a => Number.isNaN(a.v))) r.v = NaN; r.v *= neg; return r;
     }
     function prod() {
         let a = prim();
@@ -239,8 +285,19 @@ const mathSer = r => {
     return `calc(${String(+r.v.toPrecision(6)).replace(/^-0$/, '0')}${u})`;
 };
 function specFoldMath(t) {
-    return t.replace(/\b(?:sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log)\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/gi, m => { const r = mathEval(m); return r ? mathSer(r) : m; })
-        .replace(/\bcalc\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/gi, m => { const r = /calc\(.*calc\(/i.test(m) && mathEval(m); return r ? mathSer(r) : m; });
+    /* Evaluate an outer calculation before its children so a nested signed
+       zero or NaN is not clamped before division/multiplication consumes it. */
+    const re = /\b(?:calc|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/gi;
+    let out = '', previous = 0, match;
+    while ((match = re.exec(t))) {
+        let end = re.lastIndex, depth = 1;
+        while (end < t.length && depth) { if (t[end] === '(') depth++; else if (t[end] === ')') depth--; end++; }
+        if (depth) break;
+        const text = t.slice(match.index, end), result = mathEval(text);
+        out += t.slice(previous, match.index) + (result ? mathSer(result) : text);
+        previous = end; re.lastIndex = end;
+    }
+    return out + t.slice(previous);
 }
 /* CSS math functions (calc, min/max/clamp, round/mod/rem, trig, ...): a type check. Types are '' (number), '%',
    or a dimension kind; length + % is 'length%'. An unknown function, unit or var() makes the result unknown (no
@@ -255,9 +312,9 @@ const MATH_UNITS = (() => {
     m.set('fr', 'flex');
     return m;
 })();
-const MATH_FNS = /^(calc|-webkit-calc|min|max|clamp|round|mod|rem|abs|sign|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp)$/;
-function mathType(src, strictUnits = false) {   /* returns [type | null (invalid) | undefined (unknown), end] */
-    let i = 0, unknown = false;
+const MATH_FNS = /^(calc|-webkit-calc|min|max|clamp|round|mod|rem|abs|sign|sin|cos|tan|asin|acos|atan|atan2|pow|sqrt|hypot|log|exp|progress)$/;
+function mathType(src, strictUnits = false, percentageHint = '') {   /* returns [type | null (invalid) | undefined (unknown), end] */
+    let i = 0, unknown = false, scalarProgressDepth = 0;
     const ws = () => { const s = i; while (/\s/.test(src[i] || '')) i++; return i > s; };
     const dec = t => { const m = {}; if (t) for (const e of t.split(',')) { const [d, n] = e.split('^'); m[d] = +n; } return m; };
     const enc = m => Object.keys(m).filter(d => m[d]).sort().map(d => d + '^' + m[d]).join(',');
@@ -267,6 +324,7 @@ function mathType(src, strictUnits = false) {   /* returns [type | null (invalid
         if (a === null || b === null || a === 'none' || b === 'none') return null;
         if (a === '?' || b === '?') return '?';
         if (a === b) return a;
+        if (scalarProgressDepth) return null;
         return pl(a) === pl(b) && pl(a) === 'length^1' ? 'length^1' : null;
     };
     function sum() {
@@ -305,7 +363,12 @@ function mathType(src, strictUnits = false) {   /* returns [type | null (invalid
         }
         let strat = false;
         if (name === 'round') { const m = /^\s*(nearest|up|down|to-zero)\s*,/i.exec(src.slice(i)); if (m) { i += m[0].length; strat = true; } }
-        const a = args(); if (a === null || name !== 'clamp' && a.includes('none')) return null;
+        if (name === 'progress') { const pm = /^\s*no-clamp\s+/i.exec(src.slice(i)); if (pm) i += pm[0].length; }
+        const scalarProgress = name === 'progress' && !percentageHint;
+        if (scalarProgress) scalarProgressDepth++;
+        const a = args();
+        if (scalarProgress) scalarProgressDepth--;
+        if (a === null || name !== 'clamp' && a.includes('none')) return null;
         const same = () => a.reduce((x, y) => x === '?' || y === '?' ? '?' : x === null ? null : add(x, y));
         const num = t => t === '' || t === '?';
         switch (name) {
@@ -319,6 +382,14 @@ function mathType(src, strictUnits = false) {   /* returns [type | null (invalid
         case 'round': if (a.length === 1) return strat || num(a[0]) || a[0] === '?' ? (num(a[0]) ? a[0] : null) : null;
             return a.length === 2 ? same() : null;
         case 'mod': case 'rem': return a.length === 2 ? same() : null;
+        case 'progress': {
+            if (a.length !== 3) return null;
+            // Without a destination hint, percentages are their own dimension,
+            // including percentages buried inside nested sums.
+            const t = scalarProgress ? a.reduce((x, y) => x === '?' || y === '?' ? '?' : x === y ? x : null) : same();
+            if (t === null || t !== '' && t !== '?' && !/^[a-z%]+\^1$/.test(t)) return null;
+            return '';
+        }
         case 'sign': return a.length === 1 ? '' : null;
         case 'sin': case 'cos': case 'tan': return a.length === 1 && (num(a[0]) || a[0] === 'angle^1') ? '' : null;
         case 'asin': case 'acos': case 'atan': return a.length === 1 && num(a[0]) ? 'angle^1' : null;
@@ -336,7 +407,7 @@ function mathType(src, strictUnits = false) {   /* returns [type | null (invalid
         if (m) {
             i += m[0].length;
             if (!m[3]) return '';
-            if (m[3] === '%') return '%^1';
+            if (m[3] === '%') return percentageHint ? percentageHint + '^1' : '%^1';
             const u = MATH_UNITS.get(m[3].toLowerCase());
             if (u === undefined) { if (strictUnits) return null; unknown = true; return '?'; }
             return u + '^1';
@@ -346,6 +417,7 @@ function mathType(src, strictUnits = false) {   /* returns [type | null (invalid
         i += m[0].length;
         if (src[i] === '(') { i++; return fn(m[0]); }
         if (/^(-?infinity|pi|e|nan)$/i.test(m[0])) return '';
+        if (/^(nearest|up|down|to-zero|from|to|no-clamp)$/i.test(m[0])) return null;
         if (strictUnits) return /^none$/i.test(m[0]) ? 'none' : null;
         unknown = true; return '?';   /* e.g. a relative color's channel keyword */
     }
@@ -382,6 +454,36 @@ function transformAnglesValid(value) {
             if (arg.slice(end).trim() || type !== undefined && type !== 'angle^1') return false;
         }
         re.lastIndex = Math.max(start, i - 1);
+    }
+    return true;
+}
+/* Validate the typed arguments changed by native scalar math before a
+   CSSOM setter discards its previous valid declaration. */
+function transformComponentsValid(rawValue) {
+    const value = rawValue.includes('/*') ? rawValue.replace(/\/\*[\s\S]*?(?:\*\/|$)/g, ' ') : rawValue;
+    if (value.includes(String.fromCharCode(92))) return true;
+    const re = /(^|[\s)])(matrix(?:3d)?|scale(?:3d|[xyz])?|translate(?:3d|[xyz])?)\(/gi;
+    let m;
+    while ((m = re.exec(value))) {
+        const begin = re.lastIndex; let end = begin, depth = 1;
+        while (end < value.length && depth) { if (value[end] === '(') depth++; else if (value[end] === ')') depth--; end++; }
+        const args = tomSplitTop(value.slice(begin, depth ? value.length : end - 1), ',').map(x => x.trim());
+        if (args.some(x => !x)) return false;
+        const name = m[2].toLowerCase(), matrix = name.startsWith('matrix'), scale = name.startsWith('scale');
+        const three = name.endsWith('3d'), one = /[xyz]$/.test(name);
+        if (matrix ? args.length !== (three ? 16 : 6) : three ? args.length !== 3 : one ? args.length !== 1 : args.length < 1 || args.length > 2) return false;
+        for (let j = 0; j < args.length; j++) {
+            const arg = args[j], length = !matrix && !scale, z = length && (name === 'translatez' || three && j === 2);
+            const [type, consumed] = mathType(arg, true, length && !z ? 'length' : '');
+            if (arg.slice(consumed).trim()) return false;
+            if (type === undefined) continue;
+            if (matrix && type !== '') return false;
+            if (scale && type !== '' && type !== '%^1') return false;
+            if (length && type !== 'length^1') {
+                if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(arg) || Number(arg) !== 0) return false;
+            }
+        }
+        re.lastIndex = Math.max(begin, end - 1);
     }
     return true;
 }
@@ -480,6 +582,10 @@ function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
     if (cssFlexRelevant(p)) return cssFlexParse(p, v) !== null;
     if (cssGridRelevant(p)) return cssGridParse(p, v) !== null;
+    // Sizing stretch is not a length accepted by margin, padding, insets or fonts.
+    // Alignment keywords and custom identifiers keep their separate grammars.
+    if (/^\s*(stretch|-webkit-fill-available)\s*$/i.test(v) &&
+        /^(?:(?:margin|padding|inset)(?:-(?:top|right|bottom|left|block(?:-start|-end)?|inline(?:-start|-end)?))?|top|right|bottom|left|font-size|line-height|letter-spacing|word-spacing|text-indent|vertical-align|transform|(?:border(?:-(?:top|right|bottom|left))?|outline)-width|outline-offset|gap|row-gap|column-gap)$/.test(p)) return false;
     /* Only a leading minus, whitespace or non-ASCII prefix can become a
        negative literal after trim(). Ordinary positive sizes need no scan. */
     if ((v[0] === '-' || v[0] <= ' ' || v[0] > '\x7f') && MATH_LEN_PROPS.test(p)) {
@@ -496,18 +602,20 @@ function mathValid(p, v) {
         return /^\s*(inherit|initial|unset|revert|revert-layer|none|auto|base|base-select|textfield|menulist-button|button|checkbox|listbox|menulist|meter|progress-bar|radio|searchfield|textarea)\s*$/i.test(v);
     if (/-gradient\(/i.test(v) && !/var\(|env\(|attr\(/i.test(v) && !gradInterpValid(v)) return false;
     if (/var\(|env\(|attr\(|calc-size\(|anchor/i.test(v)) return true;
-    if (p === 'transform' && !transformAnglesValid(v)) return false;
+    if (p === 'transform' && (!transformAnglesValid(v) || !transformComponentsValid(v))) return false;
     if (/^background-position(?:-[xy])?$/.test(p) && !/^\s*(inherit|initial|unset|revert|revert-layer)\s*$/i.test(v)) return cssPositionParse(v, cssPositionAxis(p)) !== null;
     const re = /(^|[\s,(/])((?:-webkit-)?[a-z][a-z0-9-]*)\(/gi;
     let m;
     while ((m = re.exec(v))) {
         if (!MATH_FNS.test(m[2].toLowerCase())) continue;
-        const st = m.index + m[1].length, [t, n] = mathType(v.slice(st));
+        const lengthDestination = MATH_LEN_PROPS.test(p) || p === 'font-size' ||
+            /^margin(?:-(?:top|right|bottom|left|block(?:-start|-end)?|inline(?:-start|-end)?))?$/.test(p);
+        const st = m.index + m[1].length, [t, n] = mathType(v.slice(st), false, lengthDestination ? 'length' : '');
         if (t === null) return false;
         re.lastIndex = st + Math.max(n, 1);
         if (t === undefined || st !== 0 && v.slice(0, st).trim()) continue;   /* only a whole-value function is checked against the property */
         if (MATH_NUM_PROPS.test(p) && !(t === '' || (t === '%^1' && /opacity$/.test(p)))) return false;
-        if (MATH_LEN_PROPS.test(p) && n >= v.trim().length && !(t === 'length^1' || t === '%^1')) return false;
+        if (lengthDestination && n >= v.trim().length && !(t === 'length^1' || t === '%^1')) return false;
     }
     return true;
 }
@@ -741,15 +849,16 @@ function specNormalize(p, v) {
         });
     if (p === 'position-area') { const n = posArea(v); if (n !== null) return n; }
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
+    const preserveMathZero = /\b(?:calc|round|mod|rem|progress)\(/i.test(v);
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
         const n = Number(num + (exp || ''));
         if (!isFinite(n)) return m;
         const r = String(n);
-        return pre + (sign === '-' && n ? '-' : '') + r;
+        return pre + (sign === '-' && (n || preserveMathZero) ? '-' : '') + r;
     }).replace(/\s+/g, ' ');
     if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return CSS_POSITION.test(p) ? t.toLowerCase() : t;
     if (CSS_POSITION.test(p)) return cssPositionSpecified(t, cssPositionAxis(p)) || t;
-    if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log)\(/i.test(t)) t = specFoldMath(t);
+    if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
     if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
     if (p === 'display') { const w = t.toLowerCase().split(' '); if (w.length === 2 && w.includes('list-item') && w.includes('flow')) t = 'list-item'; else if (w.length === 2 && w[1] === 'flow' && /^(block|inline|run-in)$/.test(w[0])) t = w[0]; else if (w.length === 2 && w[0] === 'block' && /^(flex|grid|table|flow-root|math)$/.test(w[1])) t = w[1]; else if (w.length === 2 && w[0] === 'inline' && w[1] === 'flow-root') t = 'inline-block'; else if (w.length === 2 && w[0] === 'inline' && /^(flex|grid|table)$/.test(w[1])) t = 'inline-' + w[1]; }
@@ -971,7 +1080,36 @@ methods(Element.prototype, {
     set innerHTML(v) { const a = ttCompliantHTML(v == null ? '' : v, htmlSinkOptions(false), 'Element innerHTML', xmlDocOf(this)); setInner(this, a.html, a.options); },
     get outerHTML() { return xmlDocOf(this) ? xmlSer(this, null, Object.assign(Object.create(null), { xml: XML_NS })) : N.html(this, true); },
     set outerHTML(v) { const a = ttCompliantHTML(v == null ? '' : v, htmlSinkOptions(false), 'Element outerHTML', xmlDocOf(this)); const p = N.parent(this); if (!p) return; insertNode(p, legacyHTMLFragment(p, a.html, a.options, 'Element outerHTML'), this); removeNode(this); },
-    insertAdjacentHTML(pos, html) { const a = ttCompliantHTML(html, htmlSinkOptions(false), 'Element insertAdjacentHTML', xmlDocOf(this)); const ctx = /^(beforebegin|afterend)$/i.test(pos) ? N.parent(this) : this; if (ctx) this.insertAdjacentElement(pos, legacyHTMLFragment(ctx, a.html, a.options, 'Element insertAdjacentHTML')); },
+    insertAdjacentHTML(pos, html) {
+        if (!N.isNode(this) || N.type(this) !== 1) throw new TypeError("Failed to execute 'insertAdjacentHTML' on 'Element': Illegal invocation");
+        if (arguments.length < 2) throw argsErr('insertAdjacentHTML', this, 2);
+        // WebIDL converts position before the HTML input; Trusted Types then
+        // runs before any parent/context error or fragment parsing.
+        pos = `${pos}`;
+        const a = ttCompliantHTML(html, htmlSinkOptions(false), 'Element insertAdjacentHTML', xmlDocOf(this));
+        pos = pos.replace(/[A-Z]/g, c => c.toLowerCase());
+        let ctx;
+        switch (pos) {
+        case 'beforebegin': case 'afterend':
+            ctx = N.parent(this);
+            if (!ctx || N.type(ctx) === 9) throw new DOMException('The insertion position has no modifiable parent', 'NoModificationAllowedError');
+            break;
+        case 'afterbegin': case 'beforeend': ctx = this; break;
+        default: throw new DOMException('Invalid position', 'SyntaxError');
+        }
+        // Use the specified fragment context without changing the insertion target.
+        if (N.type(ctx) !== 1 || (N.ns(ctx) === 0 && N.name(ctx) === 'html' && N.ns(N.ownerDoc(ctx)) !== 3))
+            ctx = N.create('body', 0, N.ownerDoc(this));
+        const fragment = legacyHTMLFragment(ctx, a.html, a.options, 'Element insertAdjacentHTML');
+        // The internal insertion algorithm must not dispatch an overridable
+        // public insertAdjacentElement method or coerce position a second time.
+        switch (pos) {
+        case 'beforebegin': insertNode(N.parent(this), fragment, this); break;
+        case 'afterbegin': insertNode(this, fragment, N.first(this)); break;
+        case 'beforeend': insertNode(this, fragment, null); break;
+        case 'afterend': insertNode(N.parent(this), fragment, N.next(this)); break;
+        }
+    },
     insertAdjacentElement(pos, el) {
         switch (String(pos).toLowerCase()) {
         case 'beforebegin': { const p = N.parent(this); if (p) insertNode(p, el, this); break; }

@@ -254,23 +254,17 @@ WFN(importScript) {
     WENV; std::string u = resolve(E, jcstr(iso, a[0]));
     if (u.empty()) { throw_dom(iso, ctx, "Failed to execute 'importScripts': The URL '" + jcstr(iso, a[0]) + "' is invalid.", "SyntaxError"); return; }
     NetResponse *r = net_fetch_sync(net_request_new("GET", u.c_str()));
-    if (!r || r->status < 200 || r->status >= 300) {
+    if (!r || r->error || r->status < 200 || r->status >= 300) {
         if (r) net_response_free(r);
         throw_dom(iso, ctx, "Failed to execute 'importScripts': The script at '" + u + "' failed to load.", "NetworkError"); return;
     }
-    /* a classic worker script must be served with a JavaScript MIME type (a missing type is let through) */
-    if (const char *ct = headers_get(&r->headers, "content-type"); ct && *ct) {
-        static const char *ok[] = { "application/ecmascript", "application/javascript", "application/x-ecmascript", "application/x-javascript",
-            "text/ecmascript", "text/javascript", "text/javascript1.0", "text/javascript1.1", "text/javascript1.2", "text/javascript1.3",
-            "text/javascript1.4", "text/javascript1.5", "text/jscript", "text/livescript", "text/x-ecmascript", "text/x-javascript" };
-        char *ess = mime_essence(ct);
-        bool js = false;
-        for (const char *m : ok) if (ess && !strcmp(ess, m)) js = true;
-        free(ess);
-        if (!js) {
-            net_response_free(r);
-            throw_dom(iso, ctx, "Failed to execute 'importScripts': Refused to execute script from '" + u + "' because its MIME type ('" + std::string(ct) + "') is not executable.", "NetworkError"); return;
-        }
+    /* Imported classic scripts require a JavaScript MIME type, including for
+       non-HTTP responses. Own the diagnostic before releasing its headers. */
+    if (!net_response_mime_allowed(r, NET_MIME_SCRIPT) || !net_response_mime_is_javascript(r)) {
+        const char *header = headers_get(&r->headers, "content-type");
+        const std::string type = header ? header : "";
+        net_response_free(r);
+        throw_dom(iso, ctx, "Failed to execute 'importScripts': Refused to execute script from '" + u + "' because its MIME type ('" + type + "') is not executable.", "NetworkError"); return;
     }
     std::string src(r->body ? r->body : "", r->body_len); net_response_free(r);
     v8::ScriptOrigin origin(jstr(iso, u.c_str()));
@@ -867,9 +861,20 @@ void worker_main(std::shared_ptr<Worker> w) {
         std::string src = w->src, ct = w->ctype; bool ok = w->have_src;
         if (!ok && !w->term) {
             NetResponse *r = net_fetch_sync(net_request_new("GET", w->url.c_str()));
-            if (r && r->status >= 200 && r->status < 300) {
-                src.assign(r->body ? r->body : "", r->body_len); ok = true;
-                const char *type = headers_get(&r->headers, "content-type"); ct = type ? type : "";
+            if (r && !r->error && r->status >= 200 && r->status < 300) {
+                /* Classic worker entrypoints add a strict JavaScript MIME
+                   check only for HTTP(S) final responses. Prepared data/blob
+                   sources retain the non-HTTP exception below. */
+                URL final_url = {};
+                bool http = url_parse(r->url ? r->url : w->url.c_str(), &final_url) &&
+                    (str_ieq(final_url.scheme, "http") || str_ieq(final_url.scheme, "https"));
+                url_free(&final_url);
+                ok = net_response_mime_allowed(r, NET_MIME_SCRIPT) &&
+                    (w->module || !http || net_response_mime_is_javascript(r));
+                if (ok) {
+                    src.assign(r->body ? r->body : "", r->body_len);
+                    const char *type = headers_get(&r->headers, "content-type"); ct = type ? type : "";
+                }
             }
             if (r) net_response_free(r);
         }

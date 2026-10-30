@@ -6,13 +6,16 @@
  * https://drafts.csswg.org/css-values-4/#calc-type-checking */
 enum { CN_LENGTH, CN_ANGLE, CN_TIME, CN_FREQUENCY, CN_RESOLUTION, CN_FLEX, CN_PERCENT, CN_DIMS };
 typedef struct { double value; int power[CN_DIMS]; } CssNumber;
-typedef struct { const char *p; float em, rem; const MediaCtx *media; unsigned depth, terms; bool length_percent_hint; } CssNumberParser;
+typedef struct { const char *p; float em, rem; const MediaCtx *media; unsigned depth, terms;
+    bool length_percent_hint, validation_only;
+    const LCtx *font_context; /* borrowed for the synchronous parse only */
+} CssNumberParser;
 static bool css_number_sum(CssNumberParser *p, CssNumber *out);
 static void css_number_ws(CssNumberParser *p) { while (is_ws((unsigned char)*p->p)) p->p++; }
 static bool css_number_scalar(const CssNumber *n) { for (int i = 0; i < CN_DIMS; i++) if (n->power[i]) return false; return true; }
 static bool css_number_same(const CssNumber *a, const CssNumber *b) { return !memcmp(a->power, b->power, sizeof a->power); }
 static bool css_number_angle(const CssNumber *n) { for (int i = 0; i < CN_DIMS; i++) if (n->power[i] != (i == CN_ANGLE)) return false; return true; }
-static bool css_number_function(const char *name, CssNumber *args, int n, int strategy, CssNumber *out) {
+static bool css_number_function(const char *name, CssNumber *args, int n, int strategy, bool no_clamp, CssNumber *out) {
     if (!n) return false;
     *out = args[0]; double a = args[0].value, b = n > 1 ? args[1].value : 1, v = a;
     bool same = true, scalar = true, nan = false;
@@ -23,6 +26,16 @@ static bool css_number_function(const char *name, CssNumber *args, int n, int st
         bool lo = !strcmp(name, "min"), hi = !strcmp(name, "max");
         if (!lo && !hi) v = fabs(a);
         for (int i = 1; i < n; i++) v = lo ? fmin(v, args[i].value) : hi ? fmax(v, args[i].value) : hypot(v, args[i].value);
+    } else if (!strcmp(name, "progress")) {
+        if (n != 3 || !same) return false;
+        int dimensions = 0;
+        for (int i = 0; i < CN_DIMS; i++) {
+            if (args[0].power[i] && args[0].power[i] != 1) return false;
+            dimensions += args[0].power[i] != 0;
+        }
+        if (dimensions > 1) return false;
+        memset(out->power, 0, sizeof out->power);
+        v = calculation_progress(a, b, args[2].value, no_clamp);
     } else if (!strcmp(name, "clamp")) { if (n != 3 || !same) return false; v = fmax(a, fmin(b, args[2].value)); }
     else if (!strcmp(name, "abs")) { if (n != 1) return false; v = fabs(a); }
     else if (!strcmp(name, "sign")) { if (n != 1) return false; memset(out->power, 0, sizeof out->power); v = a > 0 ? 1 : a < 0 ? -1 : a; }
@@ -78,7 +91,17 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
             else {
                 size_t len = (size_t)(q - s); if (len >= 160) return false;
                 char token[160]; memcpy(token, s, len); token[len] = 0; Length value;
-                if (!css_parse_length(token, &value, p->em, p->rem, p->media) || value.kind != LK_LEN || value.pct || value.mm) return false;
+                if (p->validation_only && !strcmp(u, "rex")) {
+                    /* Syntax validation has no document font. The nominal
+                       magnitude never escapes this boolean validation path. */
+                    value = L_px((float)out->value * p->rem * .5f);
+                } else if (p->font_context) {
+                    LCtx context = *p->font_context; context.scalar_percentage_type = false;
+                    const char *cursor = token;
+                    if (!parse_dim(&cursor, &value, &context) || *cursor ||
+                        !math_type_equal(context.math_type, math_type_unit(MATH_LENGTH))) return false;
+                } else if (!css_parse_length(token, &value, p->em, p->rem, p->media)) return false;
+                if (value.kind != LK_LEN || value.pct || value.mm) return false;
                 out->power[CN_LENGTH] = 1; out->value = value.px;
             }
         }
@@ -96,7 +119,13 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
         else return false;
         return true;
     }
-    p->p++; int strategy = 0;
+    p->p++; int strategy = 0; bool no_clamp = false;
+    if (!strcmp(name, "progress")) {
+        css_number_ws(p);
+        if (!strncasecmp(p->p, "no-clamp", 8) && is_ws((unsigned char)p->p[8])) {
+            no_clamp = true; p->p += 8;
+        }
+    }
     if (!strcmp(name, "round")) {
         css_number_ws(p); const char *begin = p->p; while (isalpha((unsigned char)*p->p) || *p->p == '-') p->p++;
         size_t n = (size_t)(p->p - begin);
@@ -115,7 +144,7 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
         css_number_ws(p); if (*p->p == ',') { p->p++; continue; }
         if (*p->p != ')') return false; p->p++; break;
     }
-    return css_number_function(name, args, n, strategy, out);
+    return css_number_function(name, args, n, strategy, no_clamp, out);
 }
 static bool css_number_value(CssNumberParser *p, CssNumber *out) {
     if (++p->depth > 64) { p->depth--; return false; }
@@ -140,12 +169,18 @@ static bool css_number_sum(CssNumberParser *p, CssNumber *out) {
         out->value = op == '+' ? out->value + r.value : out->value - r.value;
     }
 }
-static bool css_number_parse_hint(const char *text, float em, float rem, const MediaCtx *media,
-                                  bool length_percent_hint, CssNumber *out) {
+static bool css_number_parse_context(const char *text, float em, float rem, const MediaCtx *media,
+                                     bool length_percent_hint, const LCtx *font_context,
+                                     bool validation_only, CssNumber *out) {
     CssNumberParser p = { .p = text, .em = em, .rem = rem, .media = media,
-                          .length_percent_hint = length_percent_hint };
+        .length_percent_hint = length_percent_hint, .font_context = font_context,
+        .validation_only = validation_only };
     if (!css_number_value(&p, out)) return false;
     css_number_ws(&p); return !*p.p;
+}
+static bool css_number_parse_hint(const char *text, float em, float rem, const MediaCtx *media,
+                                  bool length_percent_hint, CssNumber *out) {
+    return css_number_parse_context(text, em, rem, media, length_percent_hint, NULL, false, out);
 }
 static bool css_number_parse(const char *text, float em, float rem, const MediaCtx *media, CssNumber *out) {
     return css_number_parse_hint(text, em, rem, media, false, out);

@@ -57,6 +57,7 @@ typedef struct Layout {
     float vw, vh, dpr;
     float doc_w, doc_h;
     int nboxes;
+    bool measure_only; /* transient float preflight: no absolute registration or memo reuse */
     float inl_cbh;   /* containing-block height handed to layout_inline (floats/atomics resolve % heights against it) */
     double ms;
     struct Box **alog; int nalog, calog;   /* every add_abs of this run, so a reused subtree can re-register its abs boxes */
@@ -81,12 +82,21 @@ void layout_dump(Box *b, int depth, int maxdepth);
 enum { SZ_FILL, SZ_SHRINK, SZ_FORCED };
 Box *build_box_tree(Layout *L, Document *d);
 void compute_mbp(Box *b, float cbw);
+/* Anonymous/inline wrappers do not establish the percentage containing block. */
+bool layout_percentage_wrapper(const Box *box);
+const Box *layout_percentage_cb(const Box *box);
+/* Final border-box stretch size; only an indefinite basis returns -1.
+   Available space can be negative after absolute insets: subtract margins
+   before flooring the inner size. Callers must not apply box-sizing again. */
+float layout_stretch_border_size(const Box *box, const Box *percentage_cb,
+                                bool horizontal, float available, bool definite);
 void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
 float layout_inline(Layout *L, Box *b, float x0, float y0, float W, FloatCtx *fc);
 float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, FloatCtx *fc);
 float layout_flex(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 void grid_absolute_containing_block(const Box *cb, const Box *a, float *x, float *y, float *w, float *h);
+bool grid_intrinsic_explicit(Layout *L, Box *b, float *mn, float *mx);
 float grid_item_auto_min(Layout *L, Box *c, float maxlen);   /* contribution to a minmax(auto, maxlen) column */
 float layout_table(Layout *L, Box *b, float cx, float cy, float cw, float chdef);
 void table_intrinsic(Layout *L, Box *b, float *mn, float *mx);

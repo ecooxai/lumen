@@ -22,6 +22,13 @@ typedef struct NetResponse {
     double t_start, t_end;
 } NetResponse;
 
+/* MIME checks consume only borrowed final-response headers. SCRIPT implements
+   Fetch blocked MIME categories plus nosniff; STYLE implements style nosniff.
+   The strict JavaScript predicate is separate for worker/module policies. */
+typedef enum { NET_MIME_SCRIPT, NET_MIME_STYLE } NetMimeDestination;
+bool net_response_mime_allowed(const NetResponse *response, NetMimeDestination destination);
+bool net_response_mime_is_javascript(const NetResponse *response);
+
 typedef enum {
     NET_CACHE_DEFAULT, NET_CACHE_NO_STORE, NET_CACHE_RELOAD, NET_CACHE_NO_CACHE,
     NET_CACHE_FORCE, NET_CACHE_ONLY

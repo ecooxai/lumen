@@ -1595,7 +1595,8 @@ static void run_written_script(JsCtx *c, Node *script) {
         if (doc_referrer(c->doc, url, node_attr(script, "referrerpolicy"), ref, sizeof ref)) headers_add(&request->headers, "Referer", ref);
         response = net_fetch_sync(request);
     }
-    if (response && !response->error && response->status >= 200 && response->status < 300)
+    if (response && !response->error && response->status >= 200 && response->status < 300 &&
+        net_response_mime_allowed(response, NET_MIME_SCRIPT))
         js_run_prepared_classic(c, script, response->body ? response->body : "", response->body ? response->body_len : 0,
                                 response->url ? response->url : url, true, true);
     else js_parser_script_error(c, script, true);

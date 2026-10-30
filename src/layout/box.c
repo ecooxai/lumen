@@ -71,6 +71,43 @@ static bool is_ws_text(const Box *b) { if (b->kind != BX_TEXT) return false; for
 static bool block_level(const Box *b) { return b->kind == BX_BLOCK && in_flow(b); }
 static bool inline_level(const Box *b) { return b->kind == BX_INLINE || b->kind == BX_TEXT || b->kind == BX_ATOMIC || b->kind == BX_BR; }
 
+bool layout_percentage_wrapper(const Box *box) {
+    /* Block-in-inline fixup changes the layout kind, not the containing-block
+       role. Flex/grid blockification sets bfc and must remain a real CB. */
+    return box->anon || box->kind == BX_INLINE ||
+        (box->kind == BX_BLOCK && box->st && box->st->display == D_INLINE && !box->bfc);
+}
+const Box *layout_percentage_cb(const Box *box) {
+    if (box->abs && box->cb) return box->cb;
+    const Box *cb = box->parent;
+    while (cb && layout_percentage_wrapper(cb)) cb = cb->parent;
+    return cb;
+}
+float layout_stretch_border_size(const Box *box, const Box *percentage_cb,
+                                bool horizontal, float available, bool definite) {
+    if (!definite) return -1;
+    int start = horizontal ? 3 : 0, end = horizontal ? 1 : 2;
+    float before = box->st->margin[start].kind == LK_AUTO ? 0 : box->m[start];
+    float after = box->st->margin[end].kind == LK_AUTO ? 0 : box->m[end];
+    bool vertical_cb = percentage_cb && percentage_cb->st && percentage_cb->st->writing_mode;
+    /* Sideways text layout is not generally encoded by this engine yet, but
+       its inherited writing-mode still determines the stretch sizing axis. */
+    if (!vertical_cb && percentage_cb && percentage_cb->st) {
+        const char *mode = custom_get(percentage_cb->st->gen_i, "writing-mode");
+        vertical_cb = mode && (str_ieq(mode, "sideways-rl") || str_ieq(mode, "sideways-lr"));
+    }
+    bool block_axis = horizontal == vertical_cb;
+    bool independent_cb = percentage_cb && (percentage_cb->bfc ||
+        percentage_cb->fmt == FMT_FLEX || percentage_cb->fmt == FMT_GRID || percentage_cb->fmt == FMT_TABLE);
+    /* This is a sizing-only margin adjustment, not actual margin collapse. */
+    if (percentage_cb && block_axis && block_level(box) && !independent_cb) {
+        if (!percentage_cb->b[start] && !percentage_cb->p[start]) before = 0;
+        if (!percentage_cb->b[end] && !percentage_cb->p[end]) after = 0;
+    }
+    float border_padding = horizontal ? hbp(box) : vbp(box);
+    return LMAX(border_padding, available - before - after);
+}
+
 /* an anonymous block wrapping an inline run shares its parent's style, but not its size: a
    height: 100% parent would otherwise give each wrapper the parent's whole height */
 static ComputedStyle *anon_block_style(Layout *L, ComputedStyle *p) {
@@ -371,7 +408,7 @@ bool text_break_after(const Box *t, int gi) {
     return false;
 }
 
-typedef struct { float line, mx, word, mn, edge_prefix; unsigned contents; bool after_atomic; } IState;
+typedef struct { float line, mx, word, mn, edge_prefix, trailing_space; unsigned contents; bool after_atomic; } IState;
 static void inline_intrinsic(Layout *L, Box *b, IState *s) {
     for (Box *c = b->first; c; c = c->next) {
         if (c->abs) continue;
@@ -387,30 +424,35 @@ static void inline_intrinsic(Layout *L, Box *b, IState *s) {
             bool wrap = c->st->white_space != WS_NOWRAP && c->st->white_space != WS_PRE;
             for (int i = 0; i < c->sh.n; i++) {
                 char ch = c->text[c->sh.g[i].cluster];
-                if (ch == '\n' && c->st->white_space != WS_NORMAL && c->st->white_space != WS_NOWRAP) { s->mx = LMAX(s->mx, s->line); s->line = 0; s->mn = LMAX(s->mn, s->word); s->word = 0; continue; }
+                if (ch == '\n' && c->st->white_space != WS_NORMAL && c->st->white_space != WS_NOWRAP) { s->mx = LMAX(s->mx, s->line - s->trailing_space); s->line = s->trailing_space = 0; s->mn = LMAX(s->mn, s->word); s->word = 0; continue; }
                 float a = c->sh.g[i].adv;
                 s->line += a;
+                bool collapse_space = c->st->white_space == WS_NORMAL || c->st->white_space == WS_NOWRAP || c->st->white_space == WS_PRE_LINE;
+                if (ch == ' ' && collapse_space) s->trailing_space += a;
+                else s->trailing_space = 0;
                 if (ch == ' ' && wrap) { s->mn = LMAX(s->mn, s->word); s->word = 0; }
                 else { s->word += a; if (wrap && (c->st->word_break == 1 || text_break_after(c, i))) { s->mn = LMAX(s->mn, s->word); s->word = 0; } }
             }
-        } else if (c->kind == BX_BR) { s->mx = LMAX(s->mx, s->line); s->line = 0; s->mn = LMAX(s->mn, s->word); s->word = 0; s->edge_prefix = 0; s->after_atomic = false; s->contents++; }
+        } else if (c->kind == BX_BR) { s->mx = LMAX(s->mx, s->line - s->trailing_space); s->line = s->trailing_space = 0; s->mn = LMAX(s->mn, s->word); s->word = 0; s->edge_prefix = 0; s->after_atomic = false; s->contents++; }
         else if (c->kind == BX_INLINE) {
             compute_mbp(c, 0);
             float l = c->m[3] + c->b[3] + c->p[3], r = c->m[1] + c->b[1] + c->p[1];
             unsigned before = s->contents;
             s->line += l; s->word += l; s->edge_prefix += l;
+            if (l != 0) s->trailing_space = 0;
             inline_intrinsic(L, c, s);
             s->line += r; s->word += r;
+            if (r != 0) s->trailing_space = 0;
             if (s->contents == before) s->edge_prefix += r;
         } else {
             float mn, mx; intrinsic_outer(L, c, &mn, &mx);
-            if (c->floated) { s->mn = LMAX(s->mn, mn); s->line += mx; continue; }
+            if (c->floated) { s->mn = LMAX(s->mn, mn); s->line += mx; s->trailing_space = 0; continue; }
             /* An atomic inline permits a break on either side. Opening
                inline edges stay with this item; closing edges subsequently
                extend its contribution instead of disappearing at the break. */
             s->mn = LMAX(s->mn, LMAX(s->word - s->edge_prefix, 0));
             s->word = s->edge_prefix + mn; s->edge_prefix = 0;
-            s->after_atomic = true; s->contents++; s->line += mx;
+            s->after_atomic = true; s->contents++; s->line += mx; s->trailing_space = 0;
         }
     }
 }
@@ -426,14 +468,16 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
     compute_mbp(b, resolve_own ? cbw : 0);
     const ComputedStyle *st = b->st;
     float bp = hbp(b), mn = 0, mx = 0;
-    if (st->width.kind == LK_LEN && (resolve_own ? len_def(st->width, cbw) : st->width.pct == 0) && b->fmt != FMT_TABLE) {
+    if (st->width.kind == LK_STRETCH && resolve_own && cbw >= 0 && b->fmt != FMT_TABLE) {
+        mn = mx = layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true) - bp;
+    } else if (st->width.kind == LK_LEN && (resolve_own ? len_def(st->width, cbw) : st->width.pct == 0) && b->fmt != FMT_TABLE) {
         mn = mx = (resolve_own ? res(st->width, cbw) : st->width.px) - (st->box_sizing == BOX_BORDER ? bp : 0);
     } else if (b->fmt == FMT_REPLACED) {
         float w, h; replaced_size(L, b, -1, -1, -1, -1, &w, &h); mn = mx = w;
         if (st->width.kind == LK_LEN && st->width.pct) mn = 0;
     } else if (b->fmt == FMT_INLINE) {
         IState s = {0}; inline_intrinsic(L, b, &s);
-        mx = LMAX(s.mx, s.line); mn = LMAX(s.mn, s.word);
+        mx = LMAX(s.mx, s.line - s.trailing_space); mn = LMAX(s.mn, s.word);
         if (st->white_space == WS_NOWRAP || st->white_space == WS_PRE) mn = mx;
         if (b->ctl == CTL_SELECT) { mn += 20; mx += 20; }
     } else if (b->fmt == FMT_FLEX) {
@@ -446,20 +490,22 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
         }
         if (row && n > 1) { mx += st->column_gap * (n - 1); if (!st->flex_wrap) mn += st->column_gap * (n - 1); }
     } else if (b->fmt == FMT_GRID) {
-        int nc = LMAX(1, st->grid_ncols); bool fixed = st->grid_ncols > 0;
-        float fsum = 0;
-        for (int i = 0; i < st->grid_ncols; i++) {
-            const GridTrack *t = &st->grid_cols[i];
-            if (t->size.kind != LK_LEN || t->size.pct || t->fr) { fixed = false; continue; }
-            float w = t->size.px;
-            if (t->min.kind == LK_MIN_CONTENT && st->grid_ncols == 1) for (Box *c = b->first; c; c = c->next) if (in_flow(c)) w = LMAX(w, grid_item_auto_min(L, c, t->size.px));   /* minmax(auto, len); which items land in which of several columns is not known here */
-            fsum += w;
-        }
-        if (fixed) mn = mx = fsum + st->column_gap * (nc - 1);
-        else {
-            float cmx = 0, cmn = 0;
-            for (Box *c = b->first; c; c = c->next) { if (!in_flow(c)) continue; float a, z; intrinsic_outer(L, c, &a, &z); cmx = LMAX(cmx, z); cmn = LMAX(cmn, a); }
-            mx = cmx * nc + st->column_gap * (nc - 1); mn = cmn * nc + st->column_gap * (nc - 1);
+        if (!grid_intrinsic_explicit(L, b, &mn, &mx)) {
+            int nc = LMAX(1, st->grid_ncols); bool fixed = st->grid_ncols > 0;
+            float fsum = 0;
+            for (int i = 0; i < st->grid_ncols; i++) {
+                const GridTrack *t = &st->grid_cols[i];
+                if (t->size.kind != LK_LEN || t->size.pct || t->fr) { fixed = false; continue; }
+                float w = t->size.px;
+                if (t->min.kind == LK_MIN_CONTENT && st->grid_ncols == 1) for (Box *c = b->first; c; c = c->next) if (in_flow(c)) w = LMAX(w, grid_item_auto_min(L, c, t->size.px));   /* minmax(auto, len); which items land in which of several columns is not known here */
+                fsum += w;
+            }
+            if (fixed) mn = mx = fsum + st->column_gap * (nc - 1);
+            else {
+                float cmx = 0, cmn = 0;
+                for (Box *c = b->first; c; c = c->next) { if (!in_flow(c)) continue; float a, z; intrinsic_outer(L, c, &a, &z); cmx = LMAX(cmx, z); cmn = LMAX(cmn, a); }
+                mx = cmx * nc + st->column_gap * (nc - 1); mn = cmn * nc + st->column_gap * (nc - 1);
+            }
         }
     } else if (b->fmt == FMT_TABLE) {
         table_intrinsic(L, b, &mn, &mx);
@@ -472,8 +518,12 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
             mn = LMAX(mn, a); mx = LMAX(mx, z);
         }
     }
+    float stretch = resolve_own && cbw >= 0 && (st->min_width.kind == LK_STRETCH || st->max_width.kind == LK_STRETCH) ?
+        layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true) - bp : -1;
     if (st->max_width.kind == LK_LEN && (resolve_own ? len_def(st->max_width, cbw) : !st->max_width.pct)) { float v = (resolve_own ? res(st->max_width, cbw) : st->max_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMIN(mx, v); mn = LMIN(mn, v); }
+    else if (st->max_width.kind == LK_STRETCH && stretch >= 0) { mx = LMIN(mx, stretch); mn = LMIN(mn, stretch); }
     if (st->min_width.kind == LK_LEN && (resolve_own ? len_def(st->min_width, cbw) : !st->min_width.pct)) { float v = (resolve_own ? res(st->min_width, cbw) : st->min_width.px) - (st->box_sizing == BOX_BORDER ? bp : 0); mx = LMAX(mx, v); mn = LMAX(mn, v); }
+    else if (st->min_width.kind == LK_STRETCH && stretch >= 0) { mx = LMAX(mx, stretch); mn = LMAX(mn, stretch); }
     if (resolve_own) { mn = LMAX(0, mn); mx = LMAX(0, mx); }
     if (mn > mx) mx = mn;
     *omn = mn + bp; *omx = mx + bp;
@@ -536,7 +586,16 @@ void intrinsic_with_basis(Layout *L, Box *b, float cbw, float *mn, float *mx) {
 /* CSS Sizing 4: transfer only definite constraints, then clamp each axis
  * independently. A destination's own preferred/min/max size always wins over
  * a transferred constraint. Coordinates below use the ratio's sizing box. */
-static float replaced_bound(Length value, float reference, float subtract, float add, float fallback) {
+static float replaced_bound(const Box *box, Length value, bool horizontal, float reference,
+                            float subtract, float add, float intrinsic_size, float fallback) {
+    if (value.kind == LK_STRETCH) {
+        /* Absolute limits have their own inset-modified basis in abs_place. */
+        float border = layout_stretch_border_size(box, layout_percentage_cb(box), horizontal,
+                                                  reference, !box->abs && reference >= 0);
+        float bp = horizontal ? hbp(box) : vbp(box);
+        return border >= 0 ? LMAX(0, border - bp) + add : fallback;
+    }
+    if (intrinsic_width_keyword(value)) return intrinsic_size;
     return len_def(value, reference) ? LMAX(0, res(value, reference) - subtract) + add : fallback;
 }
 static bool replaced_auto_ratio(const char *value) {
@@ -594,19 +653,30 @@ void replaced_size(Layout *L, Box *b, float cbw, float cbh, float fw, float fh, 
     float rw = border_ratio ? hb : 0, rh = border_ratio ? vb : 0;
     /* Flex/grid may already have chosen a border-box size. It determines the
        dependent automatic axis, and must not be clamped a second time here. */
-    bool wdef = fw >= 0 || len_def(st->width, cbw), hdef = fh >= 0 || len_def(st->height, cbh);
-    float w = fw >= 0 ? LMAX(0, fw - hb) + rw : wdef ? LMAX(0, res(st->width, cbw) - subtract_w) + rw : -1;
-    float h = fh >= 0 ? LMAX(0, fh - vb) + rh : hdef ? LMAX(0, res(st->height, cbh) - subtract_h) + rh : -1;
+    float stretch_w = st->width.kind == LK_STRETCH ?
+        layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, cbw >= 0) : -1;
+    float stretch_h = st->height.kind == LK_STRETCH ?
+        layout_stretch_border_size(b, layout_percentage_cb(b), false, cbh, cbh >= 0) : -1;
+    bool wdef = fw >= 0 || stretch_w >= 0 || len_def(st->width, cbw);
+    bool hdef = fh >= 0 || stretch_h >= 0 || len_def(st->height, cbh);
+    float w = fw >= 0 ? LMAX(0, fw - hb) + rw : stretch_w >= 0 ? LMAX(0, stretch_w - hb) + rw :
+        wdef ? LMAX(0, res(st->width, cbw) - subtract_w) + rw : -1;
+    float h = fh >= 0 ? LMAX(0, fh - vb) + rh : stretch_h >= 0 ? LMAX(0, stretch_h - vb) + rh :
+        hdef ? LMAX(0, res(st->height, cbh) - subtract_h) + rh : -1;
     if (wdef && !hdef) h = ratio > 0 ? w / ratio : nh + rh;
     else if (hdef && !wdef) w = ratio > 0 ? h * ratio : nw + rw;
     else if (!wdef && !hdef) {
         if (ratio > 0 && !have_width && nh > 0) { h = nh + rh; w = h * ratio; }
         else { w = nw + rw; h = ratio > 0 ? w / ratio : nh + rh; }
     }
-    float minw = replaced_bound(st->min_width, cbw, subtract_w, rw, rw);
-    float minh = replaced_bound(st->min_height, cbh, subtract_h, rh, rh);
-    float maxw = LMAX(minw, replaced_bound(st->max_width, cbw, subtract_w, rw, INFINITY));
-    float maxh = LMAX(minh, replaced_bound(st->max_height, cbh, subtract_h, rh, INFINITY));
+    /* Replaced intrinsic keywords use the natural ratio after resolving the
+       definite opposite axis, including its stretched size. */
+    float intrinsic_w = hdef && ratio > 0 ? h * ratio : nw + rw;
+    float intrinsic_h = wdef && ratio > 0 ? w / ratio : nh + rh;
+    float minw = replaced_bound(b, st->min_width, true, cbw, subtract_w, rw, intrinsic_w, rw);
+    float minh = replaced_bound(b, st->min_height, false, cbh, subtract_h, rh, intrinsic_h, rh);
+    float maxw = LMAX(minw, replaced_bound(b, st->max_width, true, cbw, subtract_w, rw, intrinsic_w, INFINITY));
+    float maxh = LMAX(minh, replaced_bound(b, st->max_height, false, cbh, subtract_h, rh, intrinsic_h, INFINITY));
     if (ratio > 0) {
         float transferred_minw = LMIN(minh * ratio, LMIN(maxw, wdef ? w : INFINITY));
         float transferred_minh = LMIN(minw / ratio, LMIN(maxh, hdef ? h : INFINITY));

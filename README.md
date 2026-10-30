@@ -1,12 +1,10 @@
 # Lumen browser (early preview)
 
-## Linux source checkpoint 214 — 30 October 2026
+## Linux measured source checkpoint 226
 
-This reviewed Linux engine checkpoint includes parser/script lifecycle, custom-element/document ownership and CSS-variable improvements. 8,764/10,540 assertions; 401/640 whole files
+Selected stepped math594/594, stretch1012/1012 and MIME87/87 assertions pass;29/29 stretch and11/11 paint comparisons pass. Fresh exact640: 411/640 whole files; 9162/10540 reported assertions. Scopes are separate; full WPT and whole-browser98/100 remain unverified. URL work is deferred.
 
-The selected parser-options, ordinary-script, creation and template/adoption scopes reach complete passes in their recorded runs. Whole-browser 98/100 and full WPT conformance remain uncertified; URL conformance is deferred. Exact candidates, denominators, reference differences and remaining limitations are documented in [the full measured report](docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_report214.md) and [checkpoint JSON](docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint214.json).
-
-EXPORT-QUALIFICATION.json maps this public source to the tested working inputs. The export has not been rebuilt independently and makes no portable-binary claim. Existing platform build/dependency instructions follow.
+See the [measured report](docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.md) and [checkpoint JSON](docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.json). Actual focused/rendering candidate226, fresh native/640 candidate226; equivalence is explicit where used. EXPORT-QUALIFICATION.json maps reviewed source to tested inputs. This source export was not independently rebuilt and is not a portable binary.
 
 ## Install on macOS
 
