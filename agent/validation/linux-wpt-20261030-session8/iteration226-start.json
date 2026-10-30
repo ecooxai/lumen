@@ -1,0 +1,11 @@
+{
+  "iteration": 12,
+  "candidate": 226,
+  "started_utc": "2026-10-30T15:28:51+00:00",
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "scope": "Bounded correction: constant0% abs/hypot preservation, marked finite-intermediate guard, CSSOM margin percentage hint and HTML fragment body context. No3D/XML/grid expansion; preserve authored oracle correction provenance."
+}

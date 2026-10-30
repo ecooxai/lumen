@@ -1,0 +1,39 @@
+{
+  "candidate": 226,
+  "created_utc": "2026-10-30T15:36:03.638482+00:00",
+  "reviewers": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "status": "Both independent source reviews ready; all browser lanes drained. Freeze for build/native/focused/rendering/exact640; no runtime release acceptance.",
+  "source_inputs": {
+    "src/css/css.h": "f62372e250050d5c4c1f4331eb24d5afd9de3123a1d42b12293aaa6b8fb75708",
+    "src/css/style.c": "153dafe54b6812d2c1a84b818ec477e57d9d0cf978e0ba64a9f33a9e0d6be115",
+    "src/js/prelude/03-element.js": "df8a9c7d5971ac49f2edf376bc0e3226067969e0ed110c7c3f5c4b96d3d24005",
+    "tests/test_css_stepped_math.c": "02e867e8fd1f69b0e471936cb54347cf1870707d081cbddeec5cfd66a6a0b7ea"
+  },
+  "corrections": [
+    "Actual zero percentage coefficients fold as constant abs/hypot operands while authored percentage provenance remains.",
+    "Only newly marked progress affine/clamp values resolve intermediate arithmetic in double; unmarked and stepped legacy paths remain unchanged.",
+    "Native function identifier scan accepts digits after the alphabetic entry point, making existing atan2 dispatch reachable without changing arity/type/function-table checks.",
+    "CSSOM margin destinations receive their length-percentage hint; scalar destinations retain strict percentage typing.",
+    "insertAdjacentHTML uses a temporary body fragment context for the specified non-Element/HTML-html cases while intrinsic insertion retains its original target."
+  ],
+  "native_prefailure": {
+    "before": "qa-native-progress-intermediate/before-v2/receipt.json",
+    "after": "qa-native-progress-intermediate/after/receipt.json",
+    "fixture_sha256": "8cfafb8e53324e9153e357fdd52e622c8597adccb527803db70d0bb7e2150965",
+    "before_result": "4/5; finite ratio was infinity instead of1.5e37",
+    "after_result": "5/5; same finite/NaN/infinity/signed-zero/negative-clamp expectations",
+    "classification": "Direct header-level arithmetic diagnostic, not WPT/browser conformance."
+  },
+  "oracle_correction": "Original33 literal-minus-zero expectations independently disproved by Values4. Version2 changes only two inputs to arithmetic -1*0; preserves expected0 and original receipts. No production signed-zero formula change.",
+  "explicit_limits": [
+    "General dependent-denominator/nested nonlinear percentage math remains unsupported.",
+    "3D transform and XML fragment parser gaps remain deferred.",
+    "Grid percentage follow-up preserves its bounded explicit-track scope;15preexisting vertical/cyclic failures are not claimed fixed.",
+    "Namespace control remains diagnostic: preserve priorSVG pass, disclose preexistingXML failure.",
+    "No fresh full640 rate until the final unchanged schedule is executed."
+  ]
+}

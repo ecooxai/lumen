@@ -1,0 +1,103 @@
+{
+  "iteration": 11,
+  "candidate": 225,
+  "started_utc": "2026-10-30T15:18:59.793564+00:00",
+  "finished_utc": "2026-10-30T15:26:57.043043+00:00",
+  "duration_minutes": 7.954157983333333,
+  "cumulative_minutes": 221.01738405,
+  "subagents": [
+    "repo_baseline",
+    "wpt_review",
+    "delivery_perf"
+  ],
+  "source_commit": "028ef40c7a76aad8f12468c9b2c6742e1ea28176",
+  "binary_sha256": "49899098f902b7ec59ff65874d77c64da392a28f4fc914ed292471e7925258c2",
+  "acceptance": "REJECTED: four independently verified prior-pass losses for constant0% abs/hypot; CSSOM mixed-progress margins and HTML parsing context still incomplete.",
+  "native": {
+    "passed": 143,
+    "total": 143,
+    "math_checks": 185,
+    "stretch_checks": 153,
+    "mime_checks": 165
+  },
+  "wpt": {
+    "stepped": [
+      594,
+      594
+    ],
+    "stretch": [
+      1012,
+      1012
+    ],
+    "mime": [
+      87,
+      87
+    ],
+    "progress": [
+      137,
+      139
+    ],
+    "math_neighbors": [
+      173,
+      432
+    ],
+    "grid_percentage": [
+      29,
+      44
+    ],
+    "insert_adjacent": [
+      70,
+      72
+    ]
+  },
+  "rendering": {
+    "stretch": [
+      29,
+      29
+    ],
+    "paint_guard": [
+      11,
+      11
+    ],
+    "actual_capture_exits_zero": 80
+  },
+  "scores": {
+    "progress_assertion_percent": 98.56115107913669,
+    "insert_adjacent_assertion_percent": 97.22222222222221,
+    "grid_percentage_assertion_percent": 65.9090909090909,
+    "release_readiness": "Rejected; no98 quality claim or fresh broad rate."
+  },
+  "independent_controls": {
+    "prior_controls": "All previous accepted controls preserved.",
+    "zero_percentage_constants": {
+      "reference": [
+        4,
+        4
+      ],
+      "candidate223": [
+        4,
+        4
+      ],
+      "candidate225": [
+        0,
+        4
+      ]
+    },
+    "progress_context_original": [
+      27,
+      33
+    ],
+    "progress_context_original_qualification": "Four real CSSOM margin failures; two authored literal-minus-zero oracle errors independently identified under Values4. Preserve original receipt; versioned computed-negative-zero input correction pending.",
+    "dom_boundary": [
+      29,
+      29
+    ]
+  },
+  "evidence": {
+    "focus": "candidate225-focused-audit.json",
+    "native": "native225/receipt.json",
+    "build": "build225/receipt.json",
+    "zero_percentage": "qa-css-math-zero-percent-constants/lumen225/receipt.json"
+  },
+  "limits": "No candidate225 full640 run; latest broad remains rejected223 9133/10540 with four grid losses, now restored in the focused00120/20 only."
+}

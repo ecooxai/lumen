@@ -66,6 +66,22 @@ int main(void) {
     equal("progress(no-clamp 10px, 10px, 10px)", 0);
     equal("progress(no-clamp 100px, 10px, 10px)", INFINITY);
     equal("calc(10px * progress(50deg, 0deg, 100deg))", 5);
+    equal("calc(atan2(1, 1) / 1deg)", 45);
+    equal("calc(atan2(1px, 1px) / 1deg)", 45);
+    equal("calc(atan2(-1 * 0, -1) / 1deg / 360 + .5)", 0);
+    equal("calc(atan2(progress(no-clamp -1 * 0, 0, 1), -1) / 1deg / 360 + .5)", 0);
+    const char *invalid_atan2[] = {
+        "calc(atan2(1) / 1deg)", "calc(atan2(1, 1, 1) / 1deg)",
+        "calc(atan2(1px, 1s) / 1deg)", "calc(atan22(1, 1) / 1deg)",
+    };
+    for (size_t i = 0; i < sizeof invalid_atan2 / sizeof *invalid_atan2; i++) {
+        Length value; assert(!css_parse_length(invalid_atan2[i], &value, 16, 16, NULL)); checks++;
+    }
+    equal("abs(calc(10px + 0%))", 10);
+    equal("hypot(calc(3px + 0%), 4px)", 5);
+    Length cancelled_percentage;
+    assert(css_parse_length("hypot(calc(3px + 0%), 4px)", &cancelled_percentage, 16, 16, NULL));
+    assert(cancelled_percentage.pctu && cancelled_percentage.pct == 0 && cancelled_percentage.px == 5); checks++;
     equal("progress(abs(5%), hypot(3%, 4%), 10%)", 0);
     equal("progress(no-clamp abs(5%), hypot(3%, 4%), 10%)", 0);
     equal("calc(1px * progress(abs(10%), (10% - 10%), 100% / 10))", 1);
@@ -86,6 +102,15 @@ int main(void) {
         assert(fabsf(len_resolve(value, 400) - progress_responsive[i].at400) < .0001f);
         checks += 3;
     }
+    Length bounded_progress;
+    assert(css_parse_length("calc(progress(no-clamp 50%, 0px, 100px) * 10px)", &bounded_progress, 16, 16, NULL));
+    float large_progress = len_resolve(bounded_progress, 3e38f);
+    assert(isfinite(large_progress) && fabsf(large_progress - 1.5e37f) <= 1.5e31f); checks++;
+    assert(css_parse_length("calc(progress(no-clamp 50%, 0px, 100px) * (-1 * 0) * 1px)", &bounded_progress, 16, 16, NULL));
+    float negative_zero_progress = len_resolve(bounded_progress, 100);
+    assert(negative_zero_progress == 0 && signbit(negative_zero_progress)); checks++;
+    assert(css_parse_length("calc(-10px * progress(50%, 0px, 100px))", &bounded_progress, 16, 16, NULL));
+    assert(len_resolve(bounded_progress, 3e38f) == -10); checks++;
     const char *unrepresented_progress[] = {
         "calc(progress(50%, 0px, calc(100px + 10%)) * 10px)",
         "calc(progress(no-clamp 50%, 100px, 100px) * 10px)",

@@ -61,6 +61,19 @@ static inline float len_resolve(Length l, float ref) {
             r += len_affine_operand(l.px3, l.pct3, l.math_pct_mask & 4, ref);
         return (float)r;
     }
+    if (l.math_pct_mask & LEN_MATH_EXACT_PROGRESS) {
+        /* Keep finite affine intermediates in double: pct * ref can exceed
+           float range even when its division by 100 is representable. */
+        double a = len_affine_operand(l.px, l.pct, l.mm ? (l.math_pct_mask & 1) : l.pctu, ref);
+        if (!l.mm || isnan(a)) return (float)a;
+        double b = len_affine_operand(l.px2, l.pct2, l.math_pct_mask & 2, ref);
+        if (isnan(b)) return NAN;
+        if (l.mm == 1) return (float)fmin(a, b);
+        if (l.mm == 2) return (float)fmax(a, b);
+        double c = len_affine_operand(l.px3, l.pct3, l.math_pct_mask & 4, ref);
+        if (isnan(c)) return NAN;
+        return (float)(l.mm == 3 ? fmax(b, fmin(a, c)) : fmin(b, fmax(a, c)));
+    }
     float a = l.px + l.pct * ref / 100.f;
     if (!l.mm) return a;
     float b = l.px2 + l.pct2 * ref / 100.f;

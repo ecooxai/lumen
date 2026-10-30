@@ -224,7 +224,7 @@ static double calculation_progress(double value, double start, double end, bool 
    trig argument without an angle unit in radians */
 static bool math_fn(const char **pp, Length *out, LCtx *c) {
     const char *p = *pp; char id[16]; int k = 0;
-    while ((isalpha((unsigned char)*p) || (k && *p == '-')) && k < (int)sizeof id - 1) id[k++] = (char)lc(*p++);
+    while ((isalnum((unsigned char)*p) || (k && *p == '-')) && k < (int)sizeof id - 1) id[k++] = (char)lc(*p++);
     id[k] = 0;
     Length l = { 0, 0, LK_LEN };
     if (*p != '(') {
@@ -298,12 +298,19 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
         for (int i = 0; i < n; i++) if (!math_type_equal(types[i], number_type)) return false;
         result_type = number_type;
     }
-    bool percentage_math = false;
+    bool percentage_math = false, percentage_provenance = false;
     if (f == 3 || f == 14) {
-        for (int i = 0; i < n; i++) percentage_math |= v[i].pct != 0 || v[i].pctu;
-        /* abs/hypot of pure percentages keep their unit. A mixed affine
-           operand needs a nonlinear representation and remains unsupported. */
-        if (percentage_math) for (int i = 0; i < n; i++) if (v[i].px != 0) return false;
+        bool pixels = false;
+        for (int i = 0; i < n; i++) {
+            percentage_math |= v[i].pct != 0;
+            percentage_provenance |= v[i].pctu;
+            pixels |= v[i].px != 0;
+        }
+        /* A cancelled 0% coefficient is constant even though its provenance
+           remains relevant to typing. Pure percentages keep their unit;
+           genuinely mixed nonlinear operands remain unsupported. */
+        percentage_math |= percentage_provenance && !pixels;
+        if (percentage_math && pixels) return false;
     }
     uint8_t stepped = f == 1 ? LEN_MATH_MOD : f == 2 ? LEN_MATH_REM :
         strat == 1 ? LEN_MATH_UP : strat == 2 ? LEN_MATH_DOWN :
@@ -370,6 +377,7 @@ static bool math_fn(const char **pp, Length *out, LCtx *c) {
     c->math_type = result_type;
     if (percentage_math) { l.pct = (float)r; l.pctu = true; }
     else l.px = (float)r;
+    if (percentage_provenance) l.pctu = true;
     if (f <= 2) l.pctu = v[0].pctu || v[1].pctu;
     *out = l; *pp = p; return true;
 }

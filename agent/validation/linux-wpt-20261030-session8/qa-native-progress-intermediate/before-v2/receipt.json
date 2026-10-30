@@ -1,0 +1,26 @@
+{
+  "phase": "before-v2",
+  "started_utc": "2026-10-30T15:33:08.328682+00:00",
+  "finished_utc": "2026-10-30T15:33:09.404055+00:00",
+  "duration_seconds": 1.0753742070082808,
+  "source_commit": "028ef40c7a76aad8f12468c9b2c6742e1ea28176",
+  "header_sha256": "67299793eab7b37d3aa60a88d8be66ae594701ee56986fa3a78dddd961cca494",
+  "header_unchanged": true,
+  "fixture_sha256": "8cfafb8e53324e9153e357fdd52e622c8597adccb527803db70d0bb7e2150965",
+  "compile_command": [
+    "/usr/bin/clang",
+    "-std=c11",
+    "-O2",
+    "-I",
+    "/mnt/p3/project/browser/lumen-android/lumen-android",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-native-progress-intermediate/before.c",
+    "-lm",
+    "-o",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-native-progress-intermediate/before-v2/probe"
+  ],
+  "compile_exit": 0,
+  "probe_exit": 1,
+  "probe_output": "finite_ratio=0 actual=inf expected=1.5e+37 unmarked_nan=1 unmarked_infinity=1 marked_negative_zero=1 marked_negative_clamp=1",
+  "monitor_joined": true,
+  "scope": "Direct production inline Length resolution only; separate from WPT/browser conformance."
+}

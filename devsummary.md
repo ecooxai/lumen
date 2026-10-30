@@ -1818,3 +1818,11 @@ Detailed evidence is in session8/iteration223-summary.json, candidate223-product
 Started 2026-10-30T15:04:14.610941+00:00; ended 2026-10-30T15:17:55.831584+00:00; 13.687011 minutes. Cumulative wall time: 211.997193 minutes. Subagents: repo_baseline, wpt_review, delivery_perf.
 
 The grid regression repair was separately committed at a8c52017 before bounded progress and adjacent-HTML changes at fb44caff. Peer review completed, but the compiler caught a missing local type conversion for the public void-pointer stylesheet field. The build gate scored 0/100 (0/1); no native, WPT or rendering conformance score exists for candidate 224. Source pins remained unchanged, monitors joined, and the original failed build receipt/log are retained. Candidate 225 makes only the local type correction before the same planned validation gates.
+
+## Iteration 11 — candidate 225, preservation gate rejected
+
+Started 2026-10-30T15:18:59.793564+00:00; ended 2026-10-30T15:26:57.043043+00:00; 7.954158 minutes. Cumulative wall time: 221.017384 minutes. Subagents: repo_baseline, wpt_review, delivery_perf.
+
+The local compiler correction passed build/startup and all143 native tests (185 math,153 stretch and165 MIME direct checks). Full focused scopes measured594/594 stepped math,1012/1012 stretch,87/87 MIME,137/139 progress,173/432 math neighbors,29/44 grid percentage and70/72 adjacent HTML. All29 stretch and11 separate paint comparisons passed with80 actual capture exits0. Scores are scope-specific: progress98.561151/100, adjacent HTML97.222222/100 and grid percentage65.909091/100; these are assertion rates, not a browser quality score.
+
+Release is rejected: four immutable223/reference constant0% abs/hypot controls fell from4/4 to0/4. The new context fixture was27/33: four actual CSSOM margin failures and two independently disproved literal-minus-zero expectations; the original evidence is retained and a versioned arithmetic-negative-zero correction is pending. No production change will satisfy the invalid literal oracle. The native-only finite-intermediate risk is being captured before a marked-only fix. No225 broad rate is inferred; fresh full640 remains required.

@@ -608,7 +608,8 @@ function mathValid(p, v) {
     let m;
     while ((m = re.exec(v))) {
         if (!MATH_FNS.test(m[2].toLowerCase())) continue;
-        const lengthDestination = MATH_LEN_PROPS.test(p) || p === 'font-size';
+        const lengthDestination = MATH_LEN_PROPS.test(p) || p === 'font-size' ||
+            /^margin(?:-(?:top|right|bottom|left|block(?:-start|-end)?|inline(?:-start|-end)?))?$/.test(p);
         const st = m.index + m[1].length, [t, n] = mathType(v.slice(st), false, lengthDestination ? 'length' : '');
         if (t === null) return false;
         re.lastIndex = st + Math.max(n, 1);
@@ -1096,6 +1097,9 @@ methods(Element.prototype, {
         case 'afterbegin': case 'beforeend': ctx = this; break;
         default: throw new DOMException('Invalid position', 'SyntaxError');
         }
+        // Use the specified fragment context without changing the insertion target.
+        if (N.type(ctx) !== 1 || (N.ns(ctx) === 0 && N.name(ctx) === 'html' && N.ns(N.ownerDoc(ctx)) !== 3))
+            ctx = N.create('body', 0, N.ownerDoc(this));
         const fragment = legacyHTMLFragment(ctx, a.html, a.options, 'Element insertAdjacentHTML');
         // The internal insertion algorithm must not dispatch an overridable
         // public insertAdjacentElement method or coerce position a second time.
