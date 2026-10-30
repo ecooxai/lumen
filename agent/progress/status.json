@@ -1,31 +1,35 @@
 {
   "title": "Lumen Linux \u00b7 Trusted Types parser compatibility",
-  "phase": "Session 7: fresh parser-option baseline and implementation",
-  "iteration": 201,
+  "phase": "Candidate 201: 1949/1961 parser checks; candidate202 fixes remaining async state",
+  "iteration": 202,
   "score": null,
-  "iteration_quality": null,
-  "score_note": "Candidate 200 measured baseline: 59.38/100 fully passing selected cases; no overall browser score inferred.",
+  "iteration_quality": 99.38806731259562,
+  "score_note": "Parser focus201:1949/1961 assertions and17/18wholefiles. Broader selected640 baseline remains380/640; no overallquality score inferred.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
   "checkpoint": "a4c26febf736ef6334f05421e1c0d69b24e5a411",
-  "updated_utc": "2026-10-30T06:31:06.548342+00:00",
+  "updated_utc": "2026-10-30T06:43:24.753476+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
     [
-      "Verified baseline200",
-      "380/640 fully passing cases (59.38%); 8,324/10,540 assertion passes (78.98%). Existing binary identity verified."
+      "Parser-option focus201",
+      "1,949/1,961 assertions (99.388%),17/18 wholefiles;941 newpasses,zero priorpasslosses."
     ],
     [
-      "Chromium reference",
-      "544/640 fully passing cases; 9,516/10,549 assertion passes. Fresh focus rerun uses the same installed Chromium150."
+      "Remaining selected failures",
+      "12 external-script async-state checks; candidate202 general lifecycle repair building."
     ],
     [
-      "Selected important part",
-      "Trusted Types parser options: 18 whole upstream files frozen before implementation; fresh Lumen200 and Chromium runs underway."
+      "Independent security controls",
+      "16/18 vsbaseline8/18; two preexisting fail-closed cross-realm rejections are under investigation."
     ],
     [
-      "Source preservation",
-      "Original source preserved; new GPT-6 Astra Pro built-in integration branch, full task saved; no URL conformance work."
+      "Native regression gate",
+      "140/140 non-URL tests pass,zero skips; one-second CPU/RAM evidence retained."
+    ],
+    [
+      "Broader frozen baseline",
+      "Candidate200:380/640 wholecases,8324/10540 assertions. Candidate201 has not yet had final640 comparison."
     ]
   ],
   "coverage": "Frozen selected 640 HTTP/window cases; URL conformance deferred. Chromium: 544/640 full cases and 9,516/10,549 assertions. This is not the complete WPT suite.",
@@ -35,12 +39,12 @@
     "URL conformance remains deferred. All failure denominators and reference differences remain visible.",
     "Surge currently has no authenticated session; existing HTTPS progress and reviewed GitHub Pages publication remain available."
   ],
-  "active_iteration": 201,
+  "active_iteration": 202,
   "accepted_binary_sha256": "9ad329ef2ba4282bc7574f34575ed6405f315f7e1a5088d956b776ccfa8d3927",
   "accepted_binary_scope": "Candidate 200, exact final CPU/offscreen Linux build; full selected-cohort and scoped regression validation complete.",
   "agent_session": "active",
   "showcase_url": "https://ecooxai.github.io/lumen/showcase.mp4",
-  "candidate_binary_sha256": null,
+  "candidate_binary_sha256": "03ac9e640989d4368510a098bc92bb75219704566d45044266e49c3bfd435e4d",
   "publication_status": "Historical accepted candidate 200 remains published; next reviewed source checkpoint will be linked after validation.",
   "showcase_note": "Actual native candidate 200 CPU/offscreen frames; final published video and poster bytes were independently downloaded and verified.",
   "source_archive_url": "https://ecooxai.github.io/lumen/src.tar.gz",
@@ -402,9 +406,9 @@
     "state": "build sealed; independent runtime acceptance pending"
   },
   "public_report_url": "https://ecooxai.github.io/lumen/",
-  "session_iteration": 1,
+  "session_iteration": 2,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
-  "accepted_iteration": 200,
+  "accepted_iteration": 201,
   "accepted_focused_results": {
     "native": "140/140",
     "network": "317/317",
@@ -532,7 +536,7 @@
       "qualification": "Normal/font-sanitizer progress remains valid experimental evidence but does not override the reproducible rendering regression. Existing167 captures and timings remain167 only."
     }
   ],
-  "current_candidate": null,
+  "current_candidate": 202,
   "fresh_session4_baseline162": {
     "iteration": 162,
     "source_commit": "e858139105c0743d8416fe6c91cd3ac42480a3b0",
@@ -1320,9 +1324,9 @@
   "session6_current": "Candidate 200 is accepted: 380/640 full selected cases, 8,324/10,540 assertions, 251 new assertion passes and no losses versus candidate 176.",
   "session6_current_summary": "Session finished after 229.084 elapsed wall minutes and 21 recorded iterations. Candidate 200 is published; the 98/100 whole-browser goal remains unmet.",
   "overall_assessment": "98/100 whole-browser goal unverified; current fixed sample baseline is 380/640 fully passing cases.",
-  "accepted_scope_label": "Historical frozen non-URL WPT sample, candidate 200",
-  "accepted_scope_pass": 380,
-  "accepted_scope_total": 640,
+  "accepted_scope_label": "Trusted Types parser-options focus, candidate201",
+  "accepted_scope_pass": 1949,
+  "accepted_scope_total": 1961,
   "reviewed_source_checkpoint186": {
     "candidate": 186,
     "source_url": "https://2b6886734b41e997.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
@@ -1357,13 +1361,21 @@
   },
   "session7_current": {
     "started_utc": "2026-10-30T06:26:11Z",
-    "iteration": 1,
-    "phase": "baseline",
+    "iteration": 2,
+    "phase": "building",
     "baseline_candidate": 200,
     "current_source_commit": null,
     "focus": "Trusted Types parser options",
     "selected_whole_files": 18,
     "focus_result": null,
-    "overall_goal_met": false
+    "overall_goal_met": false,
+    "candidate": 202,
+    "source_commit": "1f5ad47ee5b12c50a9d0f878ab2d1fcc5b491c55",
+    "binary_sha256": "03ac9e640989d4368510a098bc92bb75219704566d45044266e49c3bfd435e4d",
+    "focused_accepted_candidate": 201,
+    "focused_pass": 1949,
+    "focused_total": 1961,
+    "focused_whole_pass": 17,
+    "focused_whole_total": 18
   }
 }

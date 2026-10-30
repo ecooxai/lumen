@@ -119,7 +119,10 @@ mk('HTMLImageElement', HTMLElement, ['img'], p => {
 });
 mk('HTMLScriptElement', HTMLElement, ['script'], p => {
     reflectUrl(p, 'src'); reflectStr(p, 'type', 'charset', 'crossOrigin', 'integrity', 'referrerPolicy', 'nonce'); reflectBool(p, 'defer', 'noModule'); textProp(p);
-    methods(p, { get async() { return this.__async !== undefined ? this.__async : N.attr(this, 'async') != null; }, set async(v) { def(this, '__async', !!v); } });
+    methods(p, {
+        get async() { return N.scriptForceAsync(this) || N.attr(this, 'async') != null; },
+        set async(v) { N.scriptForceAsync(this, false); if (v) reflectSetAttr(this, 'async', ''); else reflectRemoveAttr(this, 'async'); },
+    });
 });
 H.HTMLScriptElement.supports = (t) => t === 'classic';
 mk('HTMLStyleElement', HTMLElement, ['style'], p => { reflectStr(p, 'media', 'type'); reflectBool(p, 'disabled'); methods(p, { get sheet() { return sheetFor(this); } }); });

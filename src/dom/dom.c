@@ -497,6 +497,10 @@ int node_attr_ns_index(const Node *n, const char *ns, const char *local) {
     return -1;
 }
 void node_set_attr_at(Node *n, int i, const char *name, const char *value, const char *ns, const char *pfx) {
+    /* Adding an async content attribute permanently clears force async. Its
+       later removal does not restore the dynamic-script default. */
+    if (n->type == NODE_ELEMENT && n->ns == NS_HTML && n->tag == A_script && !ns && !strcmp(name, "async"))
+        n->flags |= NF_SCRIPT_NO_FORCE_ASYNC;
     if (n->ns == NS_HTML && !(n->flags & NF_ATTR_MIXED_CASE))
         for (const unsigned char *p = (const unsigned char *)name; *p; p++)
             if (*p >= 'A' && *p <= 'Z') { n->flags |= NF_ATTR_MIXED_CASE; break; }

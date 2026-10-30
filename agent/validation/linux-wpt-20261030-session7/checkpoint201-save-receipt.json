@@ -1,0 +1,11 @@
+{
+  "saved_utc": "2026-10-30T06:39:31.761947+00:00",
+  "library_file_id": "libfile_6d291b1b82988191a7ebdc409a1b2765",
+  "filename": "lumen_gpt-6-astra-pro_builtin-rubywebterm_session7_checkpoint201.json",
+  "bytes": 3014,
+  "sha256": "11ac7f850796b2e8c398d4188a5afaf886845ede7780a3c80473b9f5d9af498e",
+  "scope": "Minimized verified progress receipt only; full task and private records remain in private Git history.",
+  "candidate": 201,
+  "source_commit": "1f5ad47ee5b12c50a9d0f878ab2d1fcc5b491c55",
+  "binary_sha256": "03ac9e640989d4368510a098bc92bb75219704566d45044266e49c3bfd435e4d"
+}

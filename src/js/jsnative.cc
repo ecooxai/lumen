@@ -84,6 +84,19 @@ FN(attrBranded) {
     CTX;
     RET(a[0]->IsObject() && a[0].As<v8::Object>()->HasPrivate(ctx, attr_brand_key(iso)).FromMaybe(false));
 }
+/* HTMLScriptElement's private force-async state survives wrapper changes and
+   adoption, and cannot be forged by page-visible expando properties. */
+FN(scriptForceAsync) {
+    CTX; ARGN(n, 0);
+    if (n->type != NODE_ELEMENT || n->ns != NS_HTML || n->tag != A_script) {
+        iso->ThrowException(v8::Exception::TypeError(jstr(iso, "Illegal invocation"))); return;
+    }
+    if (a.Length() > 1) {
+        if (BOOL(1)) n->flags &= ~NF_SCRIPT_NO_FORCE_ASYNC;
+        else n->flags |= NF_SCRIPT_NO_FORCE_ASYNC;
+    }
+    RET(!(n->flags & NF_SCRIPT_NO_FORCE_ASYNC));
+}
 FN(type) { CTX; ARGN(n, 0); RET((int)n->type); }
 FN(name) { CTX; ARGN(n, 0); RET(jstr(iso, n->type == NODE_ELEMENT || n->type == NODE_PI ? n->tag : n->type == NODE_DOCTYPE ? n->text : "")); }
 FN(ns) { CTX; ARGN(n, 0); RET((int)n->ns); }
@@ -480,6 +493,16 @@ FN(parseFragEx) {
     Node *f = html_parse_fragment_ex(c->doc, cx, s.data(), s.size(), &o);
     san_free(san);
     if (f && !BOOL(4)) mark_started(f);
+    else if (f) {
+        /* Fragment scripting mode does not make its scripts parser-inserted.
+           External scripts therefore retain force async until author code
+           explicitly sets async or adds the async content attribute. */
+        for (Node *x = f; x; x = node_next_in_tree(x, f))
+            if (x->type == NODE_ELEMENT && x->ns == NS_HTML && x->tag == A_script) {
+                x->flags &= ~NF_PARSER_INSERTED;
+                if (!node_has_attr(x, "async")) x->flags &= ~NF_SCRIPT_NO_FORCE_ASYNC;
+            }
+    }
     RET(jwrap(c, f));
 }
 /* parseDocEx(html, config|null): Document.parseHTML(Unsafe)'s document, declarative shadow roots allowed */
@@ -1542,6 +1565,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
     REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);
+    REG(scriptForceAsync);
     REG(templateContent); REG(tplHost); REG(rect); REG(textRects); REG(vrect); REG(clipSet); REG(clipGet); REG(clipImage); REG(borders); REG(overflowSize); REG(scrollPos); REG(setScroll); REG(computed); REG(trTake); REG(setAnimStyle); REG(value); REG(setValue); REG(ctlSel); REG(setCtlSel); REG(checked); REG(setChecked); REG(pickFiles);
     REG(modal); REG(popover); REG(fullscreen); REG(focus); REG(active); REG(cookie); REG(setCookie); REG(url); REG(docBase); REG(setUrl); REG(navigate); REG(navigatePost); REG(histGo);
     REG(histLen); REG(internal); REG(timer); REG(clearTimer); REG(raf); REG(cancelRaf); REG(now); REG(fetch); REG(fetchSync);
