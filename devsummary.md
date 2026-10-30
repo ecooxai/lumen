@@ -1708,3 +1708,14 @@ Bounded entry points are `src/css/style.c` functions `math_fn`, `parse_dim`, `ca
 - Existing desktop instance was not restarted: the current preflight could not find the verified task-owned PID record required by AGENTS.md. The default build binary does match tested candidate 214.
 - Whole-browser gaps, restricted cascade rewrite, omitted adversarial security acceptance, Surge authentication and Fileharbor limitations remain explicitly recorded. No rejected action was rerouted.
 - Work by GPT-6 Astra Pro built-in integration, engine-review and conformance agents using Rubywebterm, Chromium and FFmpeg.
+
+## Linux WPT session 8 — 2026-10-30 CSS math
+
+- Task began **2026-10-30 11:45:56 UTC** (**19:45:56 Asia/Shanghai**). Primary deadline **2026-10-30 16:45:56 UTC**; extra hour only for important bug repair.
+- Prior tracked source/index were clean at d1fa7a557f613571f65ce2b1e728711634606aef. The requested checkpoint precedes the new gpt-6-astra-builtin-repo-baseline-rubywebterm-20261030-css-math branch. Preexisting untracked operations artifacts remain unchanged and unstaged.
+- The complete repeated request is retained in agent/task.md with current whitespace and final delimiter. Bootstrap evidence is agent/validation/linux-wpt-20261030-session8/bootstrap.json.
+- Current unchanged immutable candidate214 matches binary SHA256 7ea0a9999ec521e90fdd2c25fa8485675abf4149aa7aaa7e1696b99bf8aae8ca. Its last completed 640-file sample is **401/640 fully passing files (62.65625%)** and **8764/10540 assertions (83.1499%)**, compared with Chromium156 **560/640 files (87.5%)** and **9551/10552 assertions (90.5136%)**. These are retained current-candidate results from 10:26:49–10:40:02 UTC, not a new run or all-WPT measurement.
+- The baseline preserves 624 OK / 15 TIMEOUT / 1 ERROR harness outcomes and all failed/notrun assertion identities. Broad aggregate SHA256 33864b6a5d2538f631e23483bba4584cd3492f3f4bd6b810aca1b169cb1f24a5.
+- Next bounded scope: upstream CSS stepped math round/mod/rem; freeze complete files and current Chromium control before engine edits. URL tests remain deferred. No overall98/100 readiness claim is made.
+- Same-model built-in agents: root project management; repo_baseline repository/implementation; wpt_review independent conformance/review; delivery_perf preview/resource/deployment.
+- Session8 bootstrap recorded at **2026-10-30T11:49:12.007063+00:00**; elapsed wall time **3.267 minutes**. No implementation iteration has completed yet; initial delivery/readiness score is provisional **4/100** and is not a browser conformance score.

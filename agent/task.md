@@ -1,5 +1,5 @@
 improve lumen browser for linux 10.30 14:25 [$rubywebterm](app://asdk_app_6aca114c3b5481918899bbaa3ec1235a) [$rubywebterm]\\(app\\://asdk_app_6aca114c3b5481918899bbaa3ec1235a) \\\\\\\
-commit and switch to a new branch then improve this new browser engin, pass all web plateform test like chromium,compare with chromium ,do not URL test pass now put URL  delay pass other important test first\\\\\\\
+commit and switch to a new branch then improve this new browser engin, pass all web plateform test like chromium,compare with chromium ,do not URL test pass now put URL  delay pass other important test first\\\\\\\
 $project_dir=\\\\\\\
 /mnt/p3/project/browser/lumen-android/lumen-android\\\\\\\
 \\\\\\\
@@ -8,7 +8,7 @@ $dev_tools=         use       mcp      or       localvm, prefer mcp if you are c
 &#x20;          for 3d task,prefer web dev tech ,chrome (make sure gpu works and use headless if no display) then blender ( headless) \\\\\\\
 \\\\\\\
 \\\\\\\
-$iteration_times=     stop when goal done or working time >5h\\\\\ add 1h if need fix important bugs\
+$iteration_times=     stop when goal done or working time >5h\\\\\ add 1h if need fix important bugs\
 $reffiles=\\\\\\\
 only use pasted image ignore file link , if no upload then use the file  link\\\\\\\
 $goal_score= 98/100\\\\\\\
@@ -135,4 +135,4 @@ Browser automation WebDriver protocol\
 WPT includes JavaScript assertion tests, screenshot-based rendering comparisons, crash tests, WebDriver tests, and some manual tests. \
 Suite size: In December 2024, WPT already contained approximately 56,500 tests and 1.8 million subtests. The suite continues to grow. \
 Standalone ECMAScript language conformance is primarily tested separately by Test262, rather than WPT.\
-\
+\\

@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "start_utc": "2026-10-30T11:45:56+00:00",
+  "start_client": "2026-10-30 19:45:56 Asia/Shanghai",
+  "primary_deadline_utc": "2026-10-30T16:45:56+00:00",
+  "critical_bug_extension_deadline_utc": "2026-10-30T17:45:56+00:00",
+  "previous_head": "d1fa7a557f613571f65ce2b1e728711634606aef",
+  "checkpoint": "cda99372ab03c3bd43f114383c306f683ee7b296",
+  "branch": "gpt-6-astra-builtin-repo-baseline-rubywebterm-20261030-css-math",
+  "tracked_source_clean_at_checkpoint": true,
+  "preexisting_untracked_artifacts": "preserved unchanged; not staged",
+  "current_candidate": 214,
+  "baseline_source_commit": "ab44cc7f825279391a0f193e0b8a10b5ab151eb4",
+  "baseline_binary_sha256": "7ea0a9999ec521e90fdd2c25fa8485675abf4149aa7aaa7e1696b99bf8aae8ca",
+  "baseline_aggregate": "agent/validation/linux-wpt-20261030-session7/qa-frozen640/final214-public-aggregate.json",
+  "baseline_aggregate_sha256": "33864b6a5d2538f631e23483bba4584cd3492f3f4bd6b810aca1b169cb1f24a5",
+  "created_utc": "2026-10-30T11:48:28.011531+00:00"
+}
