@@ -1,13 +1,13 @@
 {
   "title": "Lumen Linux \u00b7 parser options and script lifecycle",
-  "phase": "Candidate204 build \u00b7 source frozen after peer review",
-  "iteration": 4,
+  "phase": "Candidate205 build \u00b7 three C-linkage declarations corrected",
+  "iteration": 5,
   "score": 100,
   "iteration_quality": 100,
   "score_note": "Accepted candidate202 parser-options focus:1961/1961 assertions and18/18 whole files. This100/100 applies only to that declared part. The broad640sample last measured380/640; the98/100 whole-browser goal remains unmet.",
   "branch": "gpt-6-astra-pro-builtin-integration-20261030-wpt-nonurl",
   "checkpoint": "caab079d33368e569c828fde86f6408ebf5e2a90",
-  "updated_utc": "2026-10-30T07:20:27.715226+00:00",
+  "updated_utc": "2026-10-30T07:22:54.169802+00:00",
   "session_started_utc": "2026-10-30T06:26:11Z",
   "deadline_utc": "2026-10-30T11:26:11Z",
   "current_evidence": [
@@ -47,7 +47,7 @@
     "URL conformance remains deferred. All failure denominators and reference differences remain visible.",
     "Surge currently has no authenticated session; existing HTTPS progress and reviewed GitHub Pages publication remain available."
   ],
-  "active_iteration": 204,
+  "active_iteration": 205,
   "accepted_binary_sha256": "6d6f52aefc972765306567062b78a5413f68acc5050fed336b30d1998aeb7bf8",
   "accepted_binary_scope": "Candidate202,18wholeparser-optionfiles and1961assertions. Neighbor/security/broadcomparison remains separate.",
   "agent_session": "active",
@@ -414,7 +414,7 @@
     "state": "build sealed; independent runtime acceptance pending"
   },
   "public_report_url": "https://ecooxai.github.io/lumen/",
-  "session_iteration": 4,
+  "session_iteration": 5,
   "iteration_identifier_note": "Global candidate 182 is the first newly built Ruby checkpoint in this recovered session; local native iterations 181 and 182 retain their separate evidence.",
   "accepted_iteration": 202,
   "accepted_focused_results": {
@@ -1220,7 +1220,7 @@
     ],
     "source_map": "agent/validation/linux-wpt-20261029-session5/candidate175-git-map.json"
   },
-  "updated_at": "2026-10-30T07:20:27.715226+00:00",
+  "updated_at": "2026-10-30T07:22:54.169802+00:00",
   "source_candidate175_state": "focused-tested;954 regression signal under investigation;not accepted",
   "fresh_session5_candidate175_954": {
     "variants": 954,
@@ -1369,11 +1369,11 @@
   },
   "session7_current": {
     "started_utc": "2026-10-30T06:26:11Z",
-    "iteration": 4,
-    "candidate": 204,
+    "iteration": 5,
+    "candidate": 205,
     "phase": "build",
     "baseline_candidate": 200,
-    "current_source_commit": "fc436e145892665b8c9051a67528f28925f24ff6",
+    "current_source_commit": null,
     "current_source_has_uncommitted204_changes": false,
     "built_candidate": 203,
     "built_source_commit": "fc436e145892665b8c9051a67528f28925f24ff6",
@@ -1388,5 +1388,5 @@
     "overall_goal_met": false
   },
   "score_scope": "Verified candidate202 parser-options part100/100 (1961 assertions,18 files);203/204 further validation pending. Broad640 baseline59.375/100 whole files.",
-  "current_work": "Reviewing resumable parser scheduling, bounded async execution, deferred ordering and load-event lifecycle. Independent ordinary conformance baseline is being frozen."
+  "current_work": "Build205 corrects204 compilation linkage; ordinary script-conformance manifests and expected results remain frozen."
 }

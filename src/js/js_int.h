@@ -240,7 +240,7 @@ bool jsprof_active(void);      /* the debug JS profile is running */
 void js_native_report(void);   /* log and reset per-native call counts and time */
 #endif
 void js_run_inserted(JsCtx *c, Node *root);
-void js_run_dynamic_inline_script(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
+extern "C" void js_run_dynamic_inline_script(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
 /* js_run_module for script-inserted modules: an external graph not loaded yet runs later, once fetched */
 extern "C" void js_run_module_inserted(JsCtx *c, Node *script, const char *src, size_t n, const char *url);
 extern "C" JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame);
@@ -253,8 +253,8 @@ void frames_inserted(JsCtx *c, Node *root);
 void frames_forget(JsCtx *c);
 void frames_parser_tick(JsCtx *c);
 void frames_parser_cancel(JsCtx *c);
-void js_document_open(JsCtx *c);
-void js_run_written_inline(JsCtx *c);
+extern "C" void js_document_open(JsCtx *c);
+extern "C" void js_run_written_inline(JsCtx *c);
 void js_cancel_fetch(JsCtx *c, uint64_t id);
 void js_cancel_fetches(JsCtx *c, bool scripts_only = false);
 uint64_t js_fetch_parser_source(JsCtx *c, Node *script, const char *url,
