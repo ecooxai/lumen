@@ -35,14 +35,15 @@ struct JsCtx;
 class JsForegroundTasks;
 struct JsBroadcastContext;
 struct FrameScriptParser;
+struct DocumentStream;
 /* A prepared external classic script. Ready ordered jobs keep their response
    until every earlier job has executed; async jobs consume their response directly. */
 struct ClassicScriptJob {
     Node *script = nullptr;
     Document *document = nullptr;
-    uint64_t generation = 0;
+    uint64_t generation = 0, defer_order = 0;
     std::string source, url;
-    bool ordered = false, ready = false, success = false;
+    bool ordered = false, deferred = false, ready = false, success = false;
 };
 struct Fetch {
     JsCtx *c;
@@ -117,7 +118,7 @@ struct JsCtx {
     v8::Global<v8::ObjectTemplate> node_tmpl;
     v8::Global<v8::Object> api;
     v8::Global<v8::Function> protoFor, fire, report, viewportChanged, pick_cb;
-    v8::Global<v8::Function> tt_script, tt_eval;   /* Trusted Types / CSP hooks: inline script text, string compilation */
+    v8::Global<v8::Function> tt_script, tt_parser_script, tt_eval;   /* Trusted Types / CSP hooks: inline script text, string compilation */
     v8::Global<v8::ObjectTemplate> code_like;
     bool tt_on = false;                            /* inline scripts go through tt_script */
     std::unordered_map<std::string, v8::Global<v8::Object>> protos;
@@ -152,7 +153,8 @@ struct JsCtx {
     double raf_run_t = 0, raf_act_t = 0;
     uint64_t raf_act_seen = 0;
     std::map<uint64_t, Fetch *> fetches;
-    std::deque<std::shared_ptr<ClassicScriptJob>> ordered_scripts;
+    std::deque<std::shared_ptr<ClassicScriptJob>> ordered_scripts, written_deferred;
+    uint64_t parser_defer_next = 0;
     size_t pending_scripts = 0;
     bool draining_scripts = false;
     unsigned ignore_destructive_writes = 0;
@@ -160,6 +162,7 @@ struct JsCtx {
     Node *parser_write_script = nullptr;
     uint64_t parser_generation = 1;
     std::shared_ptr<FrameScriptParser> frame_parser;
+    std::shared_ptr<DocumentStream> input_stream;
     std::map<uint32_t, struct WsSock *> sockets;
     uint32_t next_ws = 1;
     std::vector<Document *> docs;
@@ -253,8 +256,14 @@ void frames_inserted(JsCtx *c, Node *root);
 void frames_forget(JsCtx *c);
 void frames_parser_tick(JsCtx *c);
 void frames_parser_cancel(JsCtx *c);
+void document_stream_tick(JsCtx *c);
+bool document_stream_write_point(JsCtx *c);
+void document_stream_cancel(JsCtx *c);
+void js_doc_write(JsCtx *c, const char *source, size_t length);
+void js_doc_close(JsCtx *c);
 extern "C" void js_document_open(JsCtx *c);
 extern "C" void js_run_written_inline(JsCtx *c);
+void js_queue_written_deferred(JsCtx *c, Node *script, const char *url);
 void js_cancel_fetch(JsCtx *c, uint64_t id);
 void js_cancel_fetches(JsCtx *c, bool scripts_only = false);
 uint64_t js_fetch_parser_source(JsCtx *c, Node *script, const char *url,

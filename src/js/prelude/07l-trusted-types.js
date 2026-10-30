@@ -443,6 +443,8 @@ function ttWriteText(texts, ln) {
    differs runs only what the default policy makes of it */
 const ttSlot = new WeakMap();
 function ttSlotsFrom(root) { const scripts = N.query(root, 'script', true); for (let i = 0; i < scripts.length; i++) ttStore(ttSlot, scripts[i], N.text(scripts[i])); }
+/* Native parser-only callback: capture original text at script-close, before author callbacks. */
+function ttParserScript(el, text) { ttStore(ttSlot, el, text); }
 {
     const nodeText = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
     const setScript = (el, v, sink) => { const s = ttString(TrustedScript, v, sink); ttStore(ttSlot, el, s); nodeText.set.call(el, s); };

@@ -235,6 +235,7 @@ let curEvent;
 const REALM = Object.freeze({
     isEvent: e => evIs(e),
     compileEventHandler: (el, name, source) => compileHandler(el, name, source),
+    resetOpenedHandlers: target => resetOpenedHandlers(target),
     dispatch(t, ev) {
         if (ev._uninit) throw new DOMException("Failed to execute 'dispatchEvent' on 'EventTarget': The event provided is uninitialized.", 'InvalidStateError');
         return dispatch(t, ev);

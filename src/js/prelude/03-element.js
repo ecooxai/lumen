@@ -1139,10 +1139,20 @@ function compileHandler(el, k, src) {
 }
 /* an on* content attribute set or removed: it replaces a handler the IDL attribute set; on <body> and <frameset> the
    window's events' handlers are the window's */
+/* document.open deactivates handlers without deleting content attributes or
+   depending on whether the page has frozen a platform-object wrapper. */
+const openedHandlerState = new WeakMap(), OpenedHandlerSet = Set;
+const openedHandlerGet = Function.prototype.call.bind(WeakMap.prototype.get);
+const openedHandlerSet = Function.prototype.call.bind(WeakMap.prototype.set);
+const openedHandlerHas = Function.prototype.call.bind(Set.prototype.has);
+const openedHandlerAdd = Function.prototype.call.bind(Set.prototype.add);
+function resetOpenedHandlers(target) { openedHandlerSet(openedHandlerState, target, new OpenedHandlerSet()); }
+function reactivateOpenedHandler(target, key) { const state = openedHandlerGet(openedHandlerState, target); if (state) openedHandlerAdd(state, key); }
 function handlerAttr(el, k, src) {
     if (el.__on && k in el.__on) delete el.__on[k];
     if (el.__hc) delete el.__hc[k];
     const target = eventHandlerTarget(el, k);
+    if (target) reactivateOpenedHandler(target, k);
     if (target && target !== el) {
         if (!target.__on) def(target, '__on', {});
         target.__on[k] = src == null ? null : compileHandler(el, k, src);
@@ -1155,6 +1165,8 @@ function installHandlers(proto, attrBacked, list = EVENT_HANDLERS) {
             const target = eventHandlerTarget(this, k);
             if (!target) return null;
             if (target !== this) return target[k];
+            const cleared = openedHandlerGet(openedHandlerState, target);
+            if (cleared && !openedHandlerHas(cleared, k)) return null;
             const own = this.__on && this.__on[k];
             if (own !== undefined) return own;
             if (attrBacked) { const src = N.attr(this, k); if (src != null) return compileHandler(this, k, src); }
@@ -1165,6 +1177,7 @@ function installHandlers(proto, attrBacked, list = EVENT_HANDLERS) {
             if (target !== this) { target[k] = v; return; }
             if (!this.__on) def(this, '__on', {});
             this.__on[k] = typeof v === 'function' ? v : null;
+            reactivateOpenedHandler(this, k);
         });
     }
 }

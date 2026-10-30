@@ -105,6 +105,7 @@ typedef struct {
     Node *n; char *src; size_t len; char *name; bool module; char *ctype;
     NetRequest *request; /* main-thread callback owner; cleared before teardown */
     bool ready, external, entered, deferred, done, module_fetched;
+    uint64_t defer_order; /* shared parser encounter order, including document.write */
 } PScript;
 typedef struct { Node *n; uint64_t h; size_t len; } SheetRef;   /* len: <style> text length, 0 for links */
 typedef struct Page {
@@ -3829,6 +3830,7 @@ static void parser_script_enter(Page *p, PScript *sc, int index) {
     sc->module = jsg_module_script(sc->n); sc->external = source != NULL;
     bool async = node_attr(sc->n, "async") != NULL;
     sc->deferred = sc->module ? !async : sc->external && !async && node_attr(sc->n, "defer") != NULL;
+    if (sc->deferred) sc->defer_order = js_parser_defer_order(p->js);
     char *name = source ? (*source ? url_join(doc_base(p->d), source) : NULL) : xstrdup(p->url);
     bool same = sc->name && name && !strcmp(sc->name, name);
     if (!same || was_module != sc->module || was_external != sc->external) {
@@ -3889,6 +3891,9 @@ static void page_pump_scripts(App *a, Page *p) {
                 js_set_ready_state(p->js, 1); /* interactive before defer/module execution */
                 continue;
             }
+            bool drained = js_parser_run_deferred_before(p->js, UINT64_MAX);
+            if (js_parser_generation(p->js) != p->script_generation) { parser_abandon(p); break; }
+            if (!drained) break;
             page_finish_js(a, p);
             break;
         }
@@ -3897,6 +3902,11 @@ static void page_pump_scripts(App *a, Page *p) {
         if (!sc->entered) parser_script_enter(p, sc, index);
         if (sc->done || (p->script_pass == 0 && sc->deferred) || (p->script_pass == 1 && !sc->deferred)) {
             p->script_index++; continue;
+        }
+        if (p->script_pass == 1) {
+            bool drained = js_parser_run_deferred_before(p->js, sc->defer_order);
+            if (js_parser_generation(p->js) != p->script_generation) { parser_abandon(p); break; }
+            if (!drained) break;
         }
         if (sc->n->doc != p->d) {
             parser_fetch_cancel(sc); sc->done = true; p->script_index++; continue;
@@ -3909,7 +3919,7 @@ static void page_pump_scripts(App *a, Page *p) {
         else if (sc->src) {
             if (sc->module) js_run_module_fetched(p->js, sc->n, sc->src, sc->len, sc->name, sc->ctype);
             else js_run_prepared_classic(p->js, sc->n, sc->src, sc->len, sc->name, sc->external, !sc->deferred);
-        } else js_dispatch(p->js, sc->n, "error", "Event", false, false, 0, 0, 0, NULL);
+        } else js_parser_script_error(p->js, sc->n, !sc->module && !sc->deferred);
         free(sc->src); sc->src = NULL; sc->len = 0;
         if (now_ms() - ts >= 50) LOAD_TRACE("script=%d module=%d bytes=%zu ms=%.0f", index, sc->module, len, now_ms() - ts);
     }

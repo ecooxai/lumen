@@ -62,6 +62,11 @@ void js_run_script(JsCtx *c, Node *script, const char *src, size_t n, const char
    started or ineligible; valid scripts are marked started before fetching. */
 bool js_prepare_script(Node *script);
 uint64_t js_parser_generation(JsCtx *c);
+uint64_t js_parser_defer_order(JsCtx *c);
+bool js_parser_run_deferred_before(JsCtx *c, uint64_t next_order);
+void js_parser_script_error(JsCtx *c, Node *script, bool parser_point);
+/* Only a newly closed script yielded by the native document parser may call this. */
+bool js_parser_script_closed(JsCtx *c, Node *script, const char *source, size_t length);
 /* These accept a just-prepared node. ordered is only for dynamic async=false. */
 void js_queue_classic_script(JsCtx *c, Node *script, const char *url, bool ordered);
 void js_run_deferred_script(JsCtx *c, Node *script, const char *src, size_t n, const char *url);

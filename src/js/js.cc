@@ -1396,6 +1396,7 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
         get("report", c->report);
         get("viewportChanged", c->viewportChanged);
         get("ttScript", c->tt_script);
+        get("ttParserScript", c->tt_parser_script);
         get("ttEval", c->tt_eval);
         /* the document's CSP: after protoFor, since reading the <meta> elements wraps nodes */
         v8::Local<v8::Value> ti;
@@ -1501,7 +1502,7 @@ static void js_free_collect(JsCtx *c, std::vector<Node *> &roots, std::vector<Do
         js_broadcast_deactivate(c->broadcast);
         v8::HandleScope hs(c->iso);
         js_cancel_fetches(c);
-        c->ordered_scripts.clear(); c->pending_scripts = 0;
+        c->ordered_scripts.clear(); c->written_deferred.clear(); c->pending_scripts = 0;
         for (auto &kv : c->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } c->sockets.clear();
         c->timer_clear();
         c->rafs.clear();
@@ -1509,7 +1510,7 @@ static void js_free_collect(JsCtx *c, std::vector<Node *> &roots, std::vector<Do
         c->anims.clear();
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset(); c->pick_cb.Reset(); c->rejs.clear();   /* before Dispose: ~JsCtx must not release handles */
-        c->tt_script.Reset(); c->tt_eval.Reset(); c->code_like.Reset();
+        c->tt_script.Reset(); c->tt_parser_script.Reset(); c->tt_eval.Reset(); c->code_like.Reset();
         c->api.Reset(); c->node_tmpl.Reset();
         c->mods.clear(); c->mod_errors.clear(); c->mod_url.clear(); c->mod_jobs.clear(); c->code_refresh.clear(); if (!c->parent) mod_synth_drop(c->iso);
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
@@ -1565,6 +1566,9 @@ static void run_written_script(JsCtx *c, Node *script) {
     if (node_has_attr(script, "async")) {
         js_queue_classic_script(c, script, url, false); free(url); return;
     }
+    if (node_has_attr(script, "defer")) {
+        js_queue_written_deferred(c, script, url); free(url); return;
+    }
     NetResponse *response = nullptr;
     if (url) {
         NetRequest *request = net_request_new("GET", url);
@@ -1576,7 +1580,7 @@ static void run_written_script(JsCtx *c, Node *script) {
     if (response && !response->error && response->status >= 200 && response->status < 300)
         js_run_prepared_classic(c, script, response->body ? response->body : "", response->body ? response->body_len : 0,
                                 response->url ? response->url : url, true, true);
-    else { JS_ENTER(c); jfire(c, script, "error"); }
+    else js_parser_script_error(c, script, true);
     if (response) net_response_free(response);
     free(url);
 }
@@ -1594,7 +1598,7 @@ void js_run_written_inline(JsCtx *c) {
     const uint64_t generation = c->parser_generation;
     while (!c->dead && generation == c->parser_generation && !c->written.empty()) {
         Node *script = c->written.front();
-        if (jsg_module_script(script) || (jsg_script_src(script) && !node_has_attr(script, "async"))) break;
+        if (jsg_module_script(script) || (jsg_script_src(script) && !node_has_attr(script, "async") && !node_has_attr(script, "defer"))) break;
         c->written.erase(c->written.begin());
         run_written_script(c, script);
     }
@@ -1611,13 +1615,22 @@ static bool tt_script_text(JsCtx *c, Node *script, const char *&src, size_t &n, 
 }
 uint64_t js_parser_generation(JsCtx *c) { return c ? c->parser_generation : 0; }
 void js_document_open(JsCtx *c) {
-    ++c->parser_generation;
+    ++c->parser_generation; c->parser_defer_next = 0;
     frames_parser_cancel(c);
     js_cancel_fetches(c, true);
-    c->ordered_scripts.clear(); c->pending_scripts = 0;
+    c->ordered_scripts.clear(); c->written_deferred.clear(); c->pending_scripts = 0;
     c->written.clear();
+    c->doc->html = c->doc->head = c->doc->body = nullptr;
     c->load_deferred = false; c->load_synced = false;
     js_set_ready_state(c, 0);
+}
+bool js_parser_script_closed(JsCtx *c, Node *script, const char *source, size_t length) {
+    if (!c || c->dead) return false;
+    if (c->tt_parser_script.IsEmpty()) return !c->tt_on;
+    JS_ENTER(c);
+    v8::TryCatch caught(iso);
+    v8::Local<v8::Value> args[2] = { jwrap(c, script), jsrc(iso, source ? source : "", source ? length : 0) }, result;
+    return c->tt_parser_script.Get(iso)->Call(ctx, v8::Undefined(iso), 2, args).ToLocal(&result);
 }
 /* HTML preparation clears parser state before its early returns. An empty or
    unsupported parser script can therefore be populated and run dynamically later. */
@@ -1664,6 +1677,18 @@ static void run_classic_script(JsCtx *c, Node *script, const char *src, size_t n
     }
     if (c->written.size() > written) run_written(c, written);
     c->parser_write_point = previous_point;
+    c->parser_write_script = previous_anchor;
+}
+void js_parser_script_error(JsCtx *c, Node *script, bool parser_point) {
+    if (!c || c->dead || !script) return;
+    Node *previous_script = c->current_script, *previous_anchor = c->parser_write_script;
+    const bool previous_point = c->parser_write_point;
+    const size_t written = c->written.size();
+    c->current_script = nullptr; c->parser_write_point = parser_point;
+    c->parser_write_script = parser_point ? script : nullptr;
+    { JS_ENTER(c); jwrap(c, script); jfire(c, script, "error"); }
+    if (c->written.size() > written) run_written(c, written);
+    c->current_script = previous_script; c->parser_write_point = previous_point;
     c->parser_write_script = previous_anchor;
 }
 void js_run_prepared_classic(JsCtx *c, Node *script, const char *src, size_t n, const char *url,
@@ -2073,6 +2098,7 @@ static void tick_one(JsCtx *c) {
     TICK_MARK(0);
     if (!c->mod_jobs.empty()) { mod_jobs_finish(c); settle(c); }
     frames_parser_tick(c);
+    document_stream_tick(c);
     if (c->dead) return;
     TICK_MARK(1);
     pick_deliver(c);

@@ -429,6 +429,9 @@ FN(parseFrag) {
     RET(jwrap(c, f));
 }
 FN(docReparse) { CTX; std::string s = S(0); js_doc_reparse(c, s.data(), s.size()); }
+FN(docWrite) { CTX; std::string s = S(0); js_doc_write(c, s.data(), s.size()); }
+FN(docClose) { CTX; js_doc_close(c); }
+FN(docStreamWritePoint) { CTX; RET(Boolean::New(c->isolate, document_stream_write_point(c))); }
 FN(parseDoc) {
     CTX; std::string s = S(0);
     Document *nd = doc_new(c->doc->url);
@@ -923,12 +926,12 @@ static void fetch_done(NetRequest *req, NetResponse *r, void *ud) {
         auto job = f->script_job;
         job->ready = true;
         job->success = r && !r->error && r->status >= 200 && r->status < 300;
-        if (job->ordered) {
+        if (job->ordered || job->deferred) {
             if (job->success) {
                 job->source.assign(r->body ? r->body : "", r->body ? r->body_len : 0);
                 if (r->url) job->url = r->url;
             }
-            classic_scripts_drain(c);
+            if (!job->deferred) classic_scripts_drain(c);
         } else {
             classic_script_finish(c, job, r && r->body ? r->body : "", r && r->body ? r->body_len : 0,
                                   r && r->url ? r->url : job->url.c_str());
@@ -1025,6 +1028,30 @@ void js_queue_classic_script(JsCtx *c, Node *script, const char *url, bool order
     Fetch *fetch = new Fetch{ c, 0, {}, script };
     fetch->script_job = job;
     start_fetch(c, rq, fetch);
+}
+/* One encounter-order clock interleaves native document-written defers with
+   parser records retained by the main document and frame loaders. */
+uint64_t js_parser_defer_order(JsCtx *c) { return ++c->parser_defer_next; }
+void js_queue_written_deferred(JsCtx *c, Node *script, const char *url) {
+    if (!url || !*url) { js_queue_classic_script(c, script, nullptr, false); return; }
+    auto job = std::make_shared<ClassicScriptJob>();
+    job->script = script; job->document = script->doc; job->generation = c->parser_generation;
+    job->url = url; job->deferred = true; job->defer_order = js_parser_defer_order(c);
+    { JS_ENTER(c); jwrap(c, script); }
+    c->written_deferred.push_back(job); ++c->pending_scripts;
+    Fetch *fetch = new Fetch{ c, 0, {}, script }; fetch->script_job = job;
+    start_fetch(c, script_request(c, script, url), fetch);
+}
+bool js_parser_run_deferred_before(JsCtx *c, uint64_t next_order) {
+    const uint64_t generation = c->parser_generation;
+    while (!c->dead && generation == c->parser_generation && !c->written_deferred.empty()) {
+        auto job = c->written_deferred.front();
+        if (job->defer_order >= next_order) return true;
+        if (!job->ready) return false;
+        c->written_deferred.pop_front();
+        classic_script_finish(c, job);
+    }
+    return !c->dead && generation == c->parser_generation;
 }
 #define MP                                                        \
     auto mpit = c->players.find((uint32_t)NUM(0));                \
@@ -1744,7 +1771,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(isNode); REG(attrBrand); REG(attrBranded); REG(version);
     REG(inert); REG(type); REG(name); REG(ns); REG(parent); REG(first); REG(last); REG(next); REG(prev); REG(index);
     (void)N->Set(ctx, jstr(iso, "fontFace"), v8::Function::New(ctx, n_fontFace).ToLocalChecked()); REG(c2dFill); REG(c2dClip); REG(c2dMeasure); REG(c2dSource); REG(c2dPresent); REG(fontsPending);
-    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
+    REG(text); REG(setText); REG(attr); REG(setAttr); REG(rmAttr); REG(attrs); REG(attrQ); REG(attrNS); REG(setAttrQ); REG(setAttrNS); REG(rmAttrQ); REG(rmAttrNS); REG(attrsNS); REG(insert); REG(remove); REG(newDoc); REG(newXmlDoc); REG(xname); REG(charset); REG(ctype); REG(csp); REG(evalGuard); REG(ttOn); REG(codeLike); REG(lazySrc); REG(parseXml); REG(parseDoc); REG(docReparse); REG(docWrite); REG(docClose); REG(docStreamWritePoint); REG(adopt); REG(pi); REG(cdata); REG(doctype); REG(ownerDoc);
     REG(create); REG(textNode); REG(comment); REG(frag); REG(html); REG(setHTML); REG(parseFrag); REG(query);
     REG(matches); REG(byId); REG(clone); REG(doc); REG(contains); REG(connected); REG(host); REG(setRealm); REG(realmOf); REG(attachShadow);
     REG(shadowOf); REG(srFlags); REG(srSetFlags); REG(srRef); REG(getHTML); REG(parseFragEx); REG(parseDocEx);

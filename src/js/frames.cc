@@ -83,7 +83,7 @@ void frame_kill(JsCtx *k) {
     for (JsCtx *g : k->kids) frame_kill(g);
     frames_parser_cancel(k);
     js_cancel_fetches(k);
-    k->ordered_scripts.clear(); k->pending_scripts = 0;
+    k->ordered_scripts.clear(); k->written_deferred.clear(); k->pending_scripts = 0;
     for (auto &kv : k->sockets) { net_ws_release(kv.second->ws); kv.second->cb.Reset(); delete kv.second; } k->sockets.clear();
     k->timer_clear(); k->rafs.clear(); k->anims.clear();
     if (k->host.frame_close && k->host_ud) k->host.frame_close(k->host_ud);
@@ -148,7 +148,7 @@ void js_doc_reparse(JsCtx *k, const char *html, size_t n) {
 struct FrameParserScript {
     Node *node = nullptr;
     std::string source, url, fetched_url;
-    uint64_t request = 0, serial = 0;
+    uint64_t request = 0, serial = 0, defer_order = 0;
     bool entered = false, external = false, module = false, deferred = false;
     bool done = false, ready = false, success = false;
 };
@@ -160,6 +160,7 @@ struct FrameScriptParser {
     bool deferred_phase = false, pumping = false, complete = false, aborted = false;
 };
 void frames_parser_cancel(JsCtx *c) {
+    document_stream_cancel(c);
     auto state = std::move(c->frame_parser);
     if (!state) return;
     state->aborted = true;
@@ -203,6 +204,8 @@ void frames_parser_tick(JsCtx *c) {
                 js_set_ready_state(c, 1);
                 continue;
             }
+            if (!js_parser_run_deferred_before(c, UINT64_MAX)) break;
+            if (state->aborted || state->generation != c->parser_generation) break;
             state->complete = true;
             js_dispatch(c, &state->document->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
             if (!c->dead && !state->aborted && state->generation == c->parser_generation) js_fire_load(c);
@@ -228,6 +231,7 @@ void frames_parser_tick(JsCtx *c) {
                 continue;
             }
             item.deferred = !async && (item.module || (item.external && node_has_attr(script, "defer")));
+            if (item.deferred) item.defer_order = js_parser_defer_order(c);
             if (item.module) {
                 if (item.request) js_cancel_fetch(c, item.request);
                 item.request = 0; item.url = url;
@@ -257,6 +261,12 @@ void frames_parser_tick(JsCtx *c) {
             }
         }
         if (item.deferred && !state->deferred_phase) { ++state->index; continue; }
+        if (item.deferred && !js_parser_run_deferred_before(c, item.defer_order)) break;
+        if (state->aborted || state->generation != c->parser_generation) break;
+        if (script->doc != state->document) {
+            if (item.request) js_cancel_fetch(c, item.request);
+            item.request = 0; item.done = true; ++state->index; continue;
+        }
         if (!item.module && item.external && !item.ready) break;
         item.done = true; ++state->index;
         // Evaluation may open the document, which releases all parser records.
@@ -268,7 +278,7 @@ void frames_parser_tick(JsCtx *c) {
             if (external && url.empty()) js_queue_classic_script(c, script, nullptr, false);
             else js_run_module(c, script, external ? nullptr : source.data(), source.size(), external ? url.c_str() : state->document->url);
         } else if (external && !success) {
-            js_dispatch(c, script, "error", "Event", false, false, 0, 0, 0, NULL);
+            js_parser_script_error(c, script, !deferred);
         } else {
             js_run_prepared_classic(c, script, source.data(), source.size(), external ? url.c_str() : state->document->url,
                                     external, !deferred);
@@ -299,10 +309,186 @@ static void frame_run_scripts(JsCtx *c, Document *document) {
     frames_parser_tick(c);
 }
 
+/* Script-created documents retain the actual tokenizer and tree-builder.
+   Bookmarks move when nested writes insert bytes, so incomplete tokens and
+   previously exposed nodes survive every write without reparsing the DOM. */
+struct StreamMark { size_t position = 0; bool skip_lf = false; };
+struct DocumentStream {
+    HtmlParser *parser = nullptr;
+    Document *document = nullptr;
+    uint64_t generation = 0;
+    bool closed = false, aborted = false, complete = false, interactive = false, pumping = false;
+    unsigned depth = 0;
+    FrameParserScript *blocked = nullptr;
+    std::vector<std::unique_ptr<FrameParserScript>> records;
+    std::vector<FrameParserScript *> modules;
+    size_t module_index = 0;
+    std::vector<std::weak_ptr<StreamMark>> marks;
+    std::shared_ptr<StreamMark> end, active;
+};
+static std::shared_ptr<StreamMark> stream_mark(const std::shared_ptr<DocumentStream> &state, size_t position) {
+    auto mark = std::make_shared<StreamMark>(); mark->position = position;
+    state->marks.push_back(mark); return mark;
+}
+void document_stream_cancel(JsCtx *c) {
+    auto state = std::move(c->input_stream);
+    if (!state) return;
+    state->aborted = true;
+    for (auto &record : state->records) {
+        if (record->request) js_cancel_fetch(c, record->request);
+        node_release(record->node);
+    }
+    state->records.clear(); state->modules.clear(); state->blocked = nullptr;
+    if (state->parser) { html_parser_free(state->parser); state->parser = nullptr; }
+}
+static std::shared_ptr<DocumentStream> document_stream(JsCtx *c) {
+    if (c->input_stream) return c->input_stream;
+    auto state = std::make_shared<DocumentStream>();
+    state->document = c->doc; state->generation = c->parser_generation;
+    state->parser = html_parser_stream_new(c->doc);
+    state->end = stream_mark(state, 0);
+    c->input_stream = state; c->load_deferred = true;
+    return state;
+}
+static bool stream_live(JsCtx *c, const std::shared_ptr<DocumentStream> &state) {
+    return !c->dead && !state->aborted && state->generation == c->parser_generation;
+}
+static void stream_execute(JsCtx *c, const std::shared_ptr<DocumentStream> &state, FrameParserScript *record) {
+    record->done = true;
+    if (record->node->doc != state->document) return;
+    Node *script = record->node;
+    const std::string source = std::move(record->source);
+    const std::string url = record->fetched_url.empty() ? record->url : record->fetched_url;
+    const bool external = record->external, success = record->success;
+    auto previous = state->active;
+    state->active = stream_mark(state, html_parser_offset(state->parser));
+    if (external && !success) js_parser_script_error(c, script, true);
+    else js_run_prepared_classic(c, script, source.data(), source.size(), external ? url.c_str() : state->document->url, external, true);
+    state->active = previous;
+}
+static FrameParserScript *stream_prepare(JsCtx *c, const std::shared_ptr<DocumentStream> &state, Node *script) {
+    size_t length = 0; char *text = jsg_script_text(script, &length);
+    const bool registered = js_parser_script_closed(c, script, text, length);
+    if (!registered || !js_prepare_script(script)) { free(text); return nullptr; }
+    const bool module = jsg_module_script(script), async = node_has_attr(script, "async");
+    const char *src = jsg_script_src(script);
+    const bool external = src != nullptr;
+    char *joined = src && *src ? url_join(doc_base(state->document), src) : nullptr;
+    std::string url = joined ? joined : ""; free(joined);
+    if (external && url.empty()) {
+        js_queue_classic_script(c, script, nullptr, false); free(text); return nullptr;
+    }
+    if (!module && external && async) {
+        js_queue_classic_script(c, script, url.c_str(), false); free(text); return nullptr;
+    }
+    if (!module && external && node_has_attr(script, "defer")) {
+        js_queue_written_deferred(c, script, url.c_str()); free(text); return nullptr;
+    }
+    if (module && async) {
+        js_run_module_inserted(c, script, external ? nullptr : text, external ? 0 : length, external ? url.c_str() : state->document->url);
+        free(text); return nullptr;
+    }
+    auto record = std::make_unique<FrameParserScript>();
+    record->node = script; node_retain(script);
+    record->module = module; record->external = external; record->url = url;
+    if (!external) record->source.assign(text ? text : "", length);
+    free(text);
+    FrameParserScript *item = record.get(); state->records.push_back(std::move(record));
+    if (module) {
+        item->deferred = true; item->defer_order = js_parser_defer_order(c);
+        state->modules.push_back(item); return nullptr;
+    }
+    if (!external) { item->ready = item->success = true; return item; }
+    std::weak_ptr<DocumentStream> weak = state;
+    item->request = js_fetch_parser_source(c, script, url.c_str(), [weak, item](JsCtx *context, NetResponse *response) {
+        auto parser = weak.lock();
+        if (!parser || !stream_live(context, parser)) return;
+        item->request = 0; item->ready = true;
+        item->success = response && !response->error && response->status >= 200 && response->status < 300;
+        if (item->success) {
+            item->source.assign(response->body ? response->body : "", response->body ? response->body_len : 0);
+            item->fetched_url = response->url ? response->url : item->url;
+        }
+    });
+    return item;
+}
+static void stream_consume(JsCtx *c, const std::shared_ptr<DocumentStream> &state, const std::shared_ptr<StreamMark> &boundary = {}) {
+    ++state->depth;
+    while (stream_live(c, state)) {
+        if (state->blocked) {
+            if (!state->blocked->ready || state->depth > 1) break;
+            FrameParserScript *record = state->blocked; state->blocked = nullptr;
+            stream_execute(c, state, record);
+            continue;
+        }
+        const size_t limit = boundary ? boundary->position : SIZE_MAX;
+        if (boundary && html_parser_offset(state->parser) >= limit) break;
+        Node *script = html_parser_run(state->parser, state->closed && !boundary, limit);
+        if (!script) break;
+        FrameParserScript *record = stream_prepare(c, state, script);
+        if (!stream_live(c, state)) break;
+        if (!record) continue;
+        if (record->external) { state->blocked = record; break; }
+        stream_execute(c, state, record);
+    }
+    --state->depth;
+}
+void document_stream_tick(JsCtx *c) {
+    auto state = c->input_stream;
+    if (!state || state->pumping || state->depth || !stream_live(c, state)) return;
+    state->pumping = true;
+    stream_consume(c, state);
+    if (stream_live(c, state) && state->closed && html_parser_done(state->parser) && !state->blocked) {
+        if (!state->interactive) { state->interactive = true; js_set_ready_state(c, 1); }
+        while (stream_live(c, state) && state->module_index < state->modules.size()) {
+            FrameParserScript *item = state->modules[state->module_index];
+            if (!js_parser_run_deferred_before(c, item->defer_order)) break;
+            if (!stream_live(c, state)) break;
+            ++state->module_index; item->done = true;
+            if (item->node->doc != state->document) continue;
+            const std::string source = item->source, url = item->url;
+            js_run_module(c, item->node, item->external ? nullptr : source.data(), source.size(), item->external ? url.c_str() : state->document->url);
+        }
+        if (stream_live(c, state) && state->module_index == state->modules.size() && js_parser_run_deferred_before(c, UINT64_MAX) && stream_live(c, state)) {
+            state->complete = true;
+            js_dispatch(c, &state->document->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+            if (stream_live(c, state)) js_fire_load(c);
+        }
+    }
+    state->pumping = false;
+    if (state->complete && c->input_stream == state) document_stream_cancel(c);
+}
+bool document_stream_write_point(JsCtx *c) {
+    const auto &state = c->input_stream;
+    return state && !state->complete && stream_live(c, state) && c->parser_write_point;
+}
+void js_doc_write(JsCtx *c, const char *source, size_t length) {
+    auto state = document_stream(c);
+    auto insertion = state->active ? state->active : state->end;
+    const size_t offset = insertion->position;
+    size_t removed = 0;
+    const size_t added = html_parser_insert(state->parser, offset, source, length, &insertion->skip_lf, &removed);
+    for (auto it = state->marks.begin(); it != state->marks.end();) {
+        if (auto mark = it->lock()) {
+            if (mark->position >= offset) mark->position = mark->position <= offset + removed ? offset + added : mark->position - removed + added;
+            ++it;
+        }
+        else it = state->marks.erase(it);
+    }
+    stream_consume(c, state, insertion);
+    if (stream_live(c, state) && state->closed) document_stream_tick(c);
+}
+void js_doc_close(JsCtx *c) {
+    auto state = document_stream(c);
+    state->closed = true; c->el_load = c->frame_el != nullptr;
+    document_stream_tick(c);
+}
+
 /* An iframe still fetching its document, or whose document still waits for its own frames, delays its
    parent's load event. A frame removed meanwhile no longer does. */
 bool (*js_load_blocked)(JsCtx *c) = nullptr;
 static bool frames_loading(JsCtx *c) {
+    if (c->input_stream && !c->input_stream->complete && !c->input_stream->aborted) return true;
     if (c->frame_parser && !c->frame_parser->complete && !c->frame_parser->aborted) return true;
     if (c->pending_scripts) return true;
     for (const auto &job : c->mod_jobs) if (job->script && job->generation == c->parser_generation) return true;

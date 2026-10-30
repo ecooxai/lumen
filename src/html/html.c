@@ -49,6 +49,11 @@ struct HtmlParser {
     Document *doc;
     SB in;
     bool scripting, quirks, stopped;
+    bool streaming, normalized, feed_skip_lf;
+    size_t offset;
+    Node *script_ready;
+    VEC(Node *) pins;
+    VEC(size_t) cr_lines; /* positions of normalized LFs originating from CR */
     /* tokenizer */
     int state;
     SB tag; bool end_tag, self_closing; VEC(TAttr) attrs; SB an, av; bool attr_open;
@@ -286,6 +291,8 @@ void html_parser_free(HtmlParser *p) {
         if (!dup) node_free_tree(p->made.v[i]);
     }
     vec_free(p->redir); vec_free(p->made); vec_free(p->dsd_tmpls);
+    for (int i = 0; i < p->pins.n; i++) node_release(p->pins.v[i]);
+    vec_free(p->pins); vec_free(p->cr_lines);
     free(p);
 }
 
@@ -418,6 +425,7 @@ static void append_comment_to(P, Tok *t, Node *parent) { if (!san_drops(p, t)) n
 
 static Node *create_el(P, Tok *t, int ns, const char *name) {
     Node *e = node_new_element(p->doc, name, ns);
+    if (p->streaming) { node_retain(e); vec_push(p->pins, e); }
     for (int i = 0; t && i < t->nattrs; i++) {
         const char *an = t->attrs[i].name, *ans = NULL, *apfx = NULL;
         if (ns == NS_SVG) an = svg_attr_name(an);
@@ -450,6 +458,7 @@ static Node *insert_html(P, Tok *t) { return insert_el(p, t, NS_HTML, t->name); 
 static Node *insert_fake(P, const char *name) { return insert_el(p, NULL, NS_HTML, name); }
 static Node *clone_el(P, Node *n) {
     Node *e = node_new_element(p->doc, n->tag, n->ns);
+    if (p->streaming) { node_retain(e); vec_push(p->pins, e); }
     for (int i = 0; i < n->nattrs; i++) node_set_attr_at(e, -1, n->attrs[i].name, n->attrs[i].value, n->attrs[i].ns, n->attrs[i].pfx);
     e->flags |= NF_PARSER_INSERTED;
     if (p->san) { e->flags |= NF_SAN_MADE; vec_push(p->made, e); }
@@ -1002,7 +1011,10 @@ static void m_text(P, Tok *t) {
     if (t->type == T_EOF) { Node *c = cur(p); if (is_html(c, A_script)) c->flags |= NF_SCRIPT_STARTED; pop(p); p->mode = p->orig_mode; reprocess(p, t); return; }
     if (t->type == T_END) {
         Node *c = cur(p); pop(p); p->mode = p->orig_mode;
-        if (!p->ctx && is_html(c, A_script) && html_script_hook) html_script_hook(p->doc, c, html_script_hook_ud);
+        if (!p->ctx && is_html(c, A_script)) {
+            if (p->streaming) p->script_ready = c;
+            else if (html_script_hook) html_script_hook(p->doc, c, html_script_hook_ud);
+        }
         if (!p->ctx && is_html(c, A_title) && !p->doc->title) p->doc->title = node_text_content(c);
     }
 }
@@ -1317,13 +1329,19 @@ static void foreign(P, Tok *t) {
         insert_el(p, t, ns, ns == NS_SVG ? svg_tag_name(n) : n);
         /* an SVG script runs only once its end tag (or a self-closing tag) is seen, and never from a fragment */
         if (ns == NS_SVG && n == A_script && (p->ctx || !t->self_closing)) cur(p)->flags |= NF_SCRIPT_STARTED;
-        if (t->self_closing) pop(p);
+        if (t->self_closing) {
+            if (!p->ctx && p->streaming && ns == NS_SVG && n == A_script) p->script_ready = cur(p);
+            pop(p);
+        }
         return;
     }
     case T_END: {
         const char *n = t->name;
         if (n == A_br || n == A_p) { foreign_breakout(p, t); return; }
-        if (n == A_script && cur(p)->ns == NS_SVG && cur(p)->tag == A_script) { if (!p->ctx) cur(p)->flags &= ~NF_SCRIPT_STARTED; pop(p); return; }
+        if (n == A_script && cur(p)->ns == NS_SVG && cur(p)->tag == A_script) {
+            if (!p->ctx) { cur(p)->flags &= ~NF_SCRIPT_STARTED; if (p->streaming) p->script_ready = cur(p); }
+            pop(p); return;
+        }
         int i = p->open.n - 1;
         for (;;) {
             if (i <= 0) return;
@@ -1489,55 +1507,83 @@ static void pi_or_bogus(P, const unsigned char *s, size_t n, size_t *pi) {
     sb_clear(&p->text); *pi = q - 1; p->state = S_BOGUS_COMMENT;
 }
 
+/* A partial reference waits only while its remaining bytes can affect the
+   result. Impossible named prefixes can be emitted immediately. */
+static bool reference_needs_input(const unsigned char *s, size_t n, size_t i) {
+    if (i == n) return true;
+    if (s[n - 1] == ';') return false;
+    if (s[i] != '#') return html_entity_has_prefix((const char *)s + i, n - i);
+    size_t j = i + 1;
+    if (j == n) return true;
+    bool hex = s[j] == 'x' || s[j] == 'X';
+    if (hex && ++j == n) return true;
+    for (; j < n; j++) {
+        unsigned char ch = s[j];
+        if (!(ch >= '0' && ch <= '9') && !(hex && ((ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F')))) return false;
+    }
+    return true;
+}
+static bool declaration_needs_input(const unsigned char *s, size_t n, size_t i) {
+    size_t left = n - i;
+    return (left < 2 && !memcmp(s + i, "--", left)) ||
+           (left < 7 && !strncasecmp((const char *)s + i, "doctype", left)) ||
+           (left < 7 && !memcmp(s + i, "[CDATA[", left));
+}
 #define EOF_C (-1)
-static void tokenize(P) {
+static void tokenize(P, bool final, size_t limit) {
     const unsigned char *s = (const unsigned char *)(p->in.s ? p->in.s : "");
-    size_t n = p->in.n, i = 0;
+    size_t n = p->in.n < limit ? p->in.n : limit, i = p->offset;
+    final = final && n == p->in.n;
     int c;
 #define NEXT() (i < n ? (int)s[i++] : (i++, EOF_C))
+#define READ() do { if (i >= n && !final) goto suspended; c = NEXT(); } while (0)
 #define RECONSUME() (i--)
 #define TO(st) (p->state = (st))
-    while (!p->stopped) {
+    while (!p->stopped && !p->script_ready) {
+        if (i >= n && !final) goto suspended;
         switch (p->state) {
         case S_DATA: {
             size_t k = i; while (k < n && s[k] != '<' && s[k] != '&' && s[k]) k++;
             if (k > i) { sb_put(&p->chars, (const char *)s + i, k - i); i = k; }
-            c = NEXT();
-            if (c == '&') charref(s, n, &i, &p->chars, false);
+            READ();
+            if (c == '&') { if (!final && reference_needs_input(s, n, i)) { i--; goto suspended; } charref(s, n, &i, &p->chars, false); }
             else if (c == '<') TO(S_TAG_OPEN);
             else if (c == 0) sb_putc(&p->chars, 0);
-            else if (c == EOF_C) { emit_eof(p); return; }
+            else if (c == EOF_C) { emit_eof(p); goto suspended; }
             break;
         }
         case S_RCDATA: case S_RAWTEXT: case S_SCRIPT: case S_PLAINTEXT: {
             int st = p->state;
             size_t k = i; while (k < n && s[k] != '<' && s[k] != '&' && s[k]) k++;
             if (k > i) { sb_put(&p->chars, (const char *)s + i, k - i); i = k; }
-            c = NEXT();
-            if (c == EOF_C) { emit_eof(p); return; }
+            READ();
+            if (c == EOF_C) { emit_eof(p); goto suspended; }
             if (c == 0) put_fffd(&p->chars);
-            else if (c == '&' && st == S_RCDATA) charref(s, n, &i, &p->chars, false);
+            else if (c == '&' && st == S_RCDATA) { if (!final && reference_needs_input(s, n, i)) { i--; goto suspended; } charref(s, n, &i, &p->chars, false); }
             else if (c == '<' && st != S_PLAINTEXT) TO(st == S_RCDATA ? S_RCDATA_LT : st == S_RAWTEXT ? S_RAWTEXT_LT : S_SCRIPT_LT);
             else sb_putc(&p->chars, (char)c);
             break;
         }
         case S_TAG_OPEN:
-            c = NEXT();
+            READ();
             if (c == '!') TO(S_MARKUP_DECL);
             else if (c == '/') TO(S_END_TAG_OPEN);
             else if (is_alpha(c)) { new_tag(p, false); RECONSUME(); TO(S_TAG_NAME); }
-            else if (c == '?') pi_or_bogus(p, s, n, &i);
+            else if (c == '?') {
+                if (!final && !memchr(s + i, '>', n - i)) { i--; goto suspended; }
+                pi_or_bogus(p, s, n, &i);
+            }
             else { sb_putc(&p->chars, '<'); RECONSUME(); TO(S_DATA); }
             break;
         case S_END_TAG_OPEN:
-            c = NEXT();
+            READ();
             if (is_alpha(c)) { new_tag(p, true); RECONSUME(); TO(S_TAG_NAME); }
             else if (c == '>') TO(S_DATA);
             else if (c == EOF_C) { sb_put(&p->chars, "</", 2); RECONSUME(); TO(S_DATA); }
             else { sb_clear(&p->text); RECONSUME(); TO(S_BOGUS_COMMENT); }
             break;
         case S_TAG_NAME:
-            c = NEXT();
+            READ();
             if (tok_ws(c)) TO(S_BEFORE_ATTR_NAME);
             else if (c == '/') TO(S_SELF_CLOSING);
             else if (c == '>') { TO(S_DATA); emit_tag(p); }
@@ -1548,7 +1594,7 @@ static void tokenize(P) {
 
         case S_RCDATA_LT: case S_RAWTEXT_LT: {
             int back = p->state == S_RCDATA_LT ? S_RCDATA : S_RAWTEXT;
-            c = NEXT();
+            READ();
             if (c == '/') { sb_clear(&p->tmp); TO(back == S_RCDATA ? S_RCDATA_END_OPEN : S_RAWTEXT_END_OPEN); }
             else { sb_putc(&p->chars, '<'); RECONSUME(); TO(back); }
             break;
@@ -1556,7 +1602,7 @@ static void tokenize(P) {
         case S_RCDATA_END_OPEN: case S_RAWTEXT_END_OPEN: case S_SCRIPT_END_OPEN: case S_SCRIPT_ESC_END_OPEN: {
             int st = p->state;
             int back = st == S_RCDATA_END_OPEN ? S_RCDATA : st == S_RAWTEXT_END_OPEN ? S_RAWTEXT : st == S_SCRIPT_END_OPEN ? S_SCRIPT : S_SCRIPT_ESC;
-            c = NEXT();
+            READ();
             if (is_alpha(c)) { new_tag(p, true); RECONSUME(); TO(st + 1); }
             else { sb_put(&p->chars, "</", 2); RECONSUME(); TO(back); }
             break;
@@ -1564,7 +1610,7 @@ static void tokenize(P) {
         case S_RCDATA_END_NAME: case S_RAWTEXT_END_NAME: case S_SCRIPT_END_NAME: case S_SCRIPT_ESC_END_NAME: {
             int st = p->state;
             int back = st == S_RCDATA_END_NAME ? S_RCDATA : st == S_RAWTEXT_END_NAME ? S_RAWTEXT : st == S_SCRIPT_END_NAME ? S_SCRIPT : S_SCRIPT_ESC;
-            c = NEXT();
+            READ();
             if ((tok_ws(c) || c == '/' || c == '>') && appropriate_end(p)) {
                 if (c == '>') { TO(S_DATA); emit_tag(p); }
                 else TO(c == '/' ? S_SELF_CLOSING : S_BEFORE_ATTR_NAME);
@@ -1574,46 +1620,46 @@ static void tokenize(P) {
         }
 
         case S_SCRIPT_LT:
-            c = NEXT();
+            READ();
             if (c == '/') { sb_clear(&p->tmp); TO(S_SCRIPT_END_OPEN); }
             else if (c == '!') { TO(S_SCRIPT_ESC_START); sb_put(&p->chars, "<!", 2); }
             else { sb_putc(&p->chars, '<'); RECONSUME(); TO(S_SCRIPT); }
             break;
         case S_SCRIPT_ESC_START: case S_SCRIPT_ESC_START_DASH:
-            c = NEXT();
+            READ();
             if (c == '-') { sb_putc(&p->chars, '-'); TO(p->state == S_SCRIPT_ESC_START ? S_SCRIPT_ESC_START_DASH : S_SCRIPT_ESC_DASH_DASH); }
             else { RECONSUME(); TO(S_SCRIPT); }
             break;
         case S_SCRIPT_ESC: {
             size_t k = i; while (k < n && s[k] != '-' && s[k] != '<' && s[k]) k++;
             if (k > i) { sb_put(&p->chars, (const char *)s + i, k - i); i = k; }
-            c = NEXT();
+            READ();
             if (c == '-') { TO(S_SCRIPT_ESC_DASH); sb_putc(&p->chars, '-'); }
             else if (c == '<') TO(S_SCRIPT_ESC_LT);
             else if (c == 0) put_fffd(&p->chars);
-            else if (c == EOF_C) { emit_eof(p); return; }
+            else if (c == EOF_C) { emit_eof(p); goto suspended; }
             break;
         }
         case S_SCRIPT_ESC_DASH: case S_SCRIPT_ESC_DASH_DASH: {
             bool dd = p->state == S_SCRIPT_ESC_DASH_DASH;
-            c = NEXT();
+            READ();
             if (c == '-') { TO(S_SCRIPT_ESC_DASH_DASH); sb_putc(&p->chars, '-'); }
             else if (c == '<') TO(S_SCRIPT_ESC_LT);
             else if (c == '>' && dd) { TO(S_SCRIPT); sb_putc(&p->chars, '>'); }
             else if (c == 0) { TO(S_SCRIPT_ESC); put_fffd(&p->chars); }
-            else if (c == EOF_C) { emit_eof(p); return; }
+            else if (c == EOF_C) { emit_eof(p); goto suspended; }
             else { TO(S_SCRIPT_ESC); sb_putc(&p->chars, (char)c); }
             break;
         }
         case S_SCRIPT_ESC_LT:
-            c = NEXT();
+            READ();
             if (c == '/') { sb_clear(&p->tmp); TO(S_SCRIPT_ESC_END_OPEN); }
             else if (is_alpha(c)) { sb_clear(&p->tmp); sb_putc(&p->chars, '<'); RECONSUME(); TO(S_SCRIPT_DESC_START); }
             else { sb_putc(&p->chars, '<'); RECONSUME(); TO(S_SCRIPT_ESC); }
             break;
         case S_SCRIPT_DESC_START: case S_SCRIPT_DESC_END: {
             bool start = p->state == S_SCRIPT_DESC_START;
-            c = NEXT();
+            READ();
             if (tok_ws(c) || c == '/' || c == '>') {
                 bool script = p->tmp.n == 6 && !memcmp(p->tmp.s, "script", 6);
                 TO(start ? (script ? S_SCRIPT_DESC : S_SCRIPT_ESC) : (script ? S_SCRIPT_ESC : S_SCRIPT_DESC));
@@ -1625,46 +1671,46 @@ static void tokenize(P) {
         case S_SCRIPT_DESC: {
             size_t k = i; while (k < n && s[k] != '-' && s[k] != '<' && s[k]) k++;
             if (k > i) { sb_put(&p->chars, (const char *)s + i, k - i); i = k; }
-            c = NEXT();
+            READ();
             if (c == '-') { TO(S_SCRIPT_DESC_DASH); sb_putc(&p->chars, '-'); }
             else if (c == '<') { TO(S_SCRIPT_DESC_LT); sb_putc(&p->chars, '<'); }
             else if (c == 0) put_fffd(&p->chars);
-            else if (c == EOF_C) { emit_eof(p); return; }
+            else if (c == EOF_C) { emit_eof(p); goto suspended; }
             break;
         }
         case S_SCRIPT_DESC_DASH: case S_SCRIPT_DESC_DASH_DASH: {
             bool dd = p->state == S_SCRIPT_DESC_DASH_DASH;
-            c = NEXT();
+            READ();
             if (c == '-') { TO(S_SCRIPT_DESC_DASH_DASH); sb_putc(&p->chars, '-'); }
             else if (c == '<') { TO(S_SCRIPT_DESC_LT); sb_putc(&p->chars, '<'); }
             else if (c == '>' && dd) { TO(S_SCRIPT); sb_putc(&p->chars, '>'); }
             else if (c == 0) { TO(S_SCRIPT_DESC); put_fffd(&p->chars); }
-            else if (c == EOF_C) { emit_eof(p); return; }
+            else if (c == EOF_C) { emit_eof(p); goto suspended; }
             else { TO(S_SCRIPT_DESC); sb_putc(&p->chars, (char)c); }
             break;
         }
         case S_SCRIPT_DESC_LT:
-            c = NEXT();
+            READ();
             if (c == '/') { sb_clear(&p->tmp); TO(S_SCRIPT_DESC_END); sb_putc(&p->chars, '/'); }
             else { RECONSUME(); TO(S_SCRIPT_DESC); }
             break;
 
         case S_BEFORE_ATTR_NAME:
-            c = NEXT();
+            READ();
             if (tok_ws(c)) break;
             if (c == '/' || c == '>' || c == EOF_C) { RECONSUME(); TO(S_AFTER_ATTR_NAME); }
             else if (c == '=') { attr_start(p); sb_putc(&p->an, '='); TO(S_ATTR_NAME); }
             else { attr_start(p); RECONSUME(); TO(S_ATTR_NAME); }
             break;
         case S_ATTR_NAME:
-            c = NEXT();
+            READ();
             if (tok_ws(c) || c == '/' || c == '>' || c == EOF_C) { RECONSUME(); TO(S_AFTER_ATTR_NAME); }
             else if (c == '=') TO(S_BEFORE_ATTR_VALUE);
             else if (c == 0) put_fffd(&p->an);
             else sb_putc(&p->an, (char)lc(c));
             break;
         case S_AFTER_ATTR_NAME:
-            c = NEXT();
+            READ();
             if (tok_ws(c)) break;
             if (c == '/') TO(S_SELF_CLOSING);
             else if (c == '=') TO(S_BEFORE_ATTR_VALUE);
@@ -1673,7 +1719,7 @@ static void tokenize(P) {
             else { attr_start(p); RECONSUME(); TO(S_ATTR_NAME); }
             break;
         case S_BEFORE_ATTR_VALUE:
-            c = NEXT();
+            READ();
             if (tok_ws(c)) break;
             if (c == '"') TO(S_ATTR_VALUE_DQ);
             else if (c == '\'') TO(S_ATTR_VALUE_SQ);
@@ -1684,24 +1730,24 @@ static void tokenize(P) {
             int q = p->state == S_ATTR_VALUE_DQ ? '"' : '\'';
             size_t k = i; while (k < n && s[k] != q && s[k] != '&' && s[k]) k++;
             if (k > i) { sb_put(&p->av, (const char *)s + i, k - i); i = k; }
-            c = NEXT();
+            READ();
             if (c == q) TO(S_AFTER_ATTR_VALUE_Q);
-            else if (c == '&') charref(s, n, &i, &p->av, true);
+            else if (c == '&') { if (!final && reference_needs_input(s, n, i)) { i--; goto suspended; } charref(s, n, &i, &p->av, true); }
             else if (c == 0) put_fffd(&p->av);
             else if (c == EOF_C) { RECONSUME(); TO(S_DATA); }
             break;
         }
         case S_ATTR_VALUE_UQ:
-            c = NEXT();
+            READ();
             if (tok_ws(c)) TO(S_BEFORE_ATTR_NAME);
-            else if (c == '&') charref(s, n, &i, &p->av, true);
+            else if (c == '&') { if (!final && reference_needs_input(s, n, i)) { i--; goto suspended; } charref(s, n, &i, &p->av, true); }
             else if (c == '>') { TO(S_DATA); emit_tag(p); }
             else if (c == 0) put_fffd(&p->av);
             else if (c == EOF_C) { RECONSUME(); TO(S_DATA); }
             else sb_putc(&p->av, (char)c);
             break;
         case S_AFTER_ATTR_VALUE_Q:
-            c = NEXT();
+            READ();
             if (tok_ws(c)) TO(S_BEFORE_ATTR_NAME);
             else if (c == '/') TO(S_SELF_CLOSING);
             else if (c == '>') { TO(S_DATA); emit_tag(p); }
@@ -1709,7 +1755,7 @@ static void tokenize(P) {
             else { RECONSUME(); TO(S_BEFORE_ATTR_NAME); }
             break;
         case S_SELF_CLOSING:
-            c = NEXT();
+            READ();
             if (c == '>') { p->self_closing = true; TO(S_DATA); emit_tag(p); }
             else if (c == EOF_C) { RECONSUME(); TO(S_DATA); }
             else { RECONSUME(); TO(S_BEFORE_ATTR_NAME); }
@@ -1718,13 +1764,14 @@ static void tokenize(P) {
         case S_BOGUS_COMMENT: {
             size_t k = i; while (k < n && s[k] != '>' && s[k]) k++;
             if (k > i) { sb_put(&p->text, (const char *)s + i, k - i); i = k; }
-            c = NEXT();
+            READ();
             if (c == '>') { TO(S_DATA); emit_comment(p); }
             else if (c == EOF_C) { emit_comment(p); RECONSUME(); TO(S_DATA); }
             else if (c == 0) put_fffd(&p->text);
             break;
         }
         case S_MARKUP_DECL:
+            if (!final && declaration_needs_input(s, n, i)) goto suspended;
             if (i + 2 <= n && s[i] == '-' && s[i + 1] == '-') { i += 2; sb_clear(&p->text); TO(S_COMMENT_START); }
             else if (i + 7 <= n && !strncasecmp((const char *)s + i, "doctype", 7)) { i += 7; TO(S_DOCTYPE); }
             else if (i + 7 <= n && !memcmp(s + i, "[CDATA[", 7)) {
@@ -1735,13 +1782,13 @@ static void tokenize(P) {
             } else { sb_clear(&p->text); TO(S_BOGUS_COMMENT); }
             break;
         case S_COMMENT_START:
-            c = NEXT();
+            READ();
             if (c == '-') TO(S_COMMENT_START_DASH);
             else if (c == '>') { TO(S_DATA); emit_comment(p); }
             else { RECONSUME(); TO(S_COMMENT); }
             break;
         case S_COMMENT_START_DASH:
-            c = NEXT();
+            READ();
             if (c == '-') TO(S_COMMENT_END);
             else if (c == '>') { TO(S_DATA); emit_comment(p); }
             else if (c == EOF_C) { emit_comment(p); RECONSUME(); TO(S_DATA); }
@@ -1750,7 +1797,7 @@ static void tokenize(P) {
         case S_COMMENT: {
             size_t k = i; while (k < n && s[k] != '<' && s[k] != '-' && s[k]) k++;
             if (k > i) { sb_put(&p->text, (const char *)s + i, k - i); i = k; }
-            c = NEXT();
+            READ();
             if (c == '<') { sb_putc(&p->text, '<'); TO(S_COMMENT_LT); }
             else if (c == '-') TO(S_COMMENT_END_DASH);
             else if (c == 0) put_fffd(&p->text);
@@ -1758,30 +1805,30 @@ static void tokenize(P) {
             break;
         }
         case S_COMMENT_LT:
-            c = NEXT();
+            READ();
             if (c == '!') { sb_putc(&p->text, '!'); TO(S_COMMENT_LT_BANG); }
             else if (c == '<') sb_putc(&p->text, '<');
             else { RECONSUME(); TO(S_COMMENT); }
             break;
         case S_COMMENT_LT_BANG:
-            c = NEXT();
+            READ();
             if (c == '-') TO(S_COMMENT_LT_BANG_DASH); else { RECONSUME(); TO(S_COMMENT); }
             break;
         case S_COMMENT_LT_BANG_DASH:
-            c = NEXT();
+            READ();
             if (c == '-') TO(S_COMMENT_LT_BANG_DASH_DASH); else { RECONSUME(); TO(S_COMMENT_END_DASH); }
             break;
         case S_COMMENT_LT_BANG_DASH_DASH:
-            NEXT(); RECONSUME(); TO(S_COMMENT_END);
+            READ(); RECONSUME(); TO(S_COMMENT_END);
             break;
         case S_COMMENT_END_DASH:
-            c = NEXT();
+            READ();
             if (c == '-') TO(S_COMMENT_END);
             else if (c == EOF_C) { emit_comment(p); RECONSUME(); TO(S_DATA); }
             else { sb_putc(&p->text, '-'); RECONSUME(); TO(S_COMMENT); }
             break;
         case S_COMMENT_END:
-            c = NEXT();
+            READ();
             if (c == '>') { TO(S_DATA); emit_comment(p); }
             else if (c == '!') TO(S_COMMENT_END_BANG);
             else if (c == '-') sb_putc(&p->text, '-');
@@ -1789,7 +1836,7 @@ static void tokenize(P) {
             else { sb_put(&p->text, "--", 2); RECONSUME(); TO(S_COMMENT); }
             break;
         case S_COMMENT_END_BANG:
-            c = NEXT();
+            READ();
             if (c == '-') { sb_put(&p->text, "--!", 3); TO(S_COMMENT_END_DASH); }
             else if (c == '>') { TO(S_DATA); emit_comment(p); }
             else if (c == EOF_C) { emit_comment(p); RECONSUME(); TO(S_DATA); }
@@ -1797,13 +1844,13 @@ static void tokenize(P) {
             break;
 
         case S_DOCTYPE:
-            c = NEXT();
+            READ();
             if (tok_ws(c)) TO(S_BEFORE_DT_NAME);
             else if (c == EOF_C) { new_doctype(p); p->dt_force_quirks = true; emit_doctype(p); RECONSUME(); TO(S_DATA); }
             else { RECONSUME(); TO(S_BEFORE_DT_NAME); }
             break;
         case S_BEFORE_DT_NAME:
-            c = NEXT();
+            READ();
             if (tok_ws(c)) break;
             new_doctype(p);
             if (c == '>') { p->dt_force_quirks = true; TO(S_DATA); emit_doctype(p); }
@@ -1811,7 +1858,7 @@ static void tokenize(P) {
             else { p->dt_has_name = true; if (c == 0) put_fffd(&p->dt_name); else sb_putc(&p->dt_name, (char)lc(c)); TO(S_DT_NAME); }
             break;
         case S_DT_NAME:
-            c = NEXT();
+            READ();
             if (tok_ws(c)) TO(S_AFTER_DT_NAME);
             else if (c == '>') { TO(S_DATA); emit_doctype(p); }
             else if (c == 0) put_fffd(&p->dt_name);
@@ -1819,7 +1866,9 @@ static void tokenize(P) {
             else sb_putc(&p->dt_name, (char)lc(c));
             break;
         case S_AFTER_DT_NAME:
-            c = NEXT();
+            if (!final && n - i < 6 &&
+                (!strncasecmp((const char *)s + i, "public", n - i) || !strncasecmp((const char *)s + i, "system", n - i))) goto suspended;
+            READ();
             if (tok_ws(c)) break;
             if (c == '>') { TO(S_DATA); emit_doctype(p); }
             else if (c == EOF_C) { p->dt_force_quirks = true; emit_doctype(p); RECONSUME(); TO(S_DATA); }
@@ -1829,7 +1878,7 @@ static void tokenize(P) {
             break;
         case S_AFTER_DT_PUBLIC_KW: case S_BEFORE_DT_PUBLIC: case S_AFTER_DT_SYSTEM_KW: case S_BEFORE_DT_SYSTEM: {
             int st = p->state; bool pub = st == S_AFTER_DT_PUBLIC_KW || st == S_BEFORE_DT_PUBLIC;
-            c = NEXT();
+            READ();
             if (tok_ws(c)) { if (st == S_AFTER_DT_PUBLIC_KW) TO(S_BEFORE_DT_PUBLIC); else if (st == S_AFTER_DT_SYSTEM_KW) TO(S_BEFORE_DT_SYSTEM); }
             else if (c == '"' || c == '\'') {
                 if (pub) { p->dt_has_pub = true; sb_clear(&p->dt_pub); TO(c == '"' ? S_DT_PUBLIC_DQ : S_DT_PUBLIC_SQ); }
@@ -1844,7 +1893,7 @@ static void tokenize(P) {
             int st = p->state; bool pub = st == S_DT_PUBLIC_DQ || st == S_DT_PUBLIC_SQ;
             int q = st == S_DT_PUBLIC_DQ || st == S_DT_SYSTEM_DQ ? '"' : '\'';
             SB *b = pub ? &p->dt_pub : &p->dt_sys;
-            c = NEXT();
+            READ();
             if (c == q) TO(pub ? S_AFTER_DT_PUBLIC : S_AFTER_DT_SYSTEM);
             else if (c == 0) put_fffd(b);
             else if (c == '>') { p->dt_force_quirks = true; TO(S_DATA); emit_doctype(p); }
@@ -1854,7 +1903,7 @@ static void tokenize(P) {
         }
         case S_AFTER_DT_PUBLIC: case S_BETWEEN_DT_IDS: {
             int st = p->state;
-            c = NEXT();
+            READ();
             if (tok_ws(c)) { if (st == S_AFTER_DT_PUBLIC) TO(S_BETWEEN_DT_IDS); }
             else if (c == '>') { TO(S_DATA); emit_doctype(p); }
             else if (c == '"' || c == '\'') { p->dt_has_sys = true; sb_clear(&p->dt_sys); TO(c == '"' ? S_DT_SYSTEM_DQ : S_DT_SYSTEM_SQ); }
@@ -1863,14 +1912,14 @@ static void tokenize(P) {
             break;
         }
         case S_AFTER_DT_SYSTEM:
-            c = NEXT();
+            READ();
             if (tok_ws(c)) break;
             if (c == '>') { TO(S_DATA); emit_doctype(p); }
             else if (c == EOF_C) { p->dt_force_quirks = true; emit_doctype(p); RECONSUME(); TO(S_DATA); }
             else { RECONSUME(); TO(S_BOGUS_DOCTYPE); }
             break;
         case S_BOGUS_DOCTYPE:
-            c = NEXT();
+            READ();
             if (c == '>') { TO(S_DATA); emit_doctype(p); }
             else if (c == EOF_C) { emit_doctype(p); RECONSUME(); TO(S_DATA); }
             break;
@@ -1878,42 +1927,34 @@ static void tokenize(P) {
         case S_CDATA: {
             size_t k = i; while (k < n && s[k] != ']') k++;
             if (k > i) { sb_put(&p->chars, (const char *)s + i, k - i); i = k; }
-            c = NEXT();
+            READ();
             if (c == ']') TO(S_CDATA_BRACKET);
-            else if (c == EOF_C) { emit_eof(p); return; }
+            else if (c == EOF_C) { emit_eof(p); goto suspended; }
             break;
         }
         case S_CDATA_BRACKET:
-            c = NEXT();
+            READ();
             if (c == ']') TO(S_CDATA_END); else { sb_putc(&p->chars, ']'); RECONSUME(); TO(S_CDATA); }
             break;
         case S_CDATA_END:
-            c = NEXT();
+            READ();
             if (c == ']') sb_putc(&p->chars, ']');
             else if (c == '>') TO(S_DATA);
             else { sb_put(&p->chars, "]]", 2); RECONSUME(); TO(S_CDATA); }
             break;
         }
     }
+suspended:
+    p->offset = i < p->in.n ? i : p->in.n;
+    flush_chars(p);
 #undef NEXT
+#undef READ
 #undef RECONSUME
 #undef TO
 }
 
 /* ---------------- entry points ---------------- */
-void html_parser_feed(HtmlParser *p, const char *src, size_t len) { sb_put(&p->in, src, len); }
-
-void html_parser_finish(HtmlParser *p) {
-    /* input stream preprocessing: CR LF and lone CR become LF */
-    if (p->in.n) {
-        char *s = p->in.s; size_t o = 0;
-        for (size_t i = 0; i < p->in.n; i++) {
-            if (s[i] == '\r') { s[o++] = '\n'; if (i + 1 < p->in.n && s[i + 1] == '\n') i++; }
-            else s[o++] = s[i];
-        }
-        p->in.n = o; s[o] = 0;
-    }
-    tokenize(p);
+static void parser_document_links(HtmlParser *p) {
     if (p->ctx) return;
     Document *d = p->doc;
     d->quirks = p->quirks;
@@ -1924,6 +1965,89 @@ void html_parser_finish(HtmlParser *p) {
             if (!d->head && is_html(k, A_head)) d->head = k;
             if (!d->body && is_html(k, A_body)) d->body = k;
         }
+}
+static void normalize_input(HtmlParser *p) {
+    if (p->normalized) return;
+    bool trailing_cr = p->in.n && p->in.s[p->in.n - 1] == '\r';
+    if (p->in.n) {
+        char *s = p->in.s; size_t out = 0;
+        for (size_t i = 0; i < p->in.n; i++) {
+            if (s[i] == '\r') { s[out++] = '\n'; if (i + 1 < p->in.n && s[i + 1] == '\n') ++i; }
+            else s[out++] = s[i];
+        }
+        p->in.n = out; s[out] = 0;
+    }
+    p->normalized = true; p->feed_skip_lf = trailing_cr;
+}
+static bool input_lf_from_cr(const HtmlParser *p, size_t position) {
+    int low = 0, high = p->cr_lines.n;
+    while (low < high) { int mid = low + (high - low) / 2; if (p->cr_lines.v[mid] < position) low = mid + 1; else high = mid; }
+    return low < p->cr_lines.n && p->cr_lines.v[low] == position;
+}
+size_t html_parser_insert(HtmlParser *p, size_t offset, const char *src, size_t len, bool *skip_lf, size_t *removed) {
+    normalize_input(p);
+    SB text; sb_init(&text);
+    VEC(size_t) new_cr = {0}, positions = {0};
+    bool skip = skip_lf && *skip_lf;
+    for (size_t i = 0; i < len; i++) {
+        char ch = src[i];
+        if (skip && ch == '\n') { skip = false; continue; }
+        skip = ch == '\r';
+        if (skip && p->streaming) vec_push(new_cr, text.n);
+        sb_putc(&text, skip ? '\n' : ch);
+    }
+    size_t old = p->in.n, added = text.n;
+    if (offset > old) offset = old;
+    /* A written CR also absorbs a following original LF. A stored LF that came
+       from an original CR must stay: CR + CR produces two line feeds. */
+    size_t erased = skip && offset < old && p->in.s[offset] == '\n' && !input_lf_from_cr(p, offset) ? 1 : 0;
+    if (erased) skip = false;
+    if (skip_lf) *skip_lf = skip;
+    if (removed) *removed = erased;
+    if (added || erased) {
+        if (offset == old && !erased) {
+            /* Appending one chunk must not copy all earlier CR positions. */
+            for (int i = 0; i < new_cr.n; i++) vec_push(p->cr_lines, offset + new_cr.v[i]);
+        } else {
+            for (int i = 0; i < p->cr_lines.n; i++) if (p->cr_lines.v[i] < offset) vec_push(positions, p->cr_lines.v[i]);
+            for (int i = 0; i < new_cr.n; i++) vec_push(positions, offset + new_cr.v[i]);
+            for (int i = 0; i < p->cr_lines.n; i++) if (p->cr_lines.v[i] >= offset + erased)
+                vec_push(positions, p->cr_lines.v[i] - erased + added);
+            vec_free(p->cr_lines);
+            p->cr_lines.v = positions.v; p->cr_lines.n = positions.n; p->cr_lines.cap = positions.cap;
+        }
+        if (added) sb_put(&p->in, text.s, added);
+        memmove(p->in.s + offset + added, p->in.s + offset + erased, old - offset - erased);
+        if (added) memcpy(p->in.s + offset, text.s, added);
+        p->in.n = old - erased + added; p->in.s[p->in.n] = 0;
+        if (offset < p->offset) p->offset = p->offset <= offset + erased ? offset + added : p->offset - erased + added;
+    }
+    vec_free(new_cr); sb_free(&text);
+    return added;
+}
+void html_parser_feed(HtmlParser *p, const char *src, size_t len) {
+    if (p->normalized) (void)html_parser_insert(p, p->in.n, src, len, &p->feed_skip_lf, NULL);
+    else sb_put(&p->in, src, len);
+}
+HtmlParser *html_parser_stream_new(Document *d) {
+    HtmlParser *p = html_parser_new(d, NULL);
+    p->streaming = p->normalized = p->dsd = true;
+    return p;
+}
+Node *html_parser_run(HtmlParser *p, bool final, size_t limit) {
+    normalize_input(p);
+    p->script_ready = NULL;
+    tokenize(p, final, limit);
+    parser_document_links(p);
+    return p->script_ready;
+}
+size_t html_parser_offset(const HtmlParser *p) { return p->offset; }
+size_t html_parser_length(const HtmlParser *p) { return p->in.n; }
+bool html_parser_done(const HtmlParser *p) { return p->stopped; }
+void html_parser_finish(HtmlParser *p) {
+    normalize_input(p);
+    tokenize(p, true, SIZE_MAX);
+    parser_document_links(p);
 }
 
 void html_parse_ex(Document *d, const char *src, size_t len, const HtmlOpts *o) {

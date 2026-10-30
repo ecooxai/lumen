@@ -234,11 +234,22 @@ HtmlParser *html_parser_new(Document *d, Node *fragment_context);
 void html_parser_feed(HtmlParser *p, const char *src, size_t len);
 void html_parser_finish(HtmlParser *p);
 void html_parser_free(HtmlParser *p);
+/* Script-created input streams keep tokenizer/tree-builder state between writes.
+   run yields a completed script, or NULL at the current input/limit boundary.
+   final supplies EOF only once all bytes up to the real stream end are consumed. */
+HtmlParser *html_parser_stream_new(Document *d);
+Node *html_parser_run(HtmlParser *p, bool final, size_t limit);
+size_t html_parser_offset(const HtmlParser *p);
+size_t html_parser_length(const HtmlParser *p);
+bool html_parser_done(const HtmlParser *p);
+size_t html_parser_insert(HtmlParser *p, size_t offset, const char *src, size_t len, bool *skip_lf, size_t *removed);
+
 /* hook invoked when a </script> end tag is seen (parser-inserted scripts) */
 extern void (*html_script_hook)(Document *d, Node *script, void *ud);
 extern void *html_script_hook_ud;
 
 uint32_t html_entity_lookup(const char *name, size_t n, uint32_t *second, size_t *consumed);
+bool html_entity_has_prefix(const char *name, size_t n);
 bool html_is_void(const char *tag);
 
 /* Commonly used tag atoms, initialised by dom_init() */

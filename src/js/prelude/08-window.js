@@ -1081,5 +1081,5 @@ function fireAnim(t, type, name, elapsed, anim) {
     Object.defineProperty(globalThis, 'Temporal', { get: load, set(v) { Object.defineProperty(globalThis, 'Temporal', { value: v, writable: true, configurable: true }); }, configurable: true });
     Object.defineProperty(Date.prototype, 'toTemporalInstant', { value: function toTemporalInstant() { load(); return Date.prototype.toTemporalInstant.call(this); }, writable: true, configurable: true });
 }
-return { ttInit, ttScript, ttEval, queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { ttInit, ttScript, ttParserScript, ttEval, queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
 })

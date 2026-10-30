@@ -228,25 +228,49 @@ methods(Document.prototype, {
     set designMode(v) { const s = String(v).toLowerCase(); if (s === 'on' || s === 'off') designModes.set(this, s); },
     open(a, b, c) {
         if (arguments.length > 2) return G.open(a, b, c);
-        if (this !== document || docOpened.has(this)) return this;
+        if (this !== document) return this;
         if (this.contentType !== 'text/html') throw new DOMException("Failed to execute 'open' on 'Document': Only HTML documents support open().", 'InvalidStateError');
         if (N.parserWritePoint()) return this;   /* an active parser script has a nonzero nesting level */
+        resetOpenedDocumentEvents(this);
         N.docOpen();
         while (this.firstChild) this.removeChild(this.firstChild);
-        docOpened.set(this, '');
+        docOpened.set(this, {});
         return this;
     },
     close() {
         if (this !== document || !docOpened.has(this)) return;
-        const html = docOpened.get(this);
         docOpened.delete(this);
-        N.docReparse(html);
+        N.docClose();
     },
     write(...s) { docWriteTo(this, ttWriteText(s, false)); }, writeln(...s) { docWriteTo(this, ttWriteText(s, true)); },
 });
-/* a document script opened (document.open(), or a write once it has loaded): the markup written so far, parsed
-   when it is closed. A write that opened it implicitly closes it in a later task if the script does not. */
+/* Script-created documents keep one live tokenizer across writes. An implicit
+   open closes in a later task unless the script closes or replaces it first. */
 const docOpened = new WeakMap(), designModes = new WeakMap();
+const openedOwnDescriptor = Object.getOwnPropertyDescriptor;
+const openedMapValues = Function.prototype.call.bind(SMap.prototype.values);
+const openedMapClear = Function.prototype.call.bind(SMap.prototype.clear);
+function resetOpenedDocumentEvents(doc) {
+    const nodes = [G, doc];
+    for (let i = 1; i < nodes.length; i++) {
+        const node = nodes[i];
+        for (let child = N.first(node); child; child = N.next(child)) apush(nodes, child);
+        if (N.type(node) === 1) { const shadow = N.shadowOf(node); if (shadow) apush(nodes, shadow); }
+    }
+    for (let i = 0; i < nodes.length; i++) {
+        const target = nodes[i], descriptor = openedOwnDescriptor(target, '__ls');
+        const listeners = descriptor && descriptor.value;
+        if (listeners instanceof SMap) {
+            for (const records of openedMapValues(listeners))
+                for (let j = 0; j < records.length; j++) records[j].removed = true;
+            openedMapClear(listeners);
+        }
+        const realm = N.realmOf(target);
+        if (realm && realm !== REALM) realm.resetOpenedHandlers(target);
+        else resetOpenedHandlers(target);
+    }
+}
+
 /* Text-control commands use the existing selection splice, not the contenteditable engine.
    maxlength limits UTF-16 code units; a truncation must not create half a surrogate pair. */
 function execControlInsert(el, cmd, value) {
@@ -356,12 +380,13 @@ function execData(cmd, val) {
 function docWriteTo(doc, html) {
     if (doc !== document) return;
     if (doc.contentType !== 'text/html') throw new DOMException("Failed to execute 'write' on 'Document': Only HTML documents support write().", 'InvalidStateError');
-    if (docOpened.has(doc)) { docOpened.set(doc, docOpened.get(doc) + html); return; }
+    if (docOpened.has(doc) || N.docStreamWritePoint()) { N.docWrite(html); return; }
     if (N.ignoreWrites()) return;
     if (!N.parserWritePoint()) {
         doc.open();
-        docOpened.set(doc, html);
-        setTimeout(() => doc.close());
+        const opened = docOpened.get(doc);
+        N.docWrite(html);
+        setTimeout(() => { if (docOpened.get(doc) === opened) doc.close(); });
         return;
     }
     docWrite(html);
