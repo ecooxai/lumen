@@ -1,0 +1,24 @@
+{
+  "candidate": 234,
+  "started_utc": "2026-10-31T10:55:42.226697+00:00",
+  "finished_utc": "2026-10-31T10:55:44.311086+00:00",
+  "duration_s": 2.0844041429809295,
+  "command": [
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py",
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/linux-wpt-20261031-session9/commit-public-source234.py",
+    "--qualification-sha256",
+    "27e156638d45671a9015c9a06841ef178ad83c70adf2ae1326f621fc684bcd40"
+  ],
+  "actual_returncode": 0,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "errors": [],
+  "forced_cleanup": [],
+  "pins_unchanged": true,
+  "execution_accepted": true,
+  "no_push_performed": true
+}

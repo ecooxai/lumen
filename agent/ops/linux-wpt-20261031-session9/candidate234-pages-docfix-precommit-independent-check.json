@@ -1,0 +1,18 @@
+{
+  "candidate": 234,
+  "accepted": true,
+  "page_preparation_sha256": "771d4ec601bcf40c37d50caa9911a54eee5d4ea2fbdee99322edbb3f442d59d9",
+  "package_receipt_sha256": "6c258fd5ccd53495c6d3defe7f8e20732f4ea1a7da56da6d16390adf345a6d9e",
+  "all17_page_files_exact": true,
+  "all749_source_files_modes_and650_inputs_exact": true,
+  "corrected_RUN_file_url_exact": true,
+  "corrected_BUILD_RUN_guide_exact": true,
+  "exact_app_verified": {
+    "sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+    "bytes": 7335352,
+    "executable": true
+  },
+  "no_unsafe_tar_members": true,
+  "pages_parent": "0090162aa2649a57f019b8fb8e8f1076ea89b203",
+  "completed_utc": "2026-10-31T11:10:18.093282+00:00"
+}

@@ -1,0 +1,30 @@
+{
+  "candidate": 234,
+  "session_start_utc": "2026-10-31T07:00:12+00:00",
+  "technical_end_utc": "2026-10-31T10:41:46.236056+00:00",
+  "artifact_delivery_end_utc": "2026-10-31T11:12:51.252420+00:00",
+  "closure_accounting_prepared_utc": "2026-10-31T11:15:53.290348+00:00",
+  "technical_wall_minutes": 221.57060093333334,
+  "artifact_delivery_wall_minutes": 31.08360606666667,
+  "cumulative_wall_minutes_at_artifact_acceptance": 252.654207,
+  "cumulative_wall_minutes_at_closure_preparation": 255.68817246666669,
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ],
+  "coordinator": "root",
+  "model": "GPT-6 Astra Pro",
+  "iteration_count_after_baseline": 8,
+  "selected_containment_score": 100,
+  "whole_browser_score": null,
+  "dedicated_URL_work_deferred": true,
+  "public_source_commit": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
+  "pages_commit": "bb9562d265d2d09f5a10bf4a069299713353e69a",
+  "final_reader_receipt_sha256": "0d0b4d86780fd180a019351f95c54e8a9e3ecee935fb5143229aeacec17d412e",
+  "final_delivery_review_sha256": "04342e9c277a744edef7b1274c69a43e18842d1eae19dd66c12b6177d63eeac0",
+  "public_artifact_delivery_complete": true,
+  "final_git_completion_and_equivalence_receipt": "agent/ops/linux-wpt-20261031-session9/handoff234-final-equivalence.json",
+  "final_private_cloud_checkpoint_recorded_separately": true,
+  "overlapping_agent_times_not_summed": true
+}

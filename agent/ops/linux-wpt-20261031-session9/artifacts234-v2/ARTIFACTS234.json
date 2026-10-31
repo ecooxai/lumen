@@ -1,0 +1,48 @@
+{
+  "candidate": 234,
+  "delivery_revision": 2,
+  "superseded_artifact_manifest_sha256": "0a7fb1752177c5c09a1325073fc07b723bfbbc42be83dd9311c2dbe8041b879b",
+  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "tested_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "public_commit": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
+  "public_tree": "e7560b9d2cae7d6e7bd014a15182876a1784dde7",
+  "public_branch": "gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
+  "artifacts": {
+    "src.tar.gz": {
+      "sha256": "e23323d22d76ff0d655d38be5f7c8b4b1364e21d98dee0b131f2aff824c8ed29",
+      "bytes": 9755285
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-source-i234.bundle": {
+      "sha256": "bff571dd105b6f7d7f289c7b961b6c70cc5c0a30a17f79bf1bc589a3f00e6e79",
+      "bytes": 4937370
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-x86_64-i234.tar.gz": {
+      "sha256": "47e3794aa199129dc64c756ee97e834f6ecc0da0add905a33484d55c3ada44eb",
+      "bytes": 2566009
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase.mp4": {
+      "sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+      "bytes": 556783
+    },
+    "PUBLIC-GIT-RECOVERY.json": {
+      "sha256": "f89ffa1649546433d971d373ca68ef72eb7ba487ae3d59d8661f26ef96a92bce",
+      "bytes": 1536
+    }
+  },
+  "source_root": "lumen-linux-source234",
+  "binary_root": "lumen-linux-x86_64-i234",
+  "source_archive_includes_public_git_bundle": true,
+  "private_history_included": false,
+  "all_650_inputs_and_public_inventory_exact": true,
+  "packaged_bundle_offline_clone_verified": true,
+  "documented_default_clone_verified": true,
+  "bundle_refs": [
+    "HEAD",
+    "refs/heads/gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031"
+  ],
+  "packaged_bundle_fsck_passed": true,
+  "exact_executable_extracted_and_rehashed": true,
+  "external_runtime_dependencies_required": true,
+  "public_report_sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
+  "completed_utc": "2026-10-31T11:09:02.200967+00:00"
+}

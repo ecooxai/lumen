@@ -1,0 +1,46 @@
+{
+  "candidate": 234,
+  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "tested_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "public_commit": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
+  "public_tree": "40016234061f6494d7519e15e9546c35169f4f0a",
+  "public_branch": "gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
+  "artifacts": {
+    "src.tar.gz": {
+      "sha256": "b2380c215466c473b3434894e61118311f3f441902bc036caae8f82152217561",
+      "bytes": 9753116
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-source-i234.bundle": {
+      "sha256": "106b7ba79980bdb7468144f7f5120e0df88cb933217031c6f0dc07c1590bf331",
+      "bytes": 4936213
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-x86_64-i234.tar.gz": {
+      "sha256": "ec57e00ef4a2012d273b0ac4573c55319f9cb2792013adee357aa2e7b5f7944c",
+      "bytes": 2566025
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase.mp4": {
+      "sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+      "bytes": 556783
+    },
+    "PUBLIC-GIT-RECOVERY.json": {
+      "sha256": "fde612cb9d0bd63d38ff341bb3feec3188f04ae769a17aa52bc906d7a73c517f",
+      "bytes": 1404
+    }
+  },
+  "source_root": "lumen-linux-source234",
+  "binary_root": "lumen-linux-x86_64-i234",
+  "source_archive_includes_public_git_bundle": true,
+  "private_history_included": false,
+  "all_650_inputs_and_public_inventory_exact": true,
+  "packaged_bundle_offline_clone_verified": true,
+  "documented_default_clone_verified": true,
+  "bundle_refs": [
+    "HEAD",
+    "refs/heads/gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031"
+  ],
+  "packaged_bundle_fsck_passed": true,
+  "exact_executable_extracted_and_rehashed": true,
+  "external_runtime_dependencies_required": true,
+  "public_report_sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
+  "completed_utc": "2026-10-31T11:01:37.571266+00:00"
+}

@@ -1,0 +1,12 @@
+{
+  "candidate": 234,
+  "exact_documented_clone_without_branch": true,
+  "clone_returncode": 0,
+  "clone_stderr": "Cloning into 'agent/ops/linux-wpt-20261031-session9/offline-source234-documentation-replay'...\nhint: Using 'master' as the name for the initial branch. This default branch name\nhint: will change to \"main\" in Git 3.0. To configure the initial branch name\nhint: to use in all of your new repositories, which will suppress this warning,\nhint: call:\nhint:\nhint: \tgit config --global init.defaultBranch <name>\nhint:\nhint: Names commonly chosen instead of 'master' are 'main', 'trunk' and\nhint: 'development'. The just-created branch can be renamed via this command:\nhint:\nhint: \tgit branch -m <name>\nhint:\nhint: Disable this message with \"git config set advice.defaultBranchName false\"\nwarning: remote HEAD refers to nonexistent ref, unable to checkout\n",
+  "head_returncode": 128,
+  "head": "",
+  "head_stderr": "fatal: Needed a single revision\n",
+  "all_650_files_match": false,
+  "tracked_state_clean": true,
+  "verified_utc": "2026-10-31T10:57:32.242762+00:00"
+}

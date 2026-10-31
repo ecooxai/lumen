@@ -1,0 +1,29 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "preparation": {
+    "path": "agent/ops/linux-wpt-20261031-session9/source234-preparation.json",
+    "sha256": "2132be58a4758665bc0e1eeb6d33f459022328735fbbb0685109698216c9c331"
+  },
+  "independent_review": {
+    "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-final-review-v2.json",
+    "sha256": "353dc945e3766fcd49175d61dd2cdd8d463384b3d63b303e9eaf02f518ab547e"
+  },
+  "handoff": {
+    "path": "agent/ops/linux-wpt-20261031-session9/handoff234-equivalence.json",
+    "sha256": "b386c0b7563d3a5908a4e32c66b9951b8e297a757def304c92de2e8a47aa4c2a"
+  },
+  "final_allowlist": {
+    "path": "agent/ops/linux-wpt-20261031-session9/public-extra-dependencies-allowlist-final-v4.json",
+    "sha256": "64c109c78e45f4393ca37d59b9f58f66060817283e5759cc396d5cbb89d76f88"
+  },
+  "public_report": {
+    "path": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/report.json",
+    "sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff"
+  },
+  "root_decision": {
+    "path": "agent/ops/linux-wpt-20261031-session9/root-publication-acceptance234.json",
+    "sha256": "dd26f9b2829006d58158e5863d93ce51a6de6ce5400c31bbbcc792c80fc0d18b"
+  }
+}

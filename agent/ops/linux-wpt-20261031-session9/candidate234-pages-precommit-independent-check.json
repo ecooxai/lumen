@@ -1,0 +1,20 @@
+{
+  "candidate": 234,
+  "accepted": true,
+  "page_preparation_sha256": "96430bc5c90ca42dc22bae92cdf88c9cae3f01b3949e74ba85bfaecd51c77b97",
+  "package_receipt_sha256": "52fde7d2b66dcec1bf8b18c5847126f94f1ae6754c38c233218fc05c15053c2a",
+  "exact_17_page_files": true,
+  "source_archive_all_749_files_and_modes_exact": true,
+  "source_archive_exact_650_measured_inputs": true,
+  "source_archive_only_3_reviewed_packaging_extras": true,
+  "corrected_bundle_and_recovery_exact": true,
+  "exact_tested_executable_in_package": {
+    "sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+    "bytes": 7335352,
+    "executable": true
+  },
+  "no_unsafe_tar_members": true,
+  "old_unrelated_public_files_preserved": true,
+  "pages_parent": "25af2cf0d71109ecebe1907bfe92c9a0e9168f33",
+  "completed_utc": "2026-10-31T11:03:09.911632+00:00"
+}

@@ -1,0 +1,84 @@
+{
+  "candidate": 234,
+  "prepared_utc": "2026-10-31T11:01:49.207166+00:00",
+  "controller_sha256": "f5d91edf68a36ef2abe8b4c9195619109fe7e2e0ee2705895af2e8fcd39638f6",
+  "pages_parent": "25af2cf0d71109ecebe1907bfe92c9a0e9168f33",
+  "public_source_commit": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
+  "public_source_tree": "40016234061f6494d7519e15e9546c35169f4f0a",
+  "public_report_sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
+  "package_manifest_sha256": "0a7fb1752177c5c09a1325073fc07b723bfbbc42be83dd9311c2dbe8041b879b",
+  "explicit_new_or_replaced_files": {
+    "ARTIFACTS234.json": {
+      "sha256": "0a7fb1752177c5c09a1325073fc07b723bfbbc42be83dd9311c2dbe8041b879b",
+      "bytes": 2033
+    },
+    "PUBLIC-GIT-RECOVERY.json": {
+      "sha256": "fde612cb9d0bd63d38ff341bb3feec3188f04ae769a17aa52bc906d7a73c517f",
+      "bytes": 1404
+    },
+    "SHA256SUMS234": {
+      "sha256": "1bee11f5e793fc3a780374d25d3d953c0240ffcfa8afb1472db425c918234e77",
+      "bytes": 650
+    },
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md": {
+      "sha256": "8af57a3d4f51f75fd843c515d2af1a2e1720e04cc3d3fb052f49df8c75a02e57",
+      "bytes": 15010
+    },
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.json": {
+      "sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
+      "bytes": 57816
+    },
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.md": {
+      "sha256": "627cc0cab39286c4b5a2ea84263af4bdfd2205af313dd2b43bd2eb87b16e0d81",
+      "bytes": 21308
+    },
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json": {
+      "sha256": "31f2fab0833dc81a07d806f9a50a802362fad94e44a8c534c7465c2d30c635eb",
+      "bytes": 3857
+    },
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-live-demo-evidence.json": {
+      "sha256": "4a09b33af7a34125b40e1544908a24c47319a40474f8c045d49de3c69a1f2112",
+      "bytes": 2429
+    },
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-native147-replay-inputs.json": {
+      "sha256": "88f5cd476c019d96438cc3b14313917f159526fe37d1dbc109599cde9637370a",
+      "bytes": 120410
+    },
+    "examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html": {
+      "sha256": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
+      "bytes": 14645
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase.mp4": {
+      "sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+      "bytes": 556783
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase.png": {
+      "sha256": "d0a726c4952998b3f6118d93cfa55afe4d7536c5dfd426b506573cddebfee7ad",
+      "bytes": 163153
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-source-i234.bundle": {
+      "sha256": "106b7ba79980bdb7468144f7f5120e0df88cb933217031c6f0dc07c1590bf331",
+      "bytes": 4936213
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-x86_64-i234.tar.gz": {
+      "sha256": "ec57e00ef4a2012d273b0ac4573c55319f9cb2792013adee357aa2e7b5f7944c",
+      "bytes": 2566025
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html": {
+      "sha256": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
+      "bytes": 14645
+    },
+    "index.html": {
+      "sha256": "1e1ee91a136bc9788bba69275a316f6880e44362316cf2ea2088160f115639ef",
+      "bytes": 14465
+    },
+    "src.tar.gz": {
+      "sha256": "b2380c215466c473b3434894e61118311f3f441902bc036caae8f82152217561",
+      "bytes": 9753116
+    }
+  },
+  "existing_unrelated_public_files_preserved": true,
+  "local_links_verified": true,
+  "viewer_browser_note_explicit": true,
+  "publication_or_remote_verification_performed": false
+}

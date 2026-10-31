@@ -1,0 +1,13 @@
+{
+  "candidate": 234,
+  "technical_end_utc": "2026-10-31T10:41:46.236056+00:00",
+  "artifact_delivery_end_utc": "2026-10-31T11:12:51.252420+00:00",
+  "delivery_wall_minutes": 31.08360606666667,
+  "cumulative_wall_minutes_at_reader_acceptance": 252.654207,
+  "public_reader_receipt_sha256": "0d0b4d86780fd180a019351f95c54e8a9e3ecee935fb5143229aeacec17d412e",
+  "public_source_commit": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
+  "pages_commit": "bb9562d265d2d09f5a10bf4a069299713353e69a",
+  "engine_source_and_binary_unchanged": true,
+  "public_artifact_delivery_complete": true,
+  "final_bookkeeping_accounting_file": "agent/validation/linux-wpt-20261031-session9/final-accounting234.json"
+}

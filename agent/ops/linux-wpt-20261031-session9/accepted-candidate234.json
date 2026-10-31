@@ -12,6 +12,17 @@
   "technical_review_sha256": "aa0068187a3ddf7f4006c89543acd05a92b1a442f46ed9b7210042a7aa79f4af",
   "accepted": true,
   "scope": "Selected non-URL engine improvements with all declared preservation and resource gates; not full WPT or whole-browser parity",
-  "public_publication": "Pending exact final delivery receipts; no old artifact is relabeled",
+  "public_publication": {
+    "published": true,
+    "verified_utc": "2026-10-31T11:12:51.252420+00:00",
+    "canonical_url": "https://ecooxai.github.io/lumen/",
+    "public_source_commit": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
+    "pages_commit": "bb9562d265d2d09f5a10bf4a069299713353e69a",
+    "source_archive_sha256": "e23323d22d76ff0d655d38be5f7c8b4b1364e21d98dee0b131f2aff824c8ed29",
+    "binary_package_sha256": "47e3794aa199129dc64c756ee97e834f6ecc0da0add905a33484d55c3ada44eb",
+    "git_bundle_sha256": "bff571dd105b6f7d7f289c7b961b6c70cc5c0a30a17f79bf1bc589a3f00e6e79",
+    "reader_receipt_sha256": "0d0b4d86780fd180a019351f95c54e8a9e3ecee935fb5143229aeacec17d412e",
+    "technical_results_unchanged": true
+  },
   "created_utc": "2026-10-31T10:51:14.697751+00:00"
 }

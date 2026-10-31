@@ -1,0 +1,17 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "decision_owner": "root",
+  "publication_accepted": true,
+  "decision_utc": "2026-10-31T10:55:26.346159+00:00",
+  "decision_reference": "Root collaboration message: Final publication approval confirmed for exact reviewed234 artifacts, bound to publicationreview353dc945, report7b1d0173, allowlist64c109c7, privatehandoff3ce3728 and unchanged650/app253f; proceed qualifier/source/bundle/offline/package checks and authorized normal source/Pages push; publish only outputs passing these bindings.",
+  "independent_review_sha256": "353dc945e3766fcd49175d61dd2cdd8d463384b3d63b303e9eaf02f518ab547e",
+  "handoff_receipt_sha256": "b386c0b7563d3a5908a4e32c66b9951b8e297a757def304c92de2e8a47aa4c2a",
+  "public_report_sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
+  "final_allowlist_sha256": "64c109c78e45f4393ca37d59b9f58f66060817283e5759cc396d5cbb89d76f88",
+  "final_handoff_commit": "3ce3728621832ab32c55f45a4ecf1f4cad5b8491",
+  "media_sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+  "engine_bytes_remain_frozen": true,
+  "no_user_permission_pause_required": true
+}

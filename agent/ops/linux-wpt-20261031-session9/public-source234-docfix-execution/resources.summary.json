@@ -1,0 +1,21 @@
+{
+  "label": "public source234 commit bundle offline recovery",
+  "started_utc": "2026-10-31T11:08:35.124070+00:00",
+  "finished_utc": "2026-10-31T11:08:37.150814+00:00",
+  "root_pid": 3045114,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 2,
+  "elapsed_seconds": 2.027,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 34.002,
+  "cpu_median": 34.002,
+  "cpu_max": 34.002,
+  "cpu_last10_median": 34.002,
+  "rss_peak_mb": 21.291,
+  "rss_final_mb": 21.291,
+  "pss_peak_mb": 5.616,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/linux-wpt-20261031-session9/public-source234-docfix-execution/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

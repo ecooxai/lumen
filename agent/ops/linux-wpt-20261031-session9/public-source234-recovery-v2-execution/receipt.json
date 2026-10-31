@@ -1,0 +1,22 @@
+{
+  "candidate": 234,
+  "started_utc": "2026-10-31T11:00:10.223725+00:00",
+  "finished_utc": "2026-10-31T11:00:12.308162+00:00",
+  "duration_s": 2.084451845003059,
+  "command": [
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py",
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/linux-wpt-20261031-session9/repair-public-bundle234-v2.py"
+  ],
+  "actual_returncode": 0,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "errors": [],
+  "forced_cleanup": [],
+  "pins_unchanged": true,
+  "execution_accepted": true,
+  "no_push_performed": true
+}

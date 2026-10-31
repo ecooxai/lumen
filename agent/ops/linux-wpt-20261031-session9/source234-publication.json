@@ -1,0 +1,18 @@
+{
+  "candidate": 234,
+  "public_commit": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
+  "public_tree": "40016234061f6494d7519e15e9546c35169f4f0a",
+  "public_branch": "gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
+  "public_url": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
+  "push_started_utc": "2026-10-31T10:56:15.393845+00:00",
+  "push_finished_utc": "2026-10-31T10:56:19.179613+00:00",
+  "actual_push_returncode": 0,
+  "actual_remote_read_returncode": 0,
+  "observed_remote_commit": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
+  "normal_nonforced_push": true,
+  "private_history_pushed": false,
+  "remote_commit_verified": true,
+  "root_publication_acceptance_sha256": "dd26f9b2829006d58158e5863d93ce51a6de6ce5400c31bbbcc792c80fc0d18b",
+  "qualification_sha256": "27e156638d45671a9015c9a06841ef178ad83c70adf2ae1326f621fc684bcd40",
+  "offline_recovery_receipt_sha256": "a61a0d23800fad3dadb3b9379c0c800dfde0de5076ffa42a032c6a6f7caa2d1b"
+}

@@ -1,0 +1,20 @@
+{
+  "candidate": 234,
+  "decision_owner": "root",
+  "accepted": true,
+  "decision_utc": "2026-10-31T11:07:15.283810+00:00",
+  "public_parent": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
+  "public_parent_tree": "40016234061f6494d7519e15e9546c35169f4f0a",
+  "guide_sha256": "72b42ab31800634f508e14f14d15153ce7ac06582479e2dc52ec562aa9407c5c",
+  "allowlist_sha256": "b3a46c146d068d42276ec8478ca8d9a41a42dff3dfb6c55934b6de17c352fca3",
+  "independent_review_sha256": "63bbbe783fb2dbf70c0fddb052631ae2ffea788e8f2bd30c83447320742d5c65",
+  "public_report_sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
+  "source_manifest_digest": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "allowed_public_paths": [
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md",
+    "SOURCE-MANIFEST.json",
+    "EXPORT-QUALIFICATION.json"
+  ],
+  "decision_reference": "CTO exact hash confirmation: one guide file:// insertion plus two generated provenance JSON updates; all650 engine inputs/app/report/16 gates fixed; normal public child, HEAD+branch bundle and both clones, corrected RUN.md package, reviewed checksum rebinding, normal push/HTTP verification; no engine rerun."
+}

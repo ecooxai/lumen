@@ -1,0 +1,302 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "reviewed_utc": "2026-10-31T10:41:46.236056+00:00",
+  "independent_checkpoint_accepted": true,
+  "independent_scope": "All16 required technical evidence gates accepted; partial API3 remains18/23. Root acceptance, handoff equivalence, reviewed publication/recovery and media visual checks remain separate delivery decisions.",
+  "required_gates": {
+    "native147": {
+      "accepted": true,
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-native-sanitizer-audit.json",
+      "sha256": "16b937c1ea3658f7140cd3ba088bfc440c004ca77ddfa52e6b2aaa48c07eab5e"
+    },
+    "visibility49_accessors2": {
+      "accepted": true,
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-visibility-audit.json",
+      "sha256": "ae0c2f45f210bf5179c5f64b8a3b8f8cd3718362391b9e3520e4146de4c0caa1"
+    },
+    "lifecycle12_upstream4": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-lifecycle-first-execution.json",
+      "sha256": "d37d6acc3236241a03dda1c3221206b2170b365204ec0a6dd0816d847f9ad752"
+    },
+    "containment39": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-containment-audit.json",
+      "sha256": "7c746b99b5f4a8b6c117432cb2cd0ac30c511f75f554d959c6ef3cc98e541a23"
+    },
+    "hidden_api3": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-hidden-api-audit.json",
+      "sha256": "43337d33366dcb38ff03f815c97040e9efd4b04a9a9c0db4f9dce50ce5fc276e"
+    },
+    "hidden_scroll_contract": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-hidden-scroll-retention-audit.json",
+      "sha256": "29c841e08d56b411680a9d6ed7dce547caa56ba7bc61d4cba9a8e67762ace823"
+    },
+    "hidden_scroll_upstream": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen234-assertions/receipt.json",
+      "sha256": "27bcec00b96eee3622a9b58e78043d0345e299e6f774e021de89e462ea1af985"
+    },
+    "cadence_v1": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun234-v1-retention/receipt.json",
+      "sha256": "75acefa9a2ad50939068604ce573820fc58afa0289ba3e61088a35161c06a21e"
+    },
+    "actual_cpp_sanitizer": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/native234-lifecycle-options-sanitizer-v3/receipt.json",
+      "sha256": "6ea12099856bedcf188974836c38b64d7be439d9ef11f63891f6227485e642ee"
+    },
+    "native_math_sanitizer": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/native234-math-sanitizer/receipt.json",
+      "sha256": "2f59ceb0cc3d9f87a9dba740dce85d899a8dfa8484532c274c97b3605993f99e"
+    },
+    "native_grid_containment_sanitizer": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/native234-sanitizer/receipt.json",
+      "sha256": "0c198b3500e5166df825f161c1351dba4109d2aba5ca0f6dea995b92203cb49e"
+    },
+    "raster_sanitizer": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/raster234-sanitizer/receipt.json",
+      "sha256": "1f401c842d2f90f734f8844e82e3242903b6d3c6ab1e31a68f42569975ce6f63"
+    },
+    "frozen640": {
+      "accepted": true,
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-frozen640-audit.json",
+      "sha256": "1997f1a091f12213705c7af083b678453d3538e03f045745a58edf9ca7a7a5f9"
+    },
+    "prior_through231": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-prior-pass-through231-audit.json",
+      "sha256": "55779cf7ee11d6891bf3dba4f8ce788c3d8bdb3669c67d74b1b3b0d0748a535b"
+    },
+    "render40": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-retained-render40-audit.json",
+      "sha256": "760e0702caa6ab82515661f77d95cc12ef2e5f401a228d675daeb6d7f96190a6"
+    },
+    "resources": {
+      "accepted": true,
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-resource-audit.json",
+      "sha256": "da7374bf14ca1aabc5f6f1f67b5a811ebdee4a71800bd7ad85e0e6ea2d73d147"
+    }
+  },
+  "per_gate_audit_paths_and_sha256": {
+    "native147": {
+      "accepted": true,
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-native-sanitizer-audit.json",
+      "sha256": "16b937c1ea3658f7140cd3ba088bfc440c004ca77ddfa52e6b2aaa48c07eab5e"
+    },
+    "visibility49_accessors2": {
+      "accepted": true,
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-visibility-audit.json",
+      "sha256": "ae0c2f45f210bf5179c5f64b8a3b8f8cd3718362391b9e3520e4146de4c0caa1"
+    },
+    "lifecycle12_upstream4": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-lifecycle-first-execution.json",
+      "sha256": "d37d6acc3236241a03dda1c3221206b2170b365204ec0a6dd0816d847f9ad752"
+    },
+    "containment39": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-containment-audit.json",
+      "sha256": "7c746b99b5f4a8b6c117432cb2cd0ac30c511f75f554d959c6ef3cc98e541a23"
+    },
+    "hidden_api3": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-hidden-api-audit.json",
+      "sha256": "43337d33366dcb38ff03f815c97040e9efd4b04a9a9c0db4f9dce50ce5fc276e"
+    },
+    "hidden_scroll_contract": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-hidden-scroll-retention-audit.json",
+      "sha256": "29c841e08d56b411680a9d6ed7dce547caa56ba7bc61d4cba9a8e67762ace823"
+    },
+    "hidden_scroll_upstream": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen234-assertions/receipt.json",
+      "sha256": "27bcec00b96eee3622a9b58e78043d0345e299e6f774e021de89e462ea1af985"
+    },
+    "cadence_v1": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun234-v1-retention/receipt.json",
+      "sha256": "75acefa9a2ad50939068604ce573820fc58afa0289ba3e61088a35161c06a21e"
+    },
+    "actual_cpp_sanitizer": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/native234-lifecycle-options-sanitizer-v3/receipt.json",
+      "sha256": "6ea12099856bedcf188974836c38b64d7be439d9ef11f63891f6227485e642ee"
+    },
+    "native_math_sanitizer": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/native234-math-sanitizer/receipt.json",
+      "sha256": "2f59ceb0cc3d9f87a9dba740dce85d899a8dfa8484532c274c97b3605993f99e"
+    },
+    "native_grid_containment_sanitizer": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/native234-sanitizer/receipt.json",
+      "sha256": "0c198b3500e5166df825f161c1351dba4109d2aba5ca0f6dea995b92203cb49e"
+    },
+    "raster_sanitizer": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/raster234-sanitizer/receipt.json",
+      "sha256": "1f401c842d2f90f734f8844e82e3242903b6d3c6ab1e31a68f42569975ce6f63"
+    },
+    "frozen640": {
+      "accepted": true,
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-frozen640-audit.json",
+      "sha256": "1997f1a091f12213705c7af083b678453d3538e03f045745a58edf9ca7a7a5f9"
+    },
+    "prior_through231": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-prior-pass-through231-audit.json",
+      "sha256": "55779cf7ee11d6891bf3dba4f8ce788c3d8bdb3669c67d74b1b3b0d0748a535b"
+    },
+    "render40": {
+      "accepted": true,
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-retained-render40-audit.json",
+      "sha256": "760e0702caa6ab82515661f77d95cc12ef2e5f401a228d675daeb6d7f96190a6"
+    },
+    "resources": {
+      "accepted": true,
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-resource-audit.json",
+      "sha256": "da7374bf14ca1aabc5f6f1f67b5a811ebdee4a71800bd7ad85e0e6ea2d73d147"
+    }
+  },
+  "additional_independent_audits": [
+    {
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-completed-gates.json",
+      "sha256": "d00aa8d0cf8999bad980faf7ee3ddcb8918d2d22d0e2279bad2b77bb107e4a6f"
+    },
+    {
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-prior231-audit.json",
+      "sha256": "45e57db13536d4c6a945433d532641134ddececfeed1bf6d47f532fab04f95be"
+    },
+    {
+      "path": "agent/validation/linux-wpt-20261031-session9/candidate234-native147-reproduction-map-v2.json",
+      "sha256": "7eff72134f2f21cce337a1d4003aa5ec80a1d6903dfb2872124857e17311618e"
+    },
+    {
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-export-dependency-closure.json",
+      "sha256": "56cd56bd97695229059fe37342b7e6c9d97329247bd3570d281a41c086f06cef"
+    }
+  ],
+  "public_report_sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
+  "recorded_build_input_count": 650,
+  "source_manifest_sha256": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
+  "source_manifest_file_sha256": "58a936e5da8f063bf666dbe9c988696139a3f8e4a89b2dcae0fcbc8508909c5f",
+  "final650_source_and_exact_app_signature_rechecked_in_resource_audit": true,
+  "no_required_technical_gate_pending": true,
+  "publication_performed": false,
+  "full_browser_or_full_WPT_parity_claimed": false,
+  "limitations": [
+    "The640-file campaign is a fixed non-URL sample, not the whole WPT repository. Native, assertion, rendering and authored-control denominators remain separate.",
+    "Dedicated URL conformance work remains deferred as requested; three named native URL targets are excluded.",
+    "Five checkVisibility upstream assertions remain failing; content-visibility:auto, unassigned-slot box behavior and listbox option boxes are not completed.",
+    "Hidden content retains layout/style data for correctness. No layout/style-skipping optimization or full content-visibility conformance is claimed.",
+    "Lifecycle and hidden-scroll comparisons retain the explicitly listed observable scheduling/geometry distinctions.",
+    "General CSS cascade layer/origin rollback, complete grid/multicol layout, document.domain and iframe realm/async-loading work remain outside this repair.",
+    "The reference adapter does not expose Chromium's OS exit status; it records its own successful completion and task-owned profile/process cleanup.",
+    "Resource values are sampled and workload-specific; the paced fixture does not measure throughput or general browser speed.",
+    "The executable is the tested Linux development build with external dependencies; it is not a portable standalone package.",
+    "All650 exported build inputs and reviewed extras match the tested source. No fresh hermetic rebuild or byte-reproducible compiler claim is made.",
+    "Public source and Git bundle contain only reviewed public ancestry; private task history, authentication, profiles and capture machinery are excluded."
+  ],
+  "specific_residuals": {
+    "API3": {
+      "status": "PARTIAL",
+      "candidate": 234,
+      "files": 3,
+      "assertions_passed": 18,
+      "total_assertions": 23,
+      "checkVisibility": {
+        "passed": 16,
+        "total": 21
+      },
+      "IntersectionObserver": {
+        "passed": 1,
+        "total": 1
+      },
+      "ResizeObserver": {
+        "passed": 1,
+        "total": 1
+      },
+      "reference_passed": 23,
+      "baseline226_passed": 10,
+      "prior231_passed": 15,
+      "remaining_failures": [
+        "checkVisibility on content-visibility:auto element which is outside the viewport.",
+        "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+        "checkVisibility on element not assigned to a slot.",
+        "checkVisibility on element not assigned to the only named slot.",
+        "checkVisibility on option and optgroup elements in a list box."
+      ]
+    },
+    "lifecycle": [
+      "Initial child-load microtasks retain the existing synchronous frame-insertion scheduling difference; only the exact declared microtask records may move.",
+      "The pageshow-open initial load microtask may observe activeGeneration=replacement rather than the reference's initial value; actual event identities/flags/counts remain strict.",
+      "Post-removal author statements may finish in native execution; stale native owner-load/pageshow follow-up is forbidden.",
+      "Observed pinned-Chromium iframe-owner-load/pageshow order is retained; no claim of complete current-HTML lifecycle ordering conformance."
+    ],
+    "hidden_scroll": {
+      "case": "range-shrink-and-regrow",
+      "phase": "hidden-shrunk",
+      "field": "leaf width/height",
+      "native": [
+        150,
+        130
+      ],
+      "reference": [
+        400,
+        400
+      ]
+    },
+    "resource": [
+      "CPU totals cover fully contained sampled intervals, not complete phase CPU accounting.",
+      "Each5-second phase has5RSS samples and only1PSS sample; full fixture has15RSS/3PSS samples.",
+      "Sampled maxima are not exact high-water marks.",
+      "Chromium OS exit is not exposed; public owned cleanup and separate adapter completion are verified.",
+      "Runs are sequential with task browser lanes quiet, not an otherwise idle laboratory host.",
+      "No statistical confidence or throughput claim; no repeat justified by the predeclared policy."
+    ]
+  },
+  "publication_review_version": 3,
+  "technical_review_sha256": "aa0068187a3ddf7f4006c89543acd05a92b1a442f46ed9b7210042a7aa79f4af",
+  "publication_review_recorded_utc": "2026-10-31T11:06:19.984555+00:00",
+  "public_report_markdown_sha256": "627cc0cab39286c4b5a2ea84263af4bdfd2205af313dd2b43bd2eb87b16e0d81",
+  "final_allowlist_sha256": "b3a46c146d068d42276ec8478ca8d9a41a42dff3dfb6c55934b6de17c352fca3",
+  "delivery_additional_audits": {
+    "candidate234-independent-live-demo-audit.json": {
+      "path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-live-demo-audit.json",
+      "sha256": "82107cd8ecbc139973c534df4435a07187e1dd04fb9faae7eab86101104050fe",
+      "accepted": true
+    },
+    "showcase234-root-publication-acceptance.json": {
+      "path": "agent/ops/linux-wpt-20261031-session9/showcase234-root-publication-acceptance.json",
+      "sha256": "34b058e1b8703c39b0b4dd0a68f83aba30ab4bcb6b6610a895ebafaeb145d66f",
+      "accepted": true
+    }
+  },
+  "public_artifact_privacy_and_links_reviewed": true,
+  "publication_approved_scope": "Exact reviewed public source/history, approved video/demo, and exact tested development binary; final archive/recovery/HTTP verification still required.",
+  "prior_publication_review_sha256": "353dc945e3766fcd49175d61dd2cdd8d463384b3d63b303e9eaf02f518ab547e",
+  "delivery_documentation_correction": {
+    "approved_by_root": true,
+    "independently_confirmed_by_conformance": true,
+    "guide_before_sha256": "8af57a3d4f51f75fd843c515d2af1a2e1720e04cc3d3fb052f49df8c75a02e57",
+    "guide_after_sha256": "72b42ab31800634f508e14f14d15153ce7ac06582479e2dc52ec562aa9407c5c",
+    "proof_path": "agent/ops/linux-wpt-20261031-session9/demo-cli-documentation-correction/proposed-correction.json",
+    "proof_sha256": "4ca63422be1416f03ee7c7d7d67429a3c8bc392e2e666e12c7d5a653ab73a729",
+    "source_command": "./build/codex-native/lumen \"file://$PWD/examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html\"",
+    "binary_package_command": "./lumen \"file://$PWD/demo.html\"",
+    "engine_qualification_unchanged": true,
+    "prior_published_artifacts_preserved": true,
+    "new_public_child_bundle_archive_verification_required": true
+  }
+}

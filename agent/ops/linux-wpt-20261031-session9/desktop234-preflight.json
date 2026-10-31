@@ -1,0 +1,14 @@
+{
+  "candidate": 234,
+  "verified_utc": "2026-10-31T10:56:44.308270+00:00",
+  "default_executable": "build/codex-native/lumen",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "default_matches_accepted_immutable": true,
+  "task_owned_pid_file_present": false,
+  "verified_existing_task_owned_display_process": false,
+  "process_terminated": false,
+  "desktop_process_launched": false,
+  "display_inspected_or_recorded": false,
+  "existing_profile_touched": false,
+  "reason": "No tracked owned PID; preserved restart rule and CTO instruction prohibit process action without verified task ownership. Updated accepted default app is ready."
+}

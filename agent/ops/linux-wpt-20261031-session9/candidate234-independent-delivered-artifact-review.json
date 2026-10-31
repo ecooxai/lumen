@@ -1,0 +1,84 @@
+{
+  "candidate": 234,
+  "delivery_revision": 2,
+  "accepted": true,
+  "recorded_utc": "2026-10-31T11:14:41.942357+00:00",
+  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "tested_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "source_manifest_digest": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
+  "public_source_commit": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
+  "public_source_tree": "e7560b9d2cae7d6e7bd014a15182876a1784dde7",
+  "pages_commit": "bb9562d265d2d09f5a10bf4a069299713353e69a",
+  "all_16_technical_gates_retained": true,
+  "all_650_tested_inputs_unchanged": true,
+  "all_749_public_files_modes_offline_verified": true,
+  "all_17_canonical_files_and_3_source_checks_verified": true,
+  "corrected_explicit_file_URL_commands_verified": true,
+  "approved_video_and_measured_demo_unchanged": true,
+  "previous_artifacts_and_failed_replays_preserved": true,
+  "private_history_published": false,
+  "whole_browser98_or_Chromium_parity_claimed": false,
+  "evidence": {
+    "agent/ops/linux-wpt-20261031-session9/candidate234-independent-final-review-v3.json": "63bbbe783fb2dbf70c0fddb052631ae2ffea788e8f2bd30c83447320742d5c65",
+    "agent/ops/linux-wpt-20261031-session9/qualification234-docfix-precommit.json": "827598da16d9f673909b1fb6b25658fd8231318f64dff6a82ce7c59fbd9f8ace",
+    "agent/ops/linux-wpt-20261031-session9/public-source234-docfix-recovery/PUBLIC-GIT-RECOVERY.json": "f89ffa1649546433d971d373ca68ef72eb7ba487ae3d59d8661f26ef96a92bce",
+    "agent/ops/linux-wpt-20261031-session9/artifacts234-v2/ARTIFACTS234.json": "86f2a66996d7134a4e8e594a9efcaaa7c6c1e4adf3425fef991c3d48d3825651",
+    "agent/ops/linux-wpt-20261031-session9/artifacts234-v2/receipt.json": "6c258fd5ccd53495c6d3defe7f8e20732f4ea1a7da56da6d16390adf345a6d9e",
+    "agent/ops/linux-wpt-20261031-session9/artifacts234-v2-execution/receipt.json": "9d353140732362c69d327fef24b3f30e3f135720e352b40f498df471b26e41d4",
+    "agent/ops/linux-wpt-20261031-session9/page234-preparation-v2.json": "771d4ec601bcf40c37d50caa9911a54eee5d4ea2fbdee99322edbb3f442d59d9",
+    "agent/ops/linux-wpt-20261031-session9/preview-promotion234-v2/receipt.json": "fef7d8feb342cd27be135a9fc6e9e4341891c5e8fec3f2a7922668bd304bdde3",
+    "agent/ops/linux-wpt-20261031-session9/source234-publication-docfix.json": "758611a2a1530ddfecbc3aace3e9ed8faedb5ea5848e85810720145ec09f88cb",
+    "agent/ops/linux-wpt-20261031-session9/pages234-publication-docfix.json": "e75a39c3dfd965d2af21208b6a745e1e956da8ffaf1e23220973ffd2dd67a691",
+    "agent/validation/linux-wpt-20261031-session9/qa-public-reader234-v2/receipt.json": "0d0b4d86780fd180a019351f95c54e8a9e3ecee935fb5143229aeacec17d412e"
+  },
+  "artifacts": {
+    "src.tar.gz": {
+      "sha256": "e23323d22d76ff0d655d38be5f7c8b4b1364e21d98dee0b131f2aff824c8ed29",
+      "bytes": 9755285
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-source-i234.bundle": {
+      "sha256": "bff571dd105b6f7d7f289c7b961b6c70cc5c0a30a17f79bf1bc589a3f00e6e79",
+      "bytes": 4937370
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-x86_64-i234.tar.gz": {
+      "sha256": "47e3794aa199129dc64c756ee97e834f6ecc0da0add905a33484d55c3ada44eb",
+      "bytes": 2566009
+    },
+    "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase.mp4": {
+      "sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+      "bytes": 556783
+    },
+    "PUBLIC-GIT-RECOVERY.json": {
+      "sha256": "f89ffa1649546433d971d373ca68ef72eb7ba487ae3d59d8661f26ef96a92bce",
+      "bytes": 1536
+    }
+  },
+  "links": {
+    "stable_results": "https://ecooxai.github.io/lumen/",
+    "source_branch": "https://github.com/ecooxai/lumen/tree/gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
+    "source_commit": "https://github.com/ecooxai/lumen/commit/b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
+    "source_archive": "https://ecooxai.github.io/lumen/src.tar.gz",
+    "public_git_bundle": "https://ecooxai.github.io/lumen/gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-source-i234.bundle",
+    "development_binary": "https://ecooxai.github.io/lumen/gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-x86_64-i234.tar.gz",
+    "video": "https://ecooxai.github.io/lumen/gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase.mp4",
+    "poster": "https://ecooxai.github.io/lumen/gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase.png",
+    "interactive_demo": "https://ecooxai.github.io/lumen/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html",
+    "measured_json": "https://ecooxai.github.io/lumen/docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.json",
+    "measured_markdown": "https://ecooxai.github.io/lumen/docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.md",
+    "build_guide": "https://ecooxai.github.io/lumen/docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md",
+    "runtime": "https://ecooxai.github.io/lumen/docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json",
+    "verified_packages": "https://ecooxai.github.io/lumen/ARTIFACTS234.json",
+    "offline_recovery": "https://ecooxai.github.io/lumen/PUBLIC-GIT-RECOVERY.json",
+    "checksums": "https://ecooxai.github.io/lumen/SHA256SUMS234",
+    "live_preview": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz",
+    "live_source_archive": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
+    "live_video": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4"
+  },
+  "tracked_final_status_sha256": "e5b228352fde97e68e1e9dfa32d226da97ce5d5b33c5b6ac01ffd5c70c695414",
+  "tracked_site_sha256": "c881a086d5c1de49453a26a9dfbd6646f2c4dc4387c1708350d17a51efe3057f",
+  "preview_manifest_final_hashes": {
+    "source-publication.json": "e8e1265d826b1c12fb1b7efbaaad896027460723d2ccfbb63578b2c7cb036e94",
+    "showcase-manifest.json": "839e5eb1e3f0d8dc94eba8d8fc95517e788045788b883063c7bd10f42f920fa2"
+  },
+  "private_checkpoint_Page_append_after_closure_commit": true
+}

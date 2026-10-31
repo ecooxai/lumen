@@ -1,0 +1,16 @@
+{
+  "candidate": 234,
+  "started_utc": "2026-10-31T11:08:58.925129+00:00",
+  "finished_utc": "2026-10-31T11:09:03.982529+00:00",
+  "duration_seconds": 5.057400320016313,
+  "controller_sha256": "28c6d5b97e49c876cb7b90458c74522fec1c01499b7157379128dfd4679652cb",
+  "worker_sha256": "bfb2f7c52041ec7a51c801598939237ca6f53b04e268919bf27e6a69c9391fbe",
+  "actual_worker_returncode": 0,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "forced_cleanup": [],
+  "worker_unchanged": true,
+  "package_receipt_sha256": "6c258fd5ccd53495c6d3defe7f8e20732f4ea1a7da56da6d16390adf345a6d9e"
+}

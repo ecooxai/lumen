@@ -1,0 +1,65 @@
+{
+  "candidate": 234,
+  "promoted_utc": "2026-10-31T11:02:45.575240+00:00",
+  "verified_utc": "2026-10-31T11:02:57.014034+00:00",
+  "exact_artifact_checks": [
+    {
+      "url": "http://127.0.0.1:4187/src.tar.gz",
+      "status": 200,
+      "bytes": 9753116,
+      "sha256": "b2380c215466c473b3434894e61118311f3f441902bc036caae8f82152217561",
+      "duration_seconds": 0.07208497900865041,
+      "exact_match": true
+    },
+    {
+      "url": "http://127.0.0.1:4187/showcase.mp4",
+      "status": 200,
+      "bytes": 556783,
+      "sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+      "duration_seconds": 0.05349842499708757,
+      "exact_match": true
+    },
+    {
+      "url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
+      "status": 200,
+      "bytes": 9753116,
+      "sha256": "b2380c215466c473b3434894e61118311f3f441902bc036caae8f82152217561",
+      "duration_seconds": 11.200401256995974,
+      "exact_match": true
+    },
+    {
+      "url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4",
+      "status": 200,
+      "bytes": 556783,
+      "sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+      "duration_seconds": 1.6160355230094865,
+      "exact_match": true
+    }
+  ],
+  "previous226_preserved": {
+    "published-source.tar.gz": {
+      "sha256": "4e28b1f5801d27a7cfb7012aef669d7800b875daa4b0d4d405e7b22e9b61eaf3",
+      "bytes": 9526948,
+      "preserved": "agent/ops/linux-wpt-20261031-session9/preview-promotion234/previous226-published-source.tar.gz"
+    },
+    "source-publication.json": {
+      "sha256": "d389e2577b1d5142fdd8cf4fdbddc16cb2d5d486b35305c087ccede28fa1c68a",
+      "bytes": 515,
+      "preserved": "agent/ops/linux-wpt-20261031-session9/preview-promotion234/previous226-source-publication.json"
+    },
+    "lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4": {
+      "sha256": "52d6958c48559f3d073c3814f669b8a635f04a1360a7731051eb12e8cd5f0244",
+      "bytes": 619695,
+      "preserved": "agent/ops/linux-wpt-20261031-session9/preview-promotion234/previous226-lumen-linux-gpt-6-astra-builtin-agents-rubywebterm-showcase.mp4"
+    },
+    "showcase-manifest.json": {
+      "sha256": "c6b4266f70d6ce68571a462da055c214bed05de920cd11aa011bbc226fbed679",
+      "bytes": 580,
+      "preserved": "agent/ops/linux-wpt-20261031-session9/preview-promotion234/previous226-showcase-manifest.json"
+    }
+  },
+  "server_auth_WS_controls_changed": false,
+  "server_restarted": false,
+  "tracked_status_site_unchanged": true,
+  "package_manifest_sha256": "0a7fb1752177c5c09a1325073fc07b723bfbbc42be83dd9311c2dbe8041b879b"
+}

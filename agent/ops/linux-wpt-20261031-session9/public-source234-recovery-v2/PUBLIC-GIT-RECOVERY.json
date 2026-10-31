@@ -1,0 +1,29 @@
+{
+  "candidate": 234,
+  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "tested_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "public_commit": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
+  "public_tree": "40016234061f6494d7519e15e9546c35169f4f0a",
+  "public_parent": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+  "public_branch": "gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
+  "public_ancestry_count": 216,
+  "bundle_file": "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-source-i234.bundle",
+  "bundle_sha256": "106b7ba79980bdb7468144f7f5120e0df88cb933217031c6f0dc07c1590bf331",
+  "bundle_bytes": 4936213,
+  "all_650_recorded_inputs_exact": true,
+  "all_public_files_and_modes_exact": true,
+  "public_file_count": 749,
+  "offline_clone_verified": true,
+  "offline_fsck_passed": true,
+  "private_history_included": false,
+  "independent_rebuild_performed": false,
+  "qualification_receipt_sha256": "27e156638d45671a9015c9a06841ef178ad83c70adf2ae1326f621fc684bcd40",
+  "completed_utc": "2026-10-31T11:00:11.838717+00:00",
+  "bundle_ref_names": [
+    "HEAD",
+    "refs/heads/gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031"
+  ],
+  "both_refs_point_to_exact_public_commit": true,
+  "default_documented_clone_verified": true,
+  "explicit_branch_clone_verified": true
+}

@@ -1,0 +1,18 @@
+{
+  "candidate": 234,
+  "public_commit": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
+  "public_tree": "e7560b9d2cae7d6e7bd014a15182876a1784dde7",
+  "public_parent": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
+  "public_branch": "gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
+  "documentation_only_followup": true,
+  "actual_push_returncode": 0,
+  "actual_remote_read_returncode": 0,
+  "observed_remote_commit": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
+  "remote_commit_verified": true,
+  "normal_nonforced_push": true,
+  "private_history_pushed": false,
+  "qualification_sha256": "827598da16d9f673909b1fb6b25658fd8231318f64dff6a82ce7c59fbd9f8ace",
+  "root_docfix_acceptance_sha256": "46c7331def623f465d306203087e9b128f512bcf919c459ce536479cf79d3d08",
+  "started_utc": "2026-10-31T11:09:05.167946+00:00",
+  "finished_utc": "2026-10-31T11:09:09.520078+00:00"
+}

@@ -1,0 +1,23 @@
+{
+  "candidate": 234,
+  "pages_commit": "0090162aa2649a57f019b8fb8e8f1076ea89b203",
+  "pages_tree": "8168d57b30fd6e336e1a925d89b9112d5ec5584c",
+  "pages_parent": "25af2cf0d71109ecebe1907bfe92c9a0e9168f33",
+  "pages_branch": "gpt-6-astra-builtin-agents-rubywebterm-showcase-20261028",
+  "public_source_commit": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
+  "actual_commit_returncode": 0,
+  "actual_push_returncode": 0,
+  "actual_remote_read_returncode": 0,
+  "observed_remote_commit": "0090162aa2649a57f019b8fb8e8f1076ea89b203",
+  "normal_nonforced_push": true,
+  "remote_commit_verified": true,
+  "page_file_count": 17,
+  "page_preparation_sha256": "96430bc5c90ca42dc22bae92cdf88c9cae3f01b3949e74ba85bfaecd51c77b97",
+  "independent_page_precommit_sha256": "8eb09306e3cc0f73841c5db43700968b43c8266a71db3c727f37d3f3e4f849aa",
+  "root_publication_acceptance_sha256": "dd26f9b2829006d58158e5863d93ce51a6de6ce5400c31bbbcc792c80fc0d18b",
+  "corrected_bundle_acceptance_sha256": "c9c8d647870b052f76f376432e9c44a6ab808c9f744e473039c494d8fa721ef2",
+  "prior_failed_message_path_attempt_preserved": true,
+  "push_started_utc": "2026-10-31T11:03:51.332834+00:00",
+  "push_finished_utc": "2026-10-31T11:04:15.349227+00:00",
+  "http_deployment_verification_pending": true
+}

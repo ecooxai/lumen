@@ -1,0 +1,196 @@
+{
+  "prepared_utc": "2026-10-31T10:54:49.896131+00:00",
+  "status": "FINAL REVIEWED234 PUBLIC SOURCE/DOCS ALLOWLIST; publication requires separately bound root decision",
+  "current_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "current_candidate": 234,
+  "recorded_input_count": 650,
+  "compiled_input_policy": "Exactly650 recorded inputs at sealed206bb89d; all source bytes and modes remain unchanged.",
+  "additional_dependencies": [
+    {
+      "export_path": "tools/gen_css_props.py",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 2566,
+      "sha256": "aa4f4af12360ab2b3381914b6285009d4e32da8cd4b308a716a0028a2749d1ea",
+      "included_in_recorded_manifest": false
+    },
+    {
+      "export_path": "tools/generate_embedded.py",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 4338,
+      "sha256": "d230a2a031f0cd65f7bb988beff232d71952a7e412e7001be8061ae6df362bfa",
+      "included_in_recorded_manifest": true
+    },
+    {
+      "export_path": "tests/test_raster_layers.py",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 1072,
+      "sha256": "26951efdf5ca85d90d4a7166c7621aa129fe7769f4e86aac514ea6d239d1065c",
+      "included_in_recorded_manifest": true
+    },
+    {
+      "export_path": "tests/raster_layers.c",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 22925,
+      "sha256": "161734d31af5713d7c3877e063cf03ed16de2b309e5f5a21ba4d2ada8021274e",
+      "included_in_recorded_manifest": true
+    },
+    {
+      "export_path": "tests/test_css_containment.c",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 30812,
+      "sha256": "41085aa429d6221503b43af8f2f2cd61c074618e9216e113a56567183c0c72d1",
+      "included_in_recorded_manifest": true
+    },
+    {
+      "export_path": "tests/js/intersection-geometry.html",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 10549,
+      "sha256": "6e277f900e9a96a4962e09703f0b400a26463aaa3387af6c337a2fc43f747086",
+      "included_in_recorded_manifest": true
+    },
+    {
+      "export_path": "tests/js/hidden-scroll-retention.html",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 26241,
+      "sha256": "66d53129c5d4f8e46dea8bf194b3c2e9266ba565e99215d1f34e3cdb47ff6dff",
+      "included_in_recorded_manifest": true
+    },
+    {
+      "export_path": "CMakeLists.txt",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 52062,
+      "sha256": "78461e2340218bd3fc57ee764d7851d46fbde69a898aa1c6e3a863abb7a2c1ca",
+      "included_in_recorded_manifest": true
+    },
+    {
+      "export_path": "tests/jsrun.c",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 9764,
+      "sha256": "9c4c1368c65a0fa33342c10466a76cfbd9ad03aad274574077ecd686aee4ac81",
+      "included_in_recorded_manifest": true
+    },
+    {
+      "export_path": "tests/js/document-lifecycle.html",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 49955,
+      "sha256": "cc4c6cfe1372b603cf395d9181a0e4bfaf133c4078ea10f99609c0b4c42c7d04",
+      "included_in_recorded_manifest": true
+    },
+    {
+      "export_path": "tests/js/checkvisibility-options.html",
+      "source_kind": "exact source at sealed234 commit",
+      "bytes": 10412,
+      "sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+      "included_in_recorded_manifest": true
+    }
+  ],
+  "documentation": [
+    {
+      "export_path": "README.md",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/README.md",
+      "bytes": 6677,
+      "sha256": "fc32b74efe27ab766469f702235daa0af04e5d1aed818006cca0fef2a34f9d70",
+      "refresh_for_final_candidate": false
+    },
+    {
+      "export_path": "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md",
+      "bytes": 15010,
+      "sha256": "8af57a3d4f51f75fd843c515d2af1a2e1720e04cc3d3fb052f49df8c75a02e57",
+      "refresh_for_final_candidate": false
+    },
+    {
+      "export_path": "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json",
+      "bytes": 3857,
+      "sha256": "31f2fab0833dc81a07d806f9a50a802362fad94e44a8c534c7465c2d30c635eb",
+      "refresh_for_final_candidate": false
+    },
+    {
+      "export_path": "docs/gpt-6-astra-pro-builtin-rubywebterm-native147-replay-inputs.json",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/docs/gpt-6-astra-pro-builtin-rubywebterm-native147-replay-inputs.json",
+      "bytes": 120410,
+      "sha256": "88f5cd476c019d96438cc3b14313917f159526fe37d1dbc109599cde9637370a",
+      "refresh_for_final_candidate": false
+    },
+    {
+      "export_path": "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.json",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/report.json",
+      "bytes": 57816,
+      "sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
+      "refresh_for_final_candidate": false
+    },
+    {
+      "export_path": "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.md",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/report.md",
+      "bytes": 21308,
+      "sha256": "627cc0cab39286c4b5a2ea84263af4bdfd2205af313dd2b43bd2eb87b16e0d81",
+      "refresh_for_final_candidate": false
+    },
+    {
+      "export_path": "docs/gpt-6-astra-pro-builtin-rubywebterm-live-demo-evidence.json",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/docs/gpt-6-astra-pro-builtin-rubywebterm-live-demo-evidence.json",
+      "bytes": 2429,
+      "sha256": "4a09b33af7a34125b40e1544908a24c47319a40474f8c045d49de3c69a1f2112",
+      "refresh_for_final_candidate": false
+    }
+  ],
+  "final_generated_reviewed_files": [
+    "SOURCE-MANIFEST.json",
+    "EXPORT-QUALIFICATION.json",
+    "OFFLINE-RECOVERY.md"
+  ],
+  "public_history_bundle_policy": "Coordinator creates and verifies the bundle from the reviewed public branch and ancestry only; include its exact bytes inside src.tar.gz and as a separate download.",
+  "README_local_links_checked": [
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.md",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json",
+    "https://github.com/ecooxai/lumen/releases",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json",
+    "examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-live-demo-evidence.json"
+  ],
+  "README_unresolved_links": [],
+  "private_files_allowed": false,
+  "publication_approved": true,
+  "staged_authored_controls": [
+    {
+      "export_path": "tests/jsrun-completion/missing-completion.html",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/tests/jsrun-completion/missing-completion.html",
+      "bytes": 135,
+      "sha256": "6f40fe0f2d5c18670e5cfcb9021eebed4107a7d776b0dea67fdb96323f47d649",
+      "expected_actual_process_exit": 1,
+      "purpose": "Authored negative completion-status control; no private workflow code"
+    },
+    {
+      "export_path": "tests/jsrun-completion/failed-completion.html",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/tests/jsrun-completion/failed-completion.html",
+      "bytes": 182,
+      "sha256": "f5cddf34bead9d6b98deffa6753ffc72bfc2778b152a3ed9bf82cc8c0ba119f2",
+      "expected_actual_process_exit": 1,
+      "purpose": "Authored negative completion-status control; no private workflow code"
+    },
+    {
+      "export_path": "tests/js/checkvisibility-slot-accessors.html",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/tests/js/checkvisibility-slot-accessors.html",
+      "bytes": 2398,
+      "sha256": "e23c504b9684614b74ddf4cb57aed465dd7f4b96e646b49b0718514f760ca8db",
+      "expected_actual_process_exit": 0,
+      "separate_case_count": 2,
+      "separate_from_frozen49": true,
+      "purpose": "Exact separately validated named-slot accessor regression fixture; no private controller"
+    },
+    {
+      "export_path": "examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html",
+      "staged_source": "agent/ops/linux-wpt-20261031-session9/public-docs-preparation/examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html",
+      "bytes": 14645,
+      "sha256": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
+      "expected_actual_process_exit": 0,
+      "outside_WPT_scoring": true,
+      "purpose": "Byte-identical native234-validated authored live demonstration; viewer browser is documented separately."
+    }
+  ],
+  "conditional_final_dependencies": [],
+  "source_manifest_sha256": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f"
+}
