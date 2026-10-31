@@ -1,0 +1,23 @@
+{
+  "page_id": "page_553cc5fa5ecc819191a13f3337e23659",
+  "page_url": "https://chatgpt.com/space/page_553cc5fa5ecc819191a13f3337e23659",
+  "visibility": "workspace_private",
+  "reference": "visualize:fde1_bGliZmlsZV81b3ZxWlBnTjNlNFp6aXNDYktPRzln_FileDrive_481410523d248191abdc7fb95e58402a",
+  "filename": "gpt-6-astra-pro-builtin-rubywebterm-lumen231-over230-checkpoint.html",
+  "byte_size": 121776,
+  "sha256": "8a2dcb8f3dd72a892cf04195f7fb00253d01ccde0a592212643009e378d295d7",
+  "readback_exact_source": true,
+  "prior_page_content_preserved": true,
+  "library_file_id": null,
+  "provider_filename_not_returned": true,
+  "uploaded_full_archive": false,
+  "held": true,
+  "accepted_release": 226,
+  "incremental_source_candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "patch_sha256": "fadc31030ebd06bf47efc12e672fcdc23e2e504788a7c496d699424148b93121",
+  "reconstructed_inputs": 649,
+  "embed_block_id": "e0709993-8520-4d46-85fa-ac251c2ecd6e",
+  "readback_block_count": 54,
+  "readback_utc": "2026-10-31T09:12:51.889Z"
+}

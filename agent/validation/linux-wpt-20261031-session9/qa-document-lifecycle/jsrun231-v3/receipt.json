@@ -1,0 +1,36 @@
+{
+  "kind": "lumen",
+  "workspace_candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "00435d64f63d928ceac27691ab1f28f533e4002a80ee728e0787df5b9c4d35fe",
+  "fixture_sha256": "15ba1babfbbde45a7571e3f2d9c2abce5bcbaeaa75c3dfa2c337cea3e80a53d0",
+  "manifest_sha256": "66b539c4479d821eaf8ca94979b544b38f8d8f492c4f2b5e20387c56550bffb5",
+  "started_utc": "2026-10-31T09:23:15.095920+00:00",
+  "finished_utc": "2026-10-31T09:23:20.269391+00:00",
+  "duration_s": 5.173469005007064,
+  "actual_inner_returncode": 0,
+  "exit_evidence": {
+    "native_jsrun_actual_returncode": 0
+  },
+  "timed_out": false,
+  "outer_cleanup_signals": [],
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "monitor_forced_stop": false,
+  "cleanup_valid": true,
+  "transport_complete": true,
+  "case_count": 11,
+  "observation_row_count": 75,
+  "recorded_case_errors": 0,
+  "pins_unchanged": true,
+  "source_unchanged": true,
+  "git_unchanged": true,
+  "recorded_input_count": 648,
+  "measurement_integrity_valid": true,
+  "behavioral_conformance": "Unclassified until independent reference contract review; transport PASS contributes zero WPT passes. Real case errors remain in observations.",
+  "not_WPT": true,
+  "errors": [],
+  "resource_interpretation": "One-second owned execution tree/cgroup; Chromium includes driver. No general performance claim."
+}

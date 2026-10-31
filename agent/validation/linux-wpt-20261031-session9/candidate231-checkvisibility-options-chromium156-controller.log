@@ -1,0 +1,1 @@
+{"kind": "chromium156", "actual_inner_returncode": 0, "execution_exit_valid": true, "monitor_returncodes": [0, 0], "cleanup_ok": true, "measurement_complete": true, "behavioral_result": "PASS", "counts": {"total": 49, "passed": 49, "failed": 0}, "measurement_integrity_valid": true, "errors": []}

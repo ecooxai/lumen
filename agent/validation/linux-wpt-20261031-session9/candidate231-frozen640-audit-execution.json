@@ -1,0 +1,43 @@
+{
+  "completed_utc": "2026-10-31T09:05:40.103003+00:00",
+  "candidate": 231,
+  "audits": [
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261030-session8/qa-frozen640/audit-prior-pass-union-v2.py",
+        "--candidate",
+        "231",
+        "--pins-sha256",
+        "f39b50bd6038ae538bfcc9dcd97a242ad8c9d816bec93f8adfd0e78ea26b5b95"
+      ],
+      "actual_exit_code": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-1.log",
+      "log_sha256": "7900fb200b0769a56338bce2dbf8a301cbf4fc449dce952c0975318d9c1a6141"
+    },
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261030-session8/qa-frozen640/compare-session8.py",
+        "--candidate",
+        "231"
+      ],
+      "actual_exit_code": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-2.log",
+      "log_sha256": "69a236313fbfc356218d840db4faba27e2e5a2da960adde96e721d78d9319d34"
+    },
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/compare-frozen640-226.py",
+        "--candidate",
+        "231"
+      ],
+      "actual_exit_code": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-3.log",
+      "log_sha256": "2935d28a6062cd393b2c726e9eb293fc6bde36e695908a6ff87a174bc59b3d37"
+    }
+  ],
+  "all_commands_exited_zero": true,
+  "outcome_acceptance_requires_audit_fields": true
+}

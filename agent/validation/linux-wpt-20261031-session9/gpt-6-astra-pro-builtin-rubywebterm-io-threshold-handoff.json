@@ -1,0 +1,26 @@
+{
+  "classification": "isolated unresolved legacy IntersectionObserver threshold disagreement",
+  "not_wpt": true,
+  "unchanged_fixture_sha256": "487671663f5374febbf353ed995644a68d843b518ee0beda259ba52e8e366ade",
+  "evidence": {
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/intersection-geometry-frame-cadence.html": "487671663f5374febbf353ed995644a68d843b518ee0beda259ba52e8e366ade",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/chromium156-v1-retry1/browser/result.json": "09fd895f95d3a1cf4fb13f62600be5432592c472c87b953b973604c708a15b40",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/chromium156-v1-retry1/receipt.json": "6467a147b4cb38366791dfbd12bb1174b176dde8a3aab088fcc9d94bfa2336fe",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/chromium156-v1-retry1/launch.json": "aab6e53491f00de8b73a6f01641364a0c439972bb5be07e354d0fed85be45783"
+  },
+  "observed": [
+    "Chromium156.0.8078.80 reports exactly one legacy failure: below threshold still reports intersecting.",
+    "The earlier default observer for the same #half element passed isIntersecting true and intersectionRatio approximately0.5.",
+    "The source fixes #half at left0/top-50/width100/height100. No source mutation, scroll or resize occurs between the initial and threshold0.75 observations.",
+    "The later cadence section passes all transitions, idle and observer lifecycle controls. Hidden owner scroll restoration agrees with the separate Chromium retention observations.",
+    "The launch records an800x640 outer window. No legacy threshold-entry fields or contemporaneous viewport snapshot were captured."
+  ],
+  "inference_and_limits": [
+    "High confidence: the failure is isolated from the new cadence/retention work and is not an outer launch/cleanup failure.",
+    "Possible initial isIntersecting behavior difference at a nonzero threshold, but the missing legacy entry prevents identifying the precise failed conjunct.",
+    "Missing initial delivery is unlikely: take waits up to50 successive20ms timers, while the first subsequent cadence callback is already timestamped398.4ms from the page time origin.",
+    "Neither a Chromium defect nor an authored oracle/setup error is established by these records."
+  ],
+  "handoff_action": "If revisited in a separately scoped investigation, instrument the exact legacy entry (target/root/intersection rectangles, ratio, isIntersecting, threshold, callback times and actual viewport) without changing its assertion. Do not modify current production or the old oracle based on this incomplete trace.",
+  "required_release_wording": "Cadence and retention reference controls agreed; one older threshold assertion disagreed and remains unclassified."
+}

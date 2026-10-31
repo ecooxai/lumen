@@ -1,0 +1,40 @@
+{
+  "candidate": 231,
+  "started_utc": "2026-10-31T09:06:42.565629+00:00",
+  "ended_utc": "2026-10-31T09:06:51.747564+00:00",
+  "duration_s": 9.181935694999993,
+  "maximum_concurrent_browser_lanes": 2,
+  "controller_sha256": "ba6af4931761846c0dfcab21ffb1520b23b94c152fdf9eb22c72f0f7e225efa7",
+  "runs": [
+    {
+      "kind": "lumen",
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v1.py",
+        "--kind",
+        "lumen",
+        "--iteration",
+        "231"
+      ],
+      "actual_controller_exit_code": 2,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-lumen-controller.log",
+      "log_sha256": "f04e54c0634f82d3acb8576f427e7e29fd5f6e0cbec8c99ff43c929af55ed0c8"
+    },
+    {
+      "kind": "chromium156",
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v1.py",
+        "--kind",
+        "chromium156",
+        "--iteration",
+        "231"
+      ],
+      "actual_controller_exit_code": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-chromium156-controller.log",
+      "log_sha256": "033aafa245aaa896cb19c62ad2b242ded45452956a6f72c703127eb56b93a3b2"
+    }
+  ],
+  "all_measurement_controllers_exited_zero": false,
+  "scope": "Authorized optional49 authored baseline only; complete feature FAIL is retained and is not a launch failure; no implementation authorized by this run."
+}

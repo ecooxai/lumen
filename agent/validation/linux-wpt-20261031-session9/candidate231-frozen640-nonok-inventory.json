@@ -1,0 +1,932 @@
+{
+  "created_utc": "2026-10-31T09:10:08.651382+00:00",
+  "candidate": 231,
+  "scope": "Read-only inventory of every unchanged non-OK harness file in the fixed640 sample; no reruns or expectation changes. All remain in the denominator.",
+  "raw_result_sha256": "2f5b8445e81e545006c26db3ee4418537f26feed2b1d1f8bbf5f098315332d38",
+  "baseline226_sha256": "ec00b3f4eaba4388f72fe6fb843798342a3fef5f146b1917d7a9d894f55cb9e9",
+  "reference156_sha256": "cb62cc6e1414e04c9303928f42140f8ac939253498549b1d58bc32f33e7dbce8",
+  "harness_counts": {
+    "TIMEOUT": 15,
+    "ERROR": 1
+  },
+  "all_harness_states_unchanged_from226": true,
+  "clusters": {
+    "streaming HTML parser reentrancy": 1,
+    "autofocus/iframe resize lifecycle": 1,
+    "action-sequence-dependent input (seven files)": 7,
+    "key/click-dependent focus-visible (three files)": 3,
+    "frame/realm lifecycle": 2,
+    "document load/pageshow lifecycle": 1,
+    "fullscreen/modal invalidation and activation": 1
+  },
+  "rows": [
+    {
+      "url": "/domparsing/stream-html-reentrancy.html",
+      "cluster": "streaming HTML parser reentrancy",
+      "finding": "Native first abort-from-script case times out and twenty subsequent cases are NOTRUN. Native has streaming API code; Chromium fails all21 because target[method] is not a function. This is unfinished parser/stream behavior, not a demonstrated small single fix.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "streamHTMLUnsafe: abort() from a streamed inline script is deferred until the current chunk is parsed",
+            "TIMEOUT",
+            "Test timed out"
+          ],
+          [
+            "streamHTMLUnsafe: abort() from a custom element reaction is deferred until the current chunk is parsed",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamHTMLUnsafe: write() and close() from a streamed inline script are processed after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamHTMLUnsafe: write() from a custom element reaction is processed after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamAppendHTMLUnsafe: abort() from a streamed inline script is deferred until the current chunk is parsed",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamAppendHTMLUnsafe: abort() from a custom element reaction is deferred until the current chunk is parsed",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamAppendHTMLUnsafe: write() and close() from a streamed inline script are processed after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamAppendHTMLUnsafe: write() from a custom element reaction is processed after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamAppendHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamAppendHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamAppendHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamPrependHTMLUnsafe: abort() from a streamed inline script is deferred until the current chunk is parsed",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamPrependHTMLUnsafe: abort() from a custom element reaction is deferred until the current chunk is parsed",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamPrependHTMLUnsafe: write() and close() from a streamed inline script are processed after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamPrependHTMLUnsafe: write() from a custom element reaction is processed after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamPrependHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamPrependHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk",
+            "NOTRUN",
+            null
+          ],
+          [
+            "streamPrependHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk",
+            "NOTRUN",
+            null
+          ]
+        ],
+        "elapsed_s": 10.4621,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-045"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "streamHTMLUnsafe: abort() from a streamed inline script is deferred until the current chunk is parsed",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamHTMLUnsafe: abort() from a custom element reaction is deferred until the current chunk is parsed",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamHTMLUnsafe: write() and close() from a streamed inline script are processed after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamHTMLUnsafe: write() from a custom element reaction is processed after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamAppendHTMLUnsafe: abort() from a streamed inline script is deferred until the current chunk is parsed",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamAppendHTMLUnsafe: abort() from a custom element reaction is deferred until the current chunk is parsed",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamAppendHTMLUnsafe: write() and close() from a streamed inline script are processed after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamAppendHTMLUnsafe: write() from a custom element reaction is processed after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamAppendHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamAppendHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamAppendHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamPrependHTMLUnsafe: abort() from a streamed inline script is deferred until the current chunk is parsed",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamPrependHTMLUnsafe: abort() from a custom element reaction is deferred until the current chunk is parsed",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamPrependHTMLUnsafe: write() and close() from a streamed inline script are processed after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamPrependHTMLUnsafe: write() from a custom element reaction is processed after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamPrependHTMLUnsafe: abort() from a streamed inline script after a parser-blocking script is deferred until the current chunk is parsed",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamPrependHTMLUnsafe: write() from a streamed inline script after a parser-blocking script is parsed after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ],
+          [
+            "streamPrependHTMLUnsafe: close() from a streamed inline script after a parser-blocking script closes the stream after the current chunk",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"TypeError: target[method] is not a function\""
+          ]
+        ],
+        "elapsed_s": 0.2359,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-090"
+      }
+    },
+    {
+      "url": "/html/webappapis/scripting/event-loops/update-the-rendering-resize-autofocus.html",
+      "cluster": "autofocus/iframe resize lifecycle",
+      "finding": "Both engines time out with the single async test NOTRUN. The upstream callback begins only after an autofocus event; no resize assertion completes. Root cause is not yet established.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "resize steps happen after autofocus, but before animation callbacks",
+            "NOTRUN",
+            null
+          ]
+        ],
+        "elapsed_s": 10.4629,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-087"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "resize steps happen after autofocus, but before animation callbacks",
+            "NOTRUN",
+            null
+          ]
+        ],
+        "elapsed_s": 10.2841,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-174"
+      }
+    },
+    {
+      "url": "/dom/events/non-cancelable-when-passive/passive-touchmove-event-listener-on-root.html",
+      "cluster": "action-sequence-dependent input (seven files)",
+      "finding": "The pinned Chromium result explicitly rejects action_sequence because the testdriver vendor does not implement it. Native waits time out; these results do not establish the underlying touch/scroll engine behavior.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "passive touchmove event listener on root",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4656,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-136"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "passive touchmove event listener on root",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"Error: action_sequence() is not implemented by testdriver-vendor.js\""
+          ]
+        ],
+        "elapsed_s": 0.4185,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-272"
+      }
+    },
+    {
+      "url": "/css/selectors/focus-visible-script-focus-019.html",
+      "cluster": "key/click-dependent focus-visible (three files)",
+      "finding": "Both engines time out after test_driver send_keys/click and expected key/focus event waits. Shared automation prerequisites are implicated; exact native selector behavior is not isolated by this completed run.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "\":focus-visible\" should be a valid selector",
+            "PASS",
+            null
+          ],
+          [
+            "Script focus after blur after mouse click on a focusable element after editing an input does NOT match :focus-visible",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4661,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard1/00-139"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "\":focus-visible\" should be a valid selector",
+            "PASS",
+            null
+          ],
+          [
+            "Script focus after blur after mouse click on a focusable element after editing an input does NOT match :focus-visible",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.2327,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-279"
+      }
+    },
+    {
+      "url": "/css/selectors/focus-visible-011.html",
+      "cluster": "key/click-dependent focus-visible (three files)",
+      "finding": "Both engines time out after test_driver send_keys/click and expected key/focus event waits. Shared automation prerequisites are implicated; exact native selector behavior is not isolated by this completed run.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            ":focus-visible matches even if preventDefault() is called",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4649,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard1/00-149"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            ":focus-visible matches even if preventDefault() is called",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.2162,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-299"
+      }
+    },
+    {
+      "url": "/dom/events/EventListener-incumbent-global-2.sub.html",
+      "cluster": "frame/realm lifecycle",
+      "finding": "Native reports undefined.body and times out; Chromium passes1/1. Source-level bounded-cause review is pending.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [
+          "[js error] Uncaught TypeError: Cannot read properties of undefined (reading 'body')"
+        ],
+        "subtests": [
+          [
+            "Check the incumbent global EventListeners  are called with",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4653,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-156"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "Check the incumbent global EventListeners  are called with",
+            "PASS",
+            null
+          ]
+        ],
+        "elapsed_s": 0.2219,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-312"
+      }
+    },
+    {
+      "url": "/dom/events/non-cancelable-when-passive/passive-touchstart-event-listener-on-root.html",
+      "cluster": "action-sequence-dependent input (seven files)",
+      "finding": "The pinned Chromium result explicitly rejects action_sequence because the testdriver vendor does not implement it. Native waits time out; these results do not establish the underlying touch/scroll engine behavior.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "passive touchstart event listener on root",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4623,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-166"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "passive touchstart event listener on root",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"Error: action_sequence() is not implemented by testdriver-vendor.js\""
+          ]
+        ],
+        "elapsed_s": 0.6379,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-332"
+      }
+    },
+    {
+      "url": "/dom/events/scrolling/visibility-hidden-scrolls.html",
+      "cluster": "action-sequence-dependent input (seven files)",
+      "finding": "The pinned Chromium result explicitly rejects action_sequence because the testdriver vendor does not implement it. Native waits time out; these results do not establish the underlying touch/scroll engine behavior.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "Scrolling should chain to a visibility: hidden element.",
+            "TIMEOUT",
+            "Test timed out"
+          ],
+          [
+            "Scrolling over a visibility: visible child should scroll a visibility: hidden scroller.",
+            "NOTRUN",
+            null
+          ]
+        ],
+        "elapsed_s": 10.462,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard1/00-192"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "Scrolling should chain to a visibility: hidden element.",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"Error: action_sequence() is not implemented by testdriver-vendor.js\""
+          ],
+          [
+            "Scrolling over a visibility: visible child should scroll a visibility: hidden scroller.",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"Error: action_sequence() is not implemented by testdriver-vendor.js\""
+          ]
+        ],
+        "elapsed_s": 0.4224,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-385"
+      }
+    },
+    {
+      "url": "/encoding/streams/realms.window.html",
+      "cluster": "frame/realm lifecycle",
+      "finding": "Native registers zero assertions and times out; Chromium passes12/12. Source-level bounded-cause review is pending.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [],
+        "elapsed_s": 10.4627,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-216"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "a TextEncoderStream object should be associated with the realm the constructor came from",
+            "PASS",
+            null
+          ],
+          [
+            "TextEncoderStream's readable and writable attributes should come from the same realm as the constructor definition",
+            "PASS",
+            null
+          ],
+          [
+            "the output chunks when read is called after write should come from the same realm as the constructor of TextEncoderStream",
+            "PASS",
+            null
+          ],
+          [
+            "the output chunks when write is called with a pending read should come from the same realm as the constructor of TextEncoderStream",
+            "PASS",
+            null
+          ],
+          [
+            "TypeError for unconvertable chunk should come from constructor realm of TextEncoderStream",
+            "PASS",
+            null
+          ],
+          [
+            "a TextDecoderStream object should be associated with the realm the constructor came from",
+            "PASS",
+            null
+          ],
+          [
+            "TextDecoderStream's readable and writable attributes should come from the same realm as the constructor definition",
+            "PASS",
+            null
+          ],
+          [
+            "the result object when read is called after write should come from the same realm as the constructor of TextDecoderStream",
+            "PASS",
+            null
+          ],
+          [
+            "the result object when write is called with a pending read should come from the same realm as the constructor of TextDecoderStream",
+            "PASS",
+            null
+          ],
+          [
+            "TypeError for chunk with the wrong type should come from constructor realm of TextDecoderStream",
+            "PASS",
+            null
+          ],
+          [
+            "TypeError for invalid chunk should come from constructor realm of TextDecoderStream",
+            "PASS",
+            null
+          ],
+          [
+            "TypeError for incomplete input should come from constructor realm of TextDecoderStream",
+            "PASS",
+            null
+          ]
+        ],
+        "elapsed_s": 0.4674,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-432"
+      }
+    },
+    {
+      "url": "/dom/events/non-cancelable-when-passive/passive-touchmove-event-listener-on-window.html",
+      "cluster": "action-sequence-dependent input (seven files)",
+      "finding": "The pinned Chromium result explicitly rejects action_sequence because the testdriver vendor does not implement it. Native waits time out; these results do not establish the underlying touch/scroll engine behavior.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "passive touchmove event listener on window",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4604,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-260"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "passive touchmove event listener on window",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"Error: action_sequence() is not implemented by testdriver-vendor.js\""
+          ]
+        ],
+        "elapsed_s": 0.4343,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-520"
+      }
+    },
+    {
+      "url": "/html/syntax/parsing/the-end.html",
+      "cluster": "document load/pageshow lifecycle",
+      "finding": "Native load.target is Window instead of Document, and pageshow/order time out; Chromium passes4/4. Source-level bounded-cause review is pending.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "DOMContentLoaded",
+            "PASS",
+            null
+          ],
+          [
+            "load",
+            "FAIL",
+            "assert_equals: target should be document expected Document node with 2 children but got object \"[object Window]\""
+          ],
+          [
+            "pageshow",
+            "TIMEOUT",
+            "Test timed out"
+          ],
+          [
+            "order",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4619,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-279"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "DOMContentLoaded",
+            "PASS",
+            null
+          ],
+          [
+            "load",
+            "PASS",
+            null
+          ],
+          [
+            "pageshow",
+            "PASS",
+            null
+          ],
+          [
+            "order",
+            "PASS",
+            null
+          ]
+        ],
+        "elapsed_s": 0.2152,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-558"
+      }
+    },
+    {
+      "url": "/css/selectors/focus-visible-script-focus-014.html",
+      "cluster": "key/click-dependent focus-visible (three files)",
+      "finding": "Both engines time out after test_driver send_keys/click and expected key/focus event waits. Shared automation prerequisites are implicated; exact native selector behavior is not isolated by this completed run.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "\":focus-visible\" should be a valid selector",
+            "PASS",
+            null
+          ],
+          [
+            "Script focus after keyboard input does match :focus-visible",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4624,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-293"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "\":focus-visible\" should be a valid selector",
+            "PASS",
+            null
+          ],
+          [
+            "Script focus after keyboard input does match :focus-visible",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.2486,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-586"
+      }
+    },
+    {
+      "url": "/dom/events/non-cancelable-when-passive/non-passive-touchmove-event-listener-on-window.html",
+      "cluster": "action-sequence-dependent input (seven files)",
+      "finding": "The pinned Chromium result explicitly rejects action_sequence because the testdriver vendor does not implement it. Native waits time out; these results do not establish the underlying touch/scroll engine behavior.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "non-passive-touchmove-event-listener-on-window",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4623,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-298"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "non-passive-touchmove-event-listener-on-window",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"Error: action_sequence() is not implemented by testdriver-vendor.js\""
+          ]
+        ],
+        "elapsed_s": 1.0471,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-596"
+      }
+    },
+    {
+      "url": "/dom/events/scrolling/scrollend-event-fired-after-snap.html",
+      "cluster": "action-sequence-dependent input (seven files)",
+      "finding": "The pinned Chromium result explicitly rejects action_sequence because the testdriver vendor does not implement it. Native waits time out; these results do not establish the underlying touch/scroll engine behavior.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "Tests that scrollend is fired after scroll snap animation completion.",
+            "TIMEOUT",
+            "Test timed out"
+          ],
+          [
+            "Tests that scrollend is fired after fling snap animation completion.",
+            "NOTRUN",
+            null
+          ]
+        ],
+        "elapsed_s": 10.4634,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0/00-311"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "Tests that scrollend is fired after scroll snap animation completion.",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"Error: action_sequence() is not implemented by testdriver-vendor.js\""
+          ],
+          [
+            "Tests that scrollend is fired after fling snap animation completion.",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"Error: action_sequence() is not implemented by testdriver-vendor.js\""
+          ]
+        ],
+        "elapsed_s": 0.6269,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-622"
+      }
+    },
+    {
+      "url": "/css/selectors/invalidation/modal-pseudo-class-in-has.html",
+      "cluster": "fullscreen/modal invalidation and activation",
+      "finding": "Native dialog checks pass, but fullscreen ancestor color stays black instead of blue and later activation reports element click intercepted. Chromium also fails to finish fullscreen controls. Both genuine native fullscreen state and activation harness behavior need separation.",
+      "native": {
+        "status": "ERROR",
+        "message": "Unhandled rejection: element click intercepted error",
+        "errors": [
+          "[js warn] Unhandled promise rejection: Error: element click intercepted error"
+        ],
+        "subtests": [
+          [
+            ":modal pseudo-class is not active with dialog.show()",
+            "PASS",
+            null
+          ],
+          [
+            ":modal pseudo-class invalidation with showModal + close",
+            "PASS",
+            null
+          ],
+          [
+            ":modal pseudo-class invalidation with showModal + remove",
+            "PASS",
+            null
+          ],
+          [
+            ":modal pseudo-class invalidation with requestFullscreen + exitFullscreen",
+            "FAIL",
+            "assert_equals: ancestor should be blue since target is fullscreen expected \"rgb(0, 0, 255)\" but got \"rgb(0, 0, 0)\""
+          ],
+          [
+            ":modal pseudo-class invalidation with requestFullscreen + remove",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4615,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard1/00-313"
+      },
+      "baseline226_harness_status": "ERROR",
+      "reference156": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            ":modal pseudo-class is not active with dialog.show()",
+            "PASS",
+            null
+          ],
+          [
+            ":modal pseudo-class invalidation with showModal + close",
+            "PASS",
+            null
+          ],
+          [
+            ":modal pseudo-class invalidation with showModal + remove",
+            "PASS",
+            null
+          ],
+          [
+            ":modal pseudo-class invalidation with requestFullscreen + exitFullscreen",
+            "TIMEOUT",
+            "Test timed out"
+          ],
+          [
+            ":modal pseudo-class invalidation with requestFullscreen + remove",
+            "NOTRUN",
+            null
+          ]
+        ],
+        "elapsed_s": 10.2596,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-627"
+      }
+    },
+    {
+      "url": "/dom/events/non-cancelable-when-passive/non-passive-touchstart-event-listener-on-div.html",
+      "cluster": "action-sequence-dependent input (seven files)",
+      "finding": "The pinned Chromium result explicitly rejects action_sequence because the testdriver vendor does not implement it. Native waits time out; these results do not establish the underlying touch/scroll engine behavior.",
+      "native": {
+        "status": "TIMEOUT",
+        "message": null,
+        "errors": [],
+        "subtests": [
+          [
+            "non-passive touchstart event listener on div",
+            "TIMEOUT",
+            "Test timed out"
+          ]
+        ],
+        "elapsed_s": 10.4628,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard1/00-317"
+      },
+      "baseline226_harness_status": "TIMEOUT",
+      "reference156": {
+        "status": "OK",
+        "message": null,
+        "errors": null,
+        "subtests": [
+          [
+            "non-passive touchstart event listener on div",
+            "FAIL",
+            "promise_test: Unhandled rejection with value: object \"Error: action_sequence() is not implemented by testdriver-vendor.js\""
+          ]
+        ],
+        "elapsed_s": 0.7285,
+        "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-frozen640/chrome156-normal/00-635"
+      }
+    }
+  ],
+  "classification_limits": "Automation dependencies are not converted into engine passes. Hypotheses are labeled; no additional implementation or test rerun is authorized by this inventory."
+}

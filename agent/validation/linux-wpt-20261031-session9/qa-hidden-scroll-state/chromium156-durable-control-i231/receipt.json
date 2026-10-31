@@ -1,0 +1,77 @@
+{
+  "kind": "chromium156",
+  "workspace_candidate": 231,
+  "workspace_source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "started_utc": "2026-10-31T08:47:47.926243+00:00",
+  "finished_utc": "2026-10-31T08:47:54.897381+00:00",
+  "duration_s": 6.971132629987551,
+  "fixture_sha256": "66d53129c5d4f8e46dea8bf194b3c2e9266ba565e99215d1f34e3cdb47ff6dff",
+  "chromium_binary_sha256": "1bcad71ad1bff85955db13c6d8dd9f32374934d5a5cb079b526c46fb51f9bd97",
+  "driver_sha256": "d7f1682dcf9e4087bae6a52ca03c9913390a79ab86e09796562db7ed6f534587",
+  "adapter_returncode": 0,
+  "outer_cleanup_signals": [],
+  "source_input_count": 648,
+  "timed_out": false,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "monitor_forced_stop": false,
+  "pins_unchanged": true,
+  "source_unchanged": true,
+  "git_unchanged": true,
+  "cleanup_ok": true,
+  "exit_evidence": {
+    "adapter_actual_returncode": 0,
+    "chromium_os_exit_status": "Not exposed by the unchanged supported public adapter",
+    "profile_removed": true,
+    "remaining_owned_identities": [],
+    "fallback_signals": [],
+    "driver_cleanup_error": null
+  },
+  "retention_and_parent_controls_pass": true,
+  "parent_overflow_observations": [
+    [
+      {
+        "phase": "hidden",
+        "width": 160,
+        "height": 140
+      },
+      {
+        "phase": "revealed",
+        "width": 400,
+        "height": 400
+      },
+      {
+        "phase": "hidden-again",
+        "width": 160,
+        "height": 140
+      }
+    ]
+  ],
+  "completion": [
+    {
+      "completed": [
+        "retain-both-axes",
+        "hidden-set-zero",
+        "hidden-set-positive",
+        "range-shrink-and-regrow",
+        "overflow-mode-change",
+        "nested-outer-hidden-inner-setter",
+        "nested-independently-hidden"
+      ],
+      "records": 30
+    }
+  ],
+  "field_summary": [
+    [
+      "921",
+      "0"
+    ]
+  ],
+  "expected_reference_field_count": 921,
+  "qualified_reference": true,
+  "authored_control_not_WPT": true,
+  "errors": [],
+  "resource_scope": "One-second owned adapter process-tree/cgroup observations; not browser-only benchmarking. Chromium OS exit status is unavailable; supported owned cleanup is retained."
+}

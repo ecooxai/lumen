@@ -1,0 +1,67 @@
+{
+  "started_utc": "2026-10-31T08:52:07.718549+00:00",
+  "iteration": "231",
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "7066920bcfe73ba8538a5ce92dddc65da86ca6e5d630886c2b4996f1728b5d5d",
+  "schedule_sha256": "7e17aeaf30a0d05982a5d69a11fe0bd062561fe9375b2fcad72fb1eba41d1c32",
+  "workers": [
+    {
+      "shard": 0,
+      "controller_pid": 2545352,
+      "started_utc": "2026-10-31T08:52:07.719516+00:00",
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py",
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_cohort.py",
+        "--runner",
+        "paired_wpt",
+        "--audit-report",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/cleanup-shard0.json",
+        "--cleanup-timeout",
+        "15",
+        "--",
+        "--kind",
+        "lumen",
+        "--binary",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i231",
+        "--urls-file",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/urls-shard0.json",
+        "--output",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard0",
+        "--timeout",
+        "15"
+      ],
+      "audit_directory": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/guard-shard0"
+    },
+    {
+      "shard": 1,
+      "controller_pid": 2545353,
+      "started_utc": "2026-10-31T08:52:07.720077+00:00",
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py",
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_cohort.py",
+        "--runner",
+        "paired_wpt",
+        "--audit-report",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/cleanup-shard1.json",
+        "--cleanup-timeout",
+        "15",
+        "--",
+        "--kind",
+        "lumen",
+        "--binary",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i231",
+        "--urls-file",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/urls-shard1.json",
+        "--output",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/shard1",
+        "--timeout",
+        "15"
+      ],
+      "audit_directory": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/guard-shard1"
+    }
+  ]
+}

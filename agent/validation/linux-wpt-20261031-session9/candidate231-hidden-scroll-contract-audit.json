@@ -1,0 +1,301 @@
+{
+  "created_utc": "2026-10-31T08:46:23.343987+00:00",
+  "iteration": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "auditor_sha256": "d01d154bd9c8382535a269ce1278e81ccc3015ce7b053cf27f735e504eae1ada",
+  "not_WPT": true,
+  "passed_contract": true,
+  "full_snapshot_equality_ignoring_time": false,
+  "errors": [],
+  "phase_results": [
+    {
+      "case": "retain-both-axes",
+      "phase": "visible",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "retain-both-axes",
+      "phase": "hidden",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "retain-both-axes",
+      "phase": "revealed",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "hidden-set-zero",
+      "phase": "visible",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "hidden-set-zero",
+      "phase": "hidden-before-set",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "hidden-set-zero",
+      "phase": "hidden-after-set",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "hidden-set-zero",
+      "phase": "revealed",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "hidden-set-positive",
+      "phase": "visible",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "hidden-set-positive",
+      "phase": "hidden-before-set",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "hidden-set-positive",
+      "phase": "hidden-after-set",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "hidden-set-positive",
+      "phase": "revealed",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "range-shrink-and-regrow",
+      "phase": "visible",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "range-shrink-and-regrow",
+      "phase": "hidden",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "range-shrink-and-regrow",
+      "phase": "hidden-shrunk",
+      "strict_fields_pass": true,
+      "raw_differences": {
+        "leafBounds.height": {
+          "native": 130,
+          "reference": 400,
+          "native_type": "number",
+          "reference_type": "number"
+        },
+        "leafBounds.width": {
+          "native": 150,
+          "reference": 400,
+          "native_type": "number",
+          "reference_type": "number"
+        }
+      },
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": {
+        "native": [
+          150,
+          130
+        ],
+        "reference": [
+          400,
+          400
+        ],
+        "classification": "Recorded eager retained layout versus Chromium cached hidden layout; no full snapshot equivalence claim."
+      }
+    },
+    {
+      "case": "range-shrink-and-regrow",
+      "phase": "revealed-shrunk",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "range-shrink-and-regrow",
+      "phase": "visible-regrown",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "overflow-mode-change",
+      "phase": "visible-scroll-container",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "overflow-mode-change",
+      "phase": "hidden",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "overflow-mode-change",
+      "phase": "hidden-overflow-visible",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "overflow-mode-change",
+      "phase": "revealed-overflow-visible",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "overflow-mode-change",
+      "phase": "scroll-container-restored",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "nested-outer-hidden-inner-setter",
+      "phase": "visible",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "nested-outer-hidden-inner-setter",
+      "phase": "outer-hidden",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "nested-outer-hidden-inner-setter",
+      "phase": "inner-set-under-hidden-outer",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "nested-outer-hidden-inner-setter",
+      "phase": "outer-revealed",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "nested-independently-hidden",
+      "phase": "visible",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "nested-independently-hidden",
+      "phase": "inner-hidden",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "nested-independently-hidden",
+      "phase": "both-hidden",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "nested-independently-hidden",
+      "phase": "outer-revealed-inner-hidden",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    },
+    {
+      "case": "nested-independently-hidden",
+      "phase": "both-revealed",
+      "strict_fields_pass": true,
+      "raw_differences": {},
+      "unaccepted_differences": {},
+      "accepted_recorded_exception": null
+    }
+  ],
+  "resource_scope": "Existing one-second process-tree/cgroup receipts; this matrix is not a performance comparison. Chromium OS exit status remains unexposed by the unchanged public adapter; its owned cleanup evidence is retained.",
+  "case_results": {
+    "retain-both-axes": true,
+    "hidden-set-zero": true,
+    "hidden-set-positive": true,
+    "range-shrink-and-regrow": true,
+    "overflow-mode-change": true,
+    "nested-outer-hidden-inner-setter": true,
+    "nested-independently-hidden": true
+  },
+  "claim": "All7 retention cases and30 phases satisfy strict offset/range/effective-coordinate and dimension contract, except the one already measured paired hidden-size caching distinction. This is not full snapshot byte equivalence, full content-visibility conformance, or additional WPT pass count.",
+  "contract_sha256": "f99db574f100b60107c55f62181b72681892ec4767b2e7cb46b73db7f7872d60",
+  "identities": {
+    "native_jsrun_sha256": "00435d64f63d928ceac27691ab1f28f533e4002a80ee728e0787df5b9c4d35fe",
+    "reference_chromium_sha256": "1bcad71ad1bff85955db13c6d8dd9f32374934d5a5cb079b526c46fb51f9bd97",
+    "fixture_sha256": "f51b1799025c08d900c8b31393f3606a16b104db00709db76eab4c48856de375"
+  },
+  "input_sha256": {
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/acceptance-contract-v2.json": "f99db574f100b60107c55f62181b72681892ec4767b2e7cb46b73db7f7872d60",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-v3/observations.json": "4e13f504121ceedec9e65a5056b0f1052551d1e6bb861c428dedf50999aae094",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun230-v3/observations.json": "182dd27b5e7b4d461dd6215386aa932be23508e07959e22367cb2b5f2a04aeaf",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/receipt.json": "73d53a618b8defb691da54b089a966746f1a0085c555db8da232f33af3126ef9",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/observations.json": "95114a7aeef76ef37982ea1883b970b7f6deb5c0614d2aa97e352e5f422585fd",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-v3/receipt.json": "0d4e879c0bb372c6bf8bc554b39881246c757e2c3fc4ad12f0a5f63afd32f727",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun230-v3/receipt.json": "8de49dd4570051fc8968fbbb8c278f47d511dadba3738b2ee80f377d9514fefb"
+  }
+}

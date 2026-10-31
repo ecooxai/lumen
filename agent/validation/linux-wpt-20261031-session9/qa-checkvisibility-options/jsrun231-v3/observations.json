@@ -1,0 +1,350 @@
+{
+  "total": 49,
+  "passed": 15,
+  "failed": 34,
+  "results": [
+    {
+      "name": "default does not opt into visibility",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "legacy visibility option",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "modern visibility option",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "modern true with legacy false",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "legacy true with modern false",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "both visibility options false",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "collapsed own visibility",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "inherited hidden visibility",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "visible descendant overrides hidden ancestor",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "visibility mutation is synchronously observed",
+      "expected": "false,true",
+      "actual": "true,true",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "default does not opt into opacity",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "legacy opacity option",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "modern opacity option",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "modern opacity true with legacy false",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "legacy opacity true with modern false",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "both opacity options false",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "positive tiny opacity remains potentially visible",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "opaque child cannot override zero-opacity ancestor",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "no rounded cumulative-opacity zero heuristic",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "opacity mutation is synchronously observed",
+      "expected": "false,true",
+      "actual": "true,true",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "boxless ancestor still contributes computed opacity",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "open shadow host opacity ancestor",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "closed-root public assignedSlot is hidden",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "closed shadow host opacity ancestor",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "assigned slot contributes computed opacity",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "manual assignment follows real shadow ancestry",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "manual reassignment updates opacity ancestry",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "public assignedSlot override cannot alter internal ancestry",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "public getComputedStyle override cannot alter native style query",
+      "expected": "false,false",
+      "actual": "true,true",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "public geometry override cannot alter box existence",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "undefined options use dictionary defaults",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "null options use dictionary defaults",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "function object is an accepted dictionary",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "primitive boolean dictionary rejected",
+      "expected": "TypeError",
+      "actual": "none",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "primitive number dictionary rejected",
+      "expected": "TypeError",
+      "actual": "none",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "primitive string dictionary rejected",
+      "expected": "TypeError",
+      "actual": "none",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "primitive symbol dictionary rejected",
+      "expected": "TypeError",
+      "actual": "none",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "primitive bigint dictionary rejected",
+      "expected": "TypeError",
+      "actual": "none",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "inherited dictionary members are read",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "truthy string option converts to boolean true",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "numeric zero option converts to boolean false",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "object boolean conversion invokes no coercion method",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "dictionary members are read exactly once in IDL order",
+      "expected": "checkOpacity,checkVisibilityCSS,contentVisibilityAuto,opacityProperty,visibilityProperty",
+      "actual": "",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "dictionary conversion precedes box-existence return",
+      "expected": "checkOpacity,checkVisibilityCSS,contentVisibilityAuto,opacityProperty,visibilityProperty",
+      "actual": "",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "later alias getter is read even when early alias is true",
+      "expected": true,
+      "actual": false,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "dictionary getter exception is propagated unchanged",
+      "expected": true,
+      "actual": false,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "dictionary style mutation is applied before visibility check",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "invalid receiver fails before dictionary getters",
+      "expected": "TypeError,0",
+      "actual": "TypeError,0",
+      "pass": true,
+      "error": null
+    },
+    {
+      "name": "optional argument preserves operation length zero",
+      "expected": 0,
+      "actual": 0,
+      "pass": true,
+      "error": null
+    }
+  ]
+}

@@ -1,0 +1,184 @@
+{
+  "candidate": 231,
+  "created_utc": "2026-10-31T09:05:40.033394+00:00",
+  "scope": "Unchanged non-URL640 assertion-file sample, not full WPT",
+  "pins": {
+    "manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f",
+    "baseline226_results_sha256": "ec00b3f4eaba4388f72fe6fb843798342a3fef5f146b1917d7a9d894f55cb9e9",
+    "chromium156_results_sha256": "cb62cc6e1414e04c9303928f42140f8ac939253498549b1d58bc32f33e7dbce8"
+  },
+  "native": {
+    "files": 640,
+    "fully_passing_files": 416,
+    "assertions": {
+      "PASS": 9246,
+      "FAIL": 1256,
+      "TIMEOUT": 15,
+      "NOTRUN": 23
+    },
+    "total_assertions": 10540,
+    "harness_statuses": {
+      "OK": 624,
+      "TIMEOUT": 15,
+      "ERROR": 1
+    }
+  },
+  "baseline226": {
+    "files": 640,
+    "fully_passing_files": 411,
+    "assertions": {
+      "PASS": 9162,
+      "FAIL": 1340,
+      "TIMEOUT": 15,
+      "NOTRUN": 23
+    },
+    "total_assertions": 10540,
+    "harness_statuses": {
+      "OK": 624,
+      "TIMEOUT": 15,
+      "ERROR": 1
+    }
+  },
+  "chromium156": {
+    "files": 640,
+    "fully_passing_files": 560,
+    "assertions": {
+      "PASS": 9551,
+      "FAIL": 980,
+      "NOTRUN": 9,
+      "TIMEOUT": 12
+    },
+    "total_assertions": 10552,
+    "harness_statuses": {
+      "OK": 626,
+      "TIMEOUT": 13,
+      "ERROR": 1
+    }
+  },
+  "native_results_sha256": "2f5b8445e81e545006c26db3ee4418537f26feed2b1d1f8bbf5f098315332d38",
+  "auditor_sha256": "133e09d99414cc8feed2b4aa55688052dc6646f535bc405714ff1da5200b9042",
+  "identity_audit_sha256": "3fec369ac16c1437a1f473f3dd816c7aab42d30e7eb4714d48dcf2f6b42a9360",
+  "vs226": {
+    "gains": 84,
+    "prior_pass_losses": 0,
+    "missing_identities": 0,
+    "added_identities": 0,
+    "whole_file_gains": [
+      "/css/css-grid/parsing/grid-template-repeat-auto-computed-withcontent-002.html",
+      "/css/css-sizing/contain-intrinsic-size/auto-004.html",
+      "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+      "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+      "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html"
+    ],
+    "whole_file_losses": [],
+    "harness_changes": []
+  },
+  "reference_identity_comparison": {
+    "shared": 10538,
+    "shared_reference_pass_native_nonpass": 1114,
+    "shared_native_pass_reference_nonpass": 821,
+    "reference_only": 14,
+    "native_only": 2
+  },
+  "categories": {
+    "css": {
+      "files": 242,
+      "fully_passing_files": 112,
+      "assertions": {
+        "PASS": 3884,
+        "FAIL": 1114,
+        "TIMEOUT": 4
+      },
+      "total_assertions": 5002,
+      "harness_statuses": {
+        "OK": 238,
+        "TIMEOUT": 3,
+        "ERROR": 1
+      }
+    },
+    "dom": {
+      "files": 113,
+      "fully_passing_files": 83,
+      "assertions": {
+        "PASS": 750,
+        "FAIL": 34,
+        "TIMEOUT": 8,
+        "NOTRUN": 2
+      },
+      "total_assertions": 794,
+      "harness_statuses": {
+        "OK": 105,
+        "TIMEOUT": 8
+      }
+    },
+    "domparsing": {
+      "files": 34,
+      "fully_passing_files": 21,
+      "assertions": {
+        "PASS": 1225,
+        "FAIL": 35,
+        "TIMEOUT": 1,
+        "NOTRUN": 20
+      },
+      "total_assertions": 1281,
+      "harness_statuses": {
+        "OK": 33,
+        "TIMEOUT": 1
+      }
+    },
+    "encoding": {
+      "files": 34,
+      "fully_passing_files": 30,
+      "assertions": {
+        "PASS": 1062,
+        "FAIL": 4
+      },
+      "total_assertions": 1066,
+      "harness_statuses": {
+        "OK": 33,
+        "TIMEOUT": 1
+      }
+    },
+    "fetch": {
+      "files": 98,
+      "fully_passing_files": 79,
+      "assertions": {
+        "PASS": 1310,
+        "FAIL": 31
+      },
+      "total_assertions": 1341,
+      "harness_statuses": {
+        "OK": 98
+      }
+    },
+    "html": {
+      "files": 85,
+      "fully_passing_files": 64,
+      "assertions": {
+        "PASS": 923,
+        "FAIL": 25,
+        "NOTRUN": 1,
+        "TIMEOUT": 2
+      },
+      "total_assertions": 951,
+      "harness_statuses": {
+        "OK": 83,
+        "TIMEOUT": 2
+      }
+    },
+    "xhr": {
+      "files": 34,
+      "fully_passing_files": 27,
+      "assertions": {
+        "PASS": 92,
+        "FAIL": 13
+      },
+      "total_assertions": 105,
+      "harness_statuses": {
+        "OK": 34
+      }
+    }
+  },
+  "qualification": "Actual controller/guard exits, cleanup, resources and source pins remain separately required; no overall98 readiness claim",
+  "preserves226": true
+}

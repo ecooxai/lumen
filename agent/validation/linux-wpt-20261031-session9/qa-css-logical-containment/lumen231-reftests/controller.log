@@ -1,0 +1,4 @@
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-001.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-002.html", "status": "PASS", "reason": null}
+{"selected": 2, "observed": 2, "statuses": {"PASS": 2}, "finished_utc": "2026-10-31T08:49:34.732375+00:00", "note": "Raw reftest outcomes; intentionally failing infrastructure controls are not relabeled PASS."}
+{"guard_cleanup": {"report": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/cleanup.json", "joined": 0, "remaining": 0, "sources_unchanged": true}}

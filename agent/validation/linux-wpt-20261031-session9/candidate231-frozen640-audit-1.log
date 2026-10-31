@@ -1,0 +1,2 @@
+{"candidate": 231, "required_prior_pass_identities": 9162, "required_prior_fully_passing_urls": 411, "prior_pass_losses": [], "prior_fully_passing_file_losses": [], "lifecycle_integrity": true, "actual_browser_pids": 640, "preservation_and_lifecycle_accepted": true}
+{"path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/prior-pass-union-audit.json", "sha256": "6841947b9dd6d07fdd3ca95f307989ee1fbe645df0e04f626d8e3e51a3101a36"}

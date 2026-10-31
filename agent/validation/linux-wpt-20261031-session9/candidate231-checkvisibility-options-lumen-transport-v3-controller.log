@@ -1,0 +1,1 @@
+{"kind": "lumen", "actual_inner_returncode": 0, "execution_exit_valid": true, "monitor_returncodes": [0, 0], "cleanup_ok": true, "measurement_complete": true, "behavioral_result": "FAIL", "counts": {"total": 49, "passed": 15, "failed": 34}, "measurement_integrity_valid": true, "errors": []}

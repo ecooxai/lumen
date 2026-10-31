@@ -1,0 +1,21 @@
+{
+  "label": "chromium156 actual lifecycle matrix",
+  "started_utc": "2026-10-31T09:30:51.690315+00:00",
+  "finished_utc": "2026-10-31T09:31:01.733725+00:00",
+  "root_pid": 2692585,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 10,
+  "elapsed_seconds": 10.043,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 6.0,
+  "cpu_median": 36.996,
+  "cpu_max": 159.983,
+  "cpu_last10_median": 36.996,
+  "rss_peak_mb": 1465.012,
+  "rss_final_mb": 31.08,
+  "pss_peak_mb": 497.963,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

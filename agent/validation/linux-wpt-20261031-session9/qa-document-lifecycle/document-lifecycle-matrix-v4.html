@@ -1,0 +1,204 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Authored document load and first pageshow observations</title>
+<body>
+<script>
+'use strict';
+// Records real lifecycle events. A transport PASS means all cases were captured,
+// not that a browser's semantics conform. No expectation is substituted for an event.
+const caseIds = ['top-initial','synthetic-events','frame-initial','repeated-close',
+  'load-document-open','load-frame-removal','load-srcdoc-navigation',
+  'pageshow-document-open','post-load-child-insertion','load-listener-throws','pageshow-cancel','post-completion-document-open'];
+const captures = caseIds.map(id => ({id,events:[],actions:[],errors:[],finished:false,nextSequence:0}));
+const byId = new Map(captures.map(c => [c.id,c]));
+let started = false;
+function labelTarget(target, win, doc) {
+  if (target === win) return 'window';
+  if (target === doc) return 'document';
+  if (target === null) return 'null';
+  return target && target.nodeType === 1 ? target.localName : Object.prototype.toString.call(target);
+}
+function metadata(event, win, doc, listener, generation) {
+  return {listener,generation,type:event.type,className:Object.prototype.toString.call(event),
+    target:labelTarget(event.target,win,doc),currentTarget:labelTarget(event.currentTarget,win,doc),
+    path:event.composedPath().map(n => labelTarget(n,win,doc)),phase:event.eventPhase,
+    trusted:event.isTrusted,bubbles:event.bubbles,cancelable:event.cancelable,composed:event.composed,
+    persisted:'persisted' in event ? event.persisted : null,readyState:doc.readyState,
+    activeGeneration:doc.documentElement && doc.documentElement.getAttribute('data-lifecycle-generation')};
+}
+window.LifecycleRecord = (id,kind,value) => {
+  const c = byId.get(id); if (!c) throw new Error('unknown case '+id);
+  c[kind].push(Object.assign({sequence:c.nextSequence++},value));
+};
+window.LifecycleMetadata = metadata;
+function topRecord(listener,event) {
+  if (event.isTrusted) LifecycleRecord('top-initial','events',metadata(event,window,document,listener,'top'));
+}
+document.documentElement.setAttribute('data-lifecycle-generation','top');
+document.addEventListener('DOMContentLoaded',e => topRecord('document-dcl',e));
+for (const type of ['load','pageshow']) {
+  // Deliberately register noncapture first: native legacy delivery must still
+  // invoke capture before noncapture, with AT_TARGET for both Window passes.
+  window.addEventListener(type,e => topRecord('window-bubble',e));
+  window.addEventListener(type,e => topRecord('window-capture',e),true);
+  document.addEventListener(type,e => topRecord('document-unexpected',e));
+}
+window.addEventListener('load',event => {
+  if (!event.isTrusted || started) return;
+  started = true;
+  queueMicrotask(() => LifecycleRecord('top-initial','actions',{action:'load-microtask'}));
+  setTimeout(runMatrix,50);
+});
+function childScript(cfg) {
+  'use strict';
+  document.documentElement.setAttribute('data-lifecycle-generation',cfg.generation);
+  const record = (kind,value) => parent.LifecycleRecord(cfg.id,kind,value);
+  const meta = (listener,event) => parent.LifecycleMetadata(event,window,document,listener,cfg.generation);
+  const active = () => document.documentElement && document.documentElement.getAttribute('data-lifecycle-generation');
+  document.addEventListener('DOMContentLoaded',event => record('events',meta('document-dcl',event)));
+  for (const type of ['load','pageshow']) {
+    window.addEventListener(type,event => { if(event.isTrusted) record('events',meta('window-bubble',event)); });
+    window.addEventListener(type,event => { if(event.isTrusted) record('events',meta('window-capture',event)); },true);
+    document.addEventListener(type,event => { if(event.isTrusted) record('events',meta('document-unexpected',event)); });
+  }
+  if (cfg.observeInstallation) record('actions',{action:'replacement-listeners-installed',generation:cfg.generation,readyState:document.readyState});
+  if (cfg.action === 'throw-load') {
+    window.addEventListener('error',event => {
+      if (event.error && event.error.message === 'lifecycle-load-listener-sentinel') {
+        record('actions',{action:'listener-error-reported',generation:cfg.generation,message:event.error.message});
+        event.preventDefault();
+      }
+    });
+    window.addEventListener('load',event => {
+      if (!event.isTrusted) return;
+      record('actions',{action:'before-listener-throw',generation:cfg.generation});
+      throw new Error('lifecycle-load-listener-sentinel');
+    });
+    window.addEventListener('load',event => {
+      if (event.isTrusted) record('actions',{action:'listener-after-throw',generation:cfg.generation});
+    });
+  }
+  if (cfg.action === 'cancel-pageshow') window.addEventListener('pageshow',event => {
+    if (!event.isTrusted) return;
+    event.preventDefault();
+    record('actions',{action:'pageshow-canceled',generation:cfg.generation,defaultPrevented:event.defaultPrevented});
+  });
+  for (const type of ['load','pageshow']) window.addEventListener(type,event => {
+    if (!event.isTrusted) return;
+    queueMicrotask(() => record('actions',{action:type+'-microtask',generation:cfg.generation,activeGeneration:active()}));
+    const trigger = cfg.action === 'pageshow-open' ? 'pageshow' : 'load';
+    if (type !== trigger || !['load-open','pageshow-open','remove','navigate-srcdoc'].includes(cfg.action) || window.__lifecycleActionTaken) return;
+    window.__lifecycleActionTaken = true;
+    record('actions',{action:'before-'+cfg.action,generation:cfg.generation,activeGeneration:active()});
+    try {
+      if (cfg.action === 'load-open' || cfg.action === 'pageshow-open') {
+        const html = parent.LifecycleChildMarkup({id:cfg.id,generation:'replacement',action:'none'});
+        document.open(); document.write(html); document.close();
+      } else if (cfg.action === 'remove') {
+        frameElement.remove();
+      } else if (cfg.action === 'navigate-srcdoc') {
+        const f = frameElement;
+        f.srcdoc = parent.LifecycleChildMarkup({id:cfg.id,generation:'replacement',action:'none'});
+        record('actions',{action:'navigation-requested',generation:cfg.generation,
+          activeGeneration:f.contentDocument && f.contentDocument.documentElement && f.contentDocument.documentElement.getAttribute('data-lifecycle-generation')});
+      }
+      record('actions',{action:'after-'+cfg.action,generation:cfg.generation,activeGeneration:active()});
+    } catch(error) { record('errors',{phase:cfg.action,name:error.name,message:String(error.message)}); }
+  });
+}
+window.LifecycleChildMarkup = cfg => '<!doctype html><meta charset="utf-8"><body><script>('+childScript.toString()+')('+JSON.stringify(cfg)+');<'+'/script>';
+const delay = ms => new Promise(resolve => setTimeout(resolve,ms));
+async function waitFor(predicate,limit=1500) {
+  const start = performance.now();
+  while (!predicate() && performance.now()-start < limit) await delay(10);
+  return predicate();
+}
+function anyLoad(c,generation='initial') { return c.events.some(e => e.type==='load' && e.generation===generation); }
+async function frameCase(id,action='none',after=null) {
+  const c=byId.get(id),f=document.createElement('iframe');
+  f.setAttribute('data-case',id);f.srcdoc=LifecycleChildMarkup({id,generation:'initial',action});
+  f.addEventListener('load',event => {
+    const d=f.contentDocument;
+    LifecycleRecord(id,'actions',{action:'iframe-element-load',targetIsFrame:event.target===f,
+      currentTargetIsFrame:event.currentTarget===f,trusted:event.isTrusted,
+      activeGeneration:d&&d.documentElement&&d.documentElement.getAttribute('data-lifecycle-generation')});
+  });
+  document.body.appendChild(f);
+  if (!await waitFor(() => anyLoad(c))) LifecycleRecord(id,'errors',{phase:'setup',message:'initial Window load not observed within1500ms'});
+  if (action==='load-open'||action==='navigate-srcdoc') {
+    if (!await waitFor(() => anyLoad(c,'replacement'))) LifecycleRecord(id,'errors',{phase:'replacement',message:'replacement Window load not observed within1500ms'});
+  }
+  // A missing native pageshow is itself an observation; do not manufacture an
+  // action triggered by that absent event merely to match reference row counts.
+  if (action==='pageshow-open') {
+    if (await waitFor(() => c.events.some(e=>e.type==='pageshow'),250)) {
+      if (!await waitFor(() => anyLoad(c,'replacement'))) LifecycleRecord(id,'errors',{phase:'replacement',message:'replacement Window load not observed within1500ms'});
+    }
+  }
+  await delay(100);
+  if (after) await after(f,c);
+  await delay(100);
+  c.finished=true;
+  if(f.isConnected)f.remove();
+}
+async function runMatrix() {
+  try {
+    await delay(25);byId.get('top-initial').finished=true;
+    const synthetic=byId.get('synthetic-events');
+    const listener=e=>{if(!e.isTrusted)LifecycleRecord('synthetic-events','events',metadata(e,window,document,'synthetic-window','top'));};
+    window.addEventListener('load',listener);window.addEventListener('pageshow',listener);
+    window.dispatchEvent(new Event('load'));
+    window.dispatchEvent(new PageTransitionEvent('pageshow',{bubbles:true,cancelable:true,persisted:true}));
+    const element=document.createElement('div');document.body.appendChild(element);
+    element.addEventListener('load',e=>LifecycleRecord('synthetic-events','events',metadata(e,window,document,'synthetic-element','top')));
+    element.dispatchEvent(new Event('load'));element.remove();
+    window.removeEventListener('load',listener);window.removeEventListener('pageshow',listener);
+    synthetic.finished=true;
+    await frameCase('frame-initial');
+    await frameCase('repeated-close','none',async(f,c)=>{
+      LifecycleRecord('repeated-close','actions',{action:'before-redundant-close'});
+      f.contentDocument.close();f.contentDocument.close();
+      LifecycleRecord('repeated-close','actions',{action:'after-redundant-close'});await delay(100);
+    });
+    await frameCase('load-document-open','load-open');
+    await frameCase('load-frame-removal','remove');
+    await frameCase('load-srcdoc-navigation','navigate-srcdoc');
+    await frameCase('pageshow-document-open','pageshow-open');
+    await frameCase('post-load-child-insertion','none',async(f,c)=>{
+      const inner=f.contentDocument.createElement('iframe');inner.srcdoc='<!doctype html><body>late child';
+      LifecycleRecord('post-load-child-insertion','actions',{action:'before-late-child'});f.contentDocument.body.appendChild(inner);
+      await delay(150);LifecycleRecord('post-load-child-insertion','actions',{action:'after-late-child'});
+    });
+    await frameCase('load-listener-throws','throw-load');
+    await frameCase('pageshow-cancel','cancel-pageshow');
+    await frameCase('post-completion-document-open','none',async(f,c)=>{
+      const d=f.contentDocument;
+      LifecycleRecord(c.id,'actions',{action:'before-post-completion-open',readyState:d.readyState});
+      d.open();
+      d.write(LifecycleChildMarkup({id:c.id,generation:'replacement',action:'none',observeInstallation:true}));
+      LifecycleRecord(c.id,'actions',{action:'before-replacement-close',readyState:d.readyState});
+      d.close();
+      LifecycleRecord(c.id,'actions',{action:'after-replacement-close',readyState:d.readyState});
+      // Observe without waiting for any presumed replacement lifecycle event.
+      await delay(250);
+      LifecycleRecord(c.id,'actions',{action:'post-completion-observation-finished',readyState:d.readyState});
+    });
+    for(let i=0;i<captures.length;i++) {
+      const c=captures[i];
+      console.log('LIFECYCLE_CASE '+JSON.stringify({index:i,id:c.id,finished:c.finished,eventCount:c.events.length,actionCount:c.actions.length,errorCount:c.errors.length}));
+      for(const kind of ['events','actions','errors']) for(let j=0;j<c[kind].length;j++)
+        console.log('LIFECYCLE_ROW '+JSON.stringify({caseIndex:i,caseId:c.id,kind,index:j,value:c[kind][j]}));
+    }
+    const complete=captures.length===12&&captures.every(c=>c.finished);
+    console.log('MEASUREMENTS document-lifecycle '+JSON.stringify({cases:captures.length,finished:captures.filter(c=>c.finished).length,complete}));
+    console.log('RESULTS document-lifecycle:'+(complete?'PASS':'FAIL'));
+    document.documentElement.setAttribute('data-document-lifecycle-complete',complete?'PASS':'FAIL');
+  } catch(error) {
+    console.log('LIFECYCLE_FATAL '+JSON.stringify({name:error.name,message:String(error.message)}));
+    console.log('RESULTS document-lifecycle:FAIL');document.documentElement.setAttribute('data-document-lifecycle-complete','FAIL');
+  }
+}
+setTimeout(()=>{
+  if(!started){console.log('LIFECYCLE_FATAL '+JSON.stringify({message:'top-level native load absent within2000ms'}));console.log('RESULTS document-lifecycle:FAIL');document.documentElement.setAttribute('data-document-lifecycle-complete','FAIL');}
+},2000);
+</script>

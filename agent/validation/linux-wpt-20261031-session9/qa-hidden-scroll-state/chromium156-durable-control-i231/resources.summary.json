@@ -1,0 +1,21 @@
+{
+  "label": "Chromium156 durable hidden-scroll control",
+  "started_utc": "2026-10-31T08:47:47.977614+00:00",
+  "finished_utc": "2026-10-31T08:47:53.001542+00:00",
+  "root_pid": 2529668,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 5,
+  "elapsed_seconds": 5.024,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 18.001,
+  "cpu_median": 116.5095,
+  "cpu_max": 141.985,
+  "cpu_last10_median": 116.5095,
+  "rss_peak_mb": 1375.248,
+  "rss_final_mb": 48.468,
+  "pss_peak_mb": 6.186,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

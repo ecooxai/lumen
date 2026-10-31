@@ -1,0 +1,22 @@
+{
+  "candidate": 231,
+  "started_utc": "2026-10-31T09:11:25.569844+00:00",
+  "ended_utc": "2026-10-31T09:11:27.947514+00:00",
+  "duration_s": 2.377670059999218,
+  "command": [
+    "python3",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v2.py",
+    "--kind",
+    "lumen",
+    "--iteration",
+    "231"
+  ],
+  "actual_controller_exit_code": 2,
+  "controller_sha256": "806a12272a97667b5dd11e4f7afaef08f2bc8b4e1f5eec235121a42e7839e833",
+  "log": "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-lumen-retry-v2-controller.log",
+  "log_sha256": "47965aaf9a8c37a4e473fbd0a7fb2983fb153ab15a1a0514be0d13a7e0f83239",
+  "reason": "Original controller omitted LUMEN_CONSOLE; native default level3 suppresses console.log. v2 sets the established level0 and independently records postflight integrity; fixture49 oracle and engine bytes unchanged.",
+  "original_failed_attempt_retained": true,
+  "successful_chromium_reference_not_rerun": true,
+  "approval_history": "First submission rejected before dispatch because a timeout-triage hold was read globally. Root explicitly clarified that only the new16-file triage is read-only and that this reviewed native49 console correction remains authorized. No approval mechanism changed."
+}

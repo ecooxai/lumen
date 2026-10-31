@@ -1,0 +1,4 @@
+Starting ChromeDriver 156.0.8078.80 (fb096c0011f9d50f0a264a9376420cdea9c421e3-refs/branch-heads/8078@{#1705}) on port 39827
+Remote connections are allowed by an allowlist (127.0.0.1).
+Please see https://chromedriver.chromium.org/security-considerations for suggestions on keeping ChromeDriver safe.
+ChromeDriver was started successfully on port 39827.

@@ -1,0 +1,12 @@
+{
+  "kind": "lumen",
+  "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i231",
+  "binary_sha256": "7066920bcfe73ba8538a5ce92dddc65da86ca6e5d630886c2b4996f1728b5d5d",
+  "started_utc": "2026-10-31T08:46:19Z",
+  "urls": [
+    "/css/css-contain/content-visibility/content-visibility-hidden-scrollTop-left-width-height.html"
+  ],
+  "repeat": 1,
+  "method": "fresh browser process and empty profile per URL; WPT resources unchanged; offscreen software Lumen vs headless Chromium; no display/GPU claim",
+  "finished_utc": "2026-10-31T08:46:21Z"
+}

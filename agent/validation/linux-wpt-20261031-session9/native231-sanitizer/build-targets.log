@@ -1,0 +1,29 @@
+[ 10%] Built target lumen_base
+[ 13%] Built target lumen_rtc
+[ 13%] Checking embedded browser assets
+[ 16%] Building C object CMakeFiles/lumen_net.dir/src/net/fetch_metadata.c.o
+[ 20%] Linking C static library liblumen_net.a
+[ 26%] Built target lumen_net
+[ 26%] Built target lumen_embedded
+[ 96%] Built target lumen_engine
+[ 96%] Building C object CMakeFiles/test_css_containment.dir/tests/test_css_containment.c.o
+[100%] Linking CXX executable test_css_containment
+[100%] Built target test_css_containment
+[ 10%] Built target lumen_rtc
+[ 13%] Built target lumen_base
+[ 13%] Checking embedded browser assets
+[ 26%] Built target lumen_net
+[ 26%] Built target lumen_embedded
+[ 96%] Built target lumen_engine
+[ 96%] Building C object CMakeFiles/test_grid_used_values.dir/tests/test_grid_used_values.c.o
+[100%] Linking CXX executable test_grid_used_values
+[100%] Built target test_grid_used_values
+[ 10%] Built target lumen_base
+[ 13%] Built target lumen_rtc
+[ 13%] Checking embedded browser assets
+[ 26%] Built target lumen_net
+[ 26%] Built target lumen_embedded
+[ 96%] Built target lumen_engine
+[100%] Building C object CMakeFiles/test_grid_absolute.dir/tests/test_grid_absolute.c.o
+[100%] Linking CXX executable test_grid_absolute
+[100%] Built target test_grid_absolute

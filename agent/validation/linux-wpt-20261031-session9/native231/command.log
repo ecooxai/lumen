@@ -1,0 +1,295 @@
+Test project /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+        Start   1: platform
+  1/145 Test   #1: platform ............................   Passed    0.00 sec
+        Start   2: encoding_labels
+  2/145 Test   #2: encoding_labels .....................   Passed    0.00 sec
+        Start   3: file
+  3/145 Test   #3: file ................................   Passed    0.00 sec
+        Start   4: http_range
+  4/145 Test   #4: http_range ..........................   Passed    0.01 sec
+        Start   5: http_zstd
+  5/145 Test   #5: http_zstd ...........................   Passed    0.12 sec
+        Start   6: mime_policy
+  6/145 Test   #6: mime_policy .........................   Passed    0.00 sec
+        Start   7: fetch_metadata
+  7/145 Test   #7: fetch_metadata ......................   Passed    0.01 sec
+        Start   8: auth_user_agent
+  8/145 Test   #8: auth_user_agent .....................   Passed    0.00 sec
+        Start   9: net_redirect
+  9/145 Test   #9: net_redirect ........................   Passed    0.01 sec
+        Start  10: desktop_sites
+ 10/145 Test  #10: desktop_sites .......................   Passed    0.00 sec
+        Start  11: cookie_site
+ 11/145 Test  #11: cookie_site .........................   Passed    0.00 sec
+        Start  12: http_cache
+ 12/145 Test  #12: http_cache ..........................   Passed    0.01 sec
+        Start  13: proxy
+ 13/145 Test  #13: proxy ...............................   Passed    0.02 sec
+        Start  14: net_stream
+ 14/145 Test  #14: net_stream ..........................   Passed    0.23 sec
+        Start  15: download
+ 15/145 Test  #15: download ............................   Passed    0.10 sec
+        Start  16: android_trust_import
+ 16/145 Test  #16: android_trust_import ................   Passed    0.01 sec
+        Start  17: android_launch
+ 17/145 Test  #17: android_launch ......................   Passed    0.00 sec
+        Start  18: android_back
+ 18/145 Test  #18: android_back ........................   Passed    0.00 sec
+        Start  19: android_fling_release
+ 19/145 Test  #19: android_fling_release ...............   Passed    0.00 sec
+        Start  20: android_fling_slow
+ 20/145 Test  #20: android_fling_slow ..................   Passed    0.00 sec
+        Start  21: android_fling_hold
+ 21/145 Test  #21: android_fling_hold ..................   Passed    0.00 sec
+        Start  22: android_fling_cancel
+ 22/145 Test  #22: android_fling_cancel ................   Passed    0.00 sec
+        Start  23: android_fling_invalid
+ 23/145 Test  #23: android_fling_invalid ...............   Passed    0.00 sec
+        Start  24: android_fling_stall
+ 24/145 Test  #24: android_fling_stall .................   Passed    0.00 sec
+        Start  25: android_fling_pixels
+ 25/145 Test  #25: android_fling_pixels ................   Passed    0.00 sec
+        Start  26: android_fling_cadence
+ 26/145 Test  #26: android_fling_cadence ...............   Passed    0.00 sec
+        Start  27: android_fling_stop
+ 27/145 Test  #27: android_fling_stop ..................   Passed    0.00 sec
+        Start  28: android_fling_reverse
+ 28/145 Test  #28: android_fling_reverse ...............   Passed    0.00 sec
+        Start  29: android_fling_bounded
+ 29/145 Test  #29: android_fling_bounded ...............   Passed    0.00 sec
+        Start  30: android_fling_independent
+ 30/145 Test  #30: android_fling_independent ...........   Passed    0.00 sec
+        Start  31: android_touch_tap
+ 31/145 Test  #31: android_touch_tap ...................   Passed    0.00 sec
+        Start  32: android_touch_drag
+ 32/145 Test  #32: android_touch_drag ..................   Passed    0.00 sec
+        Start  33: android_touch_slop
+ 33/145 Test  #33: android_touch_slop ..................   Passed    0.00 sec
+        Start  34: android_touch_cancel
+ 34/145 Test  #34: android_touch_cancel ................   Passed    0.00 sec
+        Start  35: android_touch_chrome
+ 35/145 Test  #35: android_touch_chrome ................   Passed    0.00 sec
+        Start  36: android_touch_multitouch
+ 36/145 Test  #36: android_touch_multitouch ............   Passed    0.00 sec
+        Start  37: android_touch_identity
+ 37/145 Test  #37: android_touch_identity ..............   Passed    0.00 sec
+        Start  38: android_touch_invalid
+ 38/145 Test  #38: android_touch_invalid ...............   Passed    0.00 sec
+        Start  39: android_touch_release_delta
+ 39/145 Test  #39: android_touch_release_delta .........   Passed    0.00 sec
+        Start  40: android_touch_capacity
+ 40/145 Test  #40: android_touch_capacity ..............   Passed    0.00 sec
+        Start  41: android_touch_reverse
+ 41/145 Test  #41: android_touch_reverse ...............   Passed    0.00 sec
+        Start  42: android_touch_independent
+ 42/145 Test  #42: android_touch_independent ...........   Passed    0.00 sec
+        Start  43: workspace
+ 43/145 Test  #43: workspace ...........................   Passed    0.00 sec
+        Start  44: media_icon
+ 44/145 Test  #44: media_icon ..........................   Passed    0.00 sec
+        Start  45: viewer
+ 45/145 Test  #45: viewer ..............................   Passed    0.00 sec
+        Start  46: viewport_events
+ 46/145 Test  #46: viewport_events .....................   Passed    0.13 sec
+        Start  47: viewer_script
+ 47/145 Test  #47: viewer_script .......................   Passed    0.04 sec
+        Start  48: embedded_assets
+ 48/145 Test  #48: embedded_assets .....................   Passed    0.31 sec
+        Start  49: android_dependency_plan
+ 49/145 Test  #49: android_dependency_plan .............   Passed    0.09 sec
+        Start  50: worker_tasks
+ 50/145 Test  #50: worker_tasks ........................   Passed    0.05 sec
+        Start  51: js_viewport_state
+ 51/145 Test  #51: js_viewport_state ...................   Passed    0.00 sec
+        Start  52: broadcast_site
+ 52/145 Test  #52: broadcast_site ......................   Passed    0.06 sec
+        Start  53: js_node_lifetime_root
+ 53/145 Test  #53: js_node_lifetime_root ...............   Passed    0.33 sec
+        Start  54: js_node_lifetime_child
+ 54/145 Test  #54: js_node_lifetime_child ..............   Passed    0.34 sec
+        Start  55: invoker_native
+ 55/145 Test  #55: invoker_native ......................   Passed    0.21 sec
+        Start  56: invoker_cancel
+ 56/145 Test  #56: invoker_cancel ......................   Passed    0.23 sec
+        Start  57: invoker_close
+ 57/145 Test  #57: invoker_close .......................   Passed    0.22 sec
+        Start  58: invoker_properties
+ 58/145 Test  #58: invoker_properties ..................   Passed    0.22 sec
+        Start  59: invoker_custom
+ 59/145 Test  #59: invoker_custom ......................   Passed    0.21 sec
+        Start  60: invoker_form
+ 60/145 Test  #60: invoker_form ........................   Passed    0.22 sec
+        Start  61: invoker_shadow
+ 61/145 Test  #61: invoker_shadow ......................   Passed    0.22 sec
+        Start  62: invoker_lifecycle
+ 62/145 Test  #62: invoker_lifecycle ...................   Passed    0.23 sec
+        Start  63: invoker_events
+ 63/145 Test  #63: invoker_events ......................   Passed    0.21 sec
+        Start  64: invoker_reentrant
+ 64/145 Test  #64: invoker_reentrant ...................   Passed    0.22 sec
+        Start  65: invoker_toggle
+ 65/145 Test  #65: invoker_toggle ......................   Passed    0.23 sec
+        Start  66: invoker_modal-order
+ 66/145 Test  #66: invoker_modal-order .................   Passed    0.22 sec
+        Start  67: background_clip
+ 67/145 Test  #67: background_clip .....................   Passed    0.05 sec
+        Start  68: dom_style_tracking
+ 68/145 Test  #68: dom_style_tracking ..................   Passed    0.77 sec
+        Start  69: html5lib
+ 69/145 Test  #69: html5lib ............................   Passed    0.06 sec
+        Start  70: id_map
+ 70/145 Test  #70: id_map ..............................   Passed    0.05 sec
+        Start  71: has_filter
+ 71/145 Test  #71: has_filter ..........................   Passed    0.06 sec
+        Start  72: js_fullscreen
+ 72/145 Test  #72: js_fullscreen .......................   Passed    4.21 sec
+        Start  73: js_intersection_geometry
+ 73/145 Test  #73: js_intersection_geometry ............   Passed    4.10 sec
+        Start  74: js_hidden_scroll_retention
+ 74/145 Test  #74: js_hidden_scroll_retention ..........   Passed    1.36 sec
+        Start  75: js_minmax_definite
+ 75/145 Test  #75: js_minmax_definite ..................   Passed    2.22 sec
+        Start  76: js_image_bitmap
+ 76/145 Test  #76: js_image_bitmap .....................   Passed    3.21 sec
+        Start  77: js_gsi_button
+ 77/145 Test  #77: js_gsi_button .......................   Passed    2.22 sec
+        Start  78: js_dom_webidl
+ 78/145 Test  #78: js_dom_webidl .......................   Passed    2.27 sec
+        Start  79: js_empty_input
+ 79/145 Test  #79: js_empty_input ......................   Passed    2.22 sec
+        Start  80: js_indexeddb
+ 80/145 Test  #80: js_indexeddb ........................   Passed    2.21 sec
+        Start  81: js_web_locks
+ 81/145 Test  #81: js_web_locks ........................   Passed    2.21 sec
+        Start  82: js_unhandled_rejection
+ 82/145 Test  #82: js_unhandled_rejection ..............   Passed    2.23 sec
+        Start  83: js_window_ports
+ 83/145 Test  #83: js_window_ports .....................   Passed    2.22 sec
+        Start  84: js_pointer_events
+ 84/145 Test  #84: js_pointer_events ...................   Passed    1.21 sec
+        Start  85: js_xpath
+ 85/145 Test  #85: js_xpath ............................   Passed    2.23 sec
+        Start  86: js_get_animations
+ 86/145 Test  #86: js_get_animations ...................   Passed    1.22 sec
+        Start  87: browser_input_modifier
+ 87/145 Test  #87: browser_input_modifier ..............   Passed    1.41 sec
+        Start  88: browser_popup_input
+ 88/145 Test  #88: browser_popup_input .................   Passed    1.53 sec
+        Start  89: browser_input_queue
+ 89/145 Test  #89: browser_input_queue .................   Passed    1.51 sec
+        Start  90: browser_module_errors
+ 90/145 Test  #90: browser_module_errors ...............   Passed    1.37 sec
+        Start  91: browser_module_identity
+ 91/145 Test  #91: browser_module_identity .............   Passed    1.35 sec
+        Start  92: browser_module_graph_identity
+ 92/145 Test  #92: browser_module_graph_identity .......   Passed    1.43 sec
+        Start  93: browser_body_event
+ 93/145 Test  #93: browser_body_event ..................   Passed    1.14 sec
+        Start  94: browser_grid_typed_values
+ 94/145 Test  #94: browser_grid_typed_values ...........   Passed    1.14 sec
+        Start  95: browser_grid_used_tracks
+ 95/145 Test  #95: browser_grid_used_tracks ............   Passed    1.15 sec
+        Start  96: browser_grid_repeat_count
+ 96/145 Test  #96: browser_grid_repeat_count ...........   Passed    1.14 sec
+        Start  97: browser_grid_repeat
+ 97/145 Test  #97: browser_grid_repeat .................   Passed    1.15 sec
+        Start  98: browser_grid_cssom
+ 98/145 Test  #98: browser_grid_cssom ..................   Passed    1.15 sec
+        Start  99: browser_grid_track_regression
+ 99/145 Test  #99: browser_grid_track_regression .......   Passed    1.14 sec
+        Start 100: browser_replaced_sizing
+100/145 Test #100: browser_replaced_sizing .............   Passed    1.15 sec
+        Start 101: browser_position_cssom_regression
+101/145 Test #101: browser_position_cssom_regression ...   Passed    1.15 sec
+        Start 102: browser_image_lifecycle
+102/145 Test #102: browser_image_lifecycle .............   Passed    1.34 sec
+        Start 103: browser_control_selection
+103/145 Test #103: browser_control_selection ...........   Passed    1.15 sec
+        Start 104: browser_react_message_replacement
+104/145 Test #104: browser_react_message_replacement ...   Passed    1.32 sec
+        Start 105: js_performance_startup
+105/145 Test #105: js_performance_startup ..............   Passed    3.22 sec
+        Start 106: js_worker_global_listener
+106/145 Test #106: js_worker_global_listener ...........   Passed    2.23 sec
+        Start 107: js_worker_xhr
+107/145 Test #107: js_worker_xhr .......................   Passed    3.22 sec
+        Start 108: js_touch_action
+108/145 Test #108: js_touch_action .....................   Passed    0.72 sec
+        Start 109: js_raf_throttle
+109/145 Test #109: js_raf_throttle .....................   Passed    3.71 sec
+        Start 110: nested_overflow
+110/145 Test #110: nested_overflow .....................   Passed    0.07 sec
+        Start 111: scale_text
+111/145 Test #111: scale_text ..........................   Passed    0.06 sec
+        Start 112: round_clip
+112/145 Test #112: round_clip ..........................   Passed    0.06 sec
+        Start 113: svg_gradient_img
+113/145 Test #113: svg_gradient_img ....................   Passed    0.05 sec
+        Start 114: raster_bands
+114/145 Test #114: raster_bands ........................   Passed    0.19 sec
+        Start 115: raster_spans
+115/145 Test #115: raster_spans ........................   Passed    0.81 sec
+        Start 116: fontconfig_match
+116/145 Test #116: fontconfig_match ....................   Passed    0.67 sec
+        Start 117: linux_capture_refusal
+117/145 Test #117: linux_capture_refusal ...............   Passed    0.00 sec
+        Start 118: font_woff2
+118/145 Test #118: font_woff2 ..........................   Passed    0.05 sec
+        Start 119: shape_cache
+119/145 Test #119: shape_cache .........................   Passed    0.07 sec
+        Start 120: code_cache
+120/145 Test #120: code_cache ..........................   Passed    0.37 sec
+        Start 121: inset_move
+121/145 Test #121: inset_move ..........................   Passed    0.06 sec
+        Start 122: sticky_geometry
+122/145 Test #122: sticky_geometry .....................   Passed    0.06 sec
+        Start 123: paint_cull
+123/145 Test #123: paint_cull ..........................   Passed    0.09 sec
+        Start 124: grid_used_values
+124/145 Test #124: grid_used_values ....................   Passed    0.08 sec
+        Start 125: css_stepped_math
+125/145 Test #125: css_stepped_math ....................   Passed    0.05 sec
+        Start 126: css_stretch
+126/145 Test #126: css_stretch .........................   Passed    0.07 sec
+        Start 127: css_containment
+127/145 Test #127: css_containment .....................   Passed    0.07 sec
+        Start 128: grid_repeat_validation
+128/145 Test #128: grid_repeat_validation ..............   Passed    0.05 sec
+        Start 129: grid_alignment
+129/145 Test #129: grid_alignment ......................   Passed    0.08 sec
+        Start 130: grid_item_width
+130/145 Test #130: grid_item_width .....................   Passed    0.07 sec
+        Start 131: logical_size
+131/145 Test #131: logical_size ........................   Passed    0.16 sec
+        Start 132: break_spaces
+132/145 Test #132: break_spaces ........................   Passed    0.07 sec
+        Start 133: flex_declaration
+133/145 Test #133: flex_declaration ....................   Passed    0.06 sec
+        Start 134: grid_absolute
+134/145 Test #134: grid_absolute .......................   Passed    0.07 sec
+        Start 135: flex_alignment
+135/145 Test #135: flex_alignment ......................   Passed    0.07 sec
+        Start 136: font_units
+136/145 Test #136: font_units ..........................   Passed    0.08 sec
+        Start 137: anon_block_size
+137/145 Test #137: anon_block_size .....................   Passed    0.06 sec
+        Start 138: button_center
+138/145 Test #138: button_center .......................   Passed    0.06 sec
+        Start 139: radius_inherit
+139/145 Test #139: radius_inherit ......................   Passed    0.05 sec
+        Start 140: starting_style_top
+140/145 Test #140: starting_style_top ..................   Passed    0.05 sec
+        Start 141: starting_style_nested
+141/145 Test #141: starting_style_nested ...............   Passed    0.05 sec
+        Start 142: starting_style_conditional
+142/145 Test #142: starting_style_conditional ..........   Passed    0.05 sec
+        Start 143: starting_style_reopen
+143/145 Test #143: starting_style_reopen ...............   Passed    0.05 sec
+        Start 144: js_viewport_runtime
+144/145 Test #144: js_viewport_runtime .................   Passed    0.22 sec
+        Start 145: keyboard_editing
+145/145 Test #145: keyboard_editing ....................   Passed    0.23 sec
+
+100% tests passed, 0 tests failed out of 145
+
+Total Test time (real) =  81.18 sec

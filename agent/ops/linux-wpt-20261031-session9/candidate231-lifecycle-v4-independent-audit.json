@@ -1,0 +1,748 @@
+{
+  "reviewed_utc": "2026-10-31T09:32:04.697862+00:00",
+  "scope": "Independent observation integrity and lifecycle-state inference; not WPT conformance",
+  "pins": {
+    "document-lifecycle-matrix-v4.html": "58383de5678ccd3964da0e97f6cc04089a428dcab01cff1a711875f51480a332",
+    "matrix-manifest-v4.json": "85a33adc567ac3bf609366059577d58d03438136ed039480f3d4a66dfd8abdb4",
+    "run-matrix-v4.py": "02a3e4b177208d73cb069afd43516a7a505e3fa344bb6c2fb85f28dac318670d"
+  },
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "execution_receipt": "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-v4-baseline-execution.json",
+  "execution_receipt_sha256": "7f5d9b88b4e9a8faee0f0f9dadcb0aa511c9c58caafe7361a4adf976803a8014",
+  "execution": {
+    "candidate": 231,
+    "started_utc": "2026-10-31T09:30:49.091969+00:00",
+    "ended_utc": "2026-10-31T09:31:04.415512+00:00",
+    "duration_s": 15.323540796001907,
+    "maximum_browser_lanes": 2,
+    "controller_sha256": "02a3e4b177208d73cb069afd43516a7a505e3fa344bb6c2fb85f28dac318670d",
+    "runs": [
+      {
+        "kind": "lumen",
+        "command": [
+          "python3",
+          "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/run-matrix-v4.py",
+          "--kind",
+          "lumen",
+          "--iteration",
+          "231"
+        ],
+        "actual_controller_exit_code": 0,
+        "log": "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-v4-lumen-controller.log",
+        "log_sha256": "1b3de233c2e8472d89b4276ba88ca65c569b8bcf6c698e32fed4c92c8e3eaec3"
+      },
+      {
+        "kind": "chromium156",
+        "command": [
+          "python3",
+          "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/run-matrix-v4.py",
+          "--kind",
+          "chromium156",
+          "--iteration",
+          "231"
+        ],
+        "actual_controller_exit_code": 0,
+        "log": "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-v4-chromium156-controller.log",
+        "log_sha256": "c69ea43641ca0cc078cb2c5ec13723d7ace55d34ba764079d341af2e398a9990"
+      }
+    ],
+    "all_measurement_controllers_exited_zero": true,
+    "scope": "Root-authorized final append-only lifecycle observation adds post-completion document.open. Earlier eleven cases/operations/waits and raw evidence are preserved. Transport PASS is not behavioral conformance."
+  },
+  "results": [
+    {
+      "kind": "jsrun231",
+      "receipt_sha256": "5f52c3aad2ad1ee38f3935c47f755a0b44d3fea03366f33d92f4761c144832c4",
+      "observations_sha256": "463d9d0cf8be98ff53443a1ceabbfd63ab0621a998db91ff31acf6e2be99af82",
+      "prior11_byte_equivalent_structured_rows": true,
+      "post_completion_row_count": 15,
+      "integrity_valid": true,
+      "post_completion_chronological_rows": [
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 0,
+          "value": {
+            "sequence": 0,
+            "listener": "document-dcl",
+            "generation": "initial",
+            "type": "DOMContentLoaded",
+            "className": "[object Event]",
+            "target": "document",
+            "currentTarget": "document",
+            "path": [
+              "document",
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": true,
+            "cancelable": false,
+            "composed": true,
+            "persisted": null,
+            "readyState": "interactive",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 1,
+          "value": {
+            "sequence": 1,
+            "listener": "window-bubble",
+            "generation": "initial",
+            "type": "load",
+            "className": "[object Event]",
+            "target": "window",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": false,
+            "cancelable": false,
+            "composed": true,
+            "persisted": null,
+            "readyState": "complete",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 2,
+          "value": {
+            "sequence": 2,
+            "listener": "window-capture",
+            "generation": "initial",
+            "type": "load",
+            "className": "[object Event]",
+            "target": "window",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": false,
+            "cancelable": false,
+            "composed": true,
+            "persisted": null,
+            "readyState": "complete",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 0,
+          "value": {
+            "sequence": 3,
+            "action": "iframe-element-load",
+            "targetIsFrame": true,
+            "currentTargetIsFrame": true,
+            "trusted": true,
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 1,
+          "value": {
+            "sequence": 4,
+            "action": "load-microtask",
+            "generation": "initial",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 2,
+          "value": {
+            "sequence": 5,
+            "action": "before-post-completion-open",
+            "readyState": "complete"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 3,
+          "value": {
+            "sequence": 6,
+            "action": "replacement-listeners-installed",
+            "generation": "replacement",
+            "readyState": "loading"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 4,
+          "value": {
+            "sequence": 7,
+            "action": "before-replacement-close",
+            "readyState": "loading"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 3,
+          "value": {
+            "sequence": 8,
+            "listener": "document-dcl",
+            "generation": "replacement",
+            "type": "DOMContentLoaded",
+            "className": "[object Event]",
+            "target": "document",
+            "currentTarget": "document",
+            "path": [
+              "document",
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": true,
+            "cancelable": false,
+            "composed": true,
+            "persisted": null,
+            "readyState": "interactive",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 4,
+          "value": {
+            "sequence": 9,
+            "listener": "window-bubble",
+            "generation": "replacement",
+            "type": "load",
+            "className": "[object Event]",
+            "target": "window",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": false,
+            "cancelable": false,
+            "composed": true,
+            "persisted": null,
+            "readyState": "complete",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 5,
+          "value": {
+            "sequence": 10,
+            "listener": "window-capture",
+            "generation": "replacement",
+            "type": "load",
+            "className": "[object Event]",
+            "target": "window",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": false,
+            "cancelable": false,
+            "composed": true,
+            "persisted": null,
+            "readyState": "complete",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 5,
+          "value": {
+            "sequence": 11,
+            "action": "iframe-element-load",
+            "targetIsFrame": true,
+            "currentTargetIsFrame": true,
+            "trusted": true,
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 6,
+          "value": {
+            "sequence": 12,
+            "action": "after-replacement-close",
+            "readyState": "complete"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 7,
+          "value": {
+            "sequence": 13,
+            "action": "load-microtask",
+            "generation": "replacement",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 8,
+          "value": {
+            "sequence": 14,
+            "action": "post-completion-observation-finished",
+            "readyState": "complete"
+          }
+        }
+      ],
+      "reference_os_exit_limitation": {
+        "native_jsrun_actual_returncode": 0
+      }
+    },
+    {
+      "kind": "chromium156",
+      "receipt_sha256": "7c603320ac60ebaf584292e3fc1b1bc696a947fa046465045da2b744f747261c",
+      "observations_sha256": "a0216d50b124a038d81ae270efdb88a652e818efc42f31b1c1334c3065f4cf16",
+      "prior11_byte_equivalent_structured_rows": true,
+      "post_completion_row_count": 21,
+      "integrity_valid": true,
+      "post_completion_chronological_rows": [
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 0,
+          "value": {
+            "sequence": 0,
+            "listener": "document-dcl",
+            "generation": "initial",
+            "type": "DOMContentLoaded",
+            "className": "[object Event]",
+            "target": "document",
+            "currentTarget": "document",
+            "path": [
+              "document",
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": true,
+            "cancelable": false,
+            "composed": false,
+            "persisted": null,
+            "readyState": "interactive",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 1,
+          "value": {
+            "sequence": 1,
+            "listener": "window-bubble",
+            "generation": "initial",
+            "type": "load",
+            "className": "[object Event]",
+            "target": "document",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": false,
+            "cancelable": false,
+            "composed": false,
+            "persisted": null,
+            "readyState": "complete",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 2,
+          "value": {
+            "sequence": 2,
+            "listener": "window-capture",
+            "generation": "initial",
+            "type": "load",
+            "className": "[object Event]",
+            "target": "document",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": false,
+            "cancelable": false,
+            "composed": false,
+            "persisted": null,
+            "readyState": "complete",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 0,
+          "value": {
+            "sequence": 3,
+            "action": "load-microtask",
+            "generation": "initial",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 1,
+          "value": {
+            "sequence": 4,
+            "action": "iframe-element-load",
+            "targetIsFrame": true,
+            "currentTargetIsFrame": true,
+            "trusted": true,
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 3,
+          "value": {
+            "sequence": 5,
+            "listener": "window-bubble",
+            "generation": "initial",
+            "type": "pageshow",
+            "className": "[object PageTransitionEvent]",
+            "target": "document",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": true,
+            "cancelable": true,
+            "composed": false,
+            "persisted": false,
+            "readyState": "complete",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 4,
+          "value": {
+            "sequence": 6,
+            "listener": "window-capture",
+            "generation": "initial",
+            "type": "pageshow",
+            "className": "[object PageTransitionEvent]",
+            "target": "document",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": true,
+            "cancelable": true,
+            "composed": false,
+            "persisted": false,
+            "readyState": "complete",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 2,
+          "value": {
+            "sequence": 7,
+            "action": "pageshow-microtask",
+            "generation": "initial",
+            "activeGeneration": "initial"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 3,
+          "value": {
+            "sequence": 8,
+            "action": "before-post-completion-open",
+            "readyState": "complete"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 4,
+          "value": {
+            "sequence": 9,
+            "action": "replacement-listeners-installed",
+            "generation": "replacement",
+            "readyState": "loading"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 5,
+          "value": {
+            "sequence": 10,
+            "action": "before-replacement-close",
+            "readyState": "loading"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 5,
+          "value": {
+            "sequence": 11,
+            "listener": "document-dcl",
+            "generation": "replacement",
+            "type": "DOMContentLoaded",
+            "className": "[object Event]",
+            "target": "document",
+            "currentTarget": "document",
+            "path": [
+              "document",
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": true,
+            "cancelable": false,
+            "composed": false,
+            "persisted": null,
+            "readyState": "interactive",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 6,
+          "value": {
+            "sequence": 12,
+            "listener": "window-bubble",
+            "generation": "replacement",
+            "type": "load",
+            "className": "[object Event]",
+            "target": "document",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": false,
+            "cancelable": false,
+            "composed": false,
+            "persisted": null,
+            "readyState": "complete",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 7,
+          "value": {
+            "sequence": 13,
+            "listener": "window-capture",
+            "generation": "replacement",
+            "type": "load",
+            "className": "[object Event]",
+            "target": "document",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": false,
+            "cancelable": false,
+            "composed": false,
+            "persisted": null,
+            "readyState": "complete",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 6,
+          "value": {
+            "sequence": 14,
+            "action": "iframe-element-load",
+            "targetIsFrame": true,
+            "currentTargetIsFrame": true,
+            "trusted": true,
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 8,
+          "value": {
+            "sequence": 15,
+            "listener": "window-bubble",
+            "generation": "replacement",
+            "type": "pageshow",
+            "className": "[object PageTransitionEvent]",
+            "target": "document",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": true,
+            "cancelable": true,
+            "composed": false,
+            "persisted": false,
+            "readyState": "complete",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "events",
+          "index": 9,
+          "value": {
+            "sequence": 16,
+            "listener": "window-capture",
+            "generation": "replacement",
+            "type": "pageshow",
+            "className": "[object PageTransitionEvent]",
+            "target": "document",
+            "currentTarget": "window",
+            "path": [
+              "window"
+            ],
+            "phase": 2,
+            "trusted": true,
+            "bubbles": true,
+            "cancelable": true,
+            "composed": false,
+            "persisted": false,
+            "readyState": "complete",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 7,
+          "value": {
+            "sequence": 17,
+            "action": "after-replacement-close",
+            "readyState": "complete"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 8,
+          "value": {
+            "sequence": 18,
+            "action": "load-microtask",
+            "generation": "replacement",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 9,
+          "value": {
+            "sequence": 19,
+            "action": "pageshow-microtask",
+            "generation": "replacement",
+            "activeGeneration": "replacement"
+          }
+        },
+        {
+          "caseIndex": 11,
+          "caseId": "post-completion-document-open",
+          "kind": "actions",
+          "index": 10,
+          "value": {
+            "sequence": 20,
+            "action": "post-completion-observation-finished",
+            "readyState": "complete"
+          }
+        }
+      ],
+      "reference_os_exit_limitation": {
+        "adapter_actual_returncode": 0,
+        "chromium_os_exit_status": "Not exposed by unchanged supported public adapter",
+        "profile_removed": true,
+        "remaining_owned_identities": [],
+        "fallback_signals": [],
+        "driver_cleanup_error": null
+      }
+    }
+  ],
+  "conclusion": "Same-Document open after the completion cycle emits another native load/owner-load/pageshow cycle in the pinned reference. Open during load/pageshow does not recursively dispatch another cycle. Pending/InProgress/Complete state is supported; permanent first-ever-load suppression is not.",
+  "known_reference_case_errors": "The two prior replacement-load waits remain recorded and exactly preserved; these are observational assumptions, not proven reference defects.",
+  "approved_contract": false
+}

@@ -1,0 +1,104 @@
+{
+  "reviewed_utc": "2026-10-31T08:54:43.398392+00:00",
+  "candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "7066920bcfe73ba8538a5ce92dddc65da86ca6e5d630886c2b4996f1728b5d5d",
+  "recorded_input_count": 648,
+  "all_recorded_inputs_match_immutable_build": true,
+  "selected39": {
+    "cohorts": [
+      {
+        "scope": "qa-css-logical-containment",
+        "assertions": 48,
+        "all_assertions_pass": true,
+        "renderings": 2,
+        "gained_assertions": 48,
+        "prior_pass_losses": 0,
+        "identity_set_unchanged": true
+      },
+      {
+        "scope": "qa-css-containment-numbered",
+        "assertions": 150,
+        "all_assertions_pass": true,
+        "renderings": 26,
+        "gained_assertions": 107,
+        "prior_pass_losses": 0,
+        "identity_set_unchanged": true
+      },
+      {
+        "scope": "qa-css-containment-parsing",
+        "assertions": 88,
+        "all_assertions_pass": true,
+        "renderings": 0,
+        "gained_assertions": 50,
+        "prior_pass_losses": 0,
+        "identity_set_unchanged": true
+      }
+    ],
+    "assertions_passed": 286,
+    "assertions_total": 286,
+    "rendering_passed": 28,
+    "rendering_total": 28,
+    "actual_native_processes": 67,
+    "all_four_lifecycle_events_linked": true,
+    "all_actual_exits_zero": true,
+    "all_profiles_removed": true
+  },
+  "native_and_sanitizer_xml": [
+    {
+      "path": "agent/validation/linux-wpt-20261031-session9/native231/ctest.xml",
+      "passed": 145,
+      "total": 145
+    },
+    {
+      "path": "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/ctest.xml",
+      "passed": 1,
+      "total": 1
+    },
+    {
+      "path": "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/ctest.xml",
+      "passed": 3,
+      "total": 3
+    }
+  ],
+  "raster_sanitizer_unittest_pass": true,
+  "api3": {
+    "passed": 15,
+    "total": 23,
+    "harness_OK": 3,
+    "prior_pass_losses": 0,
+    "remaining_failures": 8
+  },
+  "retention_contract30_pass": true,
+  "known_hidden_size_caching_difference_retained": true,
+  "chromium_durable921_and_parent_three_phases_pass": true,
+  "one_second_monitor_receipts_valid": true,
+  "resource_interpretation": "No throughput or memory advantage inferred from differently failing or short WPT runs. Shared cgroup samples are not per-browser memory.",
+  "legacy_Chromium_threshold_assertion": "One unresolved nonzero-threshold disagreement remains separately recorded; cadence/retention agreement is not full fixture parity.",
+  "final640_render40_and_matched_resources_pending": true,
+  "release_qualified": false,
+  "evidence_sha256": {
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/native/results.jsonl": "cd64813ddce1d80ec10acce4ce49f39e585dce94ddb92073962b8fb07897ac63",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen226-assertions/native/results.jsonl": "d82edba8ada8823974fecaeb813490cabb582c8ab6a4301bed681efa26e0ef26",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/guard-audit/launches.jsonl": "993d0c9ba385baede6269b9fe5408e4d87095accfd7b9e0b32b4e7e6587b0e8c",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/guard-audit/launches.jsonl": "88cc8775607681ff522e8b23d082bf4c14f391af0d4b8ad46a006b7c19fc0026",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/native/results.jsonl": "ab58f515fa52f99f578766df763048f5eabc22571bd88bfbad9d70897f226050",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen226-assertions/native/results.jsonl": "e4c39ac7b9bbf76bf0cbb67294b7736412a5389bcdd98aa67caa9eec67c5b3b4",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/guard-audit/launches.jsonl": "91c65d84130a29022f4998a7dff14534fced5acd5dbc2fc0dbc567deacbf4de4",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/guard-audit/launches.jsonl": "7dbc765b0cd094aa029d4529c4768ce4aac614e3f1743edbb669cd1d21a34eab",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/native/results.jsonl": "ea35f921a41539755ec32587b652ed6d53b5621a07fab0b36f539d8a41bf1240",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen226-assertions/native/results.jsonl": "ccaf8ad306b57b8d201c6e7518075e1c769aece4e8ccc8e75ba8771d6fe09132",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/guard-audit/launches.jsonl": "2ed491ff2ef32aa9e71c243e280978c5b594f4be8efa9e2ecc489b367f8fb43e",
+    "agent/validation/linux-wpt-20261031-session9/native231/ctest.xml": "7efe1fccb71ec24d357e0da01a2283cd7bbe33e06b282be1ea212a774fd3628a",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/ctest.xml": "5cf122c90145979c31316d8c1522867fda77ed723d31e62de1d1a15758480023",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/ctest.xml": "8345c921182f8d963ba0451143c6842bdb47286797c6729f04af5cfd78b99dde",
+    "agent/validation/linux-wpt-20261031-session9/native231/receipt.json": "1a42b535a205a38684c572b8a2a4e88ee858e864e5bdf306a75459f19cb59de5",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/receipt.json": "b12e5c8b3d78c287e841c081c716693ab08c07ec3eee42e3fe0c35284e731b04",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/receipt.json": "916a3a9a3c7294786b46d5710121321154434b765732defecd0785fb4feac714",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/receipt.json": "56bb01a65652e40ff7c0d9b74a9b2693d4e083416b2d078d8ad952d9027ace0f",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-hidden-scroll-contract-audit.json": "9caf9953433d272955026830bb8e05b608b2a3bef7662fb0ae3d7f5d54622806",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-hidden-api-audit.json": "48dd271bb1df0cf8dcc8469e34d9e36589aecc148e0b27630fc6c0a5ec987002",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-sanitizer-execution.json": "bdb8ece2d77c2e9adacbecf54bf92e853179f0b447e55450ab3cd82ef6f89fd9",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-containment-audit.json": "495803be13e6c08989d4e286c572a1ded947776b26642de9951b93bb9d764a61"
+  }
+}

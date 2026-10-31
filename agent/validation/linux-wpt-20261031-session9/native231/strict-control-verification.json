@@ -1,0 +1,32 @@
+{
+  "native_targets_passed": 145,
+  "native_targets_total": 145,
+  "markers": [
+    "RESULTS intersection-geometry:PASS",
+    "RESULTS io-frame-cadence:PASS",
+    "RESULTS intersection-geometry-cadence:PASS",
+    "RESULTS hidden-scroll-retention:PASS"
+  ],
+  "all_markers_present_and_none_failed": true,
+  "containment_checks": 339,
+  "containment_failures": 0,
+  "parent_extent_observations": [
+    {
+      "phase": "hidden",
+      "width": 160,
+      "height": 140
+    },
+    {
+      "phase": "revealed",
+      "width": 400,
+      "height": 400
+    },
+    {
+      "phase": "hidden-again",
+      "width": 160,
+      "height": 140
+    }
+  ],
+  "full_log_sha256": "5537070d004456c243c7c1825dfe189be052caf56224aa0a629b6918b0d102e8",
+  "wheel_event_path": "Not exercised; guard code-reviewed only"
+}

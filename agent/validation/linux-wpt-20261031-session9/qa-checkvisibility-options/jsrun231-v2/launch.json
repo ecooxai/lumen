@@ -1,0 +1,24 @@
+{
+  "kind": "lumen",
+  "candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "00435d64f63d928ceac27691ab1f28f533e4002a80ee728e0787df5b9c4d35fe",
+  "command": [
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun-astra-i231",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/checkvisibility-options-v1.html",
+    "10000"
+  ],
+  "native_environment": {
+    "JSRUN_LAYOUT": "1",
+    "JSRUN_UNTIL_ATTR": "data-checkvisibility-options-complete",
+    "LUMEN_CONSOLE": "0"
+  },
+  "fixture_sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+  "expected_checks": 49,
+  "resource_interval_seconds": 1,
+  "browser_lane_count": 1,
+  "not_WPT": true,
+  "complete_feature_FAIL_is_valid_measurement": true
+}

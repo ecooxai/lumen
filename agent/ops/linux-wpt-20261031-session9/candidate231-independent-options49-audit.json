@@ -1,0 +1,266 @@
+{
+  "reviewed_utc": "2026-10-31T09:15:31.230927+00:00",
+  "candidate": 231,
+  "authored_not_WPT": true,
+  "native_passed": 15,
+  "native_total": 49,
+  "chromium_passed": 49,
+  "chromium_total": 49,
+  "strict_row_reconstruction_valid": true,
+  "original_counts_marker_completion_consistent": true,
+  "native_actual_exit": 0,
+  "earlier_native_v1_v2_invalid_preserved": true,
+  "chromium_OS_exit_not_exposed": true,
+  "no_production_or_oracle_changes": true,
+  "failed_rows": [
+    {
+      "name": "legacy visibility option",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "modern visibility option",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "modern true with legacy false",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "legacy true with modern false",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "collapsed own visibility",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "inherited hidden visibility",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "visibility mutation is synchronously observed",
+      "expected": "false,true",
+      "actual": "true,true",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "legacy opacity option",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "modern opacity option",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "modern opacity true with legacy false",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "legacy opacity true with modern false",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "opaque child cannot override zero-opacity ancestor",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "opacity mutation is synchronously observed",
+      "expected": "false,true",
+      "actual": "true,true",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "boxless ancestor still contributes computed opacity",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "open shadow host opacity ancestor",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "closed shadow host opacity ancestor",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "assigned slot contributes computed opacity",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "manual assignment follows real shadow ancestry",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "public assignedSlot override cannot alter internal ancestry",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "public getComputedStyle override cannot alter native style query",
+      "expected": "false,false",
+      "actual": "true,true",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "public geometry override cannot alter box existence",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "primitive boolean dictionary rejected",
+      "expected": "TypeError",
+      "actual": "none",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "primitive number dictionary rejected",
+      "expected": "TypeError",
+      "actual": "none",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "primitive string dictionary rejected",
+      "expected": "TypeError",
+      "actual": "none",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "primitive symbol dictionary rejected",
+      "expected": "TypeError",
+      "actual": "none",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "primitive bigint dictionary rejected",
+      "expected": "TypeError",
+      "actual": "none",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "inherited dictionary members are read",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "truthy string option converts to boolean true",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "object boolean conversion invokes no coercion method",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "dictionary members are read exactly once in IDL order",
+      "expected": "checkOpacity,checkVisibilityCSS,contentVisibilityAuto,opacityProperty,visibilityProperty",
+      "actual": "",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "dictionary conversion precedes box-existence return",
+      "expected": "checkOpacity,checkVisibilityCSS,contentVisibilityAuto,opacityProperty,visibilityProperty",
+      "actual": "",
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "later alias getter is read even when early alias is true",
+      "expected": true,
+      "actual": false,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "dictionary getter exception is propagated unchanged",
+      "expected": true,
+      "actual": false,
+      "pass": false,
+      "error": null
+    },
+    {
+      "name": "dictionary style mutation is applied before visibility check",
+      "expected": false,
+      "actual": true,
+      "pass": false,
+      "error": null
+    }
+  ],
+  "evidence_sha256": {
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/observations.json": "55d50d94f46f32b6520516e91538475d32e9d8e096b014f2b6c29160eb45fbf6",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/receipt.json": "043da3732bfd28ba5f6946fd14c3a57294ed51c6f90f6ea3c03b49a7034d0dff",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/controller.log": "397a8d45d34881704e68c0355729fc7e3e9d53af5578407deb403e93e384a1a7",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/observations.json": "83d47660b5b6caf7f52355db04931e143a1fe51522001a7a78a9477e86ab5ef1",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/receipt.json": "051f0dab222c9d8f60c835a1caac93c50f688d8fe469b83337209cf00573e7b0",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v3.py": "e6574a5f0bf4fe347bd620c3bda0a0d72444143e609b5bb37b1d04470df9deae",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/serialize-completed-results-v3.js": "fc11a22c4bac7f5738fe35c486a0a1a856cd902082df3f872684ddb1ddee07cf",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/checkvisibility-options-v1.html": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/expected-checks-v1.json": "a76f6d7611e87643a2fdf34ca2d72bf80a7a789c3d66d82c59234855cc797506"
+  }
+}

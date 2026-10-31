@@ -1,0 +1,17 @@
+{
+  "candidate": 231,
+  "started_utc": "2026-10-31T08:48:37.551630+00:00",
+  "finished_utc": "2026-10-31T08:48:47.717803+00:00",
+  "duration_s": 10.166182854998624,
+  "returncode": 0,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "source_unchanged": true,
+  "extra_inputs_unchanged": true,
+  "git_unchanged": true,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "immutable_binary_sha256": "7066920bcfe73ba8538a5ce92dddc65da86ca6e5d630886c2b4996f1728b5d5d",
+  "source_manifest_limit": "Recorded build inputs plus explicit sanitizer files, not a full transitive system-toolchain closure"
+}

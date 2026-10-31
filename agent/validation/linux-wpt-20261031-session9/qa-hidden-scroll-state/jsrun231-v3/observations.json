@@ -1,0 +1,1697 @@
+[
+  {
+    "id": "retain-both-axes",
+    "phase": "visible",
+    "time": 183.17549300193787,
+    "owner": {
+      "before": {
+        "x": 80,
+        "y": 90
+      },
+      "after": {
+        "x": 80,
+        "y": 90
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -80,
+      "y": -90,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 80,
+      "y": 90
+    }
+  },
+  {
+    "id": "retain-both-axes",
+    "phase": "hidden",
+    "time": 215.35136500000954,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "retain-both-axes",
+    "phase": "revealed",
+    "time": 247.44716900587082,
+    "owner": {
+      "before": {
+        "x": 80,
+        "y": 90
+      },
+      "after": {
+        "x": 80,
+        "y": 90
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -80,
+      "y": -90,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 80,
+      "y": 90
+    }
+  },
+  {
+    "id": "hidden-set-zero",
+    "phase": "visible",
+    "time": 279.59200099110603,
+    "owner": {
+      "before": {
+        "x": 80,
+        "y": 90
+      },
+      "after": {
+        "x": 80,
+        "y": 90
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -80,
+      "y": -90,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 80,
+      "y": 90
+    }
+  },
+  {
+    "id": "hidden-set-zero",
+    "phase": "hidden-before-set",
+    "time": 311.42769199609756,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "hidden-set-zero",
+    "phase": "hidden-after-set",
+    "time": 343.33525800704956,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "hidden-set-zero",
+    "phase": "revealed",
+    "time": 375.1502679884434,
+    "owner": {
+      "before": {
+        "x": 80,
+        "y": 90
+      },
+      "after": {
+        "x": 80,
+        "y": 90
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -80,
+      "y": -90,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 80,
+      "y": 90
+    }
+  },
+  {
+    "id": "hidden-set-positive",
+    "phase": "visible",
+    "time": 407.41907599568367,
+    "owner": {
+      "before": {
+        "x": 80,
+        "y": 90
+      },
+      "after": {
+        "x": 80,
+        "y": 90
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -80,
+      "y": -90,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 80,
+      "y": 90
+    }
+  },
+  {
+    "id": "hidden-set-positive",
+    "phase": "hidden-before-set",
+    "time": 439.33439698815346,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "hidden-set-positive",
+    "phase": "hidden-after-set",
+    "time": 471.4291299879551,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "hidden-set-positive",
+    "phase": "revealed",
+    "time": 502.9795590043068,
+    "owner": {
+      "before": {
+        "x": 80,
+        "y": 90
+      },
+      "after": {
+        "x": 80,
+        "y": 90
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -80,
+      "y": -90,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 80,
+      "y": 90
+    }
+  },
+  {
+    "id": "range-shrink-and-regrow",
+    "phase": "visible",
+    "time": 535.262589007616,
+    "owner": {
+      "before": {
+        "x": 80,
+        "y": 90
+      },
+      "after": {
+        "x": 80,
+        "y": 90
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -80,
+      "y": -90,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 80,
+      "y": 90
+    }
+  },
+  {
+    "id": "range-shrink-and-regrow",
+    "phase": "hidden",
+    "time": 567.3176139891148,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "range-shrink-and-regrow",
+    "phase": "hidden-shrunk",
+    "time": 599.4552959799767,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 150,
+      "height": 130
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "range-shrink-and-regrow",
+    "phase": "revealed-shrunk",
+    "time": 631.3928189873695,
+    "owner": {
+      "before": {
+        "x": 30,
+        "y": 30
+      },
+      "after": {
+        "x": 30,
+        "y": 30
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 150,
+        "height": 130
+      },
+      "max": {
+        "x": 30,
+        "y": 30
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -30,
+      "y": -30,
+      "width": 150,
+      "height": 130
+    },
+    "ownerAfterDescendantReads": {
+      "x": 30,
+      "y": 30
+    }
+  },
+  {
+    "id": "range-shrink-and-regrow",
+    "phase": "visible-regrown",
+    "time": 663.3177990019321,
+    "owner": {
+      "before": {
+        "x": 30,
+        "y": 30
+      },
+      "after": {
+        "x": 30,
+        "y": 30
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -30,
+      "y": -30,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 30,
+      "y": 30
+    }
+  },
+  {
+    "id": "overflow-mode-change",
+    "phase": "visible-scroll-container",
+    "time": 695.5031439960003,
+    "owner": {
+      "before": {
+        "x": 80,
+        "y": 90
+      },
+      "after": {
+        "x": 80,
+        "y": 90
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -80,
+      "y": -90,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 80,
+      "y": 90
+    }
+  },
+  {
+    "id": "overflow-mode-change",
+    "phase": "hidden",
+    "time": 727.4075099825859,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "overflow-mode-change",
+    "phase": "hidden-overflow-visible",
+    "time": 759.4452059864998,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "visible",
+      "overflowY": "visible"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "overflow-mode-change",
+    "phase": "revealed-overflow-visible",
+    "time": 791.4604060053825,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "visible",
+      "overflowY": "visible"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "overflow-mode-change",
+    "phase": "scroll-container-restored",
+    "time": 823.4717400074005,
+    "owner": {
+      "before": {
+        "x": 80,
+        "y": 90
+      },
+      "after": {
+        "x": 80,
+        "y": 90
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -80,
+      "y": -90,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 80,
+      "y": 90
+    }
+  },
+  {
+    "id": "nested-outer-hidden-inner-setter",
+    "phase": "visible",
+    "time": 855.643572986126,
+    "owner": {
+      "before": {
+        "x": 40,
+        "y": 50
+      },
+      "after": {
+        "x": 40,
+        "y": 50
+      },
+      "client": {
+        "width": 160,
+        "height": 140
+      },
+      "scroll": {
+        "width": 450,
+        "height": 620
+      },
+      "max": {
+        "x": 290,
+        "y": 480
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 160,
+        "height": 140
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "inner": {
+      "before": {
+        "x": 60,
+        "y": 70
+      },
+      "after": {
+        "x": 60,
+        "y": 70
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 20,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -60,
+      "y": -50,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 40,
+      "y": 50
+    },
+    "innerAfterDescendantReads": {
+      "x": 60,
+      "y": 70
+    }
+  },
+  {
+    "id": "nested-outer-hidden-inner-setter",
+    "phase": "outer-hidden",
+    "time": 887.467523008585,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 160,
+        "height": 140
+      },
+      "scroll": {
+        "width": 160,
+        "height": 140
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 160,
+        "height": 140
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "inner": {
+      "before": {
+        "x": 60,
+        "y": 70
+      },
+      "after": {
+        "x": 60,
+        "y": 70
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 40,
+        "y": 70,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -20,
+      "y": 0,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    },
+    "innerAfterDescendantReads": {
+      "x": 60,
+      "y": 70
+    }
+  },
+  {
+    "id": "nested-outer-hidden-inner-setter",
+    "phase": "inner-set-under-hidden-outer",
+    "time": 919.304181009531,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 160,
+        "height": 140
+      },
+      "scroll": {
+        "width": 160,
+        "height": 140
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 160,
+        "height": 140
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "inner": {
+      "before": {
+        "x": 31,
+        "y": 47
+      },
+      "after": {
+        "x": 31,
+        "y": 47
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 40,
+        "y": 70,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 9,
+      "y": 23,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    },
+    "innerAfterDescendantReads": {
+      "x": 31,
+      "y": 47
+    }
+  },
+  {
+    "id": "nested-outer-hidden-inner-setter",
+    "phase": "outer-revealed",
+    "time": 951.1822069883347,
+    "owner": {
+      "before": {
+        "x": 40,
+        "y": 50
+      },
+      "after": {
+        "x": 40,
+        "y": 50
+      },
+      "client": {
+        "width": 160,
+        "height": 140
+      },
+      "scroll": {
+        "width": 450,
+        "height": 620
+      },
+      "max": {
+        "x": 290,
+        "y": 480
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 160,
+        "height": 140
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "inner": {
+      "before": {
+        "x": 31,
+        "y": 47
+      },
+      "after": {
+        "x": 31,
+        "y": 47
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 20,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -31,
+      "y": -27,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 40,
+      "y": 50
+    },
+    "innerAfterDescendantReads": {
+      "x": 31,
+      "y": 47
+    }
+  },
+  {
+    "id": "nested-independently-hidden",
+    "phase": "visible",
+    "time": 983.3951419889927,
+    "owner": {
+      "before": {
+        "x": 40,
+        "y": 50
+      },
+      "after": {
+        "x": 40,
+        "y": 50
+      },
+      "client": {
+        "width": 160,
+        "height": 140
+      },
+      "scroll": {
+        "width": 450,
+        "height": 620
+      },
+      "max": {
+        "x": 290,
+        "y": 480
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 160,
+        "height": 140
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "inner": {
+      "before": {
+        "x": 60,
+        "y": 70
+      },
+      "after": {
+        "x": 60,
+        "y": 70
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 20,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -60,
+      "y": -50,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 40,
+      "y": 50
+    },
+    "innerAfterDescendantReads": {
+      "x": 60,
+      "y": 70
+    }
+  },
+  {
+    "id": "nested-independently-hidden",
+    "phase": "inner-hidden",
+    "time": 1014.972234994173,
+    "owner": {
+      "before": {
+        "x": 40,
+        "y": 50
+      },
+      "after": {
+        "x": 40,
+        "y": 50
+      },
+      "client": {
+        "width": 160,
+        "height": 140
+      },
+      "scroll": {
+        "width": 450,
+        "height": 620
+      },
+      "max": {
+        "x": 290,
+        "y": 480
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 160,
+        "height": 140
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "inner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 20,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 20,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 40,
+      "y": 50
+    },
+    "innerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "nested-independently-hidden",
+    "phase": "both-hidden",
+    "time": 1047.0153339803219,
+    "owner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 160,
+        "height": 140
+      },
+      "scroll": {
+        "width": 160,
+        "height": 140
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 160,
+        "height": 140
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "inner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 40,
+        "y": 70,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 40,
+      "y": 70,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    },
+    "innerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "nested-independently-hidden",
+    "phase": "outer-revealed-inner-hidden",
+    "time": 1078.9245069921017,
+    "owner": {
+      "before": {
+        "x": 40,
+        "y": 50
+      },
+      "after": {
+        "x": 40,
+        "y": 50
+      },
+      "client": {
+        "width": 160,
+        "height": 140
+      },
+      "scroll": {
+        "width": 450,
+        "height": 620
+      },
+      "max": {
+        "x": 290,
+        "y": 480
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 160,
+        "height": 140
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "inner": {
+      "before": {
+        "x": 0,
+        "y": 0
+      },
+      "after": {
+        "x": 0,
+        "y": 0
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 120,
+        "height": 100
+      },
+      "max": {
+        "x": 0,
+        "y": 0
+      },
+      "bounds": {
+        "x": 0,
+        "y": 20,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "hidden",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": 0,
+      "y": 20,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 40,
+      "y": 50
+    },
+    "innerAfterDescendantReads": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  {
+    "id": "nested-independently-hidden",
+    "phase": "both-revealed",
+    "time": 1111.0560899972916,
+    "owner": {
+      "before": {
+        "x": 40,
+        "y": 50
+      },
+      "after": {
+        "x": 40,
+        "y": 50
+      },
+      "client": {
+        "width": 160,
+        "height": 140
+      },
+      "scroll": {
+        "width": 450,
+        "height": 620
+      },
+      "max": {
+        "x": 290,
+        "y": 480
+      },
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 160,
+        "height": 140
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "inner": {
+      "before": {
+        "x": 60,
+        "y": 70
+      },
+      "after": {
+        "x": 60,
+        "y": 70
+      },
+      "client": {
+        "width": 120,
+        "height": 100
+      },
+      "scroll": {
+        "width": 400,
+        "height": 400
+      },
+      "max": {
+        "x": 280,
+        "y": 300
+      },
+      "bounds": {
+        "x": 0,
+        "y": 20,
+        "width": 120,
+        "height": 100
+      },
+      "contentVisibility": "visible",
+      "overflowX": "hidden",
+      "overflowY": "hidden"
+    },
+    "leafBounds": {
+      "x": -60,
+      "y": -50,
+      "width": 400,
+      "height": 400
+    },
+    "ownerAfterDescendantReads": {
+      "x": 40,
+      "y": 50
+    },
+    "innerAfterDescendantReads": {
+      "x": 60,
+      "y": 70
+    }
+  }
+]

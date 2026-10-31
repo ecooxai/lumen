@@ -1,0 +1,25 @@
+{
+  "started_utc": "2026-10-31T08:49:26.056329+00:00",
+  "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i231",
+  "binary_sha256": "7066920bcfe73ba8538a5ce92dddc65da86ca6e5d630886c2b4996f1728b5d5d",
+  "manifest_sha256": "440d5dc80c78ab184d977a7d58929732ce480522550a11c5664f17c76b5317ca",
+  "urls_sha256": "aa5c89784a16518ff1f5dffeddbedaa828b470e258f68bb3cc422b6bc029ba8b",
+  "runner_sha256": "43b4d31a0eeec3773993fa573b7e24844532b71e4c32034a07a060af2c3b6d39",
+  "upstream_readiness_sha256": "2a1152de8f5a88cc33fea74d262de12c369916333d20cc7d74023fd0363d2f6b",
+  "upstream_comparator_sha256": "5e838d06466c1f2e1a1385264a44df3f8a3fe966bba39cccf4c0046241b88723",
+  "selected": 2,
+  "viewport_css": [
+    800,
+    600
+  ],
+  "dpr": 1,
+  "timeout_seconds": 30.0,
+  "long_timeout_seconds": 100.0,
+  "oracle": "Each engine test image versus its own reference; native uses pinned official WPT comparator.",
+  "unsupported_scope": [
+    "recursive reference graphs",
+    "non-HTTP reference URLs",
+    "testdriver actions during readiness",
+    "nondefault viewport/DPI"
+  ]
+}

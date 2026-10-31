@@ -1,0 +1,21 @@
+{
+  "label": "candidate231 actual native-layout IO timing diagnostic",
+  "started_utc": "2026-10-31T08:45:27.606217+00:00",
+  "finished_utc": "2026-10-31T08:45:32.632016+00:00",
+  "root_pid": 2522412,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 5,
+  "elapsed_seconds": 5.026,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 0.0,
+  "cpu_median": 0.5,
+  "cpu_max": 26.001,
+  "cpu_last10_median": 0.5,
+  "rss_peak_mb": 133.325,
+  "rss_final_mb": 133.325,
+  "pss_peak_mb": 9.559,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

@@ -1,0 +1,322 @@
+{
+  "iteration": 5,
+  "candidate": 231,
+  "started_utc": "2026-10-31T08:33:59.719549+00:00",
+  "finished_utc": "2026-10-31T09:35:38.382631+00:00",
+  "duration_minutes": 61.6443847,
+  "cumulative_task_minutes": 155.43971051666668,
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ],
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "7066920bcfe73ba8538a5ce92dddc65da86ca6e5d630886c2b4996f1728b5d5d",
+  "recorded_build_input_count": 648,
+  "native": {
+    "passed": 145,
+    "total": 145,
+    "containment_checks_passed": 339,
+    "containment_checks_total": 339,
+    "actual_exit_code": 0
+  },
+  "selected39": {
+    "assertions_passed": 286,
+    "assertions_total": 286,
+    "reftests_passed": 28,
+    "reftests_total": 28,
+    "all_prior_passes_preserved": true,
+    "actual_native_processes": 67,
+    "all_actual_native_exits_zero_and_profiles_removed": true
+  },
+  "separate_hidden_api3": {
+    "passed": 15,
+    "total": 23,
+    "whole_files_passed": 2,
+    "whole_files_total": 3,
+    "remaining_checkVisibility": {
+      "passed": 13,
+      "total": 21
+    },
+    "IO030_and_RO031": "PASS"
+  },
+  "separate_hidden_scroll_upstream": {
+    "native": {
+      "passed": 1,
+      "total": 1
+    },
+    "chromium156": {
+      "passed": 1,
+      "total": 1
+    }
+  },
+  "retention": {
+    "all7cases30phases_match_pre_edit_contract": true,
+    "full_snapshot_equality": false,
+    "sole_allowed_difference": "Exact hidden-shrunk leaf size pair native150x130 vs reference400x400, all other fields strict",
+    "native_original_v1_cadence": "PASS",
+    "native_positioned_v2_cadence": "PASS",
+    "quiescent_idle_geometry_reads": 0,
+    "quiescent_idle_notifications": 0,
+    "native_durable_parent_extent_control": "160x140 ->400x400 ->160x140",
+    "chromium_durable_reference_fields": 921,
+    "wheel_guard": "Code review only; no actual wheel-input runtime claim"
+  },
+  "sanitizers": {
+    "fresh_existing_stepped_math": "PASS",
+    "fresh_css_containment_grid_used_values_grid_absolute": "PASS",
+    "fresh_raster_ASan_UBSan": "PASS",
+    "new_future_lifecycle_CPP_runtime": "Required for232; not implied by C-only executed targets"
+  },
+  "fixed640": {
+    "candidate": 231,
+    "created_utc": "2026-10-31T09:05:40.033394+00:00",
+    "scope": "Unchanged non-URL640 assertion-file sample, not full WPT",
+    "pins": {
+      "manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f",
+      "baseline226_results_sha256": "ec00b3f4eaba4388f72fe6fb843798342a3fef5f146b1917d7a9d894f55cb9e9",
+      "chromium156_results_sha256": "cb62cc6e1414e04c9303928f42140f8ac939253498549b1d58bc32f33e7dbce8"
+    },
+    "native": {
+      "files": 640,
+      "fully_passing_files": 416,
+      "assertions": {
+        "PASS": 9246,
+        "FAIL": 1256,
+        "TIMEOUT": 15,
+        "NOTRUN": 23
+      },
+      "total_assertions": 10540,
+      "harness_statuses": {
+        "OK": 624,
+        "TIMEOUT": 15,
+        "ERROR": 1
+      }
+    },
+    "baseline226": {
+      "files": 640,
+      "fully_passing_files": 411,
+      "assertions": {
+        "PASS": 9162,
+        "FAIL": 1340,
+        "TIMEOUT": 15,
+        "NOTRUN": 23
+      },
+      "total_assertions": 10540,
+      "harness_statuses": {
+        "OK": 624,
+        "TIMEOUT": 15,
+        "ERROR": 1
+      }
+    },
+    "chromium156": {
+      "files": 640,
+      "fully_passing_files": 560,
+      "assertions": {
+        "PASS": 9551,
+        "FAIL": 980,
+        "NOTRUN": 9,
+        "TIMEOUT": 12
+      },
+      "total_assertions": 10552,
+      "harness_statuses": {
+        "OK": 626,
+        "TIMEOUT": 13,
+        "ERROR": 1
+      }
+    },
+    "native_results_sha256": "2f5b8445e81e545006c26db3ee4418537f26feed2b1d1f8bbf5f098315332d38",
+    "auditor_sha256": "133e09d99414cc8feed2b4aa55688052dc6646f535bc405714ff1da5200b9042",
+    "identity_audit_sha256": "3fec369ac16c1437a1f473f3dd816c7aab42d30e7eb4714d48dcf2f6b42a9360",
+    "vs226": {
+      "gains": 84,
+      "prior_pass_losses": 0,
+      "missing_identities": 0,
+      "added_identities": 0,
+      "whole_file_gains": [
+        "/css/css-grid/parsing/grid-template-repeat-auto-computed-withcontent-002.html",
+        "/css/css-sizing/contain-intrinsic-size/auto-004.html",
+        "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+        "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+        "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html"
+      ],
+      "whole_file_losses": [],
+      "harness_changes": []
+    },
+    "reference_identity_comparison": {
+      "shared": 10538,
+      "shared_reference_pass_native_nonpass": 1114,
+      "shared_native_pass_reference_nonpass": 821,
+      "reference_only": 14,
+      "native_only": 2
+    },
+    "categories": {
+      "css": {
+        "files": 242,
+        "fully_passing_files": 112,
+        "assertions": {
+          "PASS": 3884,
+          "FAIL": 1114,
+          "TIMEOUT": 4
+        },
+        "total_assertions": 5002,
+        "harness_statuses": {
+          "OK": 238,
+          "TIMEOUT": 3,
+          "ERROR": 1
+        }
+      },
+      "dom": {
+        "files": 113,
+        "fully_passing_files": 83,
+        "assertions": {
+          "PASS": 750,
+          "FAIL": 34,
+          "TIMEOUT": 8,
+          "NOTRUN": 2
+        },
+        "total_assertions": 794,
+        "harness_statuses": {
+          "OK": 105,
+          "TIMEOUT": 8
+        }
+      },
+      "domparsing": {
+        "files": 34,
+        "fully_passing_files": 21,
+        "assertions": {
+          "PASS": 1225,
+          "FAIL": 35,
+          "TIMEOUT": 1,
+          "NOTRUN": 20
+        },
+        "total_assertions": 1281,
+        "harness_statuses": {
+          "OK": 33,
+          "TIMEOUT": 1
+        }
+      },
+      "encoding": {
+        "files": 34,
+        "fully_passing_files": 30,
+        "assertions": {
+          "PASS": 1062,
+          "FAIL": 4
+        },
+        "total_assertions": 1066,
+        "harness_statuses": {
+          "OK": 33,
+          "TIMEOUT": 1
+        }
+      },
+      "fetch": {
+        "files": 98,
+        "fully_passing_files": 79,
+        "assertions": {
+          "PASS": 1310,
+          "FAIL": 31
+        },
+        "total_assertions": 1341,
+        "harness_statuses": {
+          "OK": 98
+        }
+      },
+      "html": {
+        "files": 85,
+        "fully_passing_files": 64,
+        "assertions": {
+          "PASS": 923,
+          "FAIL": 25,
+          "NOTRUN": 1,
+          "TIMEOUT": 2
+        },
+        "total_assertions": 951,
+        "harness_statuses": {
+          "OK": 83,
+          "TIMEOUT": 2
+        }
+      },
+      "xhr": {
+        "files": 34,
+        "fully_passing_files": 27,
+        "assertions": {
+          "PASS": 92,
+          "FAIL": 13
+        },
+        "total_assertions": 105,
+        "harness_statuses": {
+          "OK": 34
+        }
+      }
+    },
+    "qualification": "Actual controller/guard exits, cleanup, resources and source pins remain separately required; no overall98 readiness claim",
+    "preserves226": true
+  },
+  "fixed640_lifecycle": {
+    "actual_outer_terminal_id": 15781,
+    "actual_outer_terminal_exit_code": 0,
+    "actual_native_processes": 640,
+    "actual_native_exit0": 640,
+    "all_profiles_removed": true,
+    "all648_inputs_Git_binary_unchanged": true,
+    "source_binding_sha256": "da91f97228e84e26221b9cf55af2062efaddcbc00489059e032330b0f6ecf9f1",
+    "prior_union_accepted": true,
+    "required_prior226_passes": 9162,
+    "required_prior226_whole_files": 411
+  },
+  "future_preservation_baseline": {
+    "candidate": 231,
+    "required_passes": 9246,
+    "required_whole_files": 416,
+    "all_prior_registered_identities_required": true,
+    "pins_sha256": "93c09f58afbfb44a81b1d204b6f3fd5c63a1e7190b51074823cee4355d2fe406",
+    "auditor_sha256": "666076029da49855a687bbf06dc4fb8ba4f7f41aef33af9c411d6c0e9c38933e"
+  },
+  "optional_authored_options49": {
+    "native_passed": 15,
+    "total": 49,
+    "chromium_passed": 49,
+    "valid_complete_negative_measurement": true,
+    "not_WPT": true,
+    "original_suppressed_and_truncated_attempts_preserved": true,
+    "final_transport": "Supported JSRUN_POST only serializes already-computed rows; no behavioral/fixture/oracle change",
+    "automatic_approval_rejection": "One pre-dispatch scope-ambiguity rejection retained; root explicitly clarified authorization and normal review accepted the bounded retry. No approval mechanism changed."
+  },
+  "lifecycle_baseline": {
+    "v3_cases": 11,
+    "v3_native_rows": 75,
+    "v3_reference_rows": 104,
+    "v4_cases": 12,
+    "v4_native_rows": 90,
+    "v4_reference_rows": 125,
+    "all_original11_rows_equal_between_versions": true,
+    "two_reference_replacement_load_wait_assumptions_preserved": true,
+    "transport_success_is_not_behavioral_conformance": true,
+    "v4_native_sha256": "463d9d0cf8be98ff53443a1ceabbfd63ab0621a998db91ff31acf6e2be99af82",
+    "v4_reference_sha256": "a0216d50b124a038d81ae270efdb88a652e818efc42f31b1c1334c3065f4cf16",
+    "pre_edit_contract_sha256": "7044502e5d3974e2ce7b67e30cf18907c17c28731f9b6f713c316940ac1f6c82",
+    "contract_scope": "114 exact canonical rows plus precisely bounded microtask/removal residual rules; not full raw-trace equality"
+  },
+  "scores": {
+    "selected39_assertion_percent": 100,
+    "selected39_pixel_percent": 100,
+    "native_test_percent": 100,
+    "fixed640_whole_file_percent": 65,
+    "fixed640_assertion_percent": 87.72296015180265,
+    "whole_browser_98_established": false
+  },
+  "qualification": "Verified231 preservation milestone; release remains held pending final retained40 rendering and matched resource gates. Next232 scope is explicitly bounded lifecycle metadata/once/reentry, not options/origin/parser/iframe-start expansion.",
+  "accepted_public_release_candidate": 226,
+  "private231_checkpoint": {
+    "receipt": "agent/ops/linux-wpt-20261031-session9/page-checkpoint231/cloud-receipt.json",
+    "sha256": "dd016bffaa92b38aa7dc19b16cc5af4bf14b462c81d098dfdae48dd7191a74b5",
+    "recovery_items": 649,
+    "recorded_compiled_inputs": 648,
+    "additional_generator": 1
+  },
+  "next_candidate": 232,
+  "next_source_owner": "conformance_review",
+  "next_source_file_count": 10,
+  "source_freeze_target_utc": "2026-10-31T11:00:00Z",
+  "primary_work_deadline_utc": "2026-10-31T12:00:00Z"
+}

@@ -1,0 +1,8 @@
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html", "status": "OK", "pass": 7, "total": 7, "seconds": 0.4733}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html", "status": "OK", "pass": 48, "total": 48, "seconds": 0.8535}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html", "status": "OK", "pass": 8, "total": 8, "seconds": 0.4512}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html", "status": "OK", "pass": 24, "total": 24, "seconds": 0.4592}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html", "status": "OK", "pass": 12, "total": 12, "seconds": 0.452}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html", "status": "OK", "pass": 9, "total": 9, "seconds": 0.452}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-033.html", "status": "OK", "pass": 42, "total": 42, "seconds": 0.6567}
+{"guard_cleanup": {"report": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/cleanup.json", "joined": 1, "remaining": 0, "sources_unchanged": true}}

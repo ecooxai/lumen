@@ -1,0 +1,18 @@
+{
+  "kind": "lumen",
+  "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i231",
+  "binary_sha256": "7066920bcfe73ba8538a5ce92dddc65da86ca6e5d630886c2b4996f1728b5d5d",
+  "started_utc": "2026-10-31T08:49:36Z",
+  "urls": [
+    "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+    "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+    "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+    "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+    "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+    "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+    "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-033.html"
+  ],
+  "repeat": 1,
+  "method": "fresh browser process and empty profile per URL; WPT resources unchanged; offscreen software Lumen vs headless Chromium; no display/GPU claim",
+  "finished_utc": "2026-10-31T08:49:51Z"
+}

@@ -1,0 +1,45 @@
+{
+  "kind": "chromium156",
+  "candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "1bcad71ad1bff85955db13c6d8dd9f32374934d5a5cb079b526c46fb51f9bd97",
+  "fixture_sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+  "started_utc": "2026-10-31T09:06:44.292853+00:00",
+  "finished_utc": "2026-10-31T09:06:51.740873+00:00",
+  "duration_s": 7.448020245006774,
+  "actual_inner_returncode": 0,
+  "execution_exit_valid": true,
+  "exit_evidence": {
+    "adapter_actual_returncode": 0,
+    "public_adapter_status": "PASS",
+    "chromium_os_exit_status": "Not exposed by unchanged supported public adapter",
+    "profile_removed": true,
+    "remaining_owned_identities": [],
+    "fallback_signals": [],
+    "driver_cleanup_error": null
+  },
+  "outer_cleanup_signals": [],
+  "timed_out": false,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "monitor_forced_stop": false,
+  "source_input_count": 648,
+  "pins_unchanged": true,
+  "source_unchanged": true,
+  "git_unchanged": true,
+  "cleanup_ok": true,
+  "measurement_complete": true,
+  "behavioral_result": "PASS",
+  "counts": {
+    "total": 49,
+    "passed": 49,
+    "failed": 0
+  },
+  "measurement_integrity_valid": true,
+  "complete_feature_FAIL_is_valid_measurement": true,
+  "not_WPT": true,
+  "errors": [],
+  "resource_scope": "One-second owned process tree/cgroup. Chromium includes ChromeDriver; not a browser memory benchmark. No Chromium OS-exit claim."
+}

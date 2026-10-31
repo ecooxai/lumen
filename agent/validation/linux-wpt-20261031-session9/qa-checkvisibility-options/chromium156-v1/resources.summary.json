@@ -1,0 +1,21 @@
+{
+  "label": "chromium156 options baseline",
+  "started_utc": "2026-10-31T09:06:45.077436+00:00",
+  "finished_utc": "2026-10-31T09:06:49.103167+00:00",
+  "root_pid": 2611372,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 4,
+  "elapsed_seconds": 4.026,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 14.001,
+  "cpu_median": 103.001,
+  "cpu_max": 140.003,
+  "cpu_last10_median": 103.001,
+  "rss_peak_mb": 853.053,
+  "rss_final_mb": 29.762,
+  "pss_peak_mb": 5.643,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

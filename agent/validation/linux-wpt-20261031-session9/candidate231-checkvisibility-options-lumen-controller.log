@@ -1,0 +1,1 @@
+{"kind": "lumen", "actual_inner_returncode": 0, "execution_exit_valid": true, "monitor_returncodes": [0, 0], "cleanup_ok": true, "measurement_complete": false, "behavioral_result": null, "counts": null, "measurement_integrity_valid": false, "errors": ["result audit: ValueError('exactly one complete measurement required')"]}

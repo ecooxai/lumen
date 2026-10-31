@@ -1,0 +1,73 @@
+{
+  "candidate": 231,
+  "started_utc": "2026-10-31T08:46:16.899980+00:00",
+  "finished_utc": "2026-10-31T08:46:23.430679+00:00",
+  "maximum_browser_lanes": 2,
+  "runs": [
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/run-matrix.py",
+        "--kind",
+        "lumen",
+        "--iteration",
+        "231",
+        "--manifest",
+        "manifest-v3.json"
+      ],
+      "returncode": 0,
+      "started_utc": "2026-10-31T08:46:16.901101+00:00",
+      "finished_utc": "2026-10-31T08:46:19.282953+00:00",
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-0.log"
+    },
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/run-v1-retention.py",
+        "--iteration",
+        "231"
+      ],
+      "returncode": 0,
+      "started_utc": "2026-10-31T08:46:16.901272+00:00",
+      "finished_utc": "2026-10-31T08:46:23.270004+00:00",
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-1.log"
+    },
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/run-cohort-v3.py",
+        "--scope",
+        "qa-hidden-scroll-upstream",
+        "--kind",
+        "lumen",
+        "--type",
+        "assertions",
+        "--iteration",
+        "231"
+      ],
+      "returncode": 0,
+      "started_utc": "2026-10-31T08:46:19.283002+00:00",
+      "finished_utc": "2026-10-31T08:46:22.756793+00:00",
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-2.log"
+    }
+  ],
+  "audits": [
+    {
+      "kind": "contract",
+      "returncode": 0
+    },
+    {
+      "kind": "upstream",
+      "returncode": 0
+    }
+  ],
+  "original_v1_both_native_markers_pass": true,
+  "original_v1_failures": [],
+  "retention30_phase_contract_pass": true,
+  "full_snapshot_equality_ignoring_time": false,
+  "contract_errors": [],
+  "upstream_one_file_pass": true,
+  "qualification_pass": true,
+  "matrix_not_WPT": true,
+  "Chromium_v1_legacy_threshold_failure_remains_separate": true
+}

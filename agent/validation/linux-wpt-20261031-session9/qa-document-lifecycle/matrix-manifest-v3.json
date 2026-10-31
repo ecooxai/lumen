@@ -1,0 +1,52 @@
+{
+  "kind": "authored_lifecycle_observations_not_WPT",
+  "fixture": "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v3.html",
+  "fixture_sha256": "15ba1babfbbde45a7571e3f2d9c2abce5bcbaeaa75c3dfa2c337cea3e80a53d0",
+  "cases": [
+    "top-initial",
+    "synthetic-events",
+    "frame-initial",
+    "repeated-close",
+    "load-document-open",
+    "load-frame-removal",
+    "load-srcdoc-navigation",
+    "pageshow-document-open",
+    "post-load-child-insertion",
+    "load-listener-throws",
+    "pageshow-cancel"
+  ],
+  "case_count": 11,
+  "bare_adapter_marker": "document-lifecycle",
+  "completion_attribute": "data-document-lifecycle-complete",
+  "protocol": {
+    "case_rows": "LIFECYCLE_CASE JSON: index,id,finished,eventCount,actionCount,errorCount",
+    "observation_rows": "LIFECYCLE_ROW JSON: caseIndex,caseId,kind,index,value",
+    "summary": "MEASUREMENTS document-lifecycle JSON",
+    "transport_success": "RESULTS document-lifecycle:PASS",
+    "transport_failure": "RESULTS document-lifecycle:FAIL",
+    "fatal": "LIFECYCLE_FATAL JSON"
+  },
+  "strict_integrity": [
+    "Exactly11 ordered case rows, allfinished",
+    "Every per-kind row index unique contiguous and counts equal declared rows",
+    "No truncated JSON/fatal/process timeout; all pins and actual exit/cleanup valid",
+    "Transport PASS means complete capture only, never behavioral conformance",
+    "Across all kinds, value.sequence is exactly0 through total rows minus1 once each; use it to recover chronological interleaving."
+  ],
+  "acceptance_status": "Expected metadata from primary specs; exact reentrancy sequences remain observations pending pinned Chromium/native baseline and independent review.",
+  "excluded_scope": [
+    "document.domain and security origins",
+    "iframe-start asynchrony and encoding realm tests",
+    "bfcache/history restoration",
+    "general event dispatcher/handler registration ordering",
+    "checkVisibility options implementation"
+  ],
+  "normative_sources": [
+    "https://html.spec.whatwg.org/multipage/parsing.html#the-end",
+    "https://html.spec.whatwg.org/multipage/nav-history-apis.html#fire-a-page-transition-event",
+    "https://dom.spec.whatwg.org/#concept-event-dispatch"
+  ],
+  "version": 3,
+  "supersedes": "matrix-manifest-v2.json",
+  "change": "Adds load-listener exception reporting/continuation and canceled-pageshow parent completion controls; records actual iframe element load actions in all frame cases. Original cases/operations preserved."
+}

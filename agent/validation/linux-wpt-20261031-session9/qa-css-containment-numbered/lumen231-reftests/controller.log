@@ -1,0 +1,28 @@
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-001.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-002.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-003.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-005.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-006.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-007.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-008.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-011.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-012.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-013.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-014.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-015.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-016.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-017.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-018.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-019.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-020.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-021.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-022.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-023.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-024.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-025.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-026.html", "status": "PASS", "reason": null}
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-027.html", "status": "PASS", "reason": null}
+{"selected": 26, "observed": 26, "statuses": {"PASS": 26}, "finished_utc": "2026-10-31T08:51:28.147753+00:00", "note": "Raw reftest outcomes; intentionally failing infrastructure controls are not relabeled PASS."}
+{"guard_cleanup": {"report": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/cleanup.json", "joined": 0, "remaining": 0, "sources_unchanged": true}}

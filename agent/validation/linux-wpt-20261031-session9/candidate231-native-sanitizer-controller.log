@@ -1,0 +1,13 @@
+{"candidate": 231, "started_utc": "2026-10-31T08:48:30.216806+00:00", "finished_utc": "2026-10-31T08:48:37.328882+00:00", "duration_s": 7.1120755709998775, "returncode": 0, "monitor_returncodes": [0, 0], "source_unchanged": true, "extra_inputs_unchanged": true, "git_unchanged": true, "source_commit": "554d59472954585bfd39c579ee122f9f21194847", "runtime_sanitizer_options": {"ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1", "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1", "LSAN_OPTIONS": "exitcode=23"}, "target_binaries": {"test_css_containment": "b550f6716c6a6f3d350154851ff6fe830fcef52528a65c493622852597265d5a", "test_grid_used_values": "903df201f3ae3a28a3ce6ae89d8f9854a16b6bf09971f8bf376a55442da1ace0", "test_grid_absolute": "606e11cd29af5686df41d4773d2875b1b71b294484daf096bd5f4d35d46d4d6c"}, "source_manifest_limit": "Recorded build inputs plus explicit sanitizer files, not a full transitive system-toolchain closure"}
+Test project /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize
+    Start 127: grid_used_values
+1/3 Test #127: grid_used_values .................   Passed    0.29 sec
+    Start 130: css_containment
+2/3 Test #130: css_containment ..................   Passed    0.18 sec
+    Start 137: grid_absolute
+3/3 Test #137: grid_absolute ....................   Passed    0.13 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   0.61 sec
+

@@ -1,0 +1,40 @@
+{
+  "candidate": 231,
+  "started_utc": "2026-10-31T09:23:14.924793+00:00",
+  "ended_utc": "2026-10-31T09:23:29.104926+00:00",
+  "duration_s": 14.180132998997578,
+  "maximum_browser_lanes": 2,
+  "controller_sha256": "f68855fe54954fc2be95558d27008f951f987a64183519b6adf7e6709e686a60",
+  "runs": [
+    {
+      "kind": "lumen",
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/run-matrix.py",
+        "--kind",
+        "lumen",
+        "--iteration",
+        "231"
+      ],
+      "actual_controller_exit_code": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-lumen-controller.log",
+      "log_sha256": "27da4d85033a56dc6b9a6872e9e47aff3f1ea05faf9a668c43e28e61ac4c393a"
+    },
+    {
+      "kind": "chromium156",
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/run-matrix.py",
+        "--kind",
+        "chromium156",
+        "--iteration",
+        "231"
+      ],
+      "actual_controller_exit_code": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-chromium156-controller.log",
+      "log_sha256": "b69a9120ec6668a9ca52e22841796b69770fcaf97370d193dc2402969daeeb1f"
+    }
+  ],
+  "all_measurement_controllers_exited_zero": true,
+  "scope": "Root-authorized eleven-case real lifecycle observation matrix; production/source/Git frozen. Transport PASS is not behavioral conformance. All recorded errors and invalid measurements remain retained."
+}

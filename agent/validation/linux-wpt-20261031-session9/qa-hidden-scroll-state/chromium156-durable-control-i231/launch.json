@@ -1,0 +1,25 @@
+{
+  "kind": "chromium156",
+  "candidate_workspace": 231,
+  "workspace_source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "command": [
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py",
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-script-scheduling/authored/run-cft156-fixture.py",
+    "--fixture",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/hidden-scroll-retention.html",
+    "--marker",
+    "hidden-scroll-retention",
+    "--output",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser",
+    "--timeout",
+    "20"
+  ],
+  "fixture_sha256": "66d53129c5d4f8e46dea8bf194b3c2e9266ba565e99215d1f34e3cdb47ff6dff",
+  "chromium_binary_sha256": "1bcad71ad1bff85955db13c6d8dd9f32374934d5a5cb079b526c46fb51f9bd97",
+  "driver_sha256": "d7f1682dcf9e4087bae6a52ca03c9913390a79ab86e09796562db7ed6f534587",
+  "resource_interval_seconds": 1,
+  "authored_control_not_WPT": true,
+  "browser_lane_count": 1
+}

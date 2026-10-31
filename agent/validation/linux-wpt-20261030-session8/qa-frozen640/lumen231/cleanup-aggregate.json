@@ -1,0 +1,53 @@
+{
+  "checked_utc": "2026-10-31T09:05:19.897823+00:00",
+  "method": "Aggregate of separate actual guarded-worker receipts and unchanged raw audit files; no synthetic guard events. Outer terminal exit must also be checked.",
+  "worker_returncodes": [
+    0,
+    0
+  ],
+  "actual_browser_exit_codes": {
+    "0": 640
+  },
+  "recorded_browser_pids": 640,
+  "remaining_recorded_pids": [],
+  "remaining_profiles": [],
+  "shards": [
+    {
+      "shard": 0,
+      "cleanup_receipt": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/cleanup-shard0.json",
+      "cleanup_receipt_sha256": "d5d965c3bce4ee15fe80c6b89365d17ba01de9fd961359aaa803bd72be13e9ad",
+      "audit_path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/guard-shard0/launches.jsonl",
+      "audit_sha256": "3a8e45806e4bc1b6daa44b88049676141053de82a59f209a0d2462b069474d16",
+      "events": {
+        "started_at_private_gate": 320,
+        "constructor_verified_and_acknowledged": 320,
+        "author_url_released": 320,
+        "exited": 320
+      },
+      "launch_exit_pid_sets_match": true,
+      "remaining_cleanup_threads": [],
+      "runner_exception": null,
+      "sources_unchanged": true
+    },
+    {
+      "shard": 1,
+      "cleanup_receipt": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/cleanup-shard1.json",
+      "cleanup_receipt_sha256": "eda46c6203969e4c4196f5ce47f6a0caa37b09b6da16683176fe70870ae7fc75",
+      "audit_path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/guard-shard1/launches.jsonl",
+      "audit_sha256": "f26dc7541087fed00a41ad98d45b77af7714e241748bae686de11444e2e730f2",
+      "events": {
+        "started_at_private_gate": 320,
+        "constructor_verified_and_acknowledged": 320,
+        "author_url_released": 320,
+        "exited": 320
+      },
+      "launch_exit_pid_sets_match": true,
+      "remaining_cleanup_threads": [],
+      "runner_exception": null,
+      "sources_unchanged": true
+    }
+  ],
+  "monitor_returncode": 0,
+  "cleanup_complete": true,
+  "all_native_exit_codes_zero": true
+}

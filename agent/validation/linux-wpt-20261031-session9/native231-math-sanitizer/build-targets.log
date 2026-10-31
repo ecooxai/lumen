@@ -1,0 +1,38 @@
+[ 10%] Built target lumen_base
+[ 13%] Built target lumen_rtc
+[ 13%] Checking embedded browser assets
+[ 16%] Building C object CMakeFiles/lumen_net.dir/src/net/fetch_metadata.c.o
+[ 20%] Linking C static library liblumen_net.a
+[ 26%] Built target lumen_net
+[ 26%] Built target lumen_embedded
+[ 33%] Building C object CMakeFiles/lumen_engine.dir/src/css/style.c.o
+[ 33%] Building C object CMakeFiles/lumen_engine.dir/src/gpu/webgl.c.o
+/mnt/p3/project/browser/lumen-android/lumen-android/src/css/style.c:372:134: warning: misleading indentation; statement is not part of the previous 'for' [-Wmisleading-indentation]
+  372 |     case 14: { double magnitude = 0; for (int i = 0; i < n; i++) magnitude = hypot(magnitude, percentage_math ? v[i].pct : v[i].px); r = magnitude; break; }
+      |                                                                                                                                      ^
+/mnt/p3/project/browser/lumen-android/lumen-android/src/css/style.c:359:5: note: previous statement is here
+  359 |     else switch (f) {
+      |     ^
+[ 33%] Building C object CMakeFiles/lumen_engine.dir/src/gpu/webgpu_frame.c.o
+[ 36%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/js.cc.o
+1 warning generated.
+[ 36%] Building C object CMakeFiles/lumen_engine.dir/src/js/jsglue.c.o
+[ 36%] Building C object CMakeFiles/lumen_engine.dir/src/layout/block.c.o
+[ 40%] Building C object CMakeFiles/lumen_engine.dir/src/layout/box.c.o
+[ 40%] Building C object CMakeFiles/lumen_engine.dir/src/layout/flex.c.o
+[ 40%] Building C object CMakeFiles/lumen_engine.dir/src/layout/grid.c.o
+[ 43%] Building C object CMakeFiles/lumen_engine.dir/src/layout/inline.c.o
+[ 43%] Building C object CMakeFiles/lumen_engine.dir/src/media/camera.c.o
+[ 46%] Building C object CMakeFiles/lumen_engine.dir/src/media/capture.c.o
+[ 46%] Building C object CMakeFiles/lumen_engine.dir/src/media/media.c.o
+[ 50%] Building C object CMakeFiles/lumen_engine.dir/src/media/screen.c.o
+[ 50%] Building C object CMakeFiles/lumen_engine.dir/src/paint/canvas2d.c.o
+[ 50%] Building C object CMakeFiles/lumen_engine.dir/src/paint/display.c.o
+[ 53%] Building C object CMakeFiles/lumen_engine.dir/src/paint/image.c.o
+[ 53%] Building C object CMakeFiles/lumen_engine.dir/src/paint/raster.c.o
+[ 56%] Building C object CMakeFiles/lumen_engine.dir/src/paint/select.c.o
+[ 56%] Building C object CMakeFiles/lumen_engine.dir/src/paint/svg.c.o
+[ 56%] Linking CXX static library liblumen_engine.a
+[ 96%] Built target lumen_engine
+[100%] Linking CXX executable test_css_stepped_math
+[100%] Built target test_css_stepped_math

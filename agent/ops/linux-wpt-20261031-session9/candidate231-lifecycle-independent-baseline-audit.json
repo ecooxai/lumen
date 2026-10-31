@@ -1,0 +1,2789 @@
+{
+  "reviewed_utc": "2026-10-31T09:25:17.381016+00:00",
+  "candidate": 231,
+  "fixture_sha256": "15ba1babfbbde45a7571e3f2d9c2abce5bcbaeaa75c3dfa2c337cea3e80a53d0",
+  "manifest_sha256": "66b539c4479d821eaf8ca94979b544b38f8d8f492c4f2b5e20387c56550bffb5",
+  "controller_sha256": "f68855fe54954fc2be95558d27008f951f987a64183519b6adf7e6709e686a60",
+  "transport_integrity_passed": true,
+  "source_and_binary_pins_rehashed": true,
+  "authored_not_WPT": true,
+  "behavioral_acceptance_contract_pending": true,
+  "receipts": {
+    "jsrun231-v3": {
+      "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+      "binary_sha256": "00435d64f63d928ceac27691ab1f28f533e4002a80ee728e0787df5b9c4d35fe",
+      "recorded_input_count": 648,
+      "actual_inner_returncode": 0,
+      "monitor_returncodes": [
+        0,
+        0
+      ],
+      "case_count": 11,
+      "observation_row_count": 75,
+      "recorded_case_errors": 0
+    },
+    "chromium156-v3": {
+      "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+      "binary_sha256": "1bcad71ad1bff85955db13c6d8dd9f32374934d5a5cb079b526c46fb51f9bd97",
+      "recorded_input_count": 648,
+      "actual_inner_returncode": 0,
+      "monitor_returncodes": [
+        0,
+        0
+      ],
+      "case_count": 11,
+      "observation_row_count": 104,
+      "recorded_case_errors": 2
+    }
+  },
+  "reference_case_errors": [
+    {
+      "case": "load-document-open",
+      "kind": "errors",
+      "sequence": 11,
+      "phase": "replacement",
+      "message": "replacement Window load not observed within1500ms"
+    },
+    {
+      "case": "pageshow-document-open",
+      "kind": "errors",
+      "sequence": 11,
+      "phase": "replacement",
+      "message": "replacement Window load not observed within1500ms"
+    }
+  ],
+  "synthetic_events_exactly_equal": true,
+  "findings": [
+    "Both native and pinned Chromium invoke the earlier-registered noncapture listener before capture for Window load/pageshow; both callbacks are AT_TARGET. The earlier capture-first hypothesis is not the measured compatibility contract.",
+    "Chromium child iframe-element load precedes pageshow, after the load microtask. Native231 currently puts iframe-element load before that microtask and never emits pageshow.",
+    "In load-document-open, Chromium records replacement DCL, no replacement Window load, then pageshow in the replacement document. In pageshow-document-open, replacement DCL appears with neither another Window load nor another pageshow. The matrix records an unmet replacement-load wait in each case.",
+    "Chromium load-frame-removal records only before-remove; native231 continues after-remove, emits an iframe-element load, and runs the queued load microtask.",
+    "Requesting srcdoc navigation leaves the old document active through its pageshow in Chromium, then the replacement receives its own complete lifecycle. A navigation request alone does not establish committed replacement.",
+    "Chromium reports a thrown load listener, continues the later listener and lifecycle, and still completes iframe loading when pageshow is canceled. Native231 already reports/continues the listener, but has no pageshow.",
+    "DOMContentLoaded composed is false in Chromium but true in231; this existing native metadata gap must be fixed deliberately or kept separate from a narrower scope claim."
+  ],
+  "chronological_observations": {
+    "jsrun231-v3": {
+      "top-initial": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "top",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "top",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "top",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "load-microtask"
+        }
+      ],
+      "synthetic-events": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "synthetic-window",
+          "generation": "top",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": false,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "synthetic-window",
+          "generation": "top",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": false,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": true,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "synthetic-element",
+          "generation": "top",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "div",
+          "currentTarget": "div",
+          "path": [
+            "div",
+            "body",
+            "html",
+            "document"
+          ],
+          "phase": 2,
+          "trusted": false,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        }
+      ],
+      "frame-initial": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        }
+      ],
+      "repeated-close": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 5,
+          "action": "before-redundant-close"
+        },
+        {
+          "kind": "actions",
+          "sequence": 6,
+          "action": "after-redundant-close"
+        }
+      ],
+      "load-document-open": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "before-load-open",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 4,
+          "listener": "document-dcl",
+          "generation": "replacement",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "events",
+          "sequence": 5,
+          "listener": "window-bubble",
+          "generation": "replacement",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "events",
+          "sequence": 6,
+          "listener": "window-capture",
+          "generation": "replacement",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 8,
+          "action": "after-load-open",
+          "generation": "initial",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 9,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 10,
+          "action": "load-microtask",
+          "generation": "replacement",
+          "activeGeneration": "replacement"
+        }
+      ],
+      "load-frame-removal": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "before-remove",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "after-remove",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 5,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 6,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        }
+      ],
+      "load-srcdoc-navigation": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "before-navigate-srcdoc",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "navigation-requested",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 5,
+          "action": "after-navigate-srcdoc",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 6,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 8,
+          "listener": "document-dcl",
+          "generation": "replacement",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "events",
+          "sequence": 9,
+          "listener": "window-bubble",
+          "generation": "replacement",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "events",
+          "sequence": 10,
+          "listener": "window-capture",
+          "generation": "replacement",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 11,
+          "action": "load-microtask",
+          "generation": "replacement",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 12,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "replacement"
+        }
+      ],
+      "pageshow-document-open": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        }
+      ],
+      "post-load-child-insertion": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 5,
+          "action": "before-late-child"
+        },
+        {
+          "kind": "actions",
+          "sequence": 6,
+          "action": "after-late-child"
+        }
+      ],
+      "load-listener-throws": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "before-listener-throw",
+          "generation": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "listener-error-reported",
+          "generation": "initial",
+          "message": "lifecycle-load-listener-sentinel"
+        },
+        {
+          "kind": "actions",
+          "sequence": 5,
+          "action": "listener-after-throw",
+          "generation": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 6,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        }
+      ],
+      "pageshow-cancel": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": true,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        }
+      ]
+    },
+    "chromium156-v3": {
+      "top-initial": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "top",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "top",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "top",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "load-microtask"
+        },
+        {
+          "kind": "events",
+          "sequence": 4,
+          "listener": "window-bubble",
+          "generation": "top",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "events",
+          "sequence": 5,
+          "listener": "window-capture",
+          "generation": "top",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        }
+      ],
+      "synthetic-events": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "synthetic-window",
+          "generation": "top",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": false,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "synthetic-window",
+          "generation": "top",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "window",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": false,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": true,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "synthetic-element",
+          "generation": "top",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "div",
+          "currentTarget": "div",
+          "path": [
+            "div",
+            "body",
+            "html",
+            "document"
+          ],
+          "phase": 2,
+          "trusted": false,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "top"
+        }
+      ],
+      "frame-initial": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 5,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 6,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "pageshow-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        }
+      ],
+      "repeated-close": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 5,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 6,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "pageshow-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 8,
+          "action": "before-redundant-close"
+        },
+        {
+          "kind": "actions",
+          "sequence": 9,
+          "action": "after-redundant-close"
+        }
+      ],
+      "load-document-open": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "before-load-open",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 4,
+          "listener": "document-dcl",
+          "generation": "replacement",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 5,
+          "action": "after-load-open",
+          "generation": "initial",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 6,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "events",
+          "sequence": 8,
+          "listener": "window-bubble",
+          "generation": "replacement",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "events",
+          "sequence": 9,
+          "listener": "window-capture",
+          "generation": "replacement",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 10,
+          "action": "pageshow-microtask",
+          "generation": "replacement",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "errors",
+          "sequence": 11,
+          "phase": "replacement",
+          "message": "replacement Window load not observed within1500ms"
+        }
+      ],
+      "load-frame-removal": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "before-remove",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        }
+      ],
+      "load-srcdoc-navigation": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "before-navigate-srcdoc",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "navigation-requested",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 5,
+          "action": "after-navigate-srcdoc",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 6,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 8,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 9,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 10,
+          "action": "pageshow-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 11,
+          "listener": "document-dcl",
+          "generation": "replacement",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "events",
+          "sequence": 12,
+          "listener": "window-bubble",
+          "generation": "replacement",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "events",
+          "sequence": 13,
+          "listener": "window-capture",
+          "generation": "replacement",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 14,
+          "action": "load-microtask",
+          "generation": "replacement",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 15,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "events",
+          "sequence": 16,
+          "listener": "window-bubble",
+          "generation": "replacement",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "events",
+          "sequence": 17,
+          "listener": "window-capture",
+          "generation": "replacement",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 18,
+          "action": "pageshow-microtask",
+          "generation": "replacement",
+          "activeGeneration": "replacement"
+        }
+      ],
+      "pageshow-document-open": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 5,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 6,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "before-pageshow-open",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 8,
+          "listener": "document-dcl",
+          "generation": "replacement",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 9,
+          "action": "after-pageshow-open",
+          "generation": "initial",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "actions",
+          "sequence": 10,
+          "action": "pageshow-microtask",
+          "generation": "initial",
+          "activeGeneration": "replacement"
+        },
+        {
+          "kind": "errors",
+          "sequence": 11,
+          "phase": "replacement",
+          "message": "replacement Window load not observed within1500ms"
+        }
+      ],
+      "post-load-child-insertion": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 5,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 6,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "pageshow-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 8,
+          "action": "before-late-child"
+        },
+        {
+          "kind": "actions",
+          "sequence": 9,
+          "action": "after-late-child"
+        }
+      ],
+      "load-listener-throws": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "before-listener-throw",
+          "generation": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "listener-error-reported",
+          "generation": "initial",
+          "message": "lifecycle-load-listener-sentinel"
+        },
+        {
+          "kind": "actions",
+          "sequence": 5,
+          "action": "listener-after-throw",
+          "generation": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 6,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 8,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 9,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 10,
+          "action": "pageshow-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        }
+      ],
+      "pageshow-cancel": [
+        {
+          "kind": "events",
+          "sequence": 0,
+          "listener": "document-dcl",
+          "generation": "initial",
+          "type": "DOMContentLoaded",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "document",
+          "path": [
+            "document",
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "interactive",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 1,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 2,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "load",
+          "className": "[object Event]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": false,
+          "cancelable": false,
+          "composed": false,
+          "persisted": null,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 3,
+          "action": "load-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 4,
+          "action": "iframe-element-load",
+          "targetIsFrame": true,
+          "currentTargetIsFrame": true,
+          "trusted": true,
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 5,
+          "listener": "window-bubble",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "events",
+          "sequence": 6,
+          "listener": "window-capture",
+          "generation": "initial",
+          "type": "pageshow",
+          "className": "[object PageTransitionEvent]",
+          "target": "document",
+          "currentTarget": "window",
+          "path": [
+            "window"
+          ],
+          "phase": 2,
+          "trusted": true,
+          "bubbles": true,
+          "cancelable": true,
+          "composed": false,
+          "persisted": false,
+          "readyState": "complete",
+          "activeGeneration": "initial"
+        },
+        {
+          "kind": "actions",
+          "sequence": 7,
+          "action": "pageshow-canceled",
+          "generation": "initial",
+          "defaultPrevented": true
+        },
+        {
+          "kind": "actions",
+          "sequence": 8,
+          "action": "pageshow-microtask",
+          "generation": "initial",
+          "activeGeneration": "initial"
+        }
+      ]
+    }
+  },
+  "metadata_limitation": "CFT OS exit is not exposed by the unchanged public adapter; actual adapter exit and owned cleanup are verified.",
+  "sources": [
+    "https://html.spec.whatwg.org/multipage/parsing.html#the-end",
+    "https://html.spec.whatwg.org/multipage/nav-history-apis.html#fire-a-page-transition-event",
+    "https://dom.spec.whatwg.org/#concept-event-dispatch",
+    "https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#document-open-steps"
+  ],
+  "evidence_sha256": {
+    "jsrun231-v3/receipt.json": "3f5bea1d4911e9d6148043e2f9bb21fbb3daa751ed282dd7bf03d8296af7fffe",
+    "jsrun231-v3/observations.json": "8748aaaba3e626e04ba5a489e3a7ca511f70815afa157d3e26dd421a9f0e4f58",
+    "jsrun231-v3/pins-before.json": "7a22652d80b427f95d516d5b785cf81e678256e651a07d7606db50ad46245d00",
+    "jsrun231-v3/pins-after.json": "7a22652d80b427f95d516d5b785cf81e678256e651a07d7606db50ad46245d00",
+    "jsrun231-v3/controller.log": "41621f68afa1ea06520276ac6d827a2d826e75df83fadb14ae32bb710cd4d906",
+    "chromium156-v3/receipt.json": "903b09b87b95720088912350d6b5b515ec1c81a1ab6dfa942690c391749d4997",
+    "chromium156-v3/observations.json": "ccc25dfd802acde650d781bb1044d124367c82e5cb893edbea7edbb6be6ab4f8",
+    "chromium156-v3/pins-before.json": "da24ca7fd5751fcc52f1a3e42630cd910d8f950554a5f707f372d84ff6e1848f",
+    "chromium156-v3/pins-after.json": "da24ca7fd5751fcc52f1a3e42630cd910d8f950554a5f707f372d84ff6e1848f",
+    "chromium156-v3/controller.log": "fca5de5a0a2713881fe4c9df9f5267fcb9025f89fcb2d0b99e11d9d7638d1b60",
+    "candidate231-lifecycle-matrix-baseline-execution.json": "f76181ea9ee945533503b49a95f03de3f00c3f55d85c08333a841217fe6fe38b"
+  }
+}

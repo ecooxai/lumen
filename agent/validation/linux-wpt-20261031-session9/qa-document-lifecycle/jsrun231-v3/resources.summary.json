@@ -1,0 +1,21 @@
+{
+  "label": "lumen actual lifecycle matrix",
+  "started_utc": "2026-10-31T09:23:15.149704+00:00",
+  "finished_utc": "2026-10-31T09:23:19.175568+00:00",
+  "root_pid": 2669240,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 4,
+  "elapsed_seconds": 4.026,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 34.0,
+  "cpu_median": 38.03,
+  "cpu_max": 48.965,
+  "cpu_last10_median": 38.03,
+  "rss_peak_mb": 223.719,
+  "rss_final_mb": 223.719,
+  "pss_peak_mb": 9.264,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

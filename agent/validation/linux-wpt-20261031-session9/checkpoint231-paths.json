@@ -1,0 +1,2166 @@
+{
+  "candidate": 231,
+  "tested_source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "paths": [
+    "agent/ops/linux-wpt-20261031-session9/audit-frozen640-independent.py",
+    "agent/ops/linux-wpt-20261031-session9/audit-hidden-scroll-retention.py",
+    "agent/ops/linux-wpt-20261031-session9/candidate231-independent-first-gates-audit.json",
+    "agent/ops/linux-wpt-20261031-session9/candidate231-independent-frozen640-audit.json",
+    "agent/ops/linux-wpt-20261031-session9/candidate231-independent-options49-audit.json",
+    "agent/ops/linux-wpt-20261031-session9/candidate231-independent-retention-review.json",
+    "agent/ops/linux-wpt-20261031-session9/candidate231-lifecycle-independent-baseline-audit.json",
+    "agent/ops/linux-wpt-20261031-session9/candidate231-lifecycle-v4-independent-audit.json",
+    "agent/ops/linux-wpt-20261031-session9/page-checkpoint231/cloud-receipt.json",
+    "agent/validation/iteration-231/build-state.json",
+    "agent/validation/iteration-231/build.log",
+    "agent/validation/iteration-231/source-manifest-after.json",
+    "agent/validation/iteration-231/source-manifest-before.json",
+    "agent/validation/iteration-231/startup-resources.csv",
+    "agent/validation/iteration-231/startup-resources.monitor.log",
+    "agent/validation/iteration-231/startup-resources.summary.json",
+    "agent/validation/iteration-231/startup.log",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/cgroup-lumen231.csv",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/cgroup-lumen231.summary.json",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231-controller-receipt.json",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/cleanup-aggregate.json",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/cleanup-shard0.json",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/cleanup-shard1.json",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/comparison-public.json",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/controller-shard0.log",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/controller-shard1.log",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/identity-audit.json",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/prior-pass-union-audit.json",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/reference-identity-audit.json",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/results.jsonl",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/running.json",
+    "agent/validation/linux-wpt-20261031-session9/audit-prior-pass-through231.py",
+    "agent/validation/linux-wpt-20261031-session9/build231/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/build231/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/build231/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/build231/command.log",
+    "agent/validation/linux-wpt-20261031-session9/build231/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/build231/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/build231/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/build231/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/build231/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-baseline-execution.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-baseline-retry-v2-execution.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-baseline-transport-v3-execution.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-chromium156-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-lumen-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-lumen-retry-v2-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-lumen-transport-v3-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-containment-audit.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-containment-audit.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-containment-execution.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-1.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-2.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-3.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-execution.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-comparison.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-identity-audit.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-nonok-inventory.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-outer-terminal-completion.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-source-binding-launch.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-source-binding.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-source-binding.json.sha256",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-hidden-api-audit.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-hidden-scroll-contract-audit.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-hidden-scroll-upstream-audit.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-baseline-execution.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-chromium156-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-lumen-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-v4-baseline-execution.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-v4-chromium156-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-v4-lumen-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-math-sanitizer-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-native-sanitizer-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-observer-first-0.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-observer-first-1.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-observer-first-audit.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-observer-first-execution.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-qa-css-containment-numbered-assertions.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-qa-css-containment-numbered-reftests.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-qa-css-containment-parsing-assertions.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-qa-css-logical-containment-assertions.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-qa-css-logical-containment-reftests.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-raster-sanitizer-controller.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-contract-audit.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-0.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-1.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-2.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-execution.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-upstream-audit.log",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-sanitizer-execution.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-source-freeze.json",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-validation-plan.json",
+    "agent/validation/linux-wpt-20261031-session9/compare-frozen640-226.py",
+    "agent/validation/linux-wpt-20261031-session9/gpt-6-astra-pro-builtin-rubywebterm-io-threshold-handoff.json",
+    "agent/validation/linux-wpt-20261031-session9/gpt-6-astra-pro-builtin-rubywebterm-next-scope-inventory.json",
+    "agent/validation/linux-wpt-20261031-session9/iteration231-summary.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/build-targets.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/cache-after.txt",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/cache-before.txt",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/configure.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/ctest.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/ctest.xml",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/execution.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/plan.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/build-targets.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/cache-after.txt",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/cache-before.txt",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/configure.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/ctest.log",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/ctest.xml",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/execution.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/plan.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/native231/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/native231/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/native231/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/native231/command.log",
+    "agent/validation/linux-wpt-20261031-session9/native231/ctest.xml",
+    "agent/validation/linux-wpt-20261031-session9/native231/full-ctest-log.txt",
+    "agent/validation/linux-wpt-20261031-session9/native231/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/native231/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/native231/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/native231/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/native231/strict-control-verification.json",
+    "agent/validation/linux-wpt-20261031-session9/native231/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/prior-pass-through231-pins.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/checkvisibility-options-v1.html",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/driver.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/resources.monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/result.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/observations.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/expected-checks-v1.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/fixture-manifest-v1.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/observations.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/proposal-v1.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v1.py",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v2.py",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v3.py",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/serialize-completed-results-v3.js",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/cleanup.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/native/metadata.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/native/results.jsonl",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/cleanup.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/native/comparator-log.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/native/provenance.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/native/results.jsonl",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/native/summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/cleanup.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/native/metadata.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/native/results.jsonl",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/cleanup.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/native/metadata.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/native/results.jsonl",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/cleanup.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/native/comparator-log.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/native/provenance.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/native/results.jsonl",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/native/summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/acceptance-contract-v1.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser/driver.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser/resources.monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser/result.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/observations.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/browser/driver.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/browser/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/browser/resources.monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/browser/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/browser/result.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/observations.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v1.html",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v2.html",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v3.html",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v4-unrun-draft.html",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v4.html",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/observations.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/observations.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/matrix-manifest-v1.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/matrix-manifest-v2.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/matrix-manifest-v3.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/matrix-manifest-v4.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/run-matrix-v4.py",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/run-matrix.py",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/upstream-manifest-v1.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/upstream-urls.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/cleanup.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/native/metadata.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/native/results.jsonl",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser/driver.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser/resources.monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser/result.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/observations.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/run-durable-reference.py",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/cleanup.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/controller.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/native/metadata.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/native/results.jsonl",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/diagnostic.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/diagnostic.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/launch.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/run-v1-retention.py",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/cgroup-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/cgroup.csv",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/cgroup.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/pins-after.json",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/pins-before.json",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/plan.json",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/receipt.json",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/resources.csv",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/resources.summary.json",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/test.log",
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/tree-monitor.log",
+    "agent/validation/linux-wpt-20261031-session9/run-final-frozen640.py",
+    "devsummary.md"
+  ],
+  "files": {
+    "agent/ops/linux-wpt-20261031-session9/audit-frozen640-independent.py": {
+      "sha256": "2e7e6fdaddc2e74976b4310f4ef73779707a6629da9ac9a3a46d6e4d34a9e624",
+      "bytes": 11279
+    },
+    "agent/ops/linux-wpt-20261031-session9/audit-hidden-scroll-retention.py": {
+      "sha256": "d01d154bd9c8382535a269ce1278e81ccc3015ce7b053cf27f735e504eae1ada",
+      "bytes": 10735
+    },
+    "agent/ops/linux-wpt-20261031-session9/candidate231-independent-first-gates-audit.json": {
+      "sha256": "971b0cddad3cc258039f52165bd3030df886613792a34efa9579d4f6e0af77e8",
+      "bytes": 6466
+    },
+    "agent/ops/linux-wpt-20261031-session9/candidate231-independent-frozen640-audit.json": {
+      "sha256": "47bc7a9989080389c5cffde00517840df2cfa167c81514a5440371d051be0427",
+      "bytes": 717322
+    },
+    "agent/ops/linux-wpt-20261031-session9/candidate231-independent-options49-audit.json": {
+      "sha256": "0db875f7ad2fe63c79fbe896ad85e17f26ecfd1955c07bc72e62cbc0712ba060",
+      "bytes": 7755
+    },
+    "agent/ops/linux-wpt-20261031-session9/candidate231-independent-retention-review.json": {
+      "sha256": "0d0f0674d7c3ab757091ca49a7df7db3fe8b26eb737a0fe343784b37919c61db",
+      "bytes": 2753
+    },
+    "agent/ops/linux-wpt-20261031-session9/candidate231-lifecycle-independent-baseline-audit.json": {
+      "sha256": "4adf1ba41d91a325e4765ddadf7e4a9d78ad422f38483b65bbfe22bc6f8cbf0c",
+      "bytes": 79751
+    },
+    "agent/ops/linux-wpt-20261031-session9/candidate231-lifecycle-v4-independent-audit.json": {
+      "sha256": "5c296a5ab76835aeecd8a687d4b4a48b764ad3f14f25d883eea759bc6d6426e6",
+      "bytes": 23271
+    },
+    "agent/ops/linux-wpt-20261031-session9/page-checkpoint231/cloud-receipt.json": {
+      "sha256": "dd016bffaa92b38aa7dc19b16cc5af4bf14b462c81d098dfdae48dd7191a74b5",
+      "bytes": 1055
+    },
+    "agent/validation/iteration-231/build-state.json": {
+      "sha256": "779cdcf8bbc61cafcbbc195a083da6f9705c4215b552422eb7326e77437a47a7",
+      "bytes": 845
+    },
+    "agent/validation/iteration-231/build.log": {
+      "sha256": "b9a67bf11440bfd9927143ab7c0d6afc607ad48674eeb201ba12ec6c98b57559",
+      "bytes": 10460
+    },
+    "agent/validation/iteration-231/source-manifest-after.json": {
+      "sha256": "d1d2ad1ec3ce3f4a304003ac037a228a3241c5d50df08b0a94977bd5d6aefc1f",
+      "bytes": 67567
+    },
+    "agent/validation/iteration-231/source-manifest-before.json": {
+      "sha256": "d1d2ad1ec3ce3f4a304003ac037a228a3241c5d50df08b0a94977bd5d6aefc1f",
+      "bytes": 67567
+    },
+    "agent/validation/iteration-231/startup-resources.csv": {
+      "sha256": "8be3f9503e8bbe37c37acdff2e181ccf12dd42a9ec688fc41843d10838b28086",
+      "bytes": 401
+    },
+    "agent/validation/iteration-231/startup-resources.monitor.log": {
+      "sha256": "cb9f334d5921f05f11c271affe846bcb18e648e5147f140756bfebcd1fcba4fb",
+      "bytes": 661
+    },
+    "agent/validation/iteration-231/startup-resources.summary.json": {
+      "sha256": "6829cf76a06fd43ab1cf3b72daaa1ab2f86e2952f7a6ee646fd7eb513ac89109",
+      "bytes": 701
+    },
+    "agent/validation/iteration-231/startup.log": {
+      "sha256": "4b1fcb72259aa6c951ac838b65a0eb7b8054852c322fc31da65a1175db919398",
+      "bytes": 274
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/cgroup-lumen231.csv": {
+      "sha256": "ca7ae26b7fb9f47d7fbca22f4d719035218c37efaf2dc4934541a4dce81eae95",
+      "bytes": 112111
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/cgroup-lumen231.summary.json": {
+      "sha256": "47183fc14665614d83886920c90f90de6f319a9b99b99230a0641b4b528a53f7",
+      "bytes": 847
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231-controller-receipt.json": {
+      "sha256": "e1ce4c24258e93ba9e26ff71038a0df9a5a8336bd3370fb21d4576e5068c3e8c",
+      "bytes": 170293
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/cleanup-aggregate.json": {
+      "sha256": "38e98fc6dd2d0f8d5972dfd7e2c01b71b3a8025ce8205eb1516aacb0aba9d32c",
+      "bytes": 2287
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/cleanup-shard0.json": {
+      "sha256": "d5d965c3bce4ee15fe80c6b89365d17ba01de9fd961359aaa803bd72be13e9ad",
+      "bytes": 1867
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/cleanup-shard1.json": {
+      "sha256": "eda46c6203969e4c4196f5ce47f6a0caa37b09b6da16683176fe70870ae7fc75",
+      "bytes": 1868
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/comparison-public.json": {
+      "sha256": "3800596616bd47fad327e182b24cd57dddf2024fc85131f612ed154d7d60dccd",
+      "bytes": 2761
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/controller-shard0.log": {
+      "sha256": "7f1441ebf0e749ba3e1018e952cdfafca16eb93c90b5fa72c01ca1d1a49459a7",
+      "bytes": 39770
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/controller-shard1.log": {
+      "sha256": "50f3092a2aa9d1fd01e2cfc289fb0bb106db12c598923a5b6f0a4310c4492b13",
+      "bytes": 39808
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/identity-audit.json": {
+      "sha256": "d9d638cf082071b8b112a1783d29199f8c7277069fb8401147176705a2c27988",
+      "bytes": 271277
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/prior-pass-union-audit.json": {
+      "sha256": "6841947b9dd6d07fdd3ca95f307989ee1fbe645df0e04f626d8e3e51a3101a36",
+      "bytes": 25605
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/reference-identity-audit.json": {
+      "sha256": "0281560e7ddb12e420a0b87c7f70f715d2bde16cf9c7ff2f42f8f041a82afa19",
+      "bytes": 1155593
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/results.jsonl": {
+      "sha256": "2f5b8445e81e545006c26db3ee4418537f26feed2b1d1f8bbf5f098315332d38",
+      "bytes": 1373972
+    },
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/running.json": {
+      "sha256": "ba605d87b52e9b8bbb61e1795b2e944985496330ed161ee0191e9db228d2f2e5",
+      "bytes": 2966
+    },
+    "agent/validation/linux-wpt-20261031-session9/audit-prior-pass-through231.py": {
+      "sha256": "666076029da49855a687bbf06dc4fb8ba4f7f41aef33af9c411d6c0e9c38933e",
+      "bytes": 6819
+    },
+    "agent/validation/linux-wpt-20261031-session9/build231/cgroup-monitor.log": {
+      "sha256": "5be2be84a9ad5f8986b8c7f04cb78cdb265c4ab30ed753245dab9aa2f4354c83",
+      "bytes": 810
+    },
+    "agent/validation/linux-wpt-20261031-session9/build231/cgroup.csv": {
+      "sha256": "bf868dd081a555d00293dcd65776c4ccef5e1d4fcde9a9d0f11442deb95f738d",
+      "bytes": 3788
+    },
+    "agent/validation/linux-wpt-20261031-session9/build231/cgroup.summary.json": {
+      "sha256": "449a4e7075b2db04729e2e8097ccc78dce4a09f52766182266faeba7890cfda4",
+      "bytes": 834
+    },
+    "agent/validation/linux-wpt-20261031-session9/build231/command.log": {
+      "sha256": "59ae327f5706e774c8fda32c25bede8441fd8f974fb18c15a48b2be2eab8599a",
+      "bytes": 816
+    },
+    "agent/validation/linux-wpt-20261031-session9/build231/launch.json": {
+      "sha256": "63bea275c254301065f4dee55cfcfe56d77b4ee2bb90ac0f57ace44cef7813c7",
+      "bytes": 393
+    },
+    "agent/validation/linux-wpt-20261031-session9/build231/receipt.json": {
+      "sha256": "f7926d96cceffea0689bbc58e8f1e6ec6004644a61dba3b3ef751e4ab0ede5a8",
+      "bytes": 570
+    },
+    "agent/validation/linux-wpt-20261031-session9/build231/resources.csv": {
+      "sha256": "a934706adc6425de88c232ec11ff14890803dea3ec682ac4bf98932b77e0fb24",
+      "bytes": 3528
+    },
+    "agent/validation/linux-wpt-20261031-session9/build231/resources.summary.json": {
+      "sha256": "831d8a547a1bdf1392c807d0c7d4df5231464ef8bbc7955acf90bc12db29f7eb",
+      "bytes": 789
+    },
+    "agent/validation/linux-wpt-20261031-session9/build231/tree-monitor.log": {
+      "sha256": "f025864a2d1c19748fac0663d4e143b5a2bf220870ecb86ff8863621c340b6a3",
+      "bytes": 749
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-baseline-execution.json": {
+      "sha256": "f4f105988b798875a1f54edd22c69f617b5a6b21bd6d666db1caeb2c31b440e0",
+      "bytes": 1551
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-baseline-retry-v2-execution.json": {
+      "sha256": "ac14f77ac7b6f717f793922db7188f99cc28d931e29ee72e7dc0929f143193c9",
+      "bytes": 1298
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-baseline-transport-v3-execution.json": {
+      "sha256": "3ee53445d6ba778f24b059d6d7be1303aec4871f3aa0d2efe8ddd51ee3032033",
+      "bytes": 1294
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-chromium156-controller.log": {
+      "sha256": "033aafa245aaa896cb19c62ad2b242ded45452956a6f72c703127eb56b93a3b2",
+      "bytes": 297
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-lumen-controller.log": {
+      "sha256": "f04e54c0634f82d3acb8576f427e7e29fd5f6e0cbec8c99ff43c929af55ed0c8",
+      "bytes": 326
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-lumen-retry-v2-controller.log": {
+      "sha256": "47965aaf9a8c37a4e473fbd0a7fb2983fb153ab15a1a0514be0d13a7e0f83239",
+      "bytes": 353
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-lumen-transport-v3-controller.log": {
+      "sha256": "03bb9c50b963ab60b113ab2a6062539b87f03221629564be6f64041c50f2b853",
+      "bytes": 292
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-containment-audit.json": {
+      "sha256": "495803be13e6c08989d4e286c572a1ded947776b26642de9951b93bb9d764a61",
+      "bytes": 129113
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-containment-audit.log": {
+      "sha256": "36c9b18e64ee8d4e9672627e903178b6f43dad06599290ff81ef11712308c085",
+      "bytes": 889
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-containment-execution.json": {
+      "sha256": "9dab8a0206f43323c9976088bfe647ca65b13c5758eda84377bfae05e8b59512",
+      "bytes": 2299
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-1.log": {
+      "sha256": "7900fb200b0769a56338bce2dbf8a301cbf4fc449dce952c0975318d9c1a6141",
+      "bytes": 504
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-2.log": {
+      "sha256": "69a236313fbfc356218d840db4faba27e2e5a2da960adde96e721d78d9319d34",
+      "bytes": 2385
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-3.log": {
+      "sha256": "2935d28a6062cd393b2c726e9eb293fc6bde36e695908a6ff87a174bc59b3d37",
+      "bytes": 1407
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-audit-execution.json": {
+      "sha256": "76ab173cd682106dd90e0987226c7ad04fb4cce718b01ea63eea774a9a5bbcb4",
+      "bytes": 1480
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-comparison.json": {
+      "sha256": "5de1dabb1f3902b67ae8d4ee6bc3afda0261a3c8458d19307297f020e62e441c",
+      "bytes": 4528
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-controller.log": {
+      "sha256": "55a44fd61743a5cdbedf1781e31e3a565cf96e80238755ae0cf78f4be2fa6263",
+      "bytes": 395
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-identity-audit.json": {
+      "sha256": "3fec369ac16c1437a1f473f3dd816c7aab42d30e7eb4714d48dcf2f6b42a9360",
+      "bytes": 1203355
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-nonok-inventory.json": {
+      "sha256": "2dbc150da6b73537acf6e01ac7c42c8b5f06976ff991df99f5b0a94340fb48a3",
+      "bytes": 39089
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-outer-terminal-completion.json": {
+      "sha256": "4ead248f2075524961a3396ca532ad6e573c51ba658c6594f823f89c0b9a25b5",
+      "bytes": 409
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-source-binding-launch.json": {
+      "sha256": "c3c7633ea67ded74ebfd85a3b0f23695420790626f36ba87a54ee6081b1f544f",
+      "bytes": 69723
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-source-binding.json": {
+      "sha256": "da91f97228e84e26221b9cf55af2062efaddcbc00489059e032330b0f6ecf9f1",
+      "bytes": 139260
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-source-binding.json.sha256": {
+      "sha256": "fb19aed472b0107647fd50da533e2d2f24c7fb673380f05f1bf40e3fc37d34ab",
+      "bytes": 109
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-hidden-api-audit.json": {
+      "sha256": "48dd271bb1df0cf8dcc8469e34d9e36589aecc148e0b27630fc6c0a5ec987002",
+      "bytes": 15414
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-hidden-scroll-contract-audit.json": {
+      "sha256": "9caf9953433d272955026830bb8e05b608b2a3bef7662fb0ae3d7f5d54622806",
+      "bytes": 10558
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-hidden-scroll-upstream-audit.json": {
+      "sha256": "209da269b11433df9031e1a307d0c331a03ab87af3278dc5b6233e7c4275f62d",
+      "bytes": 1712
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-baseline-execution.json": {
+      "sha256": "f76181ea9ee945533503b49a95f03de3f00c3f55d85c08333a841217fe6fe38b",
+      "bytes": 1556
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-chromium156-controller.log": {
+      "sha256": "b69a9120ec6668a9ca52e22841796b69770fcaf97370d193dc2402969daeeb1f",
+      "bytes": 335
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-lumen-controller.log": {
+      "sha256": "27da4d85033a56dc6b9a6872e9e47aff3f1ea05faf9a668c43e28e61ac4c393a",
+      "bytes": 328
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-v4-baseline-execution.json": {
+      "sha256": "7f5d9b88b4e9a8faee0f0f9dadcb0aa511c9c58caafe7361a4adf976803a8014",
+      "bytes": 1575
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-v4-chromium156-controller.log": {
+      "sha256": "c69ea43641ca0cc078cb2c5ec13723d7ace55d34ba764079d341af2e398a9990",
+      "bytes": 335
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-lifecycle-matrix-v4-lumen-controller.log": {
+      "sha256": "1b3de233c2e8472d89b4276ba88ca65c569b8bcf6c698e32fed4c92c8e3eaec3",
+      "bytes": 328
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-math-sanitizer-controller.log": {
+      "sha256": "a113eb47d00ee9666e8b4de01afc5508b583450d9d028c8568059d7d688c4fe1",
+      "bytes": 1032
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-native-sanitizer-controller.log": {
+      "sha256": "64be53d7dbc2c66464a0500947e52edd9656611a6392e5e7c83d47ba98b956fa",
+      "bytes": 1416
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-observer-first-0.log": {
+      "sha256": "ed6d2d24ee971dff2937f8877910260a9f536a4deecf6367a068114ced6cd897",
+      "bytes": 284
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-observer-first-1.log": {
+      "sha256": "a2b7f8d23ff588ca4621c5c2e668e326dcf207cc788210985262eb97b2f4ee00",
+      "bytes": 3830
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-observer-first-audit.log": {
+      "sha256": "41638ad30cc1190f285d4148977be321d9ba341be71484dc465147188ae7fcca",
+      "bytes": 2502
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-observer-first-execution.json": {
+      "sha256": "03008ba00f73519f56583ac12c31f5af2b9e752d2761f1f0df674261029ad05f",
+      "bytes": 2686
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-qa-css-containment-numbered-assertions.log": {
+      "sha256": "749e367da84aefe913ac0991d6afb70b407399043ebd73c83224acb246cbb29f",
+      "bytes": 283
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-qa-css-containment-numbered-reftests.log": {
+      "sha256": "6d4d9ee7cf09bee4cec62effa86368881116e5debb8bec1c9ca4d868d9f42d37",
+      "bytes": 281
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-qa-css-containment-parsing-assertions.log": {
+      "sha256": "e9ca341f15254f4327d9f81171176eb96c4499d5a6fe92b208bcad9a6c4e2a26",
+      "bytes": 281
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-qa-css-logical-containment-assertions.log": {
+      "sha256": "d1dc47d31ff68beb04a7173f7cf232eef7bd9e7010bdd84f321b64bf0d0b5eab",
+      "bytes": 281
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-qa-css-logical-containment-reftests.log": {
+      "sha256": "51ade107d3e4f44bb26ab271583f5f052e3216dee9fea610e9debc4eefe6bf30",
+      "bytes": 280
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-raster-sanitizer-controller.log": {
+      "sha256": "4771b166c30a27c5b338330ce21b7ae663bde6c89d1d8283e644b6a9ff2adc8c",
+      "bytes": 820
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-contract-audit.log": {
+      "sha256": "f387b8c67fec61e5884ee60fffdab2f9bedc98d3305ad37bf7c1719759f27a2f",
+      "bytes": 105
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-0.log": {
+      "sha256": "3a7d15cf17a3f6c923fe6cbad4b1f5914d72c68414a6077f8f38a98ac1737f3c",
+      "bytes": 292
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-1.log": {
+      "sha256": "239f4af7e290e5049dcad1b8aa6237ac7bfa09972e4c90dd9d935642f8cf5109",
+      "bytes": 3824
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-2.log": {
+      "sha256": "1dffc99552b258577f35daacf1b3e6d8b75510c5884d9959cd41e219c39bc79d",
+      "bytes": 281
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-first-execution.json": {
+      "sha256": "3d05707dc03b4ef1caee59260201b47c2f13c447164d26dfdd5d0a89294c962e",
+      "bytes": 2134
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-retention-upstream-audit.log": {
+      "sha256": "2c17296925e036326e425873b852f94856a0591f9e18739bd6b4862d1169c3d0",
+      "bytes": 1446
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-sanitizer-execution.json": {
+      "sha256": "bdb8ece2d77c2e9adacbecf54bf92e853179f0b447e55450ab3cd82ef6f89fd9",
+      "bytes": 1236
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-source-freeze.json": {
+      "sha256": "a4a53c2ba90892f236aca3c81b96e5ce07e4e372e9ce5e5b47c59ff114e19fe0",
+      "bytes": 1278
+    },
+    "agent/validation/linux-wpt-20261031-session9/candidate231-validation-plan.json": {
+      "sha256": "bfcb73e70eb46f78c3c513e0093d23f757d011e81d1b0d119f01feaf76af9f1b",
+      "bytes": 3920
+    },
+    "agent/validation/linux-wpt-20261031-session9/compare-frozen640-226.py": {
+      "sha256": "133e09d99414cc8feed2b4aa55688052dc6646f535bc405714ff1da5200b9042",
+      "bytes": 5475
+    },
+    "agent/validation/linux-wpt-20261031-session9/gpt-6-astra-pro-builtin-rubywebterm-io-threshold-handoff.json": {
+      "sha256": "6ec45d59aa34525adeedb79903d006f927f178f4a75c910d7f96da23bcbb2f2a",
+      "bytes": 2777
+    },
+    "agent/validation/linux-wpt-20261031-session9/gpt-6-astra-pro-builtin-rubywebterm-next-scope-inventory.json": {
+      "sha256": "647a4c315dcb1cd413d38f7e34af3e02fbf96323e070b2d65406723c3a2567f7",
+      "bytes": 8447
+    },
+    "agent/validation/linux-wpt-20261031-session9/iteration231-summary.json": {
+      "sha256": "01097f661f762cba37b3b78e4b993c8a7bbbb14752a44f56319623d325869228",
+      "bytes": 10398
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/build-targets.log": {
+      "sha256": "b60991e35d1a0aefae89441fd3f73872884b4fdd37f3aca731ab2168e389de91",
+      "bytes": 2598
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/cache-after.txt": {
+      "sha256": "2cd7e7e1cbbaf0078d6661f037518d00115e0dfe4d5aad10b4e6cbea9e0e4f9a",
+      "bytes": 23754
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/cache-before.txt": {
+      "sha256": "2cd7e7e1cbbaf0078d6661f037518d00115e0dfe4d5aad10b4e6cbea9e0e4f9a",
+      "bytes": 23754
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/cgroup-monitor.log": {
+      "sha256": "85e0d1ff0a42a465d7ea0c0b00c003c95f4c7b524e0271f8c9219936ae0919bd",
+      "bytes": 827
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/cgroup.csv": {
+      "sha256": "9fa1d725d7e8f3b874173d49ea09eff8bc3717f0409bde84bf1ba8fa86271343",
+      "bytes": 1949
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/cgroup.summary.json": {
+      "sha256": "65f074410b22cebd0dfe75159cb1be5edcc3e89f4475016e9bf6348040406ba4",
+      "bytes": 851
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/configure.log": {
+      "sha256": "70e5a27a447c0a1bed847e26c1f983fe9844aa1770201bcd50527e95b3591007",
+      "bytes": 169
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/controller.log": {
+      "sha256": "518cf37ad94cab1f91d5b37b43d164c2765dc0e6548e839e4f16f4eaebefa22d",
+      "bytes": 1199
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/ctest.log": {
+      "sha256": "4bcd98770d80b12503d1524e0c8f29bced52e6211d1365336bf97dd15d19c1fd",
+      "bytes": 276
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/ctest.xml": {
+      "sha256": "5cf122c90145979c31316d8c1522867fda77ed723d31e62de1d1a15758480023",
+      "bytes": 390
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/execution.json": {
+      "sha256": "846fc48f9c865c5af6d1ff7c9a6f1798f05797a95bd8bb61cd55000a70d75339",
+      "bytes": 1457
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/pins-after.json": {
+      "sha256": "68f33aa46bdff952d4c61ec0c9cafb18d84ce0e5a4ebb33f8925a75ec670d386",
+      "bytes": 1038
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/pins-before.json": {
+      "sha256": "68f33aa46bdff952d4c61ec0c9cafb18d84ce0e5a4ebb33f8925a75ec670d386",
+      "bytes": 1038
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/plan.json": {
+      "sha256": "f7c82bdadf83e517315594dcdcab1965a647e6c62be19b1f4a83b8e840755c58",
+      "bytes": 2962
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/receipt.json": {
+      "sha256": "b12e5c8b3d78c287e841c081c716693ab08c07ec3eee42e3fe0c35284e731b04",
+      "bytes": 819
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/resources.csv": {
+      "sha256": "5c47e82157231fc4088bf0c6033bc23318870937dab34d4fef915d9abfa15a5b",
+      "bytes": 1587
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/resources.summary.json": {
+      "sha256": "a7d9a9f2f4a6aa08a2c0cae84f9efaf03fd1bd500215716d81f93ddf221ea50f",
+      "bytes": 825
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-math-sanitizer/tree-monitor.log": {
+      "sha256": "82f78c02d40047e5b64954f284b68e9a451b10bd4fcc563953a43f30a3b3175b",
+      "bytes": 785
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/build-targets.log": {
+      "sha256": "a0e60e10fd197274c8fe49428d373a7131a403f1ec2b1f13b83484c63a77bf15",
+      "bytes": 1269
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/cache-after.txt": {
+      "sha256": "2cd7e7e1cbbaf0078d6661f037518d00115e0dfe4d5aad10b4e6cbea9e0e4f9a",
+      "bytes": 23754
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/cache-before.txt": {
+      "sha256": "2cd7e7e1cbbaf0078d6661f037518d00115e0dfe4d5aad10b4e6cbea9e0e4f9a",
+      "bytes": 23754
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/cgroup-monitor.log": {
+      "sha256": "bc74b2c2a35ac3d6322ed2e379dd319fb60363c3a5a66bf0092ad74362afec54",
+      "bytes": 820
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/cgroup.csv": {
+      "sha256": "5a48ced5d629934c20394380be50d87a7ce482efe25a7ac414d1fec2ee6857f5",
+      "bytes": 1103
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/cgroup.summary.json": {
+      "sha256": "bb68b51dcff31cb8a48bf6994775fcccfaa46f31e487cedc87911f7af07940c9",
+      "bytes": 844
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/configure.log": {
+      "sha256": "70e5a27a447c0a1bed847e26c1f983fe9844aa1770201bcd50527e95b3591007",
+      "bytes": 169
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/controller.log": {
+      "sha256": "c268e6e3d5f68a1e82f52b593cdf68ac1612c447c5a8c74cb499caeb208e7834",
+      "bytes": 1272
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/ctest.log": {
+      "sha256": "0547079373f33e09d24e1a31cb4a3ee7fdc47b678885fe04318f8cfbab6d194d",
+      "bytes": 478
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/ctest.xml": {
+      "sha256": "8345c921182f8d963ba0451143c6842bdb47286797c6729f04af5cfd78b99dde",
+      "bytes": 811
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/execution.json": {
+      "sha256": "641c4dc98f3dbe72aaf8734cf8cb9c92b242361e5f384b849946bb64259d06ea",
+      "bytes": 1542
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/pins-after.json": {
+      "sha256": "1937c26872a735c6578e8f6594dc6360b043488848d42f1dac40ad917992b3e6",
+      "bytes": 1346
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/pins-before.json": {
+      "sha256": "1937c26872a735c6578e8f6594dc6360b043488848d42f1dac40ad917992b3e6",
+      "bytes": 1346
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/plan.json": {
+      "sha256": "bf44989751dcc678e8c2165f0273240ac32e8b263d971c88cebf16cda07e77b6",
+      "bytes": 3410
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/receipt.json": {
+      "sha256": "916a3a9a3c7294786b46d5710121321154434b765732defecd0785fb4feac714",
+      "bytes": 1009
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/resources.csv": {
+      "sha256": "4ea1117739882f2ca7b42dc0523adfd8a545355dd14f98c3c8fb73f8d0041c39",
+      "bytes": 814
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/resources.summary.json": {
+      "sha256": "2d3ca797fe71a80679ce9acea9165c070a0e2f803f24177590f8f5a9978361d2",
+      "bytes": 800
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231-sanitizer/tree-monitor.log": {
+      "sha256": "ca1ca1640ecab9774c26246cc14987b4fe7f9a51288f806298905c219b57e2c2",
+      "bytes": 760
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/cgroup-monitor.log": {
+      "sha256": "5d79c8b71ee87e73518f53c105ae91b5183a169753b52a7e38680b468eae3c98",
+      "bytes": 810
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/cgroup.csv": {
+      "sha256": "eec1f62efa17cdd613de60c38e848d8ffb1009d7cbc8a228d95b16ebff369a69",
+      "bytes": 11632
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/cgroup.summary.json": {
+      "sha256": "9fd3e5fe480095537200ac6c7de8d5aecc405aa19848568303530cd5678c4276",
+      "bytes": 834
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/command.log": {
+      "sha256": "60237ff29d31db60dcc1cd76e0c919317d0248e4e4534724a964fd253d3758be",
+      "bytes": 16774
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/ctest.xml": {
+      "sha256": "7efe1fccb71ec24d357e0da01a2283cd7bbe33e06b282be1ea212a774fd3628a",
+      "bytes": 43999
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/full-ctest-log.txt": {
+      "sha256": "5537070d004456c243c7c1825dfe189be052caf56224aa0a629b6918b0d102e8",
+      "bytes": 137957
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/launch.json": {
+      "sha256": "b6a727812c82fb0f16caea1a562b8762933e0dbd6ddac5280a2523e74eda153c",
+      "bytes": 553
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/receipt.json": {
+      "sha256": "1a42b535a205a38684c572b8a2a4e88ee858e864e5bdf306a75459f19cb59de5",
+      "bytes": 730
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/resources.csv": {
+      "sha256": "b5b6ccaa8d5915f8102a589446cfa313be97586312fbb76475033636e8b3f9ae",
+      "bytes": 7280
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/resources.summary.json": {
+      "sha256": "5cb8fbf2bf9307e931fac0d8b66de995d1da3f10972e85abc0eedb1cc6905e40",
+      "bytes": 788
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/strict-control-verification.json": {
+      "sha256": "2e1ade109730d0ee73c79862bfcc6d06a6a8862d4f02b0daee7a17d2582640a3",
+      "bytes": 797
+    },
+    "agent/validation/linux-wpt-20261031-session9/native231/tree-monitor.log": {
+      "sha256": "be1922da4a9efab4d6a20b1ea506da286a72d0288577869de9eeb9f476882fdd",
+      "bytes": 748
+    },
+    "agent/validation/linux-wpt-20261031-session9/prior-pass-through231-pins.json": {
+      "sha256": "93c09f58afbfb44a81b1d204b6f3fd5c63a1e7190b51074823cee4355d2fe406",
+      "bytes": 2016
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/checkvisibility-options-v1.html": {
+      "sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+      "bytes": 10412
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/driver.log": {
+      "sha256": "d5b9d212decab0919639de76db9673ece0aa63ef57516d2be4d13c08dc70c6ba",
+      "bytes": 352
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/resources.csv": {
+      "sha256": "f2402d9617e685f4ac80dd3f89eb210054352fee263c9a04dd6248f25cba25a0",
+      "bytes": 296
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/resources.monitor.log": {
+      "sha256": "816467c1cc5aabf99510595b45efdeade7efec3f148390f7ae062b18bdb984f2",
+      "bytes": 789
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/resources.summary.json": {
+      "sha256": "c42463c7229ecaf0946daa24eb4281fc51bd12f898663a92e6d27d633626129a",
+      "bytes": 829
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/result.json": {
+      "sha256": "d388ef729fd31a7936e6aca426dd3882be9c4a9616738f2771edacadbcc5e00c",
+      "bytes": 21641
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/cgroup-monitor.log": {
+      "sha256": "6b93e77b72b410e596142aca4432bf99a0ad569b0f46dd03d3127306b95c9821",
+      "bytes": 851
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/cgroup.csv": {
+      "sha256": "7b5ae1171af73e6087eb93f1316f62d897d2da7f9aa8c79a91c9b8c4a97de085",
+      "bytes": 822
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/cgroup.summary.json": {
+      "sha256": "c5d473436176e251345c33279d710574495067ca98bdf15c0f8b0dc08db002f0",
+      "bytes": 875
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/controller.log": {
+      "sha256": "219e015d15e3e0c4db317b10ae3b1d127058042e7ad4a9c644b0a44a8345a43f",
+      "bytes": 154
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/launch.json": {
+      "sha256": "241ce055930c0d65b80d14124ad047ee371e62b0680dba2191bfc17cc6f5a28e",
+      "bytes": 1156
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/observations.json": {
+      "sha256": "83d47660b5b6caf7f52355db04931e143a1fe51522001a7a78a9477e86ab5ef1",
+      "bytes": 8304
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/pins-after.json": {
+      "sha256": "a489b559813c6f4c3739ad5e331f9310e122486737cba3e6f38ed6db7b8e8500",
+      "bytes": 2682
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/pins-before.json": {
+      "sha256": "a489b559813c6f4c3739ad5e331f9310e122486737cba3e6f38ed6db7b8e8500",
+      "bytes": 2682
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/receipt.json": {
+      "sha256": "051f0dab222c9d8f60c835a1caac93c50f688d8fe469b83337209cf00573e7b0",
+      "bytes": 1476
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/resources.csv": {
+      "sha256": "e5144d7a9ac547db266986303e2297c7241466e2a0d18715a4f2ba2e03cd0776",
+      "bytes": 483
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/resources.summary.json": {
+      "sha256": "080ab760d835c876f8ef2f6cb85c8be4dfde2f5cfd4a3c350ce6d3ec5e95c887",
+      "bytes": 818
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/tree-monitor.log": {
+      "sha256": "5565bbd45745081b81ec66460b556f02af2873be16c3d22f6170f859043c876f",
+      "bytes": 778
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/expected-checks-v1.json": {
+      "sha256": "a76f6d7611e87643a2fdf34ca2d72bf80a7a789c3d66d82c59234855cc797506",
+      "bytes": 5013
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/fixture-manifest-v1.json": {
+      "sha256": "bab6f648f9b74225dfb880bcf4590d444d23d3ed4ce889febf957b4990b2703c",
+      "bytes": 732
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/cgroup-monitor.log": {
+      "sha256": "d62ee86c9c39bddf2b74e8eb81d72c09abb0d7d92ffb6ea93357f0d48781f16e",
+      "bytes": 837
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/cgroup.csv": {
+      "sha256": "69c30faf715667773332579d0cc786a9853965b09f6ef29f3d0b264bb4e58744",
+      "bytes": 402
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/cgroup.summary.json": {
+      "sha256": "65db2811e13db14ac80d721dc52c2fb92e17bab7c66d5c676df0d625530e7034",
+      "bytes": 861
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/controller.log": {
+      "sha256": "df2bbf92e4f661cb620a8b74d205fdbe79d4735fce3331872ac4aacb3c222871",
+      "bytes": 58
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/launch.json": {
+      "sha256": "0027fb511425e774882e71835c606c56284465f28412de8f7026c4799e24a153",
+      "bytes": 826
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/pins-after.json": {
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+      "bytes": 3
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/pins-before.json": {
+      "sha256": "58a63af4d9f07e875f492d962f39984c4074f6e1bcdd624fcb411a7959015384",
+      "bytes": 2365
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/receipt.json": {
+      "sha256": "6d05f55cef5383399aa6d9e7826ec45f0b012b9a435e77e2b2ec3c01a9b4457a",
+      "bytes": 1255
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/resources.csv": {
+      "sha256": "09b207452bd4f51d762fa9fdca63f4edbd733f551cd782d57ad188db2a977d6f",
+      "bytes": 143
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/resources.summary.json": {
+      "sha256": "1123decf17fc238126e323e5415e08b7b5336d01da0a13d6845f44d716937fba",
+      "bytes": 797
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v1/tree-monitor.log": {
+      "sha256": "5263bc8d4d0dffe72b6a31154a3d6cd8ba20d23632b9e2b45581ac42818d55e4",
+      "bytes": 757
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/cgroup-monitor.log": {
+      "sha256": "407389f0dccb562ed19bdb632741bbc31443d95842ccc7d7a7c9158451b9e757",
+      "bytes": 837
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/cgroup.csv": {
+      "sha256": "bd54b5fd010a78a837a1df8256dadf06b58c70cf94c58a76f79ae575f35506ec",
+      "bytes": 401
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/cgroup.summary.json": {
+      "sha256": "b403e215d594196dd0798d3d36702409b02cc69bff7a16b7a10ea3ef421f2a83",
+      "bytes": 861
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/controller.log": {
+      "sha256": "ff59be17d48274211915fd1a7066ba5c75c406fa896bcce253db18fb04577004",
+      "bytes": 6766
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/launch.json": {
+      "sha256": "90cf4f7e1e1fe12e12873557e4f103ef98acbb143ce4596641d7a769dfb95553",
+      "bytes": 972
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/pins-after.json": {
+      "sha256": "28bdfeb8e08247afc87ec004e1faf6c675840b4fa77c58c25e604c285ccdd55d",
+      "bytes": 2365
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/pins-before.json": {
+      "sha256": "28bdfeb8e08247afc87ec004e1faf6c675840b4fa77c58c25e604c285ccdd55d",
+      "bytes": 2365
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/receipt.json": {
+      "sha256": "c099ed2a81d1954b3b4b1706c2dc9cdcd3f42ff74c42ee89d5513900cece14d3",
+      "bytes": 1280
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/resources.csv": {
+      "sha256": "814ba6af1b1daddc38994a65163454ae0529851bc485d1eb6b1d150b3a3a4c4c",
+      "bytes": 143
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/resources.summary.json": {
+      "sha256": "6a3f220c7016033554ebe72761251868a85be5af2cf6af83b13db96928102b59",
+      "bytes": 797
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v2/tree-monitor.log": {
+      "sha256": "3575471a50ace00de74d6e5398d184b2d285da4a496e90badc089c2cca1ac1b9",
+      "bytes": 757
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/cgroup-monitor.log": {
+      "sha256": "204359171a131fc1ee516e40134eea2b0ff1dc2d10d821c8a003469df39520c3",
+      "bytes": 837
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/cgroup.csv": {
+      "sha256": "3df034307e4337ab1147fc5d77bbc1ffbb325b355423a8620e42f4fefdc088c7",
+      "bytes": 402
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/cgroup.summary.json": {
+      "sha256": "81cc8c582062c6ecef70af515e048e51ef56d0b2311d244d4548c6d232511bae",
+      "bytes": 861
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/controller.log": {
+      "sha256": "397a8d45d34881704e68c0355729fc7e3e9d53af5578407deb403e93e384a1a7",
+      "bytes": 15840
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/launch.json": {
+      "sha256": "dd60f692b3a7b3fb22d53108eaff8ad2a86190e8967f2adbe253de59964737e2",
+      "bytes": 1115
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/observations.json": {
+      "sha256": "55d50d94f46f32b6520516e91538475d32e9d8e096b014f2b6c29160eb45fbf6",
+      "bytes": 8114
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/pins-after.json": {
+      "sha256": "2eddb35a95879fcf12e0a542d6f254310957ff0cdd79e1c2b38db501821833c5",
+      "bytes": 2596
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/pins-before.json": {
+      "sha256": "2eddb35a95879fcf12e0a542d6f254310957ff0cdd79e1c2b38db501821833c5",
+      "bytes": 2596
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/receipt.json": {
+      "sha256": "043da3732bfd28ba5f6946fd14c3a57294ed51c6f90f6ea3c03b49a7034d0dff",
+      "bytes": 1367
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/resources.csv": {
+      "sha256": "27bbac5f5a70c2b86fd182608194e834d915cbc318b2ba78ffd37fd92e7acad5",
+      "bytes": 143
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/resources.summary.json": {
+      "sha256": "e8f1f9ab85d31ed997e6854e08348b97c6d0cf931cb41269979f223917aea25c",
+      "bytes": 797
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/jsrun231-v3/tree-monitor.log": {
+      "sha256": "7a5ed62770dec6b9a427f3f6ebff192e00e07865806ee476328737e6137486d9",
+      "bytes": 757
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/proposal-v1.json": {
+      "sha256": "7d390640cb536d8aa8afe435c05024068ae2afc9eca46ca338bffa44e5998a90",
+      "bytes": 3603
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v1.py": {
+      "sha256": "ba6af4931761846c0dfcab21ffb1520b23b94c152fdf9eb22c72f0f7e225efa7",
+      "bytes": 11623
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v2.py": {
+      "sha256": "806a12272a97667b5dd11e4f7afaef08f2bc8b4e1f5eec235121a42e7839e833",
+      "bytes": 12088
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v3.py": {
+      "sha256": "e6574a5f0bf4fe347bd620c3bda0a0d72444143e609b5bb37b1d04470df9deae",
+      "bytes": 13612
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/serialize-completed-results-v3.js": {
+      "sha256": "fc11a22c4bac7f5738fe35c486a0a1a856cd902082df3f872684ddb1ddee07cf",
+      "bytes": 959
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/cgroup-monitor.log": {
+      "sha256": "455a3ed7ff1e1ee362f7b6a56cc161418d776939c7b3bb1e5b5f9628e474b982",
+      "bytes": 849
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/cgroup.csv": {
+      "sha256": "4e9cde2e06d6133cec98a204e824da4252faa7b1a0d826db0394f608c570f43c",
+      "bytes": 2365
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/cgroup.summary.json": {
+      "sha256": "feb7f11ff037f9fda81d579e7b53323d5ed0935d2bfcc0f41c1d37c0488585f4",
+      "bytes": 873
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/cleanup.json": {
+      "sha256": "557c3306da8cd1b5c6ff406ea42e1f848c1a17b0ac2e3184eee9bddbea925003",
+      "bytes": 1903
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/controller.log": {
+      "sha256": "9511d8575e29144e694646709dcc4f539c8dfad9b4c2baef5dd7b3fa26b0ea1a",
+      "bytes": 1233
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/launch.json": {
+      "sha256": "007853c9de02d9a61901e983559488cc11785fac63c7030e2563cd6ab94353d7",
+      "bytes": 83349
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/native/metadata.json": {
+      "sha256": "13208343a4eada937bf71d082f1b40bc10bc9f7917303d10c0935dfd9d657fe3",
+      "bytes": 1028
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/native/results.jsonl": {
+      "sha256": "ab58f515fa52f99f578766df763048f5eabc22571bd88bfbad9d70897f226050",
+      "bytes": 7841
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/receipt.json": {
+      "sha256": "ee546977101fcd233880c64870e5d39d23081d7e0888052d31701d6d26fa87d0",
+      "bytes": 28511
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/resources.csv": {
+      "sha256": "d023c7d29c3046a4007cf350fdbee1456e44123014e5c0e9c5269abae8be8605",
+      "bytes": 1553
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/resources.summary.json": {
+      "sha256": "68b21c50779126e8eea047a4c20ea9e18539f51241c65e1fecb8038fd1e438ce",
+      "bytes": 824
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-assertions/tree-monitor.log": {
+      "sha256": "395e8ca1a5f86f1613ae2563098ed0d91b601bd855d55ffdb6aed95f045eb9c1",
+      "bytes": 784
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/cgroup-monitor.log": {
+      "sha256": "9c33e338a72e811167fce2f5d34df46709d6900cb71ade27f1848c3ec3cf2a2a",
+      "bytes": 848
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/cgroup.csv": {
+      "sha256": "1a73525a3a50ae72bc4584b5b90a75d85308e0fb36a9ce4fb202c1fd7f87dd40",
+      "bytes": 15828
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/cgroup.summary.json": {
+      "sha256": "71075444904f1c7a744313575d6b36c69e0e7909b9b6dd3f69a0837e2b99a366",
+      "bytes": 872
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/cleanup.json": {
+      "sha256": "da294ec4425e287a2c95f4cc396fdf6bd118ba88df676ba726a282d327bbf4c0",
+      "bytes": 2275
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/controller.log": {
+      "sha256": "82d614a53b3c8cfbf70db5feb69f2cd3ed3691b7b9a5d8a961b4757109b48c1d",
+      "bytes": 3475
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/launch.json": {
+      "sha256": "29db7cfb4c69eeca112a9e222f0e0fea68f30f8936cfb4f35a6c1a063c08b8c3",
+      "bytes": 84975
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/native/comparator-log.json": {
+      "sha256": "0f3ef62f67b0a661b5c5b0cad49f5abb107df76f78a81ccde8bf49b9d2d69567",
+      "bytes": 2759
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/native/provenance.json": {
+      "sha256": "790f729ab9a850bf5d46999642bbb3663b6b2f12483899c25596b152f381caed",
+      "bytes": 1114
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/native/results.jsonl": {
+      "sha256": "dc140dfebf31979e588ac76e539338be4177ed468d87d0b3a1b4b71f4f2841de",
+      "bytes": 101461
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/native/summary.json": {
+      "sha256": "72c2f03b5ab31f10741bbe9cc385f0407c305ba9f2585b76336d0cc6b2b3c415",
+      "bytes": 234
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/receipt.json": {
+      "sha256": "9e0e5d85aedc2f4befd6ac0eb6c78e69448ba2b7d202db4776ef9ec627a90b16",
+      "bytes": 28527
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/resources.csv": {
+      "sha256": "fd4f300cbe1b7f3ed37d66e6f7c1b19cc0ed4b3b65e3867d43cb86cbc2a2e690",
+      "bytes": 10193
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/resources.summary.json": {
+      "sha256": "5fde7eea0f0a6b1949b67eaed2d0a1006424615632616a7a3cdaaa700f67fb3e",
+      "bytes": 824
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/tree-monitor.log": {
+      "sha256": "09ad5e200f256bc07fb9ad1b6a01102556d7fcad600aecdf9943ac80b439671d",
+      "bytes": 784
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/cgroup-monitor.log": {
+      "sha256": "a90a2e904c361f6b867fe871eff7ffa18e3d55784ecb8e937f0516ba9b0ac5a8",
+      "bytes": 847
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/cgroup.csv": {
+      "sha256": "78e6ddb8e06c71b60f559dede462be5790ce781383b7722781a012a76b0d5674",
+      "bytes": 1101
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/cgroup.summary.json": {
+      "sha256": "8b07677bd90d7d4118cfc4970bd0090ab47f1f7efcb611f8a3a07ca6523a1535",
+      "bytes": 871
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/cleanup.json": {
+      "sha256": "94d25d2c2051072a9c4477ac5d06ebce16d1b696d611e5dacaf539f77fd6556a",
+      "bytes": 1901
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/controller.log": {
+      "sha256": "51742657d47af68e5b56b5b201b73b2521ead355c92429e753496325e7493aca",
+      "bytes": 707
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/launch.json": {
+      "sha256": "71d184ba76eaa2b08c85c19c9da811a368b68bdedfad4ff95b05a94a65ff0e0b",
+      "bytes": 73233
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/native/metadata.json": {
+      "sha256": "b32dac0406fc0f0d07769d8eed49606dea94f157b536dcfa51f5cfe64532d263",
+      "bytes": 751
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/native/results.jsonl": {
+      "sha256": "ea35f921a41539755ec32587b652ed6d53b5621a07fab0b36f539d8a41bf1240",
+      "bytes": 9882
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/receipt.json": {
+      "sha256": "9ce3fbf3b85b7964914e0b66fb5edc2751203e928294d797959461c6bced52ef",
+      "bytes": 8838
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/resources.csv": {
+      "sha256": "3007c348c1a5e7b152021a4bb7d57344fc6de772d45939a2464a4ac8f750b771",
+      "bytes": 706
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/resources.summary.json": {
+      "sha256": "91f301457fb2040a3807118d5bd09d80fbf73f1ea8eb1c5dafd0589b4590a020",
+      "bytes": 828
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen231-assertions/tree-monitor.log": {
+      "sha256": "1333e6940055cb9c75a395383e346f2f46438760f39dd57ca34cfbcafbf001d1",
+      "bytes": 788
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/cgroup-monitor.log": {
+      "sha256": "c05e109b4c4e2098bc7c68dee464e6d041b53f0d32a8806d3c9cdaf268ea806c",
+      "bytes": 848
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/cgroup.csv": {
+      "sha256": "a68f4653712b1bb764c764d8fe22cc99d9a24c870eac681063559c03f87870fa",
+      "bytes": 541
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/cgroup.summary.json": {
+      "sha256": "79ab3928bda778cea3450edfb5b01fae8de4eac77802c846550513aa003001b0",
+      "bytes": 872
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/cleanup.json": {
+      "sha256": "2c868b819f212be562939df687f7fb62f5141ac076de086f0ccdc5fa624275c5",
+      "bytes": 1901
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/controller.log": {
+      "sha256": "558e8ab65cffc159c0f530ea7c7fcf0e3effb73100c45ca1ebc1229ecd5d3304",
+      "bytes": 396
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/launch.json": {
+      "sha256": "b6e964fcff1497591d64c0f36167deb98176a3d0d27918cdb280b3b5cb59832e",
+      "bytes": 73184
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/native/metadata.json": {
+      "sha256": "e06d2e5704cd3f20629e82ba61caab2293d299fb4cc233555246a89f40849831",
+      "bytes": 568
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/native/results.jsonl": {
+      "sha256": "cd64813ddce1d80ec10acce4ce49f39e585dce94ddb92073962b8fb07897ac63",
+      "bytes": 1871
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/receipt.json": {
+      "sha256": "ca8840c477a942c4881da6a01c63d9f4a2834d5e46f49018f45dc8dbf895d4fe",
+      "bytes": 9106
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/resources.csv": {
+      "sha256": "7d7e8c455060a4b212a103e6665ac1b66eb0543293b99d5c9d9d77504106b32a",
+      "bytes": 328
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/resources.summary.json": {
+      "sha256": "e10547276e67df687677f0da47270654f3e64a5faef02238f335f071358c4af7",
+      "bytes": 827
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/tree-monitor.log": {
+      "sha256": "c8a5cb55e9f8c7aa9814486336510d2b7183cfad27fea7363b6ee1efc0a667b5",
+      "bytes": 787
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/cgroup-monitor.log": {
+      "sha256": "74729e47438d8c673d613f3fadfdea009955281650ebf3ce6d348ff2cd2b1f9c",
+      "bytes": 845
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/cgroup.csv": {
+      "sha256": "d08dec47d91b5b0ed6863a467d950376c43ba3d65a4d82bfe56839bdea717665",
+      "bytes": 1518
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/cgroup.summary.json": {
+      "sha256": "058f49576332dd58973034c57213d037c9d11d4d18318872e4d285ccf3e76b6b",
+      "bytes": 869
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/cleanup.json": {
+      "sha256": "e929d58a1a044d471c87ea09c1f3dc976bdbb0ec8125280881c3c8a2f342c2e8",
+      "bytes": 2272
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/controller.log": {
+      "sha256": "73ce68b690944b14e3352d1b7b262aad75813d9be697f98b8bfefbad02acc4ca",
+      "bytes": 703
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/launch.json": {
+      "sha256": "88f126bef4adde5cb6961151ffb81b10b3289e554052afd737b5f4f50f0aebe6",
+      "bytes": 73414
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/native/comparator-log.json": {
+      "sha256": "a02ef18f347782afb305d3c5e00edf55a78c43ffcaa98591404a79d4e4339dd8",
+      "bytes": 215
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/native/provenance.json": {
+      "sha256": "c09f18633c0e689dcfb97de778dcb16d4b0f38449d1684f03607738ff7912930",
+      "bytes": 1113
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/native/results.jsonl": {
+      "sha256": "70f550c5c58cb96c38f0c5124ad8ba7453a719c09b7b8c90db6dcfcc48decd18",
+      "bytes": 7797
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/native/summary.json": {
+      "sha256": "a73845cf5ab303fa6d7d34bbd510ac6ddd17283d4ae4bac2009b82a8d9954260",
+      "bytes": 231
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/receipt.json": {
+      "sha256": "53c3f767859d20b7819102f68474275375cf1e43f35c151c6d0e37fe8655c179",
+      "bytes": 9123
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/resources.csv": {
+      "sha256": "3972289532be0dc5684e92fca841521f018e9f71425354517e062aef5780e7be",
+      "bytes": 958
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/resources.summary.json": {
+      "sha256": "b8527cb7d36cff958b997a39aafc8478b634c0328e38e7f5d97fcb22ffaa6010",
+      "bytes": 825
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-reftests/tree-monitor.log": {
+      "sha256": "20f10206cc654238c07d98c7c89e6880d194648bbb6d9c41b783eee8660fdb52",
+      "bytes": 785
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/acceptance-contract-v1.json": {
+      "sha256": "7044502e5d3974e2ce7b67e30cf18907c17c28731f9b6f713c316940ac1f6c82",
+      "bytes": 65695
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser/driver.log": {
+      "sha256": "41f2420a27a792374b8234ecf68b9e2871625ca092bf24bfe25cc3b7f87046f0",
+      "bytes": 352
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser/resources.csv": {
+      "sha256": "695357a6788a5d2fffce19ff7c75d7a98b93f7a71e16acd455138812ab8cc8ea",
+      "bytes": 1187
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser/resources.monitor.log": {
+      "sha256": "56bd59fda657b73197413ee69d033037d2c10a78673db7eaec2664ba93ef6ef0",
+      "bytes": 812
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser/resources.summary.json": {
+      "sha256": "63f3e6bb075d46fee0ae5d2da2b6b1e01ec020220aa289533c7f1fe07d31a535",
+      "bytes": 852
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser/result.json": {
+      "sha256": "952196b27fff8821dc0acb9e1a5d4255ef74b3fedc1eba15de6e66456b837960",
+      "bytes": 59057
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/cgroup-monitor.log": {
+      "sha256": "15a8ad1a48ab2425da51b7dbe59073cc5f08fd47cde4584ce91340afbd61209f",
+      "bytes": 837
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/cgroup.csv": {
+      "sha256": "edcbb1e5c6d58d3f124461e956cd2a7d5b28ff17f2703fd23a2ceff0762d217f",
+      "bytes": 1520
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/cgroup.summary.json": {
+      "sha256": "133b93a7e23364f68c4f33672a841ccd5f5e03df9828d7a642f8f508c2b228bf",
+      "bytes": 861
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/controller.log": {
+      "sha256": "fca5de5a0a2713881fe4c9df9f5267fcb9025f89fcb2d0b99e11d9d7638d1b60",
+      "bytes": 148
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/launch.json": {
+      "sha256": "c711803f4cb2af78c41ed8d17e4f0168436f7faafcb0b5eab744a2dd1a8ec9de",
+      "bytes": 1245
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/observations.json": {
+      "sha256": "ccc25dfd802acde650d781bb1044d124367c82e5cb893edbea7edbb6be6ab4f8",
+      "bytes": 52490
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/pins-after.json": {
+      "sha256": "da24ca7fd5751fcc52f1a3e42630cd910d8f950554a5f707f372d84ff6e1848f",
+      "bytes": 2442
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/pins-before.json": {
+      "sha256": "da24ca7fd5751fcc52f1a3e42630cd910d8f950554a5f707f372d84ff6e1848f",
+      "bytes": 2442
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/receipt.json": {
+      "sha256": "903b09b87b95720088912350d6b5b515ec1c81a1ab6dfa942690c391749d4997",
+      "bytes": 1586
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/resources.csv": {
+      "sha256": "410feea5cfbd7cf45ae35e5f4472f911c117ca6cd0077f597fe0cdb9b1890c3e",
+      "bytes": 1460
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/resources.summary.json": {
+      "sha256": "a1ecbe4a6ec96d7f2b92d0a708e17da52932c7cb644e1abbee7f0b34853b1274",
+      "bytes": 815
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/tree-monitor.log": {
+      "sha256": "8417b89ffad37716cfc861d8214c43721f6e6250d2493c4c1075c3a70e69d97a",
+      "bytes": 775
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/browser/driver.log": {
+      "sha256": "5c35a22b72f060209d51c2be614dbe5df0d091e8a39483e10a4d38a6caa6ed76",
+      "bytes": 352
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/browser/resources.csv": {
+      "sha256": "3b3a6e25d9e6ba145b98d7b8150af6bfc71cd6956503b72dd4ff2026fe72d42d",
+      "bytes": 1359
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/browser/resources.monitor.log": {
+      "sha256": "d3de2dafa3c789157faee22b7c131a35bac467bc0e8947669a29bde0cb524d1d",
+      "bytes": 783
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/browser/resources.summary.json": {
+      "sha256": "441d252c968502a0dce2e11dc716cd69d230e0aee1de1a373ce19e3049786911",
+      "bytes": 823
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/browser/result.json": {
+      "sha256": "2075474006eac9b98cfda88bab6ace333359e7603fc05e72541d81a6f2dfc216",
+      "bytes": 66995
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/cgroup-monitor.log": {
+      "sha256": "27ddf6d4a1a229c8eb39675154849ae1be83d739d124965054ee1df196e60d44",
+      "bytes": 846
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/cgroup.csv": {
+      "sha256": "82eb33194ddbe625bc192af9e5c60d08cc2db200cd99b3f98a614aa2c00eafdd",
+      "bytes": 1664
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/cgroup.summary.json": {
+      "sha256": "c56e6256bc0beb39af580766ae3cc37138ffb33b4b36c48f41e7f62ffe3d2fb8",
+      "bytes": 870
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/controller.log": {
+      "sha256": "69ac2b8af7cd9602a01903808f83abf1cd4989f42e9261a15388537162df81a9",
+      "bytes": 148
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/launch.json": {
+      "sha256": "181c549e60dd90cb12cce8ab0ade9e5887e124e59c1512fed7d50db9efe297ec",
+      "bytes": 1245
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/observations.json": {
+      "sha256": "a0216d50b124a038d81ae270efdb88a652e818efc42f31b1c1334c3065f4cf16",
+      "bytes": 62519
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/pins-after.json": {
+      "sha256": "caa2cac811e760676b739952275a13d75bacaf86c6c065a025aba1352e095e1d",
+      "bytes": 2445
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/pins-before.json": {
+      "sha256": "caa2cac811e760676b739952275a13d75bacaf86c6c065a025aba1352e095e1d",
+      "bytes": 2445
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/receipt.json": {
+      "sha256": "7c603320ac60ebaf584292e3fc1b1bc696a947fa046465045da2b744f747261c",
+      "bytes": 1586
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/resources.csv": {
+      "sha256": "e462646ec1ee2c2413d8a5b4eb723548946a34610b6cad258dd8d13f5f90f7c4",
+      "bytes": 1640
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/resources.summary.json": {
+      "sha256": "ea17eadda884d66c2b1d766fa022d4c47b3d2a60802dd5245026a8a58a1301e2",
+      "bytes": 819
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v4/tree-monitor.log": {
+      "sha256": "5cee911f444adfab467f05fbf0ecb28cff624878cb18f030ad8b2b5972574b2b",
+      "bytes": 779
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v1.html": {
+      "sha256": "d3ec4e7ca1f7047d12c4bb9162beaea7699e8174e6a59269fcf292ca8ea29980",
+      "bytes": 10022
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v2.html": {
+      "sha256": "1ca9794d38671cb8c1b655dd47c3a89f8845796df636746cc94a2051e3028634",
+      "bytes": 10300
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v3.html": {
+      "sha256": "15ba1babfbbde45a7571e3f2d9c2abce5bcbaeaa75c3dfa2c337cea3e80a53d0",
+      "bytes": 11872
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v4-unrun-draft.html": {
+      "sha256": "72d5085a9b268706a30c58fd9c071e6d2985e013830186ec52029f0936be34fd",
+      "bytes": 12331
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v4.html": {
+      "sha256": "58383de5678ccd3964da0e97f6cc04089a428dcab01cff1a711875f51480a332",
+      "bytes": 12826
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/cgroup-monitor.log": {
+      "sha256": "f9dff233ac2d6ff9c12893fe8df94bd89efdd47fc575e2d0f93d48c9385cae23",
+      "bytes": 834
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/cgroup.csv": {
+      "sha256": "c96b230a72178f0a7b2d9dbd62a440ebb9363098e5d964531b9d85c629f8ad52",
+      "bytes": 821
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/cgroup.summary.json": {
+      "sha256": "99dc5780c6195c32ec02b2e3edf84c0ac4b4306b0a418e8cd4a5e96d42a1eca4",
+      "bytes": 858
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/controller.log": {
+      "sha256": "41621f68afa1ea06520276ac6d827a2d826e75df83fadb14ae32bb710cd4d906",
+      "bytes": 25916
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/launch.json": {
+      "sha256": "a0551c032e6bb21bc476e0d1329e9ae31d46a1139b9584384b36db81ff9ef3f4",
+      "bytes": 1036
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/observations.json": {
+      "sha256": "8748aaaba3e626e04ba5a489e3a7ca511f70815afa157d3e26dd421a9f0e4f58",
+      "bytes": 37209
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/pins-after.json": {
+      "sha256": "7a22652d80b427f95d516d5b785cf81e678256e651a07d7606db50ad46245d00",
+      "bytes": 2125
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/pins-before.json": {
+      "sha256": "7a22652d80b427f95d516d5b785cf81e678256e651a07d7606db50ad46245d00",
+      "bytes": 2125
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/receipt.json": {
+      "sha256": "3f5bea1d4911e9d6148043e2f9bb21fbb3daa751ed282dd7bf03d8296af7fffe",
+      "bytes": 1370
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/resources.csv": {
+      "sha256": "94fced40e23506873d15cecb0b20e322c01d816fccc4924be16be8d0238a674d",
+      "bytes": 378
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/resources.summary.json": {
+      "sha256": "a4bb639f77ff85783b416983c8f6dcdccb29d056d9479aa26e35f8987768259c",
+      "bytes": 805
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v3/tree-monitor.log": {
+      "sha256": "2250d98aa149a85d8689e03749604475e2cc7ce1363b13b37738024788972edf",
+      "bytes": 765
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/cgroup-monitor.log": {
+      "sha256": "9e13eb946c69af1b2155eb9350643a544f931cb3a8d6d6b4d40a61bdab22709f",
+      "bytes": 832
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/cgroup.csv": {
+      "sha256": "ad49f8d89adca6c75adff47c9f28cd317aa8283f35911422adbb4c82738db646",
+      "bytes": 822
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/cgroup.summary.json": {
+      "sha256": "1691a47c677e984e01bea8ce9853e4f3165db363cf6db9185e6af86ebca865a3",
+      "bytes": 856
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/controller.log": {
+      "sha256": "88b4a38e2322745c4fdd74268c7aeca17571cc6ed2c8853dbf38ff3d5e372bcf",
+      "bytes": 30686
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/launch.json": {
+      "sha256": "c7a8fb7250b2ddd5543b9323f8be9a87e9cd4c890ec317b25d1b229399b585f9",
+      "bytes": 1036
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/observations.json": {
+      "sha256": "463d9d0cf8be98ff53443a1ceabbfd63ab0621a998db91ff31acf6e2be99af82",
+      "bytes": 43959
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/pins-after.json": {
+      "sha256": "8d29db9e0507cc9c4d974fb7a3851806b33d47fa2edc951558e8bad5037d37ee",
+      "bytes": 2128
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/pins-before.json": {
+      "sha256": "8d29db9e0507cc9c4d974fb7a3851806b33d47fa2edc951558e8bad5037d37ee",
+      "bytes": 2128
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/receipt.json": {
+      "sha256": "5f52c3aad2ad1ee38f3935c47f755a0b44d3fea03366f33d92f4761c144832c4",
+      "bytes": 1370
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/resources.csv": {
+      "sha256": "4d4b995da71d4afb9c745c7aebfb0ed45f2f88f741dc3547cc5038046e58397b",
+      "bytes": 373
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/resources.summary.json": {
+      "sha256": "c4ef8a3cdebcfd4ddb9dd30cb34dc214fc60d5913b8c0aaa5d0f7bb0241b3604",
+      "bytes": 799
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun231-v4/tree-monitor.log": {
+      "sha256": "17790fc29ca32f586007b3c0eb6a4ddc9b6fe352d57d461814eb5c33a011a5f0",
+      "bytes": 759
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/matrix-manifest-v1.json": {
+      "sha256": "2b6bc08fb181bd65b713f9f2dd2b38c838e52ff0f8f7b7d72523a2b54d28ff27",
+      "bytes": 2062
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/matrix-manifest-v2.json": {
+      "sha256": "a0a12738111e5b5d77ebc677744bbf392ab877288663fded65c2a5dc0945f4c2",
+      "bytes": 2422
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/matrix-manifest-v3.json": {
+      "sha256": "66b539c4479d821eaf8ca94979b544b38f8d8f492c4f2b5e20387c56550bffb5",
+      "bytes": 2526
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/matrix-manifest-v4.json": {
+      "sha256": "85a33adc567ac3bf609366059577d58d03438136ed039480f3d4a66dfd8abdb4",
+      "bytes": 3008
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/run-matrix-v4.py": {
+      "sha256": "02a3e4b177208d73cb069afd43516a7a505e3fa344bb6c2fb85f28dac318670d",
+      "bytes": 12806
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/run-matrix.py": {
+      "sha256": "f68855fe54954fc2be95558d27008f951f987a64183519b6adf7e6709e686a60",
+      "bytes": 12806
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/upstream-manifest-v1.json": {
+      "sha256": "471d089dbcb8fb9c3212ffdd3b36bb7f94524ebafa68fb27b1caf63229251db0",
+      "bytes": 585
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/upstream-urls.json": {
+      "sha256": "35a0247479be7218f5ec7c0148d1385ec0fa0aadd4ce6816f3a4df20e7fe2837",
+      "bytes": 38
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/cgroup-monitor.log": {
+      "sha256": "0e4e8f0b3e5c2e2f949bd257e75cb919c6dc8cddc91df13ca33171877a531342",
+      "bytes": 848
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/cgroup.csv": {
+      "sha256": "b685a172bdbcc04578d30aba5a9e0952c3c88dc0e3715a8e5626a62593604f14",
+      "bytes": 1238
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/cgroup.summary.json": {
+      "sha256": "a9918accc5c2b7290364723034c893055b0633968ac1a71ba39e3b66176eaec2",
+      "bytes": 872
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/cleanup.json": {
+      "sha256": "b4d8290bb5defc7408e3e5dec0d00a89cd74ae762dd2a96b5530a8af25fba82f",
+      "bytes": 1906
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/controller.log": {
+      "sha256": "92d68613b2cc6c1774c106720ec8dd946b540c9683242d9b1b1e4808d03ce209",
+      "bytes": 623
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/launch.json": {
+      "sha256": "5f9b22b0f1c81283353cc05d23577219026494445d29953be8b81bf5e70fcbfe",
+      "bytes": 72807
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/native/metadata.json": {
+      "sha256": "ff9abc0f5876b5854b0c652740fb8613e6d3b4ef952991567526025e9790e70b",
+      "bytes": 668
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/native/results.jsonl": {
+      "sha256": "20282e6e0af39346df44425a6ca07f8d36d5ecdbbae89b208009d64f2aecbb0e",
+      "bytes": 3769
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/receipt.json": {
+      "sha256": "4fd3c3bea8402959d99575d2849649f4b5dc0c8d412750b67e3242884a9479f3",
+      "bytes": 8134
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/resources.csv": {
+      "sha256": "093d21013b0a6de57c733faa9ea9ed678a517751c16da2cfed469aacea6cd119",
+      "bytes": 697
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/resources.summary.json": {
+      "sha256": "d7237255324313c4e09551a14c8295be23df32d775e3ae70d4e1f5801b32e6d6",
+      "bytes": 825
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen231-assertions/tree-monitor.log": {
+      "sha256": "7c5dc1970283730a8d0e551e4bd54f08e425395e2629cccc617f4c2d14dd17b4",
+      "bytes": 785
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser/driver.log": {
+      "sha256": "6132e4433805fea13e97ae5e407a1062351185a1f49c0f5e9591b115c46ca683",
+      "bytes": 352
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser/resources.csv": {
+      "sha256": "f63e849583beda765f1004ce4bcf6c6cd0e40f2cd78729b2b074a705470043ef",
+      "bytes": 481
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser/resources.monitor.log": {
+      "sha256": "2647f837ef9e651643a5f08a55013dbf2d2b6dc189c98d4d246689467fec5a5c",
+      "bytes": 828
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser/resources.summary.json": {
+      "sha256": "69887c1c4738fae525d3fea41153eb3060cc7b0e1d87596c080f43a466c8833d",
+      "bytes": 868
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/browser/result.json": {
+      "sha256": "dbe4c8e15151c5e71ea02553a0f65d457f6c2c4e40b204616658bee749054c90",
+      "bytes": 17314
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/cgroup-monitor.log": {
+      "sha256": "4f844bf21fd014ca7e97e1dd996ee69046a84ff1fa0e97e08bbab4e09937ad38",
+      "bytes": 855
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/cgroup.csv": {
+      "sha256": "d476ccc9cdfd1e453a20547a8beaf29a12a10a93b90ee8a61b1d8dfa4b03a29c",
+      "bytes": 963
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/cgroup.summary.json": {
+      "sha256": "386d895a996594025bc1a13bbe6c9c41b24133746373e4a89ea77d08c2baf017",
+      "bytes": 879
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/controller.log": {
+      "sha256": "671133a6616c07f19a3778e2964736ee1c97ed259395aedfbfac3da332ae2b48",
+      "bytes": 154
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/launch.json": {
+      "sha256": "ab746f20a7b82af6cc2243ce24e29e31b26d0f7397aab3a1d3cab4446df9050a",
+      "bytes": 1158
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/pins-after.json": {
+      "sha256": "956b8bcad08ceae14ea8310b1a65b9839bafc7cb2579e6c034d3e59075e2636a",
+      "bytes": 2832
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/pins-before.json": {
+      "sha256": "956b8bcad08ceae14ea8310b1a65b9839bafc7cb2579e6c034d3e59075e2636a",
+      "bytes": 2832
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/receipt.json": {
+      "sha256": "98739e15d8eb092e8392bdd7af40aa33296fbd437485472f7629bafdb1805d88",
+      "bytes": 2174
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/resources.csv": {
+      "sha256": "93d4cb40469d0810f14f76064e1a8a487d5ed99f6bce21c35807d171dc380922",
+      "bytes": 675
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/resources.summary.json": {
+      "sha256": "27f8307dc69b01de11e42f2055f2a5e0e469e32fce1d376fe290bf596b2cea9b",
+      "bytes": 848
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-durable-control-i231/tree-monitor.log": {
+      "sha256": "57f0b1a209e719f651cf01e1657127836b553715d66299dc936f603d93ed0321",
+      "bytes": 808
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/cgroup-monitor.log": {
+      "sha256": "5d9345f53aaf261192f3c997861f25aedfd88c75d946090b859f5fc77f584541",
+      "bytes": 834
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/cgroup.csv": {
+      "sha256": "50b0961ec1780ab7316982db89b8da2bc6d2ef8250a179f7c3577d4260469f78",
+      "bytes": 402
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/cgroup.summary.json": {
+      "sha256": "ed1fb49ea47224aedb4aabf8f87049707705aecb665d5a12a54a7f622aadfef7",
+      "bytes": 858
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/controller.log": {
+      "sha256": "5a824090d6594ef501f49cafa51f7592c6e826921706c880239a30e4bfc5d6d7",
+      "bytes": 17920
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/launch.json": {
+      "sha256": "ac472f40a6523343097f1efa56c294f874b6b317919696b5983accb4e9d31bde",
+      "bytes": 793
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/observations.json": {
+      "sha256": "95114a7aeef76ef37982ea1883b970b7f6deb5c0614d2aa97e352e5f422585fd",
+      "bytes": 29768
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/pins-after.json": {
+      "sha256": "b9aed1fdf7f8b4ad7e8b640c8782d6990b708a83b6222c6f0cff16884d294b61",
+      "bytes": 2122
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/pins-before.json": {
+      "sha256": "b9aed1fdf7f8b4ad7e8b640c8782d6990b708a83b6222c6f0cff16884d294b61",
+      "bytes": 2122
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/receipt.json": {
+      "sha256": "73d53a618b8defb691da54b089a966746f1a0085c555db8da232f33af3126ef9",
+      "bytes": 34441
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/resources.csv": {
+      "sha256": "f9e37043c257ec06e8fefa248ebf68fed70e48ef6641d953027c0ced956a63e1",
+      "bytes": 219
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/resources.summary.json": {
+      "sha256": "27a3535bca4b631a10be7646bc609cecfe9bf05041d83c1f6ec1233a8e523bf1",
+      "bytes": 825
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun231-v3/tree-monitor.log": {
+      "sha256": "814bf9428e046e98bdde2daf4a0006c6df2f28c677fcff1b069979206b50dc95",
+      "bytes": 785
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/run-durable-reference.py": {
+      "sha256": "a3e7e1e05c04ac3d3f9fed96241705e05fa409ff48b34d04143cc09e9dbf8bf6",
+      "bytes": 10067
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/cgroup-monitor.log": {
+      "sha256": "90c7dafbd4f91b3f2023665f80dfcd3fc091ab885a22616716813d5615448977",
+      "bytes": 845
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/cgroup.csv": {
+      "sha256": "726bc189fcb7679595439013286104b0228ee4ce592e614414f0c0ac235283f4",
+      "bytes": 541
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/cgroup.summary.json": {
+      "sha256": "6e3e879bb127c4cb5d8618758ccf07d44a254315e79d5fdf1e99b5375e35fb5f",
+      "bytes": 869
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/cleanup.json": {
+      "sha256": "b503cb551f10e14cb0584133e8f9ee2cd166a64c6a59c5b49630241172f9fc82",
+      "bytes": 1897
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/controller.log": {
+      "sha256": "460a89c159254cba1bc8900eef4632fea116dd7a515bda09027c460ed5c05ece",
+      "bytes": 409
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/launch.json": {
+      "sha256": "811d599632b07f5e640d47c7ee0a75550f2eb355d84d6c59d4616ac053bc16ce",
+      "bytes": 72429
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/native/metadata.json": {
+      "sha256": "291d116d9e88ace56c46a69c24628f711da1a79ec1c2ced594ed0e7056de9d77",
+      "bytes": 584
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/native/results.jsonl": {
+      "sha256": "4cb17c9de7eb303cdd6359a7de193230144a96cd48e90662ade35fc7a6f2efa8",
+      "bytes": 654
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/receipt.json": {
+      "sha256": "0b322edef1cc43513a1843d31ac9f5512c44f2743d4a5432bbacd8762c95bda2",
+      "bytes": 7571
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/resources.csv": {
+      "sha256": "772e96771bb8b3751df5555a26b7310513128f429b9845833befda9d0b3a00d2",
+      "bytes": 328
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/resources.summary.json": {
+      "sha256": "2324aa9e4a1110dc2b3aae6338ecaa7ef543d66acab5fad3c6492ceefac60d0f",
+      "bytes": 823
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen231-assertions/tree-monitor.log": {
+      "sha256": "18a1e51d29db0b8a80d15650838a5ef874e574ff1068cb85e216ba83c0e65828",
+      "bytes": 783
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/cgroup-monitor.log": {
+      "sha256": "1498d03b4cb1c541b5a71f6376e58906dafbc4277964d261e171ed47de9e796e",
+      "bytes": 840
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/cgroup.csv": {
+      "sha256": "4e447cc35f5afd3cdde9235bd9a4a7b46be19ce53342305ed94f13b0bf8d2e56",
+      "bytes": 959
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/cgroup.summary.json": {
+      "sha256": "7b4ab274f6873104412df2529b574ff13638c1c6f8ed9596858738cf9fa42426",
+      "bytes": 864
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/diagnostic.log": {
+      "sha256": "46ac7c55e366d2656889802293357ac5f367e227d13d85649f9fd88a7d2763be",
+      "bytes": 3438
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/launch.json": {
+      "sha256": "de19e5bf0cccf13d4aed6ce235a8f77109df4d7a73c397f0c6f9ac71dec187e9",
+      "bytes": 818
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/pins-after.json": {
+      "sha256": "4fba1448d83c7f149a72a41483721191d77d975a8fe10716ac34c38815210831",
+      "bytes": 1629
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/pins-before.json": {
+      "sha256": "4fba1448d83c7f149a72a41483721191d77d975a8fe10716ac34c38815210831",
+      "bytes": 1629
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/receipt.json": {
+      "sha256": "0e5df2c84eac8d70adb69175a1fecaf5fbe55946b5d928de4770d1c2d3eb10ac",
+      "bytes": 5888
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/resources.csv": {
+      "sha256": "2ed4ba80e1d5ae01b8acb24379526f507fbf326fcdb61c3f8f55516da19c2287",
+      "bytes": 444
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/resources.summary.json": {
+      "sha256": "f213dcb9d9775cc395f6676ad1d1e01c4b826fd9d0d177e47779add8f884c10a",
+      "bytes": 833
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v1-retention/tree-monitor.log": {
+      "sha256": "a49a88cb60fc9355cda42259a66a5ed36af8182fae92a74d624375ee3befb6d9",
+      "bytes": 793
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/cgroup-monitor.log": {
+      "sha256": "f603e7c4f45343b474e064f137402277bffa735f1fe33e439378aad3459c5740",
+      "bytes": 830
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/cgroup.csv": {
+      "sha256": "7bd5524d6750dbda3ffb6136d19f3d2ad24ca6e72eb63d9b781d0458ce30de00",
+      "bytes": 959
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/cgroup.summary.json": {
+      "sha256": "85fc93d6b267944385b96996d3af5afda662d42d3f4c2e4f0e71e1aca76b72bf",
+      "bytes": 854
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/diagnostic.log": {
+      "sha256": "09dacb2ef2cb918a938fd9a5fe7691e650e8697c6b8f8f6edb04c25114b49eaa",
+      "bytes": 3444
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/launch.json": {
+      "sha256": "d2dfecd04ad4a3f0ae4b09b34a8d5ed2cc59617d3d0ef0d0f993fb04bd0926b4",
+      "bytes": 821
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/pins-after.json": {
+      "sha256": "7a25492950b3d7e3a20dff2eba7be1f7056e1c48058be4585b3c7145826cee37",
+      "bytes": 1625
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/pins-before.json": {
+      "sha256": "7a25492950b3d7e3a20dff2eba7be1f7056e1c48058be4585b3c7145826cee37",
+      "bytes": 1625
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/receipt.json": {
+      "sha256": "a6c8f536780321496e89d7d8982e6c324273f2a84bb3a3d9b0aa0fa13ff08ba9",
+      "bytes": 5894
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/resources.csv": {
+      "sha256": "06ff83dc1b2ca519f3e24da845a1e0fb1e758080de4005d03aaf48c982e656c9",
+      "bytes": 446
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/resources.summary.json": {
+      "sha256": "944174bb1ed0e25cf04ea3d3003ee3809a94ea4a84fe0262649a16a83c24c65d",
+      "bytes": 823
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/jsrun231-v2/tree-monitor.log": {
+      "sha256": "7fde331249fe84e47cea3e02d15802e7fa6e468676dff15f0a21efa96b578dae",
+      "bytes": 783
+    },
+    "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/run-v1-retention.py": {
+      "sha256": "86b8e1d8a2d8f3654cd545caaaa7b78eca3b3afe15a733127ae2c3a2cf7f1a4a",
+      "bytes": 5915
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/cgroup-monitor.log": {
+      "sha256": "decd586c4a18b17a2f0280aeb8caa02de45854fb954b01abdab097d7143adc0a",
+      "bytes": 818
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/cgroup.csv": {
+      "sha256": "6ad3d3942aa3ef3895b02f281ea12be3345f2ae5b6a064a268301b1b7cdb4701",
+      "bytes": 1521
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/cgroup.summary.json": {
+      "sha256": "cac21964e713204c9863b90fcb1da9dc4a08b1b7e509f69c9130310942b5107c",
+      "bytes": 842
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/pins-after.json": {
+      "sha256": "ada2511c2e1b82add37cf59f4e923e42e5858bb9f1f87db564d17e7830dcc647",
+      "bytes": 1185
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/pins-before.json": {
+      "sha256": "ada2511c2e1b82add37cf59f4e923e42e5858bb9f1f87db564d17e7830dcc647",
+      "bytes": 1185
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/plan.json": {
+      "sha256": "21601668abfae1930f9a23ae6c0b53cf96c1581e93674ffaf9977ef4cf243f2f",
+      "bytes": 1580
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/receipt.json": {
+      "sha256": "56bb01a65652e40ff7c0d9b74a9b2693d4e083416b2d078d8ad952d9027ace0f",
+      "bytes": 607
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/resources.csv": {
+      "sha256": "ba0dd54a3756b958c152b2dd07e1aa33c439bab2fa83ec7f9575cb09038690e2",
+      "bytes": 904
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/resources.summary.json": {
+      "sha256": "6169046b12d728d5b6e5ca5c4e4d3945f0360870caf9f8a83e78e5426dd90574",
+      "bytes": 807
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/test.log": {
+      "sha256": "c2c04cb53d8a2ff1bc586a6a7575ea52057191ee6974d08f01616c341d3bb750",
+      "bytes": 250
+    },
+    "agent/validation/linux-wpt-20261031-session9/raster231-sanitizer/tree-monitor.log": {
+      "sha256": "54b39c287a1558ef9493dda08d2a76f6643b5ef7000c0adbfdffbde7f7b68480",
+      "bytes": 767
+    },
+    "agent/validation/linux-wpt-20261031-session9/run-final-frozen640.py": {
+      "sha256": "89bafc0b54b0d7154eefda3b142e7012365d9d66a465ced45525ab64046a74f4",
+      "bytes": 5087
+    },
+    "devsummary.md": {
+      "sha256": "5e968adc38f5596bbac493c93dbac6ddc243bcd7cddd1f5724c2ef20438a123a",
+      "bytes": 345947
+    }
+  },
+  "exclusions": [
+    "source files already committed in231",
+    "preexisting unrelated user/ops work",
+    "progress site/status owned by delivery",
+    "raw profiles/guard implementation or authentication data",
+    "binary/capture images"
+  ],
+  "private_working_history_only": true
+}

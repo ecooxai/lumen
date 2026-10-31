@@ -1,0 +1,41 @@
+{
+  "runner": "agent/validation/reftest_pilot.py",
+  "arguments": [
+    "--binary",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i231",
+    "--urls-file",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/reftest-urls.json",
+    "--output",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen231-reftests/native",
+    "--wpt-root",
+    "/mnt/p3/project/browser/wpt",
+    "--manifest",
+    "/mnt/p3/project/browser/wpt-data/MANIFEST.json",
+    "--timeout",
+    "30",
+    "--long-timeout",
+    "100"
+  ],
+  "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i231",
+  "source_hashes_before": {
+    "agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+    "agent/validation/reftest_pilot.py": "43b4d31a0eeec3773993fa573b7e24844532b71e4c32034a07a060af2c3b6d39",
+    "agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+    "agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+    "tests/wpt/lumen_wpt.py": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca"
+  },
+  "source_hashes_after": {
+    "agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+    "agent/validation/reftest_pilot.py": "43b4d31a0eeec3773993fa573b7e24844532b71e4c32034a07a060af2c3b6d39",
+    "agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+    "agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+    "tests/wpt/lumen_wpt.py": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca"
+  },
+  "sources_unchanged": true,
+  "joined_cleanup_threads": 0,
+  "remaining_cleanup_threads": [],
+  "cleanup_elapsed_s": 0.0006280289962887764,
+  "cohort_elapsed_s": 111.53823987999931,
+  "runner_exception": "SystemExit(0)",
+  "method": "Join actual trusted guard cleanup workers; never synthesize audit records."
+}

@@ -1,0 +1,21 @@
+{
+  "label": "owned Chromium authored-fixture tree",
+  "started_utc": "2026-10-31T09:06:46.087001+00:00",
+  "finished_utc": "2026-10-31T09:06:48.087107+00:00",
+  "root_pid": 2611407,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 2,
+  "elapsed_seconds": 2.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 76.961,
+  "cpu_median": 76.961,
+  "cpu_max": 76.961,
+  "cpu_last10_median": 76.961,
+  "rss_peak_mb": 894.05,
+  "rss_final_mb": 894.05,
+  "pss_peak_mb": 13.985,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

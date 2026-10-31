@@ -1,0 +1,21 @@
+{
+  "label": "performance startup ctest",
+  "started_utc": "2026-10-31T08:43:25.454514+00:00",
+  "finished_utc": "2026-10-31T08:43:29.454731+00:00",
+  "root_pid": 2513330,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 4,
+  "elapsed_seconds": 4.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 0.0,
+  "cpu_median": 1.0,
+  "cpu_max": 25.002,
+  "cpu_last10_median": 1.0,
+  "rss_peak_mb": 167.58,
+  "rss_final_mb": 167.58,
+  "pss_peak_mb": 45.119,
+  "csv": "agent/validation/iteration-231/startup-resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

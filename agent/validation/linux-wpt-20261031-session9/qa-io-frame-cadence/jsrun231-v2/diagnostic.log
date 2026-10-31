@@ -1,0 +1,18 @@
+[js log] RESULTS intersection-geometry:PASS
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":293.4320960044861,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":294.17117899656296,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-enter","start":293.71680000424385,"end":310.3107089996338,"frames":[{"stamp":294.0595059990883,"now":294.12234899401665},{"stamp":310.1272479891777,"now":310.26516300439835}],"expected":true,"records":[{"time":294.17117899656296,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}],"geometryReads":2,"scrollTop":200}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":310.5948959887028,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-exit","start":310.4394260048866,"end":342.13825300335884,"frames":[{"stamp":326.0188319981098,"now":326.0857779979706},{"stamp":342.08464097976685,"now":342.1242019832134}],"expected":false,"records":[{"time":310.5948959887028,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}],"geometryReads":3,"scrollTop":0}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":342.3447560071945,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-enter-again","start":342.22612899541855,"end":373.9220589995384,"frames":[{"stamp":357.8393619954586,"now":357.87526100873947},{"stamp":373.87461799383163,"now":373.9107159972191}],"expected":true,"records":[{"time":342.3447560071945,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}],"geometryReads":4,"scrollTop":200}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":374.8308399915695,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"ancestor-hidden","start":373.99146699905396,"end":406.0851419866085,"frames":[{"stamp":389.9415929913521,"now":389.9740499854088},{"stamp":406.0188669860363,"now":406.06868198513985}],"expected":false,"records":[{"time":374.8308399915695,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}],"geometryReads":5,"scrollTop":0}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":406.8435820043087,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"ancestor-visible","start":406.18784299492836,"end":437.6923570036888,"frames":[{"stamp":422.08737099170685,"now":422.1658000051975},{"stamp":437.64120799303055,"now":437.6665169894695}],"expected":true,"records":[{"time":406.8435820043087,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}],"geometryReads":6,"scrollTop":200}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"idle-start","start":537.9269099831581,"geometryReads":6,"notifications":6}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"idle-end","elapsed":3300.2124560177326,"geometryReads":0,"notifications":0}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":3935.1814769804478,"intersecting":false,"ratio":0,"top":420,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"complete","failures":[],"geometryReads":7,"notifications":7}
+[js log] RESULTS io-frame-cadence:PASS
+jsrun: context 144.6ms, 1 scripts 23.5ms, dom_version 74

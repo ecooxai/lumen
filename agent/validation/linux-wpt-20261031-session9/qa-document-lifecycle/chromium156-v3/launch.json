@@ -1,0 +1,27 @@
+{
+  "kind": "chromium156",
+  "workspace_candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "1bcad71ad1bff85955db13c6d8dd9f32374934d5a5cb079b526c46fb51f9bd97",
+  "command": [
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py",
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-script-scheduling/authored/run-cft156-fixture.py",
+    "--fixture",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v3.html",
+    "--marker",
+    "document-lifecycle",
+    "--output",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/chromium156-v3/browser",
+    "--timeout",
+    "20"
+  ],
+  "fixture_sha256": "15ba1babfbbde45a7571e3f2d9c2abce5bcbaeaa75c3dfa2c337cea3e80a53d0",
+  "manifest_sha256": "66b539c4479d821eaf8ca94979b544b38f8d8f492c4f2b5e20387c56550bffb5",
+  "resource_interval_seconds": 1,
+  "maximum_browser_lanes": 1,
+  "native_environment": null,
+  "transport_only": true,
+  "behavioral_PASS_is_not_implied": true
+}

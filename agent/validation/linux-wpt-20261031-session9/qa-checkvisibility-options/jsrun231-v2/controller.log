@@ -1,0 +1,37 @@
+[js log] CHECK_FAIL {"name":"legacy visibility option","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"modern visibility option","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"modern true with legacy false","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"legacy true with modern false","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"collapsed own visibility","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"inherited hidden visibility","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"visibility mutation is synchronously observed","expected":"false,true","actual":"true,true","pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"legacy opacity option","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"modern opacity option","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"modern opacity true with legacy false","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"legacy opacity true with modern false","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"opaque child cannot override zero-opacity ancestor","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"opacity mutation is synchronously observed","expected":"false,true","actual":"true,true","pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"boxless ancestor still contributes computed opacity","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"open shadow host opacity ancestor","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"closed shadow host opacity ancestor","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"assigned slot contributes computed opacity","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"manual assignment follows real shadow ancestry","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"public assignedSlot override cannot alter internal ancestry","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"public getComputedStyle override cannot alter native style query","expected":"false,false","actual":"true,true","pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"public geometry override cannot alter box existence","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"primitive boolean dictionary rejected","expected":"TypeError","actual":"none","pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"primitive number dictionary rejected","expected":"TypeError","actual":"none","pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"primitive string dictionary rejected","expected":"TypeError","actual":"none","pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"primitive symbol dictionary rejected","expected":"TypeError","actual":"none","pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"primitive bigint dictionary rejected","expected":"TypeError","actual":"none","pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"inherited dictionary members are read","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"truthy string option converts to boolean true","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"object boolean conversion invokes no coercion method","expected":false,"actual":true,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"dictionary members are read exactly once in IDL order","expected":"checkOpacity,checkVisibilityCSS,contentVisibilityAuto,opacityProperty,visibilityProperty","actual":"","pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"dictionary conversion precedes box-existence return","expected":"checkOpacity,checkVisibilityCSS,contentVisibilityAuto,opacityProperty,visibilityProperty","actual":"","pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"later alias getter is read even when early alias is true","expected":true,"actual":false,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"dictionary getter exception is propagated unchanged","expected":true,"actual":false,"pass":false,"error":null}
+[js log] CHECK_FAIL {"name":"dictionary style mutation is applied before visibility check","expected":false,"actual":true,"pass":false,"error":null}
+[js log] MEASUREMENTS checkvisibility-options {"total":49,"passed":15,"failed":34,"results":[{"name":"default does not opt into visibility","expected":true,"actual":true,"pass":true,"error":null},{"name":"legacy visibility option","expected":false,"actual":true,"pass":false,"error":null},{"name":"modern visibility option","expected":false,"actual":true,"pass":false,"error":null},{"name":"modern true with legacy false","expected":false,"actual":true,"pass":false,"error":null},{"name":"legacy true with modern false","expected":false,"actual":true,"pass":false,"error":null},{"name":"both visibility options false","expected":true,"actual":true,"pass":true,"error":null},{"name":"collapsed own visibility","expected":false,"actual":true,"pass":false,"error":null},{"name":"inherited hidden visibility","expected":false,"actual":true,"pass":false,"error":null},{"name":"visible descendant overrides hidden ancestor","expected":true,"actual":true,"pass":true,"error":null},{"name":"visibility mutation is synchronously observed","expected":"false,true","actual":"true,true","pass":false,"error":null},{"name":"default does not opt into opacity","expected":true,"actual":true,"pass":true,"error":null},{"name":"legacy opacity option","expected":false,"actual":true,"pass":false,"error":null},{"name":"modern opacity option","expected":false,"actual":true,"pass":false,"error":null},{"name":"modern opacity true with legacy false","expected":false,"actual":true,"pass":false,"error":null},{"name":"legacy opacity true with modern false","expected":false,"actual":true,"pass":false,"error":null},{"name":"both opacity options false","expected":true,"actual":true,"pass":true,"error":null},{"name":"positive tiny opacity remains potentially visible","expected":true,"actual":true,"pass":true,"error":null},{"name":"opaque child cannot override zero-opacity ancestor","expected":false,"actual":true,"pass":false,"error":null},{"name":"no rounded cumulative-opacity zero heuristic","expected":true,"actual":true,"p
+[js log] RESULTS checkvisibility-options:FAIL
+jsrun: context 142.2ms, 1 scripts 24.7ms, dom_version 211

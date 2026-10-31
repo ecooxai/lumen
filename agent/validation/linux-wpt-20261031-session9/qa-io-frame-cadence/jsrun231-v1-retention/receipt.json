@@ -1,0 +1,270 @@
+{
+  "candidate": 231,
+  "started_utc": "2026-10-31T08:46:17.073405+00:00",
+  "finished_utc": "2026-10-31T08:46:23.262794+00:00",
+  "duration_s": 6.189385845995275,
+  "returncode": 0,
+  "timed_out": false,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "pins_unchanged": true,
+  "source_unchanged": true,
+  "git_unchanged": true,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "jsrun_sha256": "00435d64f63d928ceac27691ab1f28f533e4002a80ee728e0787df5b9c4d35fe",
+  "legacy_geometry_pass": true,
+  "cadence_pass": true,
+  "all_phases_completed": true,
+  "quiescent_idle": [
+    {
+      "phase": "idle-end",
+      "elapsed": 3300.2076529860497,
+      "geometryReads": 0,
+      "notifications": 0
+    }
+  ],
+  "failures": [],
+  "events": [
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 318.8043470084667,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 319.7952670156956,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ]
+    },
+    {
+      "phase": "scroll-enter",
+      "start": 319.03840002417564,
+      "end": 335.49863201379776,
+      "frames": [
+        {
+          "stamp": 319.6806710064411,
+          "now": 319.7449650168419
+        },
+        {
+          "stamp": 335.38050001859665,
+          "now": 335.4636160135269
+        }
+      ],
+      "expected": true,
+      "records": [
+        {
+          "time": 319.7952670156956,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ],
+      "geometryReads": 2,
+      "scrollTop": 200
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 335.6745330095291,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "scroll-exit",
+      "start": 335.5798750221729,
+      "end": 367.2664630115032,
+      "frames": [
+        {
+          "stamp": 351.0261390209198,
+          "now": 351.0732210278511
+        },
+        {
+          "stamp": 367.2045230269432,
+          "now": 367.2545850276947
+        }
+      ],
+      "expected": false,
+      "records": [
+        {
+          "time": 335.6745330095291,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ],
+      "geometryReads": 3,
+      "scrollTop": 0
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 367.47255101799965,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ]
+    },
+    {
+      "phase": "scroll-enter-again",
+      "start": 367.34654301404953,
+      "end": 398.39664801955223,
+      "frames": [
+        {
+          "stamp": 382.83405700325966,
+          "now": 382.873811006546
+        },
+        {
+          "stamp": 398.3491770029068,
+          "now": 398.3837000131607
+        }
+      ],
+      "expected": true,
+      "records": [
+        {
+          "time": 367.47255101799965,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ],
+      "geometryReads": 4,
+      "scrollTop": 200
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 399.4443100094795,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "ancestor-hidden",
+      "start": 398.47082901000977,
+      "end": 430.7092780172825,
+      "frames": [
+        {
+          "stamp": 414.54467701911926,
+          "now": 414.58502101898193
+        },
+        {
+          "stamp": 430.66210600733757,
+          "now": 430.69778200984
+        }
+      ],
+      "expected": false,
+      "records": [
+        {
+          "time": 399.4443100094795,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ],
+      "geometryReads": 5,
+      "scrollTop": 0
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 431.3914350271225,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ]
+    },
+    {
+      "phase": "ancestor-visible",
+      "start": 430.8097580075264,
+      "end": 462.40222001075745,
+      "frames": [
+        {
+          "stamp": 446.784068018198,
+          "now": 446.8392290174961
+        },
+        {
+          "stamp": 462.32291600108147,
+          "now": 462.3671690225601
+        }
+      ],
+      "expected": true,
+      "records": [
+        {
+          "time": 431.3914350271225,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ],
+      "geometryReads": 6,
+      "scrollTop": 200
+    },
+    {
+      "phase": "idle-start",
+      "start": 562.7126630246639,
+      "geometryReads": 6,
+      "notifications": 6
+    },
+    {
+      "phase": "idle-end",
+      "elapsed": 3300.2076529860497,
+      "geometryReads": 0,
+      "notifications": 0
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 3960.130202025175,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 420,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "complete",
+      "failures": [],
+      "geometryReads": 7,
+      "notifications": 7
+    }
+  ],
+  "not_wpt": true,
+  "qualification": "Both original geometry and final cadence PASS required for a repaired candidate. Baseline failure remains a real diagnostic result; fixed-root jsrun does not replace WPT root-scroll validation."
+}

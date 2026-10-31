@@ -1,0 +1,2 @@
+{"url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html", "status": "OK", "pass": 48, "total": 48, "seconds": 0.8762}
+{"guard_cleanup": {"report": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen231-assertions/cleanup.json", "joined": 1, "remaining": 0, "sources_unchanged": true}}

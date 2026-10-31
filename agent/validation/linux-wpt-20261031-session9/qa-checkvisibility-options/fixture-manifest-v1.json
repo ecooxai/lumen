@@ -1,0 +1,13 @@
+{
+  "kind": "authored_semantic_controls_not_WPT",
+  "fixture": "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/checkvisibility-options-v1.html",
+  "sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+  "expected_checks": 49,
+  "count_basis": "45 static check call sites, one primitive loop executes five rather than one",
+  "completion_attribute": "data-checkvisibility-options-complete",
+  "bare_adapter_marker": "checkvisibility-options",
+  "required_measurement_label": "MEASUREMENTS checkvisibility-options",
+  "success_marker": "RESULTS checkvisibility-options:PASS",
+  "failure_marker": "RESULTS checkvisibility-options:FAIL",
+  "status": "prepared_only_no_runs_authorized"
+}

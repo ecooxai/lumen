@@ -1,0 +1,26 @@
+{
+  "kind": "chromium156",
+  "candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "1bcad71ad1bff85955db13c6d8dd9f32374934d5a5cb079b526c46fb51f9bd97",
+  "command": [
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py",
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-script-scheduling/authored/run-cft156-fixture.py",
+    "--fixture",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/checkvisibility-options-v1.html",
+    "--marker",
+    "checkvisibility-options",
+    "--output",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/chromium156-v1/browser",
+    "--timeout",
+    "20"
+  ],
+  "fixture_sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+  "expected_checks": 49,
+  "resource_interval_seconds": 1,
+  "browser_lane_count": 1,
+  "not_WPT": true,
+  "complete_feature_FAIL_is_valid_measurement": true
+}

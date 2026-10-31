@@ -1,0 +1,56 @@
+{
+  "status": "planning_only_not_authorized_for_production_or_execution",
+  "authored_fixture": "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/checkvisibility-options-v1.html",
+  "authored_fixture_sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+  "scope": "checkVisibility opacityProperty/checkOpacity and visibilityProperty/checkVisibilityCSS semantics using existing native computed style and internal slot ancestry",
+  "proposed_files": [
+    "src/js/prelude/03-element.js",
+    "tests/js/checkvisibility-options.html",
+    "CMakeLists.txt"
+  ],
+  "current_source_pins": {
+    "src/js/prelude/03-element.js": "78607a98e28f88eacc61c8c49837d80840b292d1583c43ce7d323c898f032ff2",
+    "CMakeLists.txt": "e7e0c253c5945d7d7c5714f2639ead0eeeb3eeee6b9772a67b72c230cb7c8142"
+  },
+  "implementation": [
+    "Validate genuine Element receiver before dictionary conversion, using existing N.isNode/N.type pattern.",
+    "Read all five boolean dictionary members once in WebIDL lexicographic order; undefined/null means empty dictionary, other primitives throw TypeError; retain optional function length zero.",
+    "Retain existing N.rect and N.skippedAncestor checks; do not change geometry, box construction, or content-visibility:auto handling.",
+    "Use N.computed for the element visibility value. A visible descendant under a hidden ancestor is not rejected merely for ancestor visibility.",
+    "Use N.computed for inclusive element and flat-tree ancestor opacity; only individual computed zero is disqualifying, with no cumulative-opacity rounding heuristic.",
+    "Use internal slotFind and N.parent/N.host/N.shadowOf to follow actual open/closed/manual slot ancestry; do not read overridable public assignedSlot/getComputedStyle/geometry methods. Box parents are insufficient for boxless ancestors."
+  ],
+  "normative_sources": [
+    "https://drafts.csswg.org/cssom-view/#dom-element-checkvisibility",
+    "https://drafts.csswg.org/css-display-3/#visibility",
+    "https://webidl.spec.whatwg.org/#es-dictionary"
+  ],
+  "baseline_observed": {
+    "unchanged_upstream_file": "css/cssom-view/checkVisibility.html",
+    "native230_pass": 13,
+    "total": 21,
+    "chromium156_pass": 21
+  },
+  "forecast_only": {
+    "native_upstream_pass_after_bounded_repair": 16,
+    "total": 21,
+    "new_expected_passes": 3
+  },
+  "excluded_remaining_failures": [
+    "content-visibility:auto skipping (2 tests)",
+    "unassigned light-tree box generation (2 tests)",
+    "option/optgroup listbox box semantics (1 test)"
+  ],
+  "validation_plan": [
+    "No execution during current source freeze. Root decides implementation only after candidate231 broad gates.",
+    "Integrator pins/runs this authored fixture on immutable231 and pinned Chromium156 with supported authored adapter before edits.",
+    "Use exact bare reference marker checkvisibility-options; both PASS/FAIL are complete behavioral results. Require MEASUREMENTS count and no exception/timeout; no transport-only success.",
+    "If authorized and the reference semantics are confirmed, add exact durable fixture and strict CMake PASS plus any FAIL rejection; rerun entire unchanged21-test upstream file.",
+    "Preserve all existing containment, retention, cadence, native and broad-regression release gates; no WPT edits or changed denominators."
+  ],
+  "conservative_time_minutes": [
+    45,
+    60
+  ],
+  "scope_expansion_stop": "If actual slot/computed-style prerequisites require renderer or general shadow-tree changes, return to root for review; do not silently widen three-file scope."
+}

@@ -1,0 +1,25 @@
+{
+  "command": [
+    "python3",
+    "tools/codex_compile.py",
+    "python3",
+    "tests/test_raster_layers.py",
+    "-v"
+  ],
+  "candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "source_manifest_sha256": "459cc11fc785ef210c5f1a6e6095ac73d1631744dd2a5a2ebc56916a75159163",
+  "extra_inputs": {
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/run-raster-sanitizer.py": "44e0aa214e47bd4e41291cd1194c546391d8dfc46c1c48284c8d336003900800",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-231/build-state.json": "779cdcf8bbc61cafcbbc195a083da6f9705c4215b552422eb7326e77437a47a7",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-231/source-manifest-before.json": "d1d2ad1ec3ce3f4a304003ac037a228a3241c5d50df08b0a94977bd5d6aefc1f",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-231/source-manifest-after.json": "d1d2ad1ec3ce3f4a304003ac037a228a3241c5d50df08b0a94977bd5d6aefc1f",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tests/test_raster_layers.py": "26951efdf5ca85d90d4a7166c7621aa129fe7769f4e86aac514ea6d239d1065c",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tests/raster_layers.c": "161734d31af5713d7c3877e063cf03ed16de2b309e5f5a21ba4d2ada8021274e",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py": "969cbe8df729bd340e46d1a25fc2069573249b4395aba3e7ecce8f6e583ae298"
+  },
+  "sanitizers": [
+    "address",
+    "undefined"
+  ]
+}

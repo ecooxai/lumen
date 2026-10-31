@@ -1,0 +1,18 @@
+{
+  "candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "frozen_utc": "2026-10-31T08:42:45.056595+00:00",
+  "source_file_pins": {
+    "src/layout/layout.h": "8f9ffc06763cb9e91999583ea667c3967cc3e9cddd8de04f30fe6a2f7c83b769",
+    "src/layout/block.c": "4582657a2f79fe2fe3f2a82d02759d30508076d927e868923d6b87d41077bc97",
+    "src/js/jsglue.c": "694381c82349e17097b53e22481283fe67454989ad807fa49a446545fac03d43",
+    "src/paint/display.c": "35d01357f1dfb6a215372928158653630eb5f766c03226a0eaa78951b4965593",
+    "src/paint/select.c": "3bc807fbf8af63937799cfe66fd34b9357feee5746e9528fff14d8aefbedfef4",
+    "src/app/main.c": "3d90aac4e742cc8332fc60379213d636a65527ee1921cd6edb3e23275d5e1a26",
+    "tests/test_css_containment.c": "41085aa429d6221503b43af8f2f2cd61c074618e9216e113a56567183c0c72d1",
+    "tests/js/hidden-scroll-retention.html": "66d53129c5d4f8e46dea8bf194b3c2e9266ba565e99215d1f34e3cdb47ff6dff",
+    "CMakeLists.txt": "e7e0c253c5945d7d7c5714f2639ead0eeeb3eeee6b9772a67b72c230cb7c8142"
+  },
+  "source_frozen_until_qualification_complete": true,
+  "scope": "Native backing/effective element scroll state, own-hidden setter/clamp/wheel gates and hidden overflow boundary; no Node/Box growth, allocation, root routing or Android changes."
+}

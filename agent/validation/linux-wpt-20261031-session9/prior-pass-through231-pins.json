@@ -1,0 +1,34 @@
+{
+  "created_utc": "2026-10-31T09:15:44.967898+00:00",
+  "baseline_candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "7066920bcfe73ba8538a5ce92dddc65da86ca6e5d630886c2b4996f1728b5d5d",
+  "baseline_results_path": "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/results.jsonl",
+  "baseline_summary": {
+    "files": 640,
+    "fully_passing_files": 416,
+    "assertions": {
+      "PASS": 9246,
+      "FAIL": 1256,
+      "TIMEOUT": 15,
+      "NOTRUN": 23
+    },
+    "total_assertions": 10540,
+    "harness_statuses": {
+      "OK": 624,
+      "TIMEOUT": 15,
+      "ERROR": 1
+    }
+  },
+  "manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f",
+  "schedule_sha256": "7e17aeaf30a0d05982a5d69a11fe0bd062561fe9375b2fcad72fb1eba41d1c32",
+  "files": {
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/results.jsonl": "2f5b8445e81e545006c26db3ee4418537f26feed2b1d1f8bbf5f098315332d38",
+    "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen231/prior-pass-union-audit.json": "6841947b9dd6d07fdd3ca95f307989ee1fbe645df0e04f626d8e3e51a3101a36",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-comparison.json": "5de1dabb1f3902b67ae8d4ee6bc3afda0261a3c8458d19307297f020e62e441c",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-identity-audit.json": "3fec369ac16c1437a1f473f3dd816c7aab42d30e7eb4714d48dcf2f6b42a9360",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-source-binding.json": "da91f97228e84e26221b9cf55af2062efaddcbc00489059e032330b0f6ecf9f1",
+    "agent/validation/linux-wpt-20261031-session9/candidate231-frozen640-outer-terminal-completion.json": "4ead248f2075524961a3396ca532ad6e573c51ba658c6594f823f89c0b9a25b5"
+  },
+  "authorization": "Root requires all9246 accepted231 PASS identities and416wholefiles in addition to original226 and fullfocused39; no frozen runner/schedule/deadline/helper changes."
+}

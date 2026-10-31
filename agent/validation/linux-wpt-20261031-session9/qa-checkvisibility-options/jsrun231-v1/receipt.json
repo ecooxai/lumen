@@ -1,0 +1,37 @@
+{
+  "kind": "lumen",
+  "candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "00435d64f63d928ceac27691ab1f28f533e4002a80ee728e0787df5b9c4d35fe",
+  "fixture_sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+  "started_utc": "2026-10-31T09:06:42.736125+00:00",
+  "finished_utc": "2026-10-31T09:06:44.866314+00:00",
+  "duration_s": 2.130187976988964,
+  "actual_inner_returncode": 0,
+  "execution_exit_valid": true,
+  "exit_evidence": {
+    "native_jsrun_actual_returncode": 0
+  },
+  "outer_cleanup_signals": [],
+  "timed_out": false,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "monitor_forced_stop": false,
+  "source_input_count": 648,
+  "pins_unchanged": false,
+  "source_unchanged": false,
+  "git_unchanged": false,
+  "cleanup_ok": true,
+  "measurement_complete": false,
+  "behavioral_result": null,
+  "counts": null,
+  "measurement_integrity_valid": false,
+  "complete_feature_FAIL_is_valid_measurement": true,
+  "not_WPT": true,
+  "errors": [
+    "result audit: ValueError('exactly one complete measurement required')"
+  ],
+  "resource_scope": "One-second owned process tree/cgroup. Chromium includes ChromeDriver; not a browser memory benchmark. No Chromium OS-exit claim."
+}

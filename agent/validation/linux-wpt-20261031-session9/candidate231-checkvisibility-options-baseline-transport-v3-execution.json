@@ -1,0 +1,23 @@
+{
+  "candidate": 231,
+  "started_utc": "2026-10-31T09:14:41.728588+00:00",
+  "ended_utc": "2026-10-31T09:14:44.102778+00:00",
+  "duration_s": 2.374193291994743,
+  "command": [
+    "python3",
+    "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/run-baseline-v3.py",
+    "--kind",
+    "lumen",
+    "--iteration",
+    "231"
+  ],
+  "actual_controller_exit_code": 0,
+  "controller_sha256": "e6574a5f0bf4fe347bd620c3bda0a0d72444143e609b5bb37b1d04470df9deae",
+  "post_hook_sha256": "fc11a22c4bac7f5738fe35c486a0a1a856cd902082df3f872684ddb1ddee07cf",
+  "log": "agent/validation/linux-wpt-20261031-session9/candidate231-checkvisibility-options-lumen-transport-v3-controller.log",
+  "log_sha256": "03bb9c50b963ab60b113ab2a6062539b87f03221629564be6f64041c50f2b853",
+  "authorization": "Root explicitly approved one transport-only completion using existing JSRUN_POST after independent review; no timeout/frame/load runs or source edits.",
+  "transport_scope": "Only reads already-completed lexical results/failed arrays and completion attribute; emits49 indexedshortrows and counts. No checkVisibility calls, expectation or fixture mutation, geometry override or console-cap change.",
+  "prior_invalid_attempts_preserved": true,
+  "successful_chromium_reference_not_rerun": true
+}

@@ -1,0 +1,45 @@
+{
+  "candidate": 231,
+  "started_utc": "2026-10-31T08:48:16.887059+00:00",
+  "finished_utc": "2026-10-31T08:48:47.726251+00:00",
+  "runs": [
+    {
+      "kind": "math",
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/run-math-sanitizer.py",
+        "--iteration",
+        "231"
+      ],
+      "returncode": 0,
+      "started_utc": "2026-10-31T08:48:16.887103+00:00",
+      "finished_utc": "2026-10-31T08:48:30.131648+00:00"
+    },
+    {
+      "kind": "native",
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/run-native-sanitizer.py",
+        "--iteration",
+        "231"
+      ],
+      "returncode": 0,
+      "started_utc": "2026-10-31T08:48:30.131763+00:00",
+      "finished_utc": "2026-10-31T08:48:37.449104+00:00"
+    },
+    {
+      "kind": "raster",
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/run-raster-sanitizer.py",
+        "--iteration",
+        "231"
+      ],
+      "returncode": 0,
+      "started_utc": "2026-10-31T08:48:37.449194+00:00",
+      "finished_utc": "2026-10-31T08:48:47.726201+00:00"
+    }
+  ],
+  "all_three_groups_pass": true,
+  "fresh_execution_not_reused_receipts": true
+}

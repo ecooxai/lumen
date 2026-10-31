@@ -1,0 +1,24 @@
+{
+  "kind": "lumen",
+  "workspace_candidate": 231,
+  "source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "binary_sha256": "00435d64f63d928ceac27691ab1f28f533e4002a80ee728e0787df5b9c4d35fe",
+  "command": [
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun-astra-i231",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/document-lifecycle-matrix-v3.html",
+    "10000"
+  ],
+  "fixture_sha256": "15ba1babfbbde45a7571e3f2d9c2abce5bcbaeaa75c3dfa2c337cea3e80a53d0",
+  "manifest_sha256": "66b539c4479d821eaf8ca94979b544b38f8d8f492c4f2b5e20387c56550bffb5",
+  "resource_interval_seconds": 1,
+  "maximum_browser_lanes": 1,
+  "native_environment": {
+    "JSRUN_LAYOUT": "1",
+    "JSRUN_UNTIL_ATTR": "data-document-lifecycle-complete",
+    "LUMEN_CONSOLE": "0"
+  },
+  "transport_only": true,
+  "behavioral_PASS_is_not_implied": true
+}

@@ -1,0 +1,202 @@
+{
+  "fixture_sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+  "count": 49,
+  "checks": [
+    {
+      "name": "default does not opt into visibility",
+      "expected": true
+    },
+    {
+      "name": "legacy visibility option",
+      "expected": false
+    },
+    {
+      "name": "modern visibility option",
+      "expected": false
+    },
+    {
+      "name": "modern true with legacy false",
+      "expected": false
+    },
+    {
+      "name": "legacy true with modern false",
+      "expected": false
+    },
+    {
+      "name": "both visibility options false",
+      "expected": true
+    },
+    {
+      "name": "collapsed own visibility",
+      "expected": false
+    },
+    {
+      "name": "inherited hidden visibility",
+      "expected": false
+    },
+    {
+      "name": "visible descendant overrides hidden ancestor",
+      "expected": true
+    },
+    {
+      "name": "visibility mutation is synchronously observed",
+      "expected": "false,true"
+    },
+    {
+      "name": "default does not opt into opacity",
+      "expected": true
+    },
+    {
+      "name": "legacy opacity option",
+      "expected": false
+    },
+    {
+      "name": "modern opacity option",
+      "expected": false
+    },
+    {
+      "name": "modern opacity true with legacy false",
+      "expected": false
+    },
+    {
+      "name": "legacy opacity true with modern false",
+      "expected": false
+    },
+    {
+      "name": "both opacity options false",
+      "expected": true
+    },
+    {
+      "name": "positive tiny opacity remains potentially visible",
+      "expected": true
+    },
+    {
+      "name": "opaque child cannot override zero-opacity ancestor",
+      "expected": false
+    },
+    {
+      "name": "no rounded cumulative-opacity zero heuristic",
+      "expected": true
+    },
+    {
+      "name": "opacity mutation is synchronously observed",
+      "expected": "false,true"
+    },
+    {
+      "name": "boxless ancestor still contributes computed opacity",
+      "expected": false
+    },
+    {
+      "name": "open shadow host opacity ancestor",
+      "expected": false
+    },
+    {
+      "name": "closed-root public assignedSlot is hidden",
+      "expected": true
+    },
+    {
+      "name": "closed shadow host opacity ancestor",
+      "expected": false
+    },
+    {
+      "name": "assigned slot contributes computed opacity",
+      "expected": false
+    },
+    {
+      "name": "manual assignment follows real shadow ancestry",
+      "expected": false
+    },
+    {
+      "name": "manual reassignment updates opacity ancestry",
+      "expected": true
+    },
+    {
+      "name": "public assignedSlot override cannot alter internal ancestry",
+      "expected": false
+    },
+    {
+      "name": "public getComputedStyle override cannot alter native style query",
+      "expected": "false,false"
+    },
+    {
+      "name": "public geometry override cannot alter box existence",
+      "expected": false
+    },
+    {
+      "name": "undefined options use dictionary defaults",
+      "expected": true
+    },
+    {
+      "name": "null options use dictionary defaults",
+      "expected": true
+    },
+    {
+      "name": "function object is an accepted dictionary",
+      "expected": true
+    },
+    {
+      "name": "primitive boolean dictionary rejected",
+      "expected": "TypeError"
+    },
+    {
+      "name": "primitive number dictionary rejected",
+      "expected": "TypeError"
+    },
+    {
+      "name": "primitive string dictionary rejected",
+      "expected": "TypeError"
+    },
+    {
+      "name": "primitive symbol dictionary rejected",
+      "expected": "TypeError"
+    },
+    {
+      "name": "primitive bigint dictionary rejected",
+      "expected": "TypeError"
+    },
+    {
+      "name": "inherited dictionary members are read",
+      "expected": false
+    },
+    {
+      "name": "truthy string option converts to boolean true",
+      "expected": false
+    },
+    {
+      "name": "numeric zero option converts to boolean false",
+      "expected": true
+    },
+    {
+      "name": "object boolean conversion invokes no coercion method",
+      "expected": false
+    },
+    {
+      "name": "dictionary members are read exactly once in IDL order",
+      "expected": "checkOpacity,checkVisibilityCSS,contentVisibilityAuto,opacityProperty,visibilityProperty"
+    },
+    {
+      "name": "dictionary conversion precedes box-existence return",
+      "expected": "checkOpacity,checkVisibilityCSS,contentVisibilityAuto,opacityProperty,visibilityProperty"
+    },
+    {
+      "name": "later alias getter is read even when early alias is true",
+      "expected": true
+    },
+    {
+      "name": "dictionary getter exception is propagated unchanged",
+      "expected": true
+    },
+    {
+      "name": "dictionary style mutation is applied before visibility check",
+      "expected": false
+    },
+    {
+      "name": "invalid receiver fails before dictionary getters",
+      "expected": "TypeError,0"
+    },
+    {
+      "name": "optional argument preserves operation length zero",
+      "expected": 0
+    }
+  ]
+}
