@@ -1,0 +1,1307 @@
+{
+  "schema_version": 1,
+  "candidate": 234,
+  "iteration": 8,
+  "status": "QUALIFIED_SCOPED_LINUX_DEVELOPMENT_RELEASE",
+  "accepted_public_release_before_task": 226,
+  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "binary_bytes": 7335352,
+  "binary_kind": "Exact tested Linux x86_64 development executable; external runtime dependencies and recorded RUNPATH required.",
+  "source_manifest_sha256": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
+  "recorded_input_count": 650,
+  "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "model": "GPT-6 Astra Pro",
+  "agent_tool": "built-in agents",
+  "development_tool": "RubyWebterm",
+  "URL_test_work_deferred": true,
+  "full_WPT_or_Chromium_parity_claimed": false,
+  "changes": [
+    "Native physical and logical contain-intrinsic-size parsing, computed values and size-containment geometry, including writing-mode mapping and bounded family cascade priority.",
+    "Correctness-focused content-visibility:hidden sizing, descendant painting/hit suppression, observer/visibility behavior and retained element scroll offsets.",
+    "Size-contained grid automatic repeat sizing, empty multicol intrinsic sizing and select/button/video sizing controls.",
+    "Constant-color scalar and ARM NEON interpolation arithmetic with independently proved frame results; ARM compile validation only.",
+    "Rendering-opportunity-driven IntersectionObserver delivery while keeping quiescent pages unscanned.",
+    "Genuine document lifecycle event metadata, legacy load target handling, per-context reentrancy/lifetime guards and strict actual-exit integration controls.",
+    "checkVisibility option conversion and visibility/opacity checks using private native flat-tree ancestry without public DOM accessor side effects."
+  ],
+  "fixed640": {
+    "status": "MEASURED_PASS_WITH_RETAINED_FAILURES",
+    "candidate": 234,
+    "selection": "Fixed640 non-URL sample; not all WPT",
+    "last_measured_candidate": 234,
+    "last_measured": {
+      "files": 640,
+      "whole_files_passed": 417,
+      "whole_file_pass_percent": 65.15625,
+      "harness_statuses": {
+        "OK": 625,
+        "TIMEOUT": 14,
+        "ERROR": 1
+      },
+      "assertion_statuses": {
+        "PASS": 9249,
+        "FAIL": 1255,
+        "TIMEOUT": 13,
+        "NOTRUN": 23
+      },
+      "assertions_total": 10540
+    },
+    "baseline226": {
+      "files": 640,
+      "whole_files_passed": 411,
+      "whole_file_pass_percent": 64.21875,
+      "harness_statuses": {
+        "OK": 624,
+        "TIMEOUT": 15,
+        "ERROR": 1
+      },
+      "assertion_statuses": {
+        "PASS": 9162,
+        "FAIL": 1340,
+        "TIMEOUT": 15,
+        "NOTRUN": 23
+      },
+      "assertions_total": 10540
+    },
+    "reference": {
+      "name": "Pinned Chromium156.0.8078.80",
+      "files": 640,
+      "whole_files_passed": 560,
+      "whole_file_pass_percent": 87.5,
+      "harness_statuses": {
+        "OK": 626,
+        "TIMEOUT": 13,
+        "ERROR": 1
+      },
+      "assertion_statuses": {
+        "PASS": 9551,
+        "FAIL": 980,
+        "NOTRUN": 9,
+        "TIMEOUT": 12
+      },
+      "assertions_total": 10552
+    },
+    "schedule_sha256": "7e17aeaf30a0d05982a5d69a11fe0bd062561fe9375b2fcad72fb1eba41d1c32",
+    "selection_manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f",
+    "timeout_seconds": 15,
+    "worker_shards": 2,
+    "files_per_shard": 320,
+    "assertion_denominator_note": "Browser harness registration can differ. Each browser keeps its actual assertion denominator; whole-file rates share the640-file selection.",
+    "whole_files_passed": 417,
+    "total_files": 640,
+    "whole_file_pass_percent": 65.15625,
+    "assertions_passed": 9249,
+    "total_assertions": 10540,
+    "assertion_pass_percent": 87.75142314990512,
+    "harness_statuses": {
+      "OK": 625,
+      "TIMEOUT": 14,
+      "ERROR": 1
+    },
+    "assertion_statuses": {
+      "PASS": 9249,
+      "FAIL": 1255,
+      "TIMEOUT": 13,
+      "NOTRUN": 23
+    },
+    "gains_vs226": {
+      "whole_files": 6,
+      "assertions": 87
+    },
+    "gains_vs231": {
+      "whole_files": 1,
+      "assertions": 3
+    },
+    "preserved231": {
+      "whole_files": 416,
+      "assertions": 9246
+    },
+    "prior_pass_losses": 0,
+    "missing_registered_identities": 0,
+    "added_registered_identities": 0,
+    "new_nonOK_harness_results": 0,
+    "native_owned_exit0_and_cleanup_count": 640,
+    "duration_seconds": 785.889,
+    "independent_audit_sha256": "1997f1a091f12213705c7af083b678453d3538e03f045745a58edf9ca7a7a5f9",
+    "independent_prior231_audit_sha256": "45e57db13536d4c6a945433d532641134ddececfeed1bf6d47f532fab04f95be"
+  },
+  "scopes": {
+    "selected_containment39": {
+      "status": "PASS",
+      "candidate": 234,
+      "scope_score": {
+        "score": 100,
+        "out_of": 100,
+        "label": "Selected containment outcomes only"
+      },
+      "selected_files": 39,
+      "assertion_files": 11,
+      "assertions_passed": 286,
+      "total_assertions": 286,
+      "reftests_passed": 28,
+      "total_reftests": 28,
+      "actual_native_test_and_reference_processes": 67,
+      "baseline226": {
+        "assertions_passed": 81,
+        "total_assertions": 286,
+        "reftests_passed": 1,
+        "total_reftests": 28
+      },
+      "reference": {
+        "assertions_passed": 286,
+        "total_assertions": 286,
+        "reftests_passed": 28,
+        "total_reftests": 28
+      },
+      "primary_logical3": {
+        "assertions_passed": 48,
+        "total_assertions": 48,
+        "reftests_passed": 2,
+        "total_reftests": 2,
+        "baseline_assertions_passed": 0,
+        "baseline_reftests_passed": 0
+      },
+      "pixel_comparison": "Exact800x600 RGBA at DPR1 after document/font readiness, no tolerance change.",
+      "prior_pass_losses": 0
+    },
+    "hidden_api3": {
+      "status": "PARTIAL",
+      "candidate": 234,
+      "files": 3,
+      "assertions_passed": 18,
+      "total_assertions": 23,
+      "checkVisibility": {
+        "passed": 16,
+        "total": 21
+      },
+      "IntersectionObserver": {
+        "passed": 1,
+        "total": 1
+      },
+      "ResizeObserver": {
+        "passed": 1,
+        "total": 1
+      },
+      "reference_passed": 23,
+      "baseline226_passed": 10,
+      "prior231_passed": 15,
+      "remaining_failures": [
+        "checkVisibility on content-visibility:auto element which is outside the viewport.",
+        "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+        "checkVisibility on element not assigned to a slot.",
+        "checkVisibility on element not assigned to the only named slot.",
+        "checkVisibility on option and optgroup elements in a list box."
+      ]
+    },
+    "authored_visibility_options49": {
+      "status": "PASS",
+      "candidate": 234,
+      "passed": 49,
+      "total": 49,
+      "baseline231_passed": 15,
+      "reference_passed": 49,
+      "fixture_sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+      "not_WPT": true
+    },
+    "authored_slot_accessors2": {
+      "status": "PASS",
+      "candidate": 234,
+      "passed": 2,
+      "total": 2,
+      "reference_passed": 2,
+      "cases": [
+        "localName",
+        "namespaceURI"
+      ],
+      "fixture_sha256": "e23c504b9684614b74ddf4cb57aed465dd7f4b96e646b49b0718514f760ca8db",
+      "not_WPT": true
+    },
+    "native147": {
+      "status": "PASS",
+      "candidate": 234,
+      "passed": 147,
+      "total_selected": 147,
+      "total_registered": 150,
+      "excluded_names": [
+        "url",
+        "url_host_nul",
+        "data_url"
+      ],
+      "external_WPT_inputs": 64,
+      "no_skipped_tests": true,
+      "replay_inventory": "gpt-6-astra-pro-builtin-rubywebterm-native147-replay-inputs.json"
+    },
+    "document_lifecycle": {
+      "status": "PASS_WITH_DECLARED_CONTRACT_BOUNDARIES",
+      "candidate": 234,
+      "upstream_file": "/html/syntax/parsing/the-end.html",
+      "upstream_passed": 4,
+      "upstream_total": 4,
+      "reference_passed": 4,
+      "authored_cases": 12,
+      "canonical_records": 114,
+      "contract_sha256": "7044502e5d3974e2ce7b67e30cf18907c17c28731f9b6f713c316940ac1f6c82",
+      "full_trace_equivalence": false,
+      "finish_and_zero_late_bounds": "Asserted by every durable native case; separately checked in real unsuppressed instrumented process execution.",
+      "residuals": [
+        "Initial child-load microtasks retain the existing synchronous frame-insertion scheduling difference; only the exact declared microtask records may move.",
+        "The pageshow-open initial load microtask may observe activeGeneration=replacement rather than the reference's initial value; actual event identities/flags/counts remain strict.",
+        "Post-removal author statements may finish in native execution; stale native owner-load/pageshow follow-up is forbidden.",
+        "Observed pinned-Chromium iframe-owner-load/pageshow order is retained; no claim of complete current-HTML lifecycle ordering conformance."
+      ]
+    },
+    "hidden_scroll_retention": {
+      "status": "PASS_WITH_ONE_PREDECLARED_DIMENSION_DISTINCTION",
+      "candidate": 234,
+      "cases": 7,
+      "phases": 30,
+      "contract_sha256": "f99db574f100b60107c55f62181b72681892ec4767b2e7cb46b73db7f7872d60",
+      "upstream_hidden_scroll": {
+        "passed": 1,
+        "total": 1
+      },
+      "parent_overflow_sizes": [
+        [
+          160,
+          140
+        ],
+        [
+          400,
+          400
+        ],
+        [
+          160,
+          140
+        ]
+      ],
+      "sole_exception": {
+        "case": "range-shrink-and-regrow",
+        "phase": "hidden-shrunk",
+        "field": "leaf width/height",
+        "native": [
+          150,
+          130
+        ],
+        "reference": [
+          400,
+          400
+        ]
+      },
+      "full_snapshot_equivalence": false
+    },
+    "observer_cadence": {
+      "status": "PASS",
+      "candidate": 234,
+      "not_WPT": true,
+      "transitions": 5,
+      "quiescent_observation_ms": 3300,
+      "geometry_reads_during_idle": 0,
+      "notifications_during_idle": 0,
+      "reference_caveat": "Pinned Chromium agrees on cadence/retention; one isolated older nonzero-threshold assertion disagrees, and its exact entry was not logged. Neither fixture error nor Chromium bug is established."
+    },
+    "retained_render40": {
+      "status": "PASS",
+      "candidate": 234,
+      "stretch_reftests": 29,
+      "paint_reftests": 11,
+      "total_reftests": 40,
+      "total_test_and_reference_captures": 80,
+      "reftests_passed": 40,
+      "actual_test_and_reference_captures": 80,
+      "independent_audit_sha256": "760e0702caa6ab82515661f77d95cc12ef2e5f401a228d675daeb6d7f96190a6"
+    }
+  },
+  "sanitizers": {
+    "actual_cpp_lifecycle_and_visibility": {
+      "status": "PASS",
+      "candidate": 234,
+      "actual_process_exit_codes": [
+        0,
+        1,
+        1,
+        0
+      ],
+      "cases": [
+        "lifecycle12 positive",
+        "missing completion negative",
+        "FAIL completion negative",
+        "visibility49 positive"
+      ],
+      "unsuppressed": true,
+      "findings": 0,
+      "actual_instrumented_objects": [
+        "frames.cc.o",
+        "js.cc.o",
+        "jsnative.cc.o",
+        "jsrun.c.o"
+      ],
+      "prebuilt_V8_instrumented": false,
+      "sanitized_executable_sha256": "85e1ffb3c546acd69ba49f9f2657bfbbe3ef6430d3bf6da6f3826bc33210aaf8"
+    },
+    "native_math": {
+      "status": "PASS",
+      "targets": [
+        "css_stepped_math"
+      ]
+    },
+    "native_grid_containment": {
+      "status": "PASS",
+      "targets": [
+        "css_containment",
+        "grid_used_values",
+        "grid_absolute"
+      ]
+    },
+    "raster": {
+      "status": "PASS",
+      "harness": "tests/test_raster_layers.py",
+      "controls": "ASan/UBSan pixel/layer/constant-color regressions"
+    },
+    "historical232_failure": {
+      "actual_exit": 23,
+      "leaked_bytes": 54207,
+      "allocations": 48,
+      "status": "Preserved failed checkpoint; subsequent matched test-host pin-release proof kept the engine and fixture unchanged, then233 corrected the host."
+    },
+    "ARM_NEON": {
+      "status": "COMPILE_PASS",
+      "runtime_validated": false
+    }
+  },
+  "resources": {
+    "status": "PASS",
+    "candidate": 234,
+    "workload": "Identical15s paced layout fixture:5s idle,5s fixed paced work,5s idle",
+    "interpretation_policy_sha256": "c6a5b649b67182f69bb293bcfbcff889f718130ad58946dc0ff24e11d16f4f0e",
+    "sampling": "One-second process-tree CPU/RSS; PSS sampled every5s when available.",
+    "comparison_scope": "Browser-only roots; Chromium+ChromeDriver separately retained.",
+    "speed_or_throughput_claimed": false,
+    "peak_definition": "Sampled maximum, not an exact operating-system high-water mark.",
+    "missing_pss": "null",
+    "public_interpretation": "All three runs completed the same 200-node, 50-step workload, 10 checks and checksum 21144 with identical geometry. Compared with accepted 226, 234 fixed-work CPU increased 0.019637 CPU-seconds (7.27%) over approximately 4.00 seconds of matched fully covered intervals; late-idle CPU increased 0.009958 seconds. Sampled whole-window RSS/PSS were 1.859/2.130 MiB lower. No predeclared material-regression investigation threshold was reached, and no repeat was warranted. These single-run measurements neither prove an optimization nor measure throughput. Chromium browser-only memory is descriptive and separate from ChromeDriver.",
+    "public_phase_rows": [
+      {
+        "browser": "Lumen226",
+        "phase": "idle-before",
+        "cpu_seconds": 0.04001294136047363,
+        "cpu_covered_seconds": 4.001827001571655,
+        "phase_duration_seconds": 5.0,
+        "cpu_intervals": 4,
+        "rss_peak_mib": 146.506,
+        "rss_samples": 5,
+        "pss_peak_mib": 131.247,
+        "pss_samples": 1
+      },
+      {
+        "browser": "Lumen226",
+        "phase": "fixed-work",
+        "cpu_seconds": 0.27027759360790254,
+        "cpu_covered_seconds": 4.003840923309326,
+        "phase_duration_seconds": 5.301000118255615,
+        "cpu_intervals": 4,
+        "rss_peak_mib": 166.724,
+        "rss_samples": 5,
+        "pss_peak_mib": 151.539,
+        "pss_samples": 1
+      },
+      {
+        "browser": "Lumen226",
+        "phase": "idle-after",
+        "cpu_seconds": 0.030026860237121582,
+        "cpu_covered_seconds": 4.000319957733154,
+        "phase_duration_seconds": 5.0,
+        "cpu_intervals": 4,
+        "rss_peak_mib": 169.607,
+        "rss_samples": 5,
+        "pss_peak_mib": 154.521,
+        "pss_samples": 1
+      },
+      {
+        "browser": "Lumen226",
+        "phase": "whole-fixture-window",
+        "cpu_seconds": 0.48000348853588104,
+        "cpu_covered_seconds": 14.001450061798096,
+        "phase_duration_seconds": 15.302000045776367,
+        "cpu_intervals": 14,
+        "rss_peak_mib": 169.607,
+        "rss_samples": 15,
+        "pss_peak_mib": 154.521,
+        "pss_samples": 3
+      },
+      {
+        "browser": "Lumen234",
+        "phase": "idle-before",
+        "cpu_seconds": 0.03997385978698731,
+        "cpu_covered_seconds": 4.002544164657593,
+        "phase_duration_seconds": 5.001000165939331,
+        "cpu_intervals": 4,
+        "rss_peak_mib": 146.366,
+        "rss_samples": 5,
+        "pss_peak_mib": 131.063,
+        "pss_samples": 1
+      },
+      {
+        "browser": "Lumen234",
+        "phase": "fixed-work",
+        "cpu_seconds": 0.28991462847709654,
+        "cpu_covered_seconds": 3.998443841934204,
+        "phase_duration_seconds": 5.32699990272522,
+        "cpu_intervals": 4,
+        "rss_peak_mib": 165.519,
+        "rss_samples": 5,
+        "pss_peak_mib": 150.138,
+        "pss_samples": 1
+      },
+      {
+        "browser": "Lumen234",
+        "phase": "idle-after",
+        "cpu_seconds": 0.039984467029571535,
+        "cpu_covered_seconds": 4.004576921463013,
+        "phase_duration_seconds": 5.0,
+        "cpu_intervals": 4,
+        "rss_peak_mib": 167.748,
+        "rss_samples": 5,
+        "pss_peak_mib": 152.391,
+        "pss_samples": 1
+      },
+      {
+        "browser": "Lumen234",
+        "phase": "whole-fixture-window",
+        "cpu_seconds": 0.5097757021522522,
+        "cpu_covered_seconds": 14.003715991973877,
+        "phase_duration_seconds": 15.32800006866455,
+        "cpu_intervals": 14,
+        "rss_peak_mib": 167.748,
+        "rss_samples": 15,
+        "pss_peak_mib": 152.391,
+        "pss_samples": 3
+      },
+      {
+        "browser": "Chromium156 browser only",
+        "phase": "idle-before",
+        "cpu_seconds": 0.13059093952178955,
+        "cpu_covered_seconds": 4.019000053405762,
+        "phase_duration_seconds": 5.0,
+        "cpu_intervals": 4,
+        "rss_peak_mib": 1377.309,
+        "rss_samples": 5,
+        "pss_peak_mib": 474.09,
+        "pss_samples": 1
+      },
+      {
+        "browser": "Chromium156 browser only",
+        "phase": "fixed-work",
+        "cpu_seconds": 0.2515643401670456,
+        "cpu_covered_seconds": 4.0227131843566895,
+        "phase_duration_seconds": 5.090000152587891,
+        "cpu_intervals": 4,
+        "rss_peak_mib": 1408.492,
+        "rss_samples": 5,
+        "pss_peak_mib": 503.469,
+        "pss_samples": 1
+      },
+      {
+        "browser": "Chromium156 browser only",
+        "phase": "idle-after",
+        "cpu_seconds": 0.06046435356140137,
+        "cpu_covered_seconds": 4.021144151687622,
+        "phase_duration_seconds": 5.0,
+        "cpu_intervals": 4,
+        "rss_peak_mib": 1417.294,
+        "rss_samples": 5,
+        "pss_peak_mib": 508.93,
+        "pss_samples": 1
+      },
+      {
+        "browser": "Chromium156 browser only",
+        "phase": "whole-fixture-window",
+        "cpu_seconds": 0.501301931374073,
+        "cpu_covered_seconds": 14.019975185394287,
+        "phase_duration_seconds": 15.09000015258789,
+        "cpu_intervals": 14,
+        "rss_peak_mib": 1417.294,
+        "rss_samples": 15,
+        "pss_peak_mib": 508.93,
+        "pss_samples": 3
+      }
+    ],
+    "policy_investigation_flags": {
+      "fixed_work_CPU": false,
+      "late_idle_CPU": false,
+      "sampled_RSS": false,
+      "sampled_PSS": false
+    },
+    "independent_audit_sha256": "da7374bf14ca1aabc5f6f1f67b5a811ebdee4a71800bd7ad85e0e6ea2d73d147",
+    "analysis_sha256": "7652f1243f998f90d5ba99129927e876859d5f0e6a9a751b0474138b8cc312d3",
+    "limitations": [
+      "CPU totals cover fully contained sampled intervals, not complete phase CPU accounting.",
+      "Each5-second phase has5RSS samples and only1PSS sample; full fixture has15RSS/3PSS samples.",
+      "Sampled maxima are not exact high-water marks.",
+      "Chromium OS exit is not exposed; public owned cleanup and separate adapter completion are verified.",
+      "Runs are sequential with task browser lanes quiet, not an otherwise idle laboratory host.",
+      "No statistical confidence or throughput claim; no repeat justified by the predeclared policy."
+    ],
+    "driver_inclusive_peak_mib": {
+      "RSS": 1439.158,
+      "PSS": 523.966
+    },
+    "driver_inclusive_scope": "Chromium plus ChromeDriver, separate observation not used as browser-only memory."
+  },
+  "limitations": [
+    "The640-file campaign is a fixed non-URL sample, not the whole WPT repository. Native, assertion, rendering and authored-control denominators remain separate.",
+    "Dedicated URL conformance work remains deferred as requested; three named native URL targets are excluded.",
+    "Five checkVisibility upstream assertions remain failing; content-visibility:auto, unassigned-slot box behavior and listbox option boxes are not completed.",
+    "Hidden content retains layout/style data for correctness. No layout/style-skipping optimization or full content-visibility conformance is claimed.",
+    "Lifecycle and hidden-scroll comparisons retain the explicitly listed observable scheduling/geometry distinctions.",
+    "General CSS cascade layer/origin rollback, complete grid/multicol layout, document.domain and iframe realm/async-loading work remain outside this repair.",
+    "The reference adapter does not expose Chromium's OS exit status; it records its own successful completion and task-owned profile/process cleanup.",
+    "Resource values are sampled and workload-specific; the paced fixture does not measure throughput or general browser speed.",
+    "The executable is the tested Linux development build with external dependencies; it is not a portable standalone package.",
+    "All650 exported build inputs and reviewed extras match the tested source. No fresh hermetic rebuild or byte-reproducible compiler claim is made.",
+    "Public source and Git bundle contain only reviewed public ancestry; private task history, authentication, profiles and capture machinery are excluded."
+  ],
+  "history": [
+    {
+      "iteration": 0,
+      "candidate": 226,
+      "started_utc": "2026-10-31T07:00:12Z",
+      "finished_utc": "2026-10-31T07:09:52.459971+00:00",
+      "duration_minutes": 9.67433285,
+      "subagents": [
+        "repo_baseline",
+        "conformance_review",
+        "delivery_audit"
+      ],
+      "scope_scores": {
+        "logical_assertions": 0,
+        "logical_reftests": 0
+      },
+      "broad640": "REUSED_ACCEPTED411/640,9162/10540"
+    },
+    {
+      "iteration": 1,
+      "candidate": 227,
+      "started_utc": "2026-10-31T07:09:52.459971+00:00",
+      "finished_utc": "2026-10-31T07:26:26.647332+00:00",
+      "duration_minutes": 16.56978935,
+      "subagents": [
+        "repo_baseline",
+        "conformance_review",
+        "delivery_audit"
+      ],
+      "scope_scores": {
+        "primary_assertion_percent": 100,
+        "primary_pixel_percent": 100,
+        "parsing_assertion_percent": 100,
+        "all_original39_assertion_percent": 94.75524475524476,
+        "all_original39_pixel_percent": 92.85714285714286,
+        "whole_browser_98_established": false
+      },
+      "broad640": "NOT_RUN"
+    },
+    {
+      "iteration": 2,
+      "candidate": 228,
+      "started_utc": "2026-10-31T07:26:26.647332+00:00",
+      "finished_utc": "2026-10-31T07:53:55.093155+00:00",
+      "duration_minutes": 27.47409705,
+      "subagents": [
+        "repo_baseline",
+        "conformance_review",
+        "delivery_audit"
+      ],
+      "scope_scores": {
+        "native_test_percent": 99.30555555555556,
+        "containment_native_check_percent": 100,
+        "candidate_WPT_not_run": true,
+        "last_measured39_WPT_candidate": 227,
+        "whole_browser_98_established": false
+      },
+      "broad640": "NOT_RUN"
+    },
+    {
+      "iteration": 3,
+      "candidate": 229,
+      "started_utc": "2026-10-31T07:53:55.093155+00:00",
+      "finished_utc": "2026-10-31T08:16:56.662800+00:00",
+      "duration_minutes": 23.02616075,
+      "subagents": [
+        "repo_baseline",
+        "conformance_review",
+        "delivery_audit"
+      ],
+      "scope_scores": {
+        "selected39_assertion_percent": 100,
+        "selected39_pixel_percent": 100,
+        "native_test_percent": 100,
+        "hidden_api_percent": 60.86956521739131,
+        "whole_browser_98_established": false
+      },
+      "broad640": "NOT_RUN"
+    },
+    {
+      "iteration": 4,
+      "candidate": 230,
+      "started_utc": "2026-10-31T08:16:56.662800+00:00",
+      "finished_utc": "2026-10-31T08:33:59.719549+00:00",
+      "duration_minutes": 17.050945816666665,
+      "subagents": [
+        "repo_baseline",
+        "conformance_review",
+        "delivery_audit"
+      ],
+      "scope_scores": {
+        "selected39_assertion_percent": 100,
+        "selected39_pixel_percent": 100,
+        "native_test_percent": 100,
+        "hidden_api_percent": 65.21739130434783,
+        "whole_browser_98_established": false
+      },
+      "broad640": "NOT_RUN"
+    },
+    {
+      "iteration": 5,
+      "candidate": 231,
+      "started_utc": "2026-10-31T08:33:59.719549+00:00",
+      "finished_utc": "2026-10-31T09:35:38.382631+00:00",
+      "duration_minutes": 61.6443847,
+      "subagents": [
+        "repo_baseline",
+        "conformance_review",
+        "delivery_audit"
+      ],
+      "scope_scores": {
+        "selected39_assertion_percent": 100,
+        "selected39_pixel_percent": 100,
+        "native_test_percent": 100,
+        "fixed640_whole_file_percent": 65,
+        "fixed640_assertion_percent": 87.72296015180265,
+        "whole_browser_98_established": false
+      },
+      "broad640": "MEASURED416/640,9246/10540"
+    },
+    {
+      "iteration": 6,
+      "candidate": 232,
+      "started_utc": "2026-10-31T09:35:38.382631+00:00",
+      "finished_utc": "2026-10-31T09:53:58.848202+00:00",
+      "duration_minutes": 18.34109285,
+      "subagents": [
+        "repo_baseline",
+        "conformance_review",
+        "delivery_audit"
+      ],
+      "scope_scores": {
+        "score_not_combined": "Lifecycle behavior passed; sanitizer gate rejected."
+      },
+      "broad640": "NOT_RUN"
+    },
+    {
+      "iteration": 7,
+      "candidate": 233,
+      "started_utc": "2026-10-31T09:53:58.848202+00:00",
+      "finished_utc": "2026-10-31T10:06:13.077038+00:00",
+      "duration_minutes": 12.237147266666666,
+      "subagents": [
+        "repo_baseline",
+        "conformance_review",
+        "delivery_audit"
+      ],
+      "scope_scores": {
+        "host_correction": 100
+      },
+      "broad640": "NOT_RUN"
+    },
+    {
+      "iteration": 8,
+      "candidate": 234,
+      "started_utc": "2026-10-31T10:06:13.077038+00:00",
+      "finished_utc": "2026-10-31T10:41:46.236056+00:00",
+      "duration_minutes": 35.5526503,
+      "subagents": [
+        "repo_baseline",
+        "conformance_review",
+        "delivery_audit"
+      ],
+      "scope_scores": {
+        "selected_containment_outcomes": 100
+      },
+      "broad640": "MEASURED417/640,9249/10540",
+      "qualification": "All16 technical gates independently accepted; root scoped acceptance granted."
+    }
+  ],
+  "publication": {
+    "status": "AUTHORIZED_PREPARATION_PENDING_VERIFIED_PUBLICATION",
+    "public_parent": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+    "public_branch": "gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
+    "source_archive": "src.tar.gz",
+    "source_archive_includes_public_git_bundle": true,
+    "public_git_bundle": "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-source-i234.bundle",
+    "tested_binary_package": "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-x86_64-i234.tar.gz",
+    "interactive_demo": "The interactive page runs in the browser opening it. Open it in Lumen to exercise the Lumen engine. Recorded native234 validation is separate from the live values shown in any other browser. The exact authored HTML passed supported native marker-only validation; no demo screenshot or WPT score is claimed.",
+    "showcase": "Approved40.000-second960x720 H26424fps motion report of verified result cards with large white-on-black model/agent/tool attribution."
+  },
+  "prepared_utc": "2026-10-31T10:54:10.924096+00:00",
+  "source_manifest_file_sha256": "58a936e5da8f063bf666dbe9c988696139a3f8e4a89b2dcae0fcbc8508909c5f",
+  "upstream_selections": {
+    "created_utc": "2026-10-31T08:30:50.602776+00:00",
+    "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+    "focused_file_count": 39,
+    "separate_api_file_count": 3,
+    "URL_test_work_deferred": true,
+    "groups": [
+      {
+        "label": "Selected logical containment",
+        "manifest_sha256": "784d38780a2a3a8501599996b656dba07dcf11a8480d6c2f7c15b68194a6318c",
+        "selection": "Complete three-file upstream logical intrinsic-size containment subgroup, selected before fresh baseline or engine edits.",
+        "rows": [
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-001.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-001.html",
+            "source_sha256": "9df17262309833799b1954d2ab167c4c8b46981d6d61d550b2952a513bc92c28",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/reference/ref-filled-green-100px-square-only.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-002.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-002.html",
+            "source_sha256": "d6345fdd46fccd258c371e19366bbf1644edbe57ae7b9c302008e914cef20fd3",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/reference/ref-filled-green-100px-square-only.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            "source_sha256": "db55ec1d892c1eb3ba1648060736cc856f9a3025b2caa6f64e3417b32be3cb7c",
+            "type": "testharness"
+          }
+        ],
+        "support_pins": {
+          "css/reference/ref-filled-green-100px-square-only.html": "16374b3cb3d9ecd468a0a6bd73977b8613a71623c556a556cb15b555dedfe95b",
+          "css/support/60x60-green.png": "38a9a0ea560a60b9ce79be68126b1e57bbbbcab0c013b9893f4f43fce7ebc3c4",
+          "resources/check-layout-th.js": "b15666105c99548df947b3b9182e78cbadc2871e53f51e26c7c7aa27cf0bef1c",
+          "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+          "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+        }
+      },
+      {
+        "label": "Numbered containment controls",
+        "manifest_sha256": "388397d632d9cd40f54eec086e926e510b9e9a138a57e6f06b8694f5c8768d06",
+        "selection": "Complete numbered 001 through033 neighboring containment cohort frozen before changes. This includes dynamic/controls/content-visibility and is not described as fully supported static containment.",
+        "rows": [
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-001.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-001.html",
+            "source_sha256": "fcdfb81b604244e0c0e7553e54824bc84f9bce9c5bd10695e5d982dcb0d8d79c",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-001-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-002.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-002.html",
+            "source_sha256": "c0a0d9bd49bd0f9a1ba7d4efd3bec7fa91b3cd6fa080dd68316fd849304006a4",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-002-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-003.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-003.html",
+            "source_sha256": "3ede6d93347f64b391d641b3563d0e229674b12c00c826e1114e1c1c5f887e11",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-003-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004.html",
+            "source_sha256": "97d6dc9c0e5bcdf2fe7b73587d4428525e904b11bd88cb93593c03209123ca57",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-005.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-005.html",
+            "source_sha256": "ee178b3786ee51cd83900e4fde0cde29210a58dc0b638f52717334a7df72c3a4",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-006.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-006.html",
+            "source_sha256": "8ddec4191d0716711aa4337c48cfc8ceb322f8a1df84b0cb186d568e15527472",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-006-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-007.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-007.html",
+            "source_sha256": "c669713e5b67573caa6acb1548d38570d473c36d1a16ea7bf2fbe8543a438fe6",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-007-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-008.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-008.html",
+            "source_sha256": "6629d6b357225f459ec33dbb26fb75f8c752a5f26106768f02800083133f3c6c",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-008-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+            "source_sha256": "b12fc722d4967bb6992e1849311b49d6f08c04f40023806fbe3f207ce1ca4384",
+            "type": "testharness"
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010.html",
+            "source_sha256": "9720bc6dfb51a87a4bdd2de9037c093052cd8581983eddf0c1e3a3a24bfe6e0a",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-011.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-011.html",
+            "source_sha256": "3916694be1ba46f49978c2a70f06d286be84836e9772734ed8c6a047e907cc01",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-011-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-012.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-012.html",
+            "source_sha256": "c9f7ba542e9df8a58ea2308486bc359ecf5c5001e5e97ff187debbb068101879",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-012-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-013.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-013.html",
+            "source_sha256": "bbd62920eff32ba4aa0432a0460b27142131748b570df790aa737174bd9a3e0c",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-013-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-014.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-014.html",
+            "source_sha256": "ec089309b36d93f2ff42cc9dcca872c24265192f6169c710bedd50b725908b3a",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-014-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-015.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-015.html",
+            "source_sha256": "12c1ac6aaaf98d2ba3c87c8974bc6b9ff6636284fb5367dcf96b3de1e8d5d380",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-015-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-016.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-016.html",
+            "source_sha256": "0ce3d178650acda80a9bc71f3bd724bcbc4db468bc120c838ff3f81abc6f033d",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-016-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-017.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-017.html",
+            "source_sha256": "400df1fa8d7f81f0678658e15431e6d6cee475000e4f9d91d25214b748c7a6bf",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-017-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-018.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-018.html",
+            "source_sha256": "65b67e82eb16dccc6368eb35a4412ede8a8f228772ae2e3d5013f61666c3fc34",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-018-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-019.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-019.html",
+            "source_sha256": "57efc0a5c1dd838d4415060ccf4279b766c91521f1b22eee2cae73507f2671c4",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-019-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-020.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-020.html",
+            "source_sha256": "665349f1fba0a94c9e37a1426df7cc5cc27e39207af62e33d05da484749a864d",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-020-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-021.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-021.html",
+            "source_sha256": "d2c1eb7d9bc62d7294e3973c097573d8e44e26c9505440bffe952387c214cf64",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-021-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-022.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-022.html",
+            "source_sha256": "0d314dd664f42fc55a6429ffc30d40ded23b230554276f3d26698d53d7f2873d",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-022-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-023.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-023.html",
+            "source_sha256": "f43012c4ba9ff1a618200ca5229cb18daaa2374f6d76276b61024d346a401421",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-023-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-024.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-024.html",
+            "source_sha256": "f655c66bbd11797bb2f8f9cf11a76c2a52455e7c5a720296b43f743479c4e076",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-024-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-025.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-025.html",
+            "source_sha256": "75b9d91b7c113594984602dce5694183d7cb7dfb63072f93d2baed0dc6e5603f",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-025-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-026.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-026.html",
+            "source_sha256": "0e67b3c1d6f6ae54e57c8321dc31662a41bd0057b7f9117631ee3524a8485487",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-026-ref.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-027.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-027.html",
+            "source_sha256": "b6c61aa1b3666b4aefa35afb7b946882d9548669b466e243361ba41162e20c47",
+            "type": "reftest",
+            "references": [
+              {
+                "url": "/css/reference/ref-filled-green-100px-square-only.html",
+                "relation": "=="
+              }
+            ]
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            "source_sha256": "2b29fac058197a6c9cb57e7b870421e44c424f22709a3637e79809e323d4f03e",
+            "type": "testharness"
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+            "source_sha256": "372022faf10f52a601694c2078c21e9734b394b0c04268fd276d058dbe82a328",
+            "type": "testharness"
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            "source_sha256": "ab61e44672815097828d5b89078bd097a2866ca74f6c125c389334c0c20826ee",
+            "type": "testharness"
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            "source_sha256": "0cc696a5e9f8869a1de167eeb2c021f679c3b407d229631b44f1f012ca3e06f9",
+            "type": "testharness"
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+            "source_sha256": "77b4155072b8b01aa70e815d7195f6fc8dced63e23360940eec2644c8ef97287",
+            "type": "testharness"
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-033.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-033.html",
+            "source_sha256": "00ecdcee3bdf05eea6aca8a132900076ff760c427bf6e839ac3bff2cdf5fb656",
+            "type": "testharness"
+          }
+        ],
+        "support_pins": {
+          "common/reftest-wait.js": "d4a7992dfa6020b92a59955753e2e2ba7219047cd2a4ccb1fcd989a64e899b42",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-001-ref.html": "958cddbad4e052a314b5e1fe27b4d38d5eb25c18f0ed316435d07c02e8e9b94f",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-002-ref.html": "592de47721d456b642c9222152f946489620014e85cd0280498c353bd7e93533",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-003-ref.html": "d53532c174a9bf62d81464aa0bb5ef57b8863d0129a10676718a4839f392598d",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004-ref.html": "31b055b21940a214ca68c815e44584759091d7d362d1c6b8d1202be7ccbec018",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-006-ref.html": "02c489fc993782249fe313a4b30e2c90639d654bdbdbec99bd029995b8df4ab5",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-007-ref.html": "649591e336d3ab5ccf3666a8f52788fe63b6d5f2cf3a3a7b1c8684e789ba0d51",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-008-ref.html": "4e080213a04e7d4a9cc9b5be1ffe4f1dacdb038d6bd85f5ffc2b6cbbaf34e686",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010-ref.html": "25f02940173b7a838b60768d0421f6386e38491ea2f3c82c057b000e51ec8287",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-011-ref.html": "a0b096736453298dd2a80629265dae8b1ec58cd786bf4aceda34ef07299fcdf9",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-012-ref.html": "e612ed1990c1dbd19d1b1d4b7adacd62800d6df9b195ad639f2a70bd4241b213",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-013-ref.html": "5bf6fd7e2cf001d8bb6e640540d8332cd6221a09ee2fc2bc232e16a13bb3f665",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-014-ref.html": "c3621036696dd471b168b95a543a1aa677997ce3aeaa19ea5a96db0fdd841d40",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-015-ref.html": "46fe95fe7695a14c5d9724c958db557e4732dd7a2e0189b609d0833de5643eed",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-016-ref.html": "7f65fca3beac4d33aafab710f8a35f589a874efc58e0f435b914e6baf15c4fb6",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-017-ref.html": "9a742f2fcb08ee84fca67fd0eaa6f9bceb38f9419ed9e1a556c86d007df30e5f",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-018-ref.html": "e9580ec8b3c8077c9d669a9bb8da8283035d52fbf7963afcd55600f2c63198b2",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-019-ref.html": "2afa5d195a203ef3e5411849d986a80ef2fa934257eadda999f9596a6d7c0c23",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-020-ref.html": "90712ce89b330b867ed3b57ada5f5d3284945aab4268136adbdb162d52ae663c",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-021-ref.html": "97cce17bec35be6c2770e7cd428134b1dbfc81e922e076d74f29cc4386797e70",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-022-ref.html": "c6d6e4113897e08f8fd852618a38ef42f7821260361db2306c151e4ff9f088bd",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-023-ref.html": "871373433760b09200446e9424043c08645a5923ac35601740a2339cb6ce5fd3",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-024-ref.html": "f76dc93f44b933f12cc3cb2cbf2a6d58e29135e63680c5386f79067387818cc4",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-025-ref.html": "ecf0e4957b56008eb4a2785b5cf29d29facbc85c0ad261555e2585d62f06d589",
+          "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-026-ref.html": "40f70fea67bb0011ad5a5308a7ee2bddfe373227f27ecc44d215b6025144798d",
+          "css/css-sizing/contain-intrinsic-size/resources/dice.png": "75008d58c9f5564824e4bdef69ea6f8b1bae77cbae7d17c933e22c2a096b46bb",
+          "css/reference/ref-filled-green-100px-square-only.html": "16374b3cb3d9ecd468a0a6bd73977b8613a71623c556a556cb15b555dedfe95b",
+          "css/support/60x60-green.png": "38a9a0ea560a60b9ce79be68126b1e57bbbbcab0c013b9893f4f43fce7ebc3c4",
+          "resources/check-layout-th.js": "b15666105c99548df947b3b9182e78cbadc2871e53f51e26c7c7aa27cf0bef1c",
+          "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+          "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+        }
+      },
+      {
+        "label": "Containment parsing",
+        "manifest_sha256": "5e8c795f1fb95977ffabfa2f46237921f6d922058e13000273da924a7ea9191a",
+        "selection": "Complete three-file upstream intrinsic size containment parsing family from nested parsing directory, frozen before baseline and edits.",
+        "rows": [
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "source_sha256": "52b96b3dba602aacfaaa53538a73afa8a213aa0d588f3151823c4d47b019d03f",
+            "type": "testharness"
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "source_sha256": "a71ae4c5d7c0b21d98e92ef691f7cb92f3c5448bed2f133f901270f756f7e5c0",
+            "type": "testharness"
+          },
+          {
+            "url": "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-valid.html",
+            "source_path": "css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-valid.html",
+            "source_sha256": "e6be1ffc2a201397873445cb25f0227a02f5ae73b94dcbbf3ef9eb617c32e8f6",
+            "type": "testharness"
+          }
+        ],
+        "support_pins": {
+          "css/support/computed-testcommon.js": "20bd767e8a8bd9e4857a29aecfd52cad305ed4af1cf73a5064916a8a1d38ab01",
+          "css/support/parsing-testcommon.js": "ac482e1e1908e9b98f8f1c4b2c457ec77ae5ad2baa074205c4b0f7812f4024b5",
+          "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+          "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+        }
+      },
+      {
+        "label": "Separate visibility and observer API controls",
+        "manifest_sha256": "4f3f2c0a63fb3afdadb7b67cc4f59b2b84d1f2af400fabc6466624938a1236ae",
+        "selection": "Complete unmodified checkVisibility file and actual CSSContain hidden IO/RO files030/031; selected before follow-up engine changes. These differ from css-sizing contain-intrinsic-size numbered030/031.",
+        "rows": [
+          {
+            "url": "/css/cssom-view/checkVisibility.html",
+            "source_path": "css/cssom-view/checkVisibility.html",
+            "source_sha256": "be5364b8add798476806693b5096f2b571daf29d06f0e159a8de54ca103c7ec9",
+            "type": "testharness"
+          },
+          {
+            "url": "/css/css-contain/content-visibility/content-visibility-030.html",
+            "source_path": "css/css-contain/content-visibility/content-visibility-030.html",
+            "source_sha256": "414013f9e4333d9f30b0375f6ab298be2ee09513f21441ace1aaac05048cf52b",
+            "type": "testharness"
+          },
+          {
+            "url": "/css/css-contain/content-visibility/content-visibility-031.html",
+            "source_path": "css/css-contain/content-visibility/content-visibility-031.html",
+            "source_sha256": "3c683b1ff5ef61deaca78b0d614790f3f76cf197d480695240ef849e31a29397",
+            "type": "testharness"
+          }
+        ],
+        "support_pins": {
+          "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+          "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+        }
+      }
+    ],
+    "scope": "Exact frozen file identities. Outcomes must be joined to the final qualified candidate receipts; this inventory alone makes no pass claim."
+  },
+  "reference_version": "156.0.8078.80",
+  "root_technical_acceptance": {
+    "accepted": true,
+    "scope": "Scoped non-URL engine improvement; no global98 or Chromium-parity claim",
+    "technical_review_sha256": "aa0068187a3ddf7f4006c89543acd05a92b1a442f46ed9b7210042a7aa79f4af",
+    "recorded_utc": "2026-10-31T10:42:57.095102+00:00"
+  },
+  "technical_session": {
+    "started_utc": "2026-10-31T07:00:12+00:00",
+    "finished_utc": "2026-10-31T10:41:46.236056+00:00",
+    "duration_minutes": 221.5706009,
+    "post_task_delivery_time_separate": true
+  },
+  "artifacts": {
+    "interactive_demo": {
+      "file": "gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html",
+      "source_export_path": "examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html",
+      "sha256": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
+      "native_validation_actual_exit": 0,
+      "native_validation_evidence": "gpt-6-astra-pro-builtin-rubywebterm-live-demo-evidence.json",
+      "viewer_browser_note": "The interactive page runs in the browser opening it. Open it in Lumen to exercise the Lumen engine. Recorded native234 validation is separate from the live values shown in any other browser.",
+      "outside_WPT_scoring": true
+    },
+    "showcase": {
+      "file": "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase.mp4",
+      "sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+      "bytes": 556783,
+      "duration_seconds": 40,
+      "width": 960,
+      "height": 720,
+      "fps": 24,
+      "codec": "H264",
+      "actual_CTO_visual_review_passed": true,
+      "content": "Verified scoped result cards; no captured user display or generated imagery."
+    },
+    "source_archive": {
+      "file": "src.tar.gz",
+      "root": "lumen-linux-source234/",
+      "includes_reviewed_public_git_bundle": true
+    },
+    "public_git_bundle": {
+      "file": "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-source-i234.bundle",
+      "private_working_history_included": false
+    },
+    "binary_package": {
+      "file": "gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-x86_64-i234.tar.gz",
+      "executable_file": "lumen",
+      "executable_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+      "exact_tested_bytes": true,
+      "standalone_portability_claimed": false
+    }
+  }
+}

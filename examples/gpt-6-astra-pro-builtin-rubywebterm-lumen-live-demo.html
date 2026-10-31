@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en" class="reftest-wait">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lumen Linux — live engine demonstration</title>
+<style>
+* { box-sizing:border-box; }
+html,body { margin:0; padding:0; }
+body { width:800px; max-width:100%; background:#eaf0f6; color:#172c46; font-family:Arial,sans-serif; }
+header { height:78px; padding:12px 20px; background:#11233c; color:white; position:relative; }
+h1 { font-size:30px; line-height:34px; margin:0; font-weight:700; }
+header p { font-size:16px; line-height:20px; margin:2px 0 0; color:#c7d9ec; }
+.build { position:absolute; right:20px; top:21px; font-size:17px; line-height:26px; padding:0 9px; border:1px solid #7894b5; border-radius:5px; }
+main { height:462px; padding:12px 18px; }
+.panels { display:flex; gap:12px; height:290px; }
+.panel { flex:1; min-width:0; padding:12px; border:1px solid #cfdae7; border-radius:9px; background:white; }
+h2 { font-size:18px; line-height:23px; margin:0; }
+.description { font-size:17px; line-height:21px; margin:3px 0 9px; color:#52657a; }
+.stage { width:100%; height:84px; background:#eef4fb; border:1px solid #d5e1ef; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+#intrinsic-box { box-sizing:content-box; display:inline-block; contain:size; contain-intrinsic-inline-size:64px; contain-intrinsic-block-size:28px; padding:4px; border:2px solid #174d87; background:#9fc3e9; overflow:hidden; }
+#intrinsic-content { width:160px; height:54px; background:#3278bc; }
+.value { font-size:28px; line-height:34px; font-weight:700; margin-top:7px; color:#183f68; white-space:nowrap; }
+.caption { font-size:17px; line-height:21px; margin:0; color:#52657a; min-height:21px; }
+.detail { font-size:15px; line-height:19px; margin:2px 0 0; color:#52657a; min-height:19px; }
+.controls { display:flex; gap:6px; margin-top:9px; }
+button { flex:1; font-family:Arial,sans-serif; font-size:15px; line-height:18px; padding:5px 4px; color:#173f69; border:1px solid #aec4db; background:#edf4fc; border-radius:4px; cursor:pointer; }
+button:focus { outline:2px solid #3278bc; }
+#scrollbox { width:210px; height:80px; overflow:hidden; border:2px solid #26756c; background:#deeee9; }
+#scroll-content { position:relative; width:420px; height:300px; background:#d3e7e2; }
+.tile { position:absolute; width:210px; height:150px; font-size:30px; line-height:60px; padding:12px; color:white; }
+.tile-a { left:0; top:0; background:#337c74; }
+.tile-b { left:210px; top:0; background:#4e9c91; }
+.tile-c { left:0; top:150px; background:#5ca697; }
+.tile-d { left:210px; top:150px; background:#2e6d66; }
+#opacity-parent { width:100%; height:100%; opacity:0; display:flex; align-items:center; justify-content:center; }
+#visibility-target { width:130px; height:46px; line-height:44px; text-align:center; background:#f5d483; border:1px solid #a17922; font-size:23px; color:#5d4615; }
+#visibility-stage { background:#fcf7eb; border-color:#e9dcb9; }
+.events { height:134px; margin-top:12px; padding:9px 12px; border:1px solid #cfdae7; border-radius:9px; background:white; }
+.events-heading { display:flex; justify-content:space-between; align-items:baseline; }
+.events-heading p { font-size:14px; margin:0; color:#52657a; }
+.event-row { display:flex; font-size:17px; line-height:23px; white-space:nowrap; }
+.event-head { font-size:14px; line-height:18px; color:#52657a; margin-top:3px; }
+.event-row span:nth-child(1) { width:185px; }
+.event-row span:nth-child(2) { width:125px; }
+.event-row span:nth-child(3) { width:145px; }
+.event-row span:nth-child(4) { width:95px; }
+.event-row span:nth-child(5) { flex:1; }
+footer { height:60px; padding:10px 18px; background:#0c1523; color:white; display:flex; justify-content:space-between; align-items:center; }
+.credit { font-size:16px; line-height:20px; font-weight:700; }
+.credit small { display:block; font-size:14px; line-height:18px; font-weight:400; color:#d9e5f1; }
+.report { text-align:right; font-size:14px; line-height:18px; }
+.report a { color:#d9eaff; text-decoration:underline; }
+.report-label { color:#a8bed5; font-size:12px; }
+#error { display:none; font-size:15px; line-height:20px; color:#8b1e23; background:#ffe7e7; padding:8px; }
+@media (max-width:700px) {
+  body { width:100%; }
+  header { height:auto; min-height:100px; padding-right:20px; }
+  .build { position:static; display:inline-block; margin-top:7px; }
+  main { height:auto; }
+  .panels { display:block; height:auto; }
+  .panel { margin-bottom:12px; min-height:290px; }
+  .events { height:auto; min-height:134px; overflow:auto; }
+  .event-row { min-width:680px; }
+  .events-heading { display:block; }
+  footer { height:auto; min-height:90px; display:block; }
+  .report { text-align:left; margin-top:8px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Lumen Linux</h1>
+  <p>Live browser APIs · authored demonstration outside WPT scoring</p>
+  <div class="build">Candidate 234</div>
+</header>
+<main>
+  <div id="error"></div>
+  <section class="panels">
+    <article class="panel">
+      <h2>1. Containment</h2>
+      <p class="description">Logical intrinsic axes</p>
+      <div class="stage"><div id="intrinsic-box"><div id="intrinsic-content"></div></div></div>
+      <div class="value" id="containment-value">…</div>
+      <p class="caption">Actual outer box</p>
+      <p class="detail" id="containment-detail">Reading native layout</p>
+      <div class="controls"><button type="button" id="contain-toggle">Content size</button><button type="button" id="axis-toggle">Vertical axis</button></div>
+    </article>
+    <article class="panel">
+      <h2>2. Scroll retention</h2>
+      <p class="description">Hide, then reveal</p>
+      <div class="stage">
+        <div id="scrollbox"><div id="scroll-content">
+          <div class="tile tile-a">A</div><div class="tile tile-b">B</div>
+          <div class="tile tile-c">C</div><div class="tile tile-d">D</div>
+        </div></div>
+      </div>
+      <div class="value" id="scroll-value">…</div>
+      <p class="caption">Actual left / top offsets</p>
+      <p class="detail" id="scroll-detail">Recording hide and reveal</p>
+      <div class="controls"><button type="button" id="hidden-toggle">Hide contents</button><button type="button" id="scroll-reset">Reset offsets</button></div>
+    </article>
+    <article class="panel">
+      <h2>3. Visibility options</h2>
+      <p class="description">Zero-opacity ancestor</p>
+      <div class="stage" id="visibility-stage"><div id="opacity-parent"><div id="visibility-target">Target</div></div></div>
+      <div class="value" id="visibility-value">…</div>
+      <p class="caption">checkVisibility + opacity</p>
+      <p class="detail" id="visibility-detail">Reading actual API results</p>
+      <div class="controls"><button type="button" id="opacity-toggle">Opacity 1</button><button type="button" id="visibility-toggle">Hide target</button></div>
+    </article>
+  </section>
+  <section class="events">
+    <div class="events-heading"><h2>Actual page lifecycle</h2><p>Events captured inside native callbacks</p></div>
+    <div class="event-row event-head"><span>Event</span><span>Target</span><span>Current target</span><span>Trusted</span><span>Persisted</span></div>
+    <div id="event-log"></div>
+  </section>
+</main>
+<footer>
+  <div class="credit">GPT-6 Astra Pro<small>Built-in agents + RubyWebTerm</small></div>
+  <div class="report"><div class="report-label">FINAL REPORT METADATA · SEPARATE FROM LIVE READINGS</div><a id="report-link" href="#report-metadata">Final report pending</a><div id="report-metadata">Iteration 8 · candidate 234</div></div>
+</footer>
+<script>
+(function () {
+  'use strict';
+  /* Filled only from the final qualification receipt, never from this demo. */
+  const REPORT_METADATA = {qualified:true,iteration:8,candidate:234,selectedContainmentScore:100,reportURL:'https://ecooxai.github.io/lumen/'};
+  const byId = id => document.getElementById(id);
+  if (REPORT_METADATA.qualified) {
+    const link = byId('report-link');
+    link.href = REPORT_METADATA.reportURL;
+    link.textContent = 'Selected static containment: ' + REPORT_METADATA.selectedContainmentScore + '/100';
+    byId('report-metadata').textContent = 'Iteration ' + REPORT_METADATA.iteration + ' · candidate ' + REPORT_METADATA.candidate;
+  }
+  const intrinsic = byId('intrinsic-box'), scroller = byId('scrollbox');
+  const opacityParent = byId('opacity-parent'), target = byId('visibility-target');
+  const events = [], scrollHistory = [];
+  let ready = false, failed = false, contained = true, vertical = false, hidden = false, measurements = null;
+  const number = value => Math.round(value * 10) / 10;
+  const identify = value => value === window ? 'Window' : value === document ? 'Document' : value && value.nodeName ? value.nodeName : String(value);
+  function fail(error) {
+    failed = true; ready = false;
+    byId('error').style.display = 'block';
+    byId('error').textContent = 'Demo could not settle: ' + String(error);
+    document.documentElement.setAttribute('data-lumen-live-demo-ready','FAIL');
+    document.documentElement.classList.remove('reftest-wait');
+    console.log('DEMO_ERROR ' + String(error));
+    console.log('RESULTS lumen-live-demo:FAIL');
+  }
+  function scrollObservation(label) {
+    const observation = {label,left:scroller.scrollLeft,top:scroller.scrollTop,width:scroller.scrollWidth,height:scroller.scrollHeight};
+    scrollHistory.push(observation);
+    return observation;
+  }
+  function update() {
+    const rect = intrinsic.getBoundingClientRect();
+    const opacity = getComputedStyle(opacityParent).opacity;
+    const ownVisibility = getComputedStyle(target).visibility;
+    measurements = {
+      containment:{width:number(rect.width),height:number(rect.height),contain:getComputedStyle(intrinsic).contain,writingMode:getComputedStyle(intrinsic).writingMode},
+      scroll:{left:scroller.scrollLeft,top:scroller.scrollTop,width:scroller.scrollWidth,height:scroller.scrollHeight,contentVisibility:getComputedStyle(scroller).contentVisibility},
+      visibility:{default:target.checkVisibility(),opacity:target.checkVisibility({opacityProperty:true}),visibility:target.checkVisibility({visibilityProperty:true}),ancestorOpacity:opacity,ownVisibility}
+    };
+    byId('containment-value').textContent = measurements.containment.width + ' × ' + measurements.containment.height + ' px';
+    byId('containment-detail').textContent = measurements.containment.contain + ' · ' + measurements.containment.writingMode;
+    byId('scroll-value').textContent = measurements.scroll.left + ' / ' + measurements.scroll.top + ' px';
+    const last = scrollHistory.slice(-2);
+    byId('scroll-detail').textContent = last.map(item => item.label + ' ' + item.left + '/' + item.top).join(' → ');
+    byId('visibility-value').textContent = String(measurements.visibility.opacity);
+    byId('visibility-detail').textContent = 'Default ' + measurements.visibility.default + ' · visibility ' + measurements.visibility.visibility;
+    window.__lumenLiveDemo = {ready,measurements,events,scrollHistory,report:REPORT_METADATA,scope:'Authored live demonstration; not a WPT result'};
+  }
+  function record(event) {
+    const row = {type:event.type,target:identify(event.target),currentTarget:identify(event.currentTarget),phase:event.eventPhase,trusted:event.isTrusted,bubbles:event.bubbles,cancelable:event.cancelable,composed:event.composed,persisted:'persisted' in event ? event.persisted : null};
+    events.push(row);
+    const line = document.createElement('div'); line.className = 'event-row';
+    for (const value of [row.type,row.target,row.currentTarget,String(row.trusted),row.persisted === null ? '—' : String(row.persisted)]) {
+      const cell = document.createElement('span'); cell.textContent = value; line.appendChild(cell);
+    }
+    byId('event-log').appendChild(line);
+    console.log('DEMO_EVENT ' + JSON.stringify(row));
+  }
+  document.addEventListener('DOMContentLoaded',record);
+  window.addEventListener('load',record);
+  window.addEventListener('pageshow',event => {
+    record(event);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      try {
+        if (failed) return;
+        update();
+        ready = true;
+        window.__lumenLiveDemo.ready = true;
+        document.documentElement.setAttribute('data-lumen-live-demo-ready','PASS');
+        document.documentElement.classList.remove('reftest-wait');
+        console.log('DEMO_MEASUREMENTS ' + JSON.stringify(measurements));
+        /* Transport completion only: no expected geometry or WPT score is inferred. */
+        console.log('RESULTS lumen-live-demo:PASS');
+      } catch (error) { fail(error); }
+    }));
+  });
+  byId('contain-toggle').onclick = () => {
+    contained = !contained; intrinsic.style.contain = contained ? 'size' : 'none';
+    byId('contain-toggle').textContent = contained ? 'Content size' : 'Contain size'; update();
+  };
+  byId('axis-toggle').onclick = () => {
+    vertical = !vertical; intrinsic.style.writingMode = vertical ? 'vertical-rl' : 'horizontal-tb';
+    byId('axis-toggle').textContent = vertical ? 'Horizontal axis' : 'Vertical axis'; update();
+  };
+  byId('hidden-toggle').onclick = () => {
+    hidden = !hidden; scroller.style.contentVisibility = hidden ? 'hidden' : 'visible';
+    scrollObservation(hidden ? 'Hidden' : 'Revealed');
+    byId('hidden-toggle').textContent = hidden ? 'Reveal contents' : 'Hide contents'; update();
+  };
+  byId('scroll-reset').onclick = () => {
+    hidden = false; scroller.style.contentVisibility = 'visible'; scroller.getBoundingClientRect();
+    scroller.scrollLeft = 80; scroller.scrollTop = 90; scrollObservation('Reset');
+    byId('hidden-toggle').textContent = 'Hide contents'; update();
+  };
+  byId('opacity-toggle').onclick = () => {
+    const zero = getComputedStyle(opacityParent).opacity === '0'; opacityParent.style.opacity = zero ? '1' : '0';
+    byId('opacity-toggle').textContent = zero ? 'Opacity 0' : 'Opacity 1'; update();
+  };
+  byId('visibility-toggle').onclick = () => {
+    const isHidden = getComputedStyle(target).visibility === 'hidden'; target.style.visibility = isHidden ? 'visible' : 'hidden';
+    byId('visibility-toggle').textContent = isHidden ? 'Hide target' : 'Show target'; update();
+  };
+  try {
+    scroller.getBoundingClientRect(); scroller.scrollLeft = 80; scroller.scrollTop = 90;
+    scrollObservation('Initial');
+    scroller.style.contentVisibility = 'hidden'; scrollObservation('Hidden');
+    scroller.style.contentVisibility = 'visible'; scrollObservation('Revealed');
+    update();
+  } catch (error) { fail(error); }
+})();
+</script>
+</body>
+</html>
