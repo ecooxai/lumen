@@ -1,0 +1,534 @@
+{
+  "candidate": 234,
+  "created_utc": "2026-10-31T10:13:56.256166+00:00",
+  "manifest_sha256": "4f3f2c0a63fb3afdadb7b67cc4f59b2b84d1f2af400fabc6466624938a1236ae",
+  "scope": "All three unchanged upstream files and all23 registered assertions; auto-related residuals remain visible",
+  "current": {
+    "files": 3,
+    "fully_passing_files": 2,
+    "assertions": {
+      "PASS": 18,
+      "FAIL": 5
+    },
+    "total_assertions": 23,
+    "harness_statuses": {
+      "OK": 3
+    }
+  },
+  "comparisons": {
+    "lumen226": {
+      "baseline": {
+        "files": 3,
+        "fully_passing_files": 0,
+        "assertions": {
+          "FAIL": 13,
+          "PASS": 10
+        },
+        "total_assertions": 23,
+        "harness_statuses": {
+          "OK": 3
+        }
+      },
+      "gains": [
+        {
+          "identity": [
+            "/css/css-contain/content-visibility/content-visibility-030.html",
+            "IntersectionObserver interactions",
+            0
+          ],
+          "before": [
+            "IntersectionObserver interactions",
+            "FAIL",
+            "assert_equals: runStep2 expected 1 but got 0"
+          ],
+          "after": [
+            "IntersectionObserver interactions",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-contain/content-visibility/content-visibility-031.html",
+            "ResizeObserver skipped while hidden",
+            0
+          ],
+          "before": [
+            "ResizeObserver skipped while hidden",
+            "FAIL",
+            "assert_false: ResizeObsever should not run during while unrendered expected false got true"
+          ],
+          "after": [
+            "ResizeObserver skipped while hidden",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on content-visibility:hidden child after forced layout update.",
+            0
+          ],
+          "before": [
+            "checkVisibility on content-visibility:hidden child after forced layout update.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ],
+          "after": [
+            "checkVisibility on content-visibility:hidden child after forced layout update.",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on content-visibility:hidden element.",
+            0
+          ],
+          "before": [
+            "checkVisibility on content-visibility:hidden element.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ],
+          "after": [
+            "checkVisibility on content-visibility:hidden element.",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on element slotted in content-visibility: hidden shadow host.",
+            0
+          ],
+          "before": [
+            "checkVisibility on element slotted in content-visibility: hidden shadow host.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ],
+          "after": [
+            "checkVisibility on element slotted in content-visibility: hidden shadow host.",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on element slotted in opacity: 0; shadow host.",
+            0
+          ],
+          "before": [
+            "checkVisibility on element slotted in opacity: 0; shadow host.",
+            "FAIL",
+            "assert_false: checkOpacity: true expected false got true"
+          ],
+          "after": [
+            "checkVisibility on element slotted in opacity: 0; shadow host.",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on opacity:0 element.",
+            0
+          ],
+          "before": [
+            "checkVisibility on opacity:0 element.",
+            "FAIL",
+            "assert_false: checkOpacity:true expected false got true"
+          ],
+          "after": [
+            "checkVisibility on opacity:0 element.",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on visibility:hidden element.",
+            0
+          ],
+          "before": [
+            "checkVisibility on visibility:hidden element.",
+            "FAIL",
+            "assert_false: checkVisibilityCSS:true expected false got true"
+          ],
+          "after": [
+            "checkVisibility on visibility:hidden element.",
+            "PASS",
+            null
+          ]
+        }
+      ],
+      "prior_pass_losses": [],
+      "missing_identities": [],
+      "added_identities": [],
+      "prior_whole_file_losses": [],
+      "harness_changes": []
+    },
+    "lumen227": {
+      "baseline": {
+        "files": 3,
+        "fully_passing_files": 0,
+        "assertions": {
+          "FAIL": 13,
+          "PASS": 10
+        },
+        "total_assertions": 23,
+        "harness_statuses": {
+          "OK": 3
+        }
+      },
+      "gains": [
+        {
+          "identity": [
+            "/css/css-contain/content-visibility/content-visibility-030.html",
+            "IntersectionObserver interactions",
+            0
+          ],
+          "before": [
+            "IntersectionObserver interactions",
+            "FAIL",
+            "assert_equals: runStep2 expected 1 but got 0"
+          ],
+          "after": [
+            "IntersectionObserver interactions",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-contain/content-visibility/content-visibility-031.html",
+            "ResizeObserver skipped while hidden",
+            0
+          ],
+          "before": [
+            "ResizeObserver skipped while hidden",
+            "FAIL",
+            "assert_false: ResizeObsever should not run during while unrendered expected false got true"
+          ],
+          "after": [
+            "ResizeObserver skipped while hidden",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on content-visibility:hidden child after forced layout update.",
+            0
+          ],
+          "before": [
+            "checkVisibility on content-visibility:hidden child after forced layout update.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ],
+          "after": [
+            "checkVisibility on content-visibility:hidden child after forced layout update.",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on content-visibility:hidden element.",
+            0
+          ],
+          "before": [
+            "checkVisibility on content-visibility:hidden element.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ],
+          "after": [
+            "checkVisibility on content-visibility:hidden element.",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on element slotted in content-visibility: hidden shadow host.",
+            0
+          ],
+          "before": [
+            "checkVisibility on element slotted in content-visibility: hidden shadow host.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ],
+          "after": [
+            "checkVisibility on element slotted in content-visibility: hidden shadow host.",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on element slotted in opacity: 0; shadow host.",
+            0
+          ],
+          "before": [
+            "checkVisibility on element slotted in opacity: 0; shadow host.",
+            "FAIL",
+            "assert_false: checkOpacity: true expected false got true"
+          ],
+          "after": [
+            "checkVisibility on element slotted in opacity: 0; shadow host.",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on opacity:0 element.",
+            0
+          ],
+          "before": [
+            "checkVisibility on opacity:0 element.",
+            "FAIL",
+            "assert_false: checkOpacity:true expected false got true"
+          ],
+          "after": [
+            "checkVisibility on opacity:0 element.",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on visibility:hidden element.",
+            0
+          ],
+          "before": [
+            "checkVisibility on visibility:hidden element.",
+            "FAIL",
+            "assert_false: checkVisibilityCSS:true expected false got true"
+          ],
+          "after": [
+            "checkVisibility on visibility:hidden element.",
+            "PASS",
+            null
+          ]
+        }
+      ],
+      "prior_pass_losses": [],
+      "missing_identities": [],
+      "added_identities": [],
+      "prior_whole_file_losses": [],
+      "harness_changes": []
+    },
+    "chrome156": {
+      "baseline": {
+        "files": 3,
+        "fully_passing_files": 3,
+        "assertions": {
+          "PASS": 23
+        },
+        "total_assertions": 23,
+        "harness_statuses": {
+          "OK": 3
+        }
+      },
+      "gains": [],
+      "prior_pass_losses": [
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on content-visibility:auto element which is outside the viewport.",
+            0
+          ],
+          "before": [
+            "checkVisibility on content-visibility:auto element which is outside the viewport.",
+            "PASS",
+            null
+          ],
+          "after": [
+            "checkVisibility on content-visibility:auto element which is outside the viewport.",
+            "FAIL",
+            "assert_false: contentVisibilityAuto: true expected false got true"
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+            0
+          ],
+          "before": [
+            "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+            "PASS",
+            null
+          ],
+          "after": [
+            "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on element not assigned to a slot.",
+            0
+          ],
+          "before": [
+            "checkVisibility on element not assigned to a slot.",
+            "PASS",
+            null
+          ],
+          "after": [
+            "checkVisibility on element not assigned to a slot.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on element not assigned to the only named slot.",
+            0
+          ],
+          "before": [
+            "checkVisibility on element not assigned to the only named slot.",
+            "PASS",
+            null
+          ],
+          "after": [
+            "checkVisibility on element not assigned to the only named slot.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on option and optgroup elements in a list box.",
+            0
+          ],
+          "before": [
+            "checkVisibility on option and optgroup elements in a list box.",
+            "PASS",
+            null
+          ],
+          "after": [
+            "checkVisibility on option and optgroup elements in a list box.",
+            "FAIL",
+            "assert_true: option expected true got false"
+          ]
+        }
+      ],
+      "missing_identities": [],
+      "added_identities": [],
+      "prior_whole_file_losses": [
+        "/css/cssom-view/checkVisibility.html"
+      ],
+      "harness_changes": []
+    }
+  },
+  "result_sha256": "8a069d7c560623bc9551df743e6b4e9ae14e43b26bb5130e4f4493f1eab54583",
+  "auditor_sha256": "f0254669614ed8c56242d4767111e63915092f77e0f8695be96fb1c7df21a826",
+  "remaining_failures": [
+    {
+      "identity": [
+        "/css/cssom-view/checkVisibility.html",
+        "checkVisibility on content-visibility:auto element which is outside the viewport.",
+        0
+      ],
+      "result": [
+        "checkVisibility on content-visibility:auto element which is outside the viewport.",
+        "FAIL",
+        "assert_false: contentVisibilityAuto: true expected false got true"
+      ]
+    },
+    {
+      "identity": [
+        "/css/cssom-view/checkVisibility.html",
+        "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+        0
+      ],
+      "result": [
+        "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+        "FAIL",
+        "assert_false: expected false got true"
+      ]
+    },
+    {
+      "identity": [
+        "/css/cssom-view/checkVisibility.html",
+        "checkVisibility on element not assigned to a slot.",
+        0
+      ],
+      "result": [
+        "checkVisibility on element not assigned to a slot.",
+        "FAIL",
+        "assert_false: expected false got true"
+      ]
+    },
+    {
+      "identity": [
+        "/css/cssom-view/checkVisibility.html",
+        "checkVisibility on element not assigned to the only named slot.",
+        0
+      ],
+      "result": [
+        "checkVisibility on element not assigned to the only named slot.",
+        "FAIL",
+        "assert_false: expected false got true"
+      ]
+    },
+    {
+      "identity": [
+        "/css/cssom-view/checkVisibility.html",
+        "checkVisibility on option and optgroup elements in a list box.",
+        0
+      ],
+      "result": [
+        "checkVisibility on option and optgroup elements in a list box.",
+        "FAIL",
+        "assert_true: option expected true got false"
+      ]
+    }
+  ],
+  "lifecycle": {
+    "runner_exit_valid": true,
+    "inner_returncode": 0,
+    "guard_counts": {
+      "started_at_private_gate": 3,
+      "constructor_verified_and_acknowledged": 3,
+      "author_url_released": 3,
+      "exited": 3
+    },
+    "actual_exit_codes": {
+      "0": 3
+    },
+    "all_profiles_removed": true,
+    "cleanup_threads_remaining": [],
+    "runner_exception": null,
+    "pins_unchanged": true,
+    "source_unchanged": true,
+    "git_unchanged": true,
+    "monitor_returncodes": [
+      0,
+      0
+    ],
+    "lifecycle_and_provenance_valid": true,
+    "receipt_sha256": "1b320a0212744623a611d52dd6243f104cd2084bf5e736d14849bb068c5728b2",
+    "audit_sha256": "b2adb191cb27061f01311e1e5859512ddaac15fb841c979d82f622eea12011af"
+  },
+  "exact_reference_identities": true,
+  "preservation_valid": true,
+  "all_three_files_complete": false
+}

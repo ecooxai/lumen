@@ -1,0 +1,119 @@
+{
+  "created_utc": "2026-10-31T10:32:18.911140+00:00",
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "scope": "Same frozen640 non-URL files; preserve accepted226 and every newly demonstrated231 pass. Added registration is disclosed as new coverage, not a recovered before failure.",
+  "comparison_candidate": 231,
+  "baseline231": {
+    "files": 640,
+    "fully_passing_files": 416,
+    "assertions": {
+      "PASS": 9246,
+      "FAIL": 1256,
+      "TIMEOUT": 15,
+      "NOTRUN": 23
+    },
+    "total_assertions": 10540,
+    "harness_statuses": {
+      "OK": 624,
+      "TIMEOUT": 15,
+      "ERROR": 1
+    }
+  },
+  "current": {
+    "files": 640,
+    "fully_passing_files": 417,
+    "assertions": {
+      "PASS": 9249,
+      "FAIL": 1255,
+      "TIMEOUT": 13,
+      "NOTRUN": 23
+    },
+    "total_assertions": 10540,
+    "harness_statuses": {
+      "OK": 625,
+      "TIMEOUT": 14,
+      "ERROR": 1
+    }
+  },
+  "required_prior_pass_identities": 9246,
+  "required_prior_fully_passing_urls": 416,
+  "prior_pass_losses": [],
+  "prior_fully_passing_file_losses": [],
+  "prior_harness_regressions": [],
+  "harness_changes": [
+    {
+      "url": "/html/syntax/parsing/the-end.html",
+      "before": "TIMEOUT",
+      "after": "OK"
+    }
+  ],
+  "common_nonpass_to_pass": [
+    {
+      "identity": [
+        "/html/syntax/parsing/the-end.html",
+        "load",
+        0
+      ],
+      "before": [
+        "load",
+        "FAIL",
+        "assert_equals: target should be document expected Document node with 2 children but got object \"[object Window]\""
+      ],
+      "after": [
+        "load",
+        "PASS",
+        null
+      ]
+    },
+    {
+      "identity": [
+        "/html/syntax/parsing/the-end.html",
+        "order",
+        0
+      ],
+      "before": [
+        "order",
+        "TIMEOUT",
+        "Test timed out"
+      ],
+      "after": [
+        "order",
+        "PASS",
+        null
+      ]
+    },
+    {
+      "identity": [
+        "/html/syntax/parsing/the-end.html",
+        "pageshow",
+        0
+      ],
+      "before": [
+        "pageshow",
+        "TIMEOUT",
+        "Test timed out"
+      ],
+      "after": [
+        "pageshow",
+        "PASS",
+        null
+      ]
+    }
+  ],
+  "missing_identities": [],
+  "added_identities": [],
+  "whole_file_gains": [
+    "/html/syntax/parsing/the-end.html"
+  ],
+  "original226_union_preservation_accepted": true,
+  "source_binding_and_lifecycle_accepted": true,
+  "preservation_through231_accepted": true,
+  "result_sha256": "4ffe2d23b4cb14ecb718486ba6a47e2e7bc5286919eac38b5e424f8c208c8ba4",
+  "baseline_result_sha256": "2f5b8445e81e545006c26db3ee4418537f26feed2b1d1f8bbf5f098315332d38",
+  "pins_sha256": "93c09f58afbfb44a81b1d204b6f3fd5c63a1e7190b51074823cee4355d2fe406",
+  "original_union_sha256": "bbdc0cd6a2585c69415bb54b385234b55d375f5147622667c47eca085527ad90",
+  "current_source_binding_sha256": "f51dc8a74d70c9c3c4d9900f57df55b796d2b2049a094dfb129115953260dc2d",
+  "auditor_sha256": "666076029da49855a687bbf06dc4fb8ba4f7f41aef33af9c411d6c0e9c38933e"
+}

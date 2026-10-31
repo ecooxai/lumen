@@ -1,0 +1,223 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "accepted": true,
+  "reviewed_utc": "2026-10-31T10:40:46.559005+00:00",
+  "auditor_sha256": "38576eeef01d56819a81599ed9ca996984c10a39335a179b723c4aa136fca05c",
+  "analysis_sha256": "7652f1243f998f90d5ba99129927e876859d5f0e6a9a751b0474138b8cc312d3",
+  "policy_sha256": "c6a5b649b67182f69bb293bcfbcff889f718130ad58946dc0ff24e11d16f4f0e",
+  "runs": {
+    "lumen226": {
+      "accepted": true,
+      "receipt_sha256": "f2b77aec565e92a79c640954e481f814c6f639e4a5a16e6277dae36b26e75f7c",
+      "resource_scope": "Lumen native process tree",
+      "actual_root_pid": 2943430,
+      "actual_sample_count": 16,
+      "checks_passed": 10,
+      "checksum": 21144,
+      "exit_evidence": {
+        "native_exit_code": 0,
+        "profile_removed": true,
+        "lifecycle": "Supported fixture ends completed work with owned SIGTERM; Lumen exits cleanly with0."
+      }
+    },
+    "lumen234": {
+      "accepted": true,
+      "receipt_sha256": "5eb2e0737add1e1ae22d05d1154f46acedc1fca84a526b7e4344f8dc6c29c770",
+      "resource_scope": "Lumen native process tree",
+      "actual_root_pid": 2943977,
+      "actual_sample_count": 16,
+      "checks_passed": 10,
+      "checksum": 21144,
+      "exit_evidence": {
+        "native_exit_code": 0,
+        "profile_removed": true,
+        "lifecycle": "Supported fixture ends completed work with owned SIGTERM; Lumen exits cleanly with0."
+      }
+    },
+    "chromium156": {
+      "accepted": true,
+      "receipt_sha256": "14fd481a9d254e2fff923031540302b8a2e1f2b635610bc22ec39459b8dc7c26",
+      "resource_scope": "Actual pinned Chromium browser root plus its descendants; ChromeDriver excluded",
+      "actual_root_pid": 2944993,
+      "actual_sample_count": 17,
+      "checks_passed": 10,
+      "checksum": 21144,
+      "exit_evidence": {
+        "webdriver_delete_reported_error": false,
+        "owned_identity_count": 15,
+        "fallback_cleanup_signals": 0,
+        "remaining_same_identity_count": 0,
+        "chromium_os_exit_status": "Not exposed by unchanged supported public adapter; no OS-exit0 claim.",
+        "browser_only_identity": {
+          "pid": 2944993,
+          "start_ticks": 15943642
+        },
+        "browser_only_profile_removed": true
+      }
+    }
+  },
+  "policy_investigation_flags": {
+    "fixed_work_CPU": false,
+    "late_idle_CPU": false,
+    "sampled_RSS": false,
+    "sampled_PSS": false
+  },
+  "public_phase_rows": [
+    {
+      "browser": "Lumen226",
+      "phase": "idle-before",
+      "cpu_seconds": 0.04001294136047363,
+      "cpu_covered_seconds": 4.001827001571655,
+      "phase_duration_seconds": 5.0,
+      "cpu_intervals": 4,
+      "rss_peak_mib": 146.506,
+      "rss_samples": 5,
+      "pss_peak_mib": 131.247,
+      "pss_samples": 1
+    },
+    {
+      "browser": "Lumen226",
+      "phase": "fixed-work",
+      "cpu_seconds": 0.27027759360790254,
+      "cpu_covered_seconds": 4.003840923309326,
+      "phase_duration_seconds": 5.301000118255615,
+      "cpu_intervals": 4,
+      "rss_peak_mib": 166.724,
+      "rss_samples": 5,
+      "pss_peak_mib": 151.539,
+      "pss_samples": 1
+    },
+    {
+      "browser": "Lumen226",
+      "phase": "idle-after",
+      "cpu_seconds": 0.030026860237121582,
+      "cpu_covered_seconds": 4.000319957733154,
+      "phase_duration_seconds": 5.0,
+      "cpu_intervals": 4,
+      "rss_peak_mib": 169.607,
+      "rss_samples": 5,
+      "pss_peak_mib": 154.521,
+      "pss_samples": 1
+    },
+    {
+      "browser": "Lumen226",
+      "phase": "whole-fixture-window",
+      "cpu_seconds": 0.48000348853588104,
+      "cpu_covered_seconds": 14.001450061798096,
+      "phase_duration_seconds": 15.302000045776367,
+      "cpu_intervals": 14,
+      "rss_peak_mib": 169.607,
+      "rss_samples": 15,
+      "pss_peak_mib": 154.521,
+      "pss_samples": 3
+    },
+    {
+      "browser": "Lumen234",
+      "phase": "idle-before",
+      "cpu_seconds": 0.03997385978698731,
+      "cpu_covered_seconds": 4.002544164657593,
+      "phase_duration_seconds": 5.001000165939331,
+      "cpu_intervals": 4,
+      "rss_peak_mib": 146.366,
+      "rss_samples": 5,
+      "pss_peak_mib": 131.063,
+      "pss_samples": 1
+    },
+    {
+      "browser": "Lumen234",
+      "phase": "fixed-work",
+      "cpu_seconds": 0.28991462847709654,
+      "cpu_covered_seconds": 3.998443841934204,
+      "phase_duration_seconds": 5.32699990272522,
+      "cpu_intervals": 4,
+      "rss_peak_mib": 165.519,
+      "rss_samples": 5,
+      "pss_peak_mib": 150.138,
+      "pss_samples": 1
+    },
+    {
+      "browser": "Lumen234",
+      "phase": "idle-after",
+      "cpu_seconds": 0.039984467029571535,
+      "cpu_covered_seconds": 4.004576921463013,
+      "phase_duration_seconds": 5.0,
+      "cpu_intervals": 4,
+      "rss_peak_mib": 167.748,
+      "rss_samples": 5,
+      "pss_peak_mib": 152.391,
+      "pss_samples": 1
+    },
+    {
+      "browser": "Lumen234",
+      "phase": "whole-fixture-window",
+      "cpu_seconds": 0.5097757021522522,
+      "cpu_covered_seconds": 14.003715991973877,
+      "phase_duration_seconds": 15.32800006866455,
+      "cpu_intervals": 14,
+      "rss_peak_mib": 167.748,
+      "rss_samples": 15,
+      "pss_peak_mib": 152.391,
+      "pss_samples": 3
+    },
+    {
+      "browser": "Chromium156 browser only",
+      "phase": "idle-before",
+      "cpu_seconds": 0.13059093952178955,
+      "cpu_covered_seconds": 4.019000053405762,
+      "phase_duration_seconds": 5.0,
+      "cpu_intervals": 4,
+      "rss_peak_mib": 1377.309,
+      "rss_samples": 5,
+      "pss_peak_mib": 474.09,
+      "pss_samples": 1
+    },
+    {
+      "browser": "Chromium156 browser only",
+      "phase": "fixed-work",
+      "cpu_seconds": 0.2515643401670456,
+      "cpu_covered_seconds": 4.0227131843566895,
+      "phase_duration_seconds": 5.090000152587891,
+      "cpu_intervals": 4,
+      "rss_peak_mib": 1408.492,
+      "rss_samples": 5,
+      "pss_peak_mib": 503.469,
+      "pss_samples": 1
+    },
+    {
+      "browser": "Chromium156 browser only",
+      "phase": "idle-after",
+      "cpu_seconds": 0.06046435356140137,
+      "cpu_covered_seconds": 4.021144151687622,
+      "phase_duration_seconds": 5.0,
+      "cpu_intervals": 4,
+      "rss_peak_mib": 1417.294,
+      "rss_samples": 5,
+      "pss_peak_mib": 508.93,
+      "pss_samples": 1
+    },
+    {
+      "browser": "Chromium156 browser only",
+      "phase": "whole-fixture-window",
+      "cpu_seconds": 0.501301931374073,
+      "cpu_covered_seconds": 14.019975185394287,
+      "phase_duration_seconds": 15.09000015258789,
+      "cpu_intervals": 14,
+      "rss_peak_mib": 1417.294,
+      "rss_samples": 15,
+      "pss_peak_mib": 508.93,
+      "pss_samples": 3
+    }
+  ],
+  "final650_inputs_and_binary_rechecked": true,
+  "interpretation": "All fixed work and geometry checks match. No predeclared practical material-regression threshold is reached. Candidate work CPU increased0.01964 CPU-s (7.27%) over approximately4s of matched fully covered intervals; sampled whole-window RSS/PSS are1.859/2.130MiB lower. These single-run observations do not prove an optimization, throughput or general browser-speed advantage. Chromium browser-only memory is reported descriptively, separate from ChromeDriver.",
+  "limitations": [
+    "CPU totals cover fully contained sampled intervals, not complete phase CPU accounting.",
+    "Each5-second phase has5RSS samples and only1PSS sample; full fixture has15RSS/3PSS samples.",
+    "Sampled maxima are not exact high-water marks.",
+    "Chromium OS exit is not exposed; public owned cleanup and separate adapter completion are verified.",
+    "Runs are sequential with task browser lanes quiet, not an otherwise idle laboratory host.",
+    "No statistical confidence or throughput claim; no repeat justified by the predeclared policy."
+  ]
+}

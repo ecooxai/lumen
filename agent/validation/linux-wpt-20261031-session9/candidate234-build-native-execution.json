@@ -1,0 +1,7 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "started_utc": "2026-10-31T10:08:13.560329+00:00",
+  "finished_utc": "2026-10-31T10:10:06.896769+00:00",
+  "actual_wrapper_returncode": 0
+}

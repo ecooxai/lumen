@@ -1,0 +1,103 @@
+{
+  "candidate": 234,
+  "started_utc": "2026-10-31T10:17:31.674049+00:00",
+  "finished_utc": "2026-10-31T10:17:41.200155+00:00",
+  "maximum_concurrent_browser_lanes": 2,
+  "actual_execution": [
+    {
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/run-cohort-v3.py",
+        "--scope",
+        "qa-document-lifecycle-upstream",
+        "--kind",
+        "lumen",
+        "--type",
+        "assertions",
+        "--iteration",
+        "234"
+      ],
+      "actual_returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate234-lifecycle-first-0.log"
+    },
+    {
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/run-matrix-candidate-v5.py",
+        "--kind",
+        "lumen",
+        "--iteration",
+        "234"
+      ],
+      "actual_returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate234-lifecycle-first-1.log"
+    }
+  ],
+  "contract_audit_actual_returncode": 0,
+  "contract_audit_path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate234-document-lifecycle-contract-audit.json",
+  "contract_audit_sha256": "b5448528d8d4daa9b4fab415af8a3ecf6c1b34540dd6f6ff1761f076e031f1b0",
+  "upstream_WPT": {
+    "url": "/html/syntax/parsing/the-end.html",
+    "exact4_baseline_and_reference_identities": true,
+    "harness_status": "OK",
+    "assertions": {
+      "PASS": 4
+    },
+    "prior231_pass_losses": [],
+    "whole_file_pass": true,
+    "lifecycle_and_provenance_valid": true,
+    "actual_owned_exit_code": 0,
+    "profile_removed": true,
+    "result_sha256": "8cbd5086e634695845b847b26240ce9bf8a149769d1b256fa696f07d5f4a3bcd",
+    "receipt_sha256": "5fdff30dc072329694477f1b796bcb3e3bc776d8017d7fafcfc203af36e9c7e3",
+    "guard_audit_sha256": "ab445dd5639dcee831d36477db80d6395fd15d9965ee50bf48e3c80976f1b477",
+    "baseline231_assertions": {
+      "PASS": 1,
+      "FAIL": 1,
+      "TIMEOUT": 2
+    },
+    "chromium156_assertions": {
+      "PASS": 4
+    },
+    "raw_results": {
+      "subtests": [
+        [
+          "DOMContentLoaded",
+          "PASS",
+          null
+        ],
+        [
+          "load",
+          "PASS",
+          null
+        ],
+        [
+          "pageshow",
+          "PASS",
+          null
+        ],
+        [
+          "order",
+          "PASS",
+          null
+        ]
+      ],
+      "status": "OK",
+      "message": null,
+      "environment": {
+        "width": 748,
+        "height": 596,
+        "dpr": 1,
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+      },
+      "elapsed_s": 0.4758,
+      "errors": [],
+      "url": "/html/syntax/parsing/the-end.html",
+      "repeat": 0,
+      "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle-upstream/lumen234-assertions/native/00-000"
+    }
+  },
+  "errors": [],
+  "qualification_pass": true,
+  "scope": "Whole unchanged the-end4 plus paired12-case exact observable lifecycle contract; durable finish boundary and sanitizer are separate mandatory gates"
+}

@@ -1,41 +1,121 @@
 {
-  "title": "Lumen Linux · CSS math, sizing and painting",
-  "phase": "Completed and published candidate 226: native143/143; selected stepped594/594, stretch1012/1012 and MIME87/87; rendering29/29 plus11/11. Fresh fixed640 remains411/640 whole files and9162/10540 assertions, with all prior passes preserved. Public source, archive, report and36-second walkthrough are verified. Full WPT and whole-browser98/100 remain unestablished.",
-  "iteration": 12,
-  "session_iteration": 12,
+  "title": "Lumen Linux \u00b7 Non-URL WPT improvement",
+  "phase": "Candidate234 accepted for scoped non-URL improvement; approved showcase and live demo complete, public source/bundle publication in progress",
+  "iteration": 234,
+  "session_iteration": 8,
   "score": 100,
   "selected_case_score": 100,
-  "score_note": "100/100 is only the selected stretch assertion fraction. Fixed640 is64.21875% whole files and86.925996% reported assertions; whole-WPT/98 goal unverified.",
-  "score_scope": "Selected stretch assertion fraction1012/1012 only; independent broad whole-file fraction64.21875%, not whole-browser quality.",
-  "branch": "gpt-6-astra-builtin-repo-baseline-rubywebterm-20261030-css-math",
-  "checkpoint": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
-  "updated_utc": "2026-10-30T16:29:48.767248+00:00",
-  "updated_at": "2026-10-30T16:29:48.767248+00:00",
-  "session_started_utc": "2026-10-30T11:45:56Z",
-  "deadline_utc": "2026-10-30T16:45:56Z",
-  "session_id": "20261030-114556",
-  "work_session_id": "linux-wpt-20261030-session8",
-  "work_session_number": 8,
-  "session_active": false,
-  "session_status": "complete_scoped_release",
-  "session_deadline_utc": "2026-10-30T16:45:56Z",
-  "session_active_until": "2026-10-30T16:27:41.939560+00:00",
-  "session_response_availability": "This work session completed on 30 October 2026 at 16:27:41 UTC. Later messages remain queued and require a new active session; unattended replies are not provided.",
+  "score_note": "100/100 labels only the completed selected containment scope. Fixed640 whole-file pass rate is65.15625%; whole-browser Chromium parity is not claimed.",
+  "score_scope": "Verified234 selected containment outcomes only:286 assertions and28 exact reftests across39 files",
+  "branch": "gpt-6-astra-pro-builtin-repo-baseline-rubywebterm-20261031-wpt-nonurl",
+  "checkpoint": "206bb89d161d91278c56899a3f664a99480374f8",
+  "updated_utc": "2026-10-31T10:53:10.658372+00:00",
+  "updated_at": "2026-10-31T10:53:10.658372+00:00",
+  "session_started_utc": "2026-10-31T07:00:12Z",
+  "deadline_utc": "2026-10-31T12:00:12Z",
+  "session_id": "20261031-070012",
+  "work_session_id": "20261031-070012",
+  "work_session_number": 9,
+  "session_active": true,
+  "session_status": "technical_scope_accepted_delivery_active",
+  "session_deadline_utc": "2026-10-31T12:00:12Z",
+  "session_active_until": "2026-10-31T12:00:12Z",
+  "session_response_availability": "An agent is working in this session and periodically checks queued feedback. Posting requires the current session message key; later replies require an active session.",
   "goal_achieved": false,
   "goal_score": 98,
-  "overall_assessment": "Whole-browser98/100 goal remains unverified; fixed sample and selected feature results are labeled separately.",
-  "overall_result_label": "226 published; whole-WPT unverified; session complete",
-  "accepted_iteration": 226,
-  "active_iteration": 226,
-  "accepted_binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
-  "accepted_binary_scope": "Candidate226: native143, selected focused scopes,29+11 rendering and fresh exact640 with full prior-pass preservation; whole-WPT and whole-browser98/100 unverified.",
+  "overall_assessment": "Scoped engine improvement accepted. Full WPT/Chromium parity and a global98 score are not claimed.",
+  "overall_result_label": "Fixed640 sample65.15625%; selected containment100/100",
+  "accepted_iteration": 234,
+  "active_iteration": 234,
+  "accepted_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "accepted_binary_scope": "Candidate234 scoped Linux engine improvement:147 selected native tests,39 containment files, fixed640 with preserved prior passes,40 retained reftests and matched resource control. Whole-browser98/fullWPT/Chromium parity unclaimed.",
   "current_evidence": [
     [
-      "Candidate226 — independently validated",
+      "Fresh fixed640 sample \u2014 Lumen234",
+      "417/640 whole files (65.15625%); 9249/10540 assertions"
+    ],
+    [
+      "Pinned Chromium156 sample",
+      "560/640 whole files (87.50%); 9551/10552 assertions"
+    ],
+    [
+      "Broad regression preservation",
+      "+6 whole files and+87 assertions versus226; all2319246 prior assertions and416 prior whole files preserved"
+    ],
+    [
+      "Lumen234 harness outcomes",
+      "625 OK,14 TIMEOUT,1 ERROR; all640 files remain counted"
+    ],
+    [
+      "Selected39 containment \u2014 Lumen234",
+      "11 assertion files:286/286;28 reftests:28/28;67 real native test/reference launches"
+    ],
+    [
+      "Selected39 reference \u2014 Chromium156",
+      "286/286 assertions and28/28 reftests"
+    ],
+    [
+      "Separate upstream visibility/observer API3 \u2014 Lumen234",
+      "18/23; checkVisibility16/21, IO andRO1/1 each; five failures retained"
+    ],
+    [
+      "Native regression \u2014 Lumen234",
+      "147/147 selected non-URL tests; instrumented lifecycle/negative/options actual exits0/1/1/0, no diagnostics"
+    ],
+    [
+      "Lifecycle behavior \u2014 Lumen234",
+      "Untouched the-end4/4 and114 canonical paired records; durable finish/late bounds verified"
+    ],
+    [
+      "Hidden scroll retention \u2014 Lumen234",
+      "7 cases/30 phases satisfy pinned contract; one exact hidden-size caching distinction remains"
+    ],
+    [
+      "Separate authored options and accessor controls",
+      "Lumen23449/49; baseline23115/49; Chromium15649/49. Separate accessor controls2/2 in both"
+    ],
+    [
+      "Intermediate broad measurements",
+      "232:NOT RUN;233:NOT RUN.234 has the newly completed640-file measurement"
+    ],
+    [
+      "Retained rendering \u2014 Lumen234",
+      "29/29 stretch and11/11 paint reftests;80 exact test/reference captures"
+    ],
+    [
+      "Matched normal-layout resources",
+      "All10 checks match in226/234/Chromium156; no predeclared material-regression flag. CPU is sampled; no throughput claim."
+    ],
+    [
+      "Post-task delivery",
+      "Technical gates complete; reviewed source/bundle/exact-binary publication and40-second showcase in progress"
+    ],
+    [
+      "Accepted public download",
+      "Candidate234 technically accepted; public download remains226 until verified publication"
+    ]
+  ],
+  "coverage": "Selected 39-file containment scope: 286 JavaScript assertions and 28 rendering comparisons. The separate API scope has 23 assertions. The fixed 640-file non-URL sample is the broad comparison; URL work is deferred.",
+  "findings": [
+    "All39 selected containment files pass:286/286 assertions and28/28 exact reftests. The100/100 score applies only to these focused outcomes.",
+    "Fresh fixed640 sample:417/640 whole files and9249/10540 assertions, up6 files and87 assertions from226; all231 prior9246 assertions and416 whole files preserved.",
+    "All147 selected non-URL native tests and targeted unsuppressed sanitizer gates pass. URL targets remain deferred.",
+    "Matched15-second paced workload preserves all10 checks and checksum21144; no predeclared material resource-regression threshold is reached. Sampled memory and partial interval CPU do not establish throughput.",
+    "Five upstream visibility cases, the exact hidden-size caching difference and declared lifecycle/threshold residuals remain documented. FullWPT and Chromium parity are not claimed.",
+    "Public download remains the previously verified226 package until the reviewed234 publication is verified. The live authored demo runs in the browser opening it; open it in Lumen to exercise Lumen."
+  ],
+  "historical": {
+    "label": "Accepted226:411/640 whole files (64.22%);9162/10540 assertions",
+    "test_files": 640,
+    "comparison": "Pinned Chromium156:560/640 files and9551/10552 assertions;fixed non-URL sample"
+  },
+  "previous_session_evidence": [
+    [
+      "Candidate226 \u2014 independently validated",
       "Native143/143;199 math,153 stretch and165 MIME direct checks. All31 focused jobs and80 mandatory rendering captures completed with actual exits0, pinned sources and cleanup verified."
     ],
     [
-      "Fresh exact640 — actual226",
+      "Fresh exact640 \u2014 actual226",
       "411/640 whole files and9162/10540 assertions;398 assertion gains and10 whole-file gains versus214, zero prior-pass losses/missing/added native identities. Harness624 OK,15 TIMEOUT,1 ERROR; nonpasses remain counted."
     ],
     [
@@ -43,19 +123,19 @@
       "10538 shared identities;1198 Chromium-PASS/Lumen-nonPASS gaps remain, plus14 reference-only and2 native-only identities shown separately. Starting214 gap1585. No full-suite parity claim."
     ],
     [
-      "Stepped math — actual226",
+      "Stepped math \u2014 actual226",
       "594/594 across4 whole files, versus214462/594 and sealedChromium156592/594. Allfour files are outside the640 sample; these132 gains are not added to broad totals."
     ],
     [
-      "Stretch — actual226",
+      "Stretch \u2014 actual226",
       "1012/1012,48/48 files:42 standard files738/738 plus6 tentative-alias files274/274.219 baseline218/1012,11/48. BothLumen226 andChromium156 pass29/29 unchanged rendering comparisons."
     ],
     [
-      "MIME and worker lifetime — actual226",
+      "MIME and worker lifetime \u2014 actual226",
       "87/87 across7 files. Safe221 baseline37/86 across6;49 recoveries plus1 newly tested post-fix importScripts assertion. Chromium15687/87. Real blocked-script/nonexecution and worker continuation checks pass."
     ],
     [
-      "Partial complete families — actual226",
+      "Partial complete families \u2014 actual226",
       "Progress138/139 versusChromium99/139; DOM71/72 versus72/72; grid percentage29/44 versus44/44; math neighbors173/432 versus430/432.3Drotate,XML and unrelated layout gaps remain visible."
     ],
     [
@@ -63,7 +143,7 @@
       "22 mandatory authored fixtures pass424 fields, including3 ordinary crash smokes; separate fromWPT. Corrected context33/33(reference21/33),DOM29/29,zero-percent4/4. Namespace1/2 retains requiredSVGpass and preexistingXMLfailure;10grid observations add0WPT assertions."
     ],
     [
-      "Painting and rendering — actual226",
+      "Painting and rendering \u2014 actual226",
       "29/29 stretch and11/11 independent paint comparisons;80 actual clean captures. Software800x600@1, unchanged expectations/readiness/comparator.11paint guards have no pre221 native baseline; noGPU certification."
     ],
     [
@@ -71,94 +151,6 @@
       "640 one-second resource summaries: peak observed single-case RSS278.061MiB/PSS146.344MiB; shared-slice CPU44.35% ofonecore weighted under480% quota,0throttling. Noidle-memory/speed-advantage claim. Public226 source/archive/report/video are verified on Pages; live source/video routes match the same hashes. Work session complete, later messages require a new active session."
     ]
   ],
-  "coverage": "Complete selected scopes and unchanged regression sample: stepped math4files/594assertions; stretch48files/1012assertions plus29 rendering comparisons; MIME7files/87assertions;11 separate paint guards. Partial complete progress3files/139assertions, DOM4files/72, grid2files/44 and neighbors16files/432 remain counted. All22 mandatory authored fixtures pass424fields, including3 ordinary crash smokes. The2 namespace diagnostics and10 zero-assertion observations remain separate. URL conformance is deferred; full WPT remains unverified.",
-  "findings": [
-    "Fresh226 exact640 preserves all9162 prior PASS identities and411 whole files from49 complete historical result inputs; no native registration changes.",
-    "Selected stepped math, stretch sizing and MIME families pass completely, with sealedChromium comparison and unchanged WPT expectations.",
-    "DOM parent/context insertion and CSS progress improve while one XML fragment and one3Drotate failure remain explicit; broader grid and neighbor gaps remain.",
-    "Worker MIME diagnostic bytes now outlive response cleanup; actual rejection/noexecution/continuation checks pass. Only the raster seam, notworker/V8, was ASan/UBSan instrumented.",
-    "The source export is curated from646 exact recorded build inputs on reviewed public history; private task/handoff/history/auth data stay excluded. Export rebuild/portablebinary/fullGPU compatibility are not claimed."
-  ],
-  "historical": {
-    "label": "Candidate214 fixed640 non-URL sample, measured2026-10-30 10:26–10:40UTC before this session",
-    "test_files": 640,
-    "comparison": "Sealed Chrome for Testing156.0.8078.80",
-    "readiness_estimate_note": "No overall browser quality estimate is inferred from this selected sample."
-  },
-  "previous_session_evidence": {
-    "session": 7,
-    "candidate": 214,
-    "broad": {
-      "candidate": 214,
-      "files_pass": 401,
-      "files_total": 640,
-      "assertions_pass": 8764,
-      "assertions_total": 10540,
-      "assertion_outcomes": {
-        "PASS": 8764,
-        "FAIL": 1738,
-        "TIMEOUT": 15,
-        "NOTRUN": 23
-      },
-      "harness": {
-        "OK": 624,
-        "TIMEOUT": 15,
-        "ERROR": 1
-      },
-      "comparison_to200": {
-        "common_identity_pass_gains": 440,
-        "prior_pass_losses": 0,
-        "missing_previous_identities": 0,
-        "restored_passing_registrations": 0,
-        "added_registrations": 0,
-        "whole_file_gains": 21,
-        "whole_file_losses": 0
-      },
-      "comparison_to211": {
-        "common_identity_pass_gains": 64,
-        "prior_pass_losses": 0,
-        "missing_previous_identities": 0,
-        "added_registrations": 0
-      },
-      "started_utc": "2026-10-30T10:26:49.084281Z",
-      "finished_utc": "2026-10-30T10:40:02.272173Z",
-      "actual_controller_exit_code": 0,
-      "actual_browser_exit_counts": {
-        "0": 640
-      },
-      "owned_cleanup_complete": true,
-      "source_binary_unchanged": true,
-      "runner_source_pins_unchanged": true,
-      "execution_schedule_sha256": "7e17aeaf30a0d05982a5d69a11fe0bd062561fe9375b2fcad72fb1eba41d1c32",
-      "actual_total_browser_workers": 2,
-      "performance_qualification": "Conformance runs with different outcome mixes and browser concurrency are not a comparative speed benchmark."
-    },
-    "chromium": {
-      "files_pass": 560,
-      "files_total": 640,
-      "assertions_pass": 9551,
-      "assertions_total": 10552,
-      "harness": {
-        "OK": 626,
-        "TIMEOUT": 13,
-        "ERROR": 1
-      }
-    },
-    "native": {
-      "candidate": 214,
-      "pass": 140,
-      "total": 140,
-      "failures": 0,
-      "skipped": 0,
-      "deferred_url_tests": 3,
-      "started_utc": "2026-10-30T10:15:59.039709Z",
-      "finished_utc": "2026-10-30T10:17:20.147839Z",
-      "actual_exit_code": 0,
-      "owned_cleanup_complete": true
-    },
-    "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
-    "fixed640_manifest_sha256": "8b5d0d491ce8b14e6ee8107d1213c10b90127a0193207d06057216bd54f3243f"
-  },
   "measurement_units": {
     "cpu": "100%equals one logicalCPU",
     "ram": "Live host metrics decimalGB; test monitorRSS MiB and may double-count shared pages",
@@ -174,10 +166,10 @@
   "source_archive_sha256": "4e28b1f5801d27a7cfb7012aef669d7800b875daa4b0d4d405e7b22e9b61eaf3",
   "source_archive_bytes": 9526948,
   "source_archive_scope": "Audited public source history and offline-restorable Git bundle; private task history, profiles, runtime capabilities, dependencies and raw results excluded.",
-  "source_archive_note": "Verified candidate226 source archive with reviewed public Git bundle and exact646 recorded inputs. Offline restoration passed; external build dependencies and portable browser binary are not included.",
+  "source_archive_note": "The linked public archive remains verified226 during publication. Accepted234 source and recoverable reviewed public Git bundle are being packaged; private working history is excluded.",
   "showcase_url": "https://ecooxai.github.io/lumen/lumen-linux-gpt-6-astra-pro-builtin-rubywebterm-chromium-ffmpeg-checkpoint226.mp4",
   "showcase_note": "Verified36-second1024x768 Chromium-rendered results walkthrough with three unedited original WPT captures; not native Lumen desktop footage.",
-  "publication_status": "Candidate226 source, archive, measured report and walkthrough were published by normal reviewed pushes and verified at canonical HTTPS URLs. Final Pages delivery-proof commit25af2cf0; live tunnel archive/video match accepted hashes. Surge remains unauthenticated.",
+  "publication_status": "Candidate234 publication authorized and in preparation; existing public source/download remains226 until verified replacement.",
   "session8_fresh_focus_baseline": {
     "candidate": 214,
     "files": 4,
@@ -515,7 +507,7 @@
     "duration_minutes": 30.7219329,
     "session_wall_minutes": 143.40032646666666
   },
-  "active_candidate": 226,
+  "active_candidate": 234,
   "mime_baseline": {
     "candidate": 221,
     "native_safe_files": 6,
@@ -529,77 +521,55 @@
     "native_excluded": "importscripts.html was not executed because the pre-fix rejection path has a proven header lifetime bug. It is not counted as passing.",
     "current_candidate_results": "Not run yet"
   },
-  "score_candidate": 226,
-  "active_source_commit": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
-  "active_binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
+  "score_candidate": 234,
+  "active_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "active_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
   "broad_current": {
-    "candidate": 226,
-    "files_pass": 411,
-    "files_total": 640,
-    "assertions_pass": 9162,
+    "iteration": 234,
+    "files": 640,
+    "whole_files_passed": 417,
+    "whole_file_pass_percent": 65.15625,
+    "assertions_passed": 9249,
     "assertions_total": 10540,
-    "whole_file_fraction_percent": 64.21875,
-    "assertion_fraction_percent": 86.92599620493358,
-    "baseline214": {
-      "files": 640,
-      "fully_passing_files": 401,
-      "assertions": {
-        "PASS": 8764,
-        "FAIL": 1738,
-        "TIMEOUT": 15,
-        "NOTRUN": 23
-      },
-      "total_assertions": 10540,
-      "harness_statuses": {
-        "OK": 624,
-        "TIMEOUT": 15,
-        "ERROR": 1
-      }
+    "harness_statuses": {
+      "OK": 625,
+      "TIMEOUT": 14,
+      "ERROR": 1
     },
+    "assertion_statuses": {
+      "PASS": 9249,
+      "FAIL": 1255,
+      "TIMEOUT": 13,
+      "NOTRUN": 23
+    },
+    "prior_assertion_passes_preserved": 9246,
+    "prior_whole_file_passes_preserved": 416,
+    "new_assertion_passes_vs226": 87,
+    "new_whole_file_passes_vs226": 6,
+    "new_assertion_passes_vs231": 3,
+    "new_whole_file_passes_vs231": 1,
+    "prior_pass_losses": 0,
+    "new_harness_regressions": 0,
     "chromium156": {
+      "whole_files_passed": 560,
       "files": 640,
-      "fully_passing_files": 560,
-      "assertions": {
-        "PASS": 9551,
-        "FAIL": 980,
-        "NOTRUN": 9,
-        "TIMEOUT": 12
-      },
-      "total_assertions": 10552,
-      "harness_statuses": {
-        "OK": 626,
-        "TIMEOUT": 13,
-        "ERROR": 1
-      }
+      "whole_file_pass_percent": 87.5,
+      "assertions_passed": 9551,
+      "assertions_total": 10552
     },
-    "vs214": {
-      "common_nonpass_to_pass": 398,
-      "prior_pass_losses": 0,
-      "missing_identities": 0,
-      "added_identities": 0,
-      "whole_file_gains": 10,
-      "whole_file_losses": 0,
-      "harness_changes": []
-    },
-    "strict_reference_identity_comparison": {
-      "common_identities": 10538,
-      "shared_reference_pass_native_nonpass": 1198,
-      "shared_native_pass_reference_nonpass": 821,
-      "shared_both_pass": 8339,
-      "reference_only_identities": 14,
-      "native_only_identities": 2,
-      "reference_only_statuses": {
-        "PASS": 14
-      },
-      "native_only_statuses": {
-        "PASS": 2
-      },
-      "reference_identity_audit_sha256": "ed8d6b5c44e7d678458666c85b51771b8c337a1ea0b397769f31702418715edc"
-    },
-    "accepted": true,
-    "scope": "Fresh fixed640 non-URL sample; not wholeWPT."
+    "not_full_WPT": true
   },
-  "overall_qualification": "Accepted and published scoped engineering checkpoint; complete WPT/Chromium parity and whole-browser98/100 are not established.",
+  "overall_qualification": {
+    "candidate": 234,
+    "release_qualified": true,
+    "fixed640_verified": true,
+    "retained40_pending": false,
+    "matched_resource_control_pending": false,
+    "retained40_verified": true,
+    "matched_resource_control_pass": true,
+    "all16_technical_gates_verified": true,
+    "public_publication_pending": true
+  },
   "session8_candidate226": {
     "source_commit": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
     "binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
@@ -622,14 +592,11 @@
     "publication_packet_sha256": "dafaf1e5db76ddb28f2f11aee71801fe7594fe445c70eafdd38f90575259aa9a",
     "final_pages_commit": "25af2cf0d71109ecebe1907bfe92c9a0e9168f33"
   },
-  "completed_utc": "2026-10-30T16:27:41.939560+00:00",
   "live_source_archive_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/src.tar.gz",
   "live_showcase_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4",
   "publication_verified": true,
   "publication_verified_utc": "2026-10-30T16:26:46.445298+00:00",
-  "final_feedback_poll_utc": "2026-10-30T16:27:16.826123+00:00",
-  "final_feedback_unread": 0,
-  "goal_qualification": "The selected complete feature targets are passed and delivered; the full-WPT/whole-browser98/100 goal remains unachieved.",
+  "goal_qualification": "Full WPT and whole-browser 98/100 remain unverified. URL tests are deferred.",
   "publication": {
     "source_export_commit": "2287d7fc602954c85a51c36f45ab5faa2473decc",
     "source_export_tree": "919defc65c7d85b993041ea2f1cfd560f0b8d35e",
@@ -660,9 +627,174 @@
       "live_video": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/showcase.mp4"
     },
     "verification_receipt_sha256": "dafaf1e5db76ddb28f2f11aee71801fe7594fe445c70eafdd38f90575259aa9a",
-    "independent_review_sha256": "7030af98ab66a334d8f13b312abb737417d5b5a6363bc388276847c1d7f2b6b0"
+    "independent_review_sha256": "7030af98ab66a334d8f13b312abb737417d5b5a6363bc388276847c1d7f2b6b0",
+    "candidate": 226,
+    "historical_until_234_verification": true
   },
-  "final_accounting": {
+  "desktop_preflight": {
+    "checked_utc": "2026-10-30T16:15:21.859608+00:00",
+    "default_binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
+    "valid_task_owned_display_pid": false,
+    "display_inspected": false,
+    "desktop_restart_performed": false,
+    "reason": "No /tmp/lumen-display0.pid receipt exists; no verified task-owned desktop process."
+  },
+  "selected_focus": {
+    "name": "CSS logical intrinsic size containment",
+    "files": [
+      "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-001.html",
+      "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-002.html",
+      "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html"
+    ],
+    "assertions": 48,
+    "reftests": 2,
+    "baseline_pending": false,
+    "reference": "pinned Chromium156",
+    "neighbor_scope": "fixed numbered contain-intrinsic-size001 through033; no auto-memory completion claim",
+    "baseline": {
+      "candidate": 226,
+      "assertions_pass": 0,
+      "assertions_total": 48,
+      "reftests_pass": 0,
+      "reftests_total": 2,
+      "outcome_score": 0.0
+    },
+    "reference_results": {
+      "assertions_pass": 48,
+      "assertions_total": 48,
+      "reftests_pass": 2,
+      "reftests_total": 2
+    },
+    "baseline_qualification": "First CFT assertion attempt had a profile-socket path HARNESS_ERROR; retained separately. Short-path retry passes. Redundant outer process sampler exited-15; actual browser1s samples and cgroupdata retained. One-sample short case cannot produce CPU deltas.",
+    "candidate227": {
+      "assertions_pass": 48,
+      "assertions_total": 48,
+      "reftests_pass": 2,
+      "reftests_total": 2,
+      "selected_outcome_score": 100.0,
+      "release_accepted": false
+    }
+  },
+  "checkpoint227_persistence": {
+    "saved": true,
+    "kind": "private incremental source checkpoint",
+    "verified_input_count": 648,
+    "complete_archive_uploaded": false,
+    "fileharbor_http_status": 403
+  },
+  "pending_candidate": {
+    "iteration": 234,
+    "state": "accepted_technical_scope_delivery_pending",
+    "release_qualified": true,
+    "measured_broad_iteration": 234,
+    "remaining": [
+      "reviewed public source and bundle publication",
+      "exact development binary package and recovery verification"
+    ]
+  },
+  "candidate_native": {
+    "iteration": 234,
+    "passed": 147,
+    "total": 147,
+    "scope": "Selected non-URL tests; url, url_host_nul and data_url deliberately excluded",
+    "lifecycle_and_options_sanitizer_actual_exits": [
+      0,
+      1,
+      1,
+      0
+    ],
+    "sanitizer_diagnostics": false,
+    "release_qualified": true
+  },
+  "rejected_candidate228": {
+    "native_passed": 143,
+    "native_total": 144,
+    "blocker": "css_stepped_math SIGSEGV"
+  },
+  "candidate_focused39": {
+    "iteration": 234,
+    "files": 39,
+    "assertion_files": 11,
+    "assertions_passed": 286,
+    "assertions_total": 286,
+    "reftests_passed": 28,
+    "reftests_total": 28,
+    "actual_test_reference_launches": 67
+  },
+  "checkpoint229_persistence": {
+    "private": true,
+    "held": true,
+    "incremental": true,
+    "source_inputs_verified": 648,
+    "readback_sha256": "ce619edd69e121019ae406f8c8e22a6473ca8c21e7ba7fb7f6b8ab30bada8d51",
+    "full_archive_uploaded": false
+  },
+  "accepted_release": 234,
+  "candidate_source": "206bb89d161d91278c56899a3f664a99480374f8",
+  "candidate_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "candidate_recorded_input_count": 650,
+  "checkpoint230_persistence": {
+    "private": true,
+    "held": true,
+    "sha256": "4583f9a0b399ec43b9c1913dae500e82ae24db0ab95737a1e51ad3f46b2a1f6e",
+    "full_archive_uploaded": false,
+    "source_inputs_verified": 648
+  },
+  "candidate_api3": {
+    "iteration": 234,
+    "assertions_passed": 18,
+    "assertions_total": 23,
+    "checkVisibility_passed": 16,
+    "checkVisibility_total": 21,
+    "io030_passed": true,
+    "ro031_passed": true
+  },
+  "checkpoint232_persistence": {
+    "candidate": 232,
+    "held": true,
+    "incremental_source_saved": true,
+    "required_inputs_verified": 650,
+    "source_patch_files": 10,
+    "exact_readback_verified": true,
+    "full_archive_uploaded": false,
+    "note": "Private held lifecycle checkpoint includes actual sanitizer exit23 and separately proven host-only correction; accepted release226 unchanged."
+  },
+  "broad_not_run_candidates": [
+    232,
+    233
+  ],
+  "candidate_authored_options": {
+    "iteration": 234,
+    "frozen49": [
+      49,
+      49
+    ],
+    "separate_accessor_controls": [
+      2,
+      2
+    ],
+    "not_WPT": true
+  },
+  "checkpoint234_persistence": {
+    "candidate": 234,
+    "held": true,
+    "incremental_source_saved": true,
+    "required_inputs_verified": 651,
+    "source_patch_files": 4,
+    "exact_readback_verified": true,
+    "html_sha256": "b0806710a2bf8197311b30f44db2fed9634b3f02704042bed2769505adc3cacb",
+    "full_archive_uploaded": false
+  },
+  "technical_acceptance": {
+    "candidate": 234,
+    "accepted": true,
+    "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+    "technical_review_sha256": "aa0068187a3ddf7f4006c89543acd05a92b1a442f46ed9b7210042a7aa79f4af"
+  },
+  "selected_scope_goal_achieved": true,
+  "public_download_candidate": 226,
+  "publication_verified_for_candidate": 226,
+  "final_accounting_previous_session": {
     "task_started_utc": "2026-10-30T11:45:56+00:00",
     "technical_iteration_finished_utc": "2026-10-30T15:59:39.154365+00:00",
     "technical_elapsed_minutes": 253.71923941666668,
@@ -672,12 +804,27 @@
     "documentation_closeout_receipt": "agent/validation/linux-wpt-20261030-session8/final-accounting226.json",
     "qualification": "Later exact documentation/equivalence time is recorded separately; test timestamps and scores are unchanged."
   },
-  "desktop_preflight": {
-    "checked_utc": "2026-10-30T16:15:21.859608+00:00",
-    "default_binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
-    "valid_task_owned_display_pid": false,
-    "display_inspected": false,
-    "desktop_restart_performed": false,
-    "reason": "No /tmp/lumen-display0.pid receipt exists; no verified task-owned desktop process."
+  "technical_session": {
+    "start_utc": "2026-10-31T07:00:12Z",
+    "end_utc": "2026-10-31T10:41:46.236056+00:00",
+    "duration_minutes": 221.5706009,
+    "final_iteration_minutes": 35.5526503,
+    "delivery_elapsed_separate": true
+  },
+  "showcase234": {
+    "approved": true,
+    "sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+    "duration_seconds": 40,
+    "dimensions": [
+      960,
+      720
+    ],
+    "published": false
+  },
+  "live_demo234": {
+    "native_marker_validation_passed": true,
+    "outside_WPT_scoring": true,
+    "runs_in_viewer_browser": true,
+    "instruction": "Open the demo in Lumen to exercise the Lumen engine."
   }
 }

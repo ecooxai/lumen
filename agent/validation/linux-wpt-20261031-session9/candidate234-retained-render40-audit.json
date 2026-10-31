@@ -1,0 +1,858 @@
+{
+  "iteration": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "created_utc": "2026-10-31T10:36:12.770661+00:00",
+  "auditor_sha256": "22fd3c09973cdd10a9fe790c6e6860333d9b44aaba8ad61057fe52a4f68c27aa",
+  "passed": true,
+  "families": [
+    {
+      "family": "stretch",
+      "passed": true,
+      "urls": [
+        "/css/css-sizing/stretch/abspos-1.html",
+        "/css/css-sizing/stretch/abspos-2.html",
+        "/css/css-sizing/stretch/bfc-next-to-float-1.html",
+        "/css/css-sizing/stretch/bfc-next-to-float-2.html",
+        "/css/css-sizing/stretch/block-height-003.html",
+        "/css/css-sizing/stretch/block-height-006.html",
+        "/css/css-sizing/stretch/block-height-009.html",
+        "/css/css-sizing/stretch/block-height-010.html",
+        "/css/css-sizing/stretch/cache-miss-001.html",
+        "/css/css-sizing/stretch/cache-miss-002.html",
+        "/css/css-sizing/stretch/fixed-table-1.html",
+        "/css/css-sizing/stretch/flexbox-auto-minimum-001.html",
+        "/css/css-sizing/stretch/flexbox-auto-minimum-002.html",
+        "/css/css-sizing/stretch/flexbox-flex-base-size-001.html",
+        "/css/css-sizing/stretch/flexbox-flex-base-size-002.html",
+        "/css/css-sizing/stretch/flexbox-stretch-minimum-001.html",
+        "/css/css-sizing/stretch/flexbox-stretch-minimum-002.html",
+        "/css/css-sizing/stretch/min-width-1.html",
+        "/css/css-sizing/stretch/positioned-non-replaced-1.html",
+        "/css/css-sizing/stretch/positioned-replaced-1.html",
+        "/css/css-sizing/stretch/positioned-replaced-2.html",
+        "/css/css-sizing/stretch/positioned-replaced-3.html",
+        "/css/css-sizing/stretch/replaced-next-to-float-1.html",
+        "/css/css-sizing/stretch/replaced-next-to-float-2.html",
+        "/css/css-sizing/stretch/stretch-anonymous-block-001.html",
+        "/css/css-sizing/stretch/stretch-float-with-sibling.html",
+        "/css/css-sizing/stretch/stretch-float.html",
+        "/css/css-sizing/stretch/stretch-quirk-001.html",
+        "/css/css-sizing/stretch/stretch-quirk-002.html"
+      ],
+      "reftests": 29,
+      "captures": 58,
+      "independent_exact_pixel_checks": [
+        {
+          "url": "/css/css-sizing/stretch/abspos-1.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/abspos-2.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/bfc-next-to-float-1.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/bfc-next-to-float-2.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/block-height-003.html",
+          "reference_url": "/css/css-sizing/stretch/block-height-003-ref.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/block-height-006.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/block-height-009.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/block-height-010.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/cache-miss-001.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/cache-miss-002.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/fixed-table-1.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square-only.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/flexbox-auto-minimum-001.html",
+          "reference_url": "/css/reference/ref-filled-green-200px-square.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/flexbox-auto-minimum-002.html",
+          "reference_url": "/css/reference/ref-filled-green-200px-square.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/flexbox-flex-base-size-001.html",
+          "reference_url": "/css/reference/ref-filled-green-200px-square.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/flexbox-flex-base-size-002.html",
+          "reference_url": "/css/reference/ref-filled-green-200px-square.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/flexbox-stretch-minimum-001.html",
+          "reference_url": "/css/reference/ref-filled-green-200px-square.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/flexbox-stretch-minimum-002.html",
+          "reference_url": "/css/reference/ref-filled-green-200px-square.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/min-width-1.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square-only.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/positioned-non-replaced-1.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square-only.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/positioned-replaced-1.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square-only.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/positioned-replaced-2.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square-only.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/positioned-replaced-3.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square-only.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/replaced-next-to-float-1.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/replaced-next-to-float-2.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/stretch-anonymous-block-001.html",
+          "reference_url": "/css/css-sizing/stretch/stretch-anonymous-block-001-ref.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/stretch-float-with-sibling.html",
+          "reference_url": "/css/css-sizing/stretch/stretch-float-with-sibling-ref.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/stretch-float.html",
+          "reference_url": "/css/css-sizing/stretch/stretch-float-ref.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/stretch-quirk-001.html",
+          "reference_url": "/css/css-sizing/stretch/stretch-quirk-001-ref.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-sizing/stretch/stretch-quirk-002.html",
+          "reference_url": "/css/css-sizing/stretch/stretch-quirk-002-ref.html",
+          "rgba_equal": true
+        }
+      ],
+      "sampled_browsers": [
+        {
+          "pid": 2931002,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.793,
+          "pss_peak_mb": 51.014
+        },
+        {
+          "pid": 2931123,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 139.088,
+          "pss_peak_mb": 50.047
+        },
+        {
+          "pid": 2931241,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.486,
+          "pss_peak_mb": 45.542
+        },
+        {
+          "pid": 2931364,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.609,
+          "pss_peak_mb": 55.191
+        },
+        {
+          "pid": 2931484,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.711,
+          "pss_peak_mb": 56.503
+        },
+        {
+          "pid": 2931612,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.781,
+          "pss_peak_mb": 55.035
+        },
+        {
+          "pid": 2931744,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 139.284,
+          "pss_peak_mb": 50.544
+        },
+        {
+          "pid": 2931859,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.625,
+          "pss_peak_mb": 54.777
+        },
+        {
+          "pid": 2932340,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.199,
+          "pss_peak_mb": 55.084
+        },
+        {
+          "pid": 2932478,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.682,
+          "pss_peak_mb": 51.396
+        },
+        {
+          "pid": 2932576,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.879,
+          "pss_peak_mb": 74.298
+        },
+        {
+          "pid": 2932703,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.674,
+          "pss_peak_mb": 73.968
+        },
+        {
+          "pid": 2933148,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.244,
+          "pss_peak_mb": 70.752
+        },
+        {
+          "pid": 2933230,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.777,
+          "pss_peak_mb": 69.232
+        },
+        {
+          "pid": 2933329,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 139.149,
+          "pss_peak_mb": 69.152
+        },
+        {
+          "pid": 2933416,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.22,
+          "pss_peak_mb": 74.807
+        },
+        {
+          "pid": 2933511,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.818,
+          "pss_peak_mb": 67.905
+        },
+        {
+          "pid": 2933953,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.744,
+          "pss_peak_mb": 69.174
+        },
+        {
+          "pid": 2934033,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.768,
+          "pss_peak_mb": 68.035
+        },
+        {
+          "pid": 2934141,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.547,
+          "pss_peak_mb": 75.566
+        },
+        {
+          "pid": 2934235,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 137.966,
+          "pss_peak_mb": 68.687
+        },
+        {
+          "pid": 2934331,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 137.953,
+          "pss_peak_mb": 68.889
+        },
+        {
+          "pid": 2934434,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.203,
+          "pss_peak_mb": 68.906
+        },
+        {
+          "pid": 2934529,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.772,
+          "pss_peak_mb": 62.273
+        },
+        {
+          "pid": 2934631,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.666,
+          "pss_peak_mb": 69.162
+        },
+        {
+          "pid": 2934727,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.514,
+          "pss_peak_mb": 70.728
+        },
+        {
+          "pid": 2934829,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.482,
+          "pss_peak_mb": 75.427
+        },
+        {
+          "pid": 2935265,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.539,
+          "pss_peak_mb": 75.031
+        },
+        {
+          "pid": 2935360,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.633,
+          "pss_peak_mb": 70.621
+        },
+        {
+          "pid": 2935452,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.592,
+          "pss_peak_mb": 68.743
+        },
+        {
+          "pid": 2935543,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.519,
+          "pss_peak_mb": 69.216
+        },
+        {
+          "pid": 2935638,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.043,
+          "pss_peak_mb": 69.581
+        },
+        {
+          "pid": 2935731,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.65,
+          "pss_peak_mb": 74.94
+        },
+        {
+          "pid": 2935826,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.346,
+          "pss_peak_mb": 70.33
+        },
+        {
+          "pid": 2935917,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.031,
+          "pss_peak_mb": 70.749
+        },
+        {
+          "pid": 2936007,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.334,
+          "pss_peak_mb": 67.862
+        },
+        {
+          "pid": 2936098,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.224,
+          "pss_peak_mb": 68.986
+        },
+        {
+          "pid": 2936188,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.314,
+          "pss_peak_mb": 74.555
+        },
+        {
+          "pid": 2936284,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 137.994,
+          "pss_peak_mb": 69.126
+        },
+        {
+          "pid": 2936382,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 137.974,
+          "pss_peak_mb": 69.03
+        },
+        {
+          "pid": 2936480,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.539,
+          "pss_peak_mb": 67.636
+        },
+        {
+          "pid": 2936573,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.473,
+          "pss_peak_mb": 68.183
+        },
+        {
+          "pid": 2936668,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.637,
+          "pss_peak_mb": 69.309
+        },
+        {
+          "pid": 2936758,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.482,
+          "pss_peak_mb": 68.28
+        },
+        {
+          "pid": 2936849,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.809,
+          "pss_peak_mb": 69.356
+        },
+        {
+          "pid": 2936945,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.826,
+          "pss_peak_mb": 69.27
+        },
+        {
+          "pid": 2937028,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.486,
+          "pss_peak_mb": 74.782
+        },
+        {
+          "pid": 2937124,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 139.01,
+          "pss_peak_mb": 75.089
+        },
+        {
+          "pid": 2937214,
+          "samples": 1,
+          "cpu_delta_samples": 0,
+          "rss_peak_mb": 84.984,
+          "pss_peak_mb": 68.887
+        },
+        {
+          "pid": 2937288,
+          "samples": 1,
+          "cpu_delta_samples": 0,
+          "rss_peak_mb": 84.906,
+          "pss_peak_mb": 69.15
+        },
+        {
+          "pid": 2937351,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.314,
+          "pss_peak_mb": 68.972
+        },
+        {
+          "pid": 2937435,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.633,
+          "pss_peak_mb": 68.874
+        },
+        {
+          "pid": 2937526,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.453,
+          "pss_peak_mb": 68.873
+        },
+        {
+          "pid": 2937651,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.486,
+          "pss_peak_mb": 74.98
+        },
+        {
+          "pid": 2937754,
+          "samples": 1,
+          "cpu_delta_samples": 0,
+          "rss_peak_mb": 84.472,
+          "pss_peak_mb": 68.829
+        },
+        {
+          "pid": 2937828,
+          "samples": 1,
+          "cpu_delta_samples": 0,
+          "rss_peak_mb": 85.115,
+          "pss_peak_mb": 70.712
+        },
+        {
+          "pid": 2937884,
+          "samples": 1,
+          "cpu_delta_samples": 0,
+          "rss_peak_mb": 84.877,
+          "pss_peak_mb": 68.867
+        },
+        {
+          "pid": 2937949,
+          "samples": 1,
+          "cpu_delta_samples": 0,
+          "rss_peak_mb": 91.263,
+          "pss_peak_mb": 75.449
+        }
+      ],
+      "cgroup_samples": 119,
+      "receipt_hashes": {
+        "launch.json": "cbbc7bd8cf8b80ab45584a6e4cd35574e1586d6939fe22d5fc9e11c889424084",
+        "completion.json": "20a49c8974fb4305364fc21a998eb3a4b7fafb08f5e888e2d99e907587190330",
+        "cleanup.json": "fbb0988afc2f812174ce0583abf18718b12b37e1d12af01e294ca8a549019ca3",
+        "pins-before.json": "73fdb33bd865cb75d8c181f1eeeca1f6a2829472c2780f3c94efc6d6b09cc4b8",
+        "pins-after.json": "55ea3cffc503b2845f6ff3f8f611ea9e2524f7fa375060c41139513ecda1d5f0",
+        "native/results.jsonl": "472eba4a859057e970b05fd008d75932a1de753a4eaf5d6d19d6a59e7be9c8a4",
+        "guard-audit/launches.jsonl": "51bf4df95c2e525f942a333c0728de7508ed6721a2a40add01be979f08607ec7"
+      }
+    },
+    {
+      "family": "paint",
+      "passed": true,
+      "urls": [
+        "/css/CSS2/zindex/z-index-abspos-001.xht",
+        "/css/CSS2/zindex/z-index-abspos-002.xht",
+        "/css/CSS2/zindex/z-index-abspos-003.xht",
+        "/css/CSS2/zindex/z-index-abspos-004.xht",
+        "/css/CSS2/zindex/z-index-abspos-005.xht",
+        "/css/CSS2/zindex/z-index-abspos-007.xht",
+        "/css/CSS2/stacking-context/root-element-creates-stacking-context.html",
+        "/css/CSS2/visuren/fixed-pos-stacking-001.xht",
+        "/css/css-position/sticky/position-sticky-stacking-context-002.html",
+        "/css/css-backgrounds/background-color-body-propagation-001.html",
+        "/css/css-backgrounds/background-color-body-propagation-002.html"
+      ],
+      "reftests": 11,
+      "captures": 22,
+      "independent_exact_pixel_checks": [
+        {
+          "url": "/css/CSS2/zindex/z-index-abspos-001.xht",
+          "reference_url": "/css/CSS2/zindex/z-index-abspos-001-ref.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/CSS2/zindex/z-index-abspos-002.xht",
+          "reference_url": "/css/CSS2/zindex/z-index-abspos-001-ref.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/CSS2/zindex/z-index-abspos-003.xht",
+          "reference_url": "/css/CSS2/zindex/z-index-abspos-001-ref.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/CSS2/zindex/z-index-abspos-004.xht",
+          "reference_url": "/css/CSS2/zindex/z-index-abspos-001-ref.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/CSS2/zindex/z-index-abspos-005.xht",
+          "reference_url": "/css/CSS2/zindex/z-index-abspos-001-ref.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/CSS2/zindex/z-index-abspos-007.xht",
+          "reference_url": "/css/CSS2/zindex/z-index-abspos-001-ref.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/CSS2/stacking-context/root-element-creates-stacking-context.html",
+          "reference_url": "/css/CSS2/stacking-context/root-element-creates-stacking-context-ref.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/CSS2/visuren/fixed-pos-stacking-001.xht",
+          "reference_url": "/css/CSS2/visuren/fixed-pos-stacking-001-ref.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-position/sticky/position-sticky-stacking-context-002.html",
+          "reference_url": "/css/reference/ref-filled-green-100px-square.xht",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-backgrounds/background-color-body-propagation-001.html",
+          "reference_url": "/css/css-backgrounds/background-color-body-propagation-ref.html",
+          "rgba_equal": true
+        },
+        {
+          "url": "/css/css-backgrounds/background-color-body-propagation-002.html",
+          "reference_url": "/css/css-backgrounds/background-color-body-propagation-ref.html",
+          "rgba_equal": true
+        }
+      ],
+      "sampled_browsers": [
+        {
+          "pid": 2928839,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.691,
+          "pss_peak_mb": 70.749
+        },
+        {
+          "pid": 2929263,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.736,
+          "pss_peak_mb": 69.092
+        },
+        {
+          "pid": 2929353,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.662,
+          "pss_peak_mb": 68.719
+        },
+        {
+          "pid": 2929450,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.113,
+          "pss_peak_mb": 75.343
+        },
+        {
+          "pid": 2929540,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.912,
+          "pss_peak_mb": 69.402
+        },
+        {
+          "pid": 2929635,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.519,
+          "pss_peak_mb": 68.871
+        },
+        {
+          "pid": 2929728,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.699,
+          "pss_peak_mb": 69.066
+        },
+        {
+          "pid": 2929825,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.551,
+          "pss_peak_mb": 75.095
+        },
+        {
+          "pid": 2929930,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.17,
+          "pss_peak_mb": 73.879
+        },
+        {
+          "pid": 2930033,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.912,
+          "pss_peak_mb": 74.223
+        },
+        {
+          "pid": 2930128,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.883,
+          "pss_peak_mb": 69.04
+        },
+        {
+          "pid": 2930218,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.945,
+          "pss_peak_mb": 68.871
+        },
+        {
+          "pid": 2930997,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.658,
+          "pss_peak_mb": 59.763
+        },
+        {
+          "pid": 2931114,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.363,
+          "pss_peak_mb": 53.727
+        },
+        {
+          "pid": 2931239,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 139.059,
+          "pss_peak_mb": 53.441
+        },
+        {
+          "pid": 2931362,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.351,
+          "pss_peak_mb": 55.005
+        },
+        {
+          "pid": 2931482,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.605,
+          "pss_peak_mb": 54.162
+        },
+        {
+          "pid": 2931608,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.961,
+          "pss_peak_mb": 51.134
+        },
+        {
+          "pid": 2931730,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.789,
+          "pss_peak_mb": 63.646
+        },
+        {
+          "pid": 2931855,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.273,
+          "pss_peak_mb": 65.48
+        },
+        {
+          "pid": 2932326,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.674,
+          "pss_peak_mb": 58.715
+        },
+        {
+          "pid": 2932454,
+          "samples": 2,
+          "cpu_delta_samples": 1,
+          "rss_peak_mb": 138.51,
+          "pss_peak_mb": 72.224
+        }
+      ],
+      "cgroup_samples": 48,
+      "receipt_hashes": {
+        "launch.json": "38c2f6e68b496681636aab4448ea42f4a926434473b623b1b420f62374461312",
+        "completion.json": "352417febf3f890c36ec90294d3422baf73b338d93cc482f5cbdd8d1ce253111",
+        "cleanup.json": "7e6851a4857d61dddbce896e288a1f6a9437082d1b2cd61b32662da0d944b299",
+        "pins-before.json": "33de1872e9a69cff96a0d9daffd1a4acdc29f003d2a25ccfbf0ddef89cc621a4",
+        "pins-after.json": "679eebc1476a33a4e1061f31fbe5fbd8887ba6bf1d97d9b23d848f90d8c40bb0",
+        "native/results.jsonl": "a20cabd946801e9406417387021735c0c60ed99997b0eda8045bbbf36b9191ba",
+        "guard-audit/launches.jsonl": "cf00384e526b062a9764b8d3be05778ddbd8e59e418d0035d8b4a5b6a84ed6e9"
+      }
+    }
+  ],
+  "errors": [],
+  "scope": "29 stretch and 11 paint frozen reftests; unchanged exact comparisons; not full WPT. Read-only audit of existing images and receipts.",
+  "resource_limitations": "One-second snapshots can miss short peaks/processes; summed RSS double-counts shared pages; PSS is sampled separately. Cgroup is shared. No comparative performance claim.",
+  "build_input_count": 650
+}

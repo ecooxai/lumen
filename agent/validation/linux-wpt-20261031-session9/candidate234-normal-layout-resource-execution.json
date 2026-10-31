@@ -1,0 +1,59 @@
+{
+  "candidate": 234,
+  "started_utc": "2026-10-31T10:36:41.081976+00:00",
+  "finished_utc": "2026-10-31T10:37:38.505848+00:00",
+  "maximum_browser_lanes": 1,
+  "runs_sequential_and_other_heavy_work_held": true,
+  "runs": [
+    {
+      "label": "baseline226",
+      "started_utc": "2026-10-31T10:36:41.082002+00:00",
+      "finished_utc": "2026-10-31T10:36:58.385273+00:00",
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-normal-layout-performance/run-v2.py",
+        "--kind",
+        "lumen",
+        "--iteration",
+        "226",
+        "--workspace-iteration",
+        "234"
+      ],
+      "actual_returncode": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate234-resources-baseline226-controller.log"
+    },
+    {
+      "label": "candidate",
+      "started_utc": "2026-10-31T10:36:58.385350+00:00",
+      "finished_utc": "2026-10-31T10:37:15.694254+00:00",
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-normal-layout-performance/run-v2.py",
+        "--kind",
+        "lumen",
+        "--iteration",
+        "234",
+        "--workspace-iteration",
+        "234"
+      ],
+      "actual_returncode": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate234-resources-candidate-controller.log"
+    },
+    {
+      "label": "chromium156",
+      "started_utc": "2026-10-31T10:37:15.694326+00:00",
+      "finished_utc": "2026-10-31T10:37:38.505786+00:00",
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-normal-layout-performance/run-v2.py",
+        "--kind",
+        "chromium156",
+        "--workspace-iteration",
+        "234"
+      ],
+      "actual_returncode": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate234-resources-chromium156-controller.log"
+    }
+  ],
+  "actual_sequence_success": true
+}

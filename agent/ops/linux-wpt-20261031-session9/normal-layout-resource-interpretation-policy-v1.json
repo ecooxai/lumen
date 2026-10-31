@@ -1,0 +1,40 @@
+{
+  "created_utc": "2026-10-31T09:54:35.857518+00:00",
+  "status": "Root approved before any final matched benchmark run",
+  "purpose": "Practical engineering investigation flags, not statistical significance or an automatic release score",
+  "required_comparability": [
+    "Identical fixture geometry, work counts and checksum",
+    "Valid uniquely owned pinned browser process scope",
+    "Compare covered phase duration and sample timing before interpreting deltas",
+    "Keep Chromium browser-only memory distinct from ChromeDriver-inclusive samples"
+  ],
+  "final_vs_226_investigation_flags": {
+    "paced_work_CPU": {
+      "relative_increase_at_least": 0.25,
+      "absolute_increase_CPU_seconds_at_least": 0.1,
+      "combine": "AND"
+    },
+    "late_idle_CPU": {
+      "ratio_at_least": 2.0,
+      "absolute_increase_CPU_seconds_at_least": 0.05,
+      "combine": "AND"
+    },
+    "RSS_memory": {
+      "relative_increase_at_least": 0.15,
+      "absolute_increase_MiB_at_least": 32,
+      "combine": "AND"
+    },
+    "PSS_memory": {
+      "relative_increase_at_least": 0.15,
+      "absolute_increase_MiB_at_least": 16,
+      "combine": "AND"
+    }
+  },
+  "zero_baseline": "Use the absolute bound and mark the relative ratio undefined; a positive qualifying idle delta from zero is investigated",
+  "coverage": "CPU deltas require comparable covered phase duration; sparse or misaligned boundaries are inconclusive until existing raw traces are examined. No invented CPU delta for a single short sample.",
+  "memory": "RSS sums can double-count shared pages. PSS is a sparse separately sampled process-tree value, not a continuous maximum. Missing PSS remains null.",
+  "action": "Investigate any concrete flagged regression using existing traces first; repeat only if attribution remains materially uncertain, never automatically. A single boundary or isolated peak sample is not statistical evidence.",
+  "Chromium": "Descriptive comparison only, with interface and process-scope limitations retained.",
+  "paced_elapsed_time": "Fixed pacing prevents speed or throughput claims.",
+  "new_benchmark_requested": false
+}

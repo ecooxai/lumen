@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i234",
+  "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/showcase/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html",
+  "marker": "lumen-live-demo",
+  "source_hashes_before": {
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_fixture.py": "8da5fcf656a2c787d57c36101c7f6735b8047c207c83d60a4ca1853c6b72da9d",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/showcase/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i234": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282"
+  },
+  "source_hashes_after": {
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_fixture.py": "8da5fcf656a2c787d57c36101c7f6735b8047c207c83d60a4ca1853c6b72da9d",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/native_capture_guard.py": "d2099b548c524ae039533afe6c8f44fe4e1a4abe11c586bc08af98e3f91edc1d",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_cohort.py": "9d515fee536f6c50b4d863e51a5b929f16649aa6be5985d580393e3ff0d4877c",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/paired_wpt.py": "ea8b177e030d808fd4924028d2001fd9b40d1f4026fcdc994828940107a4c6bb",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/showcase/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i234": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282"
+  },
+  "sources_unchanged": true,
+  "joined_cleanup_threads": 1,
+  "remaining_cleanup_threads": [],
+  "cleanup_elapsed_s": 0.6106224220129661,
+  "elapsed_s": 1.6786847080220468,
+  "guard_audit": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/showcase/native234/guard-audit/launches.jsonl",
+  "guard_events": [
+    "started_at_private_gate",
+    "constructor_verified_and_acknowledged",
+    "author_url_released",
+    "exited"
+  ],
+  "guard_events_complete_and_linked": true,
+  "remaining_recorded_pids": [],
+  "runner_exception": null,
+  "method": "Join actual trusted cleanup workers; require their real exit record and removed profile; never synthesize audit events."
+}

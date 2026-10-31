@@ -1,0 +1,195 @@
+{
+  "checked_utc": "2026-10-31T10:11:54.629573+00:00",
+  "candidate": 234,
+  "accepted_private_source_base": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
+  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "source_manifest_sha256": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
+  "recorded_input_count": 650,
+  "changed_production_generator_test_files": [
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "78461e2340218bd3fc57ee764d7851d46fbde69a898aa1c6e3a863abb7a2c1ca",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/app/main.c",
+      "sha256": "56b8a5f406d19fbf4293119e880143b6a861bee3a8257085c8b8a6252973fc8f",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/css/css.h",
+      "sha256": "af92df71fed041bb9d7aada3aba0042c7eff45436677f69ca1a315731f7f5d21",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/css/parse.c",
+      "sha256": "304607d8251953db18ad743831ec0541e4d39f87c4287f8adace6f7dfcca9511",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/css/props_generated.inc",
+      "sha256": "47e148caf02b9a0db9330a974617914cf434c6f0a3cb5c1614f9017cafca7913",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/css/style.c",
+      "sha256": "c30e149874ed53524f40515590dcb7c2f575d8eafea979ddb48179b852d4a4ed",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/css/ua.c",
+      "sha256": "5b907951bf0a42a7dfada2df45541eba8d4b8a48b31c8fe4caa29ac1011f78a8",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/js/frames.cc",
+      "sha256": "d1b26d07b91633b9ee7c00e1fe72ad1f055c6e6903f506f07874ec2706fe7f65",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/js/js.cc",
+      "sha256": "e23cb28e15cfa2c690aac1a7c6ded12bb4b7321e18fcd26cf487ee0eb95072ff",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/js/js.h",
+      "sha256": "abb0d8e272c413ade53c724bb93e7dc2e4973cf14b44fb93a7889b9b06bf06a7",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/js/js_int.h",
+      "sha256": "e4be820f677e7991c055d77c90888067a9b8abd5fdaed1ffabf572f57df7a0e6",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/js/jsglue.c",
+      "sha256": "694381c82349e17097b53e22481283fe67454989ad807fa49a446545fac03d43",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/js/jsglue.h",
+      "sha256": "bafd1b210ab7671fbfb78002cd707873a081addb2b35a36d78d9d7a33e97af46",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/js/jsnative.cc",
+      "sha256": "38ffe15e72f8f6bc43539fa90ceb2406714d5d9997538553dff9d3f289156a42",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/js/prelude/01-events.js",
+      "sha256": "306cb27d9f75a006ade228c1a0e2a0be157469378089ecca2f2ff6bf81bfec72",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/js/prelude/03-element.js",
+      "sha256": "a0ca5534a0c74671264a5e84c9c72ebcf3a1e535b93e5dd6f5de1d8f868c9c33",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/js/prelude/08-window.js",
+      "sha256": "27d00e008660b3fd8f4029a99d0c05eb4b90a068a3d4f9b2e2f878534cb6b6ef",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/layout/block.c",
+      "sha256": "4582657a2f79fe2fe3f2a82d02759d30508076d927e868923d6b87d41077bc97",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/layout/box.c",
+      "sha256": "3d241c78b4943e5bede8b9b55bbffe69e1d380c0d09f69f238dfecccd08206df",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/layout/grid.c",
+      "sha256": "a07166e0fd1cc566c01f7179f1ace6e9a56ed25cf4d085b4adec0ab97f0e0f3d",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/layout/layout.h",
+      "sha256": "8f9ffc06763cb9e91999583ea667c3967cc3e9cddd8de04f30fe6a2f7c83b769",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/paint/display.c",
+      "sha256": "35d01357f1dfb6a215372928158653630eb5f766c03226a0eaa78951b4965593",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/paint/raster.c",
+      "sha256": "d8118fd89bf5f30ac6a5a75d5595c9125e080cf33d563e6511470f3058688ac0",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/paint/select.c",
+      "sha256": "3bc807fbf8af63937799cfe66fd34b9357feee5746e9528fff14d8aefbedfef4",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "src/paint/svg.c",
+      "sha256": "5c3230bcbf4b707e194aac83fc6c8a3f94d3e29d0ae074dc7d9be3f904ba72cf",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "tests/js/checkvisibility-options.html",
+      "sha256": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "tests/js/document-lifecycle.html",
+      "sha256": "cc4c6cfe1372b603cf395d9181a0e4bfaf133c4078ea10f99609c0b4c42c7d04",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "tests/js/hidden-scroll-retention.html",
+      "sha256": "66d53129c5d4f8e46dea8bf194b3c2e9266ba565e99215d1f34e3cdb47ff6dff",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "tests/js/intersection-geometry.html",
+      "sha256": "6e277f900e9a96a4962e09703f0b400a26463aaa3387af6c337a2fc43f747086",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "tests/jsrun.c",
+      "sha256": "9c4c1368c65a0fa33342c10466a76cfbd9ad03aad274574077ecd686aee4ac81",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "tests/raster_layers.c",
+      "sha256": "161734d31af5713d7c3877e063cf03ed16de2b309e5f5a21ba4d2ada8021274e",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "tests/test_css_containment.c",
+      "sha256": "41085aa429d6221503b43af8f2f2cd61c074618e9216e113a56567183c0c72d1",
+      "covered_by": "sealed_build_manifest"
+    },
+    {
+      "path": "tools/gen_css_props.py",
+      "sha256": "aa4f4af12360ab2b3381914b6285009d4e32da8cd4b308a716a0028a2749d1ea",
+      "covered_by": "explicit_reviewed_dependency_allowlist"
+    }
+  ],
+  "uncovered_changed_files": [],
+  "additional_reproduction_controls": [
+    {
+      "export_path": "tests/jsrun-completion/missing-completion.html",
+      "sha256": "6f40fe0f2d5c18670e5cfcb9021eebed4107a7d776b0dea67fdb96323f47d649"
+    },
+    {
+      "export_path": "tests/jsrun-completion/failed-completion.html",
+      "sha256": "f5cddf34bead9d6b98deffa6753ffc72bfc2778b152a3ed9bf82cc8c0ba119f2"
+    },
+    {
+      "export_path": "tests/js/checkvisibility-slot-accessors.html",
+      "sha256": "e23c504b9684614b74ddf4cb57aed465dd7f4b96e646b49b0718514f760ca8db"
+    }
+  ],
+  "reviewed_allowlist_sha256": "89c0834b920dbf807aece58dfba4e114f885e54940616528de7f5877bff770e6",
+  "closure_passed": true,
+  "public_export_created": false,
+  "public_git_changed": false,
+  "release_qualified": false
+}

@@ -1,0 +1,10 @@
+{
+  "candidate": 234,
+  "terminal_id": 16207,
+  "actual_terminal_exit_code": 0,
+  "running": false,
+  "retained_snapshot": "06c76ca328ae54c8",
+  "observed_utc": "2026-10-31T10:38:44.599672+00:00",
+  "execution_receipt_sha256": "ce85c09c1b1b2341475b2c9a7472dc1e73af881280bd593b5dd268a837558e51",
+  "note": "Actual terminal completion; phase/resource comparisons require separate independent analysis."
+}

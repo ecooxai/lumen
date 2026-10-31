@@ -1,0 +1,84 @@
+[
+  {
+    "label": "positive-lifecycle",
+    "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/document-lifecycle.html",
+    "duration_ms": 12000,
+    "expected_exit": 0,
+    "started_utc": "2026-10-31T10:14:25.468832+00:00",
+    "finished_utc": "2026-10-31T10:14:29.597407+00:00",
+    "duration_s": 4.128565872000763,
+    "pid": 2843167,
+    "actual_jsrun_returncode": 0,
+    "timed_out": false,
+    "owned_cleanup_signals": [],
+    "command": [
+      "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i234-lifecycle-sanitized",
+      "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/document-lifecycle.html",
+      "12000"
+    ],
+    "binary_sha256": "85e1ffb3c546acd69ba49f9f2657bfbbe3ef6430d3bf6da6f3826bc33210aaf8",
+    "binary_unchanged": true
+  },
+  {
+    "label": "missing-completion",
+    "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/missing-completion.html",
+    "duration_ms": 20,
+    "expected_exit": 1,
+    "started_utc": "2026-10-31T10:14:29.779419+00:00",
+    "finished_utc": "2026-10-31T10:14:30.246375+00:00",
+    "duration_s": 0.4669608229887672,
+    "pid": 2843313,
+    "actual_jsrun_returncode": 1,
+    "timed_out": false,
+    "owned_cleanup_signals": [],
+    "command": [
+      "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i234-lifecycle-sanitized",
+      "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/missing-completion.html",
+      "20"
+    ],
+    "binary_sha256": "85e1ffb3c546acd69ba49f9f2657bfbbe3ef6430d3bf6da6f3826bc33210aaf8",
+    "binary_unchanged": true
+  },
+  {
+    "label": "failed-completion",
+    "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/failed-completion.html",
+    "duration_ms": 20,
+    "expected_exit": 1,
+    "started_utc": "2026-10-31T10:14:30.425121+00:00",
+    "finished_utc": "2026-10-31T10:14:30.839906+00:00",
+    "duration_s": 0.41478314698906615,
+    "pid": 2843342,
+    "actual_jsrun_returncode": 1,
+    "timed_out": false,
+    "owned_cleanup_signals": [],
+    "command": [
+      "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i234-lifecycle-sanitized",
+      "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/failed-completion.html",
+      "20"
+    ],
+    "binary_sha256": "85e1ffb3c546acd69ba49f9f2657bfbbe3ef6430d3bf6da6f3826bc33210aaf8",
+    "binary_unchanged": true
+  },
+  {
+    "label": "visibility-options49",
+    "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/checkvisibility-options.html",
+    "duration_ms": 10000,
+    "expected_exit": 0,
+    "completion_attribute": "data-checkvisibility-options-complete",
+    "readonly_post_script": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/serialize-completed-results-v3.js",
+    "started_utc": "2026-10-31T10:14:31.022521+00:00",
+    "finished_utc": "2026-10-31T10:14:31.539610+00:00",
+    "duration_s": 0.5170899860095233,
+    "pid": 2843383,
+    "actual_jsrun_returncode": 0,
+    "timed_out": false,
+    "owned_cleanup_signals": [],
+    "command": [
+      "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i234-lifecycle-sanitized",
+      "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/checkvisibility-options.html",
+      "10000"
+    ],
+    "binary_sha256": "85e1ffb3c546acd69ba49f9f2657bfbbe3ef6430d3bf6da6f3826bc33210aaf8",
+    "binary_unchanged": true
+  }
+]

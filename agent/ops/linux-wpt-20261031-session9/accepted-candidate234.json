@@ -1,0 +1,17 @@
+{
+  "candidate": 234,
+  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_path": "build/codex-native/lumen-astra-i234",
+  "default_binary_path": "build/codex-native/lumen",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "recorded_inputs": 650,
+  "source_manifest_digest": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
+  "technical_acceptance_utc": "2026-10-31T10:41:46.236056+00:00",
+  "decision_owner": "root",
+  "technical_review_path": "agent/ops/linux-wpt-20261031-session9/candidate234-independent-final-review.json",
+  "technical_review_sha256": "aa0068187a3ddf7f4006c89543acd05a92b1a442f46ed9b7210042a7aa79f4af",
+  "accepted": true,
+  "scope": "Selected non-URL engine improvements with all declared preservation and resource gates; not full WPT or whole-browser parity",
+  "public_publication": "Pending exact final delivery receipts; no old artifact is relabeled",
+  "created_utc": "2026-10-31T10:51:14.697751+00:00"
+}

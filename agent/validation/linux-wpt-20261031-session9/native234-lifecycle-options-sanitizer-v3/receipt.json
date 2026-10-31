@@ -1,0 +1,94 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "started_utc": "2026-10-31T10:14:13.226460+00:00",
+  "finished_utc": "2026-10-31T10:14:33.243844+00:00",
+  "duration_s": 20.017382268997608,
+  "actual_outer_sequence_returncode": 0,
+  "actual_native_returncodes": [
+    0,
+    1,
+    1,
+    0
+  ],
+  "immutable_sanitized_binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i234-lifecycle-sanitized",
+  "immutable_sanitized_sha256": "85e1ffb3c546acd69ba49f9f2657bfbbe3ef6430d3bf6da6f3826bc33210aaf8",
+  "all12_strict_lifecycle_cases_pass": true,
+  "raw_lifecycle_case_markers": [
+    [
+      "top-initial",
+      "PASS"
+    ],
+    [
+      "synthetic-events",
+      "PASS"
+    ],
+    [
+      "frame-initial",
+      "PASS"
+    ],
+    [
+      "repeated-close",
+      "PASS"
+    ],
+    [
+      "load-document-open",
+      "PASS"
+    ],
+    [
+      "load-frame-removal",
+      "PASS"
+    ],
+    [
+      "load-srcdoc-navigation",
+      "PASS"
+    ],
+    [
+      "pageshow-document-open",
+      "PASS"
+    ],
+    [
+      "post-load-child-insertion",
+      "PASS"
+    ],
+    [
+      "load-listener-throws",
+      "PASS"
+    ],
+    [
+      "pageshow-cancel",
+      "PASS"
+    ],
+    [
+      "post-completion-document-open",
+      "PASS"
+    ]
+  ],
+  "all49_instrumented_visibility_cases_pass": true,
+  "visibility_readonly_post_hook_sha256": "fc11a22c4bac7f5738fe35c486a0a1a856cd902082df3f872684ddb1ddee07cf",
+  "durable_finish_boundaries_asserted": true,
+  "positive_and_negative_completion_contract_pass": true,
+  "sanitizer_diagnostics": {
+    "positive-lifecycle": false,
+    "missing-completion": false,
+    "failed-completion": false,
+    "visibility-options49": false
+  },
+  "recorded_input_count": 650,
+  "source_unchanged": true,
+  "pins_unchanged": true,
+  "git_unchanged": true,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "monitor_forced_stop": false,
+  "sanitizer_options": {
+    "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
+    "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
+    "LSAN_OPTIONS": "exitcode=23"
+  },
+  "errors": [],
+  "qualification_pass": true,
+  "prebuilt_V8_itself_instrumented": false
+}

@@ -1,0 +1,26 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "fixture_sha256": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
+  "manifest_sha256": "bf2e5ca98d4234de88bacad4c8075c6c4f00ea633e26b2f6d472412472b7e5d2",
+  "started_utc": "2026-10-31T10:50:18.431960+00:00",
+  "finished_utc": "2026-10-31T10:50:20.582898+00:00",
+  "duration_s": 2.1509360219934024,
+  "actual_controller_returncode": 0,
+  "actual_native_exit_code": 0,
+  "profile_removed": true,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "forced_cleanup": [],
+  "pins_unchanged": true,
+  "source_unchanged": true,
+  "git_unchanged": true,
+  "cleanup_ok": true,
+  "settled_marker_and_real_readings_valid": true,
+  "not_WPT": true,
+  "no_screenshot_or_visual_validation": true,
+  "errors": []
+}

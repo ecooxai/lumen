@@ -1,0 +1,27 @@
+{
+  "utc": "2026-10-31T10:26:12.367531+00:00",
+  "elapsed_s": 437.313218,
+  "completed_files": {
+    "shard0": 180,
+    "shard1": 192
+  },
+  "total": 372,
+  "provisional_harness_counts": {
+    "OK": 365,
+    "TIMEOUT": 7
+  },
+  "new_nonOK_harness_vs231_so_far": [],
+  "completed_resource_summaries": 372,
+  "sampled_case_tree_peak_RSS_MiB": 273.293,
+  "sampled_case_tree_peak_PSS_MiB": 149.293,
+  "sampled_case_tree_max_CPU_one_core_pct": 171.011,
+  "all650_current_inputs_unchanged": true,
+  "git_source_unchanged": true,
+  "additional_shared_cgroup_observation": {
+    "interval_s": 1.0002827049756888,
+    "cpu_one_core_percent": 47.82627927288087,
+    "throttled_period_delta": 0,
+    "cpu_max": "480000 100000"
+  },
+  "limits": "Provisional counts only. Per-case sampled peaks are not simultaneous workload totals or memory bounds; the extra cgroup observation covers one interval only."
+}

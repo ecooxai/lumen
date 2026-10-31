@@ -1,0 +1,40 @@
+{
+  "candidate": 234,
+  "iteration": 8,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "started_utc": "2026-10-31T10:08:13.560329+00:00",
+  "source_files": {
+    "src/js/prelude/03-element.js": "a0ca5534a0c74671264a5e84c9c72ebcf3a1e535b93e5dd6f5de1d8f868c9c33",
+    "tests/js/checkvisibility-options.html": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+    "CMakeLists.txt": "78461e2340218bd3fc57ee764d7851d46fbde69a898aa1c6e3a863abb7a2c1ca"
+  },
+  "source_frozen": true,
+  "first_gates": [
+    "native147",
+    "unchanged49 visibility cases with actual exit",
+    "separate2 accessor controls against pinnedChrome",
+    "whole unchanged21checkVisibility identities withinAPI3"
+  ],
+  "preservation": [
+    "selected39 assertions and pixels",
+    "API3 IO/RO and existingvisibilitypasses",
+    "native lifecycle12/114 and whole the-end4",
+    "hidden scroll30-phasecontract and upstream1",
+    "actualC++ lifecycle+completionnegatives+frozen49 ASanUBSan",
+    "retained C containment/grid/math/raster sanitizers",
+    "exact640 preserving2319246assertions416files",
+    "retained40 reftests80captures",
+    "matched226/final/Chrome resource control sequential otherwisequiet"
+  ],
+  "URL_suites": "deferred",
+  "accepted_public_release_candidate": 226,
+  "verified_intermediate_fallback": 233,
+  "source_target_utc": "2026-10-31T10:25:00Z",
+  "final_qualification_target_utc": "2026-10-31T11:00:00Z",
+  "deadline_utc": "2026-10-31T12:00:00Z",
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ]
+}

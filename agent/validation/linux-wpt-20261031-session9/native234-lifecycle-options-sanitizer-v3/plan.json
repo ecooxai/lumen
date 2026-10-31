@@ -1,0 +1,83 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "recorded_input_count": 650,
+  "commands_without_embedded_worker": [
+    {
+      "label": "configure",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "cmake",
+        "-S",
+        "/mnt/p3/project/browser/lumen-android/lumen-android",
+        "-B",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize"
+      ]
+    },
+    {
+      "label": "build-jsrun",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "cmake",
+        "--build",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize",
+        "--target",
+        "jsrun",
+        "-j2"
+      ]
+    },
+    {
+      "label": "actual-runtime-controls",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "/home/a/.local/bin/python3",
+        "-c",
+        "recorded worker in pinned controller source"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "label": "positive-lifecycle",
+      "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/document-lifecycle.html",
+      "duration_ms": 12000,
+      "expected_exit": 0
+    },
+    {
+      "label": "missing-completion",
+      "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/missing-completion.html",
+      "duration_ms": 20,
+      "expected_exit": 1
+    },
+    {
+      "label": "failed-completion",
+      "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/failed-completion.html",
+      "duration_ms": 20,
+      "expected_exit": 1
+    },
+    {
+      "label": "visibility-options49",
+      "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/checkvisibility-options.html",
+      "duration_ms": 10000,
+      "expected_exit": 0,
+      "completion_attribute": "data-checkvisibility-options-complete",
+      "readonly_post_script": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-options/serialize-completed-results-v3.js"
+    }
+  ],
+  "flags": {
+    "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -DV8_CPPGC_MICROTASK_QUEUE",
+    "CMAKE_C_FLAGS": "-fsanitize=address,undefined",
+    "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined -Wl,-rpath-link,/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec"
+  },
+  "actual_cpp_paths": [
+    "src/js/frames.cc",
+    "src/js/js.cc"
+  ],
+  "resource_interval_seconds": 1,
+  "maximum_browser_lanes": 1,
+  "prebuilt_V8_itself_instrumented": false,
+  "acceptance": "Real OS exits0/1/1/0, all12 strict lifecycle cases plus49 exact visibility rows, no ASan/UBSan/LSan diagnostics; no CTest PASS regex inference"
+}

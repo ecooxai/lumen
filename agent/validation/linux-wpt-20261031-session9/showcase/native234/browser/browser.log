@@ -1,0 +1,9 @@
+LUMEN_CAPTURE_GUARD_READY 2984264 5b1cfc3296a8b2846435579d67907826
+lumen: presenting with cpu
+lumen: lite mode off
+[js log] DEMO_EVENT {"type":"DOMContentLoaded","target":"Document","currentTarget":"Document","phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null}
+[js log] DEMO_EVENT {"type":"load","target":"Document","currentTarget":"Window","phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null}
+[js log] DEMO_EVENT {"type":"pageshow","target":"Document","currentTarget":"Window","phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false}
+lumen: http://127.0.0.1:42211/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html loaded in 9ms, first frame 22.1ms (layout+paint+present), 175 boxes
+[js log] DEMO_MEASUREMENTS {"containment":{"width":76,"height":40,"contain":"size","writingMode":"horizontal-tb"},"scroll":{"left":80,"top":90,"width":420,"height":300,"contentVisibility":"visible"},"visibility":{"default":true,"opacity":false,"visibility":true,"ancestorOpacity":"0","ownVisibility":"visible"}}
+[js log] RESULTS lumen-live-demo:PASS

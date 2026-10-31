@@ -1,0 +1,21 @@
+{
+  "candidate": 234,
+  "reviewed_utc": "2026-10-31T10:08:28.989971+00:00",
+  "source_files": {
+    "src/js/prelude/03-element.js": "a0ca5534a0c74671264a5e84c9c72ebcf3a1e535b93e5dd6f5de1d8f868c9c33",
+    "tests/js/checkvisibility-options.html": "aeeb79df0c100533387835070801079a695dff5b0e64819757b73db14eddca06",
+    "CMakeLists.txt": "78461e2340218bd3fc57ee764d7851d46fbde69a898aa1c6e3a863abb7a2c1ca"
+  },
+  "static_blockers": [],
+  "static_review_passed": true,
+  "runtime_qualification_pending": true,
+  "scope": [
+    "Five WebIDL boolean members converted once in lexicographic order before layout/style",
+    "Captured intrinsic Object, TypeError and WeakMap get",
+    "Private native named/manual slot ancestry; no replaceable public DOM getters",
+    "Individual computed zero opacity on inclusive flat ancestors",
+    "Own computed visibility; existing automatic-skipping/box limitations unchanged",
+    "Exact frozen49 durable fixture with real-exit completion gate; separate two accessor controls"
+  ],
+  "no_full_checkVisibility_support_claim": true
+}

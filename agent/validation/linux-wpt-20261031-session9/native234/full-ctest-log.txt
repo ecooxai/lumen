@@ -1,0 +1,2803 @@
+Start testing: Oct 31 03:08 PDT
+----------------------------------------------------------
+1/147 Testing: platform
+1/147 Test: platform
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_platform"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"platform" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+platform tests ok: RSS=14884864 bytes, CPU=2684 us
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"platform" end time: Oct 31 03:08 PDT
+"platform" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/147 Testing: encoding_labels
+2/147 Test: encoding_labels
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_encoding_labels"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"encoding_labels" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+encoding label native controls: 221/221 PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"encoding_labels" end time: Oct 31 03:08 PDT
+"encoding_labels" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/147 Testing: file
+3/147 Test: file
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_file"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"file" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+file tests ok
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"file" end time: Oct 31 03:08 PDT
+"file" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/147 Testing: http_range
+4/147 Test: http_range
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_http_range"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"http_range" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+HTTP Range controls: 42/42 PASS across 14 wire requests
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"http_range" end time: Oct 31 03:08 PDT
+"http_range" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/147 Testing: http_zstd
+5/147 Test: http_zstd
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_http_zstd"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"http_zstd" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+HTTP zstd controls: 258/258 PASS across sync, stream and sink paths
+<end of output>
+Test time =   0.12 sec
+----------------------------------------------------------
+Test Passed.
+"http_zstd" end time: Oct 31 03:08 PDT
+"http_zstd" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/147 Testing: mime_policy
+6/147 Test: mime_policy
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_mime_policy"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"mime_policy" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+MIME response policy: 165/165 checks passed
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"mime_policy" end time: Oct 31 03:08 PDT
+"mime_policy" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/147 Testing: fetch_metadata
+7/147 Test: fetch_metadata
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_fetch_metadata"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"fetch_metadata" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+fetch-metadata: 195/195 checks passed (pinned full PSL)
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"fetch_metadata" end time: Oct 31 03:08 PDT
+"fetch_metadata" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/147 Testing: auth_user_agent
+8/147 Test: auth_user_agent
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_auth_user_agent"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"auth_user_agent" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Authentication browser identity passed
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"auth_user_agent" end time: Oct 31 03:08 PDT
+"auth_user_agent" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/147 Testing: net_redirect
+9/147 Test: net_redirect
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_net_redirect"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"net_redirect" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+network redirect tests ok
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"net_redirect" end time: Oct 31 03:08 PDT
+"net_redirect" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/147 Testing: desktop_sites
+10/147 Test: desktop_sites
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_desktop_sites"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"desktop_sites" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+saved: * -youtube.com
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"desktop_sites" end time: Oct 31 03:08 PDT
+"desktop_sites" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/147 Testing: cookie_site
+11/147 Test: cookie_site
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_cookie_site"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"cookie_site" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+ok
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"cookie_site" end time: Oct 31 03:08 PDT
+"cookie_site" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/147 Testing: http_cache
+12/147 Test: http_cache
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_http_cache"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"http_cache" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+http cache: ok
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"http_cache" end time: Oct 31 03:08 PDT
+"http_cache" time elapsed: 00:00:00
+----------------------------------------------------------
+
+13/147 Testing: proxy
+13/147 Test: proxy
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_proxy"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"proxy" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+proxy ok
+<end of output>
+Test time =   0.02 sec
+----------------------------------------------------------
+Test Passed.
+"proxy" end time: Oct 31 03:08 PDT
+"proxy" time elapsed: 00:00:00
+----------------------------------------------------------
+
+14/147 Testing: net_stream
+14/147 Test: net_stream
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_net_stream"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"net_stream" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+stream byte ordering, bounded batching, live delivery and truncation passed
+<end of output>
+Test time =   0.23 sec
+----------------------------------------------------------
+Test Passed.
+"net_stream" end time: Oct 31 03:08 PDT
+"net_stream" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/147 Testing: download
+15/147 Test: download
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_download"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"download" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+requests 6 ranged 5 max parallel 6
+download classification, names, page bytes and parallel ranged downloads with cookies passed
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"download" end time: Oct 31 03:08 PDT
+"download" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/147 Testing: android_trust_import
+16/147 Test: android_trust_import
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_trust"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_trust_import" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android trust import tests ok
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"android_trust_import" end time: Oct 31 03:08 PDT
+"android_trust_import" time elapsed: 00:00:00
+----------------------------------------------------------
+
+17/147 Testing: android_launch
+17/147 Test: android_launch
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_launch"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_launch" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android launch queue tests ok
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_launch" end time: Oct 31 03:08 PDT
+"android_launch" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/147 Testing: android_back
+18/147 Test: android_back
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_back"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_back" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android Back policy and bounded concurrent dispatch PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_back" end time: Oct 31 03:08 PDT
+"android_back" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/147 Testing: android_fling_release
+19/147 Test: android_fling_release
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "release"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_release" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_release" end time: Oct 31 03:08 PDT
+"android_fling_release" time elapsed: 00:00:00
+----------------------------------------------------------
+
+20/147 Testing: android_fling_slow
+20/147 Test: android_fling_slow
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "slow"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_slow" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_slow" end time: Oct 31 03:08 PDT
+"android_fling_slow" time elapsed: 00:00:00
+----------------------------------------------------------
+
+21/147 Testing: android_fling_hold
+21/147 Test: android_fling_hold
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "hold"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_hold" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_hold" end time: Oct 31 03:08 PDT
+"android_fling_hold" time elapsed: 00:00:00
+----------------------------------------------------------
+
+22/147 Testing: android_fling_cancel
+22/147 Test: android_fling_cancel
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "cancel"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_cancel" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_cancel" end time: Oct 31 03:08 PDT
+"android_fling_cancel" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/147 Testing: android_fling_invalid
+23/147 Test: android_fling_invalid
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "invalid"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_invalid" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_invalid" end time: Oct 31 03:08 PDT
+"android_fling_invalid" time elapsed: 00:00:00
+----------------------------------------------------------
+
+24/147 Testing: android_fling_stall
+24/147 Test: android_fling_stall
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "stall"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_stall" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_stall" end time: Oct 31 03:08 PDT
+"android_fling_stall" time elapsed: 00:00:00
+----------------------------------------------------------
+
+25/147 Testing: android_fling_pixels
+25/147 Test: android_fling_pixels
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "pixels"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_pixels" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_pixels" end time: Oct 31 03:08 PDT
+"android_fling_pixels" time elapsed: 00:00:00
+----------------------------------------------------------
+
+26/147 Testing: android_fling_cadence
+26/147 Test: android_fling_cadence
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "cadence"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_cadence" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_cadence" end time: Oct 31 03:08 PDT
+"android_fling_cadence" time elapsed: 00:00:00
+----------------------------------------------------------
+
+27/147 Testing: android_fling_stop
+27/147 Test: android_fling_stop
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "stop"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_stop" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_stop" end time: Oct 31 03:08 PDT
+"android_fling_stop" time elapsed: 00:00:00
+----------------------------------------------------------
+
+28/147 Testing: android_fling_reverse
+28/147 Test: android_fling_reverse
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "reverse"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_reverse" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_reverse" end time: Oct 31 03:08 PDT
+"android_fling_reverse" time elapsed: 00:00:00
+----------------------------------------------------------
+
+29/147 Testing: android_fling_bounded
+29/147 Test: android_fling_bounded
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "bounded"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_bounded" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_bounded" end time: Oct 31 03:08 PDT
+"android_fling_bounded" time elapsed: 00:00:00
+----------------------------------------------------------
+
+30/147 Testing: android_fling_independent
+30/147 Test: android_fling_independent
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_fling" "independent"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_fling_independent" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_fling_independent" end time: Oct 31 03:08 PDT
+"android_fling_independent" time elapsed: 00:00:00
+----------------------------------------------------------
+
+31/147 Testing: android_touch_tap
+31/147 Test: android_touch_tap
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "tap"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_tap" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_tap" end time: Oct 31 03:08 PDT
+"android_touch_tap" time elapsed: 00:00:00
+----------------------------------------------------------
+
+32/147 Testing: android_touch_drag
+32/147 Test: android_touch_drag
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "drag"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_drag" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_drag" end time: Oct 31 03:08 PDT
+"android_touch_drag" time elapsed: 00:00:00
+----------------------------------------------------------
+
+33/147 Testing: android_touch_slop
+33/147 Test: android_touch_slop
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "slop"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_slop" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_slop" end time: Oct 31 03:08 PDT
+"android_touch_slop" time elapsed: 00:00:00
+----------------------------------------------------------
+
+34/147 Testing: android_touch_cancel
+34/147 Test: android_touch_cancel
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "cancel"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_cancel" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_cancel" end time: Oct 31 03:08 PDT
+"android_touch_cancel" time elapsed: 00:00:00
+----------------------------------------------------------
+
+35/147 Testing: android_touch_chrome
+35/147 Test: android_touch_chrome
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "chrome"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_chrome" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_chrome" end time: Oct 31 03:08 PDT
+"android_touch_chrome" time elapsed: 00:00:00
+----------------------------------------------------------
+
+36/147 Testing: android_touch_multitouch
+36/147 Test: android_touch_multitouch
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "multitouch"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_multitouch" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_multitouch" end time: Oct 31 03:08 PDT
+"android_touch_multitouch" time elapsed: 00:00:00
+----------------------------------------------------------
+
+37/147 Testing: android_touch_identity
+37/147 Test: android_touch_identity
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "identity"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_identity" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_identity" end time: Oct 31 03:08 PDT
+"android_touch_identity" time elapsed: 00:00:00
+----------------------------------------------------------
+
+38/147 Testing: android_touch_invalid
+38/147 Test: android_touch_invalid
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "invalid"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_invalid" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_invalid" end time: Oct 31 03:08 PDT
+"android_touch_invalid" time elapsed: 00:00:00
+----------------------------------------------------------
+
+39/147 Testing: android_touch_release_delta
+39/147 Test: android_touch_release_delta
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "release_delta"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_release_delta" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_release_delta" end time: Oct 31 03:08 PDT
+"android_touch_release_delta" time elapsed: 00:00:00
+----------------------------------------------------------
+
+40/147 Testing: android_touch_capacity
+40/147 Test: android_touch_capacity
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "capacity"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_capacity" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_capacity" end time: Oct 31 03:08 PDT
+"android_touch_capacity" time elapsed: 00:00:00
+----------------------------------------------------------
+
+41/147 Testing: android_touch_reverse
+41/147 Test: android_touch_reverse
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "reverse"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_reverse" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_reverse" end time: Oct 31 03:08 PDT
+"android_touch_reverse" time elapsed: 00:00:00
+----------------------------------------------------------
+
+42/147 Testing: android_touch_independent
+42/147 Test: android_touch_independent
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_android_touch" "independent"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_touch_independent" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+Android touch scenario PASS
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"android_touch_independent" end time: Oct 31 03:08 PDT
+"android_touch_independent" time elapsed: 00:00:00
+----------------------------------------------------------
+
+43/147 Testing: workspace
+43/147 Test: workspace
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_workspace"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"workspace" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+workspace icon tests ok
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"workspace" end time: Oct 31 03:08 PDT
+"workspace" time elapsed: 00:00:00
+----------------------------------------------------------
+
+44/147 Testing: media_icon
+44/147 Test: media_icon
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_media_icon"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"media_icon" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+media icon tests ok
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"media_icon" end time: Oct 31 03:08 PDT
+"media_icon" time elapsed: 00:00:00
+----------------------------------------------------------
+
+45/147 Testing: viewer
+45/147 Test: viewer
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_viewer" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/viewer-test.html"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"viewer" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+local viewer tests ok
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"viewer" end time: Oct 31 03:08 PDT
+"viewer" time elapsed: 00:00:00
+----------------------------------------------------------
+
+46/147 Testing: viewport_events
+46/147 Test: viewport_events
+Command: "/home/a/.config/nvm/versions/node/v22.22.2/bin/node" "--test" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/test_viewport_events.js"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"viewport_events" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+TAP version 13
+# Subtest: root scroll targets the document and bubbles to window without resize or visual pan
+ok 1 - root scroll targets the document and bubbles to window without resize or visual pan
+  ---
+  duration_ms: 7.131943
+  type: 'test'
+  ...
+# Subtest: scroll propagation honors stopPropagation and reports listener errors
+ok 2 - scroll propagation honors stopPropagation and reports listener errors
+  ---
+  duration_ms: 4.114864
+  type: 'test'
+  ...
+# Subtest: visual viewport is a stable EventTarget with read-only CSS geometry
+ok 3 - visual viewport is a stable EventTarget with read-only CSS geometry
+  ---
+  duration_ms: 2.210035
+  type: 'test'
+  ...
+# Subtest: resize dispatches window then visual then changed media lists
+ok 4 - resize dispatches window then visual then changed media lists
+  ---
+  duration_ms: 2.978246
+  type: 'test'
+  ...
+# Subtest: DPR changes notify resolution queries without resize
+ok 5 - DPR changes notify resolution queries without resize
+  ---
+  duration_ms: 1.72726
+  type: 'test'
+  ...
+# Subtest: visual handlers, once, removal, manual dispatch and listener errors
+ok 6 - visual handlers, once, removal, manual dispatch and listener errors
+  ---
+  duration_ms: 1.931788
+  type: 'test'
+  ...
+# Subtest: media list creation during notification is deferred to the next update
+ok 7 - media list creation during notification is deferred to the next update
+  ---
+  duration_ms: 1.90755
+  type: 'test'
+  ...
+# Subtest: engine binds, releases and calls viewport notification before animation frames
+ok 8 - engine binds, releases and calls viewport notification before animation frames
+  ---
+  duration_ms: 0.9675
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 98.01009
+<end of output>
+Test time =   0.14 sec
+----------------------------------------------------------
+Test Passed.
+"viewport_events" end time: Oct 31 03:08 PDT
+"viewport_events" time elapsed: 00:00:00
+----------------------------------------------------------
+
+47/147 Testing: viewer_script
+47/147 Test: viewer_script
+Command: "/home/a/.config/nvm/versions/node/v22.22.2/bin/node" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/test_viewer.js" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/viewer-test.html"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"viewer_script" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+viewer script tests ok
+<end of output>
+Test time =   0.04 sec
+----------------------------------------------------------
+Test Passed.
+"viewer_script" end time: Oct 31 03:08 PDT
+"viewer_script" time elapsed: 00:00:00
+----------------------------------------------------------
+
+48/147 Testing: embedded_assets
+48/147 Test: embedded_assets
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/test_embed.py"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"embedded_assets" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.280s
+
+OK
+<end of output>
+Test time =   0.34 sec
+----------------------------------------------------------
+Test Passed.
+"embedded_assets" end time: Oct 31 03:08 PDT
+"embedded_assets" time elapsed: 00:00:00
+----------------------------------------------------------
+
+49/147 Testing: android_dependency_plan
+49/147 Test: android_dependency_plan
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/test_android_deps.py"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"android_dependency_plan" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.035s
+
+OK
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"android_dependency_plan" end time: Oct 31 03:08 PDT
+"android_dependency_plan" time elapsed: 00:00:00
+----------------------------------------------------------
+
+50/147 Testing: worker_tasks
+50/147 Test: worker_tasks
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_worker_tasks"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"worker_tasks" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+foreground task queue: ordering, deadlines, wakeup, non-nesting, reentrancy, concurrent shutdown passed
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"worker_tasks" end time: Oct 31 03:08 PDT
+"worker_tasks" time elapsed: 00:00:00
+----------------------------------------------------------
+
+51/147 Testing: js_viewport_state
+51/147 Test: js_viewport_state
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_js_viewport_state"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_viewport_state" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"js_viewport_state" end time: Oct 31 03:08 PDT
+"js_viewport_state" time elapsed: 00:00:00
+----------------------------------------------------------
+
+52/147 Testing: broadcast_site
+52/147 Test: broadcast_site
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_broadcast_site"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"broadcast_site" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+BroadcastChannel site invariants: 30 passed, 0 failed; PSL available
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"broadcast_site" end time: Oct 31 03:08 PDT
+"broadcast_site" time elapsed: 00:00:00
+----------------------------------------------------------
+
+53/147 Testing: js_node_lifetime_root
+53/147 Test: js_node_lifetime_root
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_js_node_lifetime" "root"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_node_lifetime_root" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+cross-realm node and ownerDocument lifetime PASS; all nodes released
+<end of output>
+Test time =   0.36 sec
+----------------------------------------------------------
+Test Passed.
+"js_node_lifetime_root" end time: Oct 31 03:08 PDT
+"js_node_lifetime_root" time elapsed: 00:00:00
+----------------------------------------------------------
+
+54/147 Testing: js_node_lifetime_child
+54/147 Test: js_node_lifetime_child
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_js_node_lifetime" "child"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_node_lifetime_child" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+cross-realm node and ownerDocument lifetime PASS; all nodes released
+<end of output>
+Test time =   0.34 sec
+----------------------------------------------------------
+Test Passed.
+"js_node_lifetime_child" end time: Oct 31 03:08 PDT
+"js_node_lifetime_child" time elapsed: 00:00:00
+----------------------------------------------------------
+
+55/147 Testing: invoker_native
+55/147 Test: invoker_native
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "native"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_native" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+native passed
+<end of output>
+Test time =   0.23 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_native" end time: Oct 31 03:08 PDT
+"invoker_native" time elapsed: 00:00:00
+----------------------------------------------------------
+
+56/147 Testing: invoker_cancel
+56/147 Test: invoker_cancel
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "cancel"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_cancel" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+cancel passed
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_cancel" end time: Oct 31 03:08 PDT
+"invoker_cancel" time elapsed: 00:00:00
+----------------------------------------------------------
+
+57/147 Testing: invoker_close
+57/147 Test: invoker_close
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "close"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_close" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+close passed
+<end of output>
+Test time =   0.24 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_close" end time: Oct 31 03:08 PDT
+"invoker_close" time elapsed: 00:00:00
+----------------------------------------------------------
+
+58/147 Testing: invoker_properties
+58/147 Test: invoker_properties
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "properties"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_properties" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+properties passed
+<end of output>
+Test time =   0.25 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_properties" end time: Oct 31 03:08 PDT
+"invoker_properties" time elapsed: 00:00:00
+----------------------------------------------------------
+
+59/147 Testing: invoker_custom
+59/147 Test: invoker_custom
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "custom"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_custom" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+custom passed
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_custom" end time: Oct 31 03:08 PDT
+"invoker_custom" time elapsed: 00:00:00
+----------------------------------------------------------
+
+60/147 Testing: invoker_form
+60/147 Test: invoker_form
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "form"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_form" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+form passed
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_form" end time: Oct 31 03:08 PDT
+"invoker_form" time elapsed: 00:00:00
+----------------------------------------------------------
+
+61/147 Testing: invoker_shadow
+61/147 Test: invoker_shadow
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "shadow"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_shadow" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+shadow passed
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_shadow" end time: Oct 31 03:08 PDT
+"invoker_shadow" time elapsed: 00:00:00
+----------------------------------------------------------
+
+62/147 Testing: invoker_lifecycle
+62/147 Test: invoker_lifecycle
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "lifecycle"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_lifecycle" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+lifecycle passed
+<end of output>
+Test time =   0.23 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_lifecycle" end time: Oct 31 03:08 PDT
+"invoker_lifecycle" time elapsed: 00:00:00
+----------------------------------------------------------
+
+63/147 Testing: invoker_events
+63/147 Test: invoker_events
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "events"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_events" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+events passed
+<end of output>
+Test time =   0.23 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_events" end time: Oct 31 03:08 PDT
+"invoker_events" time elapsed: 00:00:00
+----------------------------------------------------------
+
+64/147 Testing: invoker_reentrant
+64/147 Test: invoker_reentrant
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "reentrant"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_reentrant" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+reentrant passed
+<end of output>
+Test time =   0.25 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_reentrant" end time: Oct 31 03:08 PDT
+"invoker_reentrant" time elapsed: 00:00:00
+----------------------------------------------------------
+
+65/147 Testing: invoker_toggle
+65/147 Test: invoker_toggle
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "toggle"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_toggle" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+toggle passed
+<end of output>
+Test time =   0.27 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_toggle" end time: Oct 31 03:08 PDT
+"invoker_toggle" time elapsed: 00:00:00
+----------------------------------------------------------
+
+66/147 Testing: invoker_modal-order
+66/147 Test: invoker_modal-order
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_invoker_commands" "modal-order"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"invoker_modal-order" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+modal-order passed
+<end of output>
+Test time =   0.22 sec
+----------------------------------------------------------
+Test Passed.
+"invoker_modal-order" end time: Oct 31 03:08 PDT
+"invoker_modal-order" time elapsed: 00:00:00
+----------------------------------------------------------
+
+67/147 Testing: background_clip
+67/147 Test: background_clip
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_background_clip"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"background_clip" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+background color clip: 25 independent cascade checks passed
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"background_clip" end time: Oct 31 03:08 PDT
+"background_clip" time elapsed: 00:00:00
+----------------------------------------------------------
+
+68/147 Testing: dom_style_tracking
+68/147 Test: dom_style_tracking
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_dom_style_tracking"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"dom_style_tracking" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+style presence .group :not([style]): root edit matched 4
+style presence .group > p:not([style]) span: root edit matched 4
+style presence [style] > span: root edit matched 4
+style presence .group > p[style] + p span: root edit matched 4
+style presence p:nth-child(1 of :not([style])) span: root edit matched 4
+style presence .group:has(p[style]) span: root edit matched 4
+style presence :is(.group [style]) span: root edit matched 4
+style presence [mZ] :first-child:nth-child(1 of :not([style])): root edit matched 5
+style presence [style*='0'] > span: root edit matched 4
+style presence .group > p:not([style*=margin]) span: root edit matched 4
+style presence p:nth-child(1 of :not([style*=margin])) span: root edit matched 4
+style presence .group:has(p[style*='1px']) span: root edit matched 4
+style presence [mZ] :first-child:nth-child(1 of :not([style*=x])): root edit matched 5
+style presence :is(.group [style$=px]) span: root edit matched 4
+Stylesheet invalidation and class cache passed
+<end of output>
+Test time =   0.75 sec
+----------------------------------------------------------
+Test Passed.
+"dom_style_tracking" end time: Oct 31 03:08 PDT
+"dom_style_tracking" time elapsed: 00:00:00
+----------------------------------------------------------
+
+69/147 Testing: html5lib
+69/147 Test: html5lib
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_html5lib" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/adoption01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/adoption02.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/blocks.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/comments01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/doctype01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/domjs-unsafe.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/entities01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/entities02.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/foreign-fragment.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/html5test-com.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/inbody01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/isindex.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/main-element.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/math.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/menuitem-element.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/namespace-sensitivity.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/noscript01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/pending-spec-changes-plain-text-unsafe.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/pending-spec-changes.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/plain-text-unsafe.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/processing-instructions.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/quirks01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/ruby.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/scriptdata01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/scripted_adoption01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/scripted_ark.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/scripted_foster01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/scripted_webkit01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/search-element.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/svg.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tables01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/template.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests1.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests10.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests11.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests12.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests14.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests15.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests16.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests17.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests18.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests19.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests2.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests20.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests21.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests22.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests23.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests24.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests25.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests26.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests3.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests4.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests5.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests6.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests7.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests8.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests9.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tests_innerHTML_1.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/tricky01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/void-in-phrasing.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/webkit01.dat" "/mnt/p3/project/browser/lumen-android/lumen-android/../../wpt/html/syntax/parsing/resources/webkit02.dat"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"html5lib" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+adoption01.dat                                     18/18  
+adoption02.dat                                      4/4   
+blocks.dat                                         48/48  
+comments01.dat                                     16/16  
+doctype01.dat                                      37/37  
+domjs-unsafe.dat                                   49/49  
+entities01.dat                                     75/75  
+entities02.dat                                     26/26  
+foreign-fragment.dat                               66/66  
+html5test-com.dat                                  30/30  
+inbody01.dat                                        4/4   
+isindex.dat                                         4/4   
+main-element.dat                                    3/3   
+math.dat                                            8/8   
+menuitem-element.dat                               20/20  
+namespace-sensitivity.dat                           1/1   
+noscript01.dat                                      0/0   
+pending-spec-changes-plain-text-unsafe.dat          1/1   
+pending-spec-changes.dat                            3/3   
+plain-text-unsafe.dat                              53/53  
+processing-instructions.dat                       123/123 
+quirks01.dat                                        4/4   
+ruby.dat                                           21/21  
+scriptdata01.dat                                   26/26  
+scripted_adoption01.dat                             0/1   
+scripted_ark.dat                                    0/1   
+scripted_foster01.dat                               0/2   
+scripted_webkit01.dat                               0/2   
+search-element.dat                                  8/8   
+svg.dat                                             8/8   
+tables01.dat                                       19/19  
+template.dat                                      127/127 
+tests1.dat                                        112/112 
+tests10.dat                                        54/54  
+tests11.dat                                        13/13  
+tests12.dat                                         2/2   
+tests14.dat                                         7/7   
+tests15.dat                                        14/14  
+tests16.dat                                       191/191 
+tests17.dat                                        13/13  
+tests18.dat                                        35/35  
+tests19.dat                                       107/107 
+tests2.dat                                         63/63  
+tests20.dat                                        64/64  
+tests21.dat                                        23/23  
+tests22.dat                                         5/5   
+tests23.dat                                         5/5   
+tests24.dat                                         8/8   
+tests25.dat                                        26/26  
+tests26.dat                                        20/20  
+tests3.dat                                         24/24  
+tests4.dat                                          9/9   
+tests5.dat                                         16/16  
+tests6.dat                                         52/52  
+tests7.dat                                         34/34  
+tests8.dat                                         10/10  
+tests9.dat                                         27/27  
+tests_innerHTML_1.dat                              81/81  
+tricky01.dat                                        9/9   
+void-in-phrasing.dat                               13/13  
+webkit01.dat                                       52/52  
+webkit02.dat                                       48/48  
+TOTAL 1939/1945
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"html5lib" end time: Oct 31 03:08 PDT
+"html5lib" time elapsed: 00:00:00
+----------------------------------------------------------
+
+70/147 Testing: id_map
+70/147 Test: id_map
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_id_map"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"id_map" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+id map ok
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"id_map" end time: Oct 31 03:08 PDT
+"id_map" time elapsed: 00:00:00
+----------------------------------------------------------
+
+71/147 Testing: has_filter
+71/147 Test: has_filter
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_has_filter"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"has_filter" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+:has() name filter matches full subtree walks
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"has_filter" end time: Oct 31 03:08 PDT
+"has_filter" time elapsed: 00:00:00
+----------------------------------------------------------
+
+72/147 Testing: js_fullscreen
+72/147 Test: js_fullscreen
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/fullscreen.html" "4000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_fullscreen" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+jsrun: fullscreen 1
+jsrun: fullscreen 0
+jsrun: fullscreen 1
+jsrun: fullscreen 0
+[js log] RESULTS fullscreen:PASS
+jsrun: context 191.2ms, 1 scripts 2.3ms, dom_version 46
+<end of output>
+Test time =   4.28 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS fullscreen:PASS]
+"js_fullscreen" end time: Oct 31 03:08 PDT
+"js_fullscreen" time elapsed: 00:00:04
+----------------------------------------------------------
+
+73/147 Testing: js_intersection_geometry
+73/147 Test: js_intersection_geometry
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/intersection-geometry.html" "10000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_intersection_geometry" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS intersection-geometry:PASS
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":339.1983830034733,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":339.8216439783573,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-enter","start":339.4184239804745,"end":355.6029089987278,"frames":[{"stamp":339.71405097842216,"now":339.7758370041847},{"stamp":355.45175099372864,"now":355.5718919932842}],"expected":true,"records":[{"time":339.8216439783573,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}],"geometryReads":2,"scrollTop":200}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":355.7927860021591,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-exit","start":355.6826120018959,"end":387.66694298386574,"frames":[{"stamp":371.52947998046875,"now":371.5922069847584},{"stamp":387.6032259762287,"now":387.65465900301933}],"expected":false,"records":[{"time":355.7927860021591,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}],"geometryReads":3,"scrollTop":0}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":387.85722798109055,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-enter-again","start":387.7363570034504,"end":419.47896698117256,"frames":[{"stamp":403.27001598477364,"now":403.3067190051079},{"stamp":419.44723799824715,"now":419.46848899126053}],"expected":true,"records":[{"time":387.85722798109055,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}],"geometryReads":4,"scrollTop":200}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":420.3878870010376,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"ancestor-hidden","start":419.54160299897194,"end":451.83897998929024,"frames":[{"stamp":435.73093497753143,"now":435.7687519788742},{"stamp":451.7918799817562,"now":451.82742097973824}],"expected":false,"records":[{"time":420.3878870010376,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}],"geometryReads":5,"scrollTop":0}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":452.5988139808178,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"ancestor-visible","start":451.9281300008297,"end":484.0413309931755,"frames":[{"stamp":467.87116199731827,"now":467.92796298861504},{"stamp":483.96593099832535,"now":484.00764498114586}],"expected":true,"records":[{"time":452.5988139808178,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}],"geometryReads":6,"scrollTop":200}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"idle-start","start":584.2632739841938,"geometryReads":6,"notifications":6}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"idle-end","elapsed":3300.1894429922104,"geometryReads":0,"notifications":0}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":3981.5140430033207,"intersecting":false,"ratio":0,"top":420,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"complete","failures":[],"geometryReads":7,"notifications":7}
+[js log] RESULTS io-frame-cadence:PASS
+[js log] RESULTS intersection-geometry-cadence:PASS
+jsrun: context 161.9ms, 1 scripts 29.8ms, dom_version 74
+<end of output>
+Test time =   4.18 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS intersection-geometry-cadence:PASS]
+"js_intersection_geometry" end time: Oct 31 03:08 PDT
+"js_intersection_geometry" time elapsed: 00:00:04
+----------------------------------------------------------
+
+74/147 Testing: js_hidden_scroll_retention
+74/147 Test: js_hidden_scroll_retention
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/hidden-scroll-retention.html" "10000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_hidden_scroll_retention" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+[js log] DIAGNOSTIC hidden-scroll-parent-overflow [{"phase":"hidden","width":160,"height":140},{"phase":"revealed","width":400,"height":400},{"phase":"hidden-again","width":160,"height":140}]
+[js log] hidden-scroll-retention: 7 cases, 30 phases, 921 fields, documented eager hidden size differences 1
+[js log] RESULTS hidden-scroll-retention:PASS
+[js log] MEASUREMENTS hidden-scroll-state:COMPLETE {"completed":["retain-both-axes","hidden-set-zero","hidden-set-positive","range-shrink-and-regrow","overflow-mode-change","nested-outer-hidden-inner-setter","nested-independently-hidden"],"records":30}
+[js log] RESULTS hidden-scroll-state:PASS
+jsrun: context 160.3ms, 1 scripts 23.2ms, dom_version 130
+<end of output>
+Test time =   1.41 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS hidden-scroll-retention:PASS]
+"js_hidden_scroll_retention" end time: Oct 31 03:08 PDT
+"js_hidden_scroll_retention" time elapsed: 00:00:01
+----------------------------------------------------------
+
+75/147 Testing: js_document_lifecycle
+75/147 Test: js_document_lifecycle
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/document-lifecycle.html" "12000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_document_lifecycle" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+[js log] LIFECYCLE_CASE {"index":0,"id":"top-initial","finished":true,"eventCount":5,"actionCount":1,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"top","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"top","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"top","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"top","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"top","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"actions","index":0,"value":{"sequence":3,"action":"load-microtask"}}
+[js log] LIFECYCLE_CASE {"index":1,"id":"synthetic-events","finished":true,"eventCount":3,"actionCount":0,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":1,"caseId":"synthetic-events","kind":"events","index":0,"value":{"sequence":0,"listener":"synthetic-window","generation":"top","type":"load","className":"[object Event]","target":"window","currentTarget":"window","path":["window"],"phase":2,"trusted":false,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":1,"caseId":"synthetic-events","kind":"events","index":1,"value":{"sequence":1,"listener":"synthetic-window","generation":"top","type":"pageshow","className":"[object PageTransitionEvent]","target":"window","currentTarget":"window","path":["window"],"phase":2,"trusted":false,"bubbles":true,"cancelable":true,"composed":false,"persisted":true,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":1,"caseId":"synthetic-events","kind":"events","index":2,"value":{"sequence":2,"listener":"synthetic-element","generation":"top","type":"load","className":"[object Event]","target":"div","currentTarget":"div","path":["div","body","html","document"],"phase":2,"trusted":false,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_CASE {"index":2,"id":"frame-initial","finished":true,"eventCount":5,"actionCount":3,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"actions","index":1,"value":{"sequence":6,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"actions","index":2,"value":{"sequence":7,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_CASE {"index":3,"id":"repeated-close","finished":true,"eventCount":5,"actionCount":5,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"actions","index":1,"value":{"sequence":6,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"actions","index":2,"value":{"sequence":7,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"actions","index":3,"value":{"sequence":8,"action":"before-redundant-close"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"actions","index":4,"value":{"sequence":9,"action":"after-redundant-close"}}
+[js log] LIFECYCLE_CASE {"index":4,"id":"load-document-open","finished":true,"eventCount":6,"actionCount":5,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":3,"value":{"sequence":4,"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":4,"value":{"sequence":7,"listener":"window-bubble","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":5,"value":{"sequence":8,"listener":"window-capture","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"actions","index":0,"value":{"sequence":3,"action":"before-load-open","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"actions","index":1,"value":{"sequence":5,"action":"after-load-open","generation":"initial","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"actions","index":2,"value":{"sequence":6,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"actions","index":3,"value":{"sequence":9,"action":"load-microtask","generation":"initial","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"actions","index":4,"value":{"sequence":10,"action":"pageshow-microtask","generation":"replacement","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_CASE {"index":5,"id":"load-frame-removal","finished":true,"eventCount":3,"actionCount":3,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"actions","index":0,"value":{"sequence":3,"action":"before-remove","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"actions","index":1,"value":{"sequence":4,"action":"after-remove","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"actions","index":2,"value":{"sequence":5,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_CASE {"index":6,"id":"load-srcdoc-navigation","finished":true,"eventCount":10,"actionCount":9,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":3,"value":{"sequence":7,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":4,"value":{"sequence":8,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":5,"value":{"sequence":11,"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":6,"value":{"sequence":12,"listener":"window-bubble","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":7,"value":{"sequence":13,"listener":"window-capture","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":8,"value":{"sequence":16,"listener":"window-bubble","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":9,"value":{"sequence":17,"listener":"window-capture","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":0,"value":{"sequence":3,"action":"before-navigate-srcdoc","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":1,"value":{"sequence":4,"action":"navigation-requested","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":2,"value":{"sequence":5,"action":"after-navigate-srcdoc","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":3,"value":{"sequence":6,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":4,"value":{"sequence":9,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":5,"value":{"sequence":10,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":6,"value":{"sequence":14,"action":"load-microtask","generation":"replacement","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":7,"value":{"sequence":15,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":8,"value":{"sequence":18,"action":"pageshow-microtask","generation":"replacement","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_CASE {"index":7,"id":"pageshow-document-open","finished":true,"eventCount":6,"actionCount":5,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":5,"value":{"sequence":7,"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"actions","index":1,"value":{"sequence":6,"action":"before-pageshow-open","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"actions","index":2,"value":{"sequence":8,"action":"after-pageshow-open","generation":"initial","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"actions","index":3,"value":{"sequence":9,"action":"load-microtask","generation":"initial","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"actions","index":4,"value":{"sequence":10,"action":"pageshow-microtask","generation":"initial","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_CASE {"index":8,"id":"post-load-child-insertion","finished":true,"eventCount":5,"actionCount":5,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"actions","index":1,"value":{"sequence":6,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"actions","index":2,"value":{"sequence":7,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"actions","index":3,"value":{"sequence":8,"action":"before-late-child"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"actions","index":4,"value":{"sequence":9,"action":"after-late-child"}}
+[js log] LIFECYCLE_CASE {"index":9,"id":"load-listener-throws","finished":true,"eventCount":5,"actionCount":6,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"events","index":3,"value":{"sequence":7,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"events","index":4,"value":{"sequence":8,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":0,"value":{"sequence":3,"action":"before-listener-throw","generation":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":1,"value":{"sequence":4,"action":"listener-error-reported","generation":"initial","message":"lifecycle-load-listener-sentinel"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":2,"value":{"sequence":5,"action":"listener-after-throw","generation":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":3,"value":{"sequence":6,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":4,"value":{"sequence":9,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":5,"value":{"sequence":10,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_CASE {"index":10,"id":"pageshow-cancel","finished":true,"eventCount":5,"actionCount":4,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"actions","index":1,"value":{"sequence":6,"action":"pageshow-canceled","generation":"initial","defaultPrevented":true}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"actions","index":2,"value":{"sequence":7,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"actions","index":3,"value":{"sequence":8,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_CASE {"index":11,"id":"post-completion-document-open","finished":true,"eventCount":10,"actionCount":11,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":5,"value":{"sequence":11,"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":6,"value":{"sequence":12,"listener":"window-bubble","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":7,"value":{"sequence":13,"listener":"window-capture","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":8,"value":{"sequence":15,"listener":"window-bubble","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":9,"value":{"sequence":16,"listener":"window-capture","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":1,"value":{"sequence":6,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":2,"value":{"sequence":7,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":3,"value":{"sequence":8,"action":"before-post-completion-open","readyState":"complete"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":4,"value":{"sequence":9,"action":"replacement-listeners-installed","generation":"replacement","readyState":"loading"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":5,"value":{"sequence":10,"action":"before-replacement-close","readyState":"loading"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":6,"value":{"sequence":14,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":7,"value":{"sequence":17,"action":"after-replacement-close","readyState":"complete"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":8,"value":{"sequence":18,"action":"load-microtask","generation":"replacement","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":9,"value":{"sequence":19,"action":"pageshow-microtask","generation":"replacement","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":10,"value":{"sequence":20,"action":"post-completion-observation-finished","readyState":"complete"}}
+[js log] LIFECYCLE_CONTRACT top-initial:PASS
+[js log] LIFECYCLE_CONTRACT synthetic-events:PASS
+[js log] LIFECYCLE_CONTRACT frame-initial:PASS
+[js log] LIFECYCLE_CONTRACT repeated-close:PASS
+[js log] LIFECYCLE_CONTRACT load-document-open:PASS
+[js log] LIFECYCLE_CONTRACT load-frame-removal:PASS
+[js log] LIFECYCLE_CONTRACT load-srcdoc-navigation:PASS
+[js log] LIFECYCLE_CONTRACT pageshow-document-open:PASS
+[js log] LIFECYCLE_CONTRACT post-load-child-insertion:PASS
+[js log] LIFECYCLE_CONTRACT load-listener-throws:PASS
+[js log] LIFECYCLE_CONTRACT pageshow-cancel:PASS
+[js log] LIFECYCLE_CONTRACT post-completion-document-open:PASS
+[js log] LIFECYCLE_CONTRACT_SUMMARY {"cases":12,"passed":12,"failed":0}
+[js log] MEASUREMENTS document-lifecycle {"cases":12,"finished":12,"complete":true}
+[js log] RESULTS document-lifecycle:PASS
+jsrun: context 166.3ms, 1 scripts 13.8ms, dom_version 83
+<end of output>
+Test time =   3.72 sec
+----------------------------------------------------------
+Test Passed.
+"js_document_lifecycle" end time: Oct 31 03:08 PDT
+"js_document_lifecycle" time elapsed: 00:00:03
+----------------------------------------------------------
+
+76/147 Testing: js_checkvisibility_options
+76/147 Test: js_checkvisibility_options
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/checkvisibility-options.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_checkvisibility_options" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+[js log] MEASUREMENTS checkvisibility-options {"total":49,"passed":49,"failed":0,"results":[{"name":"default does not opt into visibility","expected":true,"actual":true,"pass":true,"error":null},{"name":"legacy visibility option","expected":false,"actual":false,"pass":true,"error":null},{"name":"modern visibility option","expected":false,"actual":false,"pass":true,"error":null},{"name":"modern true with legacy false","expected":false,"actual":false,"pass":true,"error":null},{"name":"legacy true with modern false","expected":false,"actual":false,"pass":true,"error":null},{"name":"both visibility options false","expected":true,"actual":true,"pass":true,"error":null},{"name":"collapsed own visibility","expected":false,"actual":false,"pass":true,"error":null},{"name":"inherited hidden visibility","expected":false,"actual":false,"pass":true,"error":null},{"name":"visible descendant overrides hidden ancestor","expected":true,"actual":true,"pass":true,"error":null},{"name":"visibility mutation is synchronously observed","expected":"false,true","actual":"false,true","pass":true,"error":null},{"name":"default does not opt into opacity","expected":true,"actual":true,"pass":true,"error":null},{"name":"legacy opacity option","expected":false,"actual":false,"pass":true,"error":null},{"name":"modern opacity option","expected":false,"actual":false,"pass":true,"error":null},{"name":"modern opacity true with legacy false","expected":false,"actual":false,"pass":true,"error":null},{"name":"legacy opacity true with modern false","expected":false,"actual":false,"pass":true,"error":null},{"name":"both opacity options false","expected":true,"actual":true,"pass":true,"error":null},{"name":"positive tiny opacity remains potentially visible","expected":true,"actual":true,"pass":true,"error":null},{"name":"opaque child cannot override zero-opacity ancestor","expected":false,"actual":false,"pass":true,"error":null},{"name":"no rounded cumulative-opacity zero heuristic","expected":true,"actual":true,"pa
+[js log] RESULTS checkvisibility-options:PASS
+jsrun: context 141.3ms, 1 scripts 25.3ms, dom_version 212
+<end of output>
+Test time =   0.24 sec
+----------------------------------------------------------
+Test Passed.
+"js_checkvisibility_options" end time: Oct 31 03:08 PDT
+"js_checkvisibility_options" time elapsed: 00:00:00
+----------------------------------------------------------
+
+77/147 Testing: js_minmax_definite
+77/147 Test: js_minmax_definite
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/minmax-definite.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_minmax_definite" start time: Oct 31 03:08 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS minmax-definite:PASS
+jsrun: context 140.6ms, 1 scripts 12.2ms, dom_version 37
+<end of output>
+Test time =   2.23 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS minmax-definite:PASS]
+"js_minmax_definite" end time: Oct 31 03:09 PDT
+"js_minmax_definite" time elapsed: 00:00:02
+----------------------------------------------------------
+
+78/147 Testing: js_image_bitmap
+78/147 Test: js_image_bitmap
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/image-bitmap.html" "3000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_image_bitmap" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS image-bitmap:PASS
+jsrun: context 140.4ms, 1 scripts 2.8ms, dom_version 16
+<end of output>
+Test time =   3.22 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS image-bitmap:PASS]
+"js_image_bitmap" end time: Oct 31 03:09 PDT
+"js_image_bitmap" time elapsed: 00:00:03
+----------------------------------------------------------
+
+79/147 Testing: js_gsi_button
+79/147 Test: js_gsi_button
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/gsi-button.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_gsi_button" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] gsi b=0.0,0.0 355.0x40.0 i=95.1,11.0 18.0x18.0 g=95.1,11.0 18.0x18.0 t=121.1,11.5 138.8x17.0
+[js log] RESULTS gsi-button:PASS
+jsrun: context 168.3ms, 1 scripts 17.2ms, dom_version 62
+<end of output>
+Test time =   2.26 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS gsi-button:PASS]
+"js_gsi_button" end time: Oct 31 03:09 PDT
+"js_gsi_button" time elapsed: 00:00:02
+----------------------------------------------------------
+
+80/147 Testing: js_dom_webidl
+80/147 Test: js_dom_webidl
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/dom-webidl.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_dom_webidl" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+jsrun: frame about:srcdoc
+[js log] RESULTS dom-webidl:PASS
+jsrun: context 142.0ms, 1 scripts 78.7ms, dom_version 30
+<end of output>
+Test time =   2.29 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS dom-webidl:PASS]
+"js_dom_webidl" end time: Oct 31 03:09 PDT
+"js_dom_webidl" time elapsed: 00:00:02
+----------------------------------------------------------
+
+81/147 Testing: js_empty_input
+81/147 Test: js_empty_input
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/empty-input.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_empty_input" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS empty-input:PASS
+jsrun: context 142.0ms, 1 scripts 13.5ms, dom_version 44
+<end of output>
+Test time =   2.23 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS empty-input:PASS]
+"js_empty_input" end time: Oct 31 03:09 PDT
+"js_empty_input" time elapsed: 00:00:02
+----------------------------------------------------------
+
+82/147 Testing: js_indexeddb
+82/147 Test: js_indexeddb
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/indexeddb.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_indexeddb" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS indexeddb:PASS
+jsrun: context 146.1ms, 1 scripts 2.3ms, dom_version 14
+<end of output>
+Test time =   2.22 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS indexeddb:PASS]
+"js_indexeddb" end time: Oct 31 03:09 PDT
+"js_indexeddb" time elapsed: 00:00:02
+----------------------------------------------------------
+
+83/147 Testing: js_web_locks
+83/147 Test: js_web_locks
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/web-locks.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_web_locks" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS web-locks:PASS
+jsrun: context 135.5ms, 1 scripts 2.3ms, dom_version 14
+<end of output>
+Test time =   2.21 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS web-locks:PASS]
+"js_web_locks" end time: Oct 31 03:09 PDT
+"js_web_locks" time elapsed: 00:00:02
+----------------------------------------------------------
+
+84/147 Testing: js_unhandled_rejection
+84/147 Test: js_unhandled_rejection
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/unhandled-rejection.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_unhandled_rejection" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js warn] Unhandled promise rejection: Error: loud
+    at file:///mnt/p3/project/browser/lumen-android/lumen-android/tests/js/unhandled-rejection.html:10:29
+[js log] RESULTS unhandled-rejection:PASS
+jsrun: context 158.0ms, 1 scripts 2.0ms, dom_version 14
+<end of output>
+Test time =   2.23 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS unhandled-rejection:PASS]
+"js_unhandled_rejection" end time: Oct 31 03:09 PDT
+"js_unhandled_rejection" time elapsed: 00:00:02
+----------------------------------------------------------
+
+85/147 Testing: js_window_ports
+85/147 Test: js_window_ports
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/window-ports.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_window_ports" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS window-ports:PASS
+jsrun: context 138.7ms, 1 scripts 2.8ms, dom_version 20
+<end of output>
+Test time =   2.21 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS window-ports:PASS]
+"js_window_ports" end time: Oct 31 03:09 PDT
+"js_window_ports" time elapsed: 00:00:02
+----------------------------------------------------------
+
+86/147 Testing: js_pointer_events
+86/147 Test: js_pointer_events
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/pointer-events.html" "1000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_pointer_events" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS pointer-events:PASS
+jsrun: context 145.9ms, 1 scripts 5.6ms, dom_version 19
+<end of output>
+Test time =   1.22 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS pointer-events:PASS]
+"js_pointer_events" end time: Oct 31 03:09 PDT
+"js_pointer_events" time elapsed: 00:00:01
+----------------------------------------------------------
+
+87/147 Testing: js_xpath
+87/147 Test: js_xpath
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/xpath.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_xpath" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS xpath:PASS
+jsrun: context 136.3ms, 1 scripts 12.8ms, dom_version 65
+<end of output>
+Test time =   2.22 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS xpath:PASS]
+"js_xpath" end time: Oct 31 03:09 PDT
+"js_xpath" time elapsed: 00:00:02
+----------------------------------------------------------
+
+88/147 Testing: js_get_animations
+88/147 Test: js_get_animations
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/get-animations.html" "1000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_get_animations" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS get-animations:PASS
+jsrun: context 142.2ms, 1 scripts 4.5ms, dom_version 23
+<end of output>
+Test time =   1.22 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS get-animations:PASS]
+"js_get_animations" end time: Oct 31 03:09 PDT
+"js_get_animations" time elapsed: 00:00:01
+----------------------------------------------------------
+
+89/147 Testing: browser_input_modifier
+89/147 Test: browser_input_modifier
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/input-modifier-cancel-regression.html" "--marker" "browser-input-modifier" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-input-modifier" "--testdriver"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_input_modifier" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-input-modifier:PASS 7/7 [{"name":"cancelled modifier request reports AbortError","status":"PASS","detail":"AbortError"},{"name":"cancelled modifier does not affect replacement input","status":"PASS","detail":"{\"value\":\"a\",\"events\":[{\"key\":\"a\",\"ctrl\":false,\"shift\":false}]}"},{"name":"queued modifier changes apply in dispatch order","status":"PASS","detail":"[{\"key\":\"ArrowLeft\",\"ctrl\":true,\"shift\":false}]"},{"name":"released modifier does not affect later input","status":"PASS","detail":"{\"value\":\"b\",\"events\":[{\"key\":\"b\",\"ctrl\":false,\"shift\":false}]}"},{"name":"cancelled release request reports AbortError","status":"PASS","detail":"AbortError"},{"name":"cancelled release preserves an already delivered modifier","status":"PASS","detail":"[{\"key\":\"ArrowLeft\",\"ctrl\":true,\"shift\":false}]"},{"name":"explicit release clears delivered virtual state","status":"PASS","detail":"{\"value\":\"b\",\"events\":[{\"key\":\"b\",\"ctrl\":false,\"shift\":false}]}"}]
+Resource peak: 47.7% CPU, 130.6 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-input-modifier/resources.csv
+<end of output>
+Test time =   1.65 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-input-modifier:PASS]
+"browser_input_modifier" end time: Oct 31 03:09 PDT
+"browser_input_modifier" time elapsed: 00:00:01
+----------------------------------------------------------
+
+90/147 Testing: browser_popup_input
+90/147 Test: browser_popup_input
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/popup-input-regression.html" "--marker" "browser-popup-input" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-popup-input" "--testdriver"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_popup_input" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-popup-input:PASS 2/2 [{"name":"queued input completion reaches its originating document after popup and navigation","status":"PASS","detail":"settled=true"},{"name":"trusted text input reaches its originating textarea","status":"PASS","detail":"value=\"x\""}]
+Resource peak: 51.7% CPU, 158.4 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-popup-input/resources.csv
+<end of output>
+Test time =   1.55 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-popup-input:PASS]
+"browser_popup_input" end time: Oct 31 03:09 PDT
+"browser_popup_input" time elapsed: 00:00:01
+----------------------------------------------------------
+
+91/147 Testing: browser_input_queue
+91/147 Test: browser_input_queue
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/input-queue-lifecycle-regression.html" "--marker" "browser-input-queue" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-input-queue" "--testdriver"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_input_queue" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-input-queue:PASS 11/11 [{"name":"control metadata survives navigation","status":"PASS","detail":"present"},{"name":"navigation cancels a live origin request with AbortError","status":"PASS","detail":"AbortError"},{"name":"cancelled input is not delivered to the departing document","status":"PASS","detail":""},{"name":"cancelled input is not delivered to the replacement document","status":"PASS","detail":"\"\""},{"name":"closed target receives no further input in another document","status":"PASS","detail":"\"\""},{"name":"closed scripted target is retired","status":"PASS","detail":"true"},{"name":"later tab does not receive an earlier target request","status":"PASS","detail":""},{"name":"concurrent input requests complete in queue order","status":"PASS","detail":"true:\"abc\""},{"name":"queued text retains its UTF-8 bytes through dispatch","status":"PASS","detail":"true:\"é中\""},{"name":"pointer actions reach the originating page behind a popup","status":"PASS","detail":"true:1"},{"name":"routed pointer action uses the trusted native dispatch path","status":"PASS","detail":"true"}]
+Resource peak: 61.7% CPU, 158.0 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-input-queue/resources.csv
+<end of output>
+Test time =   1.50 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-input-queue:PASS]
+"browser_input_queue" end time: Oct 31 03:09 PDT
+"browser_input_queue" time elapsed: 00:00:01
+----------------------------------------------------------
+
+92/147 Testing: browser_module_errors
+92/147 Test: browser_module_errors
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/module-error-regression.html" "--marker" "browser-module-errors" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-module-errors"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_module_errors" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-module-errors:PASS 43/43
+Resource peak: 74.5% CPU, 161.6 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-module-errors/resources.csv
+<end of output>
+Test time =   1.38 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-module-errors:PASS]
+"browser_module_errors" end time: Oct 31 03:09 PDT
+"browser_module_errors" time elapsed: 00:00:01
+----------------------------------------------------------
+
+93/147 Testing: browser_module_identity
+93/147 Test: browser_module_identity
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/module-identity-regression.html" "--marker" "browser-module-identity" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-module-identity"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_module_identity" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-module-identity:PASS 25/25
+Resource peak: 50.7% CPU, 174.3 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-module-identity/resources.csv
+<end of output>
+Test time =   1.38 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-module-identity:PASS]
+"browser_module_identity" end time: Oct 31 03:09 PDT
+"browser_module_identity" time elapsed: 00:00:01
+----------------------------------------------------------
+
+94/147 Testing: browser_module_graph_identity
+94/147 Test: browser_module_graph_identity
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/module-graph-identity-regression.html" "--marker" "browser-module-graph-identity" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-module-graph-identity"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_module_graph_identity" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-module-graph-identity:PASS 42/42
+Resource peak: 40.8% CPU, 156.9 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-module-graph-identity/resources.csv
+<end of output>
+Test time =   1.43 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-module-graph-identity:PASS]
+"browser_module_graph_identity" end time: Oct 31 03:09 PDT
+"browser_module_graph_identity" time elapsed: 00:00:01
+----------------------------------------------------------
+
+95/147 Testing: browser_body_event
+95/147 Test: browser_body_event
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/body-event-regression.html" "--marker" "browser-body-event" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-body-event"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_body_event" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-body-event:PASS 10/10 [{"name":"null and undefined body values reject with HierarchyRequestError","status":"PASS"},{"name":"non-HTML element body values reject during interface conversion","status":"PASS"},{"name":"body descriptor validates its receiver","status":"PASS"},{"name":"setting the same body does not mutate the tree","status":"PASS"},{"name":"replacement adopts a foreign body and its descendants","status":"PASS"},{"name":"body replacement creates one combined target mutation record","status":"PASS"},{"name":"body replacement ignores author overrides of public mutation methods","status":"PASS"},{"name":"non-HTML root accepts an HTML body while getter remains null","status":"PASS"},{"name":"body replacement adopts nodes from a different Window realm","status":"PASS"},{"name":"standard global handler properties dispatch real Event objects","status":"PASS"}]
+Resource peak: 41.8% CPU, 149.1 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-body-event/resources.csv
+<end of output>
+Test time =   1.15 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-body-event:PASS]
+"browser_body_event" end time: Oct 31 03:09 PDT
+"browser_body_event" time elapsed: 00:00:01
+----------------------------------------------------------
+
+96/147 Testing: browser_grid_typed_values
+96/147 Test: browser_grid_typed_values
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-typed-value-regression.html" "--marker" "browser-grid-typed-values" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-typed-values"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_grid_typed_values" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-grid-typed-values:PASS 62/62
+Resource peak: 30.9% CPU, 129.2 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-typed-values/resources.csv
+<end of output>
+Test time =   1.15 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-grid-typed-values:PASS]
+"browser_grid_typed_values" end time: Oct 31 03:09 PDT
+"browser_grid_typed_values" time elapsed: 00:00:01
+----------------------------------------------------------
+
+97/147 Testing: browser_grid_used_tracks
+97/147 Test: browser_grid_used_tracks
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-used-track-regression.html" "--marker" "browser-grid-used-tracks" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-used-tracks"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_grid_used_tracks" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-grid-used-tracks:PASS 47/47
+Resource peak: 42.8% CPU, 149.6 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-used-tracks/resources.csv
+<end of output>
+Test time =   1.16 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-grid-used-tracks:PASS]
+"browser_grid_used_tracks" end time: Oct 31 03:09 PDT
+"browser_grid_used_tracks" time elapsed: 00:00:01
+----------------------------------------------------------
+
+98/147 Testing: browser_grid_repeat_count
+98/147 Test: browser_grid_repeat_count
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-repeat-count-regression.html" "--marker" "browser-grid-repeat-count" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-repeat-count"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_grid_repeat_count" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-grid-repeat-count:PASS 128/128
+Resource peak: 30.9% CPU, 130.1 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-repeat-count/resources.csv
+<end of output>
+Test time =   1.14 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-grid-repeat-count:PASS]
+"browser_grid_repeat_count" end time: Oct 31 03:09 PDT
+"browser_grid_repeat_count" time elapsed: 00:00:01
+----------------------------------------------------------
+
+99/147 Testing: browser_grid_repeat
+99/147 Test: browser_grid_repeat
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-auto-repeat-regression.html" "--marker" "browser-grid-repeat" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-repeat"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_grid_repeat" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-grid-repeat:PASS 84/84
+Resource peak: 28.9% CPU, 129.4 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-repeat/resources.csv
+<end of output>
+Test time =   1.14 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-grid-repeat:PASS]
+"browser_grid_repeat" end time: Oct 31 03:09 PDT
+"browser_grid_repeat" time elapsed: 00:00:01
+----------------------------------------------------------
+
+100/147 Testing: browser_grid_cssom
+100/147 Test: browser_grid_cssom
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-cssom-regression.html" "--marker" "browser-grid-cssom" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-cssom"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_grid_cssom" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-grid-cssom:PASS 28/28 [{"name":"invalid track assignment preserves previous valid declaration","status":"PASS"},{"name":"invalid auto-flow does not replace a valid value","status":"PASS"},{"name":"track grammar agrees with two-argument CSS.supports","status":"PASS"},{"name":"area shorthand expands custom identifiers across all four lines","status":"PASS"},{"name":"line shorthand serializes an omitted auto end","status":"PASS"},{"name":"span line order and redundant one canonicalization","status":"PASS"},{"name":"invalid span token ordering preserves the declaration","status":"PASS"},{"name":"escaped identifier equivalence permits shortest serialization","status":"PASS"},{"name":"template areas expand to longhand rows columns and areas","status":"PASS"},{"name":"template row boundary names merge and trailing empty lists disappear","status":"PASS"},{"name":"nonrectangular named areas are rejected","status":"PASS"},{"name":"grid shorthand resets implicit properties","status":"PASS"},{"name":"important longhand survives a later normal shorthand declaration","status":"PASS"},{"name":"explicit setProperty replaces important shorthand with normal value","status":"PASS"},{"name":"invalid priority leaves grid declaration unchanged","status":"PASS"},{"name":"removeProperty removes expanded shorthand longhands","status":"PASS"},{"name":"pending custom property token stream remains intact","status":"PASS"},{"name":"stylesheet CSSOM setter validates and expands the same grammar","status":"PASS"},{"name":"calculated span range is deferred and number sums canonicalize","status":"PASS"},{"name":"valid geometry remains unchanged after invalid CSSOM assignment","status":"PASS"},{"name":"pending grid shorthand replaced by concrete longhands","status":"PASS"},{"name":"pending shorthand replaces previous concrete longhand values","status":"PASS"},{"name":"important pending shorthand survives a later normal shorthand","status":"PASS"},{"name":"concrete important shorthand
+Resource peak: 28.8% CPU, 129.8 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-cssom/resources.csv
+<end of output>
+Test time =   1.15 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-grid-cssom:PASS]
+"browser_grid_cssom" end time: Oct 31 03:09 PDT
+"browser_grid_cssom" time elapsed: 00:00:01
+----------------------------------------------------------
+
+101/147 Testing: browser_grid_track_regression
+101/147 Test: browser_grid_track_regression
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/grid-track-regression.html" "--marker" "browser-grid-track-regression" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-track-regression"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_grid_track_regression" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-grid-track-regression:PASS 18/18
+Resource peak: 32.8% CPU, 130.6 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-track-regression/resources.csv
+<end of output>
+Test time =   1.15 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-grid-track-regression:PASS]
+"browser_grid_track_regression" end time: Oct 31 03:09 PDT
+"browser_grid_track_regression" time elapsed: 00:00:01
+----------------------------------------------------------
+
+102/147 Testing: browser_replaced_sizing
+102/147 Test: browser_replaced_sizing
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/replaced-sizing-regression.html" "--marker" "browser-replaced-sizing" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-replaced-sizing"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_replaced_sizing" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-replaced-sizing:PASS 20/20
+Resource peak: 27.9% CPU, 129.5 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-replaced-sizing/resources.csv
+<end of output>
+Test time =   1.15 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-replaced-sizing:PASS]
+"browser_replaced_sizing" end time: Oct 31 03:09 PDT
+"browser_replaced_sizing" time elapsed: 00:00:01
+----------------------------------------------------------
+
+103/147 Testing: browser_position_cssom_regression
+103/147 Test: browser_position_cssom_regression
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/position-cssom-regression.html" "--marker" "browser-position-cssom-regression" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-position-cssom-regression"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_position_cssom_regression" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-position-cssom-regression:PASS 7/7 [{"name":"Specified background-position preserves its pending variable token stream","status":"PASS","message":""},{"name":"Last shorthand declaration overrides earlier axis for backgroundPosition","status":"PASS","message":""},{"name":"Pending shorthand axes are empty while computed substitution resolves","status":"PASS","message":""},{"name":"Direct pending axis preserves its token stream and resolves at computed value","status":"PASS","message":""},{"name":"Explicit setProperty replaces an important value with a normal value","status":"PASS","message":""},{"name":"Explicit property assignment replaces an important value with a normal value","status":"PASS","message":""},{"name":"Custom-property identifiers remain case-sensitive in specified and computed positions","status":"PASS","message":""}]
+Resource peak: 28.9% CPU, 129.1 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-position-cssom-regression/resources.csv
+<end of output>
+Test time =   1.15 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-position-cssom-regression:PASS]
+"browser_position_cssom_regression" end time: Oct 31 03:09 PDT
+"browser_position_cssom_regression" time elapsed: 00:00:01
+----------------------------------------------------------
+
+104/147 Testing: browser_image_lifecycle
+104/147 Test: browser_image_lifecycle
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/image-lifecycle.html" "--marker" "browser-image-lifecycle" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-image-lifecycle"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_image_lifecycle" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS browser-image-lifecycle:PASS 16/16
+Resource peak: 29.9% CPU, 130.6 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-image-lifecycle/resources.csv
+<end of output>
+Test time =   1.34 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS browser-image-lifecycle:PASS]
+"browser_image_lifecycle" end time: Oct 31 03:09 PDT
+"browser_image_lifecycle" time elapsed: 00:00:01
+----------------------------------------------------------
+
+105/147 Testing: browser_control_selection
+105/147 Test: browser_control_selection
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/control-selection.html" "--marker" "control-selection" "--testdriver" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-control-selection"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_control_selection" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS control-selection:PASS 37/37
+Resource peak: 35.8% CPU, 130.5 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-control-selection/resources.csv
+<end of output>
+Test time =   1.15 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS control-selection:PASS]
+"browser_control_selection" end time: Oct 31 03:09 PDT
+"browser_control_selection" time elapsed: 00:00:01
+----------------------------------------------------------
+
+106/147 Testing: browser_react_message_replacement
+106/147 Test: browser_react_message_replacement
+Command: "/home/a/.local/bin/python3.12" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/browser/run.py" "--binary" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen" "--fixture" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/device/editbar/controlled-message.html" "--marker" "react-message-replacement" "--testdriver" "--output" "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-react-message-replacement"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"browser_react_message_replacement" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+RESULTS react-message-replacement:PASS 4/4
+Resource peak: 33.9% CPU, 130.4 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-react-message-replacement/resources.csv
+<end of output>
+Test time =   1.34 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS react-message-replacement:PASS]
+"browser_react_message_replacement" end time: Oct 31 03:09 PDT
+"browser_react_message_replacement" time elapsed: 00:00:01
+----------------------------------------------------------
+
+107/147 Testing: js_performance_startup
+107/147 Test: js_performance_startup
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/performance-startup.html" "3000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_performance_startup" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS performance-startup:PASS
+jsrun: context 157.6ms, 1 scripts 4.5ms, dom_version 23
+<end of output>
+Test time =   3.24 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS performance-startup:PASS]
+"js_performance_startup" end time: Oct 31 03:09 PDT
+"js_performance_startup" time elapsed: 00:00:03
+----------------------------------------------------------
+
+108/147 Testing: js_worker_global_listener
+108/147 Test: js_worker_global_listener
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/worker-global-listener.html" "2000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_worker_global_listener" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS worker-global-listener dispatch:PASS listen:PASS
+jsrun: context 137.8ms, 1 scripts 2.9ms, dom_version 14
+<end of output>
+Test time =   2.21 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS worker-global-listener dispatch:PASS listen:PASS]
+"js_worker_global_listener" end time: Oct 31 03:09 PDT
+"js_worker_global_listener" time elapsed: 00:00:02
+----------------------------------------------------------
+
+109/147 Testing: js_worker_xhr
+109/147 Test: js_worker_xhr
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/worker-xhr.html" "3000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_worker_xhr" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS worker-xhr:PASS
+jsrun: context 134.0ms, 1 scripts 2.9ms, dom_version 14
+<end of output>
+Test time =   3.21 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS worker-xhr:PASS]
+"js_worker_xhr" end time: Oct 31 03:09 PDT
+"js_worker_xhr" time elapsed: 00:00:03
+----------------------------------------------------------
+
+110/147 Testing: js_touch_action
+110/147 Test: js_touch_action
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/touch-action.html" "500"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_touch_action" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS touch-action:PASS
+jsrun: context 135.0ms, 1 scripts 2.6ms, dom_version 49
+<end of output>
+Test time =   0.72 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS touch-action:PASS]
+"js_touch_action" end time: Oct 31 03:09 PDT
+"js_touch_action" time elapsed: 00:00:00
+----------------------------------------------------------
+
+111/147 Testing: js_raf_throttle
+111/147 Test: js_raf_throttle
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/raf-throttle.html" "3500"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_raf_throttle" start time: Oct 31 03:09 PDT
+Output:
+----------------------------------------------------------
+[js log] RESULTS raf-throttle:PASS
+jsrun: context 144.4ms, 1 scripts 1.8ms, dom_version 14
+<end of output>
+Test time =   3.72 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS raf-throttle:PASS]
+"js_raf_throttle" end time: Oct 31 03:10 PDT
+"js_raf_throttle" time elapsed: 00:00:03
+----------------------------------------------------------
+
+112/147 Testing: nested_overflow
+112/147 Test: nested_overflow
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_nested_overflow"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"nested_overflow" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+Nested visible overflow, clipping, resizing and fixed descendants passed
+<end of output>
+Test time =   0.09 sec
+----------------------------------------------------------
+Test Passed.
+"nested_overflow" end time: Oct 31 03:10 PDT
+"nested_overflow" time elapsed: 00:00:00
+----------------------------------------------------------
+
+113/147 Testing: scale_text
+113/147 Test: scale_text
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_scale_text"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"scale_text" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+Uniform scale transforms scale text with the subtree passed
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"scale_text" end time: Oct 31 03:10 PDT
+"scale_text" time elapsed: 00:00:00
+----------------------------------------------------------
+
+114/147 Testing: round_clip
+114/147 Test: round_clip
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_round_clip"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"round_clip" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+Rounded image, outline and overflow clips passed
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"round_clip" end time: Oct 31 03:10 PDT
+"round_clip" time elapsed: 00:00:00
+----------------------------------------------------------
+
+115/147 Testing: svg_gradient_img
+115/147 Test: svg_gradient_img
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_svg_gradient_img"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"svg_gradient_img" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+ring left ff3186ff centre 00000000
+SVG image gradients passed
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"svg_gradient_img" end time: Oct 31 03:10 PDT
+"svg_gradient_img" time elapsed: 00:00:00
+----------------------------------------------------------
+
+116/147 Testing: raster_bands
+116/147 Test: raster_bands
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_raster_bands"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"raster_bands" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+rect 0: one pass 43.4 ms, bands 21.3 ms, 0 differing px, punched 1/1
+rect 1: one pass 25.4 ms, bands 9.0 ms, 0 differing px, punched 1/1
+rect 2: one pass 4.5 ms, bands 2.1 ms, 0 differing px, punched 1/1
+rect 3: one pass 8.1 ms, bands 3.7 ms, 0 differing px, punched 1/1
+Banded parallel raster matches one pass
+<end of output>
+Test time =   0.21 sec
+----------------------------------------------------------
+Test Passed.
+"raster_bands" end time: Oct 31 03:10 PDT
+"raster_bands" time elapsed: 00:00:00
+----------------------------------------------------------
+
+117/147 Testing: raster_spans
+117/147 Test: raster_spans
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_raster_spans"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"raster_spans" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+146 items, 12 layers, 18 clips in view
+scale 1 rect 0: spans 11.7 ms, per pixel 15.4 ms, 0 differing px
+scale 1 rect 1: spans 5.6 ms, per pixel 10.9 ms, 0 differing px
+scale 1 rect 2: spans 0.8 ms, per pixel 1.3 ms, 0 differing px
+scale 1 rect 3: spans 0.3 ms, per pixel 0.5 ms, 0 differing px
+scale 1 rect 4: spans 1.1 ms, per pixel 2.2 ms, 0 differing px
+scale 2 rect 0: spans 47.9 ms, per pixel 62.8 ms, 0 differing px
+scale 2 rect 1: spans 26.4 ms, per pixel 45.6 ms, 0 differing px
+scale 2 rect 2: spans 1.8 ms, per pixel 2.3 ms, 0 differing px
+scale 2 rect 3: spans 1.3 ms, per pixel 1.3 ms, 0 differing px
+scale 2 rect 4: spans 2.8 ms, per pixel 4.9 ms, 0 differing px
+scale 1.75 rect 0: spans 25.1 ms, per pixel 42.4 ms, 0 differing px
+scale 1.75 rect 1: spans 19.8 ms, per pixel 35.3 ms, 0 differing px
+scale 1.75 rect 2: spans 1.4 ms, per pixel 1.8 ms, 0 differing px
+scale 1.75 rect 3: spans 1.0 ms, per pixel 1.0 ms, 0 differing px
+scale 1.75 rect 4: spans 3.0 ms, per pixel 5.0 ms, 0 differing px
+scale 2.62 rect 0: spans 65.9 ms, per pixel 107.9 ms, 0 differing px
+scale 2.62 rect 1: spans 44.7 ms, per pixel 80.3 ms, 0 differing px
+scale 2.62 rect 2: spans 2.9 ms, per pixel 3.8 ms, 0 differing px
+scale 2.62 rect 3: spans 2.1 ms, per pixel 2.3 ms, 0 differing px
+scale 2.62 rect 4: spans 4.5 ms, per pixel 7.6 ms, 0 differing px
+Raster spans match per-pixel coverage
+<end of output>
+Test time =   0.88 sec
+----------------------------------------------------------
+Test Passed.
+"raster_spans" end time: Oct 31 03:10 PDT
+"raster_spans" time elapsed: 00:00:00
+----------------------------------------------------------
+
+118/147 Testing: fontconfig_match
+118/147 Test: fontconfig_match
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_fontconfig_match"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"fontconfig_match" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+Fontconfig oracle: 718 comparisons, 0 mismatches, peak snapshot 920 patterns, version 21801
+<end of output>
+Test time =   0.78 sec
+----------------------------------------------------------
+Test Passed.
+"fontconfig_match" end time: Oct 31 03:10 PDT
+"fontconfig_match" time elapsed: 00:00:00
+----------------------------------------------------------
+
+119/147 Testing: linux_capture_refusal
+119/147 Test: linux_capture_refusal
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_linux_capture_refusal"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"linux_capture_refusal" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+production Linux capture refusal: 19 checks; no SDL backend linked or called
+<end of output>
+Test time =   0.00 sec
+----------------------------------------------------------
+Test Passed.
+"linux_capture_refusal" end time: Oct 31 03:10 PDT
+"linux_capture_refusal" time elapsed: 00:00:00
+----------------------------------------------------------
+
+120/147 Testing: font_woff2
+120/147 Test: font_woff2
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_font_woff2"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"font_woff2" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+woff2 face: 5 glyphs, 51.0 px wide, H 26x28
+WOFF2 web font loaded
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"font_woff2" end time: Oct 31 03:10 PDT
+"font_woff2" time elapsed: 00:00:00
+----------------------------------------------------------
+
+121/147 Testing: shape_cache
+121/147 Test: shape_cache
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_shape_cache"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"shape_cache" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+shape cache: ok
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"shape_cache" end time: Oct 31 03:10 PDT
+"shape_cache" time elapsed: 00:00:00
+----------------------------------------------------------
+
+122/147 Testing: code_cache
+122/147 Test: code_cache
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_code_cache"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"code_cache" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+code cache: ok
+<end of output>
+Test time =   0.40 sec
+----------------------------------------------------------
+Test Passed.
+"code_cache" end time: Oct 31 03:10 PDT
+"code_cache" time elapsed: 00:00:00
+----------------------------------------------------------
+
+123/147 Testing: inset_move
+123/147 Test: inset_move
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_inset_move"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"inset_move" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+inset move: ok
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"inset_move" end time: Oct 31 03:10 PDT
+"inset_move" time elapsed: 00:00:00
+----------------------------------------------------------
+
+124/147 Testing: sticky_geometry
+124/147 Test: sticky_geometry
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_sticky_geometry"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"sticky_geometry" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+Sticky scroll geometry, painting, hit tests and containing-block bounds passed
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"sticky_geometry" end time: Oct 31 03:10 PDT
+"sticky_geometry" time elapsed: 00:00:00
+----------------------------------------------------------
+
+125/147 Testing: paint_cull
+125/147 Test: paint_cull
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_paint_cull"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"paint_cull" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+page sy=0: 2 items in view; built 306 full, 4 culled
+page sy=150: 0 items in view; built 305 full, 3 culled
+page sy=1000: 0 items in view; built 304 full, 2 culled
+page sy=2600: 0 items in view; built 304 full, 2 culled
+page sy=4000: 0 items in view; built 304 full, 2 culled
+page sy=5900: 221 items in view; built 517 full, 232 culled
+page sy=6100: 269 items in view; built 562 full, 281 culled
+page sy=20958: 195 items in view; built 493 full, 206 culled
+moved sy=0: 1 items in view; built 305 full, 3 culled
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"paint_cull" end time: Oct 31 03:10 PDT
+"paint_cull" time elapsed: 00:00:00
+----------------------------------------------------------
+
+126/147 Testing: grid_used_values
+126/147 Test: grid_used_values
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_grid_used_values"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"grid_used_values" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+grid used values: 17 ordinary checks and120 layout/animation replacement cycles passed
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"grid_used_values" end time: Oct 31 03:10 PDT
+"grid_used_values" time elapsed: 00:00:00
+----------------------------------------------------------
+
+127/147 Testing: css_stepped_math
+127/147 Test: css_stepped_math
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_css_stepped_math"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"css_stepped_math" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+PASS css_stepped_math 199 native boundary checks
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"css_stepped_math" end time: Oct 31 03:10 PDT
+"css_stepped_math" time elapsed: 00:00:00
+----------------------------------------------------------
+
+128/147 Testing: css_stretch
+128/147 Test: css_stretch
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_css_stretch"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"css_stretch" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+CSS stretch: 153/153 native checks passed
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"css_stretch" end time: Oct 31 03:10 PDT
+"css_stretch" time elapsed: 00:00:00
+----------------------------------------------------------
+
+129/147 Testing: css_containment
+129/147 Test: css_containment
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_css_containment"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"css_containment" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+containment: 339 checks, 0 failures
+<end of output>
+Test time =   0.08 sec
+----------------------------------------------------------
+Test Passed.
+"css_containment" end time: Oct 31 03:10 PDT
+"css_containment" time elapsed: 00:00:00
+----------------------------------------------------------
+
+130/147 Testing: grid_repeat_validation
+130/147 Test: grid_repeat_validation
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_grid_repeat_validation"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"grid_repeat_validation" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+grid repeat validation: atomic arrays/metadata and fixed-size grammar PASS
+<end of output>
+Test time =   0.05 sec
+----------------------------------------------------------
+Test Passed.
+"grid_repeat_validation" end time: Oct 31 03:10 PDT
+"grid_repeat_validation" time elapsed: 00:00:00
+----------------------------------------------------------
+
+131/147 Testing: grid_alignment
+131/147 Test: grid_alignment
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_grid_alignment"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"grid_alignment" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+grid alignment: 75 geometry cases passed
+<end of output>
+Test time =   0.08 sec
+----------------------------------------------------------
+Test Passed.
+"grid_alignment" end time: Oct 31 03:10 PDT
+"grid_alignment" time elapsed: 00:00:00
+----------------------------------------------------------
+
+132/147 Testing: grid_item_width
+132/147 Test: grid_item_width
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_grid_item_width"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"grid_item_width" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+a: x 550 w 680 h 600 (want w 680)
+b: x 10 w 1060 h 22 (want w 1060)
+c: x 10 w 1060 h 22 (want w 1060)
+e: x 10 w 1060 h 22 (want w 1060)
+m: x 10 w 1060 h 22 (want w 1060)
+minified computed: [10px minmax(0,1fr)10px] [minmax(20px,.8fr)auto minmax(20px,1fr)]
+minified resolved: [10px 1060px 10px] [230.222px 22px 287.778px]
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"grid_item_width" end time: Oct 31 03:10 PDT
+"grid_item_width" time elapsed: 00:00:00
+----------------------------------------------------------
+
+133/147 Testing: logical_size
+133/147 Test: logical_size
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_logical_size"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"logical_size" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+p: w 200 h 88; b: w 100 h 60
+22 logical cascade controls passed
+186 logical border controls passed
+1638 logical edge checks passed
+1662 logical edge and mutation checks passed
+<end of output>
+Test time =   0.17 sec
+----------------------------------------------------------
+Test Passed.
+"logical_size" end time: Oct 31 03:10 PDT
+"logical_size" time elapsed: 00:00:00
+----------------------------------------------------------
+
+134/147 Testing: break_spaces
+134/147 Test: break_spaces
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_break_spaces"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"break_spaces" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+22 preserved-space line-break controls passed
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"break_spaces" end time: Oct 31 03:10 PDT
+"break_spaces" time elapsed: 00:00:00
+----------------------------------------------------------
+
+135/147 Testing: flex_declaration
+135/147 Test: flex_declaration
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_flex_declaration"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"flex_declaration" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+336 native flex declaration controls passed
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"flex_declaration" end time: Oct 31 03:10 PDT
+"flex_declaration" time elapsed: 00:00:00
+----------------------------------------------------------
+
+136/147 Testing: grid_absolute
+136/147 Test: grid_absolute
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_grid_absolute"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"grid_absolute" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+Grid absolute containing-block controls: 96/96 passed
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"grid_absolute" end time: Oct 31 03:10 PDT
+"grid_absolute" time elapsed: 00:00:00
+----------------------------------------------------------
+
+137/147 Testing: flex_alignment
+137/147 Test: flex_alignment
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_flex_alignment"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"flex_alignment" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+Flex alignment geometry: 393/393 passed
+<end of output>
+Test time =   0.08 sec
+----------------------------------------------------------
+Test Passed.
+"flex_alignment" end time: Oct 31 03:10 PDT
+"flex_alignment" time elapsed: 00:00:00
+----------------------------------------------------------
+
+138/147 Testing: font_units
+138/147 Test: font_units
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_font_units" "/mnt/p3/project/browser/wpt/fonts/Ahem.ttf" "/mnt/p3/project/browser/wpt/css/css-values/resources/ChTestZeroWidthZero.woff"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"font_units" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+74 font-unit controls passed; external Ahem loaded (21768 bytes), zero-advance font loaded (1056 bytes)
+<end of output>
+Test time =   0.09 sec
+----------------------------------------------------------
+Test Passed.
+"font_units" end time: Oct 31 03:10 PDT
+"font_units" time elapsed: 00:00:00
+----------------------------------------------------------
+
+139/147 Testing: anon_block_size
+139/147 Test: anon_block_size
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_anon_block_size"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"anon_block_size" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+overlay y 0 h 414, row y 4
+box y 0 h 300 w 540, row y 24
+square y 700 h 200, row y 724
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"anon_block_size" end time: Oct 31 03:10 PDT
+"anon_block_size" time elapsed: 00:00:00
+----------------------------------------------------------
+
+140/147 Testing: button_center
+140/147 Test: button_center
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_button_center"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"button_center" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+b1 y 0 h 48, svg y 12 h 24
+b2 y 48 h 60, span y 69.9338 h 16.1324
+b3 y 108, svg y 108; div y 156, svg y 156
+<end of output>
+Test time =   0.07 sec
+----------------------------------------------------------
+Test Passed.
+"button_center" end time: Oct 31 03:10 PDT
+"button_center" time elapsed: 00:00:00
+----------------------------------------------------------
+
+141/147 Testing: radius_inherit
+141/147 Test: radius_inherit
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_radius_inherit"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"radius_inherit" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+a 26 26 0 0, c 4 26, b 9 0, i 0
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"radius_inherit" end time: Oct 31 03:10 PDT
+"radius_inherit" time elapsed: 00:00:00
+----------------------------------------------------------
+
+142/147 Testing: starting_style_top
+142/147 Test: starting_style_top
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_starting_style" "top"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"starting_style_top" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+top passed
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"starting_style_top" end time: Oct 31 03:10 PDT
+"starting_style_top" time elapsed: 00:00:00
+----------------------------------------------------------
+
+143/147 Testing: starting_style_nested
+143/147 Test: starting_style_nested
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_starting_style" "nested"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"starting_style_nested" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+nested passed
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"starting_style_nested" end time: Oct 31 03:10 PDT
+"starting_style_nested" time elapsed: 00:00:00
+----------------------------------------------------------
+
+144/147 Testing: starting_style_conditional
+144/147 Test: starting_style_conditional
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_starting_style" "conditional"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"starting_style_conditional" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+conditional passed
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"starting_style_conditional" end time: Oct 31 03:10 PDT
+"starting_style_conditional" time elapsed: 00:00:00
+----------------------------------------------------------
+
+145/147 Testing: starting_style_reopen
+145/147 Test: starting_style_reopen
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_starting_style" "reopen"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"starting_style_reopen" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+reopen passed
+<end of output>
+Test time =   0.06 sec
+----------------------------------------------------------
+Test Passed.
+"starting_style_reopen" end time: Oct 31 03:10 PDT
+"starting_style_reopen" time elapsed: 00:00:00
+----------------------------------------------------------
+
+146/147 Testing: js_viewport_runtime
+146/147 Test: js_viewport_runtime
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_js_viewport_runtime"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"js_viewport_runtime" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+viewport runtime assertions passed
+<end of output>
+Test time =   0.25 sec
+----------------------------------------------------------
+Test Passed.
+"js_viewport_runtime" end time: Oct 31 03:10 PDT
+"js_viewport_runtime" time elapsed: 00:00:00
+----------------------------------------------------------
+
+147/147 Testing: keyboard_editing
+147/147 Test: keyboard_editing
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_keyboard_editing"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+"keyboard_editing" start time: Oct 31 03:10 PDT
+Output:
+----------------------------------------------------------
+<end of output>
+Test time =   0.26 sec
+----------------------------------------------------------
+Test Passed.
+"keyboard_editing" end time: Oct 31 03:10 PDT
+"keyboard_editing" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Oct 31 03:10 PDT

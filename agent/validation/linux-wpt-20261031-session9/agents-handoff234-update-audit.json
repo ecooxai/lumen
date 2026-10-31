@@ -1,0 +1,15 @@
+{
+  "updated_utc": "2026-10-31T10:46:58.407203+00:00",
+  "path": "AGENTS.md",
+  "before_sha256": "06482600b3bf83cb680b20f10baad411deb01241a964bc76947d8d747b5e7795",
+  "after_sha256": "e93f719ef9b3a45a1dd8d5e9f94ce9e524062f7152715a189f7922c7972187ed",
+  "first121_sha256": "443b33087067fcae89f3aa2e60ca6a31af4c221dc96e25ef03c81fc917cc2a1f",
+  "first121_preserved_byte_for_byte": true,
+  "retained_old_lines_189_through_210_sha256": "5b9c834a0043e9e33655e8f3e2b56768601e1dcd8668835da4d726f6dc47f023",
+  "retained_architecture_boundaries_preserved_byte_for_byte": true,
+  "archive_path": "agents/archive/gpt-6-astra-pro-builtin-rubywebterm-AGENTS-session8-20261031.md",
+  "archive_sha256": "06482600b3bf83cb680b20f10baad411deb01241a964bc76947d8d747b5e7795",
+  "compiled_source_files_modified": [],
+  "git_mutations_performed": false,
+  "publication_state": "technical acceptance complete; final publication/delivery receipts remain authoritative"
+}

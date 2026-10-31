@@ -1,0 +1,14 @@
+{
+  "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/showcase/run-owned-demo234.py": "16a8d36371dfa7d85c91838eabbcfc334db65705d5e043ef822f3ef8b01cada1",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/showcase/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/showcase/lumen-live-demo-manifest-final.json": "bf2e5ca98d4234de88bacad4c8075c6c4f00ea633e26b2f6d472412472b7e5d2",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i234": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/run_guarded_fixture.py": "8da5fcf656a2c787d57c36101c7f6735b8047c207c83d60a4ca1853c6b72da9d",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py": "969cbe8df729bd340e46d1a25fc2069573249b4395aba3e7ecce8f6e583ae298",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/agent/progress/monitor.py": "57c216199f5a685f4d6a730bb0c53c92f004bb04b8f1f2d437505281e84e5a8c",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/agent/progress/cgroup_monitor.py": "0f1292f190f9cd40ce048526a4028d5a5fe1b8dfe1639bc14742d4e8d0eeb1f0",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-234/build-state.json": "22f693e54369d822f41da06fbc26bc6700602ad0716a697ee594c291171c4256",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-234/source-manifest-before.json": "58a936e5da8f063bf666dbe9c988696139a3f8e4a89b2dcae0fcbc8508909c5f",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-234/source-manifest-after.json": "58a936e5da8f063bf666dbe9c988696139a3f8e4a89b2dcae0fcbc8508909c5f",
+  "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-234/build.log": "92bad2f6872bf8eed5f2287dfdc38e41675c83da3ee5fee5ac1a7b65f32ea342"
+}

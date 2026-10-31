@@ -1,0 +1,19 @@
+{
+  "candidate": 234,
+  "native_tests_passed": 147,
+  "native_tests_total": 147,
+  "actual_outer_terminal": 16091,
+  "actual_outer_exit": 0,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "all650_recorded_inputs_unchanged": true,
+  "all12_durable_contracts_pass": true,
+  "lifecycle_CTest_uses_default_actual_exit_gate": true,
+  "options_CTest_uses_default_actual_exit_gate": true,
+  "generated_CTest_properties": {
+    "js_document_lifecycle": "set_tests_properties([=[js_document_lifecycle]=] PROPERTIES  ENVIRONMENT \"LUMEN_CONSOLE=0;JSRUN_LAYOUT=1;JSRUN_UNTIL_ATTR=data-document-lifecycle-complete;JSRUN_EXPECT_ATTR_VALUE=PASS\" FAIL_REGULAR_EXPRESSION \"RESULTS .*:FAIL;LIFECYCLE_CONTRACT .*:FAIL\" TIMEOUT \"30\" _BACKTRACE_TRIPLES \"/mnt/p3/project/browser/lumen-android/lumen-android/CMakeLists.txt;456;add_test;/mnt/p3/project/browser/lumen-android/lumen-android/CMakeLists.txt;0;\")",
+    "js_checkvisibility_options": "set_tests_properties([=[js_checkvisibility_options]=] PROPERTIES  ENVIRONMENT \"LUMEN_CONSOLE=0;JSRUN_LAYOUT=1;JSRUN_UNTIL_ATTR=data-checkvisibility-options-complete;JSRUN_EXPECT_ATTR_VALUE=PASS\" FAIL_REGULAR_EXPRESSION \"RESULTS .*:FAIL\" TIMEOUT \"30\" _BACKTRACE_TRIPLES \"/mnt/p3/project/browser/lumen-android/lumen-android/CMakeLists.txt;458;add_test;/mnt/p3/project/browser/lumen-android/lumen-android/CMakeLists.txt;0;\")"
+  },
+  "full_ctest_log_sha256": "2ab7c5801d19ab90b77b9a4e4ac279b5f445a738cb209fb299fdf68b4076cc94",
+  "immutable_jsrun_sha256": "120a1122e05db62af86c5f6fde6bab54bd8ad6c9560f9c1729f8bfa074fe95ad",
+  "immutable_app_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282"
+}

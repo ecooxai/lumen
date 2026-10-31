@@ -1,0 +1,200 @@
+{
+  "iteration": 8,
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "production_app_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "recorded_input_count": 650,
+  "recorded_input_digest": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
+  "started_utc": "2026-10-31T10:06:13.077038+00:00",
+  "finished_utc": "2026-10-31T10:41:46.236056+00:00",
+  "duration_minutes": 35.552650299999996,
+  "cumulative_task_minutes": 221.57060093333334,
+  "source_build_started_utc": "2026-10-31T10:08:13.560329+00:00",
+  "technical_end_definition": "Final independent16-gate technical review completion; later publication/accounting is a separate delivery phase.",
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ],
+  "coordinator": "root",
+  "scoped_complete_scores": {
+    "selected39_assertions": 100,
+    "selected39_reftests": 100,
+    "frozen49_visibility": 100,
+    "separate2_slot_accessors": 100,
+    "whole_the_end4": 100,
+    "retained40_rendering": 100
+  },
+  "whole_browser_score": null,
+  "native_tests": {
+    "passed": 147,
+    "total": 147,
+    "actual_outer_terminal": 16091,
+    "actual_exit": 0
+  },
+  "selected39": {
+    "whole_files": 39,
+    "assertion_files": 11,
+    "assertions_passed": 286,
+    "assertions_total": 286,
+    "reftests_passed": 28,
+    "reftests_total": 28,
+    "actual_native_launches": 67,
+    "all_prior_passes_and_harnesses_preserved": true
+  },
+  "visibility_authored49": {
+    "passed": 49,
+    "total": 49,
+    "baseline231_passed": 15,
+    "pinned_chromium156_passed": 49,
+    "new_passes": 34,
+    "not_WPT": true
+  },
+  "slot_accessors_separate2": {
+    "passed": 2,
+    "total": 2,
+    "reference_passed": 2,
+    "public_getter_reads": 0,
+    "not_WPT": true
+  },
+  "hidden_API3": {
+    "passed": 18,
+    "total": 23,
+    "checkVisibility": {
+      "passed": 16,
+      "total": 21,
+      "outside_fixed640": true
+    },
+    "IO030": {
+      "passed": 1,
+      "total": 1
+    },
+    "RO031": {
+      "passed": 1,
+      "total": 1
+    },
+    "remaining_failures": "Two automatic-visibility, two unassigned-slot and one option/optgroup control; all stay visible."
+  },
+  "lifecycle": {
+    "whole_the_end4": {
+      "passed": 4,
+      "total": 4,
+      "inside_fixed640": true
+    },
+    "authored_cases": 12,
+    "canonical_rows": 114,
+    "actual_structured_rows": 125,
+    "durable_finish_boundaries": true,
+    "declared_microtask_removal_reference_residuals_retained": true
+  },
+  "hidden_retention": {
+    "cases": 7,
+    "phases": 30,
+    "strict_contract_passed": true,
+    "full_snapshot_equality": false,
+    "exact_hidden_shrunk_paired_leaf_size_difference_preserved": true,
+    "upstream_visible_inner_scroller": {
+      "passed": 1,
+      "total": 1
+    },
+    "original_and_v2_cadence_passed": true,
+    "idle_geometry_rescans": 0,
+    "idle_notifications": 0,
+    "wheel_event_runtime_tested": false
+  },
+  "sanitizers": {
+    "actual_CXX_lifecycle_visibility_completion_exits": [
+      0,
+      1,
+      1,
+      0
+    ],
+    "all12_lifecycle_and49_visibility_cases_passed": true,
+    "unsuppressed_diagnostics": false,
+    "math_target_passed": true,
+    "containment_grid_three_targets_passed": true,
+    "raster_passed": true,
+    "prebuilt_V8_itself_instrumented": false
+  },
+  "retained_render40": {
+    "passed": 40,
+    "total": 40,
+    "actual_native_captures": 80,
+    "all_RGBA_equal": true
+  },
+  "full640": {
+    "fresh_run": true,
+    "fully_passing_files": 417,
+    "files": 640,
+    "passing_assertions": 9249,
+    "registered_assertions": 10540,
+    "file_percent": 65.15625,
+    "assertion_percent": 87.75142314990512,
+    "harness_counts": {
+      "OK": 625,
+      "TIMEOUT": 14,
+      "ERROR": 1
+    },
+    "gain_vs226_assertions": 87,
+    "gain_vs226_whole_files": 6,
+    "gain_vs231_assertions": 3,
+    "gain_vs231_whole_files": 1,
+    "all231_required9246_passes_and416_files_preserved": true,
+    "missing_or_added_native_identities": 0,
+    "new_nonOK_harness_regressions": 0,
+    "actual_native_exits_zero": 640,
+    "actual_outer_terminal": 16135,
+    "actual_exit": 0,
+    "duration_seconds": 785.8891301249969,
+    "chromium156": {
+      "fully_passing_files": 560,
+      "files": 640,
+      "passing_assertions": 9551,
+      "registered_assertions": 10552
+    },
+    "strict_shared_identities": 10538,
+    "shared_reference_PASS_native_nonPASS": 1111,
+    "shared_native_PASS_reference_nonPASS": 821,
+    "reference_only_identities": 14,
+    "native_only_identities": 2
+  },
+  "matched_resources": {
+    "all_three_exact_checks": 10,
+    "checksum": 21144,
+    "sequential_quiet_window": [
+      "2026-10-31T10:36:41.082002+00:00",
+      "2026-10-31T10:37:38.505786+00:00"
+    ],
+    "actual_outer_terminal": 16207,
+    "actual_exit": 0,
+    "predeclared_investigation_flags": [],
+    "work_covered_CPU_seconds": {
+      "baseline226": 0.27027759360790254,
+      "candidate234": 0.28991462847709654,
+      "chromium156": 0.2515643401670456
+    },
+    "work_covered_seconds": {
+      "baseline226": 4.003840923309326,
+      "candidate234": 3.998443841934204,
+      "chromium156": 4.0227131843566895
+    },
+    "whole_fixture_sampled_MAX_RSS_MiB": {
+      "baseline226": 169.607,
+      "candidate234": 167.748,
+      "chromium156": 1417.294
+    },
+    "whole_fixture_sampled_MAX_PSS_MiB": {
+      "baseline226": 154.521,
+      "candidate234": 152.391,
+      "chromium156": 508.93
+    },
+    "limits": "One paced matched workload,15RSS/3PSS whole-window samples each; RSS duplicates shared pages; intervals miss boundaries/short peaks; not throughput or general performance equivalence. Chromium OS exit is unexposed; owned cleanup and adapter completion are verified."
+  },
+  "root_technical_acceptance": {
+    "accepted": true,
+    "decision_owner": "root",
+    "review_sha256": "aa0068187a3ddf7f4006c89543acd05a92b1a442f46ed9b7210042a7aa79f4af",
+    "decision_reference": "CTO acceptance message for candidate234 exact source/app/inputdigest, authorizing posttasks after versioned publication/media review."
+  },
+  "public_promotion_status": "Held pending final reviewed artifacts/source bundle/recovery/media/HTTP checks; public226 artifacts are not silently relabeled."
+}

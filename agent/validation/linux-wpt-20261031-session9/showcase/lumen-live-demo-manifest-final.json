@@ -1,0 +1,37 @@
+{
+  "version": 3,
+  "source_path": "agent/validation/linux-wpt-20261031-session9/showcase/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html",
+  "source_sha256": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
+  "viewport": {
+    "width": 800,
+    "height": 600,
+    "device_scale_factor": 1
+  },
+  "protocol": {
+    "marker": "lumen-live-demo",
+    "completion_attribute": "data-lumen-live-demo-ready",
+    "completion_value": "PASS",
+    "reftest_wait_class": "reftest-wait",
+    "global_snapshot": "__lumenLiveDemo"
+  },
+  "scope": "Owned authored demonstration outside WPT scores and denominators. PASS is settled transport completion only; every panel number is read from real browser APIs.",
+  "external_assets": false,
+  "actions": "Two genuine hide/reveal style transitions on startup, followed by synchronous API observations; controls perform real style changes. Lifecycle rows captured only inside real DCL/load/pageshow callbacks.",
+  "metadata": {
+    "qualified": true,
+    "iteration": 8,
+    "candidate": 234,
+    "selectedContainmentScore": 100,
+    "score_scope": "Exactly39 selected static/parsing containment WPT files:286/286 assertions and28/28 reftests; not whole WPT or overall browser compatibility.",
+    "reportURL": "https://ecooxai.github.io/lumen/",
+    "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+    "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+    "compiled_source_manifest_digest": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
+    "accepted_independent_review_sha256": "aa0068187a3ddf7f4006c89543acd05a92b1a442f46ed9b7210042a7aa79f4af",
+    "containment_audit_sha256": "7c746b99b5f4a8b6c117432cb2cd0ac30c511f75f554d959c6ef3cc98e541a23"
+  },
+  "production_inputs_modified": false,
+  "predecessor_sha256": "e4c4a2a1883d0709705dc37d34c554c899bc4a5398591f4fe2aca708a67bafdd",
+  "changes": "Only the reviewed REPORT_METADATA literal changed: accepted iteration8/candidate234, selected static containment100/100, final report URL. All API/control/layout/readiness bytes are unchanged from reviewedv2.",
+  "runtime_validation": "Pending supported marker-only validation on the accepted native binary; no arbitrary owned screenshot route is asserted."
+}

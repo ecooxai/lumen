@@ -1,0 +1,23 @@
+{
+  "candidate": 234,
+  "started_utc": "2026-10-31T10:16:08.037222+00:00",
+  "finished_utc": "2026-10-31T10:16:30.903029+00:00",
+  "gates": [
+    {
+      "gate": "math",
+      "actual_returncode": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate234-math-sanitizer-controller.log"
+    },
+    {
+      "gate": "native",
+      "actual_returncode": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate234-native-sanitizer-controller.log"
+    },
+    {
+      "gate": "raster",
+      "actual_returncode": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate234-raster-sanitizer-controller.log"
+    }
+  ],
+  "actual_sequence_success": true
+}

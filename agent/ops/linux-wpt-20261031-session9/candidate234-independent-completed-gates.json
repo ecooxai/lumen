@@ -1,0 +1,398 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "reviewed_utc": "2026-10-31T10:29:15.742482+00:00",
+  "auditor_sha256": "c69a8b6cd2141e2d57f87ed4f7d6a2838f162ad49794e406d7e89abad287259b",
+  "completed_gates": {
+    "containment39": {
+      "accepted": true,
+      "assertions_passed": 286,
+      "assertion_files": 11,
+      "reftests_passed": 28,
+      "actual_lifecycles": 67,
+      "cohorts": {
+        "qa-css-logical-containment": {
+          "assertions": {
+            "accepted": true,
+            "receipt_sha256": "ed7daf3e0c2ab9164f76d7ae3106fb5aea619dddeb6c9ea942cb66af9b8723c7",
+            "raw_result_sha256": "85ad755225836e8a4fdb71142b3a4496ac0ebd14877713a96b6c04551537dca0",
+            "files": 1,
+            "assertion_statuses": {
+              "PASS": 48
+            },
+            "pixel_statuses": null,
+            "actual_native_lifecycles": 1,
+            "resources": {
+              "resources": {
+                "summary_sha256": "50069b8490f8335e9f85bece4dcd9895d4efcb2ed440a354a3a736c2bb309ee2",
+                "csv_sha256": "dc5369fb1389ece7a0e026273ce1b646de3fc2d9ba3b773f3418686004c85bc8",
+                "samples": 3,
+                "interval_seconds": 1
+              },
+              "cgroup": {
+                "summary_sha256": "693168fe7b0a260bdb9bfb384cbd60bebeb8f101b5cca8b116b5a109327d6b85",
+                "csv_sha256": "11df5c82969c7140985a4aca4f167fc55856722d0764efb50d98c3ab0d587f13",
+                "samples": 3,
+                "interval_seconds": 1
+              }
+            }
+          },
+          "rendering": {
+            "accepted": true,
+            "receipt_sha256": "6277cf179e1337acb17f04394f0e8b961127c56f76320a343c68be1bd5411246",
+            "raw_result_sha256": "c882e9f9f3dbd77a6802e99fc4c70fe0d3c9638ea7ede2d7a0fbf398966f8c27",
+            "files": 2,
+            "assertion_statuses": null,
+            "pixel_statuses": {
+              "PASS": 2
+            },
+            "actual_native_lifecycles": 4,
+            "resources": {
+              "resources": {
+                "summary_sha256": "c666899f070ca03594608e3bb1af26bf8517b74af4cb46d7843b8e53ab357652",
+                "csv_sha256": "2b0a5b8ba3e1f4043de2e2b5c4f127aa0f292aa974c42ea01717d0a078737233",
+                "samples": 10,
+                "interval_seconds": 1
+              },
+              "cgroup": {
+                "summary_sha256": "4f3cd5285bed3f9c093874b090f741dde5d69b3034f61924131ff8e2a5c03b0e",
+                "csv_sha256": "4ccae0832fa2c83073a982c8ce242a597f22c9275beaa2899ac8c47a5f6d9053",
+                "samples": 10,
+                "interval_seconds": 1
+              }
+            }
+          }
+        },
+        "qa-css-containment-numbered": {
+          "assertions": {
+            "accepted": true,
+            "receipt_sha256": "1964f8ae460c8e0051d2f3284a50e465bec819dcc22f73efce2d12db6c230c5e",
+            "raw_result_sha256": "cb4b21b24aa15f0419651a4b740153ff7afff7f502ab666e56bc051413a6e590",
+            "files": 7,
+            "assertion_statuses": {
+              "PASS": 150
+            },
+            "pixel_statuses": null,
+            "actual_native_lifecycles": 7,
+            "resources": {
+              "resources": {
+                "summary_sha256": "8d3541b9098b091c2c5bb53ca2d4a5c9e39ad2c9cfbdc7f94580f2f311d9b69d",
+                "csv_sha256": "0aa7903544aef3127930b01ebd9e2af9cd941430f39d6f7b80b2944545e155c1",
+                "samples": 16,
+                "interval_seconds": 1
+              },
+              "cgroup": {
+                "summary_sha256": "555a43d5a36d975a291ba07dffa9592bad5ee122ea89ff94eae21a1da809ceed",
+                "csv_sha256": "cc1bb2f8dbad5dac0d98d111788769062810cacb2287b02efa9cb22715274fb1",
+                "samples": 16,
+                "interval_seconds": 1
+              }
+            }
+          },
+          "rendering": {
+            "accepted": true,
+            "receipt_sha256": "239388e2d4e226b9751e8d81fd2db0ccacb84b3fe18d6a6d8ad9f3097060aeb8",
+            "raw_result_sha256": "43155b77f2d03de91d51e4ff016d62fa5fa2f513c410f62f92eea69a7a1994b8",
+            "files": 26,
+            "assertion_statuses": null,
+            "pixel_statuses": {
+              "PASS": 26
+            },
+            "actual_native_lifecycles": 52,
+            "resources": {
+              "resources": {
+                "summary_sha256": "7279a66d07370976510b51e65886446515b56073a62a49a15d31e29b97ac22fb",
+                "csv_sha256": "9a239acbbffe0b207ac081da382928c7f518f181458dbc40a3627870b79c85b0",
+                "samples": 112,
+                "interval_seconds": 1
+              },
+              "cgroup": {
+                "summary_sha256": "5cda6cd97ed9f824a05cb21804d6b342716d405d76208153758585b408564999",
+                "csv_sha256": "aa5c3557897b3cd694e6265a857e005ff06fc6bdd463d0f6b85b1e10c0f9ccca",
+                "samples": 112,
+                "interval_seconds": 1
+              }
+            }
+          }
+        },
+        "qa-css-containment-parsing": {
+          "assertions": {
+            "accepted": true,
+            "receipt_sha256": "fb5a6ecc99f4b4a29bd689bb5aaa6104939c8f36321f28664171ca5bc6d685f8",
+            "raw_result_sha256": "83eb51c8504b0cde846f90466d8e82bbb759b14bc9fe8281bbba51afd3b1dc24",
+            "files": 3,
+            "assertion_statuses": {
+              "PASS": 88
+            },
+            "pixel_statuses": null,
+            "actual_native_lifecycles": 3,
+            "resources": {
+              "resources": {
+                "summary_sha256": "c8e68f8c7f246e376ed075e2075d8115fed9c09a708836fabd13b2a8b04241ad",
+                "csv_sha256": "3974188fbecf92934a95fe31ae0923c112b9057ce05929b9873178ebf301111c",
+                "samples": 8,
+                "interval_seconds": 1
+              },
+              "cgroup": {
+                "summary_sha256": "06980955f9523c1b265e7546a695933c9e792fa099d9f15bc0efc4e2aedc2061",
+                "csv_sha256": "cd5362dcbcbc6b1a7ca1e6e228f849a48f252fc9f25e1a4753cbc23a2694a46b",
+                "samples": 8,
+                "interval_seconds": 1
+              }
+            }
+          }
+        }
+      },
+      "preservation_report_sha256": "7c746b99b5f4a8b6c117432cb2cd0ac30c511f75f554d959c6ef3cc98e541a23"
+    },
+    "hidden_api3": {
+      "accepted": true,
+      "receipt_sha256": "1b320a0212744623a611d52dd6243f104cd2084bf5e736d14849bb068c5728b2",
+      "raw_result_sha256": "8a069d7c560623bc9551df743e6b4e9ae14e43b26bb5130e4f4493f1eab54583",
+      "files": 3,
+      "assertion_statuses": {
+        "PASS": 18,
+        "FAIL": 5
+      },
+      "pixel_statuses": null,
+      "actual_native_lifecycles": 3,
+      "resources": {
+        "resources": {
+          "summary_sha256": "566aa70a09d0a8222c08c3c01227b3e4c043cb94596e1a6400f2d6d6cb954531",
+          "csv_sha256": "d44ed1e106a34b3769bcb9eb6f57ce5290a6339823c1ceccb76bfb18aee10c00",
+          "samples": 8,
+          "interval_seconds": 1
+        },
+        "cgroup": {
+          "summary_sha256": "cb5fe3829f89dbec4370e47bc80344c59a06a9da0d7d30d6f7b64397327f0590",
+          "csv_sha256": "3a65d9a6db32aad54a37b0a094002fafab583022921019eac10b6ca872fe724d",
+          "samples": 8,
+          "interval_seconds": 1
+        }
+      },
+      "report_sha256": "43337d33366dcb38ff03f815c97040e9efd4b04a9a9c0db4f9dce50ce5fc276e",
+      "partial": true,
+      "remaining_failures": [
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on content-visibility:auto element which is outside the viewport.",
+            0
+          ],
+          "result": [
+            "checkVisibility on content-visibility:auto element which is outside the viewport.",
+            "FAIL",
+            "assert_false: contentVisibilityAuto: true expected false got true"
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+            0
+          ],
+          "result": [
+            "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on element not assigned to a slot.",
+            0
+          ],
+          "result": [
+            "checkVisibility on element not assigned to a slot.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on element not assigned to the only named slot.",
+            0
+          ],
+          "result": [
+            "checkVisibility on element not assigned to the only named slot.",
+            "FAIL",
+            "assert_false: expected false got true"
+          ]
+        },
+        {
+          "identity": [
+            "/css/cssom-view/checkVisibility.html",
+            "checkVisibility on option and optgroup elements in a list box.",
+            0
+          ],
+          "result": [
+            "checkVisibility on option and optgroup elements in a list box.",
+            "FAIL",
+            "assert_true: option expected true got false"
+          ]
+        }
+      ]
+    },
+    "lifecycle12_upstream4": {
+      "accepted": true,
+      "receipt_sha256": "5fdff30dc072329694477f1b796bcb3e3bc776d8017d7fafcfc203af36e9c7e3",
+      "raw_result_sha256": "8cbd5086e634695845b847b26240ce9bf8a149769d1b256fa696f07d5f4a3bcd",
+      "files": 1,
+      "assertion_statuses": {
+        "PASS": 4
+      },
+      "pixel_statuses": null,
+      "actual_native_lifecycles": 1,
+      "resources": {
+        "resources": {
+          "summary_sha256": "4107b3875c3f8acbee200766912508e4fbc505335d4c9673e5c12cc5860eade2",
+          "csv_sha256": "bb8af06cef155169ccbaf00309b2dbe25dd79682bec3bc999de9e3652f541766",
+          "samples": 3,
+          "interval_seconds": 1
+        },
+        "cgroup": {
+          "summary_sha256": "f6daa06f09d189eb5209fd0318321ef401b4362fb3c27bc1e66d2c41a16dce3c",
+          "csv_sha256": "b577691abbf98654326a325780f6c6b0fd39460178e3db8b6deac945bb4adf34",
+          "samples": 3,
+          "interval_seconds": 1
+        }
+      },
+      "canonical_records": 114,
+      "cases": 12,
+      "contract_report_sha256": "b5448528d8d4daa9b4fab415af8a3ecf6c1b34540dd6f6ff1761f076e031f1b0",
+      "execution_sha256": "d37d6acc3236241a03dda1c3221206b2170b365204ec0a6dd0816d847f9ad752",
+      "finish_and_zero_late_bounds": "Separately verified from unchanged durable positive-case assertions in normal147 and real C++ sanitizer audit."
+    },
+    "hidden_scroll_contract": {
+      "accepted": true,
+      "report_sha256": "29c841e08d56b411680a9d6ed7dce547caa56ba7bc61d4cba9a8e67762ace823",
+      "cases": 7,
+      "phases": 30,
+      "full_snapshot_equivalence": false,
+      "exception": "Only range-shrink-and-regrow/hidden-shrunk leaf size native150x130 versus reference400x400, exact paired dimensions; all other pinned fields strict."
+    },
+    "hidden_scroll_upstream": {
+      "accepted": true,
+      "receipt_sha256": "27bcec00b96eee3622a9b58e78043d0345e299e6f774e021de89e462ea1af985",
+      "raw_result_sha256": "810dd5396846a6ee3fdd50fa3c86cb79ad67a07c7a00f826c3d2bd32636e1112",
+      "files": 1,
+      "assertion_statuses": {
+        "PASS": 1
+      },
+      "pixel_statuses": null,
+      "actual_native_lifecycles": 1,
+      "resources": {
+        "resources": {
+          "summary_sha256": "a16e5ccec3a76766827b82c37fba7ebb6d6284abb479f2c5ac79fdf7da94c9c1",
+          "csv_sha256": "5afb5e43a3c2060b082e8e13f123b09a0b35c129e5aa67218dfee434a0810e7b",
+          "samples": 3,
+          "interval_seconds": 1
+        },
+        "cgroup": {
+          "summary_sha256": "c4b61fad7701ffad81277adeb67d21279720e6976157c7d64dd06b1728271972",
+          "csv_sha256": "d6ee40f5e4fcc46eab9b1aa87d8fa1191e7eb240056e281f11429e02a3fd948b",
+          "samples": 3,
+          "interval_seconds": 1
+        }
+      }
+    },
+    "cadence_v1": {
+      "accepted": true,
+      "receipt_sha256": "75acefa9a2ad50939068604ce573820fc58afa0289ba3e61088a35161c06a21e",
+      "resources": {
+        "resources": {
+          "summary_sha256": "245df3e1f9630d960b6af0dca250eb40c82e029d4331584d0438f971c10c270d",
+          "csv_sha256": "859ee65ee23a8dbe44e551c2e7451f06b957ac78db9ad4098fdd2961370c08ed",
+          "samples": 5,
+          "interval_seconds": 1
+        },
+        "cgroup": {
+          "summary_sha256": "2a6641797e00f864ce7a7a63c72b771296746f64638101258ee8730c8380f827",
+          "csv_sha256": "e2e607d21f8a5757a02106ab9affd7428eb5abcc0f682a61cb4cd0012c9ee064",
+          "samples": 6,
+          "interval_seconds": 1
+        }
+      },
+      "idle": {
+        "phase": "idle-end",
+        "elapsed": 3300.2066920101643,
+        "geometryReads": 0,
+        "notifications": 0
+      },
+      "reference_limit": "Chromium reference cadence/retention agrees, while one isolated older nonzero-threshold assertion remains unresolved; no full fixture equivalence claim."
+    },
+    "native_math_sanitizer": {
+      "accepted": true,
+      "receipt_sha256": "2f59ceb0cc3d9f87a9dba740dce85d899a8dfa8484532c274c97b3605993f99e",
+      "cases": 1,
+      "log_sha256": "d3257a44921f306dbad1fbf1a0eab94ee48f839ed11da3b56ad4aebd37078651",
+      "resources": {
+        "resources": {
+          "summary_sha256": "ff576c84a038efacbd824906c45ab923878481232e6a9ae01d8a49b9ef51a317",
+          "csv_sha256": "5d4e9680ecfad05dc87c3be54572a492f8a2eeacffb81e86f9e163cfef0cefd2",
+          "samples": 3,
+          "interval_seconds": 1
+        },
+        "cgroup": {
+          "summary_sha256": "28c2726e03d4196631ca5a3e37d71d668c6e3abde2bfe91626afdbfc35c2d415",
+          "csv_sha256": "6e139d9580f6b543d654bb8ac122a5dc091507b9d3506514240daa705739752e",
+          "samples": 4,
+          "interval_seconds": 1
+        }
+      },
+      "execution_sha256": "d33ef9bcfc99785ebbb6fa1a903fe113b5b7cfe502f9887ad4ba9c024a0c0cad"
+    },
+    "native_grid_containment_sanitizer": {
+      "accepted": true,
+      "receipt_sha256": "0c198b3500e5166df825f161c1351dba4109d2aba5ca0f6dea995b92203cb49e",
+      "cases": 3,
+      "log_sha256": "ca221a21e0bf754869ca74a3fa9faba3bd8765b1bb689a09beca7af414ed096b",
+      "resources": {
+        "resources": {
+          "summary_sha256": "e1a17c537af752e3cf9b6da8133142a89fcc635c39c2e5da4cd24a241b08af08",
+          "csv_sha256": "fbbfa37229841e7093db2091176a37cac90bc572686b69ac95af1d0b2346d5b6",
+          "samples": 6,
+          "interval_seconds": 1
+        },
+        "cgroup": {
+          "summary_sha256": "f04acf034a730f4b9be2e665b4c62e3dd6b2538097c3064d8ae7c86d5947880f",
+          "csv_sha256": "cbec97362d57c67b3b3af6c029fe5b3e3ee3dadbceb7466eb5c90f8892ea8846",
+          "samples": 7,
+          "interval_seconds": 1
+        }
+      },
+      "execution_sha256": "d33ef9bcfc99785ebbb6fa1a903fe113b5b7cfe502f9887ad4ba9c024a0c0cad"
+    },
+    "raster_sanitizer": {
+      "accepted": true,
+      "receipt_sha256": "1f401c842d2f90f734f8844e82e3242903b6d3c6ab1e31a68f42569975ce6f63",
+      "cases": 1,
+      "log_sha256": "036986062ddddd0eeef72ec3c6a45a423aa5586e64089bb86284cbd758801a21",
+      "resources": {
+        "resources": {
+          "summary_sha256": "4d1e37abeecf3816fd52d609fb5213c61d244d639d9b5549f1acf98a6ee221d1",
+          "csv_sha256": "bfdaedb7f4017f03dbbb39babfbcf5228ede590c90e8bc065b6663459a20350c",
+          "samples": 10,
+          "interval_seconds": 1
+        },
+        "cgroup": {
+          "summary_sha256": "0dabfa8716ffdc92207a385bf9596542e178d9321bf13349e3b12721a732d225",
+          "csv_sha256": "ea0ff1b0a8deba003f9dd4fae7e7a983b89d2e1d7c0f9a7568111db225126721",
+          "samples": 11,
+          "interval_seconds": 1
+        }
+      },
+      "execution_sha256": "d33ef9bcfc99785ebbb6fa1a903fe113b5b7cfe502f9887ad4ba9c024a0c0cad"
+    }
+  },
+  "limitations": [
+    "This read-only audit does not complete the still-running fixed640, retained40, or matched resource gates.",
+    "API3 is an accepted measurement of18/23, not a complete conformance pass.",
+    "Lifecycle normalizations and the single hidden-size cache distinction remain explicit in their pinned contracts.",
+    "One-second resource coverage is provenance evidence here; no performance claim."
+  ],
+  "independent_completed_gate_acceptance": true
+}

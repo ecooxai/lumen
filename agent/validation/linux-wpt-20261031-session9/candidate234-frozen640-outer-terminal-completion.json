@@ -1,0 +1,9 @@
+{
+  "observed_utc": "2026-10-31T10:32:17.755782+00:00",
+  "terminal_id": 16135,
+  "actual_terminal_exit_code": 0,
+  "running": false,
+  "retained_snapshot": "a84c409294dbc655",
+  "source_binding_receipt_sha256": "f51dc8a74d70c9c3c4d9900f57df55b796d2b2049a094dfb129115953260dc2d",
+  "note": "Actual retained RubyWebterm terminal completion observed before audits; WPT pass counts are independently audited."
+}

@@ -1,0 +1,23 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "observed_utc": "2026-10-31T10:36:15.160236+00:00",
+  "actual_terminals": [
+    {
+      "scope": "stretch29",
+      "terminal_id": 16195,
+      "actual_terminal_exit_code": 0,
+      "running": false,
+      "retained_snapshot": "fdc89843828a6817"
+    },
+    {
+      "scope": "paint11",
+      "terminal_id": 16192,
+      "actual_terminal_exit_code": 0,
+      "running": false,
+      "retained_snapshot": "b3a136eaf4289101"
+    }
+  ],
+  "semantic_pixel_and_lifecycle_audit_required_separately": true
+}

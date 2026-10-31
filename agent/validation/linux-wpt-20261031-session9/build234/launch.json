@@ -1,0 +1,18 @@
+{
+  "started_utc": "2026-10-31T10:08:13.600546+00:00",
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "command": [
+    "python3",
+    "tools/codex_compile.py",
+    "python3",
+    "agent/validation/build_candidate.py",
+    "--iteration",
+    "234",
+    "--jobs",
+    "2",
+    "--startup"
+  ],
+  "pid": 2821933,
+  "cgroup_monitor_pid": 2821931,
+  "tree_monitor_pid": 2821934
+}

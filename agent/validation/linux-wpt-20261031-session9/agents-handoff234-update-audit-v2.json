@@ -1,0 +1,21 @@
+{
+  "updated_utc": "2026-10-31T10:50:20.310745+00:00",
+  "path": "AGENTS.md",
+  "before_sha256": "06482600b3bf83cb680b20f10baad411deb01241a964bc76947d8d747b5e7795",
+  "after_sha256": "067203c6150cc4b4b143959b87284270969798171394f74a1e71ea8bc79650e1",
+  "first121_sha256": "443b33087067fcae89f3aa2e60ca6a31af4c221dc96e25ef03c81fc917cc2a1f",
+  "first121_preserved_byte_for_byte": true,
+  "retained_old_lines_189_through_210_sha256": "5b9c834a0043e9e33655e8f3e2b56768601e1dcd8668835da4d726f6dc47f023",
+  "retained_architecture_boundaries_preserved_byte_for_byte": true,
+  "archive_path": "agents/archive/gpt-6-astra-pro-builtin-rubywebterm-AGENTS-session8-20261031.md",
+  "archive_sha256": "06482600b3bf83cb680b20f10baad411deb01241a964bc76947d8d747b5e7795",
+  "compiled_source_files_modified": [],
+  "git_mutations_performed": false,
+  "publication_state": "technical acceptance complete; final publication/delivery receipts remain authoritative",
+  "version": 2,
+  "prior_handoff_sha256": "e93f719ef9b3a45a1dd8d5e9f94ce9e524062f7152715a189f7922c7972187ed",
+  "prior_audit_sha256": "3292d505bdbbb60ea2b44a03dd9f548b88002412da3603cf672d230c98b842f5",
+  "change": "Correct completed private Page checkpoint fallback after FileHarbor403; do not leave a false pending FileHarbor retry.",
+  "checkpoint_receipt": "agent/ops/linux-wpt-20261031-session9/page-checkpoint234/cloud-receipt.json",
+  "checkpoint_receipt_sha256": "bfabca7007b66663a0b9e1299e2951c6310454e7a9e157ad73c0b383857ca266"
+}

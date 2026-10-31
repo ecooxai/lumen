@@ -1,0 +1,50 @@
+{
+  "candidate": 234,
+  "source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "reviewed_utc": "2026-10-31T10:48:59.475992+00:00",
+  "reviewer": "delivery_audit GPT-6 Astra Pro",
+  "method": "Actual native image display through authorized RubyWebterm get_image, all five frames inspected visually; hashes/dimensions independently checked afterward.",
+  "visual_acceptance": true,
+  "root_visual_acceptance_pending": true,
+  "video_sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+  "video_bytes": 556783,
+  "duration_seconds": 40,
+  "dimensions": [
+    960,
+    720
+  ],
+  "render_receipt_sha256": "b091782f656203cf6773a49f30bac15a53b269511a32d6e46cf9225867c7ba7c",
+  "monitored_execution_receipt_sha256": "09e6a992705b0ed15b6fe917b7f957b9596228420f80df3b9ca1994b87a444eb",
+  "frames": [
+    {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/linux-wpt-20261031-session9/showcase234/gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase-editable/review-frame-4.png",
+      "sha256": "d0a726c4952998b3f6118d93cfa55afe4d7536c5dfd426b506573cddebfee7ad"
+    },
+    {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/linux-wpt-20261031-session9/showcase234/gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase-editable/review-frame-12.png",
+      "sha256": "89a9e8181b040a961198305bde71e0356b6c225885315d1a4d6b89be0d031350"
+    },
+    {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/linux-wpt-20261031-session9/showcase234/gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase-editable/review-frame-20.png",
+      "sha256": "861a85925af89815adbcd6fd0e058dc0dfe875d20127cee44c618af5e6f34f5c"
+    },
+    {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/linux-wpt-20261031-session9/showcase234/gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase-editable/review-frame-28.png",
+      "sha256": "1cb620bc68dc7dd941c030c61d72250c7da37995945e47abb64c5ddecdbaee25"
+    },
+    {
+      "path": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/linux-wpt-20261031-session9/showcase234/gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase-editable/review-frame-36.png",
+      "sha256": "3da780776355bdb6b190fe022d1e8b4afe62f181bc9c515350e22f561c2d3c46"
+    }
+  ],
+  "findings": [
+    "All five slide titles and body lines are readable and unclipped.",
+    "Large white attribution remains fully visible on a black footer in every frame.",
+    "Selected39, native147, retained40 and fixed640 denominators stay distinct.",
+    "417/640 Lumen versus560/640 Chromium is labeled a fixed non-URL sample, with timeouts/errors retained.",
+    "No full-WPT, global98, browser-speed or Chromium-parity claim.",
+    "No user-display screenshot or unverified native-demo screenshot included."
+  ],
+  "authoring": "Curated measured result cards; interactive demo is a separate artifact."
+}

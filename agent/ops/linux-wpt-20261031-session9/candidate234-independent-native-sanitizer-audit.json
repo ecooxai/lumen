@@ -1,0 +1,74 @@
+{
+  "candidate": 234,
+  "reviewed_utc": "2026-10-31T10:16:20.214422+00:00",
+  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "recorded_inputs": 650,
+  "normal_native": [
+    147,
+    147
+  ],
+  "normal_native_actual_outer_exit": 0,
+  "native_proof_sha256": "e0eaebc03f076de46862e93cdc37590755af2b4cb2f46b5d1ebc1fbf042219e8",
+  "native_xml_sha256": "c8359a3dadd5f90fa4fc47395e78ea7e33b509d8c8e2bde2c77b9e15e96baabb",
+  "sanitizer_receipt_sha256": "6ea12099856bedcf188974836c38b64d7be439d9ef11f63891f6227485e642ee",
+  "sanitized_jsrun_sha256": "85e1ffb3c546acd69ba49f9f2657bfbbe3ef6430d3bf6da6f3826bc33210aaf8",
+  "actual_instrumented_exits": [
+    0,
+    1,
+    1,
+    0
+  ],
+  "lifecycle_cases": [
+    12,
+    12
+  ],
+  "finish_and_late_bounds": "All12 strict durable fixture assertions pass; bounds are asserted internally, not independently logged timestamps.",
+  "instrumented_visibility": [
+    49,
+    49
+  ],
+  "instrumented_and_normal49_rows_identical": true,
+  "address_undefined_instrumented_objects": [
+    "CMakeFiles/lumen_engine.dir/src/js/frames.cc.o",
+    "CMakeFiles/lumen_engine.dir/src/js/js.cc.o",
+    "CMakeFiles/lumen_engine.dir/src/js/jsnative.cc.o",
+    "CMakeFiles/jsrun.dir/tests/jsrun.c.o"
+  ],
+  "prebuilt_V8_itself_instrumented": false,
+  "sanitizer_findings": [],
+  "resource_evidence": [
+    {
+      "scope": "native234",
+      "kind": "resources",
+      "samples": 87,
+      "csv_sha256": "e53bb03a718d590fe8a5e13f5bd49826dca8c26d5210bb6ae56a5be3c8f86a44",
+      "summary_sha256": "945d6020598378cf5fb8d929e7f325429fdf64333ae782ee33baeac660569639"
+    },
+    {
+      "scope": "native234",
+      "kind": "cgroup",
+      "samples": 87,
+      "csv_sha256": "7506aa585013a453da849a96e38942d04d86ccd964ec8e001d32126108dbbfc2",
+      "summary_sha256": "54203ab5187d052f1968699f41bcbd7df7addc0319ef8dc78746033419c1ddef"
+    },
+    {
+      "scope": "native234-lifecycle-options-sanitizer-v3",
+      "kind": "resources",
+      "samples": 19,
+      "csv_sha256": "7f559a932b5ad0849fea4f289bff91c51aa31926e19c9baf0125e1d1f75460ba",
+      "summary_sha256": "11afc7b1b8cf9051617d531bf38fc0f8f2669e6acacd5d06d757f4e8c1eded22"
+    },
+    {
+      "scope": "native234-lifecycle-options-sanitizer-v3",
+      "kind": "cgroup",
+      "samples": 19,
+      "csv_sha256": "2213499ca824cb8eff5168aed6a5128390e390608aadd018c9a3dc3174b7bbc7",
+      "summary_sha256": "9323f47c941e7b53576cfa252098ef4c3e415f12e588e1007289ccac5b22a88c"
+    }
+  ],
+  "one_second_sampled_coverage": true,
+  "default_actual_exit_CTest_gates_verified": true,
+  "source_and_pins_valid": true,
+  "independent_gate_passed": true,
+  "whole_release_qualified": false
+}

@@ -1,0 +1,20 @@
+{
+  "candidate": 234,
+  "started_utc": "2026-10-31T10:47:53.429944+00:00",
+  "finished_utc": "2026-10-31T10:47:59.502751+00:00",
+  "elapsed_seconds": 6.072809228993719,
+  "actual_renderer_returncode": 0,
+  "actual_monitors": [
+    0,
+    0
+  ],
+  "tree_monitor_forced": false,
+  "renderer_unchanged": true,
+  "accepted_data_unchanged": true,
+  "wrapper_sha256": "459e586bf858642244ecc103f42d7938d61b944eeaa67c2c9d771dc165ad606e",
+  "video_sha256": "c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9",
+  "video_bytes": 556783,
+  "render_receipt_sha256": "b091782f656203cf6773a49f30bac15a53b269511a32d6e46cf9225867c7ba7c",
+  "render_receipt": "agent/ops/linux-wpt-20261031-session9/showcase234/gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase.receipt.json",
+  "execution_valid": true
+}

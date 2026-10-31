@@ -1,0 +1,78 @@
+{
+  "candidate": 234,
+  "started_utc": "2026-10-31T10:13:47.664182+00:00",
+  "finished_utc": "2026-10-31T10:13:56.265003+00:00",
+  "maximum_concurrent_browser_lanes": 2,
+  "execution": [
+    {
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/run-cohort-v3.py",
+        "--scope",
+        "qa-hidden-observer-visibility",
+        "--kind",
+        "lumen",
+        "--type",
+        "assertions",
+        "--iteration",
+        "234"
+      ],
+      "returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate234-observer-first-0.log"
+    },
+    {
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/run-v2.py",
+        "--iteration",
+        "234"
+      ],
+      "returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate234-observer-first-1.log"
+    }
+  ],
+  "api_audit_returncode": 0,
+  "exact23_identities_preserved": true,
+  "api_pass_count": 18,
+  "api_total": 23,
+  "prior229_pass_losses": [],
+  "IO030_and_RO031_pass": true,
+  "strict_authored_v2_pass": true,
+  "quiescent_idle": [
+    {
+      "phase": "idle-end",
+      "elapsed": 3300.1676529943943,
+      "geometryReads": 0,
+      "notifications": 0
+    }
+  ],
+  "qualification_pass": true,
+  "authored_fixture_not_WPT": true,
+  "remaining_checkVisibility_failures": [
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on content-visibility:auto element which is outside the viewport.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on option and optgroup elements in a list box.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on element not assigned to a slot.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on element not assigned to the only named slot.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+      0
+    ]
+  ]
+}

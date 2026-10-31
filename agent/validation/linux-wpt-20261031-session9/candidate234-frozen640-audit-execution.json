@@ -1,0 +1,49 @@
+{
+  "candidate": 234,
+  "gates": [
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261030-session8/qa-frozen640/audit-prior-pass-union-v2.py",
+        "--candidate",
+        "234",
+        "--pins-sha256",
+        "f39b50bd6038ae538bfcc9dcd97a242ad8c9d816bec93f8adfd0e78ea26b5b95"
+      ],
+      "actual_returncode": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate234-frozen640-audit-0.log"
+    },
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261030-session8/qa-frozen640/compare-session8.py",
+        "--candidate",
+        "234"
+      ],
+      "actual_returncode": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate234-frozen640-audit-1.log"
+    },
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/compare-frozen640-226.py",
+        "--candidate",
+        "234"
+      ],
+      "actual_returncode": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate234-frozen640-audit-2.log"
+    },
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/audit-prior-pass-through231.py",
+        "--candidate",
+        "234"
+      ],
+      "actual_returncode": 0,
+      "log": "agent/validation/linux-wpt-20261031-session9/candidate234-frozen640-audit-3.log"
+    }
+  ],
+  "all_commands_returned_zero": true,
+  "semantic_flags_must_also_be_reviewed": true
+}
