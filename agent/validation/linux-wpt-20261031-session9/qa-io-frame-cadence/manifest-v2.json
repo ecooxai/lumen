@@ -1,0 +1,30 @@
+{
+  "kind": "authored diagnostic copy, not upstream WPT",
+  "source_path": "tests/js/intersection-geometry.html",
+  "source_sha256": "eecc38fe5a8dfb82c90405c759edff42ec263bddc4ef7829faf9fefdf70b6f33",
+  "diagnostic_path": "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/intersection-geometry-frame-cadence-v2.html",
+  "diagnostic_sha256": "601f9603137d88c2e4d139e0613d3e85bb28ebfbe1275b8da372f4a75dd340b5",
+  "source_assertions_preserved": true,
+  "candidate_baseline": "229",
+  "legacy_marker": "RESULTS intersection-geometry:PASS",
+  "probe_marker": "RESULTS io-frame-cadence:PASS",
+  "completion_attribute": "data-io-cadence-complete",
+  "environment": {
+    "JSRUN_LAYOUT": "1",
+    "JSRUN_UNTIL_ATTR": "data-io-cadence-complete",
+    "LUMEN_CONSOLE": "0"
+  },
+  "jsrun_duration_ms": 10000,
+  "idle_duration_ms": 3300,
+  "notes": [
+    "Actual element scroll geometry; no mocked native geometry or test expectations",
+    "Initial and each transition immediately follow completed observer delivery",
+    "Callback and both rAF timestamps retained; idle geometry reads and duplicate notifications counted",
+    "This jsrun host has a fixed root viewport, so root scrolling remains checked by unchanged IO030 WPT",
+    "V1 unhide timed out because hidden reset scrollTop from200 to0; that original failure and fixture are retained unchanged. V2 removes the unverified retention assumption through explicit setup, not a relaxed timing expectation."
+  ],
+  "version": 2,
+  "previous_diagnostic_path": "agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/intersection-geometry-frame-cadence.html",
+  "previous_diagnostic_sha256": "487671663f5374febbf353ed995644a68d843b518ee0beda259ba52e8e366ade",
+  "change": "Explicitly restore actual scrollTop=200 after unhide; preserve all expected states and two-rAF timing assertions. Do not infer scroll-retention semantics from this diagnostic."
+}

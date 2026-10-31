@@ -1,0 +1,17 @@
+{
+  "command": [
+    "python3",
+    "tools/codex_compile.py",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun-astra-i229",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/intersection-geometry-frame-cadence.html",
+    "10000"
+  ],
+  "source_commit": "30c48fcaed638e17d9aae4292bdb86a83fc1cce2",
+  "jsrun_sha256": "7979e52e56ecba609a2054f6794ece8ba75f7fadcb36b504c667228596af2cdf",
+  "fixture_sha256": "487671663f5374febbf353ed995644a68d843b518ee0beda259ba52e8e366ade",
+  "completion_attribute": "data-io-cadence-complete",
+  "resource_interval_seconds": 1,
+  "not_wpt": true,
+  "fixed_root_viewport": true,
+  "geometry_instrumentation": "Delegates original getBoundingClientRect unchanged; counts reads only"
+}

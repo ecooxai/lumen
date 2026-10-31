@@ -1,0 +1,21 @@
+{
+  "label": "lumen /css/css-contain/content-visibility/content-visibility-030.html",
+  "started_utc": "2026-10-31T08:02:25.716211+00:00",
+  "finished_utc": "2026-10-31T08:02:27.716420+00:00",
+  "root_pid": 2382431,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 2,
+  "elapsed_seconds": 2.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 24.999,
+  "cpu_median": 24.999,
+  "cpu_max": 24.999,
+  "cpu_last10_median": 24.999,
+  "rss_peak_mb": 150.368,
+  "rss_final_mb": 150.368,
+  "pss_peak_mb": 76.8,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen229-assertions/native/00-001/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

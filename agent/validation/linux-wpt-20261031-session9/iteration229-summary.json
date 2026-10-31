@@ -1,0 +1,78 @@
+{
+  "iteration": 3,
+  "candidate": 229,
+  "started_utc": "2026-10-31T07:53:55.093155+00:00",
+  "finished_utc": "2026-10-31T08:16:56.662800+00:00",
+  "duration_minutes": 23.02616075,
+  "cumulative_task_minutes": 76.74438,
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ],
+  "source_commit": "30c48fcaed638e17d9aae4292bdb86a83fc1cce2",
+  "binary_sha256": "9a6e0d064fad72995060161ade05f54707e9f270a9e8dded22ddb277a62bac98",
+  "source_input_count": 647,
+  "native": {
+    "passed": 144,
+    "total": 144,
+    "containment_checks_passed": 300,
+    "containment_checks_total": 300
+  },
+  "sanitizers": {
+    "math": "PASS",
+    "containment_and_grid_3targets": "PASS",
+    "raster_ASan_UBSan": "PASS"
+  },
+  "selected39": {
+    "fully_passing_files": 39,
+    "total_files": 39,
+    "assertions_passed": 286,
+    "assertions_total": 286,
+    "reftests_passed": 28,
+    "reftests_total": 28,
+    "assertion_gains_vs226": 205,
+    "pixel_gains_vs226": 27,
+    "prior_pass_losses": 0,
+    "harness_regressions": 0,
+    "reference_matches": true,
+    "native_launch_exit_cleanup_count": 67
+  },
+  "separate_hidden_api3": {
+    "passed": 14,
+    "total": 23,
+    "fully_passing_files": 1,
+    "files": 3,
+    "checkVisibility": {
+      "passed": 13,
+      "total": 21
+    },
+    "IntersectionObserver030": "FAIL runStep3 expected3 got0",
+    "ResizeObserver031": "PASS",
+    "prior_pass_losses": 0,
+    "residual_note": "Eight checkVisibility failures cover options, auto visibility, slotting, and form option behavior; they are not all auto cases."
+  },
+  "scores": {
+    "selected39_assertion_percent": 100,
+    "selected39_pixel_percent": 100,
+    "native_test_percent": 100,
+    "hidden_api_percent": 60.86956521739131,
+    "whole_browser_98_established": false
+  },
+  "io_cadence_diagnostic": {
+    "v1": "Incomplete native diagnostic: four timing misses, then unhide timeout because scroll offset not restored; idle not reached. Preserved unchanged.",
+    "v2": "Five two-rAF timing misses with correct eventual states; 3.3s idle has zero native geometry rescans and zero duplicate entries; all lifecycle phases complete.",
+    "chromium_v1_initial": "Preserved timeout from passing full marker instead of the supported bare marker tag.",
+    "chromium_v1_corrected": "Cadence/lifecycle section PASS all five transitions and idle; separate pre-existing legacy geometry threshold assertion FAIL. Entire authored fixture is not claimed passing.",
+    "retention": "Chromium reports scrollTop0 hidden and restores200 on unhide; native229 remains0. Separate confirmed compatibility gap; no scrolling change authorized in230.",
+    "next_repair": "Dirty/pending IO only, after rAF/RO, actual-rAF branch or 16ms fallback deadline; preserve generation snapshots and lifecycle. Strict v2 and unchanged upstream IO030 gate the repair."
+  },
+  "qualification": "Selected39 milestone complete and immutable, but final runtime qualification pending bounded IO pacing repair. No fresh broad640 or final rendering/performance run yet; accepted release remains226.",
+  "accepted_release_candidate": 226,
+  "evidence": {
+    "containment": "candidate229-containment-audit.json",
+    "api": "candidate229-hidden-api-audit.json",
+    "native_v2": "qa-io-frame-cadence/jsrun229-v2/receipt.json",
+    "chromium_v1": "qa-io-frame-cadence/chromium156-v1-retry1/receipt.json"
+  }
+}

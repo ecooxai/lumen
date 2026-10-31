@@ -1,0 +1,6 @@
+test_partial_layers_match_full_pixels_with_bounded_storage (__main__.RasterLayerTests.test_partial_layers_match_full_pixels_with_bounded_storage) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 8.611s
+
+OK

@@ -1,0 +1,23 @@
+{
+  "started_utc": "2026-10-31T08:14:59.864396+00:00",
+  "finished_utc": "2026-10-31T08:15:24.748926+00:00",
+  "duration_s": 24.884529530012514,
+  "adapter_returncode": 1,
+  "adapter_marker_status_not_semantic_pass": "TIMEOUT",
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "pins_unchanged": true,
+  "source_workspace_unchanged": true,
+  "git_unchanged": true,
+  "profile_removed": true,
+  "fixture_unchanged": true,
+  "remaining_owned_identities": [],
+  "driver_cleanup_error": null,
+  "chromium_os_exit_status": "Not exposed by unchanged supported adapter",
+  "legacy_geometry_pass": false,
+  "cadence_pass": false,
+  "events": [],
+  "not_wpt": true
+}

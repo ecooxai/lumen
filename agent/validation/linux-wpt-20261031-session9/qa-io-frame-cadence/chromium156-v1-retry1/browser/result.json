@@ -1,0 +1,218 @@
+{
+  "status": "PASS",
+  "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/intersection-geometry-frame-cadence.html",
+  "fixture_sha256": "487671663f5374febbf353ed995644a68d843b518ee0beda259ba52e8e366ade",
+  "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+  "binary_sha256": "1bcad71ad1bff85955db13c6d8dd9f32374934d5a5cb079b526c46fb51f9bd97",
+  "url": "http://127.0.0.1:43203/intersection-geometry-frame-cadence.html",
+  "capabilities": {
+    "acceptInsecureCerts": false,
+    "browserName": "chrome",
+    "browserVersion": "156.0.8078.80",
+    "chrome": {
+      "chromedriverVersion": "156.0.8078.80 (fb096c0011f9d50f0a264a9376420cdea9c421e3-refs/branch-heads/8078@{#1705})",
+      "userDataDir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j"
+    },
+    "fedcm:accounts": true,
+    "goog:chromeOptions": {
+      "debuggerAddress": "localhost:43665"
+    },
+    "goog:processID": 2423943,
+    "networkConnectionEnabled": false,
+    "pageLoadStrategy": "none",
+    "platformName": "linux",
+    "proxy": {},
+    "setWindowRect": true,
+    "strictFileInteractability": false,
+    "timeouts": {
+      "implicit": 0,
+      "pageLoad": 300000,
+      "script": 30000
+    },
+    "unhandledPromptBehavior": "dismiss and notify",
+    "webauthn:extension:cmtgKey": true,
+    "webauthn:extension:credBlob": true,
+    "webauthn:extension:largeBlob": true,
+    "webauthn:extension:minPinLength": true,
+    "webauthn:extension:prf": true,
+    "webauthn:virtualAuthenticators": true
+  },
+  "console": [
+    "RESULTS intersection-geometry:FAIL below threshold still reports intersecting",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"callback\",\"records\":[{\"time\":398.40000000596046,\"intersecting\":false,\"ratio\":0,\"top\":320,\"scrollTop\":0}]}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"callback\",\"records\":[{\"time\":414.90000000596046,\"intersecting\":true,\"ratio\":1,\"top\":120,\"scrollTop\":200}]}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"scroll-enter\",\"start\":398.80000001192093,\"end\":431.30000001192093,\"frames\":[{\"stamp\":414.2,\"now\":414.7000000178814},{\"stamp\":430.9,\"now\":431.30000001192093}],\"expected\":true,\"records\":[{\"time\":414.90000000596046,\"intersecting\":true,\"ratio\":1,\"top\":120,\"scrollTop\":200}],\"geometryReads\":0,\"scrollTop\":200}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"callback\",\"records\":[{\"time\":431.7000000178814,\"intersecting\":false,\"ratio\":0,\"top\":320,\"scrollTop\":0}]}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"scroll-exit\",\"start\":431.5,\"end\":464.5,\"frames\":[{\"stamp\":447.6,\"now\":447.90000000596046},{\"stamp\":464.2,\"now\":464.5}],\"expected\":false,\"records\":[{\"time\":431.7000000178814,\"intersecting\":false,\"ratio\":0,\"top\":320,\"scrollTop\":0}],\"geometryReads\":0,\"scrollTop\":0}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"callback\",\"records\":[{\"time\":464.80000001192093,\"intersecting\":true,\"ratio\":1,\"top\":120,\"scrollTop\":200}]}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"scroll-enter-again\",\"start\":464.7000000178814,\"end\":497.80000001192093,\"frames\":[{\"stamp\":480.9,\"now\":481.2000000178814},{\"stamp\":497.5,\"now\":497.80000001192093}],\"expected\":true,\"records\":[{\"time\":464.80000001192093,\"intersecting\":true,\"ratio\":1,\"top\":120,\"scrollTop\":200}],\"geometryReads\":0,\"scrollTop\":200}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"callback\",\"records\":[{\"time\":498.40000000596046,\"intersecting\":false,\"ratio\":0,\"top\":0,\"scrollTop\":0}]}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"ancestor-hidden\",\"start\":497.90000000596046,\"end\":531.3000000119209,\"frames\":[{\"stamp\":514.1,\"now\":514.5999999940395},{\"stamp\":530.8,\"now\":531.3000000119209}],\"expected\":false,\"records\":[{\"time\":498.40000000596046,\"intersecting\":false,\"ratio\":0,\"top\":0,\"scrollTop\":0}],\"geometryReads\":0,\"scrollTop\":0}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"callback\",\"records\":[{\"time\":532.0999999940395,\"intersecting\":true,\"ratio\":1,\"top\":120,\"scrollTop\":200}]}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"ancestor-visible\",\"start\":531.5,\"end\":564.5999999940395,\"frames\":[{\"stamp\":547.5,\"now\":547.8000000119209},{\"stamp\":564.2,\"now\":564.5999999940395}],\"expected\":true,\"records\":[{\"time\":532.0999999940395,\"intersecting\":true,\"ratio\":1,\"top\":120,\"scrollTop\":200}],\"geometryReads\":0,\"scrollTop\":200}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"idle-start\",\"start\":665.0999999940395,\"geometryReads\":0,\"notifications\":6}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"idle-end\",\"elapsed\":3300.4000000059605,\"geometryReads\":0,\"notifications\":0}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"callback\",\"records\":[{\"time\":4061.7000000178814,\"intersecting\":false,\"ratio\":0,\"top\":420,\"scrollTop\":0}]}",
+    "DIAGNOSTIC io-frame-cadence {\"phase\":\"complete\",\"failures\":[],\"geometryReads\":0,\"notifications\":7}",
+    "RESULTS io-frame-cadence:PASS"
+  ],
+  "marker": "RESULTS io-frame-cadence:PASS",
+  "owned_process_cleanup": {
+    "recorded_identities": [
+      {
+        "pid": 2423904,
+        "start_ticks": 15100464,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chromedriver-linux64/chromedriver",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chromedriver-linux64/chromedriver",
+          "--port=58471",
+          "--allowed-ips=127.0.0.1"
+        ]
+      },
+      {
+        "pid": 2423943,
+        "start_ticks": 15100544,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+          "--allow-pre-commit-input",
+          "--disable-background-networking",
+          "--disable-background-timer-throttling",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-client-side-phishing-detection",
+          "--disable-component-update",
+          "--disable-default-apps",
+          "--disable-features=IgnoreDuplicateNavs,Prewarm",
+          "--disable-gpu",
+          "--disable-hang-monitor",
+          "--disable-popup-blocking",
+          "--disable-prompt-on-repost",
+          "--disable-sync",
+          "--enable-automation",
+          "--enable-logging",
+          "--headless=new",
+          "--log-level=0",
+          "--no-default-browser-check",
+          "--no-first-run",
+          "--no-proxy-server",
+          "--no-service-autorun",
+          "--password-store=basic",
+          "--remote-debugging-port=0",
+          "--test-type=webdriver",
+          "--use-mock-keychain",
+          "--user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j",
+          "--window-size=800,640"
+        ]
+      },
+      {
+        "pid": 2423951,
+        "start_ticks": 15100548,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=zygote --no-zygote-sandbox --enable-logging --headless=new --log-level=0 --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl"
+        ]
+      },
+      {
+        "pid": 2423952,
+        "start_ticks": 15100548,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=zygote --enable-logging --headless=new --log-level=0 --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl"
+        ]
+      },
+      {
+        "pid": 2423954,
+        "start_ticks": 15100551,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=zygote --enable-logging --headless=new --log-level=0 --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl"
+        ]
+      },
+      {
+        "pid": 2423981,
+        "start_ticks": 15100553,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=gpu-process --gpu-recent-crash-count=0 --headless=new --ozone-platform=headless --use-angle=swiftshader-webgl --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --gpu-preferences=YAAAAAAAAAAgAAAEAAAAAAAAAAAAAGAASAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAMAAAAAQAAAAAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAA== --shared-files --field-trial-handle=3,i,11389226658681747725,10483819477163499163,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,13368785683646120528,17614529170222247651,4 --trace-process-track-uuid=3190708988185955192 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2423983,
+        "start_ticks": 15100553,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=none --use-angle=swiftshader-webgl --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,11389226658681747725,10483819477163499163,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,13368785683646120528,17614529170222247651,4 --trace-process-track-uuid=3190708989122997041 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2423997,
+        "start_ticks": 15100558,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=utility --use-angle=swiftshader-webgl --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,11389226658681747725,10483819477163499163,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,13368785683646120528,17614529170222247651,4 --trace-process-track-uuid=3190708990060038890 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2424024,
+        "start_ticks": 15100563,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=renderer --top-chrome-webui --gpu-client-id=5 --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --disable-background-timer-throttling --enable-automation --remote-debugging-port=0 --test-type=webdriver --allow-pre-commit-input --ozone-platform=headless --disable-gpu-compositing --lang=en-US --disallow-v8-feature-flag-overrides --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=5 --gpu-channel-request-start-time-ticks=151005635596 --launch-time-ticks=151005636366 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,11389226658681747725,10483819477163499163,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,13368785683646120528,17614529170222247651,4 --trace-process-track-uuid=3190708990997080739 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2424040,
+        "start_ticks": 15100570,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=renderer --gpu-client-id=7 --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --disable-background-timer-throttling --enable-automation --remote-debugging-port=0 --test-type=webdriver --allow-pre-commit-input --ozone-platform=headless --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=7 --gpu-channel-request-start-time-ticks=151005707870 --launch-time-ticks=151005708694 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,11389226658681747725,10483819477163499163,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,13368785683646120528,17614529170222247651,4 --trace-process-track-uuid=3190708992871164437 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2424041,
+        "start_ticks": 15100571,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=renderer --gpu-client-id=6 --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --disable-background-timer-throttling --enable-automation --remote-debugging-port=0 --test-type=webdriver --allow-pre-commit-input --ozone-platform=headless --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=6 --gpu-channel-request-start-time-ticks=151005711256 --launch-time-ticks=151005712075 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,11389226658681747725,10483819477163499163,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,13368785683646120528,17614529170222247651,4 --trace-process-track-uuid=3190708991934122588 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2424077,
+        "start_ticks": 15100589,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=renderer --gpu-client-id=8 --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --disable-background-timer-throttling --enable-automation --remote-debugging-port=0 --test-type=webdriver --allow-pre-commit-input --ozone-platform=headless --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=8 --gpu-channel-request-start-time-ticks=151005876762 --launch-time-ticks=151005889154 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,11389226658681747725,10483819477163499163,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,13368785683646120528,17614529170222247651,4 --trace-process-track-uuid=3190708993808206286 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2424098,
+        "start_ticks": 15100603,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=gpu-process --gpu-recent-crash-count=0 --headless=new --ozone-platform=headless --use-angle=swiftshader-webgl --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --gpu-preferences=YAAAAAAAAAAgAAAEAAAAAAAAAAAAAGAASAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --use-gl=disabled --shared-files --field-trial-handle=3,i,11389226658681747725,10483819477163499163,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,13368785683646120528,17614529170222247651,4 --trace-process-track-uuid=3190708994745248135 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2424100,
+        "start_ticks": 15100604,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=broker"
+        ]
+      },
+      {
+        "pid": 2424191,
+        "start_ticks": 15100866,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=renderer --gpu-client-id=10 --crashpad-handler-pid=2423945 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-mdyuu51j --change-stack-guard-on-fork=enable --disable-background-timer-throttling --enable-automation --remote-debugging-port=0 --test-type=webdriver --allow-pre-commit-input --ozone-platform=headless --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=10 --gpu-channel-request-start-time-ticks=151008661911 --launch-time-ticks=151008662998 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,11389226658681747725,10483819477163499163,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,13368785683646120528,17614529170222247651,4 --trace-process-track-uuid=3190708995682289984 --enable-logging --log-level=0"
+        ]
+      }
+    ],
+    "signals": [],
+    "remaining_same_identity": []
+  },
+  "profile_removed": true,
+  "elapsed_s": 6.280044947983697,
+  "fixture_unchanged": true
+}

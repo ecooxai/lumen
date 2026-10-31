@@ -1,0 +1,3781 @@
+{
+  "candidate": 229,
+  "created_utc": "2026-10-31T08:03:53.630550+00:00",
+  "identity_definition": "Exact URL, assertion name, occurrence index; pixel outcomes exact URL",
+  "cohorts": {
+    "qa-css-logical-containment": {
+      "baseline": {
+        "files": 1,
+        "fully_passing_files": 0,
+        "assertions": {
+          "FAIL": 48
+        },
+        "total_assertions": 48,
+        "harness_statuses": {
+          "OK": 1
+        }
+      },
+      "current": {
+        "files": 1,
+        "fully_passing_files": 1,
+        "assertions": {
+          "PASS": 48
+        },
+        "total_assertions": 48,
+        "harness_statuses": {
+          "OK": 1
+        }
+      },
+      "identity_gains": [
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 1",
+            0
+          ],
+          "before": [
+            ".test 1",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 1",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 10",
+            0
+          ],
+          "before": [
+            ".test 10",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-block\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"0\" data-expected-client-height=\"50\">\nclientWidth expected 0 but got 60"
+          ],
+          "after": [
+            ".test 10",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 11",
+            0
+          ],
+          "before": [
+            ".test 11",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-inline\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"100\" data-expected-client-height=\"0\">\nclientWidth expected 100 but got 60"
+          ],
+          "after": [
+            ".test 11",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 12",
+            0
+          ],
+          "before": [
+            ".test 12",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-both\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"100\" data-expected-client-height=\"50\">\nclientWidth expected 100 but got 60"
+          ],
+          "after": [
+            ".test 12",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 13",
+            0
+          ],
+          "before": [
+            ".test 13",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-none vertical\" src=\"/css/support/60x60-green.png\" data-expected-client-height=\"0\" data-expected-client-width=\"0\">\nclientWidth expected 0 but got 60"
+          ],
+          "after": [
+            ".test 13",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 14",
+            0
+          ],
+          "before": [
+            ".test 14",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-block vertical\" src=\"/css/support/60x60-green.png\" data-expected-client-height=\"0\" data-expected-client-width=\"50\">\nclientWidth expected 50 but got 60"
+          ],
+          "after": [
+            ".test 14",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 15",
+            0
+          ],
+          "before": [
+            ".test 15",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-inline vertical\" src=\"/css/support/60x60-green.png\" data-expected-client-height=\"100\" data-expected-client-width=\"0\">\nclientWidth expected 0 but got 60"
+          ],
+          "after": [
+            ".test 15",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 16",
+            0
+          ],
+          "before": [
+            ".test 16",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-both vertical\" src=\"/css/support/60x60-green.png\" data-expected-client-height=\"100\" data-expected-client-width=\"50\">\nclientWidth expected 50 but got 60"
+          ],
+          "after": [
+            ".test 16",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 17",
+            0
+          ],
+          "before": [
+            ".test 17",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\"></svg>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 17",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 18",
+            0
+          ],
+          "before": [
+            ".test 18",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-block\" data-expected-client-width=\"0\" data-expected-client-height=\"50\"></svg>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 18",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 19",
+            0
+          ],
+          "before": [
+            ".test 19",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-inline\" data-expected-client-width=\"100\" data-expected-client-height=\"0\"></svg>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 19",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 2",
+            0
+          ],
+          "before": [
+            ".test 2",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-block\" data-expected-client-width=\"0\" data-expected-client-height=\"50\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 2",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 20",
+            0
+          ],
+          "before": [
+            ".test 20",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\"></svg>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 20",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 21",
+            0
+          ],
+          "before": [
+            ".test 21",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-none vertical\" data-expected-client-height=\"0\" data-expected-client-width=\"0\"></svg>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 21",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 22",
+            0
+          ],
+          "before": [
+            ".test 22",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-block vertical\" data-expected-client-height=\"0\" data-expected-client-width=\"50\"></svg>\nclientWidth expected 50 but got 300"
+          ],
+          "after": [
+            ".test 22",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 23",
+            0
+          ],
+          "before": [
+            ".test 23",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-inline vertical\" data-expected-client-height=\"100\" data-expected-client-width=\"0\"></svg>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 23",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 24",
+            0
+          ],
+          "before": [
+            ".test 24",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-both vertical\" data-expected-client-height=\"100\" data-expected-client-width=\"50\"></svg>\nclientWidth expected 50 but got 300"
+          ],
+          "after": [
+            ".test 24",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 25",
+            0
+          ],
+          "before": [
+            ".test 25",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-none\" width=\"40\" height=\"20\" data-expected-client-width=\"0\" data-expected-client-height=\"0\"></canvas>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 25",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 26",
+            0
+          ],
+          "before": [
+            ".test 26",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-block\" width=\"40\" height=\"20\" data-expected-client-width=\"0\" data-expected-client-height=\"50\"></canvas>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 26",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 27",
+            0
+          ],
+          "before": [
+            ".test 27",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-inline\" width=\"40\" height=\"20\" data-expected-client-width=\"100\" data-expected-client-height=\"0\"></canvas>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 27",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 28",
+            0
+          ],
+          "before": [
+            ".test 28",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-both\" width=\"40\" height=\"20\" data-expected-client-width=\"100\" data-expected-client-height=\"50\"></canvas>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 28",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 29",
+            0
+          ],
+          "before": [
+            ".test 29",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-none vertical\" width=\"40\" height=\"20\" data-expected-client-height=\"0\" data-expected-client-width=\"0\"></canvas>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 29",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 3",
+            0
+          ],
+          "before": [
+            ".test 3",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-inline\" data-expected-client-width=\"100\" data-expected-client-height=\"0\"></div>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 3",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 30",
+            0
+          ],
+          "before": [
+            ".test 30",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-block vertical\" width=\"40\" height=\"20\" data-expected-client-height=\"0\" data-expected-client-width=\"50\"></canvas>\nclientWidth expected 50 but got 40"
+          ],
+          "after": [
+            ".test 30",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 31",
+            0
+          ],
+          "before": [
+            ".test 31",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-inline vertical\" width=\"40\" height=\"20\" data-expected-client-height=\"100\" data-expected-client-width=\"0\"></canvas>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 31",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 32",
+            0
+          ],
+          "before": [
+            ".test 32",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-both vertical\" width=\"40\" height=\"20\" data-expected-client-height=\"100\" data-expected-client-width=\"50\"></canvas>\nclientWidth expected 50 but got 40"
+          ],
+          "after": [
+            ".test 32",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 33",
+            0
+          ],
+          "before": [
+            ".test 33",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\"></iframe>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 33",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 34",
+            0
+          ],
+          "before": [
+            ".test 34",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-block\" data-expected-client-width=\"0\" data-expected-client-height=\"50\"></iframe>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 34",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 35",
+            0
+          ],
+          "before": [
+            ".test 35",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-inline\" data-expected-client-width=\"100\" data-expected-client-height=\"0\"></iframe>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 35",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 36",
+            0
+          ],
+          "before": [
+            ".test 36",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\"></iframe>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 36",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 37",
+            0
+          ],
+          "before": [
+            ".test 37",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-none vertical\" data-expected-client-height=\"0\" data-expected-client-width=\"0\"></iframe>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 37",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 38",
+            0
+          ],
+          "before": [
+            ".test 38",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-block vertical\" data-expected-client-height=\"0\" data-expected-client-width=\"50\"></iframe>\nclientWidth expected 50 but got 300"
+          ],
+          "after": [
+            ".test 38",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 39",
+            0
+          ],
+          "before": [
+            ".test 39",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-inline vertical\" data-expected-client-height=\"100\" data-expected-client-width=\"0\"></iframe>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 39",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 4",
+            0
+          ],
+          "before": [
+            ".test 4",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\"></div>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 4",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 40",
+            0
+          ],
+          "before": [
+            ".test 40",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-both vertical\" data-expected-client-height=\"100\" data-expected-client-width=\"50\"></iframe>\nclientWidth expected 50 but got 300"
+          ],
+          "after": [
+            ".test 40",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 41",
+            0
+          ],
+          "before": [
+            ".test 41",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\"></video>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 41",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 42",
+            0
+          ],
+          "before": [
+            ".test 42",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-block\" data-expected-client-width=\"0\" data-expected-client-height=\"50\"></video>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 42",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 43",
+            0
+          ],
+          "before": [
+            ".test 43",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-inline\" data-expected-client-width=\"100\" data-expected-client-height=\"0\"></video>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 43",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 44",
+            0
+          ],
+          "before": [
+            ".test 44",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\"></video>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 44",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 45",
+            0
+          ],
+          "before": [
+            ".test 45",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-none vertical\" data-expected-client-height=\"0\" data-expected-client-width=\"0\"></video>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 45",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 46",
+            0
+          ],
+          "before": [
+            ".test 46",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-block vertical\" data-expected-client-height=\"0\" data-expected-client-width=\"50\"></video>\nclientWidth expected 50 but got 300"
+          ],
+          "after": [
+            ".test 46",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 47",
+            0
+          ],
+          "before": [
+            ".test 47",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-inline vertical\" data-expected-client-height=\"100\" data-expected-client-width=\"0\"></video>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 47",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 48",
+            0
+          ],
+          "before": [
+            ".test 48",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-both vertical\" data-expected-client-height=\"100\" data-expected-client-width=\"50\"></video>\nclientWidth expected 50 but got 300"
+          ],
+          "after": [
+            ".test 48",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 5",
+            0
+          ],
+          "before": [
+            ".test 5",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-none vertical\" data-expected-client-height=\"0\" data-expected-client-width=\"0\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 5",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 6",
+            0
+          ],
+          "before": [
+            ".test 6",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-block vertical\" data-expected-client-height=\"0\" data-expected-client-width=\"50\"></div>\nclientWidth expected 50 but got 40"
+          ],
+          "after": [
+            ".test 6",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 7",
+            0
+          ],
+          "before": [
+            ".test 7",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-inline vertical\" data-expected-client-height=\"100\" data-expected-client-width=\"0\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 7",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 8",
+            0
+          ],
+          "before": [
+            ".test 8",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-both vertical\" data-expected-client-height=\"100\" data-expected-client-width=\"50\"></div>\nclientWidth expected 50 but got 40"
+          ],
+          "after": [
+            ".test 8",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+            ".test 9",
+            0
+          ],
+          "before": [
+            ".test 9",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-none\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"0\" data-expected-client-height=\"0\">\nclientWidth expected 0 but got 60"
+          ],
+          "after": [
+            ".test 9",
+            "PASS",
+            null
+          ]
+        }
+      ],
+      "prior_pass_losses": [],
+      "missing_identities": [],
+      "added_identities": [],
+      "prior_whole_file_losses": [],
+      "harness_changes": [],
+      "native_result_sha256": "f0c1719c67c5578e5de9e3dd13c30a58e6d130c91751bbb25472dd98ca6e410c",
+      "assertion_lifecycle": {
+        "runner_exit_valid": true,
+        "inner_returncode": 0,
+        "guard_counts": {
+          "started_at_private_gate": 1,
+          "constructor_verified_and_acknowledged": 1,
+          "author_url_released": 1,
+          "exited": 1
+        },
+        "actual_exit_codes": {
+          "0": 1
+        },
+        "all_profiles_removed": true,
+        "cleanup_threads_remaining": [],
+        "runner_exception": null,
+        "pins_unchanged": true,
+        "source_unchanged": true,
+        "git_unchanged": true,
+        "monitor_returncodes": [
+          0,
+          0
+        ],
+        "lifecycle_and_provenance_valid": true,
+        "receipt_sha256": "2c15575bc7cc8d5632a29dd1e0f7c77db0ac25aabc46be300137dba0c095895b",
+        "audit_sha256": "e685e7538e1ac2a57e7397358f0df80dbc87c4d56ff40a9320bb9816eaa23f18"
+      },
+      "rendering": {
+        "baseline": {
+          "FAIL": 2
+        },
+        "current": {
+          "PASS": 2
+        },
+        "tests": 2,
+        "gains": [
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-001.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-002.html"
+        ],
+        "prior_pass_losses": [],
+        "evidence_sha256": "2532aa8f3ace27538af0e312552f2f85cf525a6bcdfa14efa6aa24649abae05a",
+        "lifecycle": {
+          "runner_exit_valid": true,
+          "inner_returncode": 0,
+          "guard_counts": {
+            "started_at_private_gate": 4,
+            "constructor_verified_and_acknowledged": 4,
+            "author_url_released": 4,
+            "exited": 4
+          },
+          "actual_exit_codes": {
+            "0": 4
+          },
+          "all_profiles_removed": true,
+          "cleanup_threads_remaining": [],
+          "runner_exception": "SystemExit(0)",
+          "pins_unchanged": true,
+          "source_unchanged": true,
+          "git_unchanged": true,
+          "monitor_returncodes": [
+            0,
+            0
+          ],
+          "lifecycle_and_provenance_valid": true,
+          "receipt_sha256": "2bba9ba0144129f88113abf0923244642a0fa9c46b6d533fa91d6c730a538a9e",
+          "audit_sha256": "ce46e057d0eb2465247d93347cb9939e9b503c0bd86de97c51329c2e3944db3b"
+        }
+      }
+    },
+    "qa-css-containment-numbered": {
+      "baseline": {
+        "files": 7,
+        "fully_passing_files": 1,
+        "assertions": {
+          "FAIL": 107,
+          "PASS": 43
+        },
+        "total_assertions": 150,
+        "harness_statuses": {
+          "OK": 7
+        }
+      },
+      "current": {
+        "files": 7,
+        "fully_passing_files": 7,
+        "assertions": {
+          "PASS": 150
+        },
+        "total_assertions": 150,
+        "harness_statuses": {
+          "OK": 7
+        }
+      },
+      "identity_gains": [
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+            ".test 1",
+            0
+          ],
+          "before": [
+            ".test 1",
+            "FAIL",
+            "assert_equals: \n<select multiple=\"\" class=\"test cis-both\" data-expected-client-width=\"55\" data-expected-client-height=\"66\"></select>\nclientWidth expected 55 but got 20"
+          ],
+          "after": [
+            ".test 1",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+            ".test 2",
+            0
+          ],
+          "before": [
+            ".test 2",
+            "FAIL",
+            "assert_equals: \n<select multiple=\"\" class=\"test cis-width\" data-expected-client-width=\"55\" data-expected-client-height=\"17\"></select>\nclientWidth expected 55 but got 20"
+          ],
+          "after": [
+            ".test 2",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+            ".test 3",
+            0
+          ],
+          "before": [
+            ".test 3",
+            "FAIL",
+            "assert_equals: \n<select multiple=\"\" class=\"test cis-height\" data-expected-client-height=\"66\" data-expected-client-width=\"20\"></select>\nclientHeight expected 66 but got 17"
+          ],
+          "after": [
+            ".test 3",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+            ".test 4",
+            0
+          ],
+          "before": [
+            ".test 4",
+            "FAIL",
+            "assert_equals: \n<select multiple=\"\" size=\"2\" class=\"test cis-width\" data-expected-client-width=\"55\" data-expected-client-height=\"17\"></select>\nclientWidth expected 55 but got 20"
+          ],
+          "after": [
+            ".test 4",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+            ".test 5",
+            0
+          ],
+          "before": [
+            ".test 5",
+            "FAIL",
+            "assert_equals: \n<select multiple=\"\" size=\"2\" class=\"test cis-height\" data-expected-client-height=\"66\" data-expected-client-width=\"20\"></select>\nclientHeight expected 66 but got 17"
+          ],
+          "after": [
+            ".test 5",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+            ".test 6",
+            0
+          ],
+          "before": [
+            ".test 6",
+            "FAIL",
+            "assert_equals: \n<select multiple=\"\" size=\"10\" class=\"test cis-width\" data-expected-client-width=\"55\" data-expected-client-height=\"17\"></select>\nclientWidth expected 55 but got 20"
+          ],
+          "after": [
+            ".test 6",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+            ".test 7",
+            0
+          ],
+          "before": [
+            ".test 7",
+            "FAIL",
+            "assert_equals: \n<select multiple=\"\" size=\"10\" class=\"test cis-height\" data-expected-client-height=\"66\" data-expected-client-width=\"20\"></select>\nclientHeight expected 66 but got 17"
+          ],
+          "after": [
+            ".test 7",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 1",
+            0
+          ],
+          "before": [
+            ".test 1",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"20\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 1",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 10",
+            0
+          ],
+          "before": [
+            ".test 10",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-height\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"0\" data-expected-client-height=\"60\">\nclientWidth expected 0 but got 60"
+          ],
+          "after": [
+            ".test 10",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 11",
+            0
+          ],
+          "before": [
+            ".test 11",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-width\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"100\" data-expected-client-height=\"60\">\nclientWidth expected 100 but got 60"
+          ],
+          "after": [
+            ".test 11",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 12",
+            0
+          ],
+          "before": [
+            ".test 12",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-both\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"100\" data-expected-client-height=\"60\">\nclientWidth expected 100 but got 60"
+          ],
+          "after": [
+            ".test 12",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 13",
+            0
+          ],
+          "before": [
+            ".test 13",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-none vertical\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"60\" data-expected-client-height=\"0\">\nclientHeight expected 0 but got 60"
+          ],
+          "after": [
+            ".test 13",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 14",
+            0
+          ],
+          "before": [
+            ".test 14",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-height vertical\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"60\" data-expected-client-height=\"50\">\nclientHeight expected 50 but got 60"
+          ],
+          "after": [
+            ".test 14",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 15",
+            0
+          ],
+          "before": [
+            ".test 15",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-width vertical\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"60\" data-expected-client-height=\"0\">\nclientHeight expected 0 but got 60"
+          ],
+          "after": [
+            ".test 15",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 16",
+            0
+          ],
+          "before": [
+            ".test 16",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-both vertical\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"60\" data-expected-client-height=\"50\">\nclientHeight expected 50 but got 60"
+          ],
+          "after": [
+            ".test 16",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 17",
+            0
+          ],
+          "before": [
+            ".test 17",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"150\"></svg>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 17",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 18",
+            0
+          ],
+          "before": [
+            ".test 18",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"150\"></svg>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 18",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 19",
+            0
+          ],
+          "before": [
+            ".test 19",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"150\"></svg>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 19",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 2",
+            0
+          ],
+          "before": [
+            ".test 2",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"20\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 2",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 20",
+            0
+          ],
+          "before": [
+            ".test 20",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"150\"></svg>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 20",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 21",
+            0
+          ],
+          "before": [
+            ".test 21",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-none vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"0\"></svg>\nclientHeight expected 0 but got 150"
+          ],
+          "after": [
+            ".test 21",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 22",
+            0
+          ],
+          "before": [
+            ".test 22",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-height vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"50\"></svg>\nclientHeight expected 50 but got 150"
+          ],
+          "after": [
+            ".test 22",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 23",
+            0
+          ],
+          "before": [
+            ".test 23",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-width vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"0\"></svg>\nclientHeight expected 0 but got 150"
+          ],
+          "after": [
+            ".test 23",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 24",
+            0
+          ],
+          "before": [
+            ".test 24",
+            "FAIL",
+            "assert_equals: \n<svg class=\"test cis-both vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"50\"></svg>\nclientHeight expected 50 but got 150"
+          ],
+          "after": [
+            ".test 24",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 25",
+            0
+          ],
+          "before": [
+            ".test 25",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-none\" width=\"40\" height=\"20\" data-expected-client-width=\"0\" data-expected-client-height=\"20\"></canvas>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 25",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 26",
+            0
+          ],
+          "before": [
+            ".test 26",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-height\" width=\"40\" height=\"20\" data-expected-client-width=\"0\" data-expected-client-height=\"20\"></canvas>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 26",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 27",
+            0
+          ],
+          "before": [
+            ".test 27",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-width\" width=\"40\" height=\"20\" data-expected-client-width=\"100\" data-expected-client-height=\"20\"></canvas>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 27",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 28",
+            0
+          ],
+          "before": [
+            ".test 28",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-both\" width=\"40\" height=\"20\" data-expected-client-width=\"100\" data-expected-client-height=\"20\"></canvas>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 28",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 29",
+            0
+          ],
+          "before": [
+            ".test 29",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-none vertical\" width=\"40\" height=\"20\" data-expected-client-width=\"40\" data-expected-client-height=\"0\"></canvas>\nclientHeight expected 0 but got 20"
+          ],
+          "after": [
+            ".test 29",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 3",
+            0
+          ],
+          "before": [
+            ".test 3",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"20\"></div>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 3",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 30",
+            0
+          ],
+          "before": [
+            ".test 30",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-height vertical\" width=\"40\" height=\"20\" data-expected-client-width=\"40\" data-expected-client-height=\"50\"></canvas>\nclientHeight expected 50 but got 20"
+          ],
+          "after": [
+            ".test 30",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 31",
+            0
+          ],
+          "before": [
+            ".test 31",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-width vertical\" width=\"40\" height=\"20\" data-expected-client-width=\"40\" data-expected-client-height=\"0\"></canvas>\nclientHeight expected 0 but got 20"
+          ],
+          "after": [
+            ".test 31",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 32",
+            0
+          ],
+          "before": [
+            ".test 32",
+            "FAIL",
+            "assert_equals: \n<canvas class=\"test cis-both vertical\" width=\"40\" height=\"20\" data-expected-client-width=\"40\" data-expected-client-height=\"50\"></canvas>\nclientHeight expected 50 but got 20"
+          ],
+          "after": [
+            ".test 32",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 33",
+            0
+          ],
+          "before": [
+            ".test 33",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"150\"></iframe>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 33",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 34",
+            0
+          ],
+          "before": [
+            ".test 34",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"150\"></iframe>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 34",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 35",
+            0
+          ],
+          "before": [
+            ".test 35",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"150\"></iframe>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 35",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 36",
+            0
+          ],
+          "before": [
+            ".test 36",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"150\"></iframe>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 36",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 37",
+            0
+          ],
+          "before": [
+            ".test 37",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-none vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"0\"></iframe>\nclientHeight expected 0 but got 150"
+          ],
+          "after": [
+            ".test 37",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 38",
+            0
+          ],
+          "before": [
+            ".test 38",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-height vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"50\"></iframe>\nclientHeight expected 50 but got 150"
+          ],
+          "after": [
+            ".test 38",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 39",
+            0
+          ],
+          "before": [
+            ".test 39",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-width vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"0\"></iframe>\nclientHeight expected 0 but got 150"
+          ],
+          "after": [
+            ".test 39",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 4",
+            0
+          ],
+          "before": [
+            ".test 4",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"20\"></div>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 4",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 40",
+            0
+          ],
+          "before": [
+            ".test 40",
+            "FAIL",
+            "assert_equals: \n<iframe class=\"test cis-both vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"50\"></iframe>\nclientHeight expected 50 but got 150"
+          ],
+          "after": [
+            ".test 40",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 41",
+            0
+          ],
+          "before": [
+            ".test 41",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"150\"></video>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 41",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 42",
+            0
+          ],
+          "before": [
+            ".test 42",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"150\"></video>\nclientWidth expected 0 but got 300"
+          ],
+          "after": [
+            ".test 42",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 43",
+            0
+          ],
+          "before": [
+            ".test 43",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"150\"></video>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 43",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 44",
+            0
+          ],
+          "before": [
+            ".test 44",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"150\"></video>\nclientWidth expected 100 but got 300"
+          ],
+          "after": [
+            ".test 44",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 45",
+            0
+          ],
+          "before": [
+            ".test 45",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-none vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"0\"></video>\nclientHeight expected 0 but got 150"
+          ],
+          "after": [
+            ".test 45",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 46",
+            0
+          ],
+          "before": [
+            ".test 46",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-height vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"50\"></video>\nclientHeight expected 50 but got 150"
+          ],
+          "after": [
+            ".test 46",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 47",
+            0
+          ],
+          "before": [
+            ".test 47",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-width vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"0\"></video>\nclientHeight expected 0 but got 150"
+          ],
+          "after": [
+            ".test 47",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 48",
+            0
+          ],
+          "before": [
+            ".test 48",
+            "FAIL",
+            "assert_equals: \n<video class=\"test cis-both vertical\" data-expected-client-width=\"300\" data-expected-client-height=\"50\"></video>\nclientHeight expected 50 but got 150"
+          ],
+          "after": [
+            ".test 48",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 5",
+            0
+          ],
+          "before": [
+            ".test 5",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-none vertical\" data-expected-client-width=\"40\" data-expected-client-height=\"0\"></div>\nclientHeight expected 0 but got 20"
+          ],
+          "after": [
+            ".test 5",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 6",
+            0
+          ],
+          "before": [
+            ".test 6",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-height vertical\" data-expected-client-width=\"40\" data-expected-client-height=\"50\"></div>\nclientHeight expected 50 but got 20"
+          ],
+          "after": [
+            ".test 6",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 7",
+            0
+          ],
+          "before": [
+            ".test 7",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-width vertical\" data-expected-client-width=\"40\" data-expected-client-height=\"0\"></div>\nclientHeight expected 0 but got 20"
+          ],
+          "after": [
+            ".test 7",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 8",
+            0
+          ],
+          "before": [
+            ".test 8",
+            "FAIL",
+            "assert_equals: \n<div class=\"test cis-both vertical\" data-expected-client-width=\"40\" data-expected-client-height=\"50\"></div>\nclientHeight expected 50 but got 20"
+          ],
+          "after": [
+            ".test 8",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+            ".test 9",
+            0
+          ],
+          "before": [
+            ".test 9",
+            "FAIL",
+            "assert_equals: \n<img class=\"test cis-none\" src=\"/css/support/60x60-green.png\" data-expected-client-width=\"0\" data-expected-client-height=\"60\">\nclientWidth expected 0 but got 60"
+          ],
+          "after": [
+            ".test 9",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+            ".test 1",
+            0
+          ],
+          "before": [
+            ".test 1",
+            "FAIL",
+            "assert_equals: \n<button class=\"test cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\"></button>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 1",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+            ".test 2",
+            0
+          ],
+          "before": [
+            ".test 2",
+            "FAIL",
+            "assert_equals: \n<button class=\"test cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"50\"></button>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 2",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+            ".test 3",
+            0
+          ],
+          "before": [
+            ".test 3",
+            "FAIL",
+            "assert_equals: \n<button class=\"test cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"0\"></button>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 3",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+            ".test 4",
+            0
+          ],
+          "before": [
+            ".test 4",
+            "FAIL",
+            "assert_equals: \n<button class=\"test cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\"></button>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 4",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+            ".test 5",
+            0
+          ],
+          "before": [
+            ".test 5",
+            "FAIL",
+            "assert_equals: \n<button class=\"test cis-none min-size\" data-expected-client-width=\"20\" data-expected-client-height=\"5\"></button>\nclientWidth expected 20 but got 40"
+          ],
+          "after": [
+            ".test 5",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+            ".test 6",
+            0
+          ],
+          "before": [
+            ".test 6",
+            "FAIL",
+            "assert_equals: \n<button class=\"test cis-height min-size\" data-expected-client-width=\"20\" data-expected-client-height=\"50\"></button>\nclientWidth expected 20 but got 40"
+          ],
+          "after": [
+            ".test 6",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+            ".test 7",
+            0
+          ],
+          "before": [
+            ".test 7",
+            "FAIL",
+            "assert_equals: \n<button class=\"test cis-width min-size\" data-expected-client-width=\"100\" data-expected-client-height=\"5\"></button>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 7",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+            ".test 8",
+            0
+          ],
+          "before": [
+            ".test 8",
+            "FAIL",
+            "assert_equals: \n<button class=\"test cis-both min-size\" data-expected-client-width=\"100\" data-expected-client-height=\"50\"></button>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 8",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 1",
+            0
+          ],
+          "before": [
+            ".test 1",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-auto cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\" data-expected-scroll-width=\"40\" data-expected-scroll-height=\"20\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 1",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 10",
+            0
+          ],
+          "before": [
+            ".test 10",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-hidden cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"50\" data-expected-scroll-width=\"40\" data-expected-scroll-height=\"50\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 10",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 11",
+            0
+          ],
+          "before": [
+            ".test 11",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-hidden cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"0\" data-expected-scroll-width=\"100\" data-expected-scroll-height=\"20\"></div>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 11",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 12",
+            0
+          ],
+          "before": [
+            ".test 12",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-hidden cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\" data-expected-scroll-width=\"100\" data-expected-scroll-height=\"50\"></div>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 12",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 13",
+            0
+          ],
+          "before": [
+            ".test 13",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-auto cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 0 but got 400"
+          ],
+          "after": [
+            ".test 13",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 14",
+            0
+          ],
+          "before": [
+            ".test 14",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-auto cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"50\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 0 but got 400"
+          ],
+          "after": [
+            ".test 14",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 15",
+            0
+          ],
+          "before": [
+            ".test 15",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-auto cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"0\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 100 but got 400"
+          ],
+          "after": [
+            ".test 15",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 16",
+            0
+          ],
+          "before": [
+            ".test 16",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-auto cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 100 but got 400"
+          ],
+          "after": [
+            ".test 16",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 17",
+            0
+          ],
+          "before": [
+            ".test 17",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-scroll cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 0 but got 400"
+          ],
+          "after": [
+            ".test 17",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 18",
+            0
+          ],
+          "before": [
+            ".test 18",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-scroll cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"50\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 0 but got 400"
+          ],
+          "after": [
+            ".test 18",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 19",
+            0
+          ],
+          "before": [
+            ".test 19",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-scroll cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"0\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 100 but got 400"
+          ],
+          "after": [
+            ".test 19",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 2",
+            0
+          ],
+          "before": [
+            ".test 2",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-auto cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"50\" data-expected-scroll-width=\"40\" data-expected-scroll-height=\"50\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 2",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 20",
+            0
+          ],
+          "before": [
+            ".test 20",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-scroll cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 100 but got 400"
+          ],
+          "after": [
+            ".test 20",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 21",
+            0
+          ],
+          "before": [
+            ".test 21",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-hidden cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 0 but got 400"
+          ],
+          "after": [
+            ".test 21",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 22",
+            0
+          ],
+          "before": [
+            ".test 22",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-hidden cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"50\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 0 but got 400"
+          ],
+          "after": [
+            ".test 22",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 23",
+            0
+          ],
+          "before": [
+            ".test 23",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-hidden cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"0\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 100 but got 400"
+          ],
+          "after": [
+            ".test 23",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 24",
+            0
+          ],
+          "before": [
+            ".test 24",
+            "FAIL",
+            "assert_equals: \n<div class=\"test big-contents overflow-hidden cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\" data-expected-scroll-width=\"400\" data-expected-scroll-height=\"200\"></div>\nclientWidth expected 100 but got 400"
+          ],
+          "after": [
+            ".test 24",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 3",
+            0
+          ],
+          "before": [
+            ".test 3",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-auto cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"0\" data-expected-scroll-width=\"100\" data-expected-scroll-height=\"20\"></div>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 3",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 4",
+            0
+          ],
+          "before": [
+            ".test 4",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-auto cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\" data-expected-scroll-width=\"100\" data-expected-scroll-height=\"50\"></div>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 4",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 5",
+            0
+          ],
+          "before": [
+            ".test 5",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-scroll cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\" data-expected-scroll-width=\"40\" data-expected-scroll-height=\"20\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 5",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 6",
+            0
+          ],
+          "before": [
+            ".test 6",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-scroll cis-height\" data-expected-client-width=\"0\" data-expected-client-height=\"50\" data-expected-scroll-width=\"40\" data-expected-scroll-height=\"50\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 6",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 7",
+            0
+          ],
+          "before": [
+            ".test 7",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-scroll cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"0\" data-expected-scroll-width=\"100\" data-expected-scroll-height=\"20\"></div>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 7",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 8",
+            0
+          ],
+          "before": [
+            ".test 8",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-scroll cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\" data-expected-scroll-width=\"100\" data-expected-scroll-height=\"50\"></div>\nclientWidth expected 100 but got 40"
+          ],
+          "after": [
+            ".test 8",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+            ".test 9",
+            0
+          ],
+          "before": [
+            ".test 9",
+            "FAIL",
+            "assert_equals: \n<div class=\"test small-contents overflow-hidden cis-none\" data-expected-client-width=\"0\" data-expected-client-height=\"0\" data-expected-scroll-width=\"40\" data-expected-scroll-height=\"20\"></div>\nclientWidth expected 0 but got 40"
+          ],
+          "after": [
+            ".test 9",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 1",
+            0
+          ],
+          "before": [
+            ".test 1",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-60px-1 cis-none\" data-expected-client-width=\"60\" data-expected-client-height=\"0\"></div>\nclientWidth expected 60 but got 0"
+          ],
+          "after": [
+            ".test 1",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 10",
+            0
+          ],
+          "before": [
+            ".test 10",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-60px-2 cis-height\" data-expected-client-width=\"125\" data-expected-client-height=\"50\"></div>\nclientWidth expected 125 but got 0"
+          ],
+          "after": [
+            ".test 10",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 11",
+            0
+          ],
+          "before": [
+            ".test 11",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-60px-2 cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"0\"></div>\nclientWidth expected 100 but got 0"
+          ],
+          "after": [
+            ".test 11",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 12",
+            0
+          ],
+          "before": [
+            ".test 12",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-60px-2 cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\"></div>\nclientWidth expected 100 but got 0"
+          ],
+          "after": [
+            ".test 12",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 2",
+            0
+          ],
+          "before": [
+            ".test 2",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-60px-1 cis-height\" data-expected-client-width=\"60\" data-expected-client-height=\"50\"></div>\nclientWidth expected 60 but got 0"
+          ],
+          "after": [
+            ".test 2",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 3",
+            0
+          ],
+          "before": [
+            ".test 3",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-60px-1 cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"0\"></div>\nclientWidth expected 100 but got 0"
+          ],
+          "after": [
+            ".test 3",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 4",
+            0
+          ],
+          "before": [
+            ".test 4",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-60px-1 cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\"></div>\nclientWidth expected 100 but got 0"
+          ],
+          "after": [
+            ".test 4",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 5",
+            0
+          ],
+          "before": [
+            ".test 5",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-120px-1 cis-none\" data-expected-client-width=\"120\" data-expected-client-height=\"0\"></div>\nclientWidth expected 120 but got 0"
+          ],
+          "after": [
+            ".test 5",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 6",
+            0
+          ],
+          "before": [
+            ".test 6",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-120px-1 cis-height\" data-expected-client-width=\"120\" data-expected-client-height=\"50\"></div>\nclientWidth expected 120 but got 0"
+          ],
+          "after": [
+            ".test 6",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 7",
+            0
+          ],
+          "before": [
+            ".test 7",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-120px-1 cis-width\" data-expected-client-width=\"100\" data-expected-client-height=\"0\"></div>\nclientWidth expected 100 but got 0"
+          ],
+          "after": [
+            ".test 7",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 8",
+            0
+          ],
+          "before": [
+            ".test 8",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-120px-1 cis-both\" data-expected-client-width=\"100\" data-expected-client-height=\"50\"></div>\nclientWidth expected 100 but got 0"
+          ],
+          "after": [
+            ".test 8",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+            ".test 9",
+            0
+          ],
+          "before": [
+            ".test 9",
+            "FAIL",
+            "assert_equals: \n<div class=\"test columns-60px-2 cis-none\" data-expected-client-width=\"125\" data-expected-client-height=\"0\"></div>\nclientWidth expected 125 but got 0"
+          ],
+          "after": [
+            ".test 9",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+            ".test 2",
+            0
+          ],
+          "before": [
+            ".test 2",
+            "FAIL",
+            "assert_equals: \n<select class=\"test ciw-none cih-0\" data-expected-client-width=\"20\" data-expected-client-height=\"0\"></select>\nclientHeight expected 0 but got 17"
+          ],
+          "after": [
+            ".test 2",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+            ".test 3",
+            0
+          ],
+          "before": [
+            ".test 3",
+            "FAIL",
+            "assert_equals: \n<select class=\"test ciw-none cih-100\" data-expected-client-width=\"20\" data-expected-client-height=\"100\"></select>\nclientHeight expected 100 but got 17"
+          ],
+          "after": [
+            ".test 3",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+            ".test 4",
+            0
+          ],
+          "before": [
+            ".test 4",
+            "FAIL",
+            "assert_equals: \n<select class=\"test ciw-0 cih-none\" data-expected-client-width=\"0\" data-expected-client-height=\"17\"></select>\nclientWidth expected 0 but got 20"
+          ],
+          "after": [
+            ".test 4",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+            ".test 5",
+            0
+          ],
+          "before": [
+            ".test 5",
+            "FAIL",
+            "assert_equals: \n<select class=\"test ciw-0 cih-0\" data-expected-client-width=\"0\" data-expected-client-height=\"0\"></select>\nclientWidth expected 0 but got 20"
+          ],
+          "after": [
+            ".test 5",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+            ".test 6",
+            0
+          ],
+          "before": [
+            ".test 6",
+            "FAIL",
+            "assert_equals: \n<select class=\"test ciw-0 cih-100\" data-expected-client-width=\"0\" data-expected-client-height=\"100\"></select>\nclientWidth expected 0 but got 20"
+          ],
+          "after": [
+            ".test 6",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+            ".test 7",
+            0
+          ],
+          "before": [
+            ".test 7",
+            "FAIL",
+            "assert_equals: \n<select class=\"test ciw-100 cih-none\" data-expected-client-width=\"100\" data-expected-client-height=\"17\"></select>\nclientWidth expected 100 but got 20"
+          ],
+          "after": [
+            ".test 7",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+            ".test 8",
+            0
+          ],
+          "before": [
+            ".test 8",
+            "FAIL",
+            "assert_equals: \n<select class=\"test ciw-100 cih-0\" data-expected-client-width=\"100\" data-expected-client-height=\"0\"></select>\nclientWidth expected 100 but got 20"
+          ],
+          "after": [
+            ".test 8",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+            ".test 9",
+            0
+          ],
+          "before": [
+            ".test 9",
+            "FAIL",
+            "assert_equals: \n<select class=\"test ciw-100 cih-100\" data-expected-client-width=\"100\" data-expected-client-height=\"100\"></select>\nclientWidth expected 100 but got 20"
+          ],
+          "after": [
+            ".test 9",
+            "PASS",
+            null
+          ]
+        }
+      ],
+      "prior_pass_losses": [],
+      "missing_identities": [],
+      "added_identities": [],
+      "prior_whole_file_losses": [],
+      "harness_changes": [],
+      "native_result_sha256": "8651d781e1863ab82b168cbed14cbfc2c1697942a4fca8e151ef1427151409f8",
+      "assertion_lifecycle": {
+        "runner_exit_valid": true,
+        "inner_returncode": 0,
+        "guard_counts": {
+          "started_at_private_gate": 7,
+          "constructor_verified_and_acknowledged": 7,
+          "author_url_released": 7,
+          "exited": 7
+        },
+        "actual_exit_codes": {
+          "0": 7
+        },
+        "all_profiles_removed": true,
+        "cleanup_threads_remaining": [],
+        "runner_exception": null,
+        "pins_unchanged": true,
+        "source_unchanged": true,
+        "git_unchanged": true,
+        "monitor_returncodes": [
+          0,
+          0
+        ],
+        "lifecycle_and_provenance_valid": true,
+        "receipt_sha256": "77a2704d5ca687624862017a91c2dad46e51037148d31015ff28b54ac0b32011",
+        "audit_sha256": "79b8f5adb8882127b5a18327aec230891612fba9371730104e452192b803012a"
+      },
+      "rendering": {
+        "baseline": {
+          "FAIL": 25,
+          "PASS": 1
+        },
+        "current": {
+          "PASS": 26
+        },
+        "tests": 26,
+        "gains": [
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-001.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-002.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-003.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-005.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-006.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-007.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-008.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-011.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-012.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-013.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-014.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-015.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-016.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-017.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-019.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-020.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-021.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-022.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-023.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-024.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-025.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-026.html",
+          "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-027.html"
+        ],
+        "prior_pass_losses": [],
+        "evidence_sha256": "08c1cb09d1d5510f90cfac9f662fba734562a654e59cf663a7d07be8bdb5f088",
+        "lifecycle": {
+          "runner_exit_valid": true,
+          "inner_returncode": 0,
+          "guard_counts": {
+            "started_at_private_gate": 52,
+            "constructor_verified_and_acknowledged": 52,
+            "author_url_released": 52,
+            "exited": 52
+          },
+          "actual_exit_codes": {
+            "0": 52
+          },
+          "all_profiles_removed": true,
+          "cleanup_threads_remaining": [],
+          "runner_exception": "SystemExit(0)",
+          "pins_unchanged": true,
+          "source_unchanged": true,
+          "git_unchanged": true,
+          "monitor_returncodes": [
+            0,
+            0
+          ],
+          "lifecycle_and_provenance_valid": true,
+          "receipt_sha256": "238c73cb4fbb25a8fc47edaf8d38ee0a01532536c4b0667fad8b83be759eca7b",
+          "audit_sha256": "c7d40fc1f0f0012f9080fa4dbf45a6ec9e99179e191d1027aeb270b28759c677"
+        }
+      }
+    },
+    "qa-css-containment-parsing": {
+      "baseline": {
+        "files": 3,
+        "fully_passing_files": 0,
+        "assertions": {
+          "PASS": 38,
+          "FAIL": 50
+        },
+        "total_assertions": 88,
+        "harness_statuses": {
+          "OK": 3
+        }
+      },
+      "current": {
+        "files": 3,
+        "fully_passing_files": 3,
+        "assertions": {
+          "PASS": 88
+        },
+        "total_assertions": 88,
+        "harness_statuses": {
+          "OK": 3
+        }
+      },
+      "identity_gains": [
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "Property contain-intrinsic-height value '2vw'",
+            0
+          ],
+          "before": [
+            "Property contain-intrinsic-height value '2vw'",
+            "FAIL",
+            "assert_equals: expected \"14.96px\" but got \"2vw\""
+          ],
+          "after": [
+            "Property contain-intrinsic-height value '2vw'",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "Property contain-intrinsic-height value '3vh'",
+            0
+          ],
+          "before": [
+            "Property contain-intrinsic-height value '3vh'",
+            "FAIL",
+            "assert_equals: expected \"17.88px\" but got \"3vh\""
+          ],
+          "after": [
+            "Property contain-intrinsic-height value '3vh'",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "Property contain-intrinsic-size value '2px 3.3vh'",
+            0
+          ],
+          "before": [
+            "Property contain-intrinsic-size value '2px 3.3vh'",
+            "FAIL",
+            "assert_equals: expected \"2px 19.668px\" but got \"2px 3.3vh\""
+          ],
+          "after": [
+            "Property contain-intrinsic-size value '2px 3.3vh'",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "Property contain-intrinsic-size value '2px 3vh'",
+            0
+          ],
+          "before": [
+            "Property contain-intrinsic-size value '2px 3vh'",
+            "FAIL",
+            "assert_equals: expected \"2px 17.88px\" but got \"2px 3vh\""
+          ],
+          "after": [
+            "Property contain-intrinsic-size value '2px 3vh'",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "Property contain-intrinsic-size value '2vw 3px'",
+            0
+          ],
+          "before": [
+            "Property contain-intrinsic-size value '2vw 3px'",
+            "FAIL",
+            "assert_equals: expected \"14.96px 3px\" but got \"2vw 3px\""
+          ],
+          "after": [
+            "Property contain-intrinsic-size value '2vw 3px'",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "Property contain-intrinsic-size value 'auto 1px auto 1px'",
+            0
+          ],
+          "before": [
+            "Property contain-intrinsic-size value 'auto 1px auto 1px'",
+            "FAIL",
+            "assert_equals: expected \"auto 1px\" but got \"auto 1px auto 1px\""
+          ],
+          "after": [
+            "Property contain-intrinsic-size value 'auto 1px auto 1px'",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "Property contain-intrinsic-size value 'inherit'",
+            0
+          ],
+          "before": [
+            "Property contain-intrinsic-size value 'inherit'",
+            "FAIL",
+            "assert_equals: expected \"5px\" but got \"5px 5px\""
+          ],
+          "after": [
+            "Property contain-intrinsic-size value 'inherit'",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "Property contain-intrinsic-width value '2vw'",
+            0
+          ],
+          "before": [
+            "Property contain-intrinsic-width value '2vw'",
+            "FAIL",
+            "assert_equals: expected \"14.96px\" but got \"2vw\""
+          ],
+          "after": [
+            "Property contain-intrinsic-width value '2vw'",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+            "Property contain-intrinsic-width value '3vh'",
+            0
+          ],
+          "before": [
+            "Property contain-intrinsic-width value '3vh'",
+            "FAIL",
+            "assert_equals: expected \"17.88px\" but got \"3vh\""
+          ],
+          "after": [
+            "Property contain-intrinsic-width value '3vh'",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-block-size'] = \"-1px\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-block-size'] = \"-1px\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"-1px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-block-size'] = \"-1px\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-block-size'] = \"1px 1px\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-block-size'] = \"1px 1px\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px 1px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-block-size'] = \"1px 1px\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-block-size'] = \"1px auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-block-size'] = \"1px auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-block-size'] = \"1px auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-block-size'] = \"1px none\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-block-size'] = \"1px none\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px none\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-block-size'] = \"1px none\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-block-size'] = \"20%\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-block-size'] = \"20%\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"20%\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-block-size'] = \"20%\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-block-size'] = \"auto 1px auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-block-size'] = \"auto 1px auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"auto 1px auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-block-size'] = \"auto 1px auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-block-size'] = \"legacy\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-block-size'] = \"legacy\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"legacy\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-block-size'] = \"legacy\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-block-size'] = \"none auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-block-size'] = \"none auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"none auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-block-size'] = \"none auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-height'] = \"-1px\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-height'] = \"-1px\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"-1px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-height'] = \"-1px\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-height'] = \"1px 1px\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-height'] = \"1px 1px\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px 1px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-height'] = \"1px 1px\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-height'] = \"1px auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-height'] = \"1px auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-height'] = \"1px auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-height'] = \"1px none\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-height'] = \"1px none\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px none\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-height'] = \"1px none\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-height'] = \"20%\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-height'] = \"20%\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"20%\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-height'] = \"20%\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-height'] = \"auto 1px auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-height'] = \"auto 1px auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"auto 1px auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-height'] = \"auto 1px auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-height'] = \"legacy\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-height'] = \"legacy\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"legacy\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-height'] = \"legacy\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-inline-size'] = \"-1px\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-inline-size'] = \"-1px\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"-1px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-inline-size'] = \"-1px\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-inline-size'] = \"1px 1px\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-inline-size'] = \"1px 1px\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px 1px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-inline-size'] = \"1px 1px\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-inline-size'] = \"1px auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-inline-size'] = \"1px auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-inline-size'] = \"1px auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-inline-size'] = \"1px none\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-inline-size'] = \"1px none\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px none\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-inline-size'] = \"1px none\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-inline-size'] = \"20%\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-inline-size'] = \"20%\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"20%\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-inline-size'] = \"20%\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-inline-size'] = \"auto 1px auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-inline-size'] = \"auto 1px auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"auto 1px auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-inline-size'] = \"auto 1px auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-inline-size'] = \"legacy\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-inline-size'] = \"legacy\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"legacy\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-inline-size'] = \"legacy\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"-1px\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"-1px\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"-1px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"-1px\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"10%\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"10%\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"10%\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"10%\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"1px 1%\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"1px 1%\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px 1%\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"1px 1%\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"1px 1px auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"1px 1px auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px 1px auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"1px 1px auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"1px auto auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"1px auto auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px auto auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"1px auto auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"2em 3px 5px\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"2em 3px 5px\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"2em 3px 5px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"2em 3px 5px\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"auto 1px 1px auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"auto 1px 1px auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"auto 1px 1px auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"auto 1px 1px auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"auto legacy auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"auto legacy auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"auto legacy auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"auto legacy auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"auto legacy\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"auto legacy\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"auto legacy\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"auto legacy\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-size'] = \"legacy\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"legacy\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"legacy\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"legacy\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-width'] = \"-1px\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-width'] = \"-1px\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"-1px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-width'] = \"-1px\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-width'] = \"1px 1px\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-width'] = \"1px 1px\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px 1px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-width'] = \"1px 1px\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-width'] = \"1px auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-width'] = \"1px auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-width'] = \"1px auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-width'] = \"1px none\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-width'] = \"1px none\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"1px none\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-width'] = \"1px none\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-width'] = \"20%\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-width'] = \"20%\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"20%\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-width'] = \"20%\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-width'] = \"auto 1px auto\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-width'] = \"auto 1px auto\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"auto 1px auto\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-width'] = \"auto 1px auto\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+            "e.style['contain-intrinsic-width'] = \"legacy\" should not set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-width'] = \"legacy\" should not set the property value",
+            "FAIL",
+            "assert_equals: expected \"\" but got \"legacy\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-width'] = \"legacy\" should not set the property value",
+            "PASS",
+            null
+          ]
+        },
+        {
+          "identity": [
+            "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-valid.html",
+            "e.style['contain-intrinsic-size'] = \"auto 1px auto 1px\" should set the property value",
+            0
+          ],
+          "before": [
+            "e.style['contain-intrinsic-size'] = \"auto 1px auto 1px\" should set the property value",
+            "FAIL",
+            "assert_equals: serialization should be canonical expected \"auto 1px\" but got \"auto 1px auto 1px\""
+          ],
+          "after": [
+            "e.style['contain-intrinsic-size'] = \"auto 1px auto 1px\" should set the property value",
+            "PASS",
+            null
+          ]
+        }
+      ],
+      "prior_pass_losses": [],
+      "missing_identities": [],
+      "added_identities": [],
+      "prior_whole_file_losses": [],
+      "harness_changes": [],
+      "native_result_sha256": "aafaff28755abbb09e659a9188e0af4c4e287323e3604322c9c06f54f2ba88e6",
+      "assertion_lifecycle": {
+        "runner_exit_valid": true,
+        "inner_returncode": 0,
+        "guard_counts": {
+          "started_at_private_gate": 3,
+          "constructor_verified_and_acknowledged": 3,
+          "author_url_released": 3,
+          "exited": 3
+        },
+        "actual_exit_codes": {
+          "0": 3
+        },
+        "all_profiles_removed": true,
+        "cleanup_threads_remaining": [],
+        "runner_exception": null,
+        "pins_unchanged": true,
+        "source_unchanged": true,
+        "git_unchanged": true,
+        "monitor_returncodes": [
+          0,
+          0
+        ],
+        "lifecycle_and_provenance_valid": true,
+        "receipt_sha256": "4d1ec135363dfdf65ae33f6f5de0dabdef721f7fd8c9b378a2c4dc15b60ca6b7",
+        "audit_sha256": "22b3361b1abd26574a8a5fb535a7ee0b36ee827cc5a43701288b9c6a2faf2b55"
+      }
+    }
+  },
+  "raw_result_qualification": "Assertion counts and exact pixel comparisons remain separate; no full WPT or whole-browser score.",
+  "harness_preservation_valid": true,
+  "auditor_sha256": "1c23d8e835b8f521211d463a926023f00c36b892b163072c21dc095a9740bd39",
+  "preservation_valid": true,
+  "lifecycle_valid": true,
+  "primary_complete": true,
+  "scoped_candidate_gate": true
+}

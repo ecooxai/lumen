@@ -1,0 +1,21 @@
+{
+  "label": "native-reftest-viewport",
+  "started_utc": "2026-10-31T08:02:47.264797+00:00",
+  "finished_utc": "2026-10-31T08:02:49.264921+00:00",
+  "root_pid": 2383773,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 2,
+  "elapsed_seconds": 2.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 18.001,
+  "cpu_median": 18.001,
+  "cpu_max": 18.001,
+  "cpu_last10_median": 18.001,
+  "rss_peak_mb": 149.877,
+  "rss_final_mb": 149.877,
+  "pss_peak_mb": 79.599,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen229-reftests/native/023/test/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

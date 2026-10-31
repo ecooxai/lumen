@@ -1,0 +1,21 @@
+{
+  "label": "pinned Chromium authored IO retention corrected reference",
+  "started_utc": "2026-10-31T08:16:46.793246+00:00",
+  "finished_utc": "2026-10-31T08:16:54.821190+00:00",
+  "root_pid": 2423869,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 8,
+  "elapsed_seconds": 8.028,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 16.001,
+  "cpu_median": 31.988,
+  "cpu_max": 148.003,
+  "cpu_last10_median": 31.988,
+  "rss_peak_mb": 1463.747,
+  "rss_final_mb": 30.663,
+  "pss_peak_mb": 508.046,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/chromium156-v1-retry1/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

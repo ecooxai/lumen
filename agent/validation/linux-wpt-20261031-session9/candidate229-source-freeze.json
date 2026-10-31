@@ -1,0 +1,14 @@
+{
+  "candidate": 229,
+  "source_commit": "30c48fcaed638e17d9aae4292bdb86a83fc1cce2",
+  "frozen_utc": "2026-10-31T07:57:30.687039+00:00",
+  "changed_files": [
+    "src/css/style.c"
+  ],
+  "legacy_math_test_sha256": "02e867e8fd1f69b0e471936cb54347cf1870707d081cbddeec5cfd66a6a0b7ea",
+  "static_reviews": [
+    "repo_baseline: no blocker",
+    "delivery_audit: accepted count representation and established parser restored; old test unchanged"
+  ],
+  "accepted_release_candidate": 226
+}

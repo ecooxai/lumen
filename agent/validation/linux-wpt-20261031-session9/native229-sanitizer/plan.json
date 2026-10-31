@@ -1,0 +1,75 @@
+{
+  "commands": [
+    {
+      "label": "configure",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "cmake",
+        "-S",
+        "/mnt/p3/project/browser/lumen-android/lumen-android",
+        "-B",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize"
+      ]
+    },
+    {
+      "label": "build-targets",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "cmake",
+        "--build",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize",
+        "--target",
+        "test_css_containment",
+        "test_grid_used_values",
+        "test_grid_absolute",
+        "-j2"
+      ]
+    },
+    {
+      "label": "ctest",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "ctest",
+        "--test-dir",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize",
+        "-j1",
+        "--output-on-failure",
+        "-R",
+        "^(css_containment|grid_used_values|grid_absolute)$",
+        "--output-junit",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/native229-sanitizer/ctest.xml"
+      ]
+    }
+  ],
+  "candidate": 229,
+  "source_commit": "30c48fcaed638e17d9aae4292bdb86a83fc1cce2",
+  "source_manifest_sha256": "bd0b4bb8f5988af1814d942c7376e54ea529c9afee66cad0b287d90b2300f037",
+  "flags": {
+    "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -DV8_CPPGC_MICROTASK_QUEUE",
+    "CMAKE_C_FLAGS": "-fsanitize=address,undefined",
+    "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined -Wl,-rpath-link,/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec"
+  },
+  "extra_inputs": {
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/run-native-sanitizer.py": "ae68e120bdac31fa13bb54741796b42b3860b647a873efaad5953ad594d0bafe",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-229/build-state.json": "8ffd2be7f0a4cb45bc48f668759476194e6ec0da2284ba0dccc78f8030501325",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-229/source-manifest-before.json": "7473f91464efad8b3b2eb66e2cc17631c2de5e9e89b44b24572da49e183649ac",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-229/source-manifest-after.json": "7473f91464efad8b3b2eb66e2cc17631c2de5e9e89b44b24572da49e183649ac",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tests/test_css_containment.c": "3d306c7c0353f26e0d59691bc3efb88c4710c6f9fc24e3a91eb8e13db22500cf",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tests/test_grid_used_values.c": "a8b6f755c14b2336ecff4d3a092f8b124f5b8f90647c817f9c6eb679ff641d3c",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tests/test_grid_absolute.c": "196d37a17383766e6c44d8df37eeea888687fa995bb27bf0a8fe05467b521bd0",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py": "969cbe8df729bd340e46d1a25fc2069573249b4395aba3e7ecce8f6e583ae298"
+  },
+  "sanitizers": [
+    "address",
+    "undefined"
+  ],
+  "targets": [
+    "test_css_containment",
+    "test_grid_used_values",
+    "test_grid_absolute"
+  ],
+  "reason": "Enlarged existing track arrays with aliased gap views; bound and ownership regression controls"
+}

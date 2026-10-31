@@ -1,0 +1,242 @@
+{
+  "candidate": 229,
+  "started_utc": "2026-10-31T08:13:35.407507+00:00",
+  "finished_utc": "2026-10-31T08:13:41.549618+00:00",
+  "duration_s": 6.142110658984166,
+  "returncode": 0,
+  "timed_out": false,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "pins_unchanged": true,
+  "source_unchanged": true,
+  "git_unchanged": true,
+  "source_commit": "30c48fcaed638e17d9aae4292bdb86a83fc1cce2",
+  "jsrun_sha256": "7979e52e56ecba609a2054f6794ece8ba75f7fadcb36b504c667228596af2cdf",
+  "legacy_geometry_pass": true,
+  "cadence_pass": false,
+  "all_phases_completed": true,
+  "quiescent_idle": [
+    {
+      "phase": "idle-end",
+      "elapsed": 3300.277394980192,
+      "geometryReads": 0,
+      "notifications": 0
+    }
+  ],
+  "failures": [
+    "scroll-enter: expected one changed observation within two rendering opportunities",
+    "scroll-exit: expected one changed observation within two rendering opportunities",
+    "scroll-enter-again: expected one changed observation within two rendering opportunities",
+    "ancestor-hidden: expected one changed observation within two rendering opportunities",
+    "ancestor-visible: expected one changed observation within two rendering opportunities"
+  ],
+  "events": [
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 507.1057119965553,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "scroll-enter",
+      "start": 507.4520959854126,
+      "end": 523.9975709915161,
+      "frames": [
+        {
+          "stamp": 507.77872198820114,
+          "now": 507.8423889875412
+        },
+        {
+          "stamp": 523.8406129777431,
+          "now": 523.9606119990349
+        }
+      ],
+      "expected": true,
+      "records": [],
+      "geometryReads": 1,
+      "scrollTop": 200
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 557.0384069979191,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ]
+    },
+    {
+      "phase": "scroll-exit",
+      "start": 557.1323809921741,
+      "end": 573.5054929852486,
+      "frames": [
+        {
+          "stamp": 557.2994689941406,
+          "now": 557.3066889941692
+        },
+        {
+          "stamp": 573.4326259791851,
+          "now": 573.4815099835396
+        }
+      ],
+      "expected": false,
+      "records": [],
+      "geometryReads": 2,
+      "scrollTop": 0
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 607.1073289811611,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "scroll-enter-again",
+      "start": 607.1944169998169,
+      "end": 623.4766319990158,
+      "frames": [
+        {
+          "stamp": 607.4008199870586,
+          "now": 607.4104239940643
+        },
+        {
+          "stamp": 623.430044978857,
+          "now": 623.4655769765377
+        }
+      ],
+      "expected": true,
+      "records": [],
+      "geometryReads": 3,
+      "scrollTop": 200
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 657.2811699807644,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ]
+    },
+    {
+      "phase": "ancestor-hidden",
+      "start": 657.4088209867477,
+      "end": 674.3723829984665,
+      "frames": [
+        {
+          "stamp": 658.1265669763088,
+          "now": 658.1431379914284
+        },
+        {
+          "stamp": 674.3139639794827,
+          "now": 674.3497389853001
+        }
+      ],
+      "expected": false,
+      "records": [],
+      "geometryReads": 4,
+      "scrollTop": 0
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 707.4578449726105,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "ancestor-visible",
+      "start": 707.5519879758358,
+      "end": 724.2776139974594,
+      "frames": [
+        {
+          "stamp": 708.0616729855537,
+          "now": 708.0685549974442
+        },
+        {
+          "stamp": 724.2363859713078,
+          "now": 724.2658259868622
+        }
+      ],
+      "expected": true,
+      "records": [],
+      "geometryReads": 5,
+      "scrollTop": 200
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 757.5442369878292,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ]
+    },
+    {
+      "phase": "idle-start",
+      "start": 857.7637349963188,
+      "geometryReads": 6,
+      "notifications": 6
+    },
+    {
+      "phase": "idle-end",
+      "elapsed": 3300.277394980192,
+      "geometryReads": 0,
+      "notifications": 0
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 4254.771347999573,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 420,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "complete",
+      "failures": [
+        "scroll-enter: expected one changed observation within two rendering opportunities",
+        "scroll-exit: expected one changed observation within two rendering opportunities",
+        "scroll-enter-again: expected one changed observation within two rendering opportunities",
+        "ancestor-hidden: expected one changed observation within two rendering opportunities",
+        "ancestor-visible: expected one changed observation within two rendering opportunities"
+      ],
+      "geometryReads": 7,
+      "notifications": 7
+    }
+  ],
+  "not_wpt": true,
+  "qualification": "Both original geometry and final cadence PASS required for a repaired candidate. Baseline failure remains a real diagnostic result; fixed-root jsrun does not replace WPT root-scroll validation."
+}

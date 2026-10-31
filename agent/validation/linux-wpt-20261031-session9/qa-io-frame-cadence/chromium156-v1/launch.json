@@ -1,0 +1,20 @@
+{
+  "command": [
+    "python3",
+    "tools/codex_compile.py",
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-script-scheduling/authored/run-cft156-fixture.py",
+    "--fixture",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/intersection-geometry-frame-cadence.html",
+    "--marker",
+    "RESULTS io-frame-cadence:",
+    "--output",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/chromium156-v1/browser",
+    "--timeout",
+    "20"
+  ],
+  "source_workspace": "30c48fcaed638e17d9aae4292bdb86a83fc1cce2",
+  "fixture_sha256": "487671663f5374febbf353ed995644a68d843b518ee0beda259ba52e8e366ade",
+  "purpose": "Classify original authored scroll-retention setup; any completion-marker adapter PASS is not a semantic cadence PASS",
+  "not_wpt": true
+}

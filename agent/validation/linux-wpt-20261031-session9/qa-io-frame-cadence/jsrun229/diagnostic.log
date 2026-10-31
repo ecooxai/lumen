@@ -1,0 +1,13 @@
+[js log] RESULTS intersection-geometry:PASS
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":508.534088999033,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-enter","start":508.8422349989414,"end":524.9001449942589,"frames":[{"stamp":509.17461398243904,"now":509.23810797929764},{"stamp":524.7532210052013,"now":524.8651520013809}],"expected":true,"records":[],"geometryReads":1,"scrollTop":200}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":558.4721739888191,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-exit","start":558.5756880044937,"end":575.0724669992924,"frames":[{"stamp":558.7666620016098,"now":558.7773929834366},{"stamp":574.9688259959221,"now":575.0492880046368}],"expected":false,"records":[],"geometryReads":2,"scrollTop":0}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":608.5714679956436,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-enter-again","start":608.6625429987907,"end":624.5062029957771,"frames":[{"stamp":608.8408550024033,"now":608.8485819995403},{"stamp":624.4561100006104,"now":624.4944030046463}],"expected":true,"records":[],"geometryReads":3,"scrollTop":200}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":658.6757119894028,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"ancestor-hidden","start":658.7960929870605,"end":675.6373569965363,"frames":[{"stamp":659.527280986309,"now":659.5448499917984},{"stamp":675.5781149864197,"now":675.6139749884605}],"expected":false,"records":[],"geometryReads":4,"scrollTop":0}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":708.7348969876766,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"ancestor-visible","start":708.8253049850464,"end":724.6250720024109,"frames":[{"stamp":709.0856460034847,"now":709.0945180058479},{"stamp":724.5952409803867,"now":724.6158329844475}],"expected":true,"records":[],"geometryReads":5,"scrollTop":0}
+[js log] RESULTS io-frame-cadence:FAIL Error: no observer delivery within 1000 ms
+jsrun: context 142.2ms, 1 scripts 14.8ms, dom_version 73

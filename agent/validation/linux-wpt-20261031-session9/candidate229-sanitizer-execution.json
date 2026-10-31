@@ -1,0 +1,20 @@
+[
+  {
+    "controller": "run-math-sanitizer.py",
+    "started_utc": "2026-10-31T07:59:44.838799+00:00",
+    "finished_utc": "2026-10-31T07:59:51.105312+00:00",
+    "outer_returncode": 0
+  },
+  {
+    "controller": "run-native-sanitizer.py",
+    "started_utc": "2026-10-31T07:59:51.105512+00:00",
+    "finished_utc": "2026-10-31T07:59:58.451512+00:00",
+    "outer_returncode": 0
+  },
+  {
+    "controller": "run-raster-sanitizer.py",
+    "started_utc": "2026-10-31T07:59:58.451711+00:00",
+    "finished_utc": "2026-10-31T08:00:08.712727+00:00",
+    "outer_returncode": 0
+  }
+]

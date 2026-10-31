@@ -1,0 +1,21 @@
+{
+  "label": "candidate229 real-source raster ASan UBSan",
+  "started_utc": "2026-10-31T07:59:58.593809+00:00",
+  "finished_utc": "2026-10-31T08:00:07.621973+00:00",
+  "root_pid": 2373862,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 9,
+  "elapsed_seconds": 9.028,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 26.999,
+  "cpu_median": 97.50399999999999,
+  "cpu_max": 99.0,
+  "cpu_last10_median": 97.50399999999999,
+  "rss_peak_mb": 256.84,
+  "rss_final_mb": 77.746,
+  "pss_peak_mb": 209.784,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster229-sanitizer/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

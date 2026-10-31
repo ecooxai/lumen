@@ -1,0 +1,261 @@
+{
+  "started_utc": "2026-10-31T08:16:46.755627+00:00",
+  "finished_utc": "2026-10-31T08:16:56.662800+00:00",
+  "duration_s": 9.907172331993934,
+  "adapter_returncode": 0,
+  "adapter_status": "PASS",
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "pins_unchanged": true,
+  "source_workspace_unchanged": true,
+  "git_unchanged": true,
+  "profile_removed": true,
+  "fixture_unchanged": true,
+  "remaining_owned_identities": [],
+  "driver_cleanup_error": null,
+  "chromium_os_exit_status": "Not exposed by unchanged supported adapter",
+  "legacy_geometry_pass": false,
+  "cadence_pass": true,
+  "events": [
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 398.40000000596046,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 414.90000000596046,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ]
+    },
+    {
+      "phase": "scroll-enter",
+      "start": 398.80000001192093,
+      "end": 431.30000001192093,
+      "frames": [
+        {
+          "stamp": 414.2,
+          "now": 414.7000000178814
+        },
+        {
+          "stamp": 430.9,
+          "now": 431.30000001192093
+        }
+      ],
+      "expected": true,
+      "records": [
+        {
+          "time": 414.90000000596046,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ],
+      "geometryReads": 0,
+      "scrollTop": 200
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 431.7000000178814,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "scroll-exit",
+      "start": 431.5,
+      "end": 464.5,
+      "frames": [
+        {
+          "stamp": 447.6,
+          "now": 447.90000000596046
+        },
+        {
+          "stamp": 464.2,
+          "now": 464.5
+        }
+      ],
+      "expected": false,
+      "records": [
+        {
+          "time": 431.7000000178814,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 320,
+          "scrollTop": 0
+        }
+      ],
+      "geometryReads": 0,
+      "scrollTop": 0
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 464.80000001192093,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ]
+    },
+    {
+      "phase": "scroll-enter-again",
+      "start": 464.7000000178814,
+      "end": 497.80000001192093,
+      "frames": [
+        {
+          "stamp": 480.9,
+          "now": 481.2000000178814
+        },
+        {
+          "stamp": 497.5,
+          "now": 497.80000001192093
+        }
+      ],
+      "expected": true,
+      "records": [
+        {
+          "time": 464.80000001192093,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ],
+      "geometryReads": 0,
+      "scrollTop": 200
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 498.40000000596046,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 0,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "ancestor-hidden",
+      "start": 497.90000000596046,
+      "end": 531.3000000119209,
+      "frames": [
+        {
+          "stamp": 514.1,
+          "now": 514.5999999940395
+        },
+        {
+          "stamp": 530.8,
+          "now": 531.3000000119209
+        }
+      ],
+      "expected": false,
+      "records": [
+        {
+          "time": 498.40000000596046,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 0,
+          "scrollTop": 0
+        }
+      ],
+      "geometryReads": 0,
+      "scrollTop": 0
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 532.0999999940395,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ]
+    },
+    {
+      "phase": "ancestor-visible",
+      "start": 531.5,
+      "end": 564.5999999940395,
+      "frames": [
+        {
+          "stamp": 547.5,
+          "now": 547.8000000119209
+        },
+        {
+          "stamp": 564.2,
+          "now": 564.5999999940395
+        }
+      ],
+      "expected": true,
+      "records": [
+        {
+          "time": 532.0999999940395,
+          "intersecting": true,
+          "ratio": 1,
+          "top": 120,
+          "scrollTop": 200
+        }
+      ],
+      "geometryReads": 0,
+      "scrollTop": 200
+    },
+    {
+      "phase": "idle-start",
+      "start": 665.0999999940395,
+      "geometryReads": 0,
+      "notifications": 6
+    },
+    {
+      "phase": "idle-end",
+      "elapsed": 3300.4000000059605,
+      "geometryReads": 0,
+      "notifications": 0
+    },
+    {
+      "phase": "callback",
+      "records": [
+        {
+          "time": 4061.7000000178814,
+          "intersecting": false,
+          "ratio": 0,
+          "top": 420,
+          "scrollTop": 0
+        }
+      ]
+    },
+    {
+      "phase": "complete",
+      "failures": [],
+      "geometryReads": 0,
+      "notifications": 7
+    }
+  ],
+  "not_wpt": true
+}
