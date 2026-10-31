@@ -1,0 +1,21 @@
+{
+  "label": "session9 owned native230 process tree",
+  "started_utc": "2026-10-31T08:23:28.060067+00:00",
+  "finished_utc": "2026-10-31T08:24:48.084798+00:00",
+  "root_pid": 2442721,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 80,
+  "elapsed_seconds": 80.025,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 0.0,
+  "cpu_median": 13.0,
+  "cpu_max": 77.997,
+  "cpu_last10_median": 2.0,
+  "rss_peak_mb": 229.507,
+  "rss_final_mb": 69.448,
+  "pss_peak_mb": 171.189,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/native230/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

@@ -1,0 +1,12 @@
+{
+  "source_log": "build/codex-native/Testing/Temporary/LastTest.log",
+  "sha256": "6fbf40abe74497e86782cb6c9e9e9ae66d583d18de41a9726cc075455e8b5174",
+  "markers": [
+    "RESULTS intersection-geometry:PASS",
+    "RESULTS io-frame-cadence:PASS",
+    "RESULTS intersection-geometry-cadence:PASS"
+  ],
+  "all_present": true,
+  "none_failed": true,
+  "junit_output_limit": "1024bytes truncates final markers; full CTest log archived without rerunning tests."
+}

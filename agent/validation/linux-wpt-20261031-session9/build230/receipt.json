@@ -1,0 +1,25 @@
+{
+  "started_utc": "2026-10-31T08:23:03.837586+00:00",
+  "finished_utc": "2026-10-31T08:23:27.969203+00:00",
+  "duration_s": 24.131617378996452,
+  "command": [
+    "python3",
+    "tools/codex_compile.py",
+    "python3",
+    "agent/validation/build_candidate.py",
+    "--iteration",
+    "230",
+    "--jobs",
+    "2",
+    "--startup"
+  ],
+  "pid": 2441391,
+  "exit_code": 0,
+  "source_commit": "9c97267df362820d6815143c0c9a82abd9b5f5cd",
+  "git_head_after": "9c97267df362820d6815143c0c9a82abd9b5f5cd",
+  "git_unchanged": true,
+  "monitor_returncodes": [
+    0,
+    0
+  ]
+}

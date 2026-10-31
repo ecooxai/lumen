@@ -1,0 +1,38 @@
+{
+  "started_utc": "2026-10-31T08:28:41.138654+00:00",
+  "finished_utc": "2026-10-31T08:28:46.899147+00:00",
+  "candidate": 230,
+  "scope": "Separate one-file upstream hidden scroll baseline, not part of39/API3",
+  "runs": [
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/run-cohort-v3.py",
+        "--scope",
+        "qa-hidden-scroll-upstream",
+        "--kind",
+        "lumen",
+        "--type",
+        "assertions",
+        "--iteration",
+        "230"
+      ],
+      "returncode": 0
+    },
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/run-cohort-v3.py",
+        "--scope",
+        "qa-hidden-scroll-upstream",
+        "--kind",
+        "chromium156",
+        "--type",
+        "assertions",
+        "--iteration",
+        "230"
+      ],
+      "returncode": 0
+    }
+  ]
+}

@@ -1,0 +1,225 @@
+{
+  "status": "PASS",
+  "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/hidden-scroll-state-matrix-v3.html",
+  "fixture_sha256": "f51b1799025c08d900c8b31393f3606a16b104db00709db76eab4c48856de375",
+  "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+  "binary_sha256": "1bcad71ad1bff85955db13c6d8dd9f32374934d5a5cb079b526c46fb51f9bd97",
+  "url": "http://127.0.0.1:40717/hidden-scroll-state-matrix-v3.html",
+  "capabilities": {
+    "acceptInsecureCerts": false,
+    "browserName": "chrome",
+    "browserVersion": "156.0.8078.80",
+    "chrome": {
+      "chromedriverVersion": "156.0.8078.80 (fb096c0011f9d50f0a264a9376420cdea9c421e3-refs/branch-heads/8078@{#1705})",
+      "userDataDir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h"
+    },
+    "fedcm:accounts": true,
+    "goog:chromeOptions": {
+      "debuggerAddress": "localhost:37793"
+    },
+    "goog:processID": 2473622,
+    "networkConnectionEnabled": false,
+    "pageLoadStrategy": "none",
+    "platformName": "linux",
+    "proxy": {},
+    "setWindowRect": true,
+    "strictFileInteractability": false,
+    "timeouts": {
+      "implicit": 0,
+      "pageLoad": 300000,
+      "script": 30000
+    },
+    "unhandledPromptBehavior": "dismiss and notify",
+    "webauthn:extension:cmtgKey": true,
+    "webauthn:extension:credBlob": true,
+    "webauthn:extension:largeBlob": true,
+    "webauthn:extension:minPinLength": true,
+    "webauthn:extension:prf": true,
+    "webauthn:virtualAuthenticators": true
+  },
+  "console": [
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"retain-both-axes\",\"phase\":\"visible\",\"time\":230.69999998807907,\"owner\":{\"before\":{\"x\":80,\"y\":90},\"after\":{\"x\":80,\"y\":90},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-80,\"y\":-90,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":80,\"y\":90}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"retain-both-axes\",\"phase\":\"hidden\",\"time\":264.39999997615814,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":0,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"retain-both-axes\",\"phase\":\"revealed\",\"time\":297.19999998807907,\"owner\":{\"before\":{\"x\":80,\"y\":90},\"after\":{\"x\":80,\"y\":90},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-80,\"y\":-90,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":80,\"y\":90}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"hidden-set-zero\",\"phase\":\"visible\",\"time\":330.7999999821186,\"owner\":{\"before\":{\"x\":80,\"y\":90},\"after\":{\"x\":80,\"y\":90},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-80,\"y\":-90,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":80,\"y\":90}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"hidden-set-zero\",\"phase\":\"hidden-before-set\",\"time\":364,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":0,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"hidden-set-zero\",\"phase\":\"hidden-after-set\",\"time\":397.19999998807907,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":0,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"hidden-set-zero\",\"phase\":\"revealed\",\"time\":430.69999998807907,\"owner\":{\"before\":{\"x\":80,\"y\":90},\"after\":{\"x\":80,\"y\":90},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-80,\"y\":-90,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":80,\"y\":90}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"hidden-set-positive\",\"phase\":\"visible\",\"time\":463.7999999821186,\"owner\":{\"before\":{\"x\":80,\"y\":90},\"after\":{\"x\":80,\"y\":90},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-80,\"y\":-90,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":80,\"y\":90}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"hidden-set-positive\",\"phase\":\"hidden-before-set\",\"time\":497.19999998807907,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":0,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"hidden-set-positive\",\"phase\":\"hidden-after-set\",\"time\":530.5999999940395,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":0,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"hidden-set-positive\",\"phase\":\"revealed\",\"time\":564,\"owner\":{\"before\":{\"x\":80,\"y\":90},\"after\":{\"x\":80,\"y\":90},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-80,\"y\":-90,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":80,\"y\":90}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"range-shrink-and-regrow\",\"phase\":\"visible\",\"time\":597.1999999880791,\"owner\":{\"before\":{\"x\":80,\"y\":90},\"after\":{\"x\":80,\"y\":90},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-80,\"y\":-90,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":80,\"y\":90}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"range-shrink-and-regrow\",\"phase\":\"hidden\",\"time\":630.6999999880791,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":0,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"range-shrink-and-regrow\",\"phase\":\"hidden-shrunk\",\"time\":664,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":0,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"range-shrink-and-regrow\",\"phase\":\"revealed-shrunk\",\"time\":697.0999999940395,\"owner\":{\"before\":{\"x\":30,\"y\":30},\"after\":{\"x\":30,\"y\":30},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":150,\"height\":130},\"max\":{\"x\":30,\"y\":30},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-30,\"y\":-30,\"width\":150,\"height\":130},\"ownerAfterDescendantReads\":{\"x\":30,\"y\":30}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"range-shrink-and-regrow\",\"phase\":\"visible-regrown\",\"time\":730.5,\"owner\":{\"before\":{\"x\":30,\"y\":30},\"after\":{\"x\":30,\"y\":30},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-30,\"y\":-30,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":30,\"y\":30}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"overflow-mode-change\",\"phase\":\"visible-scroll-container\",\"time\":764,\"owner\":{\"before\":{\"x\":80,\"y\":90},\"after\":{\"x\":80,\"y\":90},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-80,\"y\":-90,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":80,\"y\":90}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"overflow-mode-change\",\"phase\":\"hidden\",\"time\":797.0999999940395,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":0,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"overflow-mode-change\",\"phase\":\"hidden-overflow-visible\",\"time\":830.5999999940395,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"visible\",\"overflowY\":\"visible\"},\"leafBounds\":{\"x\":0,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"overflow-mode-change\",\"phase\":\"revealed-overflow-visible\",\"time\":863.8999999761581,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"visible\",\"overflowY\":\"visible\"},\"leafBounds\":{\"x\":0,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"overflow-mode-change\",\"phase\":\"scroll-container-restored\",\"time\":897.0999999940395,\"owner\":{\"before\":{\"x\":80,\"y\":90},\"after\":{\"x\":80,\"y\":90},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":0,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-80,\"y\":-90,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":80,\"y\":90}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"nested-outer-hidden-inner-setter\",\"phase\":\"visible\",\"time\":930.5999999940395,\"owner\":{\"before\":{\"x\":40,\"y\":50},\"after\":{\"x\":40,\"y\":50},\"client\":{\"width\":160,\"height\":140},\"scroll\":{\"width\":450,\"height\":620},\"max\":{\"x\":290,\"y\":480},\"bounds\":{\"x\":0,\"y\":0,\"width\":160,\"height\":140},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"inner\":{\"before\":{\"x\":60,\"y\":70},\"after\":{\"x\":60,\"y\":70},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":20,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-60,\"y\":-50,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":40,\"y\":50},\"innerAfterDescendantReads\":{\"x\":60,\"y\":70}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"nested-outer-hidden-inner-setter\",\"phase\":\"outer-hidden\",\"time\":963.8999999761581,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":160,\"height\":140},\"scroll\":{\"width\":160,\"height\":140},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":160,\"height\":140},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"inner\":{\"before\":{\"x\":60,\"y\":70},\"after\":{\"x\":60,\"y\":70},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":40,\"y\":70,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-20,\"y\":0,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0},\"innerAfterDescendantReads\":{\"x\":60,\"y\":70}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"nested-outer-hidden-inner-setter\",\"phase\":\"inner-set-under-hidden-outer\",\"time\":997.1999999880791,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":160,\"height\":140},\"scroll\":{\"width\":160,\"height\":140},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":160,\"height\":140},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"inner\":{\"before\":{\"x\":31,\"y\":47},\"after\":{\"x\":31,\"y\":47},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":40,\"y\":70,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":9,\"y\":23,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0},\"innerAfterDescendantReads\":{\"x\":31,\"y\":47}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"nested-outer-hidden-inner-setter\",\"phase\":\"outer-revealed\",\"time\":1030.5999999940395,\"owner\":{\"before\":{\"x\":40,\"y\":50},\"after\":{\"x\":40,\"y\":50},\"client\":{\"width\":160,\"height\":140},\"scroll\":{\"width\":450,\"height\":620},\"max\":{\"x\":290,\"y\":480},\"bounds\":{\"x\":0,\"y\":0,\"width\":160,\"height\":140},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"inner\":{\"before\":{\"x\":31,\"y\":47},\"after\":{\"x\":31,\"y\":47},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":20,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-31,\"y\":-27,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":40,\"y\":50},\"innerAfterDescendantReads\":{\"x\":31,\"y\":47}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"nested-independently-hidden\",\"phase\":\"visible\",\"time\":1064,\"owner\":{\"before\":{\"x\":40,\"y\":50},\"after\":{\"x\":40,\"y\":50},\"client\":{\"width\":160,\"height\":140},\"scroll\":{\"width\":450,\"height\":620},\"max\":{\"x\":290,\"y\":480},\"bounds\":{\"x\":0,\"y\":0,\"width\":160,\"height\":140},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"inner\":{\"before\":{\"x\":60,\"y\":70},\"after\":{\"x\":60,\"y\":70},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":20,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-60,\"y\":-50,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":40,\"y\":50},\"innerAfterDescendantReads\":{\"x\":60,\"y\":70}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"nested-independently-hidden\",\"phase\":\"inner-hidden\",\"time\":1097.199999988079,\"owner\":{\"before\":{\"x\":40,\"y\":50},\"after\":{\"x\":40,\"y\":50},\"client\":{\"width\":160,\"height\":140},\"scroll\":{\"width\":450,\"height\":620},\"max\":{\"x\":290,\"y\":480},\"bounds\":{\"x\":0,\"y\":0,\"width\":160,\"height\":140},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"inner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":20,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":0,\"y\":20,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":40,\"y\":50},\"innerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"nested-independently-hidden\",\"phase\":\"both-hidden\",\"time\":1130.5999999940395,\"owner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":160,\"height\":140},\"scroll\":{\"width\":160,\"height\":140},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":0,\"width\":160,\"height\":140},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"inner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":40,\"y\":70,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":40,\"y\":70,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":0,\"y\":0},\"innerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"nested-independently-hidden\",\"phase\":\"outer-revealed-inner-hidden\",\"time\":1163.7999999821186,\"owner\":{\"before\":{\"x\":40,\"y\":50},\"after\":{\"x\":40,\"y\":50},\"client\":{\"width\":160,\"height\":140},\"scroll\":{\"width\":450,\"height\":620},\"max\":{\"x\":290,\"y\":480},\"bounds\":{\"x\":0,\"y\":0,\"width\":160,\"height\":140},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"inner\":{\"before\":{\"x\":0,\"y\":0},\"after\":{\"x\":0,\"y\":0},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":120,\"height\":100},\"max\":{\"x\":0,\"y\":0},\"bounds\":{\"x\":0,\"y\":20,\"width\":120,\"height\":100},\"contentVisibility\":\"hidden\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":0,\"y\":20,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":40,\"y\":50},\"innerAfterDescendantReads\":{\"x\":0,\"y\":0}}",
+    "DIAGNOSTIC hidden-scroll-state {\"id\":\"nested-independently-hidden\",\"phase\":\"both-revealed\",\"time\":1197.199999988079,\"owner\":{\"before\":{\"x\":40,\"y\":50},\"after\":{\"x\":40,\"y\":50},\"client\":{\"width\":160,\"height\":140},\"scroll\":{\"width\":450,\"height\":620},\"max\":{\"x\":290,\"y\":480},\"bounds\":{\"x\":0,\"y\":0,\"width\":160,\"height\":140},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"inner\":{\"before\":{\"x\":60,\"y\":70},\"after\":{\"x\":60,\"y\":70},\"client\":{\"width\":120,\"height\":100},\"scroll\":{\"width\":400,\"height\":400},\"max\":{\"x\":280,\"y\":300},\"bounds\":{\"x\":0,\"y\":20,\"width\":120,\"height\":100},\"contentVisibility\":\"visible\",\"overflowX\":\"hidden\",\"overflowY\":\"hidden\"},\"leafBounds\":{\"x\":-60,\"y\":-50,\"width\":400,\"height\":400},\"ownerAfterDescendantReads\":{\"x\":40,\"y\":50},\"innerAfterDescendantReads\":{\"x\":60,\"y\":70}}",
+    "MEASUREMENTS hidden-scroll-state:COMPLETE {\"completed\":[\"retain-both-axes\",\"hidden-set-zero\",\"hidden-set-positive\",\"range-shrink-and-regrow\",\"overflow-mode-change\",\"nested-outer-hidden-inner-setter\",\"nested-independently-hidden\"],\"records\":30}",
+    "RESULTS hidden-scroll-state:PASS"
+  ],
+  "marker": "RESULTS hidden-scroll-state:PASS",
+  "owned_process_cleanup": {
+    "recorded_identities": [
+      {
+        "pid": 2473599,
+        "start_ticks": 15182094,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chromedriver-linux64/chromedriver",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chromedriver-linux64/chromedriver",
+          "--port=48671",
+          "--allowed-ips=127.0.0.1"
+        ]
+      },
+      {
+        "pid": 2473622,
+        "start_ticks": 15182177,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+          "--allow-pre-commit-input",
+          "--disable-background-networking",
+          "--disable-background-timer-throttling",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-client-side-phishing-detection",
+          "--disable-component-update",
+          "--disable-default-apps",
+          "--disable-features=IgnoreDuplicateNavs,Prewarm",
+          "--disable-gpu",
+          "--disable-hang-monitor",
+          "--disable-popup-blocking",
+          "--disable-prompt-on-repost",
+          "--disable-sync",
+          "--enable-automation",
+          "--enable-logging",
+          "--headless=new",
+          "--log-level=0",
+          "--no-default-browser-check",
+          "--no-first-run",
+          "--no-proxy-server",
+          "--no-service-autorun",
+          "--password-store=basic",
+          "--remote-debugging-port=0",
+          "--test-type=webdriver",
+          "--use-mock-keychain",
+          "--user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h",
+          "--window-size=800,640"
+        ]
+      },
+      {
+        "pid": 2473637,
+        "start_ticks": 15182180,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=zygote --no-zygote-sandbox --enable-logging --headless=new --log-level=0 --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl"
+        ]
+      },
+      {
+        "pid": 2473638,
+        "start_ticks": 15182180,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=zygote --enable-logging --headless=new --log-level=0 --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl"
+        ]
+      },
+      {
+        "pid": 2473640,
+        "start_ticks": 15182183,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=zygote --enable-logging --headless=new --log-level=0 --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --no-first-run --ozone-platform=headless --ozone-override-screen-size=800,600 --use-angle=swiftshader-webgl"
+        ]
+      },
+      {
+        "pid": 2473662,
+        "start_ticks": 15182185,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=gpu-process --gpu-recent-crash-count=0 --headless=new --ozone-platform=headless --use-angle=swiftshader-webgl --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --gpu-preferences=YAAAAAAAAAAgAAAEAAAAAAAAAAAAAGAASAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAwAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAMAAAAAQAAAAAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAA== --shared-files --field-trial-handle=3,i,8081389903507660639,9511622601112057579,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,3172200608280051989,11061456804590170588,4 --trace-process-track-uuid=3190708988185955192 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2473663,
+        "start_ticks": 15182186,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=none --use-angle=swiftshader-webgl --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,8081389903507660639,9511622601112057579,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,3172200608280051989,11061456804590170588,4 --trace-process-track-uuid=3190708989122997041 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2473676,
+        "start_ticks": 15182190,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=utility --utility-sub-type=storage.mojom.StorageService --lang=en-US --service-sandbox-type=utility --use-angle=swiftshader-webgl --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,8081389903507660639,9511622601112057579,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,3172200608280051989,11061456804590170588,4 --trace-process-track-uuid=3190708990060038890 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2473703,
+        "start_ticks": 15182195,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=renderer --top-chrome-webui --gpu-client-id=5 --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --disable-background-timer-throttling --enable-automation --remote-debugging-port=0 --test-type=webdriver --allow-pre-commit-input --ozone-platform=headless --disable-gpu-compositing --lang=en-US --disallow-v8-feature-flag-overrides --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=5 --gpu-channel-request-start-time-ticks=151821957757 --launch-time-ticks=151821958545 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,8081389903507660639,9511622601112057579,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,3172200608280051989,11061456804590170588,4 --trace-process-track-uuid=3190708990997080739 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2473721,
+        "start_ticks": 15182204,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=renderer --gpu-client-id=7 --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --disable-background-timer-throttling --enable-automation --remote-debugging-port=0 --test-type=webdriver --allow-pre-commit-input --ozone-platform=headless --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=7 --gpu-channel-request-start-time-ticks=151822038139 --launch-time-ticks=151822038865 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,8081389903507660639,9511622601112057579,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,3172200608280051989,11061456804590170588,4 --trace-process-track-uuid=3190708992871164437 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2473722,
+        "start_ticks": 15182204,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=renderer --gpu-client-id=6 --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --disable-background-timer-throttling --enable-automation --remote-debugging-port=0 --test-type=webdriver --allow-pre-commit-input --ozone-platform=headless --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=6 --gpu-channel-request-start-time-ticks=151822040650 --launch-time-ticks=151822042249 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,8081389903507660639,9511622601112057579,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,3172200608280051989,11061456804590170588,4 --trace-process-track-uuid=3190708991934122588 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2473758,
+        "start_ticks": 15182221,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=renderer --gpu-client-id=8 --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --disable-background-timer-throttling --enable-automation --remote-debugging-port=0 --test-type=webdriver --allow-pre-commit-input --ozone-platform=headless --disable-gpu-compositing --lang=en-US --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=8 --gpu-channel-request-start-time-ticks=151822210684 --launch-time-ticks=151822212178 --shared-files=v8_context_snapshot_data:100 --field-trial-handle=3,i,8081389903507660639,9511622601112057579,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,3172200608280051989,11061456804590170588,4 --trace-process-track-uuid=3190708993808206286 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2473779,
+        "start_ticks": 15182233,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=gpu-process --gpu-recent-crash-count=0 --headless=new --ozone-platform=headless --use-angle=swiftshader-webgl --crashpad-handler-pid=2473631 --enable-crash-reporter=, --noerrdialogs --user-data-dir=/mnt/p3/project/browser/lumen-android/lumen-android/agent/t/chromium-fixture-8msaam8h --change-stack-guard-on-fork=enable --gpu-preferences=YAAAAAAAAAAgAAAEAAAAAAAAAAAAAGAASAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAIAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --use-gl=disabled --shared-files --field-trial-handle=3,i,8081389903507660639,9511622601112057579,262144 --disable-features=IgnoreDuplicateNavs,PaintHolding,Prewarm --variations-seed-version --pseudonymization-salt-handle=7,i,3172200608280051989,11061456804590170588,4 --trace-process-track-uuid=3190708994745248135 --enable-logging --log-level=0"
+        ]
+      },
+      {
+        "pid": 2473781,
+        "start_ticks": 15182234,
+        "exe": "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome",
+        "command": [
+          "/mnt/p3/project/browser/lumen-android/lumen-android/build/references/chrome-for-testing-156.0.8078.80/chrome-linux64/chrome --type=broker"
+        ]
+      }
+    ],
+    "signals": [],
+    "remaining_same_identity": []
+  },
+  "profile_removed": true,
+  "elapsed_s": 3.286919943988323,
+  "fixture_unchanged": true
+}

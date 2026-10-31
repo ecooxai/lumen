@@ -1,0 +1,71 @@
+{
+  "kind": "authored measurement matrix, not upstream WPT or a conformance pass score",
+  "fixture": "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/hidden-scroll-state-matrix-v2.html",
+  "sha256": "6d8d0658eaa4c1ba59f3195687b41d95e6bf43de2601c2fb85259975464f0113",
+  "cases": [
+    {
+      "id": "retain-both-axes",
+      "snapshots": 3
+    },
+    {
+      "id": "hidden-set-zero",
+      "snapshots": 4
+    },
+    {
+      "id": "hidden-set-positive",
+      "snapshots": 4
+    },
+    {
+      "id": "range-shrink-and-regrow",
+      "snapshots": 5
+    },
+    {
+      "id": "overflow-mode-change",
+      "snapshots": 5
+    },
+    {
+      "id": "nested-outer-hidden-inner-setter",
+      "snapshots": 4
+    },
+    {
+      "id": "nested-independently-hidden",
+      "snapshots": 5
+    }
+  ],
+  "expected_case_count": 7,
+  "expected_snapshot_count": 30,
+  "completion_marker": "MEASUREMENTS hidden-scroll-state:COMPLETE",
+  "error_marker": "MEASUREMENTS hidden-scroll-state:ERROR",
+  "completion_attribute": "data-hidden-scroll-state-complete",
+  "environment": {
+    "LUMEN_CONSOLE": "0",
+    "JSRUN_LAYOUT": "1",
+    "JSRUN_UNTIL_ATTR": "data-hidden-scroll-state-complete"
+  },
+  "jsrun_duration_ms": 10000,
+  "native_candidate": "immutable230",
+  "reference": "pinnedChromium156 via the existing reviewed public direct-file adapter",
+  "geometry": "overflow:hidden programmatic scrollers avoid scrollbar-width differences; each case uses a fresh owner",
+  "upstream_adjacent_control": {
+    "source_path": "css/css-contain/content-visibility/content-visibility-hidden-scrollTop-left-width-height.html",
+    "sha256": "1ff979aadd68914ab469800e7ccaac9176abf05fd605c30495ef578bdcfd0966",
+    "kind": "testharness",
+    "support_pins": {
+      "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+      "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+    }
+  },
+  "adapter_notes": [
+    "Do not modify production or upstream WPT",
+    "Capture exact fixture SHA, immutable native/reference binary identities, actual exits, console records and one-second monitors",
+    "Completion means all7 cases/30 snapshots captured; no behavioral PASS is inferred before reviewing reference observations",
+    "Reference values must be written separately after capture; do not replace fixture observations with assumptions"
+  ],
+  "version": 2,
+  "previous_fixture": "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/hidden-scroll-state-matrix.html",
+  "previous_sha256": "4386a7c146789c57ebf02e50572a33c14e522030780bc81bf63e2918cc51d64b",
+  "adapter_marker": "hidden-scroll-state",
+  "transport_success_marker": "RESULTS hidden-scroll-state:PASS",
+  "transport_failure_marker": "RESULTS hidden-scroll-state:FAIL",
+  "transport_qualification": "PASS means all7 cases/30 snapshots were captured without a script exception. It is NOT behavioral conformance and must not enter any WPT pass denominator. Numeric expected observations remain unassigned until independent reference review."
+}

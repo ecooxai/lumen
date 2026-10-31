@@ -1,0 +1,21 @@
+{
+  "label": "chromium tree /css/css-contain/content-visibility/content-visibility-hidden-scrollTop-left-width-height.html",
+  "started_utc": "2026-10-31T08:28:43.907559+00:00",
+  "finished_utc": "2026-10-31T08:28:44.907894+00:00",
+  "root_pid": 2467258,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 1,
+  "elapsed_seconds": 1.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": null,
+  "cpu_median": null,
+  "cpu_max": null,
+  "cpu_last10_median": null,
+  "rss_peak_mb": 113.697,
+  "rss_final_mb": 113.697,
+  "pss_peak_mb": 91.277,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/chrome156-assertions/reference/00-000/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

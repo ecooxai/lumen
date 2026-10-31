@@ -1,0 +1,44 @@
+{
+  "candidate": 230,
+  "created_utc": "2026-10-31T08:22:45.556502+00:00",
+  "based_on_candidate229_source": "30c48fcaed638e17d9aae4292bdb86a83fc1cce2",
+  "evidence_checkpoint": "70793066bda30d08fc952b8f209c6925e97d7a19",
+  "owned_changed_files": [
+    "src/js/js.cc",
+    "tests/js/intersection-geometry.html",
+    "CMakeLists.txt"
+  ],
+  "scope": "Frame-aware dirty/pending IO pacing plus durable exact cadence/geometry/lifecycle controls; no scrolling change.",
+  "source_pins_before_commit": {
+    "src/js/js.cc": "acff1d497257dcdb704ce945f91461861100b633cf6ba4e3737db2e8d568689f",
+    "tests/js/intersection-geometry.html": "6e277f900e9a96a4962e09703f0b400a26463aaa3387af6c337a2fc43f747086",
+    "CMakeLists.txt": "aa0ccc68442f78a4d8762e8470b0d9118546de4468ab9d57d1ca36a38ae21a1a"
+  },
+  "qualification_order": [
+    "Capped monitored build/startup plus144 URL-excluded native tests, including strict aggregate IO geometry/cadence test",
+    "Unchanged hidden API3 scope (all23 identities; require IO030 and RO031 plus no prior pass loss) and immutable authored v2 (both PASS markers, all timing/idle/lifecycle phases)",
+    "Same bounded math, containment/grid3 and real raster ASan/UBSan gates",
+    "Original39 full upstream files: all286 assertions and28 reftests, unchanged reference/exact identity and lifecycle audit",
+    "Unchanged previously accepted stretch29 plus paint11 reftests (80 actual native captures), exact prior pass audit",
+    "Sequential same-fixture ordinary-layout resource comparison226/new/Chromium156, actual browser-root scope, no competing browser lane",
+    "Fresh fixed640, prior-pass union and explicit226/Chromium156 identity/harness comparison",
+    "Independent final review before accepted release or public promotion"
+  ],
+  "sanitizer_policy": "Fresh bounded replay planned (~24seconds total on229); no reused receipt will be mislabeled a new run.",
+  "resource_policy": {
+    "sampling_seconds": 1,
+    "build_jobs": 2,
+    "ctest_jobs": 1,
+    "maximum_browser_lanes": 2,
+    "performance_browser_lanes": 1,
+    "quota": "Existing codex_compile shared CPU480% of one core"
+  },
+  "remaining_known_scope_limits": [
+    "Eight existing checkVisibility option/auto/slotting/form-option controls remain separate",
+    "Hidden/unhide scroll-offset restoration differs from Chromium; planning only, no scrolling code authorized",
+    "Broader containment auto remembered-size family remains outside completed39 scope",
+    "Full WPT/whole-browser98 not established"
+  ],
+  "accepted_release_before_all_gates": 226,
+  "URL_tests": "deferred"
+}

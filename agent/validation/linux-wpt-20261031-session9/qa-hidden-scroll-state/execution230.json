@@ -1,0 +1,34 @@
+{
+  "started_utc": "2026-10-31T08:30:20.526038+00:00",
+  "finished_utc": "2026-10-31T08:30:30.749008+00:00",
+  "candidate": 230,
+  "runs": [
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/run-matrix.py",
+        "--kind",
+        "lumen",
+        "--iteration",
+        "230",
+        "--manifest",
+        "manifest-v3.json"
+      ],
+      "returncode": 0
+    },
+    {
+      "command": [
+        "python3",
+        "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/run-matrix.py",
+        "--kind",
+        "chromium156",
+        "--iteration",
+        "230",
+        "--manifest",
+        "manifest-v3.json"
+      ],
+      "returncode": 0
+    }
+  ],
+  "measurement_only": true
+}

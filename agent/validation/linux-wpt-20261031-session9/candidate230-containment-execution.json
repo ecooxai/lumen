@@ -1,0 +1,49 @@
+{
+  "candidate": 230,
+  "started_utc": "2026-10-31T08:26:16.309370+00:00",
+  "finished_utc": "2026-10-31T08:28:20.887068+00:00",
+  "max_browser_workers": 2,
+  "results": [
+    {
+      "scope": "qa-css-logical-containment",
+      "type": "assertions",
+      "started_utc": "2026-10-31T08:26:16.310497+00:00",
+      "finished_utc": "2026-10-31T08:26:19.846399+00:00",
+      "outer_returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate230-qa-css-logical-containment-assertions.log"
+    },
+    {
+      "scope": "qa-css-logical-containment",
+      "type": "reftests",
+      "started_utc": "2026-10-31T08:26:16.310748+00:00",
+      "finished_utc": "2026-10-31T08:26:26.841023+00:00",
+      "outer_returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate230-qa-css-logical-containment-reftests.log"
+    },
+    {
+      "scope": "qa-css-containment-parsing",
+      "type": "assertions",
+      "started_utc": "2026-10-31T08:26:19.846526+00:00",
+      "finished_utc": "2026-10-31T08:26:28.394424+00:00",
+      "outer_returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate230-qa-css-containment-parsing-assertions.log"
+    },
+    {
+      "scope": "qa-css-containment-numbered",
+      "type": "assertions",
+      "started_utc": "2026-10-31T08:26:26.841137+00:00",
+      "finished_utc": "2026-10-31T08:26:43.338366+00:00",
+      "outer_returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate230-qa-css-containment-numbered-assertions.log"
+    },
+    {
+      "scope": "qa-css-containment-numbered",
+      "type": "reftests",
+      "started_utc": "2026-10-31T08:26:28.394533+00:00",
+      "finished_utc": "2026-10-31T08:28:20.886812+00:00",
+      "outer_returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate230-qa-css-containment-numbered-reftests.log"
+    }
+  ],
+  "qualification": "Raw exact-identity outcomes and guard cleanup audited separately; outer nonzero remains actual failure, not rewritten."
+}

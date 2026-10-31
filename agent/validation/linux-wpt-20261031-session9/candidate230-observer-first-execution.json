@@ -1,0 +1,93 @@
+{
+  "candidate": 230,
+  "started_utc": "2026-10-31T08:25:50.582708+00:00",
+  "finished_utc": "2026-10-31T08:25:59.123872+00:00",
+  "maximum_concurrent_browser_lanes": 2,
+  "execution": [
+    {
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/run-cohort-v3.py",
+        "--scope",
+        "qa-hidden-observer-visibility",
+        "--kind",
+        "lumen",
+        "--type",
+        "assertions",
+        "--iteration",
+        "230"
+      ],
+      "returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate230-observer-first-0.log"
+    },
+    {
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-io-frame-cadence/run-v2.py",
+        "--iteration",
+        "230"
+      ],
+      "returncode": 0,
+      "log": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate230-observer-first-1.log"
+    }
+  ],
+  "api_audit_returncode": 0,
+  "exact23_identities_preserved": true,
+  "api_pass_count": 15,
+  "api_total": 23,
+  "prior229_pass_losses": [],
+  "IO030_and_RO031_pass": true,
+  "strict_authored_v2_pass": true,
+  "quiescent_idle": [
+    {
+      "phase": "idle-end",
+      "elapsed": 3300.2826670110226,
+      "geometryReads": 0,
+      "notifications": 0
+    }
+  ],
+  "qualification_pass": true,
+  "authored_fixture_not_WPT": true,
+  "remaining_checkVisibility_failures": [
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on visibility:hidden element.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on content-visibility:auto element which is outside the viewport.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on option and optgroup elements in a list box.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on element not assigned to a slot.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on element not assigned to the only named slot.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on opacity:0 element.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on element slotted in opacity: 0; shadow host.",
+      0
+    ],
+    [
+      "/css/cssom-view/checkVisibility.html",
+      "checkVisibility on content-visibility:auto with visibility:hidden inside.",
+      0
+    ]
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "label": "lumen owned hidden scroll matrix measurement",
+  "started_utc": "2026-10-31T08:30:20.742180+00:00",
+  "finished_utc": "2026-10-31T08:30:22.768847+00:00",
+  "root_pid": 2473116,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 2,
+  "elapsed_seconds": 2.027,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 26.001,
+  "cpu_median": 26.001,
+  "cpu_max": 26.001,
+  "cpu_last10_median": 26.001,
+  "rss_peak_mb": 133.284,
+  "rss_final_mb": 133.284,
+  "pss_peak_mb": 9.023,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun230-v3/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

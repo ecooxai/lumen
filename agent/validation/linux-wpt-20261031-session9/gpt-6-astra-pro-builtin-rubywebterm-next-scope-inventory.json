@@ -1,0 +1,164 @@
+{
+  "created_utc": "2026-10-31T08:29:36.487964+00:00",
+  "status": "planning only; no new source edits or test launches authorized for these optional scopes",
+  "decision": "Finish confirmed hidden-owner scroll retention, its seven-case reference matrix and required upstream inner-scroller control, then broad qualification. Reserve at least one hour before12:00UTC for regression and delivery.",
+  "measured_basis": {
+    "baseline": "immutable226 fixed640, not wholeWPT",
+    "baseline_results": "agent/validation/linux-wpt-20261030-session8/qa-frozen640/lumen226/results.jsonl",
+    "current_completed_containment": "229 all39 preselected files:286/286subtests plus28/28reftests;230 qualification in progress",
+    "current_API": "230 checkVisibility13/21, IO0301/1, RO0311/1 =15/23 acrossthree separate files"
+  },
+  "optional_scopes": [
+    {
+      "scope": "remaining CIS family",
+      "files": [
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-001.html",
+          "sha256": "005305b5eb7fc54e617ce183cf602ec64ff6ed9cf6ff4355e6c3f734e3deda04"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-002.html",
+          "sha256": "d35f03eca11be13a8cf63e49b084570cfac6e5048fbb5c9d05a1d78267dc81e6"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-003.html",
+          "sha256": "ecc5bb5342d1175b2f9d8950425b8534011687df3e6b9ce4e93cef15d0b3dd24"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-004.html",
+          "sha256": "b2d95e414de4b5163edcbd8bca34f4ec15ba9ce9505f8761ed3d22e4c14a9523"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-005.html",
+          "sha256": "48da734a4510fae4c45a1c93890e5c49e39eab06fee68d4b151cc54da493afdb"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-006.html",
+          "sha256": "23c1fd3826496852bcf1b7f93268a590e62ee33b7672447c3cfbefb4f5585c0c"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-007.html",
+          "sha256": "51ee3e87e91591133f9698059d68ab98e3dad7f336d978466facd03e154c8b7c"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-008.html",
+          "sha256": "9aab0583b60b6408348ca774c678f7a6479060c0b07ffe5389f38a3c239dff6f"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-009.html",
+          "sha256": "ff5edab2c30f0090b4378da59433afb48bd0b112f01aafec401d90a152988788"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-010.html",
+          "sha256": "24b90c1e6455e8270a8a14cb7714c91aad78d2c6e4a6d7928da4b3da1b8c47ac"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-011.html",
+          "sha256": "aac8bd0d3fe5aef417172544562aee2ced70eafa5a203b694d18f2325b070db7"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-012.html",
+          "sha256": "1564d387c28953e5a0e4b17d672a3aa3faec2692f52f734bc7f37421bcb13c18"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-013.html",
+          "sha256": "d953737047ddb02274794c4f627b79f59df9788096fa1f1e1f2bfbc7c8535dfb"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-014.html",
+          "sha256": "eec0800c3a5b29ffce84ad61488da1095d94227af3d9f5faa8958e460cda6c0f"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-015.html",
+          "sha256": "422ee685a2920afa37d96ffee13cc1d2f94b2151a493327ac3f0993e4a1e651d"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-016.html",
+          "sha256": "dd7409e36bc2609bf2f949cb0d5c1631e4b6c69b21f436fe9ad682f883bd0381"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-017.html",
+          "sha256": "fd05fae387739aed4a509fff8c721637006b073acad28add451e54d76988d169"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/auto-018.html",
+          "sha256": "dce6987ec39b72eeb9123d72ccbafb9d3590eeb37d8eeaccb1981c77f323830f"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/forget-on-disconnect-in-iframe.html",
+          "sha256": "e7fbfca5fd61c6eb843a045c41c9eb4ce5d4433a68404f60008747496e0c6b4a"
+        },
+        {
+          "path": "css/css-sizing/contain-intrinsic-size/animation/contain-intrinsic-size-interpolation.html",
+          "sha256": "b7d0e10939f83b223685f7b74ea8492c8375501d992d5e48a0119a52cadd0e9f"
+        }
+      ],
+      "stored_measured_subgroup": {
+        "auto-004.html": "0/1",
+        "auto-010.html": "0/2",
+        "auto-013.html": "0/1",
+        "auto-017.html": "0/1"
+      },
+      "unmeasured": "All other listed files lack a current dedicated native/Chromium baseline; do not infer outcomes.",
+      "dependencies": [
+        "remembered-size lifecycle at rendering opportunities",
+        "content-visibility:auto skipping and viewport state",
+        "fragment-aware intrinsic sizes; auto010 currently fails its two-fragment prerequisite",
+        "disconnect/reconnect and iframe ownership",
+        "interpolation implementation for registered native properties"
+      ],
+      "recommendation": "Do not start this whole family during the current reserved delivery window; not a bounded extension of static containment."
+    },
+    {
+      "scope": "XML fragments",
+      "candidate_whole_files": [
+        "domparsing/insert_adjacent_html-xhtml.xhtml",
+        "domparsing/createContextualFragment-xhtml.xhtml",
+        "domparsing/innerhtml-01.xhtml",
+        "domparsing/innerhtml-03.xhtml",
+        "domparsing/innerhtml-05.xhtml",
+        "domparsing/createContextualFragment-in-detached-xml-document-crash.html"
+      ],
+      "stored_evidence": {
+        "prior_insertAdjacentHTML_four_file_group": "71/72; XML malformed-fragment gap remains",
+        "insert_adjacent_html-xhtml.xhtml": "29/30; expected SyntaxError for malformed<p>not thrown",
+        "innerhtml-05.xhtml": "0/1; Cannot read properties of undefined(reading documentElement), separate frame/global prerequisite",
+        "createContextualFragment.html": "34/35; missing-argument TypeError, not XML parsing proof"
+      },
+      "architecture": "src/js/jsnative.cc parseFrag/setHTML use html_parse_fragment unconditionally; src/html/xml.c has a document XML parser but no context-aware XML fragment dispatch. Namespace context, strict fragment errors and safe insertion must be real native semantics.",
+      "unmeasured": "The broader candidate XHTML/fragment list needs an unchanged whole-file paired baseline before selecting it.",
+      "estimate_minutes": [
+        90,
+        150
+      ],
+      "recommendation": "Do not start without a separate reviewed architecture/scope decision."
+    },
+    {
+      "scope": "checkVisibility visibility/opacity options",
+      "current_whole_file": "13/21 on230, same13 on229",
+      "bounded_cases": [
+        "checkVisibility on visibility:hidden element.",
+        "checkVisibility on opacity:0 element.",
+        "checkVisibility on element slotted in opacity: 0; shadow host."
+      ],
+      "implementation_direction": "Use existing native computed visibility and opacity along flat layout ancestry, preserving owner/ancestor hidden distinctions and genuine geometry. Honor modern and legacy option names.",
+      "remaining_outside_cases": [
+        "offscreen content-visibility:auto",
+        "auto plus visibility interaction",
+        "unassigned-slot box behavior",
+        "option/optgroup box behavior"
+      ],
+      "estimate_minutes": [
+        25,
+        45
+      ],
+      "recommendation": "Possible optional follow-up only after retention and broad regression evidence; not currently authorized edits and not whole checkVisibility completion."
+    }
+  ],
+  "retention_priority": {
+    "matrix": "qa-hidden-scroll-state/manifest-v3.json",
+    "required_separate_upstream": "qa-hidden-scroll-upstream/manifest.json",
+    "confirmed_cause": "New hidden-owner overflow extents become own box; pre-existing clamp_scroll destroys Node persistent offsets.",
+    "design_to_measure": "Retain existing Node.scroll_x/y backing fields where appropriate and use shared effective owner offsets. Hidden setters, real-range changes and nested owners depend on pinned reference matrix. No production change approved yet."
+  }
+}

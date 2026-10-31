@@ -1,0 +1,21 @@
+{
+  "label": "lumen /css/cssom-view/checkVisibility.html",
+  "started_utc": "2026-10-31T08:25:51.087384+00:00",
+  "finished_utc": "2026-10-31T08:25:53.087596+00:00",
+  "root_pid": 2454867,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 2,
+  "elapsed_seconds": 2.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 23.001,
+  "cpu_median": 23.001,
+  "cpu_max": 23.001,
+  "cpu_last10_median": 23.001,
+  "rss_peak_mb": 150.258,
+  "rss_final_mb": 150.258,
+  "pss_peak_mb": 61.977,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen230-assertions/native/00-000/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

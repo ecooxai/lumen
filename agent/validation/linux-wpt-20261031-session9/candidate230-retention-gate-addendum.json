@@ -1,0 +1,22 @@
+{
+  "created_utc": "2026-10-31T08:30:20.526038+00:00",
+  "candidate": 230,
+  "parent_authorization": "Separate retention matrix and unchanged upstream hidden-scroll control before final wide qualification; no scrolling edits authorized yet.",
+  "matrix_manifest": "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/manifest-v3.json",
+  "matrix_manifest_sha256": "055cde00bbf2e19ed2819d56915dfe6c3819f9b27de2008cd490d6e0a74ca0bb",
+  "matrix_fixture_sha256": "f51b1799025c08d900c8b31393f3606a16b104db00709db76eab4c48856de375",
+  "upstream_scope": "qa-hidden-scroll-upstream",
+  "upstream_baseline": "230 and156 each1/1 PASS, harnessOK; separate from39/API3",
+  "held_gates": [
+    "final sanitizer replay",
+    "retained render40",
+    "matched resource comparison",
+    "fresh640"
+  ],
+  "expected_measurements": {
+    "cases": 7,
+    "snapshots": 30
+  },
+  "transport_completion_is_not_behavioral_PASS": true,
+  "max_browser_lanes": 2
+}

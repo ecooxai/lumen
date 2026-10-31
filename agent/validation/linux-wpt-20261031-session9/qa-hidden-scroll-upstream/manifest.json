@@ -1,0 +1,23 @@
+{
+  "label": "required visible-inner-scroller control for hidden owner offset retention",
+  "wpt_root": "/mnt/p3/project/browser/wpt",
+  "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "rows": [
+    {
+      "url": "/css/css-contain/content-visibility/content-visibility-hidden-scrollTop-left-width-height.html",
+      "source_path": "css/css-contain/content-visibility/content-visibility-hidden-scrollTop-left-width-height.html",
+      "source_sha256": "1ff979aadd68914ab469800e7ccaac9176abf05fd605c30495ef578bdcfd0966",
+      "type": "testharness"
+    }
+  ],
+  "support_pins": {
+    "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+    "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+  },
+  "scope": "Separate one-file upstream control; do not add to or change the frozen39 containment denominator",
+  "baseline_required": [
+    "immutable230",
+    "pinnedChromium156"
+  ],
+  "repair_required": true
+}

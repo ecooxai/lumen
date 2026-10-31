@@ -1,0 +1,21 @@
+{
+  "label": "lumen /css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+  "started_utc": "2026-10-31T08:26:27.326223+00:00",
+  "finished_utc": "2026-10-31T08:26:29.326365+00:00",
+  "root_pid": 2457428,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 2,
+  "elapsed_seconds": 2.0,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 21.001,
+  "cpu_median": 21.001,
+  "cpu_max": 21.001,
+  "cpu_last10_median": 21.001,
+  "rss_peak_mb": 150.02,
+  "rss_final_mb": 150.02,
+  "pss_peak_mb": 72.813,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen230-assertions/native/00-000/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

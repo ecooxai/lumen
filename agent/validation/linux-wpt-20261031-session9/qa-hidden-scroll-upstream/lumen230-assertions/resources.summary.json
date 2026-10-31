@@ -1,0 +1,21 @@
+{
+  "label": "session9 owned cohort process tree",
+  "started_utc": "2026-10-31T08:28:41.402326+00:00",
+  "finished_utc": "2026-10-31T08:28:44.431828+00:00",
+  "root_pid": 2467140,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 3,
+  "elapsed_seconds": 3.03,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 5.0,
+  "cpu_median": 26.001,
+  "cpu_max": 47.002,
+  "cpu_last10_median": 26.001,
+  "rss_peak_mb": 196.661,
+  "rss_final_mb": 196.661,
+  "pss_peak_mb": 4.954,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/lumen230-assertions/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

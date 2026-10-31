@@ -1,0 +1,85 @@
+{
+  "iteration": 4,
+  "candidate": 230,
+  "started_utc": "2026-10-31T08:16:56.662800+00:00",
+  "finished_utc": "2026-10-31T08:33:59.719549+00:00",
+  "duration_minutes": 17.050945816666665,
+  "cumulative_task_minutes": 93.79532581666668,
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ],
+  "source_commit": "9c97267df362820d6815143c0c9a82abd9b5f5cd",
+  "binary_sha256": "9bd3a23ffa79bfa6b7b62e1a554e259ef2e5938a1636930eccce2a7f48bc0fc5",
+  "source_input_count": 647,
+  "native": {
+    "passed": 144,
+    "total": 144,
+    "strict_geometry_cadence_aggregate": "PASS",
+    "build_seconds": 24.131617378996452,
+    "native_seconds": 81.0627918310056
+  },
+  "selected39": {
+    "fully_passing_files": 39,
+    "files": 39,
+    "assertions_passed": 286,
+    "assertions_total": 286,
+    "reftests_passed": 28,
+    "reftests_total": 28,
+    "prior_pass_losses": 0,
+    "harness_regressions": 0,
+    "actual_native_lifecycles": 67
+  },
+  "separate_hidden_api3": {
+    "passed": 15,
+    "total": 23,
+    "fully_passing_files": 2,
+    "files": 3,
+    "IO030": "PASS",
+    "RO031": "PASS",
+    "checkVisibility_passed": 13,
+    "checkVisibility_total": 21,
+    "prior229_pass_losses": 0
+  },
+  "strict_authored_v2": {
+    "legacy_geometry": "PASS",
+    "cadence": "PASS",
+    "five_two_rAF_transitions": "PASS",
+    "quiescent_idle_ms": 3300.2826670110226,
+    "quiescent_geometry_reads": 0,
+    "quiescent_notifications": 0,
+    "lifecycle_controls": "PASS",
+    "not_WPT": true
+  },
+  "separate_hidden_scroll_upstream": {
+    "files": 1,
+    "assertions": 1,
+    "lumen230": "PASS",
+    "chromium156": "PASS",
+    "native_exit": 0,
+    "profile_removed": true
+  },
+  "retention_matrix": {
+    "cases": 7,
+    "snapshots_per_engine": 30,
+    "native_and_chromium_measurement_integrity_valid": true,
+    "fixture_sha256": "f51b1799025c08d900c8b31393f3606a16b104db00709db76eab4c48856de375",
+    "transport_completion_is_not_behavioral_PASS": true,
+    "confirmed_gap": "Native loses owner offsets across hidden/reveal; Chromium restores them, ignores hidden-owner setters, clamps upon reveal to smaller range and preserves nested visible-inner setters. Native hidden overflow-visible scroll range also differs.",
+    "retained_geometry_limit": "Full descendant geometry records are preserved; no blanket30-snapshot equivalence or full hidden-layout skipping claim.",
+    "production_scrolling_repair": "Not yet authorized/implemented at checkpoint; independently reviewed plan pending."
+  },
+  "scores": {
+    "selected39_assertion_percent": 100,
+    "selected39_pixel_percent": 100,
+    "native_test_percent": 100,
+    "hidden_api_percent": 65.21739130434783,
+    "whole_browser_98_established": false
+  },
+  "qualification": "HOLD: observer pacing repaired and all selected39 preserved, but newly demonstrated hidden-owner scroll retention is incomplete. Final sanitizer/render40/performance/640 campaign deferred until repair decision. Accepted release226 unchanged.",
+  "final_sanitizers": "Not rerun on230; previous229 receipts retained, final fresh replay held for stable runtime.",
+  "last_broad640_candidate": 226,
+  "accepted_release_candidate": 226,
+  "private229_checkpoint": "agent/ops/linux-wpt-20261031-session9/page-checkpoint229/cloud-receipt.json"
+}

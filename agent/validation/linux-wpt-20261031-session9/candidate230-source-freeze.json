@@ -1,0 +1,18 @@
+{
+  "candidate": 230,
+  "source_commit": "9c97267df362820d6815143c0c9a82abd9b5f5cd",
+  "frozen_utc": "2026-10-31T08:22:54.698607+00:00",
+  "changed_files": [
+    "src/js/js.cc",
+    "tests/js/intersection-geometry.html",
+    "CMakeLists.txt"
+  ],
+  "source_pins": {
+    "src/js/js.cc": "acff1d497257dcdb704ce945f91461861100b633cf6ba4e3737db2e8d568689f",
+    "tests/js/intersection-geometry.html": "6e277f900e9a96a4962e09703f0b400a26463aaa3387af6c337a2fc43f747086",
+    "CMakeLists.txt": "aa0ccc68442f78a4d8762e8470b0d9118546de4468ab9d57d1ca36a38ae21a1a"
+  },
+  "scope": "Frame-aware dirty/pending IO pacing plus durable exact cadence/geometry/lifecycle controls; no scrolling change.",
+  "no_unapproved_scrolling_changes": true,
+  "source_frozen_until_all_candidate_gates_complete": true
+}

@@ -1,0 +1,17 @@
+{
+  "kind": "lumen",
+  "candidate_workspace": 230,
+  "source_commit": "9c97267df362820d6815143c0c9a82abd9b5f5cd",
+  "command": [
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun-astra-i230",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/hidden-scroll-state-matrix-v3.html",
+    "10000"
+  ],
+  "fixture_sha256": "f51b1799025c08d900c8b31393f3606a16b104db00709db76eab4c48856de375",
+  "binary_sha256": "28829686968c7393d0b1bd64aad82b85b7e27fe589da663921169e74f4616f52",
+  "resource_interval_seconds": 1,
+  "measurement_only": true,
+  "transport_PASS_does_not_imply_behavior_PASS": true
+}

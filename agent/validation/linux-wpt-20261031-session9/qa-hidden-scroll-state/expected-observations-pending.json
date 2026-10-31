@@ -1,0 +1,48 @@
+{
+  "status": "reference measurements pending; no expected numeric oracle has been inferred for unmeasured cases",
+  "established_prior_reference": [
+    {
+      "source": "qa-io-frame-cadence/chromium156-v1-retry1",
+      "setup": "one vertical overflow:auto scroller; initialscrollTop200",
+      "hidden_scrollTop": 0,
+      "revealed_scrollTop": 200,
+      "limitation": "does not establish hidden setter, changed-range, horizontal or nested semantics"
+    }
+  ],
+  "hypotheses_not_assertions": [
+    {
+      "case": "retain-both-axes",
+      "question": "Are both stored offsets restored after own hidden state ends?"
+    },
+    {
+      "case": "hidden-set-zero",
+      "question": "Does an explicit zero setter while own contents are hidden cancel, preserve, or replace retained offsets?"
+    },
+    {
+      "case": "hidden-set-positive",
+      "question": "Do positive setters while own contents are hidden take effect now, at reveal, or get ignored?"
+    },
+    {
+      "case": "range-shrink-and-regrow",
+      "question": "When is the retained offset clamped against a changed real range, and is a discarded excess restored after regrowth?"
+    },
+    {
+      "case": "overflow-mode-change",
+      "question": "Does changing to a non-scroll container discard or preserve retained offsets before scrolling is restored?"
+    },
+    {
+      "case": "nested-outer-hidden-inner-setter",
+      "question": "Can a visible inner scroll container be read/set through an outer hidden subtree, independently of outer retained offsets?"
+    },
+    {
+      "case": "nested-independently-hidden",
+      "question": "Are own retained offsets independent when inner and outer hidden states end in stages?"
+    }
+  ],
+  "native_source_diagnosis": {
+    "new_path": "src/layout/block.c overflow(): layout_contents_hidden -> scroll extent equals own box",
+    "existing_destructive_path": "post()/clamp_scroll() overwrites Node.scroll_x/y with zero for that empty range",
+    "reuse_candidate": "retain existing persistent Node offsets; use effective zero offsets for the hidden owner through shared native geometry/scroll helpers; decide setter behavior only after reference measurements",
+    "not_approved": "no production scrolling change yet"
+  }
+}

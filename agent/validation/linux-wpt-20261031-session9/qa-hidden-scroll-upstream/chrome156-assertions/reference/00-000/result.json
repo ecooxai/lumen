@@ -1,0 +1,53 @@
+{
+  "environment": {
+    "dpr": 1,
+    "height": 596,
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "width": 748
+  },
+  "message": null,
+  "status": "OK",
+  "subtests": [
+    [
+      "Content Visibility: scrollLeft/scrollTop/scrollWidth/scrollHeight measure correctly",
+      "PASS",
+      null
+    ]
+  ],
+  "elapsed_s": 0.2106,
+  "capabilities": {
+    "acceptInsecureCerts": false,
+    "browserName": "chrome",
+    "browserVersion": "156.0.8078.80",
+    "chrome": {
+      "chromedriverVersion": "156.0.8078.80 (fb096c0011f9d50f0a264a9376420cdea9c421e3-refs/branch-heads/8078@{#1705})",
+      "userDataDir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/chrome156-assertions/reference/00-000/profile-56c0us86"
+    },
+    "fedcm:accounts": true,
+    "goog:chromeOptions": {
+      "debuggerAddress": "localhost:40675"
+    },
+    "goog:processID": 2467274,
+    "networkConnectionEnabled": false,
+    "pageLoadStrategy": "none",
+    "platformName": "linux",
+    "proxy": {},
+    "setWindowRect": true,
+    "strictFileInteractability": false,
+    "timeouts": {
+      "implicit": 0,
+      "pageLoad": 300000,
+      "script": 30000
+    },
+    "unhandledPromptBehavior": "dismiss and notify",
+    "webauthn:extension:cmtgKey": true,
+    "webauthn:extension:credBlob": true,
+    "webauthn:extension:largeBlob": true,
+    "webauthn:extension:minPinLength": true,
+    "webauthn:extension:prf": true,
+    "webauthn:virtualAuthenticators": true
+  },
+  "url": "/css/css-contain/content-visibility/content-visibility-hidden-scrollTop-left-width-height.html",
+  "repeat": 0,
+  "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-upstream/chrome156-assertions/reference/00-000"
+}
