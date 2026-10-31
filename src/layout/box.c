@@ -405,16 +405,26 @@ void text_shape_cache_sweep(void) {
 /* CSS Contain2 3.1/3.2 exclusions are about the principal box, not merely
  * the element's declared display. Anonymous wrappers/text share styles but
  * cannot acquire independent containment. Table captions remain eligible. */
-bool layout_contents_hidden(const Box *box) {
-    return box && box->st && box->node && !box->anon && box->kind != BX_TEXT &&
-        box->kind != BX_BR && box->kind != BX_INLINE && box->st->content_visibility == CV_HIDDEN;
-}
-bool layout_size_contained(const Box *box, bool horizontal) {
+static bool size_containment_applies(const Box *box) {
     if (!box || !box->st || box->anon || !box->node || box->kind == BX_TEXT ||
         box->kind == BX_BR || box->kind == BX_INLINE || box->fmt == FMT_TABLE) return false;
     int display = box->st->display;
-    if (display == D_NONE || display == D_CONTENTS ||
-        (display >= D_TABLE_ROW && display <= D_TABLE_COLUMN_GROUP)) return false;
+    /* The construction-time query precedes the formatting-context switch. */
+    return display != D_NONE && display != D_CONTENTS && display != D_TABLE && display != D_INLINE_TABLE &&
+        !(display >= D_TABLE_ROW && display <= D_TABLE_COLUMN_GROUP);
+}
+bool layout_contents_hidden(const Box *box) {
+    return size_containment_applies(box) && box->st->content_visibility == CV_HIDDEN;
+}
+bool layout_has_skipped_ancestor(const Box *box) {
+    /* Box parents follow the flattened layout tree, including assigned
+       shadow content. The skipping owner keeps its own observable box. */
+    for (const Box *p = box ? box->parent : NULL; p; p = p->parent)
+        if (layout_contents_hidden(p)) return true;
+    return false;
+}
+bool layout_size_contained(const Box *box, bool horizontal) {
+    if (!size_containment_applies(box)) return false;
     bool inline_axis = horizontal != (box->st->writing_mode != 0);
     return layout_contents_hidden(box) ||
         (box->st->size_containment & (inline_axis ? CONTAIN_INLINE_SIZE : CONTAIN_BLOCK_SIZE)) != 0;
@@ -503,6 +513,20 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
         mn = mx = (resolve_own ? res(st->width, cbw) : st->width.px) - (st->box_sizing == BOX_BORDER ? bp : 0);
     } else if (contained && (st->contain_intrinsic[0].flags & CIS_LENGTH) && b->fmt != FMT_REPLACED) {
         mn = mx = st->contain_intrinsic[0].length;
+    } else if ((contained || !b->first) && !st->writing_mode && !b->ctl && b->kind != BX_INLINE &&
+               (b->fmt == FMT_FLOW || b->fmt == FMT_INLINE) &&
+               (st->column_width.kind == LK_LEN || st->column_count)) {
+        /* Empty multicol containers retain their own specified columns.
+           Fixed column width supplies max-content, not a false minimum.
+           An explicit CIS above replaces the total inner size, not each
+           column. General content fragmentation is outside this path. */
+        unsigned count = st->column_count ? st->column_count : 1;
+        float gap = st->column_gap_l.kind == LK_AUTO ? st->font_size :
+            len_has_pct(st->column_gap_l) ? 0 : LMAX(0, st->column_gap);
+        double gutters = (double)gap * (count - 1);
+        mn = st->column_width.kind == LK_LEN ? 0 : (float)fmin(gutters, 3.4028234663852886e38);
+        double preferred = (st->column_width.kind == LK_LEN ? (double)st->column_width.px : 0) * count + gutters;
+        mx = (float)fmin(preferred, 3.4028234663852886e38);
     } else if (b->fmt == FMT_REPLACED) {
         float w, h; replaced_size(L, b, -1, -1, -1, -1, &w, &h); mn = mx = w;
         if (st->width.kind == LK_LEN && st->width.pct) mn = 0;
@@ -521,21 +545,28 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
         }
         if (row && n > 1) { mx += st->column_gap * (n - 1); if (!st->flex_wrap) mn += st->column_gap * (n - 1); }
     } else if (b->fmt == FMT_GRID) {
-        if (contained || !grid_intrinsic_explicit(L, b, &mn, &mx)) {
+        bool empty_auto_fit = false;
+        if (!b->first) for (int i = 0; i < st->grid_ncols; i++)
+            if (st->grid_cols[i].repeat_kind == GRID_REPEAT_FIT) { empty_auto_fit = true; break; }
+        if (contained || empty_auto_fit || !grid_intrinsic_explicit(L, b, &mn, &mx)) {
             int nc = LMAX(1, st->grid_ncols); bool fixed = st->grid_ncols > 0;
-            float fsum = 0;
+            float fsum = 0, own_gaps = 0; bool previous_track = false;
             for (int i = 0; i < st->grid_ncols; i++) {
                 const GridTrack *t = &st->grid_cols[i];
+                if ((contained || empty_auto_fit) && t->repeat_kind == GRID_REPEAT_FIT) { previous_track = false; continue; }
+                if (previous_track) own_gaps += st->column_gap;
+                previous_track = true;
                 if (t->size.kind != LK_LEN || t->size.pct || t->fr) { fixed = false; continue; }
                 float w = t->size.px;
                 if (t->min.kind == LK_MIN_CONTENT && st->grid_ncols == 1) for (Box *c = contained ? NULL : b->first; c; c = c->next) if (in_flow(c)) w = LMAX(w, grid_item_auto_min(L, c, t->size.px));   /* minmax(auto, len); which items land in which of several columns is not known here */
                 fsum += w;
             }
-            if (fixed) mn = mx = fsum + st->column_gap * (nc - 1);
+            if (fixed) mn = mx = fsum + own_gaps;
             else {
                 float cmx = 0, cmn = 0;
                 for (Box *c = contained ? NULL : b->first; c; c = c->next) { if (!in_flow(c)) continue; float a, z; intrinsic_outer(L, c, &a, &z); cmx = LMAX(cmx, z); cmn = LMAX(cmn, a); }
-                mx = cmx * nc + st->column_gap * (nc - 1); mn = cmn * nc + st->column_gap * (nc - 1);
+                float gutters = contained || empty_auto_fit ? own_gaps : st->column_gap * (nc - 1);
+                mx = cmx * nc + gutters; mn = cmn * nc + gutters;
             }
         }
     } else if (b->fmt == FMT_TABLE) {

@@ -19,6 +19,15 @@ static void size(Document *d, const char *id, float w, float h) {
 static void value(Document *d, const char *id, const char *prop, const char *want) {
     char *v = css_get_computed_value(node(d,id),prop); check(prop,!strcmp(v,want)); free(v);
 }
+static void tracks(Document *d, const char *id, int axis, int count, const float *want) {
+    const GridUsedTracks *u=node(d,id)->box->grid_used;
+    check("materialized grid track count",u&&u->count[axis]==count);
+    if(u&&u->count[axis]==count) for(int i=0;i<count;i++) same(id,u->size[axis][i],want[i]);
+}
+static void offset(Document *d,const char *child,const char *parent,float x,float y) {
+    const Box *a=node(d,child)->box,*b=node(d,parent)->box;
+    same(child,a->x-b->x-b->b[3]-b->p[3],x);same(child,a->y-b->y-b->b[0]-b->p[0],y);
+}
 static void dispose(Document *d, StyleEngine *e, Layout *l) { layout_free(l); style_engine_free(e); doc_free(d); }
 static Image *sample_image(Node *n);
 static unsigned image_calls;
@@ -45,6 +54,12 @@ int main(void) {
     check("contain duplicate rejected",!css_containment_valid("contain","size size"));
     check("contain conflicting axes rejected",!css_containment_valid("contain","size inline-size"));
     check("contain combined accepted",css_containment_valid("contain","paint size style layout"));
+    check("columns typed shorthand",css_columns_valid("columns","71px 2"));
+    check("columns reversed shorthand",css_columns_valid("columns","2 71px"));
+    check("columns auto shorthand",css_columns_valid("columns","auto auto"));
+    check("columns duplicate widths invalid",!css_columns_valid("columns","1px 2px"));
+    check("column count zero invalid",!css_columns_valid("column-count","0"));
+    check("column width percent invalid",!css_columns_valid("column-width","10%"));
     style_free(st);
     Document *d=doc_new("https://css-containment.test/");
     const char *html="<!doctype html><html><body>"
@@ -71,8 +86,35 @@ int main(void) {
       "<div id='logical-last' class='base' style='contain:size;contain-intrinsic-width:39px;contain-intrinsic-inline-size:22px;contain-intrinsic-block-size:11px'></div>"
       "<div id='basis-last' class='base' style='contain:size;contain-intrinsic-inline-size:23px;contain-intrinsic-block-size:41px;writing-mode:vertical-rl'></div>"
       "<div id='priority' class='base' style='contain:size;contain-intrinsic-width:39px!important;contain-intrinsic-inline-size:22px;contain-intrinsic-block-size:11px'></div>"
+      "<div id='sheet-important' class='base' style='contain:size;contain-intrinsic-inline-size:22px;contain-intrinsic-block-size:11px'></div>"
+      "<div id='inline-important' class='base' style='contain:size;contain-intrinsic-width:39px!important;contain-intrinsic-block-size:11px'></div>"
+      "<div id='ua-important' class='base' style='contain:size;contain-intrinsic-width:39px!important;contain-intrinsic-block-size:11px'></div>"
+      "<div id='all-reset' style='contain-intrinsic-size:39px;all:initial;contain:size;display:inline-block'></div>"
+      "<div id='all-after' style='all:initial;contain-intrinsic-size:39px 11px;contain:size;display:inline-block'></div>"
+      "<div id='all-invalid' style='contain-intrinsic-size:39px 11px;all:60px;contain:size;display:inline-block'></div>"
+      "<div id='all-variable' style='--reset:initial;contain-intrinsic-size:39px;all:var(--reset);contain:size;display:inline-block'></div>"
+      "<div id='all-important' style='all:initial!important;contain-intrinsic-size:39px;contain:size;display:inline-block'></div>"
+      "<div id='important-before-all' style='contain-intrinsic-size:39px 11px!important;all:initial;contain:size;display:inline-block'></div>"
+      "<select id='select-one' style='padding:0;border:0'></select>"
+      "<select id='select-multiple' multiple style='padding:0;border:0'></select>"
+      "<select id='select-three' size='3' style='padding:0;border:0'></select>"
+      "<select id='select-contained' size='3' style='contain:size;padding:0;border:0'></select>"
+      "<select id='select-zero' multiple style='contain:size;contain-intrinsic-height:0;padding:0;border:0'></select>"
+      "<select id='select-override' multiple style='contain:size;contain-intrinsic-height:23px;padding:0;border:0'></select>"
+      "<select id='select-authored' multiple style='contain:size;height:29px;padding:0;border:0'></select>"
+      "<button id='button-border' style='width:40px;height:30px;padding:2px;border:3px solid'></button>"
+      "<button id='button-content' style='box-sizing:content-box;width:40px;height:30px;padding:2px;border:3px solid'></button>"
+      "<button id='button-minimum' style='contain:size;min-width:30px;min-height:15px;padding:0;border:5px solid'></button>"
       "<div id='inherit-parent' style='writing-mode:vertical-lr;contain-intrinsic-inline-size:37px;contain-intrinsic-block-size:19px'>"
-      "<div id='inherit-child' class='base' style='writing-mode:horizontal-tb;contain:size;contain-intrinsic-inline-size:inherit;contain-intrinsic-block-size:inherit'></div></div>"
+      "<div id='inherit-child' class='base' style='writing-mode:horizontal-tb;contain:size;contain-intrinsic-inline-size:inherit;contain-intrinsic-block-size:inherit'></div>"
+      "<div id='all-inherit' style='all:inherit;contain:size;display:inline-block;writing-mode:horizontal-tb'></div></div>"
+      "<div id='columns-max' style='display:inline-block;contain:size;columns:71px 2;column-gap:7px'></div>"
+      "<div id='columns-min' style='display:inline-block;contain:size;columns:71px 2;column-gap:7px;width:min-content'></div>"
+      "<div id='columns-zero' style='display:inline-block;contain:size;columns:71px 2;column-gap:7px;contain-intrinsic-size:0px'></div>"
+      "<div id='columns-override' style='display:inline-block;contain:size;columns:71px 2;column-gap:7px;contain-intrinsic-size:51px 19px'></div>"
+      "<div id='columns-normal-gap' style='display:inline-block;contain:size;columns:71px 2;font-size:10px'></div>"
+      "<div id='columns-count' style='display:inline-block;contain:size;column-count:2;column-gap:7px'></div>"
+      "<div id='columns-empty-natural' style='display:inline-block;columns:71px 2;column-gap:7px'></div>"
       "<div id='grid-none' class='cg'><div class='child'></div></div>"
       "<div id='grid-zero' class='cg' style='contain-intrinsic-size:0px'><div class='child'></div></div>"
       "<div id='flex' style='display:inline-flex'><div id='flex-item' class='cis'><div class='child'></div></div></div>"
@@ -81,34 +123,99 @@ int main(void) {
       "</body></html>";
     const char *css="body{margin:0}.base,.cis{display:inline-block}.cis{contain:size;contain-intrinsic-inline-size:73px;contain-intrinsic-block-size:31px}.bordered{padding:5px;border:3px solid}.child{width:220px;height:90px}.small{width:40px;height:20px}.cg{display:inline-grid;contain:size;grid-template-columns:45px;grid-template-rows:20px}";
     html_parse(d,html,strlen(html));StyleEngine *e=style_engine_new(d);
-    style_engine_add_sheet(e,css_parse_sheet(css,strlen(css),d->url,1,&e->media));style_recalc(e,&d->node,true);
+    style_engine_add_sheet(e,css_parse_sheet(css,strlen(css),d->url,1,&e->media));
+    const char *author_priority="#sheet-important{contain-intrinsic-width:39px!important}#inline-important{contain-intrinsic-inline-size:22px!important}#ua-important{contain-intrinsic-width:23px!important}";
+    const char *ua_priority="#ua-important{contain-intrinsic-inline-size:43px!important}";
+    style_engine_add_sheet(e,css_parse_sheet(author_priority,strlen(author_priority),d->url,1,&e->media));
+    style_engine_add_sheet(e,css_parse_sheet(ua_priority,strlen(ua_priority),d->url,0,&e->media));style_recalc(e,&d->node,true);
     Layout *l=layout_new();layout_run(l,d,800,2000);
     size(d,"inner",73,31);size(d,"border",89,47);size(d,"borderbox",89,47);size(d,"limits",80,47);
     size(d,"explicit",45,27);size(d,"ratio",90,45);size(d,"empty",0,0);size(d,"strict",13,7);size(d,"content",40,20);size(d,"none",40,20);
     size(d,"inline",73,20);size(d,"vertical-inline",40,31);size(d,"vertical-block",73,31);
     size(d,"canvas",73,31);size(d,"canvas-ratio",90,45);size(d,"canvas-natural",200,100);
     size(d,"video-normal",300,150);size(d,"video-authored",91,43);size(d,"video-attributes",92,44);size(d,"video-cis",73,31);size(d,"video-ratio",90,45);
-    size(d,"physical-last",39,11);size(d,"logical-last",22,11);size(d,"basis-last",41,23);size(d,"priority",39,11);size(d,"inherit-child",37,19);
+    size(d,"physical-last",39,11);size(d,"logical-last",22,11);size(d,"basis-last",41,23);size(d,"priority",39,11);size(d,"inherit-child",37,19);size(d,"all-inherit",19,37);
+    size(d,"sheet-important",39,11);size(d,"inline-important",39,11);size(d,"ua-important",43,11);
+    size(d,"all-reset",0,0);size(d,"all-after",39,11);size(d,"all-invalid",39,11);size(d,"all-variable",0,0);size(d,"all-important",0,0);size(d,"important-before-all",39,11);
+    float select_row=style_line_height(node(d,"select-one")->style,style_font(node(d,"select-one")->style));
+    same("single-select own row",node(d,"select-one")->box->h,select_row);
+    same("multiple-select default four rows",node(d,"select-multiple")->box->h,select_row*4);
+    same("authored select display size",node(d,"select-three")->box->h,select_row*3);
+    same("contained none retains own rows",node(d,"select-contained")->box->h,select_row*3);
+    same("zero overrides native select rows",node(d,"select-zero")->box->h,0);
+    same("intrinsic override replaces select rows",node(d,"select-override")->box->h,23);
+    same("authored select height still wins",node(d,"select-authored")->box->h,29);
+    size(d,"button-border",40,30);size(d,"button-content",50,40);size(d,"button-minimum",30,15);
+    size(d,"columns-max",149,0);size(d,"columns-min",0,0);size(d,"columns-zero",0,0);size(d,"columns-override",51,19);
+    size(d,"columns-normal-gap",152,0);size(d,"columns-count",7,0);size(d,"columns-empty-natural",149,0);
+    value(d,"columns-max","columns","71px 2");value(d,"columns-count","columns","2");
     size(d,"grid-none",45,20);size(d,"grid-zero",0,0);size(d,"flex-item",73,31);size(d,"flex",73,31);size(d,"table",40,20);
     Box *inner=node(d,"inner")->box;check("contained descendants retained",inner->first!=NULL);check("overflow remains real content",inner->scroll_w>=220);
     check("non-atomic inline excluded",!layout_size_contained(node(d,"inline-excluded")->box,true));
     value(d,"basis-last","contain-intrinsic-width","41px");value(d,"basis-last","contain-intrinsic-inline-size","23px");
     value(d,"inherit-child","contain-intrinsic-size","37px 19px");
     node_set_attr(node(d,"inherit-parent"),"style","writing-mode:vertical-lr;contain-intrinsic-inline-size:53px;contain-intrinsic-block-size:29px");
-    style_recalc(e,&d->node,false);layout_run(l,d,800,2000);size(d,"inherit-child",53,29);
+    style_recalc(e,&d->node,false);layout_run(l,d,800,2000);size(d,"inherit-child",53,29);size(d,"all-inherit",29,53);
+    node_set_attr(node(d,"select-three"),"size","5");style_recalc(e,&d->node,false);layout_run(l,d,800,2000);
+    same("dynamic select display rows",node(d,"select-three")->box->h,select_row*5);
     node_set_attr(node(d,"basis-last"),"style","contain:size;contain-intrinsic-inline-size:23px;contain-intrinsic-block-size:41px;writing-mode:horizontal-tb;display:inline-block");
     style_recalc(e,&d->node,false);layout_run(l,d,800,2000);size(d,"basis-last",23,41);
+    dispose(d,e,l);
+
+    d=doc_new("https://css-containment.test/repeat");
+    html="<!doctype html><html><body>"
+      "<div id='fit' class='repeat' style='position:relative;grid-template-columns:repeat(auto-fit,20px);grid-template-rows:repeat(auto-fit,10px)'>"
+      "<div id='fit-a'></div><div id='fit-b'></div><div id='fit-abs' style='position:absolute;grid-column:1/3;grid-row:1/2;inset:0'></div></div>"
+      "<div id='fill' class='repeat' style='grid-template-columns:repeat(auto-fill,20px);grid-template-rows:repeat(auto-fill,10px)'><div></div><div></div></div>"
+      "<div id='pattern' style='display:grid;width:95px;height:10px;column-gap:5px;grid-template-columns:repeat(auto-fill,10px 20px)'><div></div><div></div><div></div><div></div></div>"
+      "<div id='zero-prefix' style='display:grid;width:45px;height:10px;column-gap:5px;grid-template-columns:0px repeat(auto-fill,10px)'></div>"
+      "<div id='fraction-fit' style='display:grid;width:100px;height:10px;column-gap:5px;grid-template-columns:repeat(auto-fit,minmax(20px,1fr))'><div></div><div></div></div>"
+      "<div id='fraction-fill' style='display:grid;width:100px;height:10px;column-gap:5px;grid-template-columns:repeat(auto-fill,minmax(20px,1fr))'><div></div><div></div></div>"
+      "<div id='indefinite-rows' style='display:grid;width:60px;gap:2px;grid-template-columns:20px 20px;grid-template-rows:repeat(auto-fill,11px)'><div></div><div></div></div>"
+      "<div id='contained-repeat' style='display:grid;width:max-content;contain:size;contain-intrinsic-size:70px 80px;gap:5px;grid-template-columns:repeat(auto-fit,15px);grid-template-rows:repeat(auto-fit,10px)'>"
+      "<div></div><div></div><div></div><div></div><div></div><div id='contained-last'></div></div>"
+      "<div id='empty-fit' class='repeat' style='grid-template-columns:repeat(auto-fit,20px);grid-template-rows:repeat(auto-fit,10px);justify-content:space-around;align-content:space-evenly'></div>"
+      "<div id='empty-fit-intrinsic' style='display:inline-grid;contain:size;grid-template-columns:repeat(auto-fit,20px);grid-template-rows:repeat(auto-fit,10px);gap:5px'></div>"
+      "<div id='bounded-repeat' style='display:grid;width:5000px;grid-template-columns:repeat(auto-fill,1px)'></div>"
+      "</body></html>";
+    html_parse(d,html,strlen(html));e=style_engine_new(d);css="body{margin:0}.repeat{display:grid;width:100px;height:70px;column-gap:5px;row-gap:4px}";
+    style_engine_add_sheet(e,css_parse_sheet(css,strlen(css),d->url,1,&e->media));style_recalc(e,&d->node,true);l=layout_new();layout_run(l,d,800,2000);
+    tracks(d,"fit",0,4,(float[]){20,20,0,0});tracks(d,"fit",1,5,(float[]){10,0,0,0,0});
+    offset(d,"fit-a","fit",0,0);offset(d,"fit-b","fit",25,0);size(d,"fit-a",20,10);size(d,"fit-abs",45,10);
+    tracks(d,"fill",0,4,(float[]){20,20,20,20});tracks(d,"fill",1,5,(float[]){10,10,10,10,10});
+    tracks(d,"pattern",0,4,(float[]){10,20,10,20});tracks(d,"zero-prefix",0,4,(float[]){0,10,10,10});
+    tracks(d,"fraction-fit",0,4,(float[]){47.5f,47.5f,0,0});tracks(d,"fraction-fill",0,4,(float[]){21.25f,21.25f,21.25f,21.25f});
+    tracks(d,"indefinite-rows",1,1,(float[]){11});size(d,"indefinite-rows",60,11);
+    size(d,"contained-repeat",70,80);tracks(d,"contained-repeat",0,3,(float[]){15,15,15});tracks(d,"contained-repeat",1,5,(float[]){10,10,0,0,0});
+    offset(d,"contained-last","contained-repeat",40,15);size(d,"contained-last",15,10);
+    tracks(d,"empty-fit",0,4,(float[]){0,0,0,0});tracks(d,"empty-fit",1,5,(float[]){0,0,0,0,0});
+    size(d,"empty-fit-intrinsic",0,0);
+    check("materialization remains bounded",node(d,"bounded-repeat")->box->grid_used->count[0]<=1000);
+    value(d,"fit","grid-template-columns","20px 20px 0px 0px");
+    node_set_attr(node(d,"fit"),"style","position:relative;width:60px;grid-template-columns:repeat(auto-fit,20px);grid-template-rows:repeat(auto-fit,10px)");
+    style_recalc(e,&d->node,false);layout_run(l,d,800,2000);tracks(d,"fit",0,2,(float[]){20,20});size(d,"fit-abs",45,10);
+    node_set_attr(node(d,"fit-b"),"style","display:none");style_recalc(e,&d->node,false);layout_run(l,d,800,2000);
+    tracks(d,"fit",0,2,(float[]){20,0});size(d,"fit-abs",20,10);value(d,"fit","grid-template-columns","20px 0px");
     dispose(d,e,l);
 
     d=doc_new("https://css-containment.test/hidden");
     html="<!doctype html><html><body><div id='hidden' style='display:inline-block;content-visibility:hidden;contain-intrinsic-size:60px 40px;background:#008000;border:2px solid #0000ff;padding:3px'>"
       "<div id='hidden-child' style='width:90px;height:70px;background:#ff0000;visibility:visible'>HIDDEN</div>"
       "<div id='hidden-fixed' style='position:fixed;left:0;top:0;width:150px;height:90px;background:#ff00ff;z-index:999'></div></div>"
-      "<canvas id='hidden-canvas' style='display:block;content-visibility:hidden;width:16px;height:16px;background:#008000'></canvas></body></html>";
+      "<canvas id='hidden-canvas' style='display:block;content-visibility:hidden;width:16px;height:16px;background:#008000'></canvas>"
+      "<table id='hidden-table' style='content-visibility:hidden;border-spacing:0'><tr><td id='hidden-cell' style='content-visibility:hidden;padding:0'>"
+      "<div id='table-child' style='width:20px;height:20px;background:#ff0000'></div></td></tr></table>"
+      "<svg id='hidden-svg' style='display:block;content-visibility:hidden;width:20px;height:20px;background:#008000'><rect id='hidden-shape' width='20' height='20' fill='#ff0000'></rect></svg></body></html>";
     html_parse(d,html,strlen(html));e=style_engine_new(d);css="body{margin:0}";
     style_engine_add_sheet(e,css_parse_sheet(css,strlen(css),d->url,1,&e->media));style_recalc(e,&d->node,true);l=layout_new();layout_run(l,d,192,160);
     size(d,"hidden",70,50);size(d,"hidden-child",90,70);check("hidden computed contain remains none",node(d,"hidden")->style->size_containment==0);
     check("hidden creates formatting context",node(d,"hidden")->box->bfc);
+    check("skipping owner keeps observable box",!layout_has_skipped_ancestor(node(d,"hidden")->box));
+    check("hidden descendant has skipped ancestor",layout_has_skipped_ancestor(node(d,"hidden-child")->box));
+    check("table excludes hidden containment",!layout_contents_hidden(node(d,"hidden-table")->box));
+    check("table-cell excludes hidden containment",!layout_contents_hidden(node(d,"hidden-cell")->box));
+    check("table contents remain observable",!layout_has_skipped_ancestor(node(d,"table-child")->box));
+    check("hidden SVG child not refined as input target",svg_hit(node(d,"hidden-svg"),5,5,20,20)==NULL);
     check("hidden owns fixed containing block",node(d,"hidden-fixed")->box->cb==node(d,"hidden")->box);
     Box *owner=node(d,"hidden")->box;Box *h=layout_hit(l,owner->x+7,owner->y+7,0,0);check("hidden child cannot intercept hit",h==owner);
     h=layout_hit(l,owner->x+100,owner->y+7,0,0);check("hidden fixed layer cannot escape",!h||h->node!=node(d,"hidden-fixed"));
@@ -117,13 +224,21 @@ int main(void) {
     dl_build(&dl,l,0,0,192,160);raster(&canvas,&dl,0xffffffff);
     check("hidden owner background retained",pixel(&canvas,owner,7,7)==0xff008000);
     check("hidden owner border retained",pixel(&canvas,owner,0,7)==0xff0000ff);
+    check("excluded table contents still painted",pixel(&canvas,node(d,"table-child")->box,5,5)==0xffff0000);
+    Box *table_child=node(d,"table-child")->box;
+    h=layout_hit(l,table_child->x+5,table_child->y+5,0,0);check("excluded table child still hit",h&&h->node==table_child->node);
+    check("hidden SVG own background retained",pixel(&canvas,node(d,"hidden-svg")->box,5,5)==0xff008000);
     check("hidden replaced content suppressed",image_calls==0);check("hidden replaced owner background retained",pixel(&canvas,node(d,"hidden-canvas")->box,5,5)==0xff008000);
     node_set_attr(node(d,"hidden"),"style","display:inline-block;background:#008000;border:2px solid #0000ff;padding:3px");
     node_set_attr(node(d,"hidden-canvas"),"style","display:block;width:16px;height:16px;background:#008000");
     node_set_attr(node(d,"hidden-fixed"),"style","display:none");
+    node_set_attr(node(d,"hidden-svg"),"style","display:block;width:20px;height:20px;background:#008000");
     style_recalc(e,&d->node,false);layout_run(l,d,192,160);size(d,"hidden",100,80);
     dl_build(&dl,l,0,0,192,160);raster(&canvas,&dl,0xffffffff);owner=node(d,"hidden")->box;
     check("visible child restored after invalidation",pixel(&canvas,owner,7,7)==0xffff0000);
+    check("unhidden descendant no skipped ancestor",!layout_has_skipped_ancestor(node(d,"hidden-child")->box));
+    check("visible SVG child input restored",svg_hit(node(d,"hidden-svg"),5,5,20,20)==doc_get_element_by_id(d,"hidden-shape"));
+    check("visible SVG child paint restored",pixel(&canvas,node(d,"hidden-svg")->box,5,5)==0xffff0000);
     check("visible replaced content restored",image_calls>0);check("visible replaced pixels restored",pixel(&canvas,node(d,"hidden-canvas")->box,5,5)==0xffff0000);
     h=layout_hit(l,owner->x+7,owner->y+7,0,0);check("visible child receives hit",h&&h->node==node(d,"hidden-child"));
     dl_clear(&dl);vec_free(dl.items);canvas_free(&canvas);paint_image_hook=NULL;dispose(d,e,l);

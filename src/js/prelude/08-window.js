@@ -5,7 +5,7 @@ class ResizeObserver {
     disconnect() { this._t.clear(); roAll.delete(this); roStop(); }
     _check() {
         const recs = [];
-        for (const [el, old] of this._t) { const r = N.rect(el) || [0, 0, 0, 0]; const k = r[2] + 'x' + r[3]; if (k === old) continue; this._t.set(el, k); const cr = new DOMRect(0, 0, r[2], r[3]); const sz = [{ inlineSize: r[2], blockSize: r[3] }]; recs.push({ target: el, contentRect: cr, borderBoxSize: sz, contentBoxSize: sz, devicePixelContentBoxSize: sz }); }
+        for (const [el, old] of this._t) { const r = N.rect(el) || [0, 0, 0, 0]; if (N.skippedAncestor(el)) continue; const k = r[2] + 'x' + r[3]; if (k === old) continue; this._t.set(el, k); const cr = new DOMRect(0, 0, r[2], r[3]); const sz = [{ inlineSize: r[2], blockSize: r[3] }]; recs.push({ target: el, contentRect: cr, borderBoxSize: sz, contentBoxSize: sz, devicePixelContentBoxSize: sz }); }
         if (recs.length) { try { this._cb(recs, this); } catch (e) { report(e); } }
     }
 }
@@ -43,7 +43,8 @@ class IntersectionObserver {
         const rootOn = !root || root.isConnected;
         for (const [el, prev] of this._t) {
             const r = el.getBoundingClientRect();
-            let on = rootOn && el.isConnected && (!root || ioWithin(el, root)), x0 = r.left, y0 = r.top, x1 = r.right, y1 = r.bottom;
+            // CSS Contain skips descendant intersection, while the owner keeps geometry.
+            let on = rootOn && el.isConnected && !N.skippedAncestor(el) && (!root || ioWithin(el, root)), x0 = r.left, y0 = r.top, x1 = r.right, y1 = r.bottom;
             if (on) {
                 const c = N.vclip(el, root);   // ancestors with overflow clip cut the target
                 if (c === null) on = false;

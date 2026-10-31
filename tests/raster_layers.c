@@ -75,6 +75,66 @@ static void check_gradient_spans(void) {
     for(int x=0;x<4096;x++) assert(wide[x]==RGBA(127,127,127,255));
 }
 
+/* Independent per-channel arithmetic, deliberately without packed lanes or
+   production interpolation helpers. Premultiplied channels use the same
+   convex weights, with one nearest rounding for each separable filter pass. */
+static uint32_t image_mix_oracle(uint32_t a, uint32_t b, uint32_t weight) {
+    uint32_t out = 0;
+    for (unsigned shift = 0; shift < 32; shift += 8) {
+        uint32_t av = (a >> shift) & 255, bv = (b >> shift) & 255;
+        out |= ((av * (256 - weight) + bv * weight + 128) / 256) << shift;
+    }
+    return out;
+}
+
+/* Constant samples must retain every channel and opacity at every weight.
+   This directly checks the physical invariant that the old split truncation
+   violated, independently of the numeric interpolation oracle. */
+static void check_image_constants(void) {
+    for (uint32_t alpha = 0; alpha < 256; alpha++) {
+        uint32_t p = (alpha << 24) | ((alpha / 2) << 16) | ((alpha / 3) << 8) | alpha;
+        for (uint32_t weight = 0; weight <= 256; weight++) {
+            assert(image_lerp_px(p, p, weight) == p);
+            uint32_t q = image_lerp_px(p, 0xff01fe80u, weight);
+            assert(q == image_mix_oracle(p, 0xff01fe80u, weight));
+            assert((q >> 24) >= (q >> 16 & 255));
+            assert((q >> 24) >= (q >> 8 & 255));
+            assert((q >> 24) >= (q & 255));
+        }
+        assert(image_lerp_px(p, 0xff01fe80u, 0) == p);
+        assert(image_lerp_px(p, 0xff01fe80u, 256) == 0xff01fe80u);
+    }
+    enum { W = 20, H = 20, STRIDE = 23 };
+    uint32_t actual[H * STRIDE], source[16 * 16];
+    const uint32_t colors[] = { 0, 0xffff0000u, 0xff008000u, 0xffffffffu,
+                                0x01010000u, 0x7f604020u, 0x80604020u, 0xfe987654u };
+    const int source_sizes[] = { 1, 3, 16 }, destination_sizes[] = { 1, 7, 16 };
+    const uint32_t backgrounds[] = { 0, 0xff102030u };
+    for (unsigned color = 0; color < sizeof colors / sizeof *colors; color++) {
+        for (int i = 0; i < 16 * 16; i++) source[i] = colors[color];
+        for (int si = 0; si < 3; si++) for (int di = 0; di < 3; di++)
+        for (int rounded = 0; rounded < 2; rounded++) for (int bg = 0; bg < 2; bg++) {
+            Image im = { .w = source_sizes[si], .h = source_sizes[si], .px = source };
+            DItem item = { .op = DO_IMAGE, .x = 2, .y = 2, .w = destination_sizes[di],
+                           .h = destination_sizes[di], .img = &im };
+            Canvas canvas = { .w = W, .h = H, .stride = STRIDE, .scale = 1, .px = actual };
+            R r = { .c = &canvas, .s = 1, .nclip = 1, .px = actual, .stride = STRIDE, .height = H };
+            /* Rounded clip forces the scalar image path; these pixels lie
+               completely inside it, so no coverage adjustment is expected. */
+            r.clips[0] = (Clip){ 0, 0, W, H, -20, -20, W + 40, H + 40, { 2, 2, 2, 2 }, rounded != 0 };
+            for (int i = 0; i < H * STRIDE; i++) actual[i] = backgrounds[bg];
+            uint32_t expected = backgrounds[bg];
+            over(&expected, colors[color]);
+            image(&r, &item);
+            for (int y = 0; y < H; y++) for (int x = 0; x < STRIDE; x++) {
+                bool inside = x >= 2 && x < 2 + destination_sizes[di] &&
+                              y >= 2 && y < 2 + destination_sizes[di];
+                assert(actual[y * STRIDE + x] == (inside ? expected : backgrounds[bg]));
+            }
+        }
+    }
+}
+
 /* The scalar oracle samples the source directly for every destination pixel.
    It shares only the unchanged packed-pixel blend/coverage helpers, not the
    new scanline cache or its replacement policy. */
@@ -107,9 +167,9 @@ static void check_image_scanlines(void) {
                 uint32_t wx=(uint32_t)((sx-ix)*256),wy=(uint32_t)((sy-iy)*256);
                 int xa=LCLAMP(ix,0,im.w-1),xb=LCLAMP(ix+1,0,im.w-1);
                 int ya=LCLAMP(iy,0,im.h-1)*im.w,yb=LCLAMP(iy+1,0,im.h-1)*im.w;
-                uint32_t top=scale_px(source[ya+xa],256-wx)+scale_px(source[ya+xb],wx);
-                uint32_t bot=scale_px(source[yb+xa],256-wx)+scale_px(source[yb+xb],wx);
-                pixel=scale_px(top,256-wy)+scale_px(bot,wy);
+                uint32_t top=image_mix_oracle(source[ya+xa],source[ya+xb],wx);
+                uint32_t bot=image_mix_oracle(source[yb+xa],source[yb+xb],wx);
+                pixel=image_mix_oracle(top,bot,wy);
             }
             cov*=clip_cov(&r,x+.5f,y+.5f);
             if(cov<.999f) pixel=scale_px(pixel,(uint32_t)(cov*256));
@@ -127,7 +187,7 @@ static void check_image_vertical(void) {
     for(int weight=0;weight<=256;weight++) for(int count=0;count<=71;count++) {
         for(int x=0;x<71;x++) { top[x]=colors[(x+weight)%7];bottom[x]=colors[(x*3+weight/7)%7]; }
         for(int x=0;x<73;x++) actual[x]=expected[x]=colors[x%7];
-        for(int x=0;x<count;x++) over(&expected[x+1],scale_px(top[x],256-weight)+scale_px(bottom[x],weight));
+        for(int x=0;x<count;x++) over(&expected[x+1],image_mix_oracle(top[x],bottom[x],weight));
         image_vertical(actual+1,top,bottom,count,weight);
         assert(memcmp(actual,expected,sizeof actual)==0);
     }
@@ -146,7 +206,7 @@ static void check_image_vertical(void) {
         }
         actual[0] = actual[72] = 0x98765432;
         memcpy(expected, actual, sizeof actual);
-        for (int x = 0; x < 71; x++) over(&expected[x + 1], scale_px(top[x], 256 - weight) + scale_px(bottom[x], weight));
+        for (int x = 0; x < 71; x++) over(&expected[x + 1], image_mix_oracle(top[x], bottom[x], weight));
         image_vertical(actual + 1, top, bottom, 71, weight);
         assert(memcmp(actual, expected, sizeof actual) == 0);
     }
@@ -253,6 +313,7 @@ int main(int argc, char **argv) {
     check_text_coverage();
     check_gradient_spans();
     check_shadow_clip();
+    check_image_constants();
     check_image_scanlines();
     check_image_vertical();
     enum { W=47, H=61, STRIDE=53 };
@@ -300,17 +361,18 @@ int main(int argc, char **argv) {
             }
         }
     }
-    /* Golden full-frame pixels from the previous rasterizer, independently of
-       the new layer-bound calculation (regenerated once when outer shadows
-       became clipped to outside their border box). Include glyph ink outside item bounds,
-       negative shadow spread, rounded clipping, fractional scale and punch. */
+    /* Integrated layer goldens. The six image-bearing frames use corrected
+       single-rounding interpolation, verified against independent per-channel
+       filtering over every pixel; changes are confined to image bounds. The
+       six punch frames retain their prior hashes. Include glyph ink outside
+       item bounds, negative shadow spread, rounded clips and fractional scale. */
     const uint64_t golden[] = {
-        0xac1b9841eb26b0ffull,
-        0xd2919cc3e0c6e3efull,
-        0x3c00bddca1d6dc14ull,
-        0x0cc6d1d7432a0bc5ull,
-        0x1886e0b75e735828ull,
-        0x418260ad99718ebdull,
+        0xb23c20692aee367cull,
+        0x4c5d4a09111554edull,
+        0x36df1ef40a677728ull,
+        0x78949eff613f3fd6ull,
+        0xba0a10aeafa40da4ull,
+        0x19906c10f42cea45ull,
         0x9f8fa8a840de087eull,
         0x9c225d6cccd8348dull,
         0x23aa68835221cf02ull,

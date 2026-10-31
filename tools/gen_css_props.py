@@ -26,6 +26,9 @@ for axis in ('width', 'height', 'inline-size', 'block-size', 'size'):
     name = 'contain-intrinsic-' + axis
     props[name] = {'inh': False, 'init': 'none'}
     native.add(name)
+for name, initial in [('column-width', 'auto'), ('column-count', 'auto'), ('columns', 'auto')]:
+    props[name] = {'inh': False, 'init': initial}
+    native.add(name)
 for k, p in props.items():   # colour initials that are the test's currentcolor
     if k != 'color' and p['init'] and p['init'].startswith('rgb(') : p['init'] = 'currentcolor'
 esc = lambda s: s.replace('\\', '\\\\').replace('"', '\\"')

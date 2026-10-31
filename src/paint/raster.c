@@ -445,24 +445,34 @@ static void text(R *r, const DItem *it) {
     }
 }
 
+/* Interpolate premultiplied channels before quantizing. Separate truncation
+   of the weighted products darkens even a constant image and reduces alpha.
+   Each packed 16-bit lane is at most 255*256+128, so nearest rounding cannot
+   carry into its neighbor. Equal colors, endpoints, and RGB <= alpha survive. */
+static inline uint32_t image_lerp_px(uint32_t a, uint32_t b, uint32_t weight) {
+    uint32_t inv = 256 - weight;
+    uint32_t rb = (a & 0x00ff00ffu) * inv + (b & 0x00ff00ffu) * weight + 0x00800080u;
+    uint32_t ag = ((a >> 8) & 0x00ff00ffu) * inv + ((b >> 8) & 0x00ff00ffu) * weight + 0x00800080u;
+    return ((rb >> 8) & 0x00ff00ffu) | (ag & 0xff00ff00u);
+}
 typedef struct { int a, b; uint32_t w; float cov, gap; } ImgCol;
 static void image_horizontal(uint32_t *dst, const uint32_t *src, const ImgCol *cols, int count) {
     for (int x = 0; x < count; x++) {
         const ImgCol *k = &cols[x];
-        dst[x] = scale_px(src[k->a], 256 - k->w) + scale_px(src[k->b], k->w);
+        dst[x] = image_lerp_px(src[k->a], src[k->b], k->w);
     }
 }
 /* Interior bilinear pixels have full coverage and contiguous cached sources.
    Keep this loop free of geometry/alpha branches so SIMD can process a span.
-   The packed-channel truncation and source-over factors match the edge path. */
+   The single-rounding interpolation and source-over factors match the edge path. */
 static void image_vertical(uint32_t *restrict dst, const uint32_t *restrict top,
                            const uint32_t *restrict bottom, int count, uint32_t weight) {
     int x = 0;
 #ifdef IMAGE_NEON
     /* Deinterleave eight premultiplied pixels: each lane is one channel,
-       avoiding repeated packed-channel masks. Truncate each interpolation
-       product separately, exactly as scale_px does. A 16-bit blend factor
-       also represents 256, preserving the destination for transparent pixels. */
+       avoiding repeated packed-channel masks. Add both interpolation products
+       before one rounded shift, exactly as image_lerp_px does. A 16-bit blend
+       factor represents 256, preserving the destination for transparent pixels. */
     uint8x8_t wa = vdup_n_u8((uint8_t)(256 - weight)), wb = vdup_n_u8((uint8_t)weight);
     for (; x + 8 <= count; x += 8) {
         uint8x8x4_t p;
@@ -471,8 +481,7 @@ static void image_vertical(uint32_t *restrict dst, const uint32_t *restrict top,
             uint8x8x4_t a = vld4_u8((const uint8_t *)(top + x));
             uint8x8x4_t b = vld4_u8((const uint8_t *)(bottom + x));
             for (int c = 0; c < 4; c++)
-                p.val[c] = vadd_u8(vshrn_n_u16(vmull_u8(a.val[c], wa), 8),
-                                   vshrn_n_u16(vmull_u8(b.val[c], wb), 8));
+                p.val[c] = vrshrn_n_u16(vmlal_u8(vmull_u8(a.val[c], wa), b.val[c], wb), 8);
         }
         uint16x8_t alpha = vmovl_u8(p.val[3]);
         uint16x8_t k = vsubq_u16(vsubq_u16(vdupq_n_u16(256), alpha), vshrq_n_u16(alpha, 7));
@@ -483,7 +492,7 @@ static void image_vertical(uint32_t *restrict dst, const uint32_t *restrict top,
     }
 #endif
     for (; x < count; x++) {
-        uint32_t p = scale_px(top[x], 256 - weight) + scale_px(bottom[x], weight);
+        uint32_t p = image_lerp_px(top[x], bottom[x], weight);
         uint32_t alpha = p >> 24;
         dst[x] = p + scale_px(dst[x], 256 - alpha - (alpha >> 7));
     }
@@ -530,7 +539,7 @@ static void image(R *r, const DItem *it) {
     ImgCol *cols = xmalloc((sizeof *cols + (down ? 0 : 2 * sizeof(uint32_t))) * (size_t)width);
     /* Upscaled thumbnails reuse each source row several times. Cache just the
        two horizontally interpolated rows needed by the vertical filter; keep
-       the original integer rounding at both stages. Storage is O(damage width),
+       one nearest rounding at each interpolation stage. Storage is O(damage width),
        never a second full-size scaled image. */
     uint32_t *horizontal[2] = {(uint32_t *)(cols + width), (uint32_t *)(cols + width)};
     if (!down) horizontal[1] += width;
@@ -579,7 +588,7 @@ static void image(R *r, const DItem *it) {
             const ImgCol *k = &cols[x - px0];
             uint32_t p;
             if (down) p = ra[k->a];
-            else p = scale_px(ra[x - px0], 256 - wy) + scale_px(rb[x - px0], wy);
+            else p = image_lerp_px(ra[x - px0], rb[x - px0], wy);
             float cov = k->cov * cy;
             if (background_round) cov = LMIN(cov, LCLAMP(.5f - sd_rrect(x + .5f, y + .5f, clipx, clipy, clipr, clipb, rad), 0, 1));
             cov *= k->gap * q.cov;

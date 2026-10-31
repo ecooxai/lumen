@@ -29,7 +29,7 @@ ComputedStyle *style_new_default(void) {
     ComputedStyle *s = xcalloc(1, sizeof *s); g_styles_live++;
     s->refs = 1; s->anim_iter = 1;
     s->display = D_INLINE; s->font_size = 16; s->font_weight = 400; s->line_height_normal = true;
-    s->color = RGBA(0, 0, 0, 255); s->opacity = 1; s->flex_shrink = 1; s->flex_basis = L_auto();
+    s->color = RGBA(0, 0, 0, 255); s->opacity = 1; s->flex_shrink = 1; s->flex_basis = L_auto(); s->column_width = L_auto(); s->column_gap_l = L_auto();
     s->width = s->height = L_auto(); s->min_width = s->min_height = L_auto();
     s->max_width.kind = s->max_height.kind = LK_NONE;
     for (int i = 0; i < 4; i++) { s->inset[i] = L_auto(); s->border_color[i] = s->color; s->border_width[i] = 3; }
@@ -1880,6 +1880,49 @@ static bool grid_repeat_count(ACtx *c, const char *text, long *count) {
     *count = rounded <= 1 ? 1 : rounded >= 1000 ? 1000 : (long)rounded;
     return true;
 }
+static bool column_property(const char *prop) {
+    return !strcmp(prop, "columns") || !strcmp(prop, "column-width") || !strcmp(prop, "column-count");
+}
+static bool column_count_value(ACtx *c, const char *text, unsigned *count) {
+    const char *p = text; if (*p == '+') p++;
+    if (isdigit((unsigned char)*p)) {
+        unsigned value = 0;
+        while (isdigit((unsigned char)*p)) {
+            if (value <= (UINT_MAX - 9) / 10) value = value * 10 + *p - '0'; else value = UINT_MAX;
+            p++;
+        }
+        if (!*p && value) { *count = value; return true; }
+    }
+    if (!strchr(text, '(')) return false;
+    CssNumber value;
+    if (!application_number(c, text, false, &value) || !css_number_scalar(&value)) return false;
+    double rounded = isnan(value.value) ? 1 : floor(value.value + .5);
+    *count = rounded <= 1 ? 1 : rounded >= UINT_MAX ? UINT_MAX : (unsigned)rounded; return true;
+}
+static bool columns_parse(ACtx *c, const char *prop, const char *text, Length *width, unsigned *count) {
+    char *tokens[3]; int n = split_ws(text, tokens, 3);
+    bool shorthand = !strcmp(prop, "columns"), have_width = false, have_count = false;
+    bool ok = n > 0 && n <= (shorthand ? 2 : 1);
+    Length w = L_auto(); unsigned number = 0;
+    for (int i = 0; ok && i < n; i++) {
+        if (str_ieq(tokens[i], "auto")) continue;
+        unsigned integer; ContainIntrinsicSize length[2];
+        if (strcmp(prop, "column-width") && !have_count && column_count_value(c, tokens[i], &integer)) {
+            number = integer; have_count = true;
+        } else if (strcmp(prop, "column-count") && !have_width &&
+            contain_intrinsic_parse(c, tokens[i], false, length) && length[0].flags == CIS_LENGTH) {
+            w = L_px(length[0].length); have_width = true;
+        } else ok = false;
+    }
+    free_toks(tokens, n);
+    if (ok) { *width = w; *count = number; } return ok;
+}
+bool css_columns_valid(const char *prop, const char *value) {
+    if (!column_property(prop)) return true;
+    if (var_wide_keyword(value) || css_value_has_var(value)) return true;
+    ACtx c = { .em = 16, .rem = 16, .validation_only = true }; Length width; unsigned count;
+    return columns_parse(&c, prop, value, &width, &count);
+}
 typedef struct { bool fixed, automatic, repeated; } GridTrackParseInfo;
 static bool grid_fixed_dimension(const char *text, Length value, bool parsed) {
     if (!parsed || value.kind != LK_LEN || angle_or_time(text)) return false;
@@ -1922,10 +1965,16 @@ static int parse_grid_tracks_info(ACtx *c, const char *v, GridTrack **out, GridT
             if (ns <= 0 || si.automatic || (auto_count && (automatic || !si.fixed || si.repeated))) { free(sub); free(inner); goto invalid; }
             fixed &= si.fixed; automatic |= auto_count; repeated = true; have_track = true;
             if (out) {
-                if (auto_count && sub[0].min.kind == LK_LEN && sub[0].min.px >= 1 && isfinite(sub[0].min.px) && (double)sub[0].min.px <= (double)INT_MAX) {
-                    /* Preserve the existing layout marker and sizing behavior. */
-                    GridTrack g = sub[0]; g.fr = g.fr ? g.fr : 1; g.size.kind = LK_FIT_CONTENT; g.size.px = sub[0].min.px;
-                    if (tr.n < 1000) vec_push(tr, g);
+                if (auto_count) {
+                    /* Retain the complete pattern and its actual sizing
+                       functions. Repetition depends on layout's available
+                       axis size; a fit-content value is not a repeat marker. */
+                    int keep = LMIN(ns, 1000 - tr.n);
+                    for (int j = 0; j < keep; j++) {
+                        GridTrack g = sub[j]; g.repeat_span = j ? 0 : (uint16_t)keep;
+                        g.repeat_kind = str_ieq(count, "auto-fit") ? GRID_REPEAT_FIT : GRID_REPEAT_FILL;
+                        vec_push(tr, g);
+                    }
                 } else {
                     /* Layout's implicit placement is bounded to1000 tracks;
                        parsed repetition must obey the same storage bound. */
@@ -2086,7 +2135,7 @@ static int border_corner(const char *P) {
 static bool inherit_copies_uncompared(const char *P) {
     static const char *const props[] = { "background-color","background","width","height","margin","padding","inset","border","position", NULL };
     for (int i = 0; props[i]; i++) if (!strcmp(P, props[i])) return true;
-    return !strncmp(P, "border-", 7) || border_corner(P) >= 0 || !strcmp(P, "contain") || contain_intrinsic_property(P) != -2;
+    return !strncmp(P, "border-", 7) || border_corner(P) >= 0 || !strcmp(P, "contain") || contain_intrinsic_property(P) != -2 || column_property(P);
 }
 static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block","inline-size","block-size","min-inline-size","max-inline-size","min-block-size","max-block-size", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0 || gen_prop(p); }
@@ -2435,6 +2484,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             if (prepared_count < 0) goto out;
         } else if ((!strcmp(P, "grid") || !strcmp(P, "grid-template")) && !css_grid_repeat_valid(P, val)) goto out;
     }
+    if (column_property(P)) {
+        Length width = L_auto(); unsigned count = 0;
+        if (inherit && par) { width = par->column_width; count = par->column_count; st->parent_sensitive = true; }
+        else if (!inherit && !initial && !unset && !columns_parse(&c, P, val, &width, &count)) goto out;
+        if (strcmp(P, "column-count")) st->column_width = width;
+        if (strcmp(P, "column-width")) st->column_count = count;
+        goto out;
+    }
     /* Intrinsic-size longhands share the final physical slots in cascade order.
        Inherit of a logical longhand uses the parent's corresponding axis. */
     int intrinsic_axis = contain_intrinsic_property(P);
@@ -2648,7 +2705,12 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             if (k == 4) memcpy(st->border_radius, src->border_radius, sizeof st->border_radius);
             else st->border_radius[k] = src->border_radius[k];
         }
-        else if (!strcmp(P, "all")) {}
+        else if (!strcmp(P, "all")) {
+            /* Extend all only to this newly implemented non-inherited family.
+               Its resolved CSS-wide grammar is checked above; arbitrary all
+               values must never become intrinsic lengths. */
+            css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
+        }
         else if (!inherit && !(unset && gp && gp->inherited) && gp && gp->native && gp->initial && *gp->initial) {
             /* other natively modelled properties: apply the textual initial value */
             free(vbuf); vbuf = xstrdup(gp->initial); val = vbuf; inherit = initial = unset = false;
@@ -2754,7 +2816,7 @@ apply:
         else if (!strcmp(P, "clear")) { static const char *const cl[] = { "none", "left", "right", "both", NULL }; k = kw(val, cl); if (k >= 0) st->clear = (uint8_t)k; else if (str_ieq(val, "inline-start")) st->clear = CLEAR_LEFT; }
         else if (!strcmp(P, "cursor")) { st->cursor = str_ieq(val, "pointer") ? CUR_POINTER : str_ieq(val, "text") ? CUR_TEXT : str_ieq(val, "move") ? CUR_MOVE : str_ieq(val, "not-allowed") ? CUR_NOT_ALLOWED : str_istarts(val, "grab") ? CUR_GRAB : CUR_DEFAULT; }
         else if (!strcmp(P, "content")) { free(st->content); st->content = NULL; if (!str_ieq(val, "none") && !str_ieq(val, "normal")) { SB b; sb_init(&b); const char *q = val; while (*q) { if (*q == '"' || *q == '\'') { char qc = *q++; while (*q && *q != qc) { if (*q == '\\' && q[1]) { q++; if (isxdigit((unsigned char)*q)) { uint32_t cp = (uint32_t)strtoul(q, (char **)&q, 16); sb_utf8(&b, cp); if (*q == ' ') q++; continue; } } sb_putc(&b, *q++); } if (*q) q++; } else if (str_istarts(q, "attr(")) { const char *e2 = strchr(q, ')'); char an[64]; snprintf(an, sizeof an, "%.*s", (int)(e2 ? e2 - q - 5 : 0), q + 5); const char *attribute = str_trim(an); st->attribute_dependencies |= custom_bit(atom_lower(attribute, strlen(attribute))); const char *av = el ? node_attr(el, attribute) : NULL; if (av) sb_puts(&b, av); q = e2 ? e2 + 1 : q + strlen(q); } else if (str_istarts(q, "open-quote")) { sb_puts(&b, "\xe2\x80\x9c"); q += 10; } else if (str_istarts(q, "close-quote")) { sb_puts(&b, "\xe2\x80\x9d"); q += 11; } else q++; } st->content = sb_take(&b); } }
-        else if (!strcmp(P, "column-gap")) { if (str_ieq(val, "normal")) { st->column_gap = 0; memset(&st->column_gap_l, 0, sizeof st->column_gap_l); } else if (!angle_or_time(val) && alen(&c, val, &l)) { st->column_gap = l.px; st->column_gap_l = l; } }
+        else if (!strcmp(P, "column-gap")) { if (str_ieq(val, "normal")) { st->column_gap = 0; st->column_gap_l = L_auto(); } else if (!angle_or_time(val) && alen(&c, val, &l)) { st->column_gap = l.px; st->column_gap_l = l; } }
         else if (!strcmp(P, "caret-color")) { css_parse_color(val, &st->caret_color, st->color); }
         break;
     case 'd':
@@ -4781,6 +4843,25 @@ static void apply_font_declarations(ComputedStyle *st, const ComputedStyle *par,
     if (pending.value) css_apply_decl(st, par, "line-height", pending.value, e, el);
     free(pending.owned);
 }
+/* This new logical/physical family observes the priority already carried by
+ * MDecl and Decl. It does not reorder unrelated properties or introduce a
+ * cascade/layer model. Inline important declarations sit above author rules
+ * and below UA important rules. Project all only onto these two slots. */
+static bool contain_intrinsic_family(const char *prop) {
+    return contain_intrinsic_property(prop) != -2 || !strcmp(prop, "all");
+}
+static void apply_contain_intrinsic_declarations(ComputedStyle *st, const ComputedStyle *par,
+        MDecl *v, int n, StyleEngine *e, Node *el) {
+    for (int phase = 0; phase < 3; phase++) for (int i = 0; i < n; i++) {
+        const Decl *d = v[i].d;
+        if (!contain_intrinsic_family(d->prop)) continue;
+        int priority = (v[i].key >> 62) == 3 ? 2 : !v[i].key && d->important ? 1 : 0;
+        if (priority != phase) continue;
+        /* all follows its ordinary substitution/CSS-wide validation path;
+           that path projects only the new intrinsic-size slots. */
+        css_apply_decl(st, par, d->prop, d->value, e, el);
+    }
+}
 static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el, bool author) {
     /* Dependencies precede their consumers: custom values, writing-mode/direction/text-orientation,
        font-size (em basis), color, then the remaining cascade in its order. */
@@ -4800,15 +4881,21 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
     for (int i = 0; i < n; i++) if (flow_basis_prop(v[i].d->prop)) css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
     apply_font_declarations(st, par, v, n, e, el, author);
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
+    bool intrinsic_family = false;
     for (int i = 0; i < n; i++) {
         const char *p = v[i].d->prop;
         if ((p[0] == '-' && p[1] == '-') || flow_basis_prop(p) || font_basis_prop(p) || !strcmp(p, "color")) continue;
+        if (contain_intrinsic_family(p)) {
+            intrinsic_family = true;
+            if (strcmp(p, "all")) continue;
+        }
         if (author && unitless_invalid(p, v[i].d->value, el)) continue;
         if (author && el && el->doc && el->doc->quirks && quirky_length_prop(p) && has_unitless_number(v[i].d->value)) {
             char *q = quirk_px(v[i].d->value); css_apply_decl(st, par, p, q, e, el); free(q); continue;
         }
         css_apply_decl(st, par, p, v[i].d->value, e, el);
     }
+    if (intrinsic_family) apply_contain_intrinsic_declarations(st, par, v, n, e, el);
     bg_position_resolve_logical(st);
 }
 
@@ -4959,7 +5046,7 @@ static void adopt(ComputedStyle *old, ComputedStyle *nw) {
  * retained by another computed style. Flattened maps take the normal path. */
 /* The parent values an explicit `inherit` of a non-inherited property copies (see apply's inherit). */
 static bool uncompared_differ(const ComputedStyle *a, const ComputedStyle *b) {
-    return a->size_containment != b->size_containment || a->content_visibility != b->content_visibility || memcmp(a->contain_intrinsic, b->contain_intrinsic, sizeof a->contain_intrinsic) || a->bg_color != b->bg_color || memcmp(&a->width, &b->width, sizeof a->width) || memcmp(&a->height, &b->height, sizeof a->height) ||
+    return a->column_count != b->column_count || memcmp(&a->column_width, &b->column_width, sizeof a->column_width) || a->size_containment != b->size_containment || a->content_visibility != b->content_visibility || memcmp(a->contain_intrinsic, b->contain_intrinsic, sizeof a->contain_intrinsic) || a->bg_color != b->bg_color || memcmp(&a->width, &b->width, sizeof a->width) || memcmp(&a->height, &b->height, sizeof a->height) ||
         memcmp(&a->min_width, &b->min_width, sizeof a->min_width) || memcmp(&a->min_height, &b->min_height, sizeof a->min_height) ||
         memcmp(&a->max_width, &b->max_width, sizeof a->max_width) || memcmp(&a->max_height, &b->max_height, sizeof a->max_height) ||
         memcmp(a->margin, b->margin, sizeof a->margin) || memcmp(a->padding, b->padding, sizeof a->padding) ||
@@ -6182,6 +6269,18 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         free(a); free(z); return sb_take(&b);
     }
     prop = logical_box_prop(prop, s);
+    if (column_property(prop)) {
+        bool shorthand = !strcmp(prop, "columns"), width = s->column_width.kind != LK_AUTO;
+        if (!strcmp(prop, "column-width") || (shorthand && width)) {
+            if (!width) sb_puts(&b, "auto"); else sb_printf(&b, "%gpx", s->column_width.px);
+        }
+        if (!strcmp(prop, "column-count") || (shorthand && s->column_count)) {
+            if (shorthand && width) sb_putc(&b, ' ');
+            if (!s->column_count) sb_puts(&b, "auto"); else sb_printf(&b, "%u", s->column_count);
+        }
+        if (shorthand && !width && !s->column_count) sb_puts(&b, "auto");
+        return sb_take(&b);
+    }
     int intrinsic_axis = contain_intrinsic_property(prop);
     if (intrinsic_axis != -2) {
         contain_intrinsic_str(&b, s->contain_intrinsic[intrinsic_axis < 0 ? 0 : intrinsic_axis]);

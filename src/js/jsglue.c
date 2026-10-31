@@ -77,6 +77,9 @@ uint64_t jsg_visual_generation(void) { return doc_visual_generation(); }
 void jsg_visual_changed(void) { doc_visual_changed(); }
 uint64_t jsg_activity_generation(void) { return doc_activity_generation(); }
 
+bool jsg_has_skipped_ancestor(Node *n) {
+    return layout_has_skipped_ancestor(n ? n->box : NULL);
+}
 bool jsg_rect(Node *n, float r[4]) {
     struct Box *b = n->box;
     if (!b) return false;

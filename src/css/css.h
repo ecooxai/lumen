@@ -143,7 +143,12 @@ struct ComputedStyle *css_position_try_style(const struct ComputedStyle *s, cons
 void css_position_try_free(struct ComputedStyle *t);
 const char *css_property_initial(const char *name);
 
-typedef struct GridTrack { Length size; float fr; Length min; } GridTrack;
+enum { GRID_REPEAT_NONE, GRID_REPEAT_FILL, GRID_REPEAT_FIT };
+typedef struct GridTrack {
+    Length size; float fr; Length min;
+    uint16_t repeat_span; /* first track of an authored automatic pattern */
+    uint8_t repeat_kind;
+} GridTrack;
 /* Preserve authored edges independently until layout knows the explicit grid.
    Deriving a start/span during cascading loses start-side spans and order. */
 typedef struct GridLine { int number, span; } GridLine; /* both zero: auto */
@@ -178,6 +183,7 @@ typedef struct ComputedStyle {
     float flex_grow, flex_shrink;
     Length flex_basis;
     float row_gap, column_gap; Length row_gap_l, column_gap_l;
+    Length column_width; unsigned column_count; /* auto width/count=0; empty-container intrinsic sizing */
     float vertical_align_len;
     Length width, height, min_width, min_height, max_width, max_height;
     ContainIntrinsicSize contain_intrinsic[2]; /* physical width, height; computed CSS pixels */
@@ -424,6 +430,7 @@ bool css_media_valid(const char *q);
 bool css_supports(const char *cond);
 bool css_flex_valid(const char *prop, const char *value);
 bool css_containment_valid(const char *prop, const char *value);
+bool css_columns_valid(const char *prop, const char *value);
 /* Grid1/2 automatic-repeat constraint; not a complete property grammar validator. */
 bool css_grid_repeat_valid(const char *property, const char *value);
 /* Caller owns *out. Used for implicit grid track-size patterns. */

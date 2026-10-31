@@ -19,6 +19,9 @@ typedef struct IRect { float x, y, w, h; bool first, last; int line; } IRect;
 /* Owned by one layout box; sizes are final CSS pixels in logical track order. */
 typedef struct GridUsedTracks {
     float *size[2];
+    /* Views into the second half of each owned size allocation. Collapsed
+       auto-fit tracks also collapse adjoining gutters; no extra owner. */
+    float *gap_after[2];
     float offset[2], gap[2];  /* final content alignment and distributed gutters */
     int count[2], explicit_start[2], explicit_count[2], template_count[2];
 } GridUsedTracks;
@@ -85,6 +88,7 @@ void compute_mbp(Box *b, float cbw);
 /* Size containment affects intrinsic measurement, never descendant painting. */
 bool layout_size_contained(const Box *box, bool horizontal);
 bool layout_contents_hidden(const Box *box);
+bool layout_has_skipped_ancestor(const Box *box);
 float layout_contained_inner_size(const Box *box, bool horizontal);
 /* Anonymous/inline wrappers do not establish the percentage containing block. */
 bool layout_percentage_wrapper(const Box *box);

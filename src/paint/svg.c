@@ -601,7 +601,8 @@ static const Node *hit_walk(const Node *n, Mat m, HitPaint hp, float x, float y,
     return r;
 }
 Node *svg_hit(Node *n, float x, float y, float cw, float ch) {
-    if (cw < 0.5f || ch < 0.5f) return NULL;
+    /* The owner can receive the hit; its skipped SVG shapes cannot. */
+    if (!n || layout_contents_hidden(n->box) || cw < 0.5f || ch < 0.5f) return NULL;
     float vx = 0, vy = 0, vw = cw, vh = ch; const char *vb = node_attr(n, "viewBox"), *par = node_attr(n, "preserveAspectRatio");
     if (!(vb && sscanf(vb, "%f%*[ ,]%f%*[ ,]%f%*[ ,]%f", &vx, &vy, &vw, &vh) == 4 && vw > 0 && vh > 0)) { vx = vy = 0; vw = cw; vh = ch; }
     float kx = cw / vw, ky = ch / vh, tx = 0, ty = 0;

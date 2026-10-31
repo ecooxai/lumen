@@ -806,8 +806,25 @@ static float clamph(Box *b, float h, float cbh, float bp) {
  * measured as empty. A shallow measurement box borrows immutable style and
  * has no descendants, registrations or memo state. Actual children are laid
  * out normally in the original box after its contained size is fixed. */
+static unsigned select_display_rows(const Box *b) {
+    const char *value = node_attr(b->node, "size");
+    if (value) {
+        while (is_ws((unsigned char)*value)) value++;
+        if (*value != '-') {
+            char *end; unsigned long rows = strtoul(value, &end, 10);
+            if (end != value && rows && rows <= UINT32_MAX) return (unsigned)rows;
+        }
+    }
+    return node_has_attr(b->node, "multiple") ? 4 : 1;
+}
+static float select_empty_height(const Box *b) {
+    return select_display_rows(b) * style_line_height(b->st, style_font(b->st));
+}
 static float contained_auto_height(Layout *L, Box *b, float content_width) {
     if (b->st->contain_intrinsic[1].flags & CIS_LENGTH) return b->st->contain_intrinsic[1].length;
+    /* A native empty select retains its own UI rows; option content is not
+       consulted. Explicit intrinsic height, including zero, replaces it. */
+    if (b->ctl == CTL_SELECT) return select_empty_height(b);
     if (b->fmt != FMT_GRID) return 0;
     Box empty = *b; empty.first = empty.last = empty.abs_head = NULL;
     empty.grid_used = NULL; empty.memo = empty.intr_ok = false;
@@ -946,6 +963,7 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     case FMT_TABLE: ch = layout_table(L, b, cx, cy, cw, ch_for_kids); break;
     case FMT_REPLACED: { float w, h; replaced_size(L, b, cbw, cbh, mode == SZ_FORCED ? b->w : -1, fh, &w, &h); ch = h; break; }
     }
+    if (b->ctl == CTL_SELECT) ch = LMAX(ch, select_empty_height(b));
     if (b->fmt != FMT_FLOW) b->eff_mb = b->m[2];
     if (b->bfc && f == &own) { float fb = fc_bottom(&own); if (fb > cy + ch) ch = fb - cy; }
     free(own.v);
@@ -959,7 +977,8 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
        icon buttons: an inline-block svg in a 48px display:block <button>); so is single-line
        control text */
     bool button = b->node && b->node->type == NODE_ELEMENT && b->node->tag == A_button && b->node->ns == NS_HTML && (b->fmt == FMT_FLOW || b->fmt == FMT_INLINE);
-    if (button || (b->ctl && b->ctl != CTL_TEXTAREA && b->nlines <= 1)) {
+    bool listbox = b->ctl == CTL_SELECT && (node_has_attr(b->node, "multiple") || select_display_rows(b) > 1);
+    if (button || (b->ctl && b->ctl != CTL_TEXTAREA && !listbox && b->nlines <= 1)) {
         float d = (b->h - vb - content_h) / 2;
         if (d > 0) { box_translate(b, 0, d); b->y -= d; if (b->ctl && !b->nlines) b->baseline += d; }   /* everything inside moves, the box stays */
     }
