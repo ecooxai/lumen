@@ -1884,20 +1884,9 @@ static bool column_property(const char *prop) {
     return !strcmp(prop, "columns") || !strcmp(prop, "column-width") || !strcmp(prop, "column-count");
 }
 static bool column_count_value(ACtx *c, const char *text, unsigned *count) {
-    const char *p = text; if (*p == '+') p++;
-    if (isdigit((unsigned char)*p)) {
-        unsigned value = 0;
-        while (isdigit((unsigned char)*p)) {
-            if (value <= (UINT_MAX - 9) / 10) value = value * 10 + *p - '0'; else value = UINT_MAX;
-            p++;
-        }
-        if (!*p && value) { *count = value; return true; }
-    }
-    if (!strchr(text, '(')) return false;
-    CssNumber value;
-    if (!application_number(c, text, false, &value) || !css_number_scalar(&value)) return false;
-    double rounded = isnan(value.value) ? 1 : floor(value.value + .5);
-    *count = rounded <= 1 ? 1 : rounded >= UINT_MAX ? UINT_MAX : (unsigned)rounded; return true;
+    int value;
+    if (!application_integer(c, text, 1, &value)) return false;
+    *count = (unsigned)value; return true;
 }
 static bool columns_parse(ACtx *c, const char *prop, const char *text, Length *width, unsigned *count) {
     char *tokens[3]; int n = split_ws(text, tokens, 3);
@@ -2489,7 +2478,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         if (inherit && par) { width = par->column_width; count = par->column_count; st->parent_sensitive = true; }
         else if (!inherit && !initial && !unset && !columns_parse(&c, P, val, &width, &count)) goto out;
         if (strcmp(P, "column-count")) st->column_width = width;
-        if (strcmp(P, "column-width")) st->column_count = count;
+        if (strcmp(P, "column-width")) {
+            st->column_count = count;
+            /* Preserve canonical generic storage for established numeric
+               and CSSOM consumers, including shorthand and CSS-wide updates. */
+            char canonical[32];
+            if (count) snprintf(canonical, sizeof canonical, "%u", count);
+            gen_put(&st->gen_n, "column-count", xstrdup(count ? canonical : "auto"));
+        }
         goto out;
     }
     /* Intrinsic-size longhands share the final physical slots in cascade order.
