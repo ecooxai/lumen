@@ -2211,7 +2211,9 @@ static void tick_one(JsCtx *c) {
     if (c->bg_seen != c->bg) { c->bg_seen = c->bg; jfire(c, &c->doc->node, "visibilitychange"); }
     /* a background tab gets no animation frames, as in Chrome: a hidden WebGL demo or animated page
        would otherwise keep drawing at 60 Hz */
+    bool ran_raf = false;
     if (!c->rafs.empty() && !c->bg && now - c->last_raf >= raf_gap(c, now)) {
+        ran_raf = true;
         if (now - c->last_raf > 100) c->raf_run_t = now;   /* a new run of frames */
         uint64_t act = jsg_activity_generation();
         if (act != c->raf_act_seen) { c->raf_act_seen = act; c->raf_act_t = now; }
@@ -2248,15 +2250,16 @@ static void tick_one(JsCtx *c) {
         (void)jcall(c, c->resize_pump.Get(iso), v8::Undefined(iso), 0, nullptr);
     }
     TICK_MARK(7);
-    // Snapshot before callbacks: mutations/new observations in a callback must
-    // survive for the next delivery. Bound scanning during continuous scrolling
-    // to 20 Hz; unchanged pages have no timer or geometry reads.
-    if (!c->intersection_pump.IsEmpty() && now_ms() >= c->intersection_due &&
-        (c->intersection_pending || c->intersection_version != jsg_visual_generation())) {
+    // Dirty observations update after a rendering opportunity; pace other
+    // changes like size observation. Unchanged pages have no deadline or scan.
+    // Snapshot before callbacks so their mutations/new targets stay pending.
+    if (!c->intersection_pump.IsEmpty() &&
+        (c->intersection_pending || c->intersection_version != jsg_visual_generation()) &&
+        (ran_raf || now_ms() >= c->intersection_due)) {
         if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
         c->intersection_version = jsg_visual_generation();
         c->intersection_pending = false;
-        c->intersection_due = now_ms() + 50; JST(g_jst.io++);
+        c->intersection_due = now_ms() + 16; JST(g_jst.io++);
         (void)jcall(c, c->intersection_pump.Get(iso), v8::Undefined(iso), 0, nullptr);
     }
     TICK_MARK(8);

@@ -49,5 +49,98 @@ body{margin:0;height:3000px}
     ok(typeof IntersectionObserverEntry === 'function' && 'intersectionRatio' in IntersectionObserverEntry.prototype && 'isIntersecting' in IntersectionObserverEntry.prototype, 'entry class (pages polyfill without it)');
     ok(g.get('inner') instanceof IntersectionObserverEntry, 'entries are IntersectionObserverEntry');
     console.log(fails.length ? 'RESULTS intersection-geometry:FAIL ' + fails.join('; ') : 'RESULTS intersection-geometry:PASS');
+
+    // Authored diagnostic: retain all existing geometry assertions above, then
+    // inspect actual-layout transitions immediately after observer delivery.
+    // Use the ordinary native layout and observer pipelines for this control.
+    try {
+        const cadenceFails = [], records = [], frames = [];
+        const note = value => console.log('DIAGNOSTIC io-frame-cadence ' + JSON.stringify(value));
+        const require = (condition, message) => { if (!condition) cadenceFails.push(message); };
+        const scroller = document.createElement('div'), target = document.createElement('div');
+        scroller.style.cssText = 'position:absolute;left:600px;top:120px;width:120px;height:100px;overflow:auto';
+        target.style.cssText = 'margin-top:200px;width:40px;height:20px';
+        const tail = document.createElement('div'); tail.style.height = '200px';
+        scroller.appendChild(target); scroller.appendChild(tail); document.body.appendChild(scroller);
+        let geometryReads = 0, nextDelivery = null;
+        const originalRect = target.getBoundingClientRect.bind(target);
+        target.getBoundingClientRect = function () { geometryReads++; return originalRect(); };
+        const observed = new IntersectionObserver(es => {
+            for (const e of es) records.push({ time: performance.now(), intersecting: e.isIntersecting,
+                ratio: e.intersectionRatio, top: e.boundingClientRect.top, scrollTop: scroller.scrollTop });
+            note({phase:'callback', records:records.slice(-es.length)});
+            if (nextDelivery) { const deliver = nextDelivery; nextDelivery = null; deliver(); }
+        });
+        const delivery = action => new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => { nextDelivery = null; reject(new Error('no observer delivery within 1000 ms')); }, 1000);
+            nextDelivery = () => { clearTimeout(timeout); resolve(); };
+            action();
+        });
+        const twoFrames = () => new Promise(resolve => requestAnimationFrame(stamp => {
+            frames.push({stamp, now:performance.now()});
+            requestAnimationFrame(stamp => { frames.push({stamp, now:performance.now()}); resolve(); });
+        }));
+        await delivery(() => {
+            const before = records.length; observed.observe(target);
+            require(records.length === before, 'observe must deliver asynchronously');
+        });
+        require(records.length === 1 && !records[0].intersecting, 'initial target outside element scroller');
+        const transition = async (name, mutate, expected) => {
+            const first = records.length, firstFrame = frames.length, start = performance.now();
+            mutate();
+            await twoFrames();
+            const byTwoFrames = records.slice(first);
+            note({phase:name, start, end:performance.now(), frames:frames.slice(firstFrame),
+                expected, records:byTwoFrames, geometryReads, scrollTop:scroller.scrollTop});
+            require(byTwoFrames.length === 1 && byTwoFrames[0].intersecting === expected,
+                name + ': expected one changed observation within two rendering opportunities');
+            if (!byTwoFrames.length) await delivery(() => {});
+            require(records.length === first + 1 && records[records.length - 1].intersecting === expected,
+                name + ': eventual actual-layout state');
+        };
+        // Each next transition follows the preceding completed observation.
+        // Delaying first would allow the old 50 ms cap to expire and hide it.
+        await transition('scroll-enter', () => { scroller.scrollTop = 200; }, true);
+        await transition('scroll-exit', () => { scroller.scrollTop = 0; }, false);
+        await transition('scroll-enter-again', () => { scroller.scrollTop = 200; }, true);
+        await transition('ancestor-hidden', () => { scroller.style.contentVisibility = 'hidden'; }, false);
+        // Unhiding does not establish a particular scroll offset. Restore the
+        // intended real geometry explicitly; this probe does not test retention.
+        await transition('ancestor-visible', () => {
+            scroller.style.contentVisibility = 'visible'; scroller.scrollTop = 200;
+        }, true);
+        await wait(100);
+        const idle = {start:performance.now(), geometryReads, notifications:records.length};
+        note({phase:'idle-start', ...idle});
+        await wait(3300);
+        const idleResult = {phase:'idle-end', elapsed:performance.now()-idle.start,
+            geometryReads:geometryReads-idle.geometryReads, notifications:records.length-idle.notifications};
+        note(idleResult);
+        require(idleResult.geometryReads === 0, 'quiescent observed content must not rescan geometry');
+        require(idleResult.notifications === 0, 'quiescent content must not generate duplicate entries');
+        observed.unobserve(target);
+        const stoppedReads = geometryReads, stoppedRecords = records.length;
+        target.style.marginTop = '300px'; scroller.scrollTop = 0;
+        await twoFrames(); await wait(80);
+        require(geometryReads === stoppedReads && records.length === stoppedRecords,
+            'unobserving the final target must stop scans and deliveries');
+        await delivery(() => {
+            const before = records.length; observed.observe(target);
+            require(records.length === before, 'reobserve remains asynchronous');
+        });
+        require(!records[records.length - 1].intersecting, 'reobserve gets a fresh initial offscreen observation');
+        observed.disconnect();
+        const disconnected = {reads:geometryReads, records:records.length};
+        scroller.scrollTop = 300; await twoFrames(); await wait(80);
+        require(geometryReads === disconnected.reads && records.length === disconnected.records,
+            'disconnect must stop scans and deliveries');
+        note({phase:'complete', failures:cadenceFails, geometryReads, notifications:records.length});
+        console.log(cadenceFails.length ? 'RESULTS io-frame-cadence:FAIL ' + cadenceFails.join('; ') : 'RESULTS io-frame-cadence:PASS');
+        // One aggregate marker requires both independent groups to succeed.
+        console.log(!fails.length && !cadenceFails.length ? 'RESULTS intersection-geometry-cadence:PASS' : 'RESULTS intersection-geometry-cadence:FAIL');
+    } catch (error) {
+        console.log('RESULTS io-frame-cadence:FAIL ' + String(error));
+    }
+    document.documentElement.setAttribute('data-io-cadence-complete', '1');
 })();
 </script>
