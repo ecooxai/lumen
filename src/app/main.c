@@ -2190,7 +2190,7 @@ static bool scroller_blit(App *a, int pwp, int ph, int *ox0, int *oy0, int *ox1,
         nc++;
     }
     if (found != 1 || R[2] <= R[0] || R[3] <= R[1]) SB_FAIL(PP_SB_CLIP);
-    if (!sb->node || sb->node->scroll_x != a->sbox_x0) SB_FAIL(PP_SB_X);
+    if (!box_scroll_active(sb) || box_scroll_left(sb) != a->sbox_x0) SB_FAIL(PP_SB_X);
     float fd = (box_scroll_y(sb) - a->sbox_y0) * s; int d = (int)roundf(fd);
     if (!d || fabsf(fd - d) > 0.01f || abs(d) * 2 >= R[3] - R[1]) SB_FAIL(PP_SB_D);
     /* Opaque rects that do not move with the scroller (a fixed composer bar) keep their pixels when only unmoved items
@@ -2732,7 +2732,7 @@ static void render(App *a) {
 static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
     Page *p = a->t->cur; if (!p || !p->L || a->t->asleep) return false;
     for (Box *b = layout_hit(p->L, x, y + a->t->sy, 0, a->t->sy); b; b = b->parent) {
-        if (!b->scroller || !b->node || !b->st) continue;
+        if (!box_scroll_active(b) || !b->st) continue;
         bool sx = b->st->overflow_x == OV_AUTO || b->st->overflow_x == OV_SCROLL, sy = b->st->overflow_y == OV_AUTO || b->st->overflow_y == OV_SCROLL;
         float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
         float lo = box_scroll_from_end(b) ? -maxy : 0, hi = box_scroll_from_end(b) ? 0 : maxy;
@@ -2742,11 +2742,11 @@ static bool wheel_scroll(App *a, float x, float y, float dx, float dy) {
             if (snapped != b->node->scroll_y) ny = snapped;
         }
         if (nx == b->node->scroll_x && ny == b->node->scroll_y) continue;
-        float painted_x = b->node->scroll_x, painted_y = box_scroll_y(b);
+        float painted_x = box_scroll_left(b), painted_y = box_scroll_y(b);
         b->node->scroll_x = nx; b->node->scroll_y = ny;
         doc_visual_changed();
         float rx = b->x, ry = b->y; bool fx = b->fixed;
-        for (Box *q = b->parent; q; q = q->parent) { fx |= q->fixed; if (q->scroller && q->node) { rx -= q->node->scroll_x; ry -= q->node->scroll_y; } }
+        for (Box *q = b->parent; q; q = q->parent) { fx |= q->fixed; if (q->scroller && q->node) { rx -= box_scroll_left(q); ry -= box_scroll_top(q); } }
         if (fx || (a->dirty && !a->vonly)) { a->vonly = a->sdirty = false; }
         else {
             float r[4] = { rx, ry - a->t->sy, rx + b->w, ry - a->t->sy + b->h };

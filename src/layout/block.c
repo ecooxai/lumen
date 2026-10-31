@@ -150,7 +150,7 @@ static bool anchor_inset(const Box *a, const Box *cb, int i, int src, const int 
     if (!name) name = a->st->pos_anchor;   /* the default anchor */
     const Box *ab = name && side ? find_anchor(a, name) : NULL;
     float scx = 0, scy = 0;   /* scrollers between the anchor and the containing block shift it */
-    if (ab) for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += p->scroll_x; scy += p->scroll_y; }
+    if (ab) for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += box_scroll_left(p->box); scy += box_scroll_top(p->box); }
     if (ab) {
         /* the side as a physical side q (0 top 1 right 2 bottom 3 left) and a fraction from q toward the opposite side,
            read on the declaring side's axis, then moved by the try tactics */
@@ -235,7 +235,7 @@ static bool area_apply(const Box *a, const Box *cb, const char *area, const int 
         if (sx0 == 0 || sx0 == 3) { *dl = xl0; *dh = xh0; } else { *dl = 2 - xh0; *dh = 2 - xl0; }
     }
     float scx = 0, scy = 0;
-    for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += p->scroll_x; scy += p->scroll_y; }
+    for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += box_scroll_left(p->box); scy += box_scroll_top(p->box); }
     float X[4] = { 0, ab->x - *px - scx, ab->x - *px - scx + ab->w, *pw }, Y[4] = { 0, ab->y - *py - scy, ab->y - *py - scy + ab->h, *ph };
     for (int i = 1; i < 3; i++) { X[i] = LMIN(LMAX(X[i], X[0]), X[3]); Y[i] = LMIN(LMAX(Y[i], Y[0]), Y[3]); }
     *px += X[xl]; *pw = X[xh + 1] - X[xl]; *py += Y[yl]; *ph = Y[yh + 1] - Y[yl];
@@ -1009,6 +1009,8 @@ static void overflow(Box *b) {
     b->scroll_w = r - b->x; b->scroll_h = LMAX(btm - b->y + b->p[2], bb - b->y);
 }
 static void clamp_scroll(Box *b, float maxx, float maxy) {
+    /* A skipped owner has no used scroll range; retain its backing offsets. */
+    if (layout_contents_hidden(b)) return;
     b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = box_scroll_from_end(b) ? LCLAMP(b->node->scroll_y, -maxy, 0) : LCLAMP(b->node->scroll_y, 0, maxy);
 }
 static void post(Layout *L, Box *b, float cbw, float cbh, float clipx, float clipy) {
@@ -1032,6 +1034,7 @@ static void extents(Layout *L, Box *b) {
     if (b->fixed) return;
     if (b->kind != BX_TEXT) { L->doc_w = LMAX(L->doc_w, b->x + b->w); L->doc_h = LMAX(L->doc_h, b->y + b->h); }
     if (b->scroller && b->node && b != L->root) return;
+    if (layout_contents_hidden(b)) return;
     for (int i = 0; i < b->nfrags; i++) { L->doc_w = LMAX(L->doc_w, b->frags[i].x + b->frags[i].w); L->doc_h = LMAX(L->doc_h, b->frags[i].y + b->frags[i].h); }
     for (Box *c = b->first; c; c = c->next) extents(L, c);
 }
@@ -1200,7 +1203,7 @@ void box_sticky_offset(const Box *b, float scroll_x, float scroll_y, float *dx, 
         if (a->fixed) { scroll_x = scroll_y = 0; break; }
     }
     Document *d = b->node->doc;
-    float px = port ? port->x + port->b[3] + port->node->scroll_x : scroll_x;
+    float px = port ? port->x + port->b[3] + box_scroll_left(port) : scroll_x;
     float py = port ? port->y + port->b[0] + box_scroll_y(port) : scroll_y;
     float pw = port ? port->w - port->b[3] - port->b[1] : d->layout_vw;
     float ph = port ? port->h - port->b[0] - port->b[2] : d->layout_vh;
@@ -1235,7 +1238,7 @@ static void hit_layers(Box *b, float x, float y, float ox, float oy, float vx, f
     float lx = x + ox, ly = y + oy;
     if (b->scroller && b->node && !(lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h)) return;
     float cox = ox, coy = oy;
-    if (b->scroller && b->node) { cox += b->node->scroll_x; coy += box_scroll_y(b); }
+    if (b->scroller && b->node) { cox += box_scroll_left(b); coy += box_scroll_y(b); }
     /* Reverse tree order resolves equal z-index without sorting or allocating.
        Each layer is tested at most once, and a lower layer cannot replace a hit. */
     for (Box *c = b->last; c; c = c->prev) {
@@ -1268,7 +1271,7 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
         if (best.box) return best.box;
     }
     float cox = ox, coy = oy;
-    if (b->scroller && b->node) { cox += b->node->scroll_x; coy += box_scroll_y(b); }
+    if (b->scroller && b->node) { cox += box_scroll_left(b); coy += box_scroll_y(b); }
     for (Box *c = b->last; c; c = c->prev) {
         if (hit_layer(c) != 2) continue;
         Box *h = hit(c, x, y, cox, coy, vx, vy, sx, sy, false);

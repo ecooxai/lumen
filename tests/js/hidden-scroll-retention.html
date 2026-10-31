@@ -1,0 +1,182 @@
+<!doctype html><meta charset="utf-8">
+<title>Hidden owner scroll retention regression</title>
+<style>html,body{margin:0;padding:0}body{min-height:800px}</style>
+<body>
+<script>
+(async () => {
+    const records = [], completed = [];
+    const twoFrames = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const setXY = (element, x, y) => { element.scrollLeft = x; element.scrollTop = y; };
+    const rect = element => { const r = element.getBoundingClientRect(); return {x:r.x,y:r.y,width:r.width,height:r.height}; };
+    const offsets = element => ({x:element.scrollLeft,y:element.scrollTop});
+    const read = element => {
+        const before = offsets(element);
+        const client = {width:element.clientWidth,height:element.clientHeight};
+        const scroll = {width:element.scrollWidth,height:element.scrollHeight};
+        const bounds = rect(element), after = offsets(element), style = getComputedStyle(element);
+        return {before,after,client,scroll,max:{x:Math.max(0,scroll.width-client.width),y:Math.max(0,scroll.height-client.height)},
+            bounds,contentVisibility:style.contentVisibility,overflowX:style.overflowX,overflowY:style.overflowY};
+    };
+    const sample = async (id, phase, owner, inner, leaf) => {
+        await twoFrames();
+        const record = {id,phase,time:performance.now(),owner:read(owner)};
+        if (inner) record.inner = read(inner);
+        if (leaf) record.leafBounds = rect(leaf);
+        // Expose any offset changes caused by descendant geometry reads.
+        record.ownerAfterDescendantReads = offsets(owner);
+        if (inner) record.innerAfterDescendantReads = offsets(inner);
+        records.push(record);
+        // The qualification matrix retains every raw observation separately.
+    };
+    const basic = () => {
+        const owner = document.createElement('div'), leaf = document.createElement('div');
+        owner.style.cssText = 'width:120px;height:100px;overflow:hidden;content-visibility:visible';
+        leaf.style.cssText = 'width:400px;height:400px';
+        owner.appendChild(leaf);document.body.appendChild(owner);setXY(owner,80,90);
+        return {owner,leaf};
+    };
+    const nested = () => {
+        const owner = document.createElement('div'), inner = document.createElement('div');
+        const leaf = document.createElement('div'), tail = document.createElement('div');
+        owner.style.cssText = 'width:160px;height:140px;overflow:hidden;content-visibility:visible';
+        inner.style.cssText = 'width:120px;height:100px;margin-left:40px;margin-top:70px;overflow:hidden;content-visibility:visible';
+        leaf.style.cssText = 'width:400px;height:400px';tail.style.cssText = 'width:450px;height:450px';
+        inner.appendChild(leaf);owner.appendChild(inner);owner.appendChild(tail);document.body.appendChild(owner);
+        setXY(owner,40,50);setXY(inner,60,70);return {owner,inner,leaf};
+    };
+    try {
+        {
+            const id='retain-both-axes', {owner,leaf}=basic();
+            await sample(id,'visible',owner,null,leaf);
+            owner.style.contentVisibility='hidden';await sample(id,'hidden',owner,null,leaf);
+            owner.style.contentVisibility='visible';await sample(id,'revealed',owner,null,leaf);
+            owner.remove();completed.push(id);
+        }
+        for (const [id,x,y] of [['hidden-set-zero',0,0],['hidden-set-positive',31,47]]) {
+            const {owner,leaf}=basic();await sample(id,'visible',owner,null,leaf);
+            owner.style.contentVisibility='hidden';await sample(id,'hidden-before-set',owner,null,leaf);
+            setXY(owner,x,y);await sample(id,'hidden-after-set',owner,null,leaf);
+            owner.style.contentVisibility='visible';await sample(id,'revealed',owner,null,leaf);
+            owner.remove();completed.push(id);
+        }
+        {
+            const id='range-shrink-and-regrow', {owner,leaf}=basic();
+            await sample(id,'visible',owner,null,leaf);
+            owner.style.contentVisibility='hidden';await sample(id,'hidden',owner,null,leaf);
+            leaf.style.width='150px';leaf.style.height='130px';await sample(id,'hidden-shrunk',owner,null,leaf);
+            owner.style.contentVisibility='visible';await sample(id,'revealed-shrunk',owner,null,leaf);
+            leaf.style.width='400px';leaf.style.height='400px';await sample(id,'visible-regrown',owner,null,leaf);
+            owner.remove();completed.push(id);
+        }
+        {
+            const id='overflow-mode-change', {owner,leaf}=basic();
+            await sample(id,'visible-scroll-container',owner,null,leaf);
+            owner.style.contentVisibility='hidden';await sample(id,'hidden',owner,null,leaf);
+            owner.style.overflow='visible';await sample(id,'hidden-overflow-visible',owner,null,leaf);
+            owner.style.contentVisibility='visible';await sample(id,'revealed-overflow-visible',owner,null,leaf);
+            owner.style.overflow='hidden';await sample(id,'scroll-container-restored',owner,null,leaf);
+            owner.remove();completed.push(id);
+        }
+        {
+            const id='nested-outer-hidden-inner-setter', {owner,inner,leaf}=nested();
+            await sample(id,'visible',owner,inner,leaf);
+            owner.style.contentVisibility='hidden';await sample(id,'outer-hidden',owner,inner,leaf);
+            setXY(inner,31,47);await sample(id,'inner-set-under-hidden-outer',owner,inner,leaf);
+            owner.style.contentVisibility='visible';await sample(id,'outer-revealed',owner,inner,leaf);
+            owner.remove();completed.push(id);
+        }
+        {
+            const id='nested-independently-hidden', {owner,inner,leaf}=nested();
+            await sample(id,'visible',owner,inner,leaf);
+            inner.style.contentVisibility='hidden';await sample(id,'inner-hidden',owner,inner,leaf);
+            owner.style.contentVisibility='hidden';await sample(id,'both-hidden',owner,inner,leaf);
+            owner.style.contentVisibility='visible';await sample(id,'outer-revealed-inner-hidden',owner,inner,leaf);
+            inner.style.contentVisibility='visible';await sample(id,'both-revealed',owner,inner,leaf);
+            owner.remove();completed.push(id);
+        }
+        if (completed.length !== 7 || records.length !== 30) throw new Error('incomplete reference matrix');
+
+        // Independent Chromium156 reference, captured before the repair.
+        // Every field is strict except the one documented eager hidden size.
+        const expected = [
+            {"id":"retain-both-axes","phase":"visible","owner":{"before":{"x":80,"y":90},"after":{"x":80,"y":90},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-80,"y":-90,"width":400,"height":400},"ownerAfterDescendantReads":{"x":80,"y":90}},
+            {"id":"retain-both-axes","phase":"hidden","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":0,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"retain-both-axes","phase":"revealed","owner":{"before":{"x":80,"y":90},"after":{"x":80,"y":90},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-80,"y":-90,"width":400,"height":400},"ownerAfterDescendantReads":{"x":80,"y":90}},
+            {"id":"hidden-set-zero","phase":"visible","owner":{"before":{"x":80,"y":90},"after":{"x":80,"y":90},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-80,"y":-90,"width":400,"height":400},"ownerAfterDescendantReads":{"x":80,"y":90}},
+            {"id":"hidden-set-zero","phase":"hidden-before-set","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":0,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"hidden-set-zero","phase":"hidden-after-set","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":0,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"hidden-set-zero","phase":"revealed","owner":{"before":{"x":80,"y":90},"after":{"x":80,"y":90},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-80,"y":-90,"width":400,"height":400},"ownerAfterDescendantReads":{"x":80,"y":90}},
+            {"id":"hidden-set-positive","phase":"visible","owner":{"before":{"x":80,"y":90},"after":{"x":80,"y":90},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-80,"y":-90,"width":400,"height":400},"ownerAfterDescendantReads":{"x":80,"y":90}},
+            {"id":"hidden-set-positive","phase":"hidden-before-set","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":0,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"hidden-set-positive","phase":"hidden-after-set","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":0,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"hidden-set-positive","phase":"revealed","owner":{"before":{"x":80,"y":90},"after":{"x":80,"y":90},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-80,"y":-90,"width":400,"height":400},"ownerAfterDescendantReads":{"x":80,"y":90}},
+            {"id":"range-shrink-and-regrow","phase":"visible","owner":{"before":{"x":80,"y":90},"after":{"x":80,"y":90},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-80,"y":-90,"width":400,"height":400},"ownerAfterDescendantReads":{"x":80,"y":90}},
+            {"id":"range-shrink-and-regrow","phase":"hidden","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":0,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"range-shrink-and-regrow","phase":"hidden-shrunk","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":0,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"range-shrink-and-regrow","phase":"revealed-shrunk","owner":{"before":{"x":30,"y":30},"after":{"x":30,"y":30},"client":{"width":120,"height":100},"scroll":{"width":150,"height":130},"max":{"x":30,"y":30},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-30,"y":-30,"width":150,"height":130},"ownerAfterDescendantReads":{"x":30,"y":30}},
+            {"id":"range-shrink-and-regrow","phase":"visible-regrown","owner":{"before":{"x":30,"y":30},"after":{"x":30,"y":30},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-30,"y":-30,"width":400,"height":400},"ownerAfterDescendantReads":{"x":30,"y":30}},
+            {"id":"overflow-mode-change","phase":"visible-scroll-container","owner":{"before":{"x":80,"y":90},"after":{"x":80,"y":90},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-80,"y":-90,"width":400,"height":400},"ownerAfterDescendantReads":{"x":80,"y":90}},
+            {"id":"overflow-mode-change","phase":"hidden","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":0,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"overflow-mode-change","phase":"hidden-overflow-visible","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"visible","overflowY":"visible"},"leafBounds":{"x":0,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"overflow-mode-change","phase":"revealed-overflow-visible","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"visible","overflowY":"visible"},"leafBounds":{"x":0,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"overflow-mode-change","phase":"scroll-container-restored","owner":{"before":{"x":80,"y":90},"after":{"x":80,"y":90},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":0,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-80,"y":-90,"width":400,"height":400},"ownerAfterDescendantReads":{"x":80,"y":90}},
+            {"id":"nested-outer-hidden-inner-setter","phase":"visible","owner":{"before":{"x":40,"y":50},"after":{"x":40,"y":50},"client":{"width":160,"height":140},"scroll":{"width":450,"height":620},"max":{"x":290,"y":480},"bounds":{"x":0,"y":0,"width":160,"height":140},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"inner":{"before":{"x":60,"y":70},"after":{"x":60,"y":70},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":20,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-60,"y":-50,"width":400,"height":400},"ownerAfterDescendantReads":{"x":40,"y":50},"innerAfterDescendantReads":{"x":60,"y":70}},
+            {"id":"nested-outer-hidden-inner-setter","phase":"outer-hidden","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":160,"height":140},"scroll":{"width":160,"height":140},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":160,"height":140},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"inner":{"before":{"x":60,"y":70},"after":{"x":60,"y":70},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":40,"y":70,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-20,"y":0,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0},"innerAfterDescendantReads":{"x":60,"y":70}},
+            {"id":"nested-outer-hidden-inner-setter","phase":"inner-set-under-hidden-outer","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":160,"height":140},"scroll":{"width":160,"height":140},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":160,"height":140},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"inner":{"before":{"x":31,"y":47},"after":{"x":31,"y":47},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":40,"y":70,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":9,"y":23,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0},"innerAfterDescendantReads":{"x":31,"y":47}},
+            {"id":"nested-outer-hidden-inner-setter","phase":"outer-revealed","owner":{"before":{"x":40,"y":50},"after":{"x":40,"y":50},"client":{"width":160,"height":140},"scroll":{"width":450,"height":620},"max":{"x":290,"y":480},"bounds":{"x":0,"y":0,"width":160,"height":140},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"inner":{"before":{"x":31,"y":47},"after":{"x":31,"y":47},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":20,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-31,"y":-27,"width":400,"height":400},"ownerAfterDescendantReads":{"x":40,"y":50},"innerAfterDescendantReads":{"x":31,"y":47}},
+            {"id":"nested-independently-hidden","phase":"visible","owner":{"before":{"x":40,"y":50},"after":{"x":40,"y":50},"client":{"width":160,"height":140},"scroll":{"width":450,"height":620},"max":{"x":290,"y":480},"bounds":{"x":0,"y":0,"width":160,"height":140},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"inner":{"before":{"x":60,"y":70},"after":{"x":60,"y":70},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":20,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-60,"y":-50,"width":400,"height":400},"ownerAfterDescendantReads":{"x":40,"y":50},"innerAfterDescendantReads":{"x":60,"y":70}},
+            {"id":"nested-independently-hidden","phase":"inner-hidden","owner":{"before":{"x":40,"y":50},"after":{"x":40,"y":50},"client":{"width":160,"height":140},"scroll":{"width":450,"height":620},"max":{"x":290,"y":480},"bounds":{"x":0,"y":0,"width":160,"height":140},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"inner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":20,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":0,"y":20,"width":400,"height":400},"ownerAfterDescendantReads":{"x":40,"y":50},"innerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"nested-independently-hidden","phase":"both-hidden","owner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":160,"height":140},"scroll":{"width":160,"height":140},"max":{"x":0,"y":0},"bounds":{"x":0,"y":0,"width":160,"height":140},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"inner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":40,"y":70,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":40,"y":70,"width":400,"height":400},"ownerAfterDescendantReads":{"x":0,"y":0},"innerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"nested-independently-hidden","phase":"outer-revealed-inner-hidden","owner":{"before":{"x":40,"y":50},"after":{"x":40,"y":50},"client":{"width":160,"height":140},"scroll":{"width":450,"height":620},"max":{"x":290,"y":480},"bounds":{"x":0,"y":0,"width":160,"height":140},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"inner":{"before":{"x":0,"y":0},"after":{"x":0,"y":0},"client":{"width":120,"height":100},"scroll":{"width":120,"height":100},"max":{"x":0,"y":0},"bounds":{"x":0,"y":20,"width":120,"height":100},"contentVisibility":"hidden","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":0,"y":20,"width":400,"height":400},"ownerAfterDescendantReads":{"x":40,"y":50},"innerAfterDescendantReads":{"x":0,"y":0}},
+            {"id":"nested-independently-hidden","phase":"both-revealed","owner":{"before":{"x":40,"y":50},"after":{"x":40,"y":50},"client":{"width":160,"height":140},"scroll":{"width":450,"height":620},"max":{"x":290,"y":480},"bounds":{"x":0,"y":0,"width":160,"height":140},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"inner":{"before":{"x":60,"y":70},"after":{"x":60,"y":70},"client":{"width":120,"height":100},"scroll":{"width":400,"height":400},"max":{"x":280,"y":300},"bounds":{"x":0,"y":20,"width":120,"height":100},"contentVisibility":"visible","overflowX":"hidden","overflowY":"hidden"},"leafBounds":{"x":-60,"y":-50,"width":400,"height":400},"ownerAfterDescendantReads":{"x":40,"y":50},"innerAfterDescendantReads":{"x":60,"y":70}}
+        ];
+        const failures = [];
+        // Separate control: a visible non-scroller must stop overflow at a
+        // hidden descendant owner, then include it again after reveal.
+        const parentExtentResults = [];
+        const overflowParent = document.createElement('div'), overflowOwner = document.createElement('div'), overflowLeaf = document.createElement('div');
+        overflowParent.style.cssText='width:160px;height:140px;overflow:visible';
+        overflowOwner.style.cssText='width:120px;height:100px;overflow:visible;content-visibility:hidden';
+        overflowLeaf.style.cssText='width:400px;height:400px';
+        overflowOwner.appendChild(overflowLeaf);overflowParent.appendChild(overflowOwner);document.body.appendChild(overflowParent);
+        for (const [phase,visibility,width,height] of [['hidden','hidden',160,140],['revealed','visible',400,400],['hidden-again','hidden',160,140]]) {
+            overflowOwner.style.contentVisibility=visibility;await twoFrames();
+            const got={phase,width:overflowParent.scrollWidth,height:overflowParent.scrollHeight};parentExtentResults.push(got);
+            if (got.width!==width || got.height!==height) failures.push('parent overflow '+phase+': expected '+width+'x'+height+', got '+got.width+'x'+got.height);
+        }
+        overflowParent.remove();
+        console.log('DIAGNOSTIC hidden-scroll-parent-overflow '+JSON.stringify(parentExtentResults));
+        let fields = 0, eagerHiddenSize = 0;
+        const compare = (actual, wanted, path, allowedSize) => {
+            if (wanted && typeof wanted === 'object') {
+                for (const key of Object.keys(wanted)) compare(actual && actual[key],wanted[key],path ? path+'.'+key : key,allowedSize);
+                return;
+            }
+            fields++;
+            if (allowedSize && (path==='leafBounds.width'||path==='leafBounds.height')) return;
+            if (actual!==wanted) failures.push(path+': expected '+JSON.stringify(wanted)+', got '+JSON.stringify(actual));
+        };
+        for (let i=0;i<expected.length;i++) {
+            const actual=records[i],wanted=expected[i];
+            const allowedSize=actual && actual.id==='range-shrink-and-regrow' && actual.phase==='hidden-shrunk' &&
+                wanted.id===actual.id && wanted.phase===actual.phase &&
+                actual.leafBounds.width===150 && actual.leafBounds.height===130 &&
+                wanted.leafBounds.width===400 && wanted.leafBounds.height===400;
+            if (allowedSize) eagerHiddenSize++;
+            const first=failures.length;compare(actual,wanted,'',allowedSize);
+            for(let j=first;j<failures.length;j++) failures[j]=wanted.id+'/'+wanted.phase+' '+failures[j];
+        }
+        for (const failure of failures) console.log('hidden-scroll-retention '+failure);
+        console.log('hidden-scroll-retention: '+completed.length+' cases, '+records.length+' phases, '+fields+' fields, documented eager hidden size differences '+eagerHiddenSize);
+        console.log(failures.length ? 'RESULTS hidden-scroll-retention:FAIL' : 'RESULTS hidden-scroll-retention:PASS');
+        console.log('MEASUREMENTS hidden-scroll-state:COMPLETE ' + JSON.stringify({completed,records:records.length}));
+        // Capture completion is separate from the retention result above.
+        console.log('RESULTS hidden-scroll-state:PASS');
+    } catch (error) {
+        console.log('MEASUREMENTS hidden-scroll-state:ERROR ' + String(error));
+        console.log('RESULTS hidden-scroll-retention:FAIL ' + String(error));
+        console.log('RESULTS hidden-scroll-state:FAIL ' + String(error));
+    }
+    document.documentElement.setAttribute('data-hidden-scroll-state-complete','1');
+})();
+</script>

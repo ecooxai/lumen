@@ -473,7 +473,7 @@ static void paint_block_content(PB *p, Box *b, bool decorate) {
         }
         if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
         p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
-        p->dx -= b->node->scroll_x; p->dy -= box_scroll_y(b);
+        p->dx -= box_scroll_left(b); p->dy -= box_scroll_y(b);
         p->sb = b; p->outer = &saved; p->mv_out = p->mv; p->mv = b;
     }
     if (s->display == D_LIST_ITEM && vis) paint_marker(p, b);
@@ -518,7 +518,7 @@ static void collect_context(PB *p, Box *b, DefVec *defs) {
         if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
         PB *outer = arena_alloc(&p->dl->arena, sizeof *outer); *outer = saved;
         p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
-        p->dx -= b->node->scroll_x; p->dy -= box_scroll_y(b);
+        p->dx -= box_scroll_left(b); p->dy -= box_scroll_y(b);
         p->sb = b; p->outer = outer; p->mv_out = p->mv; p->mv = b;
     }
     for (Box *c = b->first; c; c = c->next) {

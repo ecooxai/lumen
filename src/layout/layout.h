@@ -75,10 +75,16 @@ Box *layout_hit(Layout *layout, float x, float y, float scroll_x, float scroll_y
 void box_sticky_offset(const Box *b, float scroll_x, float scroll_y, float *dx, float *dy);
 Font *style_font(const ComputedStyle *s);
 float style_line_height(const ComputedStyle *s, Font *f);
+bool layout_contents_hidden(const Box *box);
+/* Stored element offsets survive skipped contents and a temporarily absent
+ * scroll container. Only the owner's effective offsets enter geometry. */
+static inline bool box_scroll_active(const Box *b) { return b && b->scroller && b->node && !layout_contents_hidden(b); }
+static inline float box_scroll_left(const Box *b) { return box_scroll_active(b) ? b->node->scroll_x : 0; }
+static inline float box_scroll_top(const Box *b) { return box_scroll_active(b) ? b->node->scroll_y : 0; }
 /* column-reverse scrollers start at the end: scrollTop 0 is the bottom, negative scrolls up */
 static inline bool box_within(const Box *x, const Box *a) { for (; x; x = x->parent) if (x == a) return true; return false; }
 static inline bool box_scroll_from_end(const Box *b) { return b->st && (b->st->display == D_FLEX || b->st->display == D_INLINE_FLEX) && b->st->flex_direction == FD_COLUMN_REVERSE; }
-static inline float box_scroll_y(const Box *b) { return b->node->scroll_y + (box_scroll_from_end(b) ? LMAX(0, b->scroll_h - b->h) : 0); }
+static inline float box_scroll_y(const Box *b) { return box_scroll_active(b) ? b->node->scroll_y + (box_scroll_from_end(b) ? LMAX(0, b->scroll_h - b->h) : 0) : 0; }
 void layout_dump(Box *b, int depth, int maxdepth);
 
 /* internal */
@@ -87,7 +93,6 @@ Box *build_box_tree(Layout *L, Document *d);
 void compute_mbp(Box *b, float cbw);
 /* Size containment affects intrinsic measurement, never descendant painting. */
 bool layout_size_contained(const Box *box, bool horizontal);
-bool layout_contents_hidden(const Box *box);
 bool layout_has_skipped_ancestor(const Box *box);
 float layout_contained_inner_size(const Box *box, bool horizontal);
 /* Anonymous/inline wrappers do not establish the percentage containing block. */

@@ -242,6 +242,68 @@ int main(void) {
     check("visible replaced content restored",image_calls>0);check("visible replaced pixels restored",pixel(&canvas,node(d,"hidden-canvas")->box,5,5)==0xffff0000);
     h=layout_hit(l,owner->x+7,owner->y+7,0,0);check("visible child receives hit",h&&h->node==node(d,"hidden-child"));
     dl_clear(&dl);vec_free(dl.items);canvas_free(&canvas);paint_image_hook=NULL;dispose(d,e,l);
+
+    /* Retained backing offsets are distinct from the hidden owner's used
+     * position. An ordinary overflow:hidden box remains scrollable. */
+    {
+        d=doc_new("https://css-containment.test/scroll-retention");
+        html="<!doctype html><html><body><div id='scroll' style='width:120px;height:100px;overflow:hidden;background:#008000'>"
+          "<div id='scroll-child' style='width:400px;height:400px;background:#ff0000'></div></div></body></html>";
+        html_parse(d,html,strlen(html));e=style_engine_new(d);css="body{margin:0}";
+        style_engine_add_sheet(e,css_parse_sheet(css,strlen(css),d->url,1,&e->media));
+        style_recalc(e,&d->node,true);l=layout_new();layout_run(l,d,160,140);
+        Node *sc=node(d,"scroll"),*contents=node(d,"scroll-child");
+        sc->scroll_x=80;sc->scroll_y=90;layout_run(l,d,160,140);
+        check("ordinary overflow:hidden remains active",box_scroll_active(sc->box));
+        same("visible scroll left",box_scroll_left(sc->box),80);same("visible scroll top",box_scroll_top(sc->box),90);
+        node_set_attr(sc,"style","width:120px;height:100px;overflow:hidden;content-visibility:hidden;background:#008000");
+        style_recalc(e,&d->node,false);layout_run(l,d,160,140);
+        same("hidden backing left retained",sc->scroll_x,80);same("hidden backing top retained",sc->scroll_y,90);
+        same("hidden used left",box_scroll_left(sc->box),0);same("hidden used top",box_scroll_top(sc->box),0);
+        same("hidden painted y",box_scroll_y(sc->box),0);check("hidden owner rejects element scrolling",!box_scroll_active(sc->box));
+        same("hidden scroll extent width",sc->box->scroll_w,sc->box->w);same("hidden scroll extent height",sc->box->scroll_h,sc->box->h);
+        check("retained offset does not move hidden hit target",layout_hit(l,5,5,0,0)==sc->box);
+        DisplayList retained_dl={0};Canvas retained_canvas;canvas_init(&retained_canvas,160,140,1);
+        dl_build(&retained_dl,l,0,0,160,140);raster(&retained_canvas,&retained_dl,0xffffffff);
+        check("retained hidden owner background",pixel(&retained_canvas,sc->box,5,5)==0xff008000);
+        dl_clear(&retained_dl);vec_free(retained_dl.items);canvas_free(&retained_canvas);
+        node_set_attr(sc,"style","width:120px;height:100px;overflow:visible;content-visibility:hidden");
+        style_recalc(e,&d->node,false);layout_run(l,d,160,140);
+        same("hidden non-scroller retains left",sc->scroll_x,80);same("hidden non-scroller retains top",sc->scroll_y,90);
+        same("hidden non-scroller used left",box_scroll_left(sc->box),0);same("hidden non-scroller used top",box_scroll_top(sc->box),0);
+        same("hidden descendants do not expand document width",l->doc_w,160);same("hidden document keeps minimum viewport height",l->doc_h,140);
+        node_set_attr(sc,"style","width:120px;height:100px;overflow:visible");
+        style_recalc(e,&d->node,false);layout_run(l,d,160,140);
+        same("visible non-scroller keeps backing left",sc->scroll_x,80);same("visible non-scroller keeps backing top",sc->scroll_y,90);
+        same("visible non-scroller used left",box_scroll_left(sc->box),0);same("visible non-scroller used top",box_scroll_top(sc->box),0);
+        check("ordinary visible overflow expands document",l->doc_w>=400&&l->doc_h>=400);
+        node_set_attr(sc,"style","width:120px;height:100px;overflow:hidden");
+        style_recalc(e,&d->node,false);layout_run(l,d,160,140);
+        same("restored scroll container left",box_scroll_left(sc->box),80);same("restored scroll container top",box_scroll_top(sc->box),90);
+        node_set_attr(sc,"style","width:120px;height:100px;overflow:hidden;content-visibility:hidden");
+        node_set_attr(contents,"style","width:150px;height:130px");
+        style_recalc(e,&d->node,false);layout_run(l,d,160,140);
+        same("hidden range change retains backing left",sc->scroll_x,80);same("hidden range change retains backing top",sc->scroll_y,90);
+        node_set_attr(sc,"style","width:120px;height:100px;overflow:hidden");
+        style_recalc(e,&d->node,false);layout_run(l,d,160,140);
+        same("reveal clamps left to real range",box_scroll_left(sc->box),30);same("reveal clamps top to real range",box_scroll_top(sc->box),30);
+        node_set_attr(contents,"style","width:400px;height:400px");style_recalc(e,&d->node,false);layout_run(l,d,160,140);
+        same("regrowth does not resurrect unclamped left",box_scroll_left(sc->box),30);same("regrowth does not resurrect unclamped top",box_scroll_top(sc->box),30);
+        node_set_attr(sc,"style","display:flex;flex-direction:column-reverse;width:120px;height:100px;overflow:hidden");
+        node_set_attr(contents,"style","width:400px;height:400px;flex-shrink:0");
+        style_recalc(e,&d->node,false);layout_run(l,d,160,140);sc->scroll_x=80;sc->scroll_y=-90;layout_run(l,d,160,140);
+        same("reverse scroller retains signed top",box_scroll_top(sc->box),-90);
+        float painted_y=box_scroll_y(sc->box);
+        same("reverse existing painted conversion",painted_y,LMAX(0,sc->box->scroll_h-sc->box->h)-90);
+        node_set_attr(sc,"style","display:flex;flex-direction:column-reverse;width:120px;height:100px;overflow:hidden;content-visibility:hidden");
+        style_recalc(e,&d->node,false);layout_run(l,d,160,140);
+        same("hidden reverse backing top retained",sc->scroll_y,-90);same("hidden reverse effective top",box_scroll_top(sc->box),0);
+        same("hidden reverse effective painted y",box_scroll_y(sc->box),0);
+        node_set_attr(sc,"style","display:flex;flex-direction:column-reverse;width:120px;height:100px;overflow:hidden");
+        style_recalc(e,&d->node,false);layout_run(l,d,160,140);
+        same("reverse signed top restored",box_scroll_top(sc->box),-90);same("reverse painted origin restored",box_scroll_y(sc->box),painted_y);
+        dispose(d,e,l);
+    }
     printf("containment: %u checks, %u failures\n",checks,failures);
     return failures?1:0;
 }
