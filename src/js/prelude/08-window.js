@@ -5,7 +5,7 @@ class ResizeObserver {
     disconnect() { this._t.clear(); roAll.delete(this); roStop(); }
     _check() {
         const recs = [];
-        for (const [el, old] of this._t) { const r = N.rect(el) || [0, 0, 0, 0]; const k = r[2] + 'x' + r[3]; if (k === old) continue; this._t.set(el, k); const cr = new DOMRect(0, 0, r[2], r[3]); const sz = [{ inlineSize: r[2], blockSize: r[3] }]; recs.push({ target: el, contentRect: cr, borderBoxSize: sz, contentBoxSize: sz, devicePixelContentBoxSize: sz }); }
+        for (const [el, old] of this._t) { const r = N.rect(el) || [0, 0, 0, 0]; if (N.skippedAncestor(el)) continue; const k = r[2] + 'x' + r[3]; if (k === old) continue; this._t.set(el, k); const cr = new DOMRect(0, 0, r[2], r[3]); const sz = [{ inlineSize: r[2], blockSize: r[3] }]; recs.push({ target: el, contentRect: cr, borderBoxSize: sz, contentBoxSize: sz, devicePixelContentBoxSize: sz }); }
         if (recs.length) { try { this._cb(recs, this); } catch (e) { report(e); } }
     }
 }
@@ -43,7 +43,8 @@ class IntersectionObserver {
         const rootOn = !root || root.isConnected;
         for (const [el, prev] of this._t) {
             const r = el.getBoundingClientRect();
-            let on = rootOn && el.isConnected && (!root || ioWithin(el, root)), x0 = r.left, y0 = r.top, x1 = r.right, y1 = r.bottom;
+            // CSS Contain skips descendant intersection, while the owner keeps geometry.
+            let on = rootOn && el.isConnected && !N.skippedAncestor(el) && (!root || ioWithin(el, root)), x0 = r.left, y0 = r.top, x1 = r.right, y1 = r.bottom;
             if (on) {
                 const c = N.vclip(el, root);   // ancestors with overflow clip cut the target
                 if (c === null) on = false;
@@ -709,11 +710,11 @@ function viewportChanged(resized, scrolled, media = true) {
     if (media) mediaChanged();
 }
 if (navigator.maxTouchPoints) for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) def(G, 'on' + type, null);
-function fire(target, type, init, Ctor = Event) {
+function fire(target, type, init, Ctor = Event, legacyTargetOverride = false) {
     const touchClick = type === 'click' && init && init.__touch;
     if (init && init.__touch) init = nativeTouchInit(type, init);
     if (init && init.__edit) oprReplace(target, init.__edit[0], init.__edit[1], init.__edit[2]);
-    const ev = new Ctor(type, init), ok = dispatch(target, ev, true);   /* dispatch runs the click's activation behavior */
+    const ev = new Ctor(type, init), ok = dispatch(target, ev, true, legacyTargetOverride);   /* dispatch runs the click's activation behavior */
     /* a tap on a text field, textarea or select focuses it */
     if (ok && type === 'click' && target && N.isNode(target) && N.type(target) === 1 && !target.disabled && !(target.closest && target.closest('a[href]'))) {
         const n = N.name(target);
@@ -1083,5 +1084,5 @@ function fireAnim(t, type, name, elapsed, anim) {
     Object.defineProperty(globalThis, 'Temporal', { get: load, set(v) { Object.defineProperty(globalThis, 'Temporal', { value: v, writable: true, configurable: true }); }, configurable: true });
     Object.defineProperty(Date.prototype, 'toTemporalInstant', { value: function toTemporalInstant() { load(); return Date.prototype.toTemporalInstant.call(this); }, writable: true, configurable: true });
 }
-return { ttInit, ttScript, ttParserScript, ttEval, queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, ceParserCreate, ceParserInserted, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { ttInit, ttScript, ttParserScript, ttEval, queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, ceParserCreate, ceParserInserted, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, PageTransitionEvent, ErrorEvent };
 })

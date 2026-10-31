@@ -1,0 +1,4115 @@
+{
+  "schema_version": 1,
+  "candidate": 234,
+  "iteration": 8,
+  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "project_source_manifest_digest": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
+  "project_recorded_input_count": 650,
+  "selected_native_test_count": 147,
+  "configured_native_test_count": 150,
+  "deferred_test_names": [
+    "data_url",
+    "url",
+    "url_host_nul"
+  ],
+  "selected_native_test_names": [
+    "android_back",
+    "android_dependency_plan",
+    "android_fling_bounded",
+    "android_fling_cadence",
+    "android_fling_cancel",
+    "android_fling_hold",
+    "android_fling_independent",
+    "android_fling_invalid",
+    "android_fling_pixels",
+    "android_fling_release",
+    "android_fling_reverse",
+    "android_fling_slow",
+    "android_fling_stall",
+    "android_fling_stop",
+    "android_launch",
+    "android_touch_cancel",
+    "android_touch_capacity",
+    "android_touch_chrome",
+    "android_touch_drag",
+    "android_touch_identity",
+    "android_touch_independent",
+    "android_touch_invalid",
+    "android_touch_multitouch",
+    "android_touch_release_delta",
+    "android_touch_reverse",
+    "android_touch_slop",
+    "android_touch_tap",
+    "android_trust_import",
+    "anon_block_size",
+    "auth_user_agent",
+    "background_clip",
+    "break_spaces",
+    "broadcast_site",
+    "browser_body_event",
+    "browser_control_selection",
+    "browser_grid_cssom",
+    "browser_grid_repeat",
+    "browser_grid_repeat_count",
+    "browser_grid_track_regression",
+    "browser_grid_typed_values",
+    "browser_grid_used_tracks",
+    "browser_image_lifecycle",
+    "browser_input_modifier",
+    "browser_input_queue",
+    "browser_module_errors",
+    "browser_module_graph_identity",
+    "browser_module_identity",
+    "browser_popup_input",
+    "browser_position_cssom_regression",
+    "browser_react_message_replacement",
+    "browser_replaced_sizing",
+    "button_center",
+    "code_cache",
+    "cookie_site",
+    "css_containment",
+    "css_stepped_math",
+    "css_stretch",
+    "desktop_sites",
+    "dom_style_tracking",
+    "download",
+    "embedded_assets",
+    "encoding_labels",
+    "fetch_metadata",
+    "file",
+    "flex_alignment",
+    "flex_declaration",
+    "font_units",
+    "font_woff2",
+    "fontconfig_match",
+    "grid_absolute",
+    "grid_alignment",
+    "grid_item_width",
+    "grid_repeat_validation",
+    "grid_used_values",
+    "has_filter",
+    "html5lib",
+    "http_cache",
+    "http_range",
+    "http_zstd",
+    "id_map",
+    "inset_move",
+    "invoker_cancel",
+    "invoker_close",
+    "invoker_custom",
+    "invoker_events",
+    "invoker_form",
+    "invoker_lifecycle",
+    "invoker_modal-order",
+    "invoker_native",
+    "invoker_properties",
+    "invoker_reentrant",
+    "invoker_shadow",
+    "invoker_toggle",
+    "js_checkvisibility_options",
+    "js_document_lifecycle",
+    "js_dom_webidl",
+    "js_empty_input",
+    "js_fullscreen",
+    "js_get_animations",
+    "js_gsi_button",
+    "js_hidden_scroll_retention",
+    "js_image_bitmap",
+    "js_indexeddb",
+    "js_intersection_geometry",
+    "js_minmax_definite",
+    "js_node_lifetime_child",
+    "js_node_lifetime_root",
+    "js_performance_startup",
+    "js_pointer_events",
+    "js_raf_throttle",
+    "js_touch_action",
+    "js_unhandled_rejection",
+    "js_viewport_runtime",
+    "js_viewport_state",
+    "js_web_locks",
+    "js_window_ports",
+    "js_worker_global_listener",
+    "js_worker_xhr",
+    "js_xpath",
+    "keyboard_editing",
+    "linux_capture_refusal",
+    "logical_size",
+    "media_icon",
+    "mime_policy",
+    "nested_overflow",
+    "net_redirect",
+    "net_stream",
+    "paint_cull",
+    "platform",
+    "proxy",
+    "radius_inherit",
+    "raster_bands",
+    "raster_spans",
+    "round_clip",
+    "scale_text",
+    "shape_cache",
+    "starting_style_conditional",
+    "starting_style_nested",
+    "starting_style_reopen",
+    "starting_style_top",
+    "sticky_geometry",
+    "svg_gradient_img",
+    "viewer",
+    "viewer_script",
+    "viewport_events",
+    "worker_tasks",
+    "workspace"
+  ],
+  "source_export_correspondence": {
+    "sealed_project_inputs_match": true,
+    "tracked_test_sources_and_fixtures": 457,
+    "all_tracked_test_sources_and_fixtures_match": true,
+    "canonical_project_dependency_count": 241,
+    "coverage_counts": {
+      "sealed650": 237,
+      "exact_public226_base": 3,
+      "explicit_extra": 1
+    },
+    "all_mapped_project_dependencies_match": true
+  },
+  "external_wpt": {
+    "upstream": "https://github.com/web-platform-tests/wpt",
+    "commit": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+    "tree": "473532b15684bbb7461cfcc6f5c1bb6adf909bc3",
+    "expected_relative_root": "../../wpt",
+    "example_layout": {
+      "source": "<work>/browser/lumen/lumen",
+      "wpt": "<work>/browser/wpt"
+    },
+    "fixture_count": 64,
+    "fixtures": [
+      {
+        "path": "css/css-values/resources/ChTestZeroWidthZero.woff",
+        "sha256": "45280eaf99497623d086bb218e8faf059e3034b675985d04139077393a99f22f",
+        "git_blob": "9c34dda475fd2f753447238d1f69fd66ba274fb6",
+        "matches_pinned_tree": true,
+        "bytes": 1056,
+        "native_test_names": [
+          "font_units"
+        ]
+      },
+      {
+        "path": "fonts/Ahem.ttf",
+        "sha256": "b719ecb31c5b21fc573c03f6421c74ac63c271a5a3ff841e34f9705fb94b8448",
+        "git_blob": "4d4785a4123287a5ca08439a6230514de91df0e7",
+        "matches_pinned_tree": true,
+        "bytes": 21768,
+        "native_test_names": [
+          "font_units"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/adoption01.dat",
+        "sha256": "b2aba05bd1d832f73a0c6103b3c8b151b283bab7c56887274d81f3a062c4963e",
+        "git_blob": "38f98efded0ae8a4f096f4c1cebba64a914241ea",
+        "matches_pinned_tree": true,
+        "bytes": 6084,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/adoption02.dat",
+        "sha256": "e091e6976f861ae616fe56c527a78e7247ee7562bcafec996d4e4bda657bd9b7",
+        "git_blob": "880cb505a660efdcacd287d50702d6b68a1c94d7",
+        "matches_pinned_tree": true,
+        "bytes": 1343,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/blocks.dat",
+        "sha256": "e3b7da1b57a4ec6991443dfc7ab3270f41d0f5959092a49be3e0edca0dae2104",
+        "git_blob": "a1a9c75218865eaad103a1cbb77263e566868ad2",
+        "matches_pinned_tree": true,
+        "bytes": 9688,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/comments01.dat",
+        "sha256": "c2f3a5ab4baf24f360ee14272aad18c33deffb9a56c2d5964777b1b6e0b8e3c1",
+        "git_blob": "f9a4ece8b5b3b6d1fa1dcfd77a75fb541797e8ef",
+        "matches_pinned_tree": true,
+        "bytes": 3349,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/doctype01.dat",
+        "sha256": "f3a286c09d729eeed9aa63e0aec13ab12336af04590c169543e6d1e1ef4723b2",
+        "git_blob": "9efdaf704bc3c55a36db4cad06e1b323d51486bf",
+        "matches_pinned_tree": true,
+        "bytes": 9076,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/domjs-unsafe.dat",
+        "sha256": "eef4fb719e027ffaadfb854787d172893850fc561c29efe72d90c5bfa3c8b7ac",
+        "git_blob": "0a1b10f96d9d62a67d631c640cf0bd68637da63d",
+        "matches_pinned_tree": true,
+        "bytes": 10356,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/entities01.dat",
+        "sha256": "b73605caac5aed5656184ab8db3f08edff5457ac3186cb04afa28384bca955e3",
+        "git_blob": "9bacebea050d93acf8ddea2bac5d9e4dbd3efbdf",
+        "matches_pinned_tree": true,
+        "bytes": 17640,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/entities02.dat",
+        "sha256": "f4e0cd461204b0184709be040c00811b776fbde1a6d002bb1c75d02056d9e54a",
+        "git_blob": "74965a35f76509d1cd5306112e8d51851d1d6fef",
+        "matches_pinned_tree": true,
+        "bytes": 4952,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/foreign-fragment.dat",
+        "sha256": "73e1785753c66420c067e5b29f89b17e7ebe1079687a512040ef19c6d42ac2c2",
+        "git_blob": "e562c6b8ff62c32ccefcf4c4666a1c9dfb45dd85",
+        "matches_pinned_tree": true,
+        "bytes": 9082,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/html5test-com.dat",
+        "sha256": "bc8b465fe4a3ef199142d7f7e8bc6bf7ba10327d3dd795d7abef993bcfb352d0",
+        "git_blob": "d5462575426533d7830c23eee0457451f4b3c4bf",
+        "matches_pinned_tree": true,
+        "bytes": 5550,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/inbody01.dat",
+        "sha256": "cb722f2853ec9613b71ea68e8bb26f474cc450b64612930591ab2656406222fe",
+        "git_blob": "10f6520f6fe0c64ac57ebee89bdbbbeac1a3849c",
+        "matches_pinned_tree": true,
+        "bytes": 836,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/isindex.dat",
+        "sha256": "d152de773e276a07a1cfc91e93f01f3ce52c447c110192f2828dab51be2721b6",
+        "git_blob": "733f82ea8eef7314b41711d938e056f75a440ca1",
+        "matches_pinned_tree": true,
+        "bytes": 774,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/main-element.dat",
+        "sha256": "d56e382994e1a5228ddb2ea49a5ff51ab68487f9a8f79ad34bcad05d40dc1e8f",
+        "git_blob": "4b103bb0fa34ce745afe2a995c8020a90018bfa0",
+        "matches_pinned_tree": true,
+        "bytes": 727,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/math.dat",
+        "sha256": "3c2ecc07272c175676ecfafa0cf6e18e74c3293075703702a4b7929fcb0d07bd",
+        "git_blob": "d6a8ae56f24f4608c57bbb497c08e19831746ac6",
+        "matches_pinned_tree": true,
+        "bytes": 1862,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/menuitem-element.dat",
+        "sha256": "08e5e25f38bbc181c840ce5c5203b2566dc03129aeaf105ca2311645d40aae4d",
+        "git_blob": "f7c8e2c3ca74eb1468ce76170d536cbceb70819c",
+        "matches_pinned_tree": true,
+        "bytes": 4015,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/namespace-sensitivity.dat",
+        "sha256": "318fbc9926eddf5863524f1503c711ddaea93b55bcbd1eaab71b7e354ddfeb09",
+        "git_blob": "050dca752284fbbee72942aa156cc260f784e5c2",
+        "matches_pinned_tree": true,
+        "bytes": 518,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/noscript01.dat",
+        "sha256": "e82449304a6371c14ed490384b6d814b7b1eeb1022dbc5caa2045fc8400655d7",
+        "git_blob": "ec3496ce92fee5878f3455025978c09624cf693a",
+        "matches_pinned_tree": true,
+        "bytes": 4619,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/pending-spec-changes-plain-text-unsafe.dat",
+        "sha256": "f45151f8dc7a4fe1a4b36710cf33606ff43cc98a42f1d2f085a77680683b0c99",
+        "git_blob": "2c546d40b8b1d8a918878a64d19d36dc7fe29204",
+        "matches_pinned_tree": true,
+        "bytes": 927,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/pending-spec-changes.dat",
+        "sha256": "a6b7c4ecccabe70de2f24184245e4a73a8d12ed44ee658c3d5d25cce04c9d27f",
+        "git_blob": "1647d7f23a96e03d085c03e6a7c87ddd439c0d2d",
+        "matches_pinned_tree": true,
+        "bytes": 851,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/plain-text-unsafe.dat",
+        "sha256": "016ec8acc054e4e8d7f5c156687b0ed563f271b3ac928dad9a9f1566f6c5f8f5",
+        "git_blob": "87a909f0bb7dd5088cb0bb3929bf142e0204be85",
+        "matches_pinned_tree": true,
+        "bytes": 14406,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/processing-instructions.dat",
+        "sha256": "3d4c6e67b59fda8fa0eb798106a42d244c69a84d7e3a385f9845bfc40071b4f1",
+        "git_blob": "c516eab0943042edb5cca8562c4087329843814b",
+        "matches_pinned_tree": true,
+        "bytes": 12487,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/quirks01.dat",
+        "sha256": "b6717cc15d4ed573ccf6755bc9d52073e675b4d09f23bde07961e27592b9717c",
+        "git_blob": "bc58de5ca0b6f77461708fff88b06c2f5a4d3780",
+        "matches_pinned_tree": true,
+        "bytes": 1170,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/ruby.dat",
+        "sha256": "5ae76ac4570d40e6648066798dd3ff729231bec98d3e010fdd67e0257f23a742",
+        "git_blob": "f4e5e4e48d72f3cd67a56766d898ea5b9f4ce338",
+        "matches_pinned_tree": true,
+        "bytes": 4471,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/scriptdata01.dat",
+        "sha256": "e32ea3adc3d68c90e62ea50b3a41bf80369d1491958532bf00787b3509667322",
+        "git_blob": "6abcb6571cf59aa10984e3dced97932f35f74065",
+        "matches_pinned_tree": true,
+        "bytes": 6624,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/scripted_adoption01.dat",
+        "sha256": "1203be63238a6effc9cc47e3c9b1fa9a0c7e0126a2f78916514afed2d46f42d8",
+        "git_blob": "5cc0f07496a658ef7a91dbcdb652f88e212e93d1",
+        "matches_pinned_tree": true,
+        "bytes": 296,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/scripted_ark.dat",
+        "sha256": "93365261fd9ea7dd9242613b57c23dba94e66bfd837a5d928f725bed81012dd0",
+        "git_blob": "feebeadba1d8a08a136be74ccfe9352587026989",
+        "matches_pinned_tree": true,
+        "bytes": 631,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/scripted_foster01.dat",
+        "sha256": "4bc2c004bfd5efe3ca1b49f3b03de0b31d69347440c97ee1ed83b34ee16ad158",
+        "git_blob": "a99760a39b7603628b56684111ebd84b784668cf",
+        "matches_pinned_tree": true,
+        "bytes": 648,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/scripted_webkit01.dat",
+        "sha256": "9d84f68ffd6e8b7b3924c9211280a70a888576b49074654cc9708236834afc58",
+        "git_blob": "3e71c1baccc9bc26200de9d17698f10f01224a6e",
+        "matches_pinned_tree": true,
+        "bytes": 603,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/search-element.dat",
+        "sha256": "625ba3dcc1b8cf8688c0ee4ebd22308554a134b916f692bf64cbb54b8b705cae",
+        "git_blob": "052ee598f5c0a350bcf94c6c9017b49bf2562a92",
+        "matches_pinned_tree": true,
+        "bytes": 2220,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/svg.dat",
+        "sha256": "4c819b8dbdfbd98cfbce9a535a304b0a16597eb29ccc04077131a62810f309cd",
+        "git_blob": "a452e7afa00d3bc62cf0af746a6375d4eec6c39e",
+        "matches_pinned_tree": true,
+        "bytes": 1606,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tables01.dat",
+        "sha256": "bfd4a53246e3acc527c8bb214cc743082e19260e72365001aad3f1d8f4bd08dc",
+        "git_blob": "40798881618870966bce094d37b5ebd158911952",
+        "matches_pinned_tree": true,
+        "bytes": 7041,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/template.dat",
+        "sha256": "72667fae7be5d2020b679409e45fed7b6923a3e9394da11a02c5bd9650323264",
+        "git_blob": "11888f306c6ac5a1d560cef797ed813f9b04db21",
+        "matches_pinned_tree": true,
+        "bytes": 28004,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests1.dat",
+        "sha256": "aada6e3d12d624051bc978694475bd6a12bcedd7758781ba62425314684d23f3",
+        "git_blob": "c4837b472376b1f95814f4dd58a2cb2f8718065d",
+        "matches_pinned_tree": true,
+        "bytes": 39460,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests10.dat",
+        "sha256": "2d2624a819c323661e396d864ac23440053127b5ea7adb44a5904f5ceee5fa64",
+        "git_blob": "3b311e4e03cd861cfd13391682ef0cb7d39962d0",
+        "matches_pinned_tree": true,
+        "bytes": 16458,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests11.dat",
+        "sha256": "276190e2a7b97e8fcf3bd863a4b4b5346b555a8336c00143cb1d0e8956b94a07",
+        "git_blob": "b9901e79ec4054762a2bdf134b991dea8829b009",
+        "matches_pinned_tree": true,
+        "bytes": 17679,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests12.dat",
+        "sha256": "e6c506cea74979a0d6ca47f6b175c7b6177d6e57db708920a89694e31dfd8a42",
+        "git_blob": "63107d277b6a7f1597155ad2527868bbc2c323de",
+        "matches_pinned_tree": true,
+        "bytes": 1612,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests14.dat",
+        "sha256": "d151b2426f38de40a5d4ae726e2a56dbc7742a9b1c95299d60c1e2e0fdad1f98",
+        "git_blob": "a08b7649ebab76276be3c38d19e75bb9598e5731",
+        "matches_pinned_tree": true,
+        "bytes": 1067,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests15.dat",
+        "sha256": "ef784ece74cbd760da3a6947aaf4478810246b73c753f25a04be4d11dd806b2d",
+        "git_blob": "93d06a871708a2929e900c331adec80d3697709e",
+        "matches_pinned_tree": true,
+        "bytes": 3649,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests16.dat",
+        "sha256": "3350be682713afc1f6dad37059f2551709497a3643c38c26e1fe36fd07d23745",
+        "git_blob": "05f34c13e33d3329ee9a4acdbc29d14c84d7d7c5",
+        "matches_pinned_tree": true,
+        "bytes": 46454,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests17.dat",
+        "sha256": "0567680775f58a5b2ad24e234f41d53f68fb2fc3ef7809bebaec0920e2f13c89",
+        "git_blob": "1c472d1dc1eb8901912449ac00937650f0e69465",
+        "matches_pinned_tree": true,
+        "bytes": 2819,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests18.dat",
+        "sha256": "5d0019ae43bb4e0b0da9f2e1d57ac0618a607bd8a1324b163ec7a23a1dc120f3",
+        "git_blob": "a3bb69a16ef57fef47ced9bc3593a68e89e7d0f1",
+        "matches_pinned_tree": true,
+        "bytes": 12119,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests19.dat",
+        "sha256": "cb2f0875d14da9d96f939b7d549953f8f26e70ea14861935d07d828ab04e0e1d",
+        "git_blob": "8b133d39a6f75c9c033fe317ac7a06a8eb995f92",
+        "matches_pinned_tree": true,
+        "bytes": 24102,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests2.dat",
+        "sha256": "9cf76b5f4890065c04fc82ae828379a55b85cbe76f584fb1ef23dcef0a77b86b",
+        "git_blob": "9232edde3091880495754475f98377a25c682639",
+        "matches_pinned_tree": true,
+        "bytes": 13193,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests20.dat",
+        "sha256": "07f7661690c4cd7cc0bbb0f1b9c1e1d65135e07c4dde8bbf106692f687e7d33d",
+        "git_blob": "80c57d1aaa7219c70f5eb63e0625525492a1a828",
+        "matches_pinned_tree": true,
+        "bytes": 13524,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests21.dat",
+        "sha256": "b1a67420c79a5131002fefc987084ffb6b6094a3a74b272c6f545a47df06452c",
+        "git_blob": "a926b1384e9798fd7ba7e1620b3a2de541ed9bc0",
+        "matches_pinned_tree": true,
+        "bytes": 5092,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests22.dat",
+        "sha256": "78488328181d0f82f34b1a5e9e456ff7c713b3ff86dab6ace1530f6f07d5370d",
+        "git_blob": "31e6d9e331042da8dc42c1d46776691ff30f1fb3",
+        "matches_pinned_tree": true,
+        "bytes": 4243,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests23.dat",
+        "sha256": "2e4752ff4ef898e4a0cf9a450e481440095163d45075a662846a062552afe148",
+        "git_blob": "49e4a4ace58be40162fbeb8c900a4c0053fa8b58",
+        "matches_pinned_tree": true,
+        "bytes": 3478,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests24.dat",
+        "sha256": "fdd5c21f60f42235ded224a03e7182d289088328f460525adaf3c14e772a24ac",
+        "git_blob": "f6dc7eb48a53d7417418f8827c9a24031b5edcd7",
+        "matches_pinned_tree": true,
+        "bytes": 929,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests25.dat",
+        "sha256": "f2e08fda6d15a08faf9ff0001ec38560d942069cee6b4e264aeedbbacde7da8d",
+        "git_blob": "5bb369b262660dd58d1ae606717cab6359b3c421",
+        "matches_pinned_tree": true,
+        "bytes": 3586,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests26.dat",
+        "sha256": "d55d24dfca2444fba759d59346cbab21f7e70340dbb14e2c7af8da3d44abd4ab",
+        "git_blob": "1ba2be2dc86699794285b2481b87c54efeb89004",
+        "matches_pinned_tree": true,
+        "bytes": 8865,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests3.dat",
+        "sha256": "c4b4d8e0ea3d978c49d1e6a985d427164858b71ec980153c4526ed0c398f43b9",
+        "git_blob": "c7583d99e8b698287e1a45042126485c42d3c174",
+        "matches_pinned_tree": true,
+        "bytes": 4601,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests4.dat",
+        "sha256": "792f9bb43b2b233a43b126d456550d17beb533ce0af4a4d24e34f09a68fd44e5",
+        "git_blob": "53770de9e6b5edaff0749b04c00640d555ba46bb",
+        "matches_pinned_tree": true,
+        "bytes": 1308,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests5.dat",
+        "sha256": "bf80b927082290541781844906abdcb72f091488f7a11e8b7d9ac00076dd4fce",
+        "git_blob": "1ef8cae421386e5d1faaae4a2be85c267aa8f9b8",
+        "matches_pinned_tree": true,
+        "bytes": 3160,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests6.dat",
+        "sha256": "be16c74d2a9862283262968439c95b9bfce6182ea61055a3c886c28d14f3e01a",
+        "git_blob": "8c36dd3d56c0573112e770f0dc7239fa957d1654",
+        "matches_pinned_tree": true,
+        "bytes": 11065,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests7.dat",
+        "sha256": "aeb9569589c809b1a563c0b163173e8cf980a6a4028cb7c210f19c181b56999a",
+        "git_blob": "aa7e16b408e2e68e0c94c998505980d7aa7b99e1",
+        "matches_pinned_tree": true,
+        "bytes": 7339,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests8.dat",
+        "sha256": "f3c8b1baece162e7e8c394540cdf9057266bb738bb0ad539a9d9b2f9d365f162",
+        "git_blob": "d532801e497da812cc7eb2ac89bdc9299829a33e",
+        "matches_pinned_tree": true,
+        "bytes": 2664,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests9.dat",
+        "sha256": "857820f088506a6d20ea6acefbf19c0a6c4de87a39b24988878066397516b36f",
+        "git_blob": "1456324ffc21f3c2c10c2e8aa7ada6b3a5edd62d",
+        "matches_pinned_tree": true,
+        "bytes": 10391,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tests_innerHTML_1.dat",
+        "sha256": "acb9f835119e302d33204f437d54637a84ae26608ccb7bc961c6f7f44202a44c",
+        "git_blob": "09e0456f0f12d4564fed2f89e349549d990c163d",
+        "matches_pinned_tree": true,
+        "bytes": 11205,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/tricky01.dat",
+        "sha256": "3fb6d24c5e371860d096ef07f5fff38be3ceaa85f1239bee35cce548b596198a",
+        "git_blob": "753502a2619e0ba75fcb93957c6d2e544183f561",
+        "matches_pinned_tree": true,
+        "bytes": 6690,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/void-in-phrasing.dat",
+        "sha256": "c8855173aca8ecbd218abc26db34a631393ce0285fffebffdaf69b8bdd6224e9",
+        "git_blob": "b7dbd1e7cec2a8420cd50006edfc9790414034b5",
+        "matches_pinned_tree": true,
+        "bytes": 1890,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/webkit01.dat",
+        "sha256": "063ca232535a792fa238ae769eeb0ddcc9bd2ee961d3da327ca134612d35d93c",
+        "git_blob": "fc7f5c80e07e4b1f4833dcbda5fef2df1b2291b2",
+        "matches_pinned_tree": true,
+        "bytes": 14034,
+        "native_test_names": [
+          "html5lib"
+        ]
+      },
+      {
+        "path": "html/syntax/parsing/resources/webkit02.dat",
+        "sha256": "03b215350d352faf110df2cc6eac23a44a7f70945b4ea962f0b17bed103459f7",
+        "git_blob": "47a3c5713ea8646ca4c825846969b150cdf28154",
+        "matches_pinned_tree": true,
+        "bytes": 14921,
+        "native_test_names": [
+          "html5lib"
+        ]
+      }
+    ],
+    "configuration_requirement": "Place the pinned WPT checkout before CMake configuration. The html5lib test is conditional on html/syntax/parsing/resources/tests1.dat. Require both font files to be found, not NOTFOUND, and compare the complete selected identity list, not only a count."
+  },
+  "test_command_mapping": [
+    {
+      "name": "platform",
+      "command": [
+        "$BUILD/test_platform"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 103,
+        "text": "        add_test(NAME ${name} COMMAND test_${name})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_platform"
+      ]
+    },
+    {
+      "name": "encoding_labels",
+      "command": [
+        "$BUILD/test_encoding_labels"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 110,
+        "text": "    add_test(NAME encoding_labels COMMAND test_encoding_labels)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_encoding_labels"
+      ]
+    },
+    {
+      "name": "file",
+      "command": [
+        "$BUILD/test_file"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 113,
+        "text": "    add_test(NAME file COMMAND test_file)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_file"
+      ]
+    },
+    {
+      "name": "http_range",
+      "command": [
+        "$BUILD/test_http_range"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 120,
+        "text": "    add_test(NAME http_range COMMAND test_http_range)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_http_range"
+      ]
+    },
+    {
+      "name": "http_zstd",
+      "command": [
+        "$BUILD/test_http_zstd"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 124,
+        "text": "    add_test(NAME http_zstd COMMAND test_http_zstd)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_http_zstd"
+      ]
+    },
+    {
+      "name": "mime_policy",
+      "command": [
+        "$BUILD/test_mime_policy"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 128,
+        "text": "    add_test(NAME mime_policy COMMAND test_mime_policy)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_mime_policy"
+      ]
+    },
+    {
+      "name": "fetch_metadata",
+      "command": [
+        "$BUILD/test_fetch_metadata"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 134,
+        "text": "    add_test(NAME fetch_metadata COMMAND test_fetch_metadata)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_fetch_metadata"
+      ]
+    },
+    {
+      "name": "auth_user_agent",
+      "command": [
+        "$BUILD/test_auth_user_agent"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 140,
+        "text": "    add_test(NAME auth_user_agent COMMAND test_auth_user_agent)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_auth_user_agent"
+      ]
+    },
+    {
+      "name": "net_redirect",
+      "command": [
+        "$BUILD/test_net_redirect"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 142,
+        "text": "    add_test(NAME net_redirect COMMAND test_net_redirect)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_net_redirect"
+      ]
+    },
+    {
+      "name": "desktop_sites",
+      "command": [
+        "$BUILD/test_desktop_sites"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 146,
+        "text": "    add_test(NAME desktop_sites COMMAND test_desktop_sites)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_desktop_sites"
+      ]
+    },
+    {
+      "name": "cookie_site",
+      "command": [
+        "$BUILD/test_cookie_site"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 149,
+        "text": "    add_test(NAME cookie_site COMMAND test_cookie_site)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_cookie_site"
+      ]
+    },
+    {
+      "name": "http_cache",
+      "command": [
+        "$BUILD/test_http_cache"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 152,
+        "text": "    add_test(NAME http_cache COMMAND test_http_cache)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_http_cache"
+      ]
+    },
+    {
+      "name": "proxy",
+      "command": [
+        "$BUILD/test_proxy"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 156,
+        "text": "    add_test(NAME proxy COMMAND test_proxy)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_proxy"
+      ]
+    },
+    {
+      "name": "net_stream",
+      "command": [
+        "$BUILD/test_net_stream"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 160,
+        "text": "    add_test(NAME net_stream COMMAND test_net_stream)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_net_stream"
+      ]
+    },
+    {
+      "name": "download",
+      "command": [
+        "$BUILD/test_download"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 164,
+        "text": "    add_test(NAME download COMMAND test_download)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_download"
+      ]
+    },
+    {
+      "name": "android_trust_import",
+      "command": [
+        "$BUILD/test_trust"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 169,
+        "text": "    add_test(NAME android_trust_import COMMAND test_trust)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_trust"
+      ]
+    },
+    {
+      "name": "android_launch",
+      "command": [
+        "$BUILD/test_android_launch"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 172,
+        "text": "    add_test(NAME android_launch COMMAND test_android_launch)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_launch"
+      ]
+    },
+    {
+      "name": "android_back",
+      "command": [
+        "$BUILD/test_android_back"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 176,
+        "text": "    add_test(NAME android_back COMMAND test_android_back)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_back"
+      ]
+    },
+    {
+      "name": "android_fling_release",
+      "command": [
+        "$BUILD/test_android_fling",
+        "release"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_slow",
+      "command": [
+        "$BUILD/test_android_fling",
+        "slow"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_hold",
+      "command": [
+        "$BUILD/test_android_fling",
+        "hold"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_cancel",
+      "command": [
+        "$BUILD/test_android_fling",
+        "cancel"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_invalid",
+      "command": [
+        "$BUILD/test_android_fling",
+        "invalid"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_stall",
+      "command": [
+        "$BUILD/test_android_fling",
+        "stall"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_pixels",
+      "command": [
+        "$BUILD/test_android_fling",
+        "pixels"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_cadence",
+      "command": [
+        "$BUILD/test_android_fling",
+        "cadence"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_stop",
+      "command": [
+        "$BUILD/test_android_fling",
+        "stop"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_reverse",
+      "command": [
+        "$BUILD/test_android_fling",
+        "reverse"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_bounded",
+      "command": [
+        "$BUILD/test_android_fling",
+        "bounded"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_fling_independent",
+      "command": [
+        "$BUILD/test_android_fling",
+        "independent"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 183,
+        "text": "        add_test(NAME android_fling_${scenario} COMMAND test_android_fling ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_fling"
+      ]
+    },
+    {
+      "name": "android_touch_tap",
+      "command": [
+        "$BUILD/test_android_touch",
+        "tap"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_drag",
+      "command": [
+        "$BUILD/test_android_touch",
+        "drag"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_slop",
+      "command": [
+        "$BUILD/test_android_touch",
+        "slop"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_cancel",
+      "command": [
+        "$BUILD/test_android_touch",
+        "cancel"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_chrome",
+      "command": [
+        "$BUILD/test_android_touch",
+        "chrome"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_multitouch",
+      "command": [
+        "$BUILD/test_android_touch",
+        "multitouch"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_identity",
+      "command": [
+        "$BUILD/test_android_touch",
+        "identity"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_invalid",
+      "command": [
+        "$BUILD/test_android_touch",
+        "invalid"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_release_delta",
+      "command": [
+        "$BUILD/test_android_touch",
+        "release_delta"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_capacity",
+      "command": [
+        "$BUILD/test_android_touch",
+        "capacity"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_reverse",
+      "command": [
+        "$BUILD/test_android_touch",
+        "reverse"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "android_touch_independent",
+      "command": [
+        "$BUILD/test_android_touch",
+        "independent"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 187,
+        "text": "        add_test(NAME android_touch_${scenario} COMMAND test_android_touch ${scenario})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_android_touch"
+      ]
+    },
+    {
+      "name": "workspace",
+      "command": [
+        "$BUILD/test_workspace"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 191,
+        "text": "    add_test(NAME workspace COMMAND test_workspace)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_workspace"
+      ]
+    },
+    {
+      "name": "media_icon",
+      "command": [
+        "$BUILD/test_media_icon"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 193,
+        "text": "    add_test(NAME media_icon COMMAND test_media_icon)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_media_icon"
+      ]
+    },
+    {
+      "name": "viewer",
+      "command": [
+        "$BUILD/test_viewer",
+        "$BUILD/viewer-test.html"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 196,
+        "text": "    add_test(NAME viewer COMMAND test_viewer \"${CMAKE_CURRENT_BINARY_DIR}/viewer-test.html\")"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_viewer"
+      ]
+    },
+    {
+      "name": "viewport_events",
+      "command": [
+        "node",
+        "--test",
+        "$SOURCE/tests/test_viewport_events.js"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 200,
+        "text": "        add_test(NAME viewport_events COMMAND \"${NODE_EXECUTABLE}\" --test \"${CMAKE_CURRENT_SOURCE_DIR}/tests/test_viewport_events.js\")"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/test_viewport_events.js"
+      ],
+      "native_targets": []
+    },
+    {
+      "name": "viewer_script",
+      "command": [
+        "node",
+        "$SOURCE/tests/test_viewer.js",
+        "$BUILD/viewer-test.html"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 201,
+        "text": "        add_test(NAME viewer_script COMMAND \"${NODE_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/test_viewer.js\" \"${CMAKE_CURRENT_BINARY_DIR}/viewer-test.html\")"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/test_viewer.js"
+      ],
+      "native_targets": []
+    },
+    {
+      "name": "embedded_assets",
+      "command": [
+        "python3",
+        "$SOURCE/tests/test_embed.py"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 205,
+        "text": "    add_test(NAME embedded_assets COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/test_embed.py\")"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/test_embed.py"
+      ],
+      "native_targets": []
+    },
+    {
+      "name": "android_dependency_plan",
+      "command": [
+        "python3",
+        "$SOURCE/tests/test_android_deps.py"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 206,
+        "text": "    add_test(NAME android_dependency_plan COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/test_android_deps.py\")"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/test_android_deps.py"
+      ],
+      "native_targets": []
+    },
+    {
+      "name": "worker_tasks",
+      "command": [
+        "$BUILD/test_worker_tasks"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 401,
+        "text": "        add_test(NAME worker_tasks COMMAND test_worker_tasks)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_worker_tasks"
+      ]
+    },
+    {
+      "name": "js_viewport_state",
+      "command": [
+        "$BUILD/test_js_viewport_state"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 405,
+        "text": "        add_test(NAME js_viewport_state COMMAND test_js_viewport_state)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_js_viewport_state"
+      ]
+    },
+    {
+      "name": "broadcast_site",
+      "command": [
+        "$BUILD/test_broadcast_site"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 412,
+        "text": "        add_test(NAME broadcast_site COMMAND test_broadcast_site)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_broadcast_site"
+      ]
+    },
+    {
+      "name": "js_node_lifetime_root",
+      "command": [
+        "$BUILD/test_js_node_lifetime",
+        "root"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 416,
+        "text": "        add_test(NAME js_node_lifetime_root COMMAND test_js_node_lifetime root)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_js_node_lifetime"
+      ]
+    },
+    {
+      "name": "js_node_lifetime_child",
+      "command": [
+        "$BUILD/test_js_node_lifetime",
+        "child"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 417,
+        "text": "        add_test(NAME js_node_lifetime_child COMMAND test_js_node_lifetime child)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_js_node_lifetime"
+      ]
+    },
+    {
+      "name": "invoker_native",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "native"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_cancel",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "cancel"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_close",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "close"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_properties",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "properties"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_custom",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "custom"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_form",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "form"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_shadow",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "shadow"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_lifecycle",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "lifecycle"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_events",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "events"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_reentrant",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "reentrant"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_toggle",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "toggle"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "invoker_modal-order",
+      "command": [
+        "$BUILD/test_invoker_commands",
+        "modal-order"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 424,
+        "text": "            add_test(NAME invoker_${mode} COMMAND test_invoker_commands ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_invoker_commands"
+      ]
+    },
+    {
+      "name": "background_clip",
+      "command": [
+        "$BUILD/test_background_clip"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 429,
+        "text": "        add_test(NAME background_clip COMMAND test_background_clip)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_background_clip"
+      ]
+    },
+    {
+      "name": "dom_style_tracking",
+      "command": [
+        "$BUILD/test_dom_style_tracking"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 434,
+        "text": "        add_test(NAME dom_style_tracking COMMAND test_dom_style_tracking)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_dom_style_tracking"
+      ]
+    },
+    {
+      "name": "html5lib",
+      "command": [
+        "$BUILD/test_html5lib",
+        "$WPT/html/syntax/parsing/resources/adoption01.dat",
+        "$WPT/html/syntax/parsing/resources/adoption02.dat",
+        "$WPT/html/syntax/parsing/resources/blocks.dat",
+        "$WPT/html/syntax/parsing/resources/comments01.dat",
+        "$WPT/html/syntax/parsing/resources/doctype01.dat",
+        "$WPT/html/syntax/parsing/resources/domjs-unsafe.dat",
+        "$WPT/html/syntax/parsing/resources/entities01.dat",
+        "$WPT/html/syntax/parsing/resources/entities02.dat",
+        "$WPT/html/syntax/parsing/resources/foreign-fragment.dat",
+        "$WPT/html/syntax/parsing/resources/html5test-com.dat",
+        "$WPT/html/syntax/parsing/resources/inbody01.dat",
+        "$WPT/html/syntax/parsing/resources/isindex.dat",
+        "$WPT/html/syntax/parsing/resources/main-element.dat",
+        "$WPT/html/syntax/parsing/resources/math.dat",
+        "$WPT/html/syntax/parsing/resources/menuitem-element.dat",
+        "$WPT/html/syntax/parsing/resources/namespace-sensitivity.dat",
+        "$WPT/html/syntax/parsing/resources/noscript01.dat",
+        "$WPT/html/syntax/parsing/resources/pending-spec-changes-plain-text-unsafe.dat",
+        "$WPT/html/syntax/parsing/resources/pending-spec-changes.dat",
+        "$WPT/html/syntax/parsing/resources/plain-text-unsafe.dat",
+        "$WPT/html/syntax/parsing/resources/processing-instructions.dat",
+        "$WPT/html/syntax/parsing/resources/quirks01.dat",
+        "$WPT/html/syntax/parsing/resources/ruby.dat",
+        "$WPT/html/syntax/parsing/resources/scriptdata01.dat",
+        "$WPT/html/syntax/parsing/resources/scripted_adoption01.dat",
+        "$WPT/html/syntax/parsing/resources/scripted_ark.dat",
+        "$WPT/html/syntax/parsing/resources/scripted_foster01.dat",
+        "$WPT/html/syntax/parsing/resources/scripted_webkit01.dat",
+        "$WPT/html/syntax/parsing/resources/search-element.dat",
+        "$WPT/html/syntax/parsing/resources/svg.dat",
+        "$WPT/html/syntax/parsing/resources/tables01.dat",
+        "$WPT/html/syntax/parsing/resources/template.dat",
+        "$WPT/html/syntax/parsing/resources/tests1.dat",
+        "$WPT/html/syntax/parsing/resources/tests10.dat",
+        "$WPT/html/syntax/parsing/resources/tests11.dat",
+        "$WPT/html/syntax/parsing/resources/tests12.dat",
+        "$WPT/html/syntax/parsing/resources/tests14.dat",
+        "$WPT/html/syntax/parsing/resources/tests15.dat",
+        "$WPT/html/syntax/parsing/resources/tests16.dat",
+        "$WPT/html/syntax/parsing/resources/tests17.dat",
+        "$WPT/html/syntax/parsing/resources/tests18.dat",
+        "$WPT/html/syntax/parsing/resources/tests19.dat",
+        "$WPT/html/syntax/parsing/resources/tests2.dat",
+        "$WPT/html/syntax/parsing/resources/tests20.dat",
+        "$WPT/html/syntax/parsing/resources/tests21.dat",
+        "$WPT/html/syntax/parsing/resources/tests22.dat",
+        "$WPT/html/syntax/parsing/resources/tests23.dat",
+        "$WPT/html/syntax/parsing/resources/tests24.dat",
+        "$WPT/html/syntax/parsing/resources/tests25.dat",
+        "$WPT/html/syntax/parsing/resources/tests26.dat",
+        "$WPT/html/syntax/parsing/resources/tests3.dat",
+        "$WPT/html/syntax/parsing/resources/tests4.dat",
+        "$WPT/html/syntax/parsing/resources/tests5.dat",
+        "$WPT/html/syntax/parsing/resources/tests6.dat",
+        "$WPT/html/syntax/parsing/resources/tests7.dat",
+        "$WPT/html/syntax/parsing/resources/tests8.dat",
+        "$WPT/html/syntax/parsing/resources/tests9.dat",
+        "$WPT/html/syntax/parsing/resources/tests_innerHTML_1.dat",
+        "$WPT/html/syntax/parsing/resources/tricky01.dat",
+        "$WPT/html/syntax/parsing/resources/void-in-phrasing.dat",
+        "$WPT/html/syntax/parsing/resources/webkit01.dat",
+        "$WPT/html/syntax/parsing/resources/webkit02.dat"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 440,
+        "text": "            add_test(NAME html5lib COMMAND test_html5lib ${HTML5LIB_DATS})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_html5lib"
+      ]
+    },
+    {
+      "name": "id_map",
+      "command": [
+        "$BUILD/test_id_map"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 445,
+        "text": "        add_test(NAME id_map COMMAND test_id_map)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_id_map"
+      ]
+    },
+    {
+      "name": "has_filter",
+      "command": [
+        "$BUILD/test_has_filter"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 449,
+        "text": "        add_test(NAME has_filter COMMAND test_has_filter)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_has_filter"
+      ]
+    },
+    {
+      "name": "js_fullscreen",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/fullscreen.html",
+        "4000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 450,
+        "text": "        add_test(NAME js_fullscreen COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/fullscreen.html\" 4000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/fullscreen.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_intersection_geometry",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/intersection-geometry.html",
+        "10000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 452,
+        "text": "        add_test(NAME js_intersection_geometry COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/intersection-geometry.html\" 10000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/intersection-geometry.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_hidden_scroll_retention",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/hidden-scroll-retention.html",
+        "10000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 454,
+        "text": "        add_test(NAME js_hidden_scroll_retention COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/hidden-scroll-retention.html\" 10000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/hidden-scroll-retention.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_document_lifecycle",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/document-lifecycle.html",
+        "12000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 456,
+        "text": "        add_test(NAME js_document_lifecycle COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/document-lifecycle.html\" 12000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/document-lifecycle.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_checkvisibility_options",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/checkvisibility-options.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 458,
+        "text": "        add_test(NAME js_checkvisibility_options COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/checkvisibility-options.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/checkvisibility-options.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_minmax_definite",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/minmax-definite.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 460,
+        "text": "        add_test(NAME js_minmax_definite COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/minmax-definite.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/minmax-definite.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_image_bitmap",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/image-bitmap.html",
+        "3000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 462,
+        "text": "        add_test(NAME js_image_bitmap COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/image-bitmap.html\" 3000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/image-bitmap.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_gsi_button",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/gsi-button.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 464,
+        "text": "        add_test(NAME js_gsi_button COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/gsi-button.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/gsi-button.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_dom_webidl",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/dom-webidl.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 466,
+        "text": "        add_test(NAME js_dom_webidl COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/dom-webidl.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/dom-webidl.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_empty_input",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/empty-input.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 468,
+        "text": "        add_test(NAME js_empty_input COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/empty-input.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/empty-input.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_indexeddb",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/indexeddb.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 470,
+        "text": "        add_test(NAME js_indexeddb COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/indexeddb.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/indexeddb.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_web_locks",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/web-locks.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 472,
+        "text": "        add_test(NAME js_web_locks COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/web-locks.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/web-locks.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_unhandled_rejection",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/unhandled-rejection.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 474,
+        "text": "        add_test(NAME js_unhandled_rejection COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/unhandled-rejection.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/unhandled-rejection.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_window_ports",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/window-ports.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 476,
+        "text": "        add_test(NAME js_window_ports COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/window-ports.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/window-ports.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_pointer_events",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/pointer-events.html",
+        "1000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 478,
+        "text": "        add_test(NAME js_pointer_events COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/pointer-events.html\" 1000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/pointer-events.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_xpath",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/xpath.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 480,
+        "text": "        add_test(NAME js_xpath COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/xpath.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/xpath.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_get_animations",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/get-animations.html",
+        "1000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 482,
+        "text": "        add_test(NAME js_get_animations COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/get-animations.html\" 1000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/get-animations.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "browser_input_modifier",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/input-modifier-cancel-regression.html",
+        "--marker",
+        "browser-input-modifier",
+        "--output",
+        "$BUILD/browser-input-modifier",
+        "--testdriver"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 484,
+        "text": "        add_test(NAME browser_input_modifier COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/input-modifier-cancel-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_popup_input",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/popup-input-regression.html",
+        "--marker",
+        "browser-popup-input",
+        "--output",
+        "$BUILD/browser-popup-input",
+        "--testdriver"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 488,
+        "text": "        add_test(NAME browser_popup_input COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/popup-input-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_input_queue",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/input-queue-lifecycle-regression.html",
+        "--marker",
+        "browser-input-queue",
+        "--output",
+        "$BUILD/browser-input-queue",
+        "--testdriver"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 492,
+        "text": "        add_test(NAME browser_input_queue COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/input-queue-lifecycle-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_module_errors",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/module-error-regression.html",
+        "--marker",
+        "browser-module-errors",
+        "--output",
+        "$BUILD/browser-module-errors"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 496,
+        "text": "        add_test(NAME browser_module_errors COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/module-error-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_module_identity",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/module-identity-regression.html",
+        "--marker",
+        "browser-module-identity",
+        "--output",
+        "$BUILD/browser-module-identity"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 500,
+        "text": "        add_test(NAME browser_module_identity COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/module-identity-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_module_graph_identity",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/module-graph-identity-regression.html",
+        "--marker",
+        "browser-module-graph-identity",
+        "--output",
+        "$BUILD/browser-module-graph-identity"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 504,
+        "text": "    add_test(NAME browser_module_graph_identity COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/module-graph-identity-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_body_event",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/body-event-regression.html",
+        "--marker",
+        "browser-body-event",
+        "--output",
+        "$BUILD/browser-body-event"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 508,
+        "text": "        add_test(NAME browser_body_event COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/body-event-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_grid_typed_values",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/grid-typed-value-regression.html",
+        "--marker",
+        "browser-grid-typed-values",
+        "--output",
+        "$BUILD/browser-grid-typed-values"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 512,
+        "text": "        add_test(NAME browser_grid_typed_values COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/grid-typed-value-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_grid_used_tracks",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/grid-used-track-regression.html",
+        "--marker",
+        "browser-grid-used-tracks",
+        "--output",
+        "$BUILD/browser-grid-used-tracks"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 516,
+        "text": "        add_test(NAME browser_grid_used_tracks COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/grid-used-track-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_grid_repeat_count",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/grid-repeat-count-regression.html",
+        "--marker",
+        "browser-grid-repeat-count",
+        "--output",
+        "$BUILD/browser-grid-repeat-count"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 520,
+        "text": "        add_test(NAME browser_grid_repeat_count COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/grid-repeat-count-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_grid_repeat",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/grid-auto-repeat-regression.html",
+        "--marker",
+        "browser-grid-repeat",
+        "--output",
+        "$BUILD/browser-grid-repeat"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 524,
+        "text": "        add_test(NAME browser_grid_repeat COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/grid-auto-repeat-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_grid_cssom",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/grid-cssom-regression.html",
+        "--marker",
+        "browser-grid-cssom",
+        "--output",
+        "$BUILD/browser-grid-cssom"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 528,
+        "text": "        add_test(NAME browser_grid_cssom COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/grid-cssom-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_grid_track_regression",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/grid-track-regression.html",
+        "--marker",
+        "browser-grid-track-regression",
+        "--output",
+        "$BUILD/browser-grid-track-regression"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 532,
+        "text": "        add_test(NAME browser_grid_track_regression COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/grid-track-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_replaced_sizing",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/replaced-sizing-regression.html",
+        "--marker",
+        "browser-replaced-sizing",
+        "--output",
+        "$BUILD/browser-replaced-sizing"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 536,
+        "text": "        add_test(NAME browser_replaced_sizing COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/replaced-sizing-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_position_cssom_regression",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/position-cssom-regression.html",
+        "--marker",
+        "browser-position-cssom-regression",
+        "--output",
+        "$BUILD/browser-position-cssom-regression"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 540,
+        "text": "        add_test(NAME browser_position_cssom_regression COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/position-cssom-regression.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_image_lifecycle",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/image-lifecycle.html",
+        "--marker",
+        "browser-image-lifecycle",
+        "--output",
+        "$BUILD/browser-image-lifecycle"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 544,
+        "text": "        add_test(NAME browser_image_lifecycle COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/image-lifecycle.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_control_selection",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/browser/control-selection.html",
+        "--marker",
+        "control-selection",
+        "--testdriver",
+        "--output",
+        "$BUILD/browser-control-selection"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 548,
+        "text": "        add_test(NAME browser_control_selection COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/control-selection.html",
+        "tests/browser/run.py"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "browser_react_message_replacement",
+      "command": [
+        "python3",
+        "$SOURCE/tests/browser/run.py",
+        "--binary",
+        "$BUILD/lumen",
+        "--fixture",
+        "$SOURCE/tests/device/editbar/controlled-message.html",
+        "--marker",
+        "react-message-replacement",
+        "--testdriver",
+        "--output",
+        "$BUILD/browser-react-message-replacement"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 552,
+        "text": "        add_test(NAME browser_react_message_replacement COMMAND \"${Python3_EXECUTABLE}\" \"${CMAKE_CURRENT_SOURCE_DIR}/tests/browser/run.py\""
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/browser/run.py",
+        "tests/device/editbar/controlled-message.html"
+      ],
+      "native_targets": [
+        "lumen"
+      ]
+    },
+    {
+      "name": "js_performance_startup",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/performance-startup.html",
+        "3000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 556,
+        "text": "        add_test(NAME js_performance_startup COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/performance-startup.html\" 3000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/performance-startup.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_worker_global_listener",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/worker-global-listener.html",
+        "2000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 558,
+        "text": "        add_test(NAME js_worker_global_listener COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/worker-global-listener.html\" 2000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/worker-global-listener.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_worker_xhr",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/worker-xhr.html",
+        "3000"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 560,
+        "text": "        add_test(NAME js_worker_xhr COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/worker-xhr.html\" 3000)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/worker-xhr.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_touch_action",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/touch-action.html",
+        "500"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 562,
+        "text": "        add_test(NAME js_touch_action COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/touch-action.html\" 500)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/touch-action.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "js_raf_throttle",
+      "command": [
+        "$BUILD/jsrun",
+        "$SOURCE/tests/js/raf-throttle.html",
+        "3500"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 564,
+        "text": "        add_test(NAME js_raf_throttle COMMAND jsrun \"${CMAKE_CURRENT_SOURCE_DIR}/tests/js/raf-throttle.html\" 3500)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt",
+        "tests/js/raf-throttle.html"
+      ],
+      "native_targets": [
+        "jsrun"
+      ]
+    },
+    {
+      "name": "nested_overflow",
+      "command": [
+        "$BUILD/test_nested_overflow"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 569,
+        "text": "        add_test(NAME nested_overflow COMMAND test_nested_overflow)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_nested_overflow"
+      ]
+    },
+    {
+      "name": "scale_text",
+      "command": [
+        "$BUILD/test_scale_text"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 573,
+        "text": "        add_test(NAME scale_text COMMAND test_scale_text)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_scale_text"
+      ]
+    },
+    {
+      "name": "round_clip",
+      "command": [
+        "$BUILD/test_round_clip"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 577,
+        "text": "        add_test(NAME round_clip COMMAND test_round_clip)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_round_clip"
+      ]
+    },
+    {
+      "name": "svg_gradient_img",
+      "command": [
+        "$BUILD/test_svg_gradient_img"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 581,
+        "text": "        add_test(NAME svg_gradient_img COMMAND test_svg_gradient_img)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_svg_gradient_img"
+      ]
+    },
+    {
+      "name": "raster_bands",
+      "command": [
+        "$BUILD/test_raster_bands"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 585,
+        "text": "        add_test(NAME raster_bands COMMAND test_raster_bands)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_raster_bands"
+      ]
+    },
+    {
+      "name": "raster_spans",
+      "command": [
+        "$BUILD/test_raster_spans"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 589,
+        "text": "        add_test(NAME raster_spans COMMAND test_raster_spans)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_raster_spans"
+      ]
+    },
+    {
+      "name": "fontconfig_match",
+      "command": [
+        "$BUILD/test_fontconfig_match"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 596,
+        "text": "            add_test(NAME fontconfig_match COMMAND test_fontconfig_match)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_fontconfig_match"
+      ]
+    },
+    {
+      "name": "linux_capture_refusal",
+      "command": [
+        "$BUILD/test_linux_capture_refusal"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 605,
+        "text": "            add_test(NAME linux_capture_refusal COMMAND test_linux_capture_refusal)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_linux_capture_refusal"
+      ]
+    },
+    {
+      "name": "font_woff2",
+      "command": [
+        "$BUILD/test_font_woff2"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 611,
+        "text": "        add_test(NAME font_woff2 COMMAND test_font_woff2)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_font_woff2"
+      ]
+    },
+    {
+      "name": "shape_cache",
+      "command": [
+        "$BUILD/test_shape_cache"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 616,
+        "text": "        add_test(NAME shape_cache COMMAND test_shape_cache)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_shape_cache"
+      ]
+    },
+    {
+      "name": "code_cache",
+      "command": [
+        "$BUILD/test_code_cache"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 620,
+        "text": "        add_test(NAME code_cache COMMAND test_code_cache)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_code_cache"
+      ]
+    },
+    {
+      "name": "inset_move",
+      "command": [
+        "$BUILD/test_inset_move"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 624,
+        "text": "        add_test(NAME inset_move COMMAND test_inset_move)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_inset_move"
+      ]
+    },
+    {
+      "name": "sticky_geometry",
+      "command": [
+        "$BUILD/test_sticky_geometry"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 628,
+        "text": "        add_test(NAME sticky_geometry COMMAND test_sticky_geometry)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_sticky_geometry"
+      ]
+    },
+    {
+      "name": "paint_cull",
+      "command": [
+        "$BUILD/test_paint_cull"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 632,
+        "text": "        add_test(NAME paint_cull COMMAND test_paint_cull)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_paint_cull"
+      ]
+    },
+    {
+      "name": "grid_used_values",
+      "command": [
+        "$BUILD/test_grid_used_values"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 636,
+        "text": "        add_test(NAME grid_used_values COMMAND test_grid_used_values)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_grid_used_values"
+      ]
+    },
+    {
+      "name": "css_stepped_math",
+      "command": [
+        "$BUILD/test_css_stepped_math"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 640,
+        "text": "        add_test(NAME css_stepped_math COMMAND test_css_stepped_math)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_css_stepped_math"
+      ]
+    },
+    {
+      "name": "css_stretch",
+      "command": [
+        "$BUILD/test_css_stretch"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 644,
+        "text": "        add_test(NAME css_stretch COMMAND test_css_stretch)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_css_stretch"
+      ]
+    },
+    {
+      "name": "css_containment",
+      "command": [
+        "$BUILD/test_css_containment"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 648,
+        "text": "        add_test(NAME css_containment COMMAND test_css_containment)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_css_containment"
+      ]
+    },
+    {
+      "name": "grid_repeat_validation",
+      "command": [
+        "$BUILD/test_grid_repeat_validation"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 652,
+        "text": "        add_test(NAME grid_repeat_validation COMMAND test_grid_repeat_validation)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_grid_repeat_validation"
+      ]
+    },
+    {
+      "name": "grid_alignment",
+      "command": [
+        "$BUILD/test_grid_alignment"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 656,
+        "text": "        add_test(NAME grid_alignment COMMAND test_grid_alignment)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_grid_alignment"
+      ]
+    },
+    {
+      "name": "grid_item_width",
+      "command": [
+        "$BUILD/test_grid_item_width"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 660,
+        "text": "        add_test(NAME grid_item_width COMMAND test_grid_item_width)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_grid_item_width"
+      ]
+    },
+    {
+      "name": "logical_size",
+      "command": [
+        "$BUILD/test_logical_size"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 664,
+        "text": "        add_test(NAME logical_size COMMAND test_logical_size)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_logical_size"
+      ]
+    },
+    {
+      "name": "break_spaces",
+      "command": [
+        "$BUILD/test_break_spaces"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 668,
+        "text": "        add_test(NAME break_spaces COMMAND test_break_spaces)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_break_spaces"
+      ]
+    },
+    {
+      "name": "flex_declaration",
+      "command": [
+        "$BUILD/test_flex_declaration"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 672,
+        "text": "        add_test(NAME flex_declaration COMMAND test_flex_declaration)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_flex_declaration"
+      ]
+    },
+    {
+      "name": "grid_absolute",
+      "command": [
+        "$BUILD/test_grid_absolute"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 676,
+        "text": "        add_test(NAME grid_absolute COMMAND test_grid_absolute)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_grid_absolute"
+      ]
+    },
+    {
+      "name": "flex_alignment",
+      "command": [
+        "$BUILD/test_flex_alignment"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 680,
+        "text": "        add_test(NAME flex_alignment COMMAND test_flex_alignment)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_flex_alignment"
+      ]
+    },
+    {
+      "name": "font_units",
+      "command": [
+        "$BUILD/test_font_units",
+        "$WPT/fonts/Ahem.ttf",
+        "$WPT/css/css-values/resources/ChTestZeroWidthZero.woff"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 690,
+        "text": "        add_test(NAME font_units COMMAND test_font_units \"${LUMEN_TEST_AHEM_FONT}\" \"${LUMEN_TEST_ZERO_FONT}\")"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_font_units"
+      ]
+    },
+    {
+      "name": "anon_block_size",
+      "command": [
+        "$BUILD/test_anon_block_size"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 696,
+        "text": "        add_test(NAME anon_block_size COMMAND test_anon_block_size)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_anon_block_size"
+      ]
+    },
+    {
+      "name": "button_center",
+      "command": [
+        "$BUILD/test_button_center"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 700,
+        "text": "add_test(NAME button_center COMMAND test_button_center)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_button_center"
+      ]
+    },
+    {
+      "name": "radius_inherit",
+      "command": [
+        "$BUILD/test_radius_inherit"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 704,
+        "text": "add_test(NAME radius_inherit COMMAND test_radius_inherit)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_radius_inherit"
+      ]
+    },
+    {
+      "name": "starting_style_top",
+      "command": [
+        "$BUILD/test_starting_style",
+        "top"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 708,
+        "text": "            add_test(NAME starting_style_${mode} COMMAND test_starting_style ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_starting_style"
+      ]
+    },
+    {
+      "name": "starting_style_nested",
+      "command": [
+        "$BUILD/test_starting_style",
+        "nested"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 708,
+        "text": "            add_test(NAME starting_style_${mode} COMMAND test_starting_style ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_starting_style"
+      ]
+    },
+    {
+      "name": "starting_style_conditional",
+      "command": [
+        "$BUILD/test_starting_style",
+        "conditional"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 708,
+        "text": "            add_test(NAME starting_style_${mode} COMMAND test_starting_style ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_starting_style"
+      ]
+    },
+    {
+      "name": "starting_style_reopen",
+      "command": [
+        "$BUILD/test_starting_style",
+        "reopen"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 708,
+        "text": "            add_test(NAME starting_style_${mode} COMMAND test_starting_style ${mode})"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_starting_style"
+      ]
+    },
+    {
+      "name": "js_viewport_runtime",
+      "command": [
+        "$BUILD/test_js_viewport_runtime"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 713,
+        "text": "        add_test(NAME js_viewport_runtime COMMAND test_js_viewport_runtime)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_js_viewport_runtime"
+      ]
+    },
+    {
+      "name": "keyboard_editing",
+      "command": [
+        "$BUILD/test_keyboard_editing"
+      ],
+      "cmake_origin": {
+        "file": "CMakeLists.txt",
+        "line": 718,
+        "text": "        add_test(NAME keyboard_editing COMMAND test_keyboard_editing)"
+      },
+      "direct_project_files": [
+        "CMakeLists.txt"
+      ],
+      "native_targets": [
+        "test_keyboard_editing"
+      ]
+    }
+  ],
+  "generated_build_inputs": {
+    "embedded_includes": {
+      "cmake_target": "lumen_embedded",
+      "generator": "tools/generate_embedded.py",
+      "outputs": [
+        "$BUILD/generated/abort_shared.inc",
+        "$BUILD/generated/broadcast_shared.inc",
+        "$BUILD/generated/cache_shared.inc",
+        "$BUILD/generated/canvas2d_shared.inc",
+        "$BUILD/generated/color_shared.inc",
+        "$BUILD/generated/compression_shared.inc",
+        "$BUILD/generated/crypto_shared.inc",
+        "$BUILD/generated/domexception_shared.inc",
+        "$BUILD/generated/editing_lazy.inc",
+        "$BUILD/generated/encoding_shared.inc",
+        "$BUILD/generated/event_shared.inc",
+        "$BUILD/generated/fetch_shared.inc",
+        "$BUILD/generated/file_shared.inc",
+        "$BUILD/generated/fontface_shared.inc",
+        "$BUILD/generated/geometry_shared.inc",
+        "$BUILD/generated/icon.inc",
+        "$BUILD/generated/idb_shared.inc",
+        "$BUILD/generated/newtab.inc",
+        "$BUILD/generated/observable_shared.inc",
+        "$BUILD/generated/perf_shared.inc",
+        "$BUILD/generated/prelude.inc",
+        "$BUILD/generated/public_suffix_list.inc",
+        "$BUILD/generated/quota_shared.inc",
+        "$BUILD/generated/safecoll_shared.inc",
+        "$BUILD/generated/streams_shared.inc",
+        "$BUILD/generated/temporal_lazy.inc",
+        "$BUILD/generated/typedom_shared.inc",
+        "$BUILD/generated/url_shared.inc",
+        "$BUILD/generated/urlpattern_shared.inc",
+        "$BUILD/generated/webgl_shared.inc",
+        "$BUILD/generated/xhr_shared.inc"
+      ],
+      "inputs": [
+        {
+          "path": "assets/data/public_suffix_list.LICENSE",
+          "sha256": "66a3107d5ad6a058aab753eaac2047ccb2ed0e39465dd0fe5844da3e300d5172",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "assets/data/public_suffix_list.dat",
+          "sha256": "0232f4df0831911356e8ee1f4d5c3b6b12c0ed3f6bd66b0f81c8ab5d3d49e9ca",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "assets/data/public_suffix_list.metadata.json",
+          "sha256": "6f972291962a7f78822e2c0b2153dad3fd9bcd0bc9b1a4087e1dea83da325d39",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "assets/icon/lumen-256.png",
+          "sha256": "713fd1e2e1fff559f3ed1f7129e267fc6766f976ca082de5fa0880471d26cd57",
+          "coverage": "exact_public226_base"
+        },
+        {
+          "path": "src/app/newtab.html",
+          "sha256": "1d9f6a697844590f682cc2f1ceadea7118e56699983cb001e01c4b6fcddbf2e7",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/lazy/editing.js",
+          "sha256": "28dae8205608e9222d80984d3ce5b91879fa6ea52892a909ad550dac353a238a",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/lazy/temporal.js",
+          "sha256": "3fe610ffa3a37112953a9d0fb1bbda8edbf828df68d943e7097c3944d64e2bd8",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/01-events.js",
+          "sha256": "306cb27d9f75a006ade228c1a0e2a0be157469378089ecca2f2ff6bf81bfec72",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/02-node.js",
+          "sha256": "831dbb6fa67c4aff244e06aea956b9dabe9d607375b9503bdfc9ac6770f968d4",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/03-element.js",
+          "sha256": "a0ca5534a0c74671264a5e84c9c72ebcf3a1e535b93e5dd6f5de1d8f868c9c33",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/03c-svg.js",
+          "sha256": "f7282578edffae046157bbeccd026629701b55d3a65f73f8aad598aec4314357",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/03d-grid-cssom.js",
+          "sha256": "14ecc44bcb00314cefda6f378d532d4d9d37981805234e11c9728dc21e9978ef",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/03e-typedom.js",
+          "sha256": "fe6293ee04a02fa77d77a06bbf72265687cb9e5a3b2b480dac54b8f053f87f50",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/04-tags.js",
+          "sha256": "eb940893a3d3b327f88842723a99971765c365b66470affd465f32068c76e08b",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/04e-color.js",
+          "sha256": "00d9ee971ea7e87b91911944d1ef637b078a31d62c77af52ead218a1e8e10ad6",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/04f-forms.js",
+          "sha256": "77b0b46ba94f2e0474c2b02dd196c9cfa2d2a76811956215764ee97549a77f76",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/04p-popover.js",
+          "sha256": "190a103ec7871f2b50c18ce7b60a708e60b7c52511fe016ac4f00a46922fd786",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/05-ce.js",
+          "sha256": "84a66cb2f3874f11fa7ece94145cd48e2d7419543716e3866c4ba28d88a4c7cc",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/05r-reflect.js",
+          "sha256": "8756f0b8023c38dc844ae6dfa3a31fe74b5d2fd0e090be0eaca6883f6f99b93d",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/06-document.js",
+          "sha256": "ecbb89235804e7e64fe2645cb916e8b22917aa4285af2417734bbee038642b64",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/06b-activate.js",
+          "sha256": "97052394d21ecf3a0cd6b26b6d094a48f2f58dbb778a22eec846a2b4fc764465",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/06c-traversal.js",
+          "sha256": "719565533d81f1b43f5484abb4d57224d862aa2f57c3e3cba6fdaaca41213c2b",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/06d-anim.js",
+          "sha256": "864c1dce902c57e3aa741a257272381199044d9f17c59ce44f8be04c898378de",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07-web.js",
+          "sha256": "f908a2d9589288120e97a1542ba994b0dd0e26c2cf2db4a580523e7e29ccf7b0",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07b-net.js",
+          "sha256": "54bdd1eb42bf285f049cb4adc4a00a51ac71e83946cdc9720d517140cd08af20",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07g-webgl.js",
+          "sha256": "6c50afb312d31f4d5e135344300396b9caa88da1404ec227e504d981af90b572",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07h-webgpu.js",
+          "sha256": "18cecd1cfd633d907155b26a6209ef6c567200096619febc7191c96a579c6d2f",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07i-idb.js",
+          "sha256": "6a2fda4697644ace59aef216b9f480b16b53940553cdbf8afa909fe724010974",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07j-xpath.js",
+          "sha256": "6ee800dda6600d13ee6a11cd8719632d5da46c7563b9e798e642abfb5a84129d",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07k-sanitizer.js",
+          "sha256": "67e6e2798d75feaeacd4991fc345d403923db576fbae54292583c4ca4aacbc22",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07l-trusted-types.js",
+          "sha256": "47d143391c4959e2674283e93ab733ab4c2a857cfd482789555bfcec46f12e59",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07r-rtc.js",
+          "sha256": "b355d4db5ffed54de619f174655f8fa4bc209474416f9cfe49ddce1afa9b01c4",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07s-rtc-native.js",
+          "sha256": "1f21fb856c2e5e5d2b44bf3d87c40a7b4d3cd7ce2488b8473c8484cd99e47288",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07w-audio.js",
+          "sha256": "efc3ed16f32865cd995a488c688c04019633b5252f5676fa130f099e80da401a",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07y-canvas2d.js",
+          "sha256": "2dc9396fa7b2495726810769525a356c8b83fd8341ca3d22fdb3eac34517170b",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07z-extra.js",
+          "sha256": "d9e98bd14db91d5b7149d5efef7188588f41d574ea7910bd6c87de0007075d47",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07zz-touch.js",
+          "sha256": "126c404102fd1f4d16fcf2ba42a32dd62ac9d03dd5929960de71e3cd7e2a3aea",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/07zzz-accname.js",
+          "sha256": "473a8ebaea82e426c162c663a4bc93669eb88d39988ba18472f6ece95b218771",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/prelude/08-window.js",
+          "sha256": "27d00e008660b3fd8f4029a99d0c05eb4b90a068a3d4f9b2e2f878534cb6b6ef",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/abort.js",
+          "sha256": "01c77842bcfcd9fde4009281a78135a7e8b19805ba6803c5e2cf9a8aa4a84c56",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/broadcast.js",
+          "sha256": "e79d420a5931dfc327947bbd4daccf07df23544a4b76c1e6daabb705fc722f16",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/cache.js",
+          "sha256": "5877fa46a8b013574beef737a9c518bee22f12b0f1bc549a9537d1039bc8339c",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/canvas2d.js",
+          "sha256": "df370a3f37a9120aa98c97be442a5e69dce0e0068f3f43ac7c1247632f32db60",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/color.js",
+          "sha256": "cc68651259f5274b77af2098c10b67ea7740cb35e15cd354627e55470b2e939e",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/compression.js",
+          "sha256": "b5df3847e9798cdb393ebb39b0e9347e5b773904c84e11e77fea6d650ceb4d85",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/crypto.js",
+          "sha256": "1b1121be5327e33f11c261408ea78d7225f5b86ab11424f0362837ee0a2cc574",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/domexception.js",
+          "sha256": "f4805728e7574456108e7a414f42bb6aeead3081d6af2d66a880a099f905f5c8",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/encoding.js",
+          "sha256": "45cac3f31c1e8ffd96f88ede84a103e319c65c8a51c13f456ff672b8cc525e08",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/event.js",
+          "sha256": "41330d9b6b228c912978e8bb0c73ad2c7256e8145c1fafa18b1193c15b57b3dc",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/fetch.js",
+          "sha256": "fb8be66ad5c67d92052302f05a3c8bdbdc954c3d8266c707d1d1b00f94459c71",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/file.js",
+          "sha256": "44fa846482d317cb436394f54554bf402051c8a0ca52de1f50f6331c7a4310dc",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/fontface.js",
+          "sha256": "f16735230b31aeb1fea6509d16b3129b6a03af7b27e12c782d1353163fe669e2",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/geometry.js",
+          "sha256": "81220e2f34dfbd03a9d767e43029b99ec1ec3f31a8fbc71b5de5a8afaecaa7c3",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/idb.js",
+          "sha256": "10412159230bcaa5cbf0bbda1db98142b4edc696d0d2e212874d210acd27b3ea",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/observable.js",
+          "sha256": "4b0d396911100dd2863061022ae1b7b8b6cff329464bc662f4054088ed9965b1",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/perf.js",
+          "sha256": "7a68af48011178d41daa2218ace2701b188b39d472606b2fd0e588fcf740638e",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/quota.js",
+          "sha256": "db5928d4960befe542265e1646b2fadef7b5f736e9c724a976322ca16ff8914c",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/safecoll.js",
+          "sha256": "ea7bc8c1562edf845422bd50892ccf7ce5bebedb60031bfb35f366754974f1da",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/streams.js",
+          "sha256": "4dba2b20bc53341bc17d4321e36f07ca9c6c04036589105c8b48f18a0ff85f0c",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/typedom.js",
+          "sha256": "beba6faa8fe80420dd55fea1aa2bbf3243e18a2513eaddc32038d86c5288712a",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/url.js",
+          "sha256": "bd053a02f64966110a43d2cd3e4f838b4538ec0abbe5177238a29af400d5146a",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/urlpattern.js",
+          "sha256": "e97fef5fba9c52af4ed2263c82505c43964d26544b756b42a0ed77212c52ca11",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/webgl.js",
+          "sha256": "ef98cdce587d19f3419241ed9d942ee514a6ba7ebf2c6feecb9741f9ce287337",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "src/js/shared/xhr.js",
+          "sha256": "8defe64a226a4b8b6207622e62a33997d6a63b7742bd11fe9a776a4b7f1eaf31",
+          "coverage": "sealed650"
+        },
+        {
+          "path": "tools/generate_embedded.py",
+          "sha256": "d230a2a031f0cd65f7bb988beff232d71952a7e412e7001be8061ae6df362bfa",
+          "coverage": "sealed650"
+        }
+      ]
+    },
+    "viewer_fixture": {
+      "path": "$BUILD/viewer-test.html",
+      "producer_test": "viewer",
+      "producer_target": "test_viewer",
+      "setup_fixture": "viewer_fixture",
+      "consumer_test": "viewer_script",
+      "consumer_requirement": "FIXTURES_REQUIRED viewer_fixture",
+      "cmake_source_lines": [
+        196,
+        202
+      ]
+    }
+  },
+  "additional_public_base_inputs": [
+    {
+      "path": "android/native-deps/vcpkg.json",
+      "sha256": "2d88a441c56e14dec96e60e25736c20a7a594c7690a35266bf152a5319f28f5a",
+      "coverage": "exact_public226_base"
+    },
+    {
+      "path": "assets/icon/lumen-256.png",
+      "sha256": "713fd1e2e1fff559f3ed1f7129e267fc6766f976ca082de5fa0880471d26cd57",
+      "coverage": "exact_public226_base"
+    },
+    {
+      "path": "tools/android/build_deps.py",
+      "sha256": "8e1ef7af3717eacdb81568a0f92bbc7089ae1bc29a2ead6a277778498a5e33f0",
+      "coverage": "exact_public226_base"
+    },
+    {
+      "path": "tools/gen_css_props.py",
+      "sha256": "aa4f4af12360ab2b3381914b6285009d4e32da8cd4b308a716a0028a2749d1ea",
+      "coverage": "explicit_extra"
+    }
+  ],
+  "limits": [
+    "This is a mapping of the existing measured native suite and reviewed source export, not a new test execution or clean-machine build.",
+    "The64 WPT files are external prerequisites and are distinct from the650 project source inputs.",
+    "Compilers, Python, Node, V8 and system/native dependencies follow the reviewed Linux build/runtime documentation.",
+    "The selected147 exclude exactly url, url_host_nul and data_url; URL suites remain deferred."
+  ]
+}

@@ -77,6 +77,9 @@ uint64_t jsg_visual_generation(void) { return doc_visual_generation(); }
 void jsg_visual_changed(void) { doc_visual_changed(); }
 uint64_t jsg_activity_generation(void) { return doc_activity_generation(); }
 
+bool jsg_has_skipped_ancestor(Node *n) {
+    return layout_has_skipped_ancestor(n ? n->box : NULL);
+}
 bool jsg_rect(Node *n, float r[4]) {
     struct Box *b = n->box;
     if (!b) return false;
@@ -111,7 +114,7 @@ bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y) {
         if (a->fixed) return true;
         struct Box *up = a->abs && a->cb ? a->cb : a->parent;
         if (up && up->scroller && up->node && up->st && (up->st->overflow_x != OV_VISIBLE || up->st->overflow_y != OV_VISIBLE)) {
-            r[0] -= up->node->scroll_x; r[1] -= box_scroll_y(up);
+            r[0] -= box_scroll_left(up); r[1] -= box_scroll_y(up);
         }
         a = up;
     }
@@ -200,7 +203,7 @@ int jsg_text_rects(Node *n, int s, int e, float *out, int max) {
     if (!owner) return 0;
     float dx = 0, dy = 0;
     for (const Box *a = t->parent; a; a = a->parent) {
-        if (a->scroller && a->node) { dx -= a->node->scroll_x; dy -= box_scroll_y(a); }
+        if (a->scroller && a->node) { dx -= box_scroll_left(a); dy -= box_scroll_y(a); }
         if (a->node && a->node == n->parent) break;
     }
     int bs = box_byte(n, t, u16_byte(n->text, (int)n->text_len, s)), be = box_byte(n, t, u16_byte(n->text, (int)n->text_len, e));
@@ -212,7 +215,7 @@ int jsg_ctl_rects(Node *el, int s, int e, float *out, int max) {
     const Box *cb = el->box;
     if (!cb || (cb->ctl != CTL_TEXT && cb->ctl != CTL_TEXTAREA) || max < 1) return 0;
     float dx = 0, dy = 0;
-    if (cb->scroller && cb->node) { dx -= cb->node->scroll_x; dy -= box_scroll_y(cb); }
+    if (cb->scroller && cb->node) { dx -= box_scroll_left(cb); dy -= box_scroll_y(cb); }
     const Box *t = ctl_text_box(cb);
     if (!t) {
         if (s != e) return 0;
@@ -229,7 +232,7 @@ bool jsg_scroll(Node *n, float r[4]) {
     if (!b || !b->scroller) return false;
     /* scrollWidth/Height: the padding box, or the overflow measured from the padding edge */
     float pw = b->w - b->b[1] - b->b[3], ph = b->h - b->b[0] - b->b[2];
-    r[0] = n->scroll_x; r[1] = n->scroll_y;
+    r[0] = box_scroll_left(b); r[1] = box_scroll_top(b);
     r[2] = b->scroll_w > b->w + 0.01f ? LMAX(pw, b->scroll_w - b->b[3]) : pw;
     r[3] = b->scroll_h > b->h + 0.01f ? LMAX(ph, b->scroll_h - b->b[0]) : ph;
     return true;
@@ -238,6 +241,7 @@ bool jsg_scroll(Node *n, float r[4]) {
 /* furthest right/bottom edge of in-flow and absolute descendants (border boxes and text); a scroller or clipping box
    counts with its own border box only */
 static void overflow_ext(const Box *b, float *mx, float *my) {
+    if (layout_contents_hidden(b)) return;
     for (const Box *c = b->first; c; c = c->next) {
         if (c->fixed) continue;
         if (!c->anon && c->kind != BX_INLINE && c->w > 0 && c->h > 0) { *mx = LMAX(*mx, c->x + c->w); *my = LMAX(*my, c->y + c->h); }   /* anonymous wrappers and inline boxes keep unshifted block-in-inline extents */
@@ -252,6 +256,7 @@ bool jsg_overflow_size(Node *n, float r[2]) {
     if (!b || (b->st && b->st->display == D_INLINE)) return false;
     float ox = b->x + b->b[3], oy = b->y + b->b[0];
     float pw = b->w - b->b[1] - b->b[3], ph = b->h - b->b[0] - b->b[2];
+    if (layout_contents_hidden(b)) { r[0] = pw; r[1] = ph; return true; }
     float mx = ox + pw, my = oy + ph;
     overflow_ext(b, &mx, &my);
     r[0] = LMAX(pw, mx - ox); r[1] = LMAX(ph, my - oy);
@@ -260,7 +265,7 @@ bool jsg_overflow_size(Node *n, float r[2]) {
 
 bool jsg_set_scroll(Node *n, float x, float y) {
     struct Box *b = n->box;
-    if (!b || !b->scroller) return false;
+    if (!box_scroll_active(b)) return false;
     float maxx = LMAX(0, b->scroll_w - b->w), maxy = LMAX(0, b->scroll_h - b->h);
     float nx = isnan(x) ? n->scroll_x : LCLAMP(x, 0, maxx);
     float ny = isnan(y) ? n->scroll_y : box_scroll_from_end(b) ? LCLAMP(y, -maxy, 0) : LCLAMP(y, 0, maxy);

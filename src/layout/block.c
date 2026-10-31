@@ -76,8 +76,8 @@ void box_translate(Box *b, float dx, float dy) { if (dx || dy) tr(b, b, dx, dy);
 void add_abs(Layout *L, Box *c) {
     if (L->measure_only) return;
     Box *cb = L->root;
-    if (!c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && p->kind != BX_INLINE && (p->st->position != P_STATIC || p->st->has_transform) && p != c) { cb = p; break; }
-    if (c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && p->st->has_transform && p->kind != BX_INLINE) { cb = p; break; }
+    if (!c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && p->kind != BX_INLINE && (p->st->position != P_STATIC || p->st->has_transform || layout_contents_hidden(p)) && p != c) { cb = p; break; }
+    if (c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && (p->st->has_transform || layout_contents_hidden(p)) && p->kind != BX_INLINE) { cb = p; break; }
     c->cb = cb; cb->has_abs = true;
     if (L->nalog == L->calog) { L->calog = L->calog ? L->calog * 2 : 64; L->alog = xrealloc(L->alog, sizeof *L->alog * (size_t)L->calog); }
     L->alog[L->nalog++] = c;
@@ -150,7 +150,7 @@ static bool anchor_inset(const Box *a, const Box *cb, int i, int src, const int 
     if (!name) name = a->st->pos_anchor;   /* the default anchor */
     const Box *ab = name && side ? find_anchor(a, name) : NULL;
     float scx = 0, scy = 0;   /* scrollers between the anchor and the containing block shift it */
-    if (ab) for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += p->scroll_x; scy += p->scroll_y; }
+    if (ab) for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += box_scroll_left(p->box); scy += box_scroll_top(p->box); }
     if (ab) {
         /* the side as a physical side q (0 top 1 right 2 bottom 3 left) and a fraction from q toward the opposite side,
            read on the declaring side's axis, then moved by the try tactics */
@@ -235,7 +235,7 @@ static bool area_apply(const Box *a, const Box *cb, const char *area, const int 
         if (sx0 == 0 || sx0 == 3) { *dl = xl0; *dh = xh0; } else { *dl = 2 - xh0; *dh = 2 - xl0; }
     }
     float scx = 0, scy = 0;
-    for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += p->scroll_x; scy += p->scroll_y; }
+    for (const Node *p = ab->node ? ab->node->parent : NULL; p && p != cb->node; p = p->parent) if (p->box && p->box->scroller) { scx += box_scroll_left(p->box); scy += box_scroll_top(p->box); }
     float X[4] = { 0, ab->x - *px - scx, ab->x - *px - scx + ab->w, *pw }, Y[4] = { 0, ab->y - *py - scy, ab->y - *py - scy + ab->h, *ph };
     for (int i = 1; i < 3; i++) { X[i] = LMIN(LMAX(X[i], X[0]), X[3]); Y[i] = LMIN(LMAX(Y[i], Y[0]), Y[3]); }
     *px += X[xl]; *pw = X[xh + 1] - X[xl]; *py += Y[yl]; *ph = Y[yh + 1] - Y[yl];
@@ -802,6 +802,36 @@ static float clamph(Box *b, float h, float cbh, float bp) {
     return clamph_basis(b, h, cbh, bp, cbh, !b->abs && cbh >= 0);
 }
 
+/* For none, the element still retains its own grid tracks while being
+ * measured as empty. A shallow measurement box borrows immutable style and
+ * has no descendants, registrations or memo state. Actual children are laid
+ * out normally in the original box after its contained size is fixed. */
+static unsigned select_display_rows(const Box *b) {
+    const char *value = node_attr(b->node, "size");
+    if (value) {
+        while (is_ws((unsigned char)*value)) value++;
+        if (*value != '-') {
+            char *end; unsigned long rows = strtoul(value, &end, 10);
+            if (end != value && rows && rows <= UINT32_MAX) return (unsigned)rows;
+        }
+    }
+    return node_has_attr(b->node, "multiple") ? 4 : 1;
+}
+static float select_empty_height(const Box *b) {
+    return select_display_rows(b) * style_line_height(b->st, style_font(b->st));
+}
+static float contained_auto_height(Layout *L, Box *b, float content_width) {
+    if (b->st->contain_intrinsic[1].flags & CIS_LENGTH) return b->st->contain_intrinsic[1].length;
+    /* A native empty select retains its own UI rows; option content is not
+       consulted. Explicit intrinsic height, including zero, replaces it. */
+    if (b->ctl == CTL_SELECT) return select_empty_height(b);
+    if (b->fmt != FMT_GRID) return 0;
+    Box empty = *b; empty.first = empty.last = empty.abs_head = NULL;
+    empty.grid_used = NULL; empty.memo = empty.intr_ok = false;
+    float height = layout_grid(L, &empty, 0, 0, content_width, -1);
+    if (empty.grid_used) { free(empty.grid_used->size[0]); free(empty.grid_used->size[1]); free(empty.grid_used); }
+    return LMAX(0, height);
+}
 static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
 /* flex/grid measure a child and then lay it out again, often with identical inputs; nested containers made that exponential */
 int g_lb_calls, g_lb_hits;
@@ -861,6 +891,11 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
         b->w = clampw(L, b, layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true), cbw, hb);
     }
     else if (len_def(s->width, cbw) && !is_cell) { b->w = clampw(L, b, res(s->width, cbw) + (bs ? 0 : hb), cbw, hb); if (b->w < hb) b->w = hb; }
+    else if (s->writing_mode && s->width.kind == LK_AUTO && layout_size_contained(b, true)) {
+        /* In a vertical flow physical width is the content-sized block axis.
+           Its contained intrinsic size does not fill the parent's width. */
+        b->w = LMAX(hb, clampw(L, b, layout_contained_inner_size(b, true) + hb, cbw, hb));
+    }
     else if (mode == SZ_FILL && b->fmt != FMT_TABLE && s->width.kind != LK_FIT_CONTENT && s->width.kind != LK_MAX_CONTENT && s->width.kind != LK_MIN_CONTENT) b->w = clampw(L, b, cbw - b->m[1] - b->m[3], cbw, hb);
     else {
         float mn, mx;
@@ -892,6 +927,8 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
         hdef = LMAX(0, layout_stretch_border_size(b, layout_percentage_cb(b), false, cbh, true) - vb);
     else if (len_def(s->height, cbh) && s->height.kind == LK_LEN) hdef = LMAX(0, res(s->height, cbh) - (bs ? vb : 0));
     else if (s->aspect_ratio > 0 && b->fmt != FMT_REPLACED && s->height.kind != LK_LEN) hdef = LMAX(0, (bs ? b->w : cw) / s->aspect_ratio - (bs ? vb : 0));
+    else if (b->fmt != FMT_REPLACED && layout_size_contained(b, false))
+        hdef = contained_auto_height(L, b, cw);
     /* children size against the used height: YouTube's theater player stretches in a flex row whose
        height:56.25vw is capped by max-height and then raised by min-height:480px */
     if (hdef >= 0 && fh < 0) hdef = LMAX(0, clamph(b, hdef + vb, cbh, vb) - vb);
@@ -926,6 +963,7 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     case FMT_TABLE: ch = layout_table(L, b, cx, cy, cw, ch_for_kids); break;
     case FMT_REPLACED: { float w, h; replaced_size(L, b, cbw, cbh, mode == SZ_FORCED ? b->w : -1, fh, &w, &h); ch = h; break; }
     }
+    if (b->ctl == CTL_SELECT) ch = LMAX(ch, select_empty_height(b));
     if (b->fmt != FMT_FLOW) b->eff_mb = b->m[2];
     if (b->bfc && f == &own) { float fb = fc_bottom(&own); if (fb > cy + ch) ch = fb - cy; }
     free(own.v);
@@ -939,7 +977,8 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
        icon buttons: an inline-block svg in a 48px display:block <button>); so is single-line
        control text */
     bool button = b->node && b->node->type == NODE_ELEMENT && b->node->tag == A_button && b->node->ns == NS_HTML && (b->fmt == FMT_FLOW || b->fmt == FMT_INLINE);
-    if (button || (b->ctl && b->ctl != CTL_TEXTAREA && b->nlines <= 1)) {
+    bool listbox = b->ctl == CTL_SELECT && (node_has_attr(b->node, "multiple") || select_display_rows(b) > 1);
+    if (button || (b->ctl && b->ctl != CTL_TEXTAREA && !listbox && b->nlines <= 1)) {
         float d = (b->h - vb - content_h) / 2;
         if (d > 0) { box_translate(b, 0, d); b->y -= d; if (b->ctl && !b->nlines) b->baseline += d; }   /* everything inside moves, the box stays */
     }
@@ -956,6 +995,7 @@ static void rel_offset(const Length in[4], float cbw, float cbh, float *dx, floa
  * Looking only at immediate border boxes makes long conversations appear
  * to have no scroll range. Compute bottom-up once, stopping at clips. */
 static void overflow(Box *b) {
+    if (layout_contents_hidden(b)) { b->scroll_w = b->w; b->scroll_h = b->h; return; }
     float r = b->x + b->w, btm = b->y + b->h - b->p[2], bb = btm;
     for (Box *c = b->first; c; c = c->next) {
         if (c->fixed || (c->abs && c->cb && !box_within(c->cb, b))) continue;
@@ -969,6 +1009,8 @@ static void overflow(Box *b) {
     b->scroll_w = r - b->x; b->scroll_h = LMAX(btm - b->y + b->p[2], bb - b->y);
 }
 static void clamp_scroll(Box *b, float maxx, float maxy) {
+    /* A skipped owner has no used scroll range; retain its backing offsets. */
+    if (layout_contents_hidden(b)) return;
     b->node->scroll_x = LCLAMP(b->node->scroll_x, 0, maxx); b->node->scroll_y = box_scroll_from_end(b) ? LCLAMP(b->node->scroll_y, -maxy, 0) : LCLAMP(b->node->scroll_y, 0, maxy);
 }
 static void post(Layout *L, Box *b, float cbw, float cbh, float clipx, float clipy) {
@@ -992,6 +1034,7 @@ static void extents(Layout *L, Box *b) {
     if (b->fixed) return;
     if (b->kind != BX_TEXT) { L->doc_w = LMAX(L->doc_w, b->x + b->w); L->doc_h = LMAX(L->doc_h, b->y + b->h); }
     if (b->scroller && b->node && b != L->root) return;
+    if (layout_contents_hidden(b)) return;
     for (int i = 0; i < b->nfrags; i++) { L->doc_w = LMAX(L->doc_w, b->frags[i].x + b->frags[i].w); L->doc_h = LMAX(L->doc_h, b->frags[i].y + b->frags[i].h); }
     for (Box *c = b->first; c; c = c->next) extents(L, c);
 }
@@ -1160,7 +1203,7 @@ void box_sticky_offset(const Box *b, float scroll_x, float scroll_y, float *dx, 
         if (a->fixed) { scroll_x = scroll_y = 0; break; }
     }
     Document *d = b->node->doc;
-    float px = port ? port->x + port->b[3] + port->node->scroll_x : scroll_x;
+    float px = port ? port->x + port->b[3] + box_scroll_left(port) : scroll_x;
     float py = port ? port->y + port->b[0] + box_scroll_y(port) : scroll_y;
     float pw = port ? port->w - port->b[3] - port->b[1] : d->layout_vw;
     float ph = port ? port->h - port->b[0] - port->b[2] : d->layout_vh;
@@ -1191,10 +1234,11 @@ static int hit_layer(const Box *c) {
 static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy, float sx, float sy, bool layers);
 typedef struct HitLayer { Box *box; int z; bool negative; } HitLayer;
 static void hit_layers(Box *b, float x, float y, float ox, float oy, float vx, float vy, float sx, float sy, HitLayer *best) {
+    if (layout_contents_hidden(b)) return;
     float lx = x + ox, ly = y + oy;
     if (b->scroller && b->node && !(lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h)) return;
     float cox = ox, coy = oy;
-    if (b->scroller && b->node) { cox += b->node->scroll_x; coy += box_scroll_y(b); }
+    if (b->scroller && b->node) { cox += box_scroll_left(b); coy += box_scroll_y(b); }
     /* Reverse tree order resolves equal z-index without sorting or allocating.
        Each layer is tested at most once, and a lower layer cannot replace a hit. */
     for (Box *c = b->last; c; c = c->prev) {
@@ -1219,13 +1263,15 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     float lx = x + ox, ly = y + oy;
     bool inside = lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h;
     if (b->scroller && b->node && !inside) return NULL;
+    if (layout_contents_hidden(b))
+        return inside && !hidden && b->st->pointer_events ? b : NULL;
     if (layers) {
         HitLayer best = {0};
         hit_layers(b, x, y, ox, oy, vx, vy, sx, sy, &best);
         if (best.box) return best.box;
     }
     float cox = ox, coy = oy;
-    if (b->scroller && b->node) { cox += b->node->scroll_x; coy += box_scroll_y(b); }
+    if (b->scroller && b->node) { cox += box_scroll_left(b); coy += box_scroll_y(b); }
     for (Box *c = b->last; c; c = c->prev) {
         if (hit_layer(c) != 2) continue;
         Box *h = hit(c, x, y, cox, coy, vx, vy, sx, sy, false);

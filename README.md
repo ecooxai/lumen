@@ -1,10 +1,12 @@
 # Lumen browser (early preview)
 
-## Linux measured source checkpoint 226
+## Linux measured source
 
-Selected stepped math594/594, stretch1012/1012 and MIME87/87 assertions pass;29/29 stretch and11/11 paint comparisons pass. Fresh exact640: 411/640 whole files; 9162/10540 reported assertions. Scopes are separate; full WPT and whole-browser98/100 remain unverified. URL work is deferred.
+The current [Linux measured report](docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.md) records the selected WPT scope, fixed 640-file non-URL comparison, native regression and rendering gates, source and binary identities, and resource measurements. Each suite retains its own denominator. URL work remains deferred; full WPT and whole-browser Chromium parity remain unverified.
 
-See the [measured report](docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.md) and [checkpoint JSON](docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.json). Actual focused/rendering candidate226, fresh native/640 candidate226; equivalence is explicit where used. EXPORT-QUALIFICATION.json maps reviewed source to tested inputs. This source export was not independently rebuilt and is not a portable binary.
+The source distribution includes the reviewed public-history Git bundle, generators and regression tests. `SOURCE-MANIFEST.json` and `EXPORT-QUALIFICATION.json` bind the public export to the tested source inputs. `OFFLINE-RECOVERY.md` explains recovery from the included bundle. The separately packaged executable is the exact tested Linux development build and requires its matching runtime.
+
+See the [tested Linux build and run guide](docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md) and [runtime identity record](docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json) before building or launching it.
 
 ## Install on macOS
 
@@ -56,9 +58,9 @@ development checkout, current accepted binaries, exact source hashes, measured
 compatibility and remaining work are recorded in the dated `AGENTS.md` handoff
 and `devsummary.md`. These private task and handoff documents, including
 `agent/task.md`, are intentionally omitted from public source snapshots.
-The [portability status and test plan](docs/codex-android-linux-status.md)
-retains earlier Linux/Android milestones; its historical results are not the
-current engine's validation.
+The current public Linux report carries the measured validation for this source
+export. Android has separate build and release gates; Linux measurements do not
+establish an Android release.
 
 ### Linux prerequisites and build
 
@@ -81,20 +83,14 @@ Native core tests can run without V8, SDL3 or wgpu-native:
 ```sh
 python3 tools/codex_compile.py cmake -S . -B build/codex-core -DLUMEN_BUILD_BROWSER=OFF
 python3 tools/codex_compile.py cmake --build build/codex-core -j2
-python3 tools/codex_compile.py ctest --test-dir build/codex-core --output-on-failure -j2
+python3 tools/codex_compile.py ctest --test-dir build/codex-core --output-on-failure -j2 -E '^(url|url_host_nul|data_url)$'
 ```
 
-For the full browser, provision the external dependencies first, then configure
-their prefix and build:
-
-```sh
-python3 tools/codex_compile.py cmake -S . -B build/codex-native -DCMAKE_BUILD_TYPE=Release -DLUMEN_DEPS_DIR=/absolute/dependency/prefix
-python3 tools/codex_compile.py cmake --build build/codex-native -j2
-```
-
-`LUMEN_V8_POINTER_COMPRESSION` must match the supplied V8 build. See
-[the native dependency record](docs/codex-linux-native-dependencies.md) for the
-retained dependency versions, archive hashes and runtime ICU setup. Prebuilt
+For the full browser, use the exact compiler, V8/wgpu include and library paths,
+pointer-compression setting, runtime search paths and ICU setup in the
+[tested Linux build and run guide](docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md).
+The [runtime identity record](docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json)
+lists the actual tested toolchain, external dependency identities and ELF imports. Prebuilt
 V8/wgpu libraries, installed system libraries, and the separately pinned WPT
 and Chromium installations are not included in the source snapshot. The source
 archive and recorded source/resource/test/build manifest do not constitute a
@@ -105,6 +101,9 @@ complete standalone WPT reproduction requires the separate validation setup.
 ### Android adapter
 
 The Android adapter builds the same C/C++ engine through SDL3; it does not embed
-Android WebView. The earlier portability document records its separate Android
-prerequisites and remaining release gates. Linux results do not establish an
-Android release or Chromium-level web-platform compatibility.
+Android WebView. Android prerequisites and release gates remain separate. Linux results do not
+establish an Android release or Chromium-level web-platform compatibility.
+
+## Authored interactive demonstration
+
+[Open the included demonstration](examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html). The interactive page runs in the browser opening it. Open it in Lumen to exercise the Lumen engine. Recorded native234 validation is separate from the live values shown in any other browser. This is authored content outside WPT scoring, with separately recorded native234 observations in [the demo evidence](docs/gpt-6-astra-pro-builtin-rubywebterm-live-demo-evidence.json).

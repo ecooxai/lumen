@@ -1052,6 +1052,7 @@ bool css_supports(const char *cond) {
             if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
             if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);
             if (r && p[0] == 'f') r = css_flex_valid(p, v);
+            if (r && p[0] == 'c') r = css_containment_valid(p, v) && css_columns_valid(p, v);
         } else r = css_supports(in);
     }
     free(s);

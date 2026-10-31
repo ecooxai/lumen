@@ -153,7 +153,8 @@ void js_doc_reparse(JsCtx *k, const char *html, size_t n) {
     d->html = d->head = d->body = NULL; d->quirks = false;
     js_set_ready_state(k, 0);
     html_parse(d, html, n);
-    k->el_load = k->frame_el != nullptr;
+    if (k->load_phase != DocumentLoadPhase::InProgress)
+        k->el_load = k->frame_el != nullptr;
     frame_run_scripts(k, d);
 }
 /* Parser scripts retain encounter order while pending fetches yield to the
@@ -221,7 +222,7 @@ void frames_parser_tick(JsCtx *c) {
             if (!js_parser_run_deferred_before(c, UINT64_MAX)) break;
             if (state->aborted || state->generation != c->parser_generation) break;
             state->complete = true;
-            js_dispatch(c, &state->document->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+            js_dispatch_document_event(c, JS_DOCUMENT_DOM_CONTENT_LOADED);
             if (!c->dead && !state->aborted && state->generation == c->parser_generation) js_fire_load(c);
             break;
         }
@@ -496,7 +497,7 @@ void document_stream_tick(JsCtx *c) {
         const bool deferred_ready = stream_live(c, state) && (c->written_deferred.empty() || (!stream_sheets_block(c, state) && stream_live(c, state)));
         if (stream_live(c, state) && state->module_index == state->modules.size() && deferred_ready && js_parser_run_deferred_before(c, UINT64_MAX) && stream_live(c, state)) {
             state->complete = true;
-            js_dispatch(c, &state->document->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+            js_dispatch_document_event(c, JS_DOCUMENT_DOM_CONTENT_LOADED);
             if (stream_live(c, state) && c->host.parser_complete) c->host.parser_complete(c->host.ud, state->document);
             if (stream_live(c, state)) js_fire_load(c);
         }
@@ -540,7 +541,11 @@ void js_doc_write(JsCtx *c, const char *source, size_t length) {
 }
 void js_doc_close(JsCtx *c) {
     auto state = document_stream(c);
-    state->closed = true; c->el_load = c->frame_el != nullptr;
+    state->closed = true;
+    /* Preserve an already pending owner load, and do not re-arm one while its
+       current lifecycle callback is running. */
+    if (c->load_phase != DocumentLoadPhase::InProgress)
+        c->el_load = c->frame_el != nullptr;
     document_stream_tick(c);
 }
 
@@ -557,20 +562,72 @@ static bool frames_loading(JsCtx *c) {
     for (JsCtx *k : c->kids) if (!k->dead && (k->frame_reload_pending || k->load_deferred)) return true;
     return false;
 }
+static bool load_context_active(JsCtx *saved, uint32_t id, Document *document) {
+    /* Lookup before inspecting a callback's saved context pointer. The existing
+       fully-active check also verifies each child frame's active document. */
+    if (js_ctx_by_id(id) != saved || saved->doc != document ||
+        !js_context_fully_active(saved)) return false;
+    JsCtx *top = saved;
+    while (top->parent) top = top->parent;
+    return !top->wid || js_ctx_of_window(top->wid) == top;
+}
+
 void js_fire_load(JsCtx *c) {
-    if (!c || c->dead) return;
-    c->load_deferred = false;   /* a frame that finishes during the scan must not fire this load from within it */
-    frames_scan(c);   /* the frames its parser inserted start loading now */
-    if (c->dead) return;
-    if (!c->load_synced && c->host.sync) { c->load_synced = true; c->host.sync(c->host.ud, c->doc, true); }   /* layout requests the web fonts load waits for */
-    if (c->dead) return;
-    if (frames_loading(c)) { c->load_deferred = true; return; }
-    js_set_ready_state(c, 2);
-    js_dispatch_window(c, "load");
-    JsCtx *p = c->parent;
-    if (!p || c->dead || p->dead) return;
-    if (c->el_load) { c->el_load = false; js_dispatch(p, c->frame_el, "load", "Event", false, false, 0, 0, 0, NULL); }
-    frames_load_check(p);
+    if (!c || c->dead || c->load_checking) return;
+    const uint32_t id = c->id;
+    Document *const document = c->doc;
+    const uint64_t generation = c->parser_generation;
+    auto live = [&]() { return load_context_active(c, id, document); };
+    if (!live()) return;
+    if (c->load_phase != DocumentLoadPhase::Pending &&
+        c->doc->ready_state == 2 && !c->load_deferred) return;
+    c->load_checking = true;
+    c->load_deferred = false;
+    auto preflight_live = [&]() {
+        if (!live()) return false;
+        if (c->parser_generation == generation) return true;
+        /* A new parser owns later completion. Do not clear a phase entered by
+           a newer context or proceed with this generation's readiness work. */
+        c->load_checking = false;
+        c->load_deferred = true;
+        return false;
+    };
+    frames_scan(c);
+    if (!preflight_live()) return;
+    if (!c->load_synced && c->host.sync) {
+        c->load_synced = true;
+        c->host.sync(c->host.ud, c->doc, true);
+        if (!preflight_live()) return;
+    }
+    if (frames_loading(c)) {
+        c->load_deferred = true;
+        c->load_checking = false;
+        return;
+    }
+    if (c->doc->ready_state != 2) js_set_ready_state(c, 2);
+    if (!preflight_live()) return;
+    c->load_checking = false;
+    /* A parser created inside load/pageshow still completes its readiness, but
+       the surrounding same-Document lifecycle remains the only event cycle. */
+    if (c->load_phase != DocumentLoadPhase::Pending) return;
+    c->load_phase = DocumentLoadPhase::InProgress;
+    js_dispatch_document_event(c, JS_DOCUMENT_LOAD);
+    if (!live()) return;
+    JsCtx *const parent = c->parent;
+    const uint32_t parent_id = parent ? parent->id : 0;
+    Document *const parent_document = parent ? parent->doc : nullptr;
+    if (parent && c->el_load) {
+        c->el_load = false;
+        js_dispatch(parent, c->frame_el, "load", "Event", false, false, 0, 0, 0, NULL);
+        if (!live()) return;
+    }
+    /* Match existing Window-load/owner-load ordering. A requested navigation
+       does not end this cycle until the active context is actually replaced. */
+    js_dispatch_document_event(c, JS_DOCUMENT_PAGESHOW);
+    if (!live()) return;
+    c->load_phase = DocumentLoadPhase::Complete;
+    if (parent && load_context_active(parent, parent_id, parent_document))
+        frames_load_check(parent);
 }
 void frames_load_check(JsCtx *c) { if (c && !c->dead && c->load_deferred && !frames_loading(c)) js_fire_load(c); }
 void js_load_recheck(JsCtx *c) { frames_load_check(c); }

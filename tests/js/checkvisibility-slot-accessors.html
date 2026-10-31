@@ -1,0 +1,52 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>checkVisibility private slot identity observations</title>
+<body>
+<script>
+(async function () {
+  const rows = [];
+  for (const property of ['localName', 'namespaceURI']) {
+    const host = document.createElement('div');
+    host.style.cssText = 'width:40px;height:40px';
+    const shadow = host.attachShadow({mode:'closed'});
+    const wrapper = document.createElement('div');
+    wrapper.style.opacity = '0';
+    const slot = document.createElement('slot');
+    slot.name = 'target';
+    wrapper.appendChild(slot);
+    shadow.appendChild(wrapper);
+    const child = document.createElement('div');
+    child.slot = 'target';
+    child.style.cssText = 'width:20px;height:20px';
+    host.appendChild(child);
+    document.body.appendChild(host);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const assigned = slot.assignedNodes().includes(child);
+    const rect = child.getBoundingClientRect();
+    const hasBox = rect.width > 0 && rect.height > 0;
+    let reads = 0, actual = null, error = null;
+    const sentinel = new Error('public ' + property + ' getter must not run');
+    const prior = Object.getOwnPropertyDescriptor(slot, property);
+    Object.defineProperty(slot, property, {configurable:true, get() { reads++; throw sentinel; }});
+    try { actual = child.checkVisibility({opacityProperty:true}); }
+    catch (e) { error = e === sentinel ? 'sentinel' : String(e); }
+    finally {
+      if (prior) Object.defineProperty(slot, property, prior);
+      else delete slot[property];
+    }
+    const row = {case:property, assigned, hasBox, actual, reads, error,
+      pass:assigned && hasBox && actual === false && reads === 0 && error === null};
+    rows.push(row);
+    console.log('SLOT_ACCESSOR_ROW ' + JSON.stringify(row));
+    host.remove();
+  }
+  const pass = rows.length === 2 && rows.every(row => row.pass);
+  window.__checkVisibilitySlotAccessors = {complete:true,rows,pass};
+  document.documentElement.setAttribute('data-checkvisibility-slot-accessors-complete', pass ? 'PASS' : 'FAIL');
+  console.log('RESULTS checkvisibility-slot-accessors:' + (pass ? 'PASS' : 'FAIL'));
+})().catch(error => {
+  console.log('SLOT_ACCESSOR_ERROR ' + String(error));
+  document.documentElement.setAttribute('data-checkvisibility-slot-accessors-complete', 'FAIL');
+  console.log('RESULTS checkvisibility-slot-accessors:FAIL');
+});
+</script>

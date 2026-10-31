@@ -17,6 +17,36 @@ static int implicit_track_pattern(Layout *L, const ComputedStyle *s, const char 
     return css_parse_grid_tracks(value, s->font_size, rem, &media, out);
 }
 
+typedef VEC(GridTrack) GridTracks;
+static float auto_repeat_measure(const GridTrack *track, float reference) {
+    float maximum = track_fixed(track, reference);
+    if (maximum < 0 && track->min.kind == LK_LEN && len_def(track->min, reference)) maximum = res(track->min, reference);
+    return LMAX(0, maximum);
+}
+static void expand_grid_tracks(const GridTrack *source, int count, float available, float gap, GridTracks *out) {
+    for (int i = 0; i < count && out->n < 1000; ) {
+        int span = LMIN(source[i].repeat_span, count - i);
+        if (!span) { vec_push(*out, source[i++]); continue; }
+        double pattern = 0, other = 0;
+        /* Only repeated track sizes need the 1px UA floor. Fixed zero
+           tracks outside the pattern must remain zero in the equation. */
+        for (int k = 0; k < span; k++) pattern += LMAX(1, auto_repeat_measure(&source[i + k], available));
+        for (int k = 0; k < count; k++) if (k < i || k >= i + span)
+            other += auto_repeat_measure(&source[k], available);
+        int repetitions = 1, limit = LMAX(1, (1000 - (count - span)) / span);
+        if (available >= 0 && isfinite(available)) {
+            double fits = ((double)available - other - gap * (count - span - 1)) / (pattern + gap * span);
+            if (fits >= limit) repetitions = limit;
+            else if (fits > 1) repetitions = (int)floor(fits + 1e-7);
+        }
+        for (int repeat = 0; repeat < repetitions && out->n < 1000; repeat++)
+            for (int k = 0; k < span && out->n < 1000; k++) {
+                GridTrack track = source[i + k]; track.repeat_span = 0; vec_push(*out, track);
+            }
+        i += span;
+    }
+}
+
 static bool area_lookup(const char *areas, const char *name, int *r, int *c, int *rs, int *cs) {
     int r0 = 1 << 20, c0 = 1 << 20, r1 = -1, c1 = -1, row = 0, col = 0;
     size_t nl = strlen(name);
@@ -243,13 +273,15 @@ static void grid_absolute_edges(GridAxis axis, const GridUsedTracks *tracks, int
 }
 static float grid_absolute_coordinate(const GridUsedTracks *tracks, int dim, int line, bool end, bool reverse) {
     int count = tracks->count[dim];
-    float position = 0, total = tracks->gap[dim] * LMAX(0, count - 1);
+    float position = 0, total = 0;
     for (int i = 0; i < count; ++i) {
-        total += tracks->size[dim][i];
-        if (i < line) position += tracks->size[dim][i] + (i < count - 1 ? tracks->gap[dim] : 0);
+        float gap = i < count - 1 ? (tracks->gap_after[dim] ? tracks->gap_after[dim][i] : tracks->gap[dim]) : 0;
+        total += tracks->size[dim][i] + gap;
+        if (i < line) position += tracks->size[dim][i] + gap;
     }
     /* A gutter belongs to neither adjacent grid area. */
-    if (end && line > 0 && line < count) position -= tracks->gap[dim];
+    if (end && line > 0 && line < count)
+        position -= tracks->gap_after[dim] ? tracks->gap_after[dim][line - 1] : tracks->gap[dim];
     return tracks->offset[dim] + (reverse ? total - position : position);
 }
 void grid_absolute_containing_block(const Box *cb, const Box *a, float *x, float *y, float *w, float *h) {
@@ -274,25 +306,23 @@ void grid_absolute_containing_block(const Box *cb, const Box *a, float *x, float
 float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) {
     const ComputedStyle *s = b->st;
     float cg = s->column_gap_l.pct ? res(s->column_gap_l, cw) : s->column_gap, rg = s->row_gap;
-    int nc = s->grid_ncols; GridTrack *tracks = s->grid_cols;
+    int nc;
     GridTrack *auto_cols = NULL, *auto_rows = NULL;
     int n_auto_cols = implicit_track_pattern(L, s, "grid-auto-columns", &auto_cols);
     int n_auto_rows = implicit_track_pattern(L, s, "grid-auto-rows", &auto_rows);
-    VEC(GridTrack) cols = {0};
-    for (int i = 0; i < nc; i++) {
-        GridTrack t = tracks[i];
-        if (t.size.kind == LK_FIT_CONTENT && t.size.px > 0) { /* repeat(auto-fill, minmax(px, 1fr)) marker */
-            float mn = t.size.px; int cnt = LMAX(1, (int)((cw + cg) / (mn + cg)));
-            GridTrack g = { L_auto(), t.fr ? t.fr : 1, L_px(mn) };
-            for (int k = 0; k < cnt; k++) vec_push(cols, g);
-            continue;
-        }
-        vec_push(cols, t);
+    GridTracks cols = {0}, explicit_row_tracks = {0};
+    expand_grid_tracks(s->grid_cols, s->grid_ncols, cw, cg, &cols);
+    const GridTrack *row_source = s->grid_rows; int sized_rows = s->grid_nrows;
+    bool automatic_rows = false;
+    for (int i = 0; i < s->grid_nrows; i++) if (s->grid_rows[i].repeat_span) { automatic_rows = true; break; }
+    if (automatic_rows) {
+        expand_grid_tracks(s->grid_rows, s->grid_nrows, chdef, rg, &explicit_row_tracks);
+        row_source = explicit_row_tracks.v; sized_rows = explicit_row_tracks.n;
     }
     int sized_columns = cols.n;
     if (s->grid_areas) { int an = area_cols(s->grid_areas); while (cols.n < an) { GridTrack t = grid_auto_track(auto_cols, n_auto_cols, cols.n - sized_columns); vec_push(cols, t); } }
     int explicit_columns = cols.n;
-    int explicit_rows = LMAX(s->grid_nrows, s->grid_areas ? area_rows(s->grid_areas) : 0);
+    int explicit_rows = LMAX(sized_rows, s->grid_areas ? area_rows(s->grid_areas) : 0);
     int first_column = 0, last_column = explicit_columns, first_row = 0, last_row = explicit_rows, auto_span = 1;
     /* Grid 8.5: establish both ends of the implicit grid before auto-placement.
        Negative lines remain relative to the explicit grid, then every item is
@@ -358,12 +388,19 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     }
     free(oc.v);
     /* column sizes: kind 0=auto 1=fixed 2=fr 3=minmax(len,len) */
-    float *cwid = xcalloc((size_t)nc, sizeof(float)), *cap = xcalloc((size_t)nc, sizeof(float));
-    float *minimum = xcalloc((size_t)nc, sizeof(float));
+    float *cwid = xcalloc((size_t)nc * 2, sizeof(float)), *cap = xcalloc((size_t)nc, sizeof(float));
+    float *cgaps = cwid + nc, *minimum = xcalloc((size_t)nc, sizeof(float));
     uint8_t *kind = xcalloc((size_t)nc, 1);
-    float fixed = cg * (nc - 1), frsum = 0; int nauto = 0, ngrow = 0;
+    for (int i = 0; i < nc; i++) if (cols.v[i].repeat_kind == GRID_REPEAT_FIT) kind[i] = 4;
+    for (int k = 0; k < items.n; k++) for (int i = items.v[k].c; i < items.v[k].c + items.v[k].cs; i++) kind[i] = 0;
+    float fixed = 0, frsum = 0; int nauto = 0, ngrow = 0, active_columns = 0;
+    for (int i = 0; i < nc; i++) {
+        if (kind[i] != 4) active_columns++;
+        if (i < nc - 1 && kind[i] != 4 && kind[i + 1] != 4) fixed += cgaps[i] = cg;
+    }
     for (int i = 0; i < nc; i++) {
         GridTrack *t = &cols.v[i];
+        if (kind[i] == 4) continue;
         if (t->fr > 0) { kind[i] = 2; frsum += t->fr; cwid[i] = t->min.kind == LK_LEN ? res(t->min, cw) : 0; fixed += cwid[i]; continue; }
         if (t->size.kind == LK_LEN && t->min.kind == LK_LEN && res(t->min, cw) < res(t->size, cw)) { kind[i] = 3; cwid[i] = res(t->min, cw); cap[i] = res(t->size, cw); fixed += cwid[i]; ngrow++; continue; }
         if (t->min.kind == LK_MIN_CONTENT && t->size.kind == LK_LEN) {   /* minmax(auto, len): at least the items' automatic minimum */
@@ -404,23 +441,36 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
             }
         }
     }
-    free(cap); free(kind); free(minimum);
-    float grid_width = cg * (nc - 1);
-    for (int i = 0; i < nc; i++) grid_width += cwid[i];
+    free(cap); free(minimum);
+    float grid_width = 0;
+    for (int i = 0; i < nc; i++) grid_width += cwid[i] + cgaps[i];
     char justify_buf[64]; float xoff = 0, column_extra = 0;
     const char *justify = grid_alignment(s, "justify-content", s->justify_content, justify_buf);
     bool rtl = !s->writing_mode && s->direction;
-    grid_content_alignment(justify, rtl, nc, cw - grid_width, &xoff, &column_extra);
-    cg += column_extra; grid_width += column_extra * (nc - 1);
+    grid_content_alignment(justify, rtl, active_columns, cw - grid_width, &xoff, &column_extra);
+    int remaining_columns = active_columns;
+    for (int i = 0; i < nc; i++) if (kind[i] != 4 && --remaining_columns > 0) cgaps[i] += column_extra;
+    cg += column_extra; grid_width += column_extra * LMAX(0, active_columns - 1);
+    free(kind);
     float *cx0 = xcalloc((size_t)nc + 1, sizeof(float));
-    for (int i = 0; i < nc; i++) cx0[i + 1] = cx0[i] + cwid[i] + (i < nc - 1 ? cg : 0);
+    for (int i = 0; i < nc; i++) cx0[i + 1] = cx0[i] + cwid[i] + cgaps[i];
     int nr = 0; for (int k = 0; k < items.n; k++) nr = LMAX(nr, items.v[k].r + items.v[k].rs);
     nr = LMAX(nr, last_row + leading_rows);
-    float *rh = xcalloc((size_t)nr + 1, sizeof(float));
+    float *rh = xcalloc(((size_t)nr + 1) * 2, sizeof(float)), *rgaps = rh + nr + 1;
     GridTrack *rows = xcalloc((size_t)nr + 1, sizeof(GridTrack));
+    enum { REPEAT_COLLAPSED = 3 };
     for (int i = 0; i < nr; i++) {
         int logical_row = i - leading_rows;
-        rows[i] = logical_row >= 0 && logical_row < s->grid_nrows ? s->grid_rows[logical_row] : grid_auto_track(auto_rows, n_auto_rows, logical_row < 0 ? logical_row : logical_row - s->grid_nrows);
+        rows[i] = logical_row >= 0 && logical_row < sized_rows ? row_source[logical_row] : grid_auto_track(auto_rows, n_auto_rows, logical_row < 0 ? logical_row : logical_row - sized_rows);
+        if (rows[i].repeat_kind == GRID_REPEAT_FIT) rows[i].repeat_kind = REPEAT_COLLAPSED;
+    }
+    for (int k = 0; k < items.n; k++) for (int i = items.v[k].r; i < items.v[k].r + items.v[k].rs; i++)
+        if (rows[i].repeat_kind == REPEAT_COLLAPSED) rows[i].repeat_kind = GRID_REPEAT_FIT;
+    float row_gutters = 0; int active_rows = 0;
+    for (int i = 0; i < nr; i++) {
+        if (rows[i].repeat_kind == REPEAT_COLLAPSED) { rows[i].size = L_px(0); rows[i].min = L_auto(); rows[i].fr = 0; }
+        else active_rows++;
+        if (i < nr - 1 && rows[i].repeat_kind != REPEAT_COLLAPSED && rows[i + 1].repeat_kind != REPEAT_COLLAPSED) row_gutters += rgaps[i] = rg;
         float fixed_height = track_fixed(&rows[i], chdef);
         if (fixed_height >= 0) rh[i] = fixed_height;
         else if (rows[i].min.kind == LK_LEN && len_def(rows[i].min, chdef)) rh[i] = res(rows[i].min, chdef);
@@ -428,7 +478,7 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     /* layout items to find row heights */
     for (int k = 0; k < items.n; k++) {
         GI *g = &items.v[k]; Box *c = g->b;
-        float w = cx0[g->c + g->cs] - cx0[g->c] - (g->c + g->cs < nc ? cg : 0);
+        float w = cx0[g->c + g->cs] - cx0[g->c] - (g->c + g->cs < nc ? cgaps[g->c + g->cs - 1] : 0);
         if (g->c + g->cs == nc) w = cx0[nc] - cx0[g->c];
         compute_mbp(c, w);
         char align_buf[64]; const char *ja = grid_self_alignment(c->st, s, true, align_buf);
@@ -438,11 +488,11 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
         bool sizing_height = c->st->height.kind == LK_STRETCH || c->st->min_height.kind == LK_STRETCH ||
                              c->st->max_height.kind == LK_STRETCH;
         if (sizing_height) {
-            float fixed_height = rg * LMAX(0, g->rs - 1); bool definite = true;
+            float fixed_height = 0; bool definite = true;
             for (int r = g->r; r < g->r + g->rs; r++) {
                 float h = track_fixed(&rows[r], chdef);
                 if (h < 0) { definite = false; break; }
-                fixed_height += h;
+                fixed_height += h + (r < g->r + g->rs - 1 ? rgaps[r] : 0);
             }
             if (definite) measure_height = fixed_height;
         }
@@ -455,7 +505,7 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     /* Flexible tracks divide the remaining definite height. A row whose
        intrinsic minimum exceeds its share freezes before redistribution.
        A total flex factor below one intentionally leaves unused space. */
-    float row_fractions = 0, available_height = chdef - rg * LMAX(0, nr - 1);
+    float row_fractions = 0, available_height = chdef - row_gutters;
     for (int i = 0; i < nr; i++) {
         if (rows[i].fr > 0) row_fractions += rows[i].fr;
         else available_height -= rh[i];
@@ -481,23 +531,25 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     }
     /* align-content: normal/stretch grows auto rows to fill a definite height */
     if (chdef >= 0 && nr && (s->align_content == AL_NORMAL || s->align_content == AL_STRETCH)) {
-        float used = rg * (nr - 1); int na = 0;
+        float used = row_gutters; int na = 0;
         for (int i = 0; i < nr; i++) { used += rh[i]; if (!rows[i].fr && rows[i].size.kind == LK_AUTO) na++; }
         if (na && chdef - used > 0.01f) for (int i = 0; i < nr; i++)
             if (!rows[i].fr && rows[i].size.kind == LK_AUTO) rh[i] += (chdef - used) / na;
     }
-    float grid_height = rg * LMAX(0, nr - 1);
+    float grid_height = row_gutters;
     for (int i = 0; i < nr; i++) grid_height += rh[i];
     char align_content_buf[64]; float yoff = 0, row_extra = 0;
     const char *align_content = grid_alignment(s, "align-content", s->align_content, align_content_buf);
-    grid_content_alignment(align_content, false, nr, chdef >= 0 ? chdef - grid_height : 0, &yoff, &row_extra);
+    grid_content_alignment(align_content, false, active_rows, chdef >= 0 ? chdef - grid_height : 0, &yoff, &row_extra);
+    int remaining_rows = active_rows;
+    for (int i = 0; i < nr; i++) if (rows[i].repeat_kind != REPEAT_COLLAPSED && --remaining_rows > 0) rgaps[i] += row_extra;
     rg += row_extra;
     float *ry = xcalloc((size_t)nr + 1, sizeof(float));
-    for (int i = 0; i < nr; i++) ry[i + 1] = ry[i] + rh[i] + (i < nr - 1 ? rg : 0);
+    for (int i = 0; i < nr; i++) ry[i + 1] = ry[i] + rh[i] + rgaps[i];
     for (int k = 0; k < items.n; k++) {
         GI *g = &items.v[k]; Box *c = g->b;
-        float top = ry[g->r], hh = ry[g->r + g->rs] - top - (g->r + g->rs < nr ? rg : 0);
-        float w = cx0[g->c + g->cs] - cx0[g->c] - (g->c + g->cs < nc ? cg : 0);
+        float top = ry[g->r], hh = ry[g->r + g->rs] - top - (g->r + g->rs < nr ? rgaps[g->r + g->rs - 1] : 0);
+        float w = cx0[g->c + g->cs] - cx0[g->c] - (g->c + g->cs < nc ? cgaps[g->c + g->cs - 1] : 0);
         char justify_self_buf[64], align_self_buf[64];
         const char *ja = grid_self_alignment(c->st, s, true, justify_self_buf);
         const char *al = grid_self_alignment(c->st, s, false, align_self_buf);
@@ -518,13 +570,13 @@ float layout_grid(Layout *L, Box *b, float cx, float cy, float cw, float chdef) 
     if (!b->grid_used) b->grid_used = xcalloc(1, sizeof *b->grid_used);
     else { free(b->grid_used->size[0]); free(b->grid_used->size[1]); }
     *b->grid_used = (GridUsedTracks){
-        .size = {cwid, rh}, .count = {items.n || explicit_columns ? nc : 0, nr},
+        .size = {cwid, rh}, .gap_after = {cgaps, rgaps}, .count = {items.n || explicit_columns ? nc : 0, nr},
         .explicit_start = {leading_columns, leading_rows},
         .explicit_count = {explicit_columns, explicit_rows},
-        .template_count = {sized_columns, s->grid_nrows},
+        .template_count = {sized_columns, sized_rows},
         .offset = {xoff, yoff}, .gap = {cg, rg}
     };
-    free(cx0); free(ry); free(rows); free(auto_cols); free(auto_rows); vec_free(items); vec_free(cols);
+    free(cx0); free(ry); free(rows); free(auto_cols); free(auto_rows); vec_free(items); vec_free(cols); vec_free(explicit_row_tracks);
     return total;
 }
 

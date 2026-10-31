@@ -54,7 +54,7 @@ static int run_scripts(JsCtx *js, Document *d) {
         }
     }
     js_set_ready_state(js, 1);
-    js_dispatch(js, &d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    js_dispatch_document_event(js, JS_DOCUMENT_DOM_CONTENT_LOADED);
     js_fire_load(js);   /* now, or once the page's iframes have loaded */
     return nscripts;
 }
@@ -143,6 +143,7 @@ int main(int argc, char **argv) {
     double t1 = now_ms();
     if (getenv("JSRUN_PRE")) js_eval(js, getenv("JSRUN_PRE"), "jsrun:pre");
     int nscripts = run_scripts(js, d);
+    js_release_pins();   /* all startup callbacks and native target traversals have returned */
     double t2 = now_ms();
     double end = t2 + ms;
     const char *until = getenv("JSRUN_UNTIL_ATTR");   /* stop early once <html> carries this attribute */
@@ -154,6 +155,7 @@ int main(int argc, char **argv) {
         if (g_open_url) jsrun_load_window();
         if (g_win2) js_tick(g_win2);
         if (d->dom_version != seen_ver) { seen_ver = d->dom_version; style_recalc(se, &d->node, false); }
+        js_release_pins();   /* all callbacks in this host event batch have returned */
         double dl = js_next_deadline(js) - now_ms();
         if (g_win2 && js_next_deadline(g_win2) - now_ms() < dl) dl = js_next_deadline(g_win2) - now_ms();
         if (dl > 5) dl = 5;
@@ -162,9 +164,17 @@ int main(int argc, char **argv) {
     fprintf(stderr, "jsrun: context %.1fms, %d scripts %.1fms, dom_version %llu\n", t1 - t0, nscripts, t2 - t1, (unsigned long long)d->dom_version);
     if (getenv("JSRUN_DUMP") && d->body) { char *s = node_serialize(d->body, true); puts(s); free(s); }
     if (getenv("JSRUN_POST")) js_eval(js, getenv("JSRUN_POST"), "jsrun:post");
+    /* An opt-in test contract must survive normal cleanup and the process exit
+       status; output matching alone can hide a sanitizer's nonzero exit. */
+    const char *expected_completion = getenv("JSRUN_EXPECT_ATTR_VALUE");
+    const char *actual_completion = until && *until && d->html ? node_attr(d->html, until) : NULL;
+    const bool completion_failed = expected_completion &&
+        (!until || !*until || !actual_completion || strcmp(actual_completion, expected_completion));
+    if (completion_failed) fprintf(stderr, "jsrun: completion attribute missing or unequal to the expected value\n");
+    js_release_pins();
     if (g_win2) { js_free(g_win2); doc_free(g_doc2); }
     js_free(js);
     style_engine_free(se);
     doc_free(d);
-    return 0;
+    return completion_failed ? 1 : 0;
 }

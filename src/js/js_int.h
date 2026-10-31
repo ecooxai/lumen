@@ -106,6 +106,8 @@ bool mod_script_requests(v8::Isolate *iso, v8::Local<v8::Context> ctx, v8::Local
                          std::vector<std::string> &requests);
 bool mod_rethrow_graph_error(v8::Isolate *iso, const ModErrorMap &errors, const ModGraph &graph,
                              const std::string &root);
+enum class DocumentLoadPhase : uint8_t { Pending, InProgress, Complete };
+
 struct JsCtx {
     v8::Isolate *iso = nullptr;
     std::shared_ptr<JsBroadcastContext> broadcast;
@@ -189,6 +191,8 @@ struct JsCtx {
     bool dead = false;
     bool load_deferred = false;       /* its window load waits for its frames (HTML's "delay the load event") */
     bool load_synced = false;         /* laid out once before load, so its web fonts are requested */
+    bool load_checking = false;       /* scan/layout/readiness can reenter completion */
+    DocumentLoadPhase load_phase = DocumentLoadPhase::Pending;
     bool xref = false;                /* it or a descendant shared objects with another context: never freed before its tab */
     double dead_at = 0;               /* steady-clock seconds when it was removed; freed 10 s later (loads settled) */
     bool el_load = false;             /* a frame: its <iframe> gets a load event after its window's */

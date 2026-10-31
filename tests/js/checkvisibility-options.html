@@ -1,0 +1,139 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Authored checkVisibility option semantics</title>
+<style>body { margin: 0; } .probe { width: 10px; height: 10px; }</style>
+<body>
+<script>
+'use strict';
+// Authored semantic controls. Expected values are pinned before reference or native execution.
+// This is not an upstream WPT file, nor a claim of complete checkVisibility support.
+const results = [];
+function probe(css = '', parent = document.body) {
+  const e = document.createElement('div');
+  e.className = 'probe'; e.style.cssText = css; parent.appendChild(e); return e;
+}
+function check(name, expected, operation) {
+  let actual, error = null;
+  try { actual = operation(); }
+  catch (e) { error = { name: e.name, message: String(e.message) }; }
+  const pass = error === null && JSON.stringify(actual) === JSON.stringify(expected);
+  results.push({ name, expected, actual: actual === undefined ? null : actual, pass, error });
+  if (!pass) console.log('CHECK_FAIL ' + JSON.stringify(results[results.length - 1]));
+}
+function thrownName(operation) { try { operation(); return 'none'; } catch (e) { return e.name; } }
+function shadowProbe(mode, assignment = 'named') {
+  const host = probe();
+  const child = probe('', host); child.slot = 'target';
+  const sr = host.attachShadow({ mode, slotAssignment: assignment });
+  const wrapper = probe('', sr);
+  const slot = document.createElement('slot'); slot.name = 'target'; wrapper.appendChild(slot);
+  if (assignment === 'manual') slot.assign(child);
+  return { host, child, sr, wrapper, slot };
+}
+const visible = probe();
+const invisible = probe('visibility:hidden');
+check('default does not opt into visibility', true, () => invisible.checkVisibility());
+check('legacy visibility option', false, () => invisible.checkVisibility({checkVisibilityCSS:true}));
+check('modern visibility option', false, () => invisible.checkVisibility({visibilityProperty:true}));
+check('modern true with legacy false', false, () => invisible.checkVisibility({checkVisibilityCSS:false,visibilityProperty:true}));
+check('legacy true with modern false', false, () => invisible.checkVisibility({checkVisibilityCSS:true,visibilityProperty:false}));
+check('both visibility options false', true, () => invisible.checkVisibility({checkVisibilityCSS:false,visibilityProperty:false}));
+const collapsed = probe('visibility:collapse');
+check('collapsed own visibility', false, () => collapsed.checkVisibility({visibilityProperty:true}));
+const inheritedHidden = probe('', invisible);
+check('inherited hidden visibility', false, () => inheritedHidden.checkVisibility({visibilityProperty:true}));
+const restoredVisible = probe('visibility:visible', invisible);
+check('visible descendant overrides hidden ancestor', true, () => restoredVisible.checkVisibility({visibilityProperty:true}));
+check('visibility mutation is synchronously observed', 'false,true', () => {
+  visible.style.visibility = 'hidden'; const a = visible.checkVisibility({visibilityProperty:true});
+  visible.style.visibility = 'visible'; return [a,visible.checkVisibility({visibilityProperty:true})].join(',');
+});
+const transparent = probe('opacity:0');
+check('default does not opt into opacity', true, () => transparent.checkVisibility());
+check('legacy opacity option', false, () => transparent.checkVisibility({checkOpacity:true}));
+check('modern opacity option', false, () => transparent.checkVisibility({opacityProperty:true}));
+check('modern opacity true with legacy false', false, () => transparent.checkVisibility({checkOpacity:false,opacityProperty:true}));
+check('legacy opacity true with modern false', false, () => transparent.checkVisibility({checkOpacity:true,opacityProperty:false}));
+check('both opacity options false', true, () => transparent.checkVisibility({checkOpacity:false,opacityProperty:false}));
+const tinyOpacity = probe('opacity:0.0001');
+check('positive tiny opacity remains potentially visible', true, () => tinyOpacity.checkVisibility({opacityProperty:true}));
+const opaqueChild = probe('opacity:1', transparent);
+check('opaque child cannot override zero-opacity ancestor', false, () => opaqueChild.checkVisibility({opacityProperty:true}));
+let positiveChain = document.body;
+for (let i = 0; i < 6; ++i) positiveChain = probe('opacity:0.0001', positiveChain);
+check('no rounded cumulative-opacity zero heuristic', true, () => positiveChain.checkVisibility({opacityProperty:true}));
+check('opacity mutation is synchronously observed', 'false,true', () => {
+  tinyOpacity.style.opacity = '0'; const a = tinyOpacity.checkVisibility({opacityProperty:true});
+  tinyOpacity.style.opacity = '0.0001'; return [a,tinyOpacity.checkVisibility({opacityProperty:true})].join(',');
+});
+const contents = probe('display:contents;opacity:0');
+const contentsChild = probe('', contents);
+check('boxless ancestor still contributes computed opacity', false, () => contentsChild.checkVisibility({opacityProperty:true}));
+const open = shadowProbe('open'); open.host.style.opacity = '0';
+check('open shadow host opacity ancestor', false, () => open.child.checkVisibility({opacityProperty:true}));
+const closed = shadowProbe('closed'); closed.host.style.opacity = '0';
+check('closed-root public assignedSlot is hidden', true, () => closed.child.assignedSlot === null);
+check('closed shadow host opacity ancestor', false, () => closed.child.checkVisibility({opacityProperty:true}));
+const slotZero = shadowProbe('open'); slotZero.slot.style.opacity = '0';
+check('assigned slot contributes computed opacity', false, () => slotZero.child.checkVisibility({opacityProperty:true}));
+const manual = shadowProbe('closed','manual'); manual.wrapper.style.opacity = '0';
+check('manual assignment follows real shadow ancestry', false, () => manual.child.checkVisibility({opacityProperty:true}));
+const opaqueWrapper = probe('',manual.sr), opaqueSlot = document.createElement('slot'); opaqueWrapper.appendChild(opaqueSlot);
+check('manual reassignment updates opacity ancestry', true, () => {
+  opaqueSlot.assign(manual.child); return manual.child.checkVisibility({opacityProperty:true});
+});
+const overriddenSlot = shadowProbe('open'); overriddenSlot.wrapper.style.opacity = '0';
+Object.defineProperty(overriddenSlot.child,'assignedSlot',{configurable:true,get(){throw new Error('public assignedSlot was consulted');}});
+check('public assignedSlot override cannot alter internal ancestry', false, () => overriddenSlot.child.checkVisibility({opacityProperty:true}));
+check('public getComputedStyle override cannot alter native style query', 'false,false', () => {
+  const old = window.getComputedStyle;
+  window.getComputedStyle = () => { throw new Error('public getComputedStyle was consulted'); };
+  try { return [invisible.checkVisibility({visibilityProperty:true}),transparent.checkVisibility({opacityProperty:true})].join(','); }
+  finally { window.getComputedStyle = old; }
+});
+transparent.getBoundingClientRect = () => { throw new Error('public geometry method was consulted'); };
+check('public geometry override cannot alter box existence', false, () => transparent.checkVisibility({opacityProperty:true}));
+check('undefined options use dictionary defaults', true, () => visible.checkVisibility(undefined));
+check('null options use dictionary defaults', true, () => visible.checkVisibility(null));
+check('function object is an accepted dictionary', true, () => visible.checkVisibility(function(){}));
+for (const [label,value] of [['boolean',false],['number',0],['string',''],['symbol',Symbol('dictionary')],['bigint',0n]])
+  check('primitive '+label+' dictionary rejected', 'TypeError', () => thrownName(() => visible.checkVisibility(value)));
+check('inherited dictionary members are read', false, () => transparent.checkVisibility(Object.create({opacityProperty:true})));
+check('truthy string option converts to boolean true', false, () => transparent.checkVisibility({opacityProperty:'false'}));
+check('numeric zero option converts to boolean false', true, () => transparent.checkVisibility({opacityProperty:0}));
+check('object boolean conversion invokes no coercion method', false, () => transparent.checkVisibility({opacityProperty:{valueOf(){throw new Error('valueOf');},toString(){throw new Error('toString');}}}));
+const names = ['checkOpacity','checkVisibilityCSS','contentVisibilityAuto','opacityProperty','visibilityProperty'];
+check('dictionary members are read exactly once in IDL order', names.join(','), () => {
+  const seen = [], o = {};
+  for (const n of names) Object.defineProperty(o,n,{get(){seen.push(n);return false;}});
+  visible.checkVisibility(o); return seen.join(',');
+});
+const noBox = probe('display:none');
+check('dictionary conversion precedes box-existence return', names.join(','), () => {
+  const seen = [], o = {};
+  for (const n of names) Object.defineProperty(o,n,{get(){seen.push(n);return false;}});
+  if (noBox.checkVisibility(o)) throw new Error('display:none unexpectedly visible');
+  return seen.join(',');
+});
+check('later alias getter is read even when early alias is true', true, () => {
+  const sentinel = {}, o = {checkOpacity:true,get opacityProperty(){throw sentinel;}};
+  try { transparent.checkVisibility(o); return false; } catch(e) { return e === sentinel; }
+});
+check('dictionary getter exception is propagated unchanged', true, () => {
+  const sentinel = {}, o = {get checkOpacity(){throw sentinel;}};
+  try { visible.checkVisibility(o); return false; } catch(e) { return e === sentinel; }
+});
+check('dictionary style mutation is applied before visibility check', false, () => {
+  const e = probe(); return e.checkVisibility({get opacityProperty(){e.style.opacity='0';return true;}});
+});
+check('invalid receiver fails before dictionary getters', 'TypeError,0', () => {
+  let reads = 0;
+  const name = thrownName(() => Element.prototype.checkVisibility.call({}, {get checkOpacity(){++reads;return false;}}));
+  return [name,reads].join(',');
+});
+check('optional argument preserves operation length zero', 0, () => Element.prototype.checkVisibility.length);
+const failed = results.filter(x => !x.pass);
+console.log('MEASUREMENTS checkvisibility-options ' + JSON.stringify({total:results.length,passed:results.length-failed.length,failed:failed.length,results}));
+console.log('RESULTS checkvisibility-options:' + (failed.length ? 'FAIL' : 'PASS'));
+document.documentElement.setAttribute('data-checkvisibility-options-complete',failed.length ? 'FAIL' : 'PASS');
+</script>

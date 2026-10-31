@@ -103,6 +103,14 @@ bool js_dispatch(JsCtx *c, Node *target, const char *type, const char *kind, boo
    the replaced UTF-16 span of the old value and n16 the inserted length (lo16 < 0: unknown) */
 bool js_dispatch_input(JsCtx *c, Node *target, const char *type, const char *input_type, const char *data, int lo16, int hi16, int n16);
 bool js_dispatch_window(JsCtx *c, const char *type);
+/* Native document lifecycle events have their own flags and legacy Window target
+   override. Synthetic events and other native event types keep their own path. */
+typedef enum JsDocumentEvent {
+    JS_DOCUMENT_DOM_CONTENT_LOADED,
+    JS_DOCUMENT_LOAD,
+    JS_DOCUMENT_PAGESHOW
+} JsDocumentEvent;
+void js_dispatch_document_event(JsCtx *c, JsDocumentEvent event);
 unsigned js_touch(JsCtx *c, Node *target, const char *phase, uint64_t device, uint64_t finger,
                   double x, double y, double pressure);
 bool js_touch_compat(JsCtx *c, Node *target, const char *type, const char *kind, double x, double y);

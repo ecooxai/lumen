@@ -297,11 +297,11 @@ static void paint_replaced(PB *p, Box *b) {
 }
 
 static bool positioned(const Box *b) { return b->st && b->node && (b->st->position != P_STATIC || (!b->st->z_auto && b->parent && b->parent->st && (b->parent->fmt == FMT_FLEX || b->parent->fmt == FMT_GRID))); }
-static bool makes_layer(const Box *b) { return b->st && b->node && (b->st->opacity < 1 || b->st->has_transform || b->st->isolation || b->st->position != P_STATIC); }
+static bool makes_layer(const Box *b) { return b->st && b->node && (b->st->opacity < 1 || b->st->has_transform || b->st->isolation || b->st->position != P_STATIC || layout_contents_hidden(b)); }
 static bool makes_context(const Box *b) {
     if (!b->st || !b->node) return false;
     const ComputedStyle *s = b->st;
-    return s->opacity < 1 || s->has_transform || s->isolation ||
+    return layout_contents_hidden(b) || s->opacity < 1 || s->has_transform || s->isolation ||
            s->position == P_FIXED || s->position == P_STICKY ||
            (positioned(b) && !s->z_auto);
 }
@@ -331,7 +331,7 @@ static void ink_add(Box *c, uint64_t gen, float *y0, float *y1, bool *defer) {
 static void box_ink(Box *b, uint64_t gen) {
     if (b->ink_gen == gen) return;
     float y0 = b->y, y1 = b->y + b->h, c0 = y0, c1 = y1; bool defer = false;
-    if (b->fmt != FMT_REPLACED) {
+    if (b->fmt != FMT_REPLACED && !layout_contents_hidden(b)) {
         const ComputedStyle *s = b->st;
         bool clips = b->scroller && b->node && (s->overflow_x != OV_VISIBLE || s->overflow_y != OV_VISIBLE);
         for (Box *c = b->first; c; c = c->next) {   /* as paint_flow: block children and floats */
@@ -459,6 +459,7 @@ static void paint_block_content(PB *p, Box *b, bool decorate) {
     const ComputedStyle *s = b->st;
     bool vis = s->visibility == VIS_VISIBLE;
     if (decorate) paint_own_deco(p, b);
+    if (layout_contents_hidden(b)) return; /* owner decoration stays; all contents, including replaced pixels, are hidden */
     if (b->fmt == FMT_REPLACED) { if (vis) paint_replaced(p, b); return; }
     bool clips = b->scroller && b->node && (s->overflow_x != OV_VISIBLE || s->overflow_y != OV_VISIBLE);
     PB saved = *p;
@@ -472,7 +473,7 @@ static void paint_block_content(PB *p, Box *b, bool decorate) {
         }
         if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
         p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
-        p->dx -= b->node->scroll_x; p->dy -= box_scroll_y(b);
+        p->dx -= box_scroll_left(b); p->dy -= box_scroll_y(b);
         p->sb = b; p->outer = &saved; p->mv_out = p->mv; p->mv = b;
     }
     if (s->display == D_LIST_ITEM && vis) paint_marker(p, b);
@@ -507,7 +508,7 @@ static void paint_flow(PB *p, Box *b) {
  * can participate in this same context. Scroller snapshots live in the display
  * list's frame arena: deferred state never retains a pointer to this call stack. */
 static void collect_context(PB *p, Box *b, DefVec *defs) {
-    if (b->fmt == FMT_REPLACED || culled(p, b)) return;
+    if (b->fmt == FMT_REPLACED || layout_contents_hidden(b) || culled(p, b)) return;
     PB saved = *p;
     const ComputedStyle *s = b->st;
     bool clips = b->scroller && b->node && (s->overflow_x != OV_VISIBLE || s->overflow_y != OV_VISIBLE);
@@ -517,7 +518,7 @@ static void collect_context(PB *p, Box *b, DefVec *defs) {
         if (p->clip) { float x1 = LMIN(x + w, p->cx + p->cw), y1 = LMIN(y + h, p->cy + p->ch); x = LMAX(x, p->cx); y = LMAX(y, p->cy); w = LMAX(0, x1 - x); h = LMAX(0, y1 - y); }
         PB *outer = arena_alloc(&p->dl->arena, sizeof *outer); *outer = saved;
         p->clip = true; p->cx = x; p->cy = y; p->cw = w; p->ch = h;
-        p->dx -= b->node->scroll_x; p->dy -= box_scroll_y(b);
+        p->dx -= box_scroll_left(b); p->dy -= box_scroll_y(b);
         p->sb = b; p->outer = outer; p->mv_out = p->mv; p->mv = b;
     }
     for (Box *c = b->first; c; c = c->next) {

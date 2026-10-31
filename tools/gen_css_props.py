@@ -20,6 +20,15 @@ src = open('src/css/style.c').read()
 body = src[src.index('char *css_get_computed_value('):]; body = body[:body.index('\n}\n')]
 native = set(re.findall(r'strcmp\(prop, "([a-z-]+)"\)', body))
 props.setdefault('accent-color', {'inh': True, 'init': None})['inh'] = True
+# Explicit native logical property group; its serializer uses shared slots and
+# cannot be inferred from direct strcmp branches in the public getter wrapper.
+for axis in ('width', 'height', 'inline-size', 'block-size', 'size'):
+    name = 'contain-intrinsic-' + axis
+    props[name] = {'inh': False, 'init': 'none'}
+    native.add(name)
+for name, initial in [('column-width', 'auto'), ('column-count', 'auto'), ('columns', 'auto')]:
+    props[name] = {'inh': False, 'init': initial}
+    native.add(name)
 for k, p in props.items():   # colour initials that are the test's currentcolor
     if k != 'color' and p['init'] and p['init'].startswith('rgb(') : p['init'] = 'currentcolor'
 esc = lambda s: s.replace('\\', '\\\\').replace('"', '\\"')

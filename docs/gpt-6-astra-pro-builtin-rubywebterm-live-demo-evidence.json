@@ -1,0 +1,80 @@
+{
+  "candidate": 234,
+  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
+  "tested_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
+  "fixture_file": "gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html",
+  "fixture_sha256": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
+  "validation_finished_utc": "2026-10-31T10:50:20.582898+00:00",
+  "actual_native_exit_code": 0,
+  "profile_removed": true,
+  "monitor_interval_seconds": 1,
+  "owned_cleanup_verified": true,
+  "source_and_binary_pins_unchanged": true,
+  "outside_WPT_scoring": true,
+  "visual_capture_performed": false,
+  "viewer_browser_note": "The interactive page runs in the browser opening it. Open it in Lumen to exercise the Lumen engine. These recorded native234 measurements are separate from live values in another browser.",
+  "recorded_native_observations": {
+    "events": [
+      {
+        "type": "DOMContentLoaded",
+        "target": "Document",
+        "currentTarget": "Document",
+        "phase": 2,
+        "trusted": true,
+        "bubbles": true,
+        "cancelable": false,
+        "composed": false,
+        "persisted": null
+      },
+      {
+        "type": "load",
+        "target": "Document",
+        "currentTarget": "Window",
+        "phase": 2,
+        "trusted": true,
+        "bubbles": false,
+        "cancelable": false,
+        "composed": false,
+        "persisted": null
+      },
+      {
+        "type": "pageshow",
+        "target": "Document",
+        "currentTarget": "Window",
+        "phase": 2,
+        "trusted": true,
+        "bubbles": true,
+        "cancelable": true,
+        "composed": false,
+        "persisted": false
+      }
+    ],
+    "measurements": [
+      {
+        "containment": {
+          "width": 76,
+          "height": 40,
+          "contain": "size",
+          "writingMode": "horizontal-tb"
+        },
+        "scroll": {
+          "left": 80,
+          "top": 90,
+          "width": 420,
+          "height": 300,
+          "contentVisibility": "visible"
+        },
+        "visibility": {
+          "default": true,
+          "opacity": false,
+          "visibility": true,
+          "ancestorOpacity": "0",
+          "ownVisibility": "visible"
+        }
+      }
+    ],
+    "not_WPT": true,
+    "no_visual_capture": true
+  },
+  "independent_audit_sha256": "82107cd8ecbc139973c534df4435a07187e1dd04fb9faae7eab86101104050fe"
+}

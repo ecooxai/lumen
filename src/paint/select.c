@@ -12,8 +12,9 @@ static SelR *g_r; static int g_nr, g_cr;
 
 typedef void (*WalkFn)(Box *b, float dx, float dy, void *ud);
 static void walk(Box *b, float dx, float dy, float psy, WalkFn fn, void *ud) {
+    if (layout_contents_hidden(b)) return;
     if (b->fixed) dy += psy;
-    if (b->scroller && b->node) { dx -= b->node->scroll_x; dy -= box_scroll_y(b); }
+    if (b->scroller && b->node) { dx -= box_scroll_left(b); dy -= box_scroll_y(b); }
     fn(b, dx, dy, ud);
     for (Box *c = b->first; c; c = c->next) walk(c, dx, dy, psy, fn, ud);
 }
@@ -215,7 +216,7 @@ static void ctl_off(const Box *cb, float psy, float *dx, float *dy) {
     *dx = *dy = 0;
     for (const Box *a = cb; a; a = a->parent) {
         if (a->fixed) *dy += psy;
-        if (a->scroller && a->node) { *dx -= a->node->scroll_x; *dy -= box_scroll_y(a); }
+        if (a->scroller && a->node) { *dx -= box_scroll_left(a); *dy -= box_scroll_y(a); }
     }
 }
 

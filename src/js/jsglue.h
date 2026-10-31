@@ -18,6 +18,7 @@ uint64_t jsg_visual_generation(void);
 void jsg_visual_changed(void);
 uint64_t jsg_activity_generation(void);
 bool jsg_rect(Node *n, float r[4]);
+bool jsg_has_skipped_ancestor(Node *n);
 bool jsg_borders(Node *n, float r[4], bool *inl);
 bool jsg_overflow_size(Node *n, float r[2]);   /* scrollWidth/Height of a non-scroll-container */
 bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y);

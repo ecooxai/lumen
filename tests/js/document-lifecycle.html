@@ -1,0 +1,275 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Native document lifecycle regression controls</title>
+<body>
+<script>
+'use strict';
+// Exercises real lifecycle events against the pre-implementation Chromium156
+// contract. Synthetic events keep their own semantics. No event or geometry is
+// manufactured. The canonical metadata/order contract is strict; the explicitly
+// retained synchronous-insertion microtask and post-removal recording differences
+// are checked separately and are not full trace equivalence.
+const caseIds = ['top-initial','synthetic-events','frame-initial','repeated-close',
+  'load-document-open','load-frame-removal','load-srcdoc-navigation',
+  'pageshow-document-open','post-load-child-insertion','load-listener-throws','pageshow-cancel','post-completion-document-open'];
+const captures = caseIds.map(id => ({id,events:[],actions:[],errors:[],finished:false,finishedSequence:null,lateRecords:0,nextSequence:0}));
+const byId = new Map(captures.map(c => [c.id,c]));
+let started = false;
+function finishCase(c) { c.finishedSequence=c.nextSequence; c.finished=true; }
+const EXPECTED_LIFECYCLE = [{"id":"top-initial","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"top","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"top"}},{"kind":"events","value":{"listener":"window-bubble","generation":"top","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}},{"kind":"events","value":{"listener":"window-capture","generation":"top","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}},{"kind":"actions","value":{"action":"load-microtask"}},{"kind":"events","value":{"listener":"window-bubble","generation":"top","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"top"}},{"kind":"events","value":{"listener":"window-capture","generation":"top","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"top"}}],"initial_load_microtask_checks":[],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[]},{"id":"synthetic-events","canonical_records":[{"kind":"events","value":{"listener":"synthetic-window","generation":"top","type":"load","className":"[object Event]","target":"window","currentTarget":"window","path":["window"],"phase":2,"trusted":false,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}},{"kind":"events","value":{"listener":"synthetic-window","generation":"top","type":"pageshow","className":"[object PageTransitionEvent]","target":"window","currentTarget":"window","path":["window"],"phase":2,"trusted":false,"bubbles":true,"cancelable":true,"composed":false,"persisted":true,"readyState":"complete","activeGeneration":"top"}},{"kind":"events","value":{"listener":"synthetic-element","generation":"top","type":"load","className":"[object Event]","target":"div","currentTarget":"div","path":["div","body","html","document"],"phase":2,"trusted":false,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}}],"initial_load_microtask_checks":[],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[]},{"id":"frame-initial","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}],"initial_load_microtask_checks":[{"exact_count":1,"allowed_values":[{"action":"load-microtask","generation":"initial","activeGeneration":"initial"}],"must_follow_event":{"type":"load","generation":"initial"},"must_precede_case_finished":true}],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[]},{"id":"repeated-close","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"before-redundant-close"}},{"kind":"actions","value":{"action":"after-redundant-close"}}],"initial_load_microtask_checks":[{"exact_count":1,"allowed_values":[{"action":"load-microtask","generation":"initial","activeGeneration":"initial"}],"must_follow_event":{"type":"load","generation":"initial"},"must_precede_case_finished":true}],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[]},{"id":"load-document-open","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"before-load-open","generation":"initial","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"after-load-open","generation":"initial","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"replacement"}},{"kind":"events","value":{"listener":"window-bubble","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}},{"kind":"events","value":{"listener":"window-capture","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"replacement","activeGeneration":"replacement"}}],"initial_load_microtask_checks":[{"exact_count":1,"allowed_values":[{"action":"load-microtask","generation":"initial","activeGeneration":"replacement"}],"must_follow_event":{"type":"load","generation":"initial"},"must_precede_case_finished":true}],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[{"phase":"replacement","message":"replacement Window load not observed within1500ms"}]},{"id":"load-frame-removal","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"before-remove","generation":"initial","activeGeneration":"initial"}}],"initial_load_microtask_checks":[],"optional_exact_post_removal_records":[{"kind":"actions","value":{"action":"after-remove","generation":"initial","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}],"preserved_v4_wait_assumptions":[]},{"id":"load-srcdoc-navigation","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"before-navigate-srcdoc","generation":"initial","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"navigation-requested","generation":"initial","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"after-navigate-srcdoc","generation":"initial","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}},{"kind":"events","value":{"listener":"window-bubble","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}},{"kind":"events","value":{"listener":"window-capture","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"load-microtask","generation":"replacement","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"replacement"}},{"kind":"events","value":{"listener":"window-bubble","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}},{"kind":"events","value":{"listener":"window-capture","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"replacement","activeGeneration":"replacement"}}],"initial_load_microtask_checks":[{"exact_count":1,"allowed_values":[{"action":"load-microtask","generation":"initial","activeGeneration":"initial"}],"must_follow_event":{"type":"load","generation":"initial"},"must_precede_case_finished":true}],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[]},{"id":"pageshow-document-open","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"before-pageshow-open","generation":"initial","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"after-pageshow-open","generation":"initial","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"initial","activeGeneration":"replacement"}}],"initial_load_microtask_checks":[{"exact_count":1,"allowed_values":[{"action":"load-microtask","generation":"initial","activeGeneration":"initial"},{"action":"load-microtask","generation":"initial","activeGeneration":"replacement"}],"must_follow_event":{"type":"load","generation":"initial"},"must_precede_case_finished":true}],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[{"phase":"replacement","message":"replacement Window load not observed within1500ms"}]},{"id":"post-load-child-insertion","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"before-late-child"}},{"kind":"actions","value":{"action":"after-late-child"}}],"initial_load_microtask_checks":[{"exact_count":1,"allowed_values":[{"action":"load-microtask","generation":"initial","activeGeneration":"initial"}],"must_follow_event":{"type":"load","generation":"initial"},"must_precede_case_finished":true}],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[]},{"id":"load-listener-throws","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"before-listener-throw","generation":"initial"}},{"kind":"actions","value":{"action":"listener-error-reported","generation":"initial","message":"lifecycle-load-listener-sentinel"}},{"kind":"actions","value":{"action":"listener-after-throw","generation":"initial"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}],"initial_load_microtask_checks":[{"exact_count":1,"allowed_values":[{"action":"load-microtask","generation":"initial","activeGeneration":"initial"}],"must_follow_event":{"type":"load","generation":"initial"},"must_precede_case_finished":true}],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[]},{"id":"pageshow-cancel","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"pageshow-canceled","generation":"initial","defaultPrevented":true}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}],"initial_load_microtask_checks":[{"exact_count":1,"allowed_values":[{"action":"load-microtask","generation":"initial","activeGeneration":"initial"}],"must_follow_event":{"type":"load","generation":"initial"},"must_precede_case_finished":true}],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[]},{"id":"post-completion-document-open","canonical_records":[{"kind":"events","value":{"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"events","value":{"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}},{"kind":"actions","value":{"action":"before-post-completion-open","readyState":"complete"}},{"kind":"actions","value":{"action":"replacement-listeners-installed","generation":"replacement","readyState":"loading"}},{"kind":"actions","value":{"action":"before-replacement-close","readyState":"loading"}},{"kind":"events","value":{"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}},{"kind":"events","value":{"listener":"window-bubble","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}},{"kind":"events","value":{"listener":"window-capture","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"replacement"}},{"kind":"events","value":{"listener":"window-bubble","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}},{"kind":"events","value":{"listener":"window-capture","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"after-replacement-close","readyState":"complete"}},{"kind":"actions","value":{"action":"load-microtask","generation":"replacement","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"pageshow-microtask","generation":"replacement","activeGeneration":"replacement"}},{"kind":"actions","value":{"action":"post-completion-observation-finished","readyState":"complete"}}],"initial_load_microtask_checks":[{"exact_count":1,"allowed_values":[{"action":"load-microtask","generation":"initial","activeGeneration":"initial"}],"must_follow_event":{"type":"load","generation":"initial"},"must_precede_case_finished":true}],"optional_exact_post_removal_records":[],"preserved_v4_wait_assumptions":[]}];
+function labelTarget(target, win, doc) {
+  if (target === win) return 'window';
+  if (target === doc) return 'document';
+  if (target === null) return 'null';
+  return target && target.nodeType === 1 ? target.localName : Object.prototype.toString.call(target);
+}
+function metadata(event, win, doc, listener, generation) {
+  return {listener,generation,type:event.type,className:Object.prototype.toString.call(event),
+    target:labelTarget(event.target,win,doc),currentTarget:labelTarget(event.currentTarget,win,doc),
+    path:event.composedPath().map(n => labelTarget(n,win,doc)),phase:event.eventPhase,
+    trusted:event.isTrusted,bubbles:event.bubbles,cancelable:event.cancelable,composed:event.composed,
+    persisted:'persisted' in event ? event.persisted : null,readyState:doc.readyState,
+    activeGeneration:doc.documentElement && doc.documentElement.getAttribute('data-lifecycle-generation')};
+}
+window.LifecycleRecord = (id,kind,value) => {
+  const c = byId.get(id); if (!c) throw new Error('unknown case '+id);
+  if (c.finished) ++c.lateRecords;
+  c[kind].push(Object.assign({sequence:c.nextSequence++},value));
+};
+window.LifecycleMetadata = metadata;
+function topRecord(listener,event) {
+  if (event.isTrusted) LifecycleRecord('top-initial','events',metadata(event,window,document,listener,'top'));
+}
+document.documentElement.setAttribute('data-lifecycle-generation','top');
+document.addEventListener('DOMContentLoaded',e => topRecord('document-dcl',e));
+for (const type of ['load','pageshow']) {
+  // Chromium's direct Window dispatch retains registration order. Observe both
+  // listener flags independently, with AT_TARGET and the actual legacy target.
+  window.addEventListener(type,e => topRecord('window-bubble',e));
+  window.addEventListener(type,e => topRecord('window-capture',e),true);
+  document.addEventListener(type,e => topRecord('document-unexpected',e));
+}
+window.addEventListener('load',event => {
+  if (!event.isTrusted || started) return;
+  started = true;
+  queueMicrotask(() => LifecycleRecord('top-initial','actions',{action:'load-microtask'}));
+  setTimeout(runMatrix,50);
+});
+function childScript(cfg) {
+  'use strict';
+  document.documentElement.setAttribute('data-lifecycle-generation',cfg.generation);
+  const record = (kind,value) => parent.LifecycleRecord(cfg.id,kind,value);
+  const meta = (listener,event) => parent.LifecycleMetadata(event,window,document,listener,cfg.generation);
+  const active = () => document.documentElement && document.documentElement.getAttribute('data-lifecycle-generation');
+  document.addEventListener('DOMContentLoaded',event => record('events',meta('document-dcl',event)));
+  for (const type of ['load','pageshow']) {
+    window.addEventListener(type,event => { if(event.isTrusted) record('events',meta('window-bubble',event)); });
+    window.addEventListener(type,event => { if(event.isTrusted) record('events',meta('window-capture',event)); },true);
+    document.addEventListener(type,event => { if(event.isTrusted) record('events',meta('document-unexpected',event)); });
+  }
+  if (cfg.observeInstallation) record('actions',{action:'replacement-listeners-installed',generation:cfg.generation,readyState:document.readyState});
+  if (cfg.action === 'throw-load') {
+    window.addEventListener('error',event => {
+      if (event.error && event.error.message === 'lifecycle-load-listener-sentinel') {
+        record('actions',{action:'listener-error-reported',generation:cfg.generation,message:event.error.message});
+        event.preventDefault();
+      }
+    });
+    window.addEventListener('load',event => {
+      if (!event.isTrusted) return;
+      record('actions',{action:'before-listener-throw',generation:cfg.generation});
+      throw new Error('lifecycle-load-listener-sentinel');
+    });
+    window.addEventListener('load',event => {
+      if (event.isTrusted) record('actions',{action:'listener-after-throw',generation:cfg.generation});
+    });
+  }
+  if (cfg.action === 'cancel-pageshow') window.addEventListener('pageshow',event => {
+    if (!event.isTrusted) return;
+    event.preventDefault();
+    record('actions',{action:'pageshow-canceled',generation:cfg.generation,defaultPrevented:event.defaultPrevented});
+  });
+  for (const type of ['load','pageshow']) window.addEventListener(type,event => {
+    if (!event.isTrusted) return;
+    queueMicrotask(() => record('actions',{action:type+'-microtask',generation:cfg.generation,activeGeneration:active()}));
+    const trigger = cfg.action === 'pageshow-open' ? 'pageshow' : 'load';
+    if (type !== trigger || !['load-open','pageshow-open','remove','navigate-srcdoc'].includes(cfg.action) || window.__lifecycleActionTaken) return;
+    window.__lifecycleActionTaken = true;
+    record('actions',{action:'before-'+cfg.action,generation:cfg.generation,activeGeneration:active()});
+    try {
+      if (cfg.action === 'load-open' || cfg.action === 'pageshow-open') {
+        const html = parent.LifecycleChildMarkup({id:cfg.id,generation:'replacement',action:'none'});
+        document.open(); document.write(html); document.close();
+      } else if (cfg.action === 'remove') {
+        frameElement.remove();
+      } else if (cfg.action === 'navigate-srcdoc') {
+        const f = frameElement;
+        f.srcdoc = parent.LifecycleChildMarkup({id:cfg.id,generation:'replacement',action:'none'});
+        record('actions',{action:'navigation-requested',generation:cfg.generation,
+          activeGeneration:f.contentDocument && f.contentDocument.documentElement && f.contentDocument.documentElement.getAttribute('data-lifecycle-generation')});
+      }
+      record('actions',{action:'after-'+cfg.action,generation:cfg.generation,activeGeneration:active()});
+    } catch(error) { record('errors',{phase:cfg.action,name:error.name,message:String(error.message)}); }
+  });
+}
+window.LifecycleChildMarkup = cfg => '<!doctype html><meta charset="utf-8"><body><script>('+childScript.toString()+')('+JSON.stringify(cfg)+');<'+'/script>';
+const delay = ms => new Promise(resolve => setTimeout(resolve,ms));
+async function waitFor(predicate,limit=1500) {
+  const start = performance.now();
+  while (!predicate() && performance.now()-start < limit) await delay(10);
+  return predicate();
+}
+function anyLoad(c,generation='initial') { return c.events.some(e => e.type==='load' && e.generation===generation); }
+async function frameCase(id,action='none',after=null) {
+  const c=byId.get(id),f=document.createElement('iframe');
+  f.setAttribute('data-case',id);f.srcdoc=LifecycleChildMarkup({id,generation:'initial',action});
+  f.addEventListener('load',event => {
+    const d=f.contentDocument;
+    LifecycleRecord(id,'actions',{action:'iframe-element-load',targetIsFrame:event.target===f,
+      currentTargetIsFrame:event.currentTarget===f,trusted:event.isTrusted,
+      activeGeneration:d&&d.documentElement&&d.documentElement.getAttribute('data-lifecycle-generation')});
+  });
+  document.body.appendChild(f);
+  if (!await waitFor(() => anyLoad(c))) LifecycleRecord(id,'errors',{phase:'setup',message:'initial Window load not observed within1500ms'});
+  if (action==='navigate-srcdoc') {
+    if (!await waitFor(() => anyLoad(c,'replacement'))) LifecycleRecord(id,'errors',{phase:'replacement',message:'replacement Window load not observed within1500ms'});
+  }
+  // A missing native pageshow is itself an observation; do not manufacture an
+  // action triggered by that absent event merely to match reference row counts.
+  if (action==='pageshow-open') await waitFor(() => c.events.some(e=>e.type==='pageshow'),250);
+  // Fresh listeners observe replacements. The paired reference disproved an
+  // assumed replacement load during an already active lifecycle; retain the
+  // semantic operations and observe for the bounded interval below instead.
+  await delay(100);
+  if (after) await after(f,c);
+  await delay(100);
+  finishCase(c);
+  if(f.isConnected)f.remove();
+}
+
+function stable(value) {
+  if (Array.isArray(value)) return value.map(stable);
+  if (value && typeof value==='object') {
+    const result={};for(const key of Object.keys(value).sort())result[key]=stable(value[key]);
+    return result;
+  }
+  return value;
+}
+const same=(a,b)=>JSON.stringify(stable(a))===JSON.stringify(stable(b));
+function need(ok,message) { if(!ok)throw new Error(message); }
+function verifyCase(c,expected) {
+  need(c.id===expected.id,'case identity');
+  need(c.finished && Number.isInteger(c.finishedSequence),'case completion boundary');
+  need(c.lateRecords===0,'no record may arrive after its case finished');
+  need(c.errors.length===0,'no unexpected setup/observation error: '+JSON.stringify(c.errors));
+  const rows=[];
+  for(const kind of ['events','actions','errors'])for(const value of c[kind])rows.push({kind,value});
+  rows.sort((a,b)=>a.value.sequence-b.value.sequence);
+  need(rows.length===c.finishedSequence,'completion sequence covers every record');
+  const canonical=[],moved=[],optional=[];
+  for(let i=0;i<rows.length;i++) {
+    const row=rows[i],value=Object.assign({},row.value);delete value.sequence;
+    need(row.value.sequence===i && i<c.finishedSequence,'contiguous record before completion');
+    const item={kind:row.kind,value};
+    if(row.kind==='actions' && value.action==='load-microtask' && value.generation==='initial' &&
+       expected.initial_load_microtask_checks.length) {
+      moved.push({sequence:row.value.sequence,value});continue;
+    }
+    const oi=expected.optional_exact_post_removal_records.findIndex(x=>same(x,item));
+    if(oi!==-1) { optional.push({index:oi,sequence:row.value.sequence});continue; }
+    canonical.push(item);
+  }
+  need(canonical.length===expected.canonical_records.length,
+    'canonical row count expected '+expected.canonical_records.length+' got '+canonical.length);
+  for(let i=0;i<canonical.length;i++)
+    need(same(canonical[i],expected.canonical_records[i]),
+      'canonical row '+i+' expected '+JSON.stringify(expected.canonical_records[i])+' got '+JSON.stringify(canonical[i]));
+  const micro=expected.initial_load_microtask_checks;
+  need(moved.length===micro.length,'exact initial load-microtask count');
+  for(let i=0;i<micro.length;i++) {
+    need(micro[i].allowed_values.some(v=>same(v,moved[i].value)),'initial load-microtask metadata');
+    const lastLoad=Math.max(-1,...c.events.filter(e=>e.type==='load'&&e.generation==='initial').map(e=>e.sequence));
+    need(lastLoad>=0 && moved[i].sequence>lastLoad && moved[i].sequence<c.finishedSequence,
+      'initial load microtask follows both load listeners and precedes completion');
+  }
+  // The one predicted activeGeneration alternative belongs only to the delayed
+  // initial load-microtask in pageshow-open. It is an observable timing residual
+  // of synchronous iframe insertion, not an exemption for any actual event.
+  const beforeRemove=c.actions.find(a=>a.action==='before-remove');
+  for(let i=0;i<optional.length;i++) {
+    need(beforeRemove && optional[i].sequence>beforeRemove.sequence,'post-removal recording boundary');
+    need(i===0 || optional[i-1].index<optional[i].index,'optional records are unique and ordered');
+  }
+}
+function verifyMatrix() {
+  let failed=0;
+  need(captures.length===EXPECTED_LIFECYCLE.length,'whole lifecycle case count');
+  for(let i=0;i<captures.length;i++) {
+    try { verifyCase(captures[i],EXPECTED_LIFECYCLE[i]);console.log('LIFECYCLE_CONTRACT '+captures[i].id+':PASS'); }
+    catch(error) { ++failed;console.log('LIFECYCLE_CONTRACT '+captures[i].id+':FAIL '+String(error.message)); }
+  }
+  console.log('LIFECYCLE_CONTRACT_SUMMARY '+JSON.stringify({cases:captures.length,passed:captures.length-failed,failed}));
+  return failed===0;
+}
+
+async function runMatrix() {
+  try {
+    await delay(25);finishCase(byId.get('top-initial'));
+    const synthetic=byId.get('synthetic-events');
+    const listener=e=>{if(!e.isTrusted)LifecycleRecord('synthetic-events','events',metadata(e,window,document,'synthetic-window','top'));};
+    window.addEventListener('load',listener);window.addEventListener('pageshow',listener);
+    window.dispatchEvent(new Event('load'));
+    window.dispatchEvent(new PageTransitionEvent('pageshow',{bubbles:true,cancelable:true,persisted:true}));
+    const element=document.createElement('div');document.body.appendChild(element);
+    element.addEventListener('load',e=>LifecycleRecord('synthetic-events','events',metadata(e,window,document,'synthetic-element','top')));
+    element.dispatchEvent(new Event('load'));element.remove();
+    window.removeEventListener('load',listener);window.removeEventListener('pageshow',listener);
+    finishCase(synthetic);
+    await frameCase('frame-initial');
+    await frameCase('repeated-close','none',async(f,c)=>{
+      LifecycleRecord('repeated-close','actions',{action:'before-redundant-close'});
+      f.contentDocument.close();f.contentDocument.close();
+      LifecycleRecord('repeated-close','actions',{action:'after-redundant-close'});await delay(100);
+    });
+    await frameCase('load-document-open','load-open');
+    await frameCase('load-frame-removal','remove');
+    await frameCase('load-srcdoc-navigation','navigate-srcdoc');
+    await frameCase('pageshow-document-open','pageshow-open');
+    await frameCase('post-load-child-insertion','none',async(f,c)=>{
+      const inner=f.contentDocument.createElement('iframe');inner.srcdoc='<!doctype html><body>late child';
+      LifecycleRecord('post-load-child-insertion','actions',{action:'before-late-child'});f.contentDocument.body.appendChild(inner);
+      await delay(150);LifecycleRecord('post-load-child-insertion','actions',{action:'after-late-child'});
+    });
+    await frameCase('load-listener-throws','throw-load');
+    await frameCase('pageshow-cancel','cancel-pageshow');
+    await frameCase('post-completion-document-open','none',async(f,c)=>{
+      const d=f.contentDocument;
+      LifecycleRecord(c.id,'actions',{action:'before-post-completion-open',readyState:d.readyState});
+      d.open();
+      d.write(LifecycleChildMarkup({id:c.id,generation:'replacement',action:'none',observeInstallation:true}));
+      LifecycleRecord(c.id,'actions',{action:'before-replacement-close',readyState:d.readyState});
+      d.close();
+      LifecycleRecord(c.id,'actions',{action:'after-replacement-close',readyState:d.readyState});
+      // Observe without waiting for any presumed replacement lifecycle event.
+      await delay(250);
+      LifecycleRecord(c.id,'actions',{action:'post-completion-observation-finished',readyState:d.readyState});
+    });
+    for(let i=0;i<captures.length;i++) {
+      const c=captures[i];
+      console.log('LIFECYCLE_CASE '+JSON.stringify({index:i,id:c.id,finished:c.finished,eventCount:c.events.length,actionCount:c.actions.length,errorCount:c.errors.length}));
+      for(const kind of ['events','actions','errors']) for(let j=0;j<c[kind].length;j++)
+        console.log('LIFECYCLE_ROW '+JSON.stringify({caseIndex:i,caseId:c.id,kind,index:j,value:c[kind][j]}));
+    }
+    const complete=captures.length===12&&captures.every(c=>c.finished)&&verifyMatrix();
+    console.log('MEASUREMENTS document-lifecycle '+JSON.stringify({cases:captures.length,finished:captures.filter(c=>c.finished).length,complete}));
+    console.log('RESULTS document-lifecycle:'+(complete?'PASS':'FAIL'));
+    document.documentElement.setAttribute('data-document-lifecycle-complete',complete?'PASS':'FAIL');
+  } catch(error) {
+    console.log('LIFECYCLE_FATAL '+JSON.stringify({name:error.name,message:String(error.message)}));
+    console.log('RESULTS document-lifecycle:FAIL');document.documentElement.setAttribute('data-document-lifecycle-complete','FAIL');
+  }
+}
+setTimeout(()=>{
+  if(!started){console.log('LIFECYCLE_FATAL '+JSON.stringify({message:'top-level native load absent within2000ms'}));console.log('RESULTS document-lifecycle:FAIL');document.documentElement.setAttribute('data-document-lifecycle-complete','FAIL');}
+},2000);
+</script>

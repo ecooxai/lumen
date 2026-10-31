@@ -260,8 +260,11 @@ const activates = ev => {
 };
 const transientActivation = () => N.now() - activationAt < ACTIVATION_MS;
 const consumeActivation = () => { activationAt = -Infinity; };
-function dispatch(target, ev, trusted) {
-    evTarget(ev, target); if (trusted) evTrusted(ev);
+function dispatch(target, ev, trusted, legacyTargetOverride = false) {
+    // The native document lifecycle dispatches on Window, while its event target
+    // is Document. Keep invocation, path and existing Window listener order.
+    evTarget(ev, legacyTargetOverride && trusted && target === G ? document : target);
+    if (trusted) evTrusted(ev);
     if (trusted && activates(ev)) { activationAt = N.now(); stickyActivation = true; }
     ev._stop = ev._imm = false;
     const path = [];
