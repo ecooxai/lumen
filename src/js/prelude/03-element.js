@@ -1089,6 +1089,46 @@ const lcName = (el, n) => { n = String(n); return N.ns(el) === 0 ? n.toLowerCase
 const NSURI = ['http://www.w3.org/1999/xhtml', 'http://www.w3.org/2000/svg', 'http://www.w3.org/1998/Math/MathML'];
 const validLocalName = n => /^[A-Za-z][^\t\n\f\r \/>\x00]*$/.test(n) || /^[:_\u0080-\u{10FFFF}][A-Za-z0-9\-.:_\u0080-\u{10FFFF}]*$/u.test(n);
 const asciiLower = s => s.replace(/[A-Z]+/g, c => c.toLowerCase()), asciiUpper = s => s.replace(/[a-z]+/g, c => c.toUpperCase());
+/* checkVisibility uses the real computed style and flat-tree ancestry. Keep
+   dictionary conversion and ancestry independent of replaceable public getters. */
+const checkVisibilityObject = Object, checkVisibilityTypeError = TypeError;
+const checkVisibilityWeakGet = Function.prototype.call.bind(WeakMap.prototype.get);
+function checkVisibilityFlatParent(node) {
+    const parent = N.parent(node);
+    if (!parent) return N.host(node);
+    if (N.type(parent) === 11) return N.host(parent) || parent;
+    const shadow = N.type(parent) === 1 && N.shadowOf(parent);
+    if (!shadow) return parent;
+    /* Only direct light children reach this branch. Manual assignment belongs to
+       this host only while the assigned slot remains in its current shadow root. */
+    if (N.srFlags(shadow) & 16) {
+        const slot = checkVisibilityWeakGet(slotManualOf, node);
+        if (!slot) return null;
+        let root = slot, ancestor;
+        while ((ancestor = N.parent(root))) root = ancestor;
+        return root === shadow ? slot : null;
+    }
+    const name = N.type(node) === 1 ? (N.attr(node, 'slot') ?? '') : '';
+    /* Native DOM traversal preserves tree order without entering nested shadow
+       roots or consulting localName, namespaceURI, assignedSlot or parentNode. */
+    for (let current = N.first(shadow); current;) {
+        if (N.type(current) === 1) {
+            if (N.ns(current) === 0 && N.name(current) === 'slot' &&
+                (N.attr(current, 'name') ?? '') === name) return current;
+            const child = N.first(current);
+            if (child) { current = child; continue; }
+        }
+        while (current && current !== shadow && !N.next(current)) current = N.parent(current);
+        if (!current || current === shadow) break;
+        current = N.next(current);
+    }
+    return null; /* Unassigned light children have no flat-tree parent. */
+}
+function checkVisibilityComputed(element, property) {
+    let value = N.computed(element, property);
+    if (trPoll()) value = N.computed(element, property);
+    return value;
+}
 methods(Element.prototype, {
     get tagName() { let ln = this.localName; if (typeof ln !== 'string') ln = String(N.name(this)); const q = this.__pfx ? this.__pfx + ':' + ln : ln; if (this.namespaceURI !== NSURI[0]) return q; const d = N.ownerDoc(this); return d && N.ns(d) === 3 ? q : asciiUpper(q); },
     get localName() { return this.__ln ?? N.name(this); }, get namespaceURI() { return this.__nsu !== undefined ? this.__nsu : N.ns(this) === 3 ? null : NSURI[N.ns(this)] || NSURI[0]; }, get prefix() { return this.__pfx ?? null; },
@@ -1256,7 +1296,35 @@ methods(Element.prototype, {
         a.play(); return a;
     },
     getAnimations(o) { const sub = !!(o && o.subtree); return waGetAnims(t => t === this || (sub && this.contains(t))); },
-    checkVisibility() { return !!N.rect(this) && !N.skippedAncestor(this); },
+    checkVisibility(options = undefined) {
+        if (!N.isNode(this) || N.type(this) !== 1) throw new checkVisibilityTypeError('Illegal invocation');
+        const hasOptions = options !== undefined && options !== null;
+        if (hasOptions && checkVisibilityObject(options) !== options)
+            throw new checkVisibilityTypeError('checkVisibility options must be a dictionary');
+        /* WebIDL converts every member in lexicographic order before querying
+           layout, even if an earlier alias or a missing box decides the result. */
+        const checkOpacity = hasOptions && !!options.checkOpacity;
+        const checkVisibilityCSS = hasOptions && !!options.checkVisibilityCSS;
+        const contentVisibilityAuto = hasOptions && !!options.contentVisibilityAuto;
+        const opacityProperty = hasOptions && !!options.opacityProperty;
+        const visibilityProperty = hasOptions && !!options.visibilityProperty;
+        /* contentVisibilityAuto is converted above; automatic content skipping
+           still follows the engine's existing native support. */
+        if (waDirty) waFlush();
+        if (!N.rect(this) || N.skippedAncestor(this)) return false;
+        if (checkOpacity || opacityProperty) {
+            for (let element = this; element; element = checkVisibilityFlatParent(element)) {
+                if (N.type(element) !== 1) continue;
+                const opacity = checkVisibilityComputed(element, 'opacity');
+                if (opacity != null && opacity !== '' && +opacity === 0) return false;
+            }
+        }
+        if (checkVisibilityCSS || visibilityProperty) {
+            const visibility = checkVisibilityComputed(this, 'visibility');
+            if (visibility === 'hidden' || visibility === 'collapse') return false;
+        }
+        return true;
+    },
 });
 /* Legacy HTML sinks use the same vetted parser options, but never enable declarative shadow roots. */
 function legacyHTMLFragment(context, html, o, m) {
