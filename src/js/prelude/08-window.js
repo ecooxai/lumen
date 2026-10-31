@@ -710,11 +710,11 @@ function viewportChanged(resized, scrolled, media = true) {
     if (media) mediaChanged();
 }
 if (navigator.maxTouchPoints) for (const type of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) def(G, 'on' + type, null);
-function fire(target, type, init, Ctor = Event) {
+function fire(target, type, init, Ctor = Event, legacyTargetOverride = false) {
     const touchClick = type === 'click' && init && init.__touch;
     if (init && init.__touch) init = nativeTouchInit(type, init);
     if (init && init.__edit) oprReplace(target, init.__edit[0], init.__edit[1], init.__edit[2]);
-    const ev = new Ctor(type, init), ok = dispatch(target, ev, true);   /* dispatch runs the click's activation behavior */
+    const ev = new Ctor(type, init), ok = dispatch(target, ev, true, legacyTargetOverride);   /* dispatch runs the click's activation behavior */
     /* a tap on a text field, textarea or select focuses it */
     if (ok && type === 'click' && target && N.isNode(target) && N.type(target) === 1 && !target.disabled && !(target.closest && target.closest('a[href]'))) {
         const n = N.name(target);
@@ -1084,5 +1084,5 @@ function fireAnim(t, type, name, elapsed, anim) {
     Object.defineProperty(globalThis, 'Temporal', { get: load, set(v) { Object.defineProperty(globalThis, 'Temporal', { value: v, writable: true, configurable: true }); }, configurable: true });
     Object.defineProperty(Date.prototype, 'toTemporalInstant', { value: function toTemporalInstant() { load(); return Date.prototype.toTemporalInstant.call(this); }, writable: true, configurable: true });
 }
-return { ttInit, ttScript, ttParserScript, ttEval, queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, ceParserCreate, ceParserInserted, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, ErrorEvent };
+return { ttInit, ttScript, ttParserScript, ttEval, queueMessage, exportPort, portMessage, rejection, workerEvent, protoFor, dispatch, fire, fireAnim, report, mediaChanged, viewportChanged, ceConnected, ceParserCreate, ceParserInserted, nativeTouch, Event, MouseEvent, PointerEvent, KeyboardEvent, FocusEvent, WheelEvent, InputEvent, PopStateEvent, PageTransitionEvent, ErrorEvent };
 })

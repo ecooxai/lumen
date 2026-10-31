@@ -3908,7 +3908,7 @@ static void parser_script_enter(Page *p, PScript *sc, int index) {
 static void page_finish_js(App *a, Page *p) {
     p->scripts_complete = true;
     double t_dcl = now_ms();
-    js_dispatch(p->js, &p->d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    js_dispatch_document_event(p->js, JS_DOCUMENT_DOM_CONTENT_LOADED);
     LOAD_TRACE("dcl_ms=%.0f", now_ms() - t_dcl);
     if (js_parser_generation(p->js) != p->script_generation) { parser_abandon(p); return; }
     for (int i = 0; i < p->nscript_links; i++) {

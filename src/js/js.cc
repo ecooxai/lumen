@@ -1641,6 +1641,10 @@ void js_document_open(JsCtx *c) {
     c->written.clear();
     c->doc->html = c->doc->head = c->doc->body = nullptr;
     c->load_deferred = false; c->load_synced = false;
+    /* Opening during load/owner-load/pageshow replaces the parser, not the
+       active completion cycle. A later open starts another cycle. */
+    if (c->load_phase != DocumentLoadPhase::InProgress)
+        c->load_phase = DocumentLoadPhase::Pending;
     js_set_ready_state(c, 0);
 }
 Node *js_parser_custom_element(JsCtx *c, Node *element, Node *intended_parent) {
@@ -2021,6 +2025,29 @@ unsigned js_touch(JsCtx *c, Node *target, const char *phase, uint64_t device, ui
 
 bool js_dispatch_window(JsCtx *c, const char *type) {
     return js_dispatch(c, nullptr, type, "Event", false, false, 0, 0, 0, nullptr);
+}
+
+void js_dispatch_document_event(JsCtx *c, JsDocumentEvent event) {
+    if (!c || c->dead || c->fire.IsEmpty()) return;
+    const bool dcl = event == JS_DOCUMENT_DOM_CONTENT_LOADED;
+    const bool pageshow = event == JS_DOCUMENT_PAGESHOW;
+    const char *type = dcl ? "DOMContentLoaded" : pageshow ? "pageshow" : "load";
+    JS_ENTER(c);
+    auto init = v8::Object::New(iso);
+    (void)init->Set(ctx, jstr(iso, "bubbles"), v8::Boolean::New(iso, dcl || pageshow));
+    (void)init->Set(ctx, jstr(iso, "cancelable"), v8::Boolean::New(iso, pageshow));
+    (void)init->Set(ctx, jstr(iso, "composed"), v8::False(iso));
+    if (pageshow) (void)init->Set(ctx, jstr(iso, "persisted"), v8::False(iso));
+    v8::Local<v8::Value> ctor = v8::Undefined(iso), result;
+    if (!c->api.IsEmpty())
+        (void)c->api.Get(iso)->Get(ctx, jstr(iso, pageshow ? "PageTransitionEvent" : "Event")).ToLocal(&ctor);
+    v8::Local<v8::Value> args[] = {
+        dcl ? v8::Local<v8::Value>(jwrap(c, &c->doc->node)) : v8::Local<v8::Value>(ctx->Global()),
+        jstr(iso, type), init, ctor, v8::Boolean::New(iso, !dcl)
+    };
+    /* The page-transition event is cancelable for compatibility, but canceling
+       it does not cancel document loading or the parent's completion. */
+    (void)jcall(c, c->fire.Get(iso), v8::Undefined(iso), 5, args).ToLocal(&result);
 }
 
 void js_set_ready_state(JsCtx *c, int state) {

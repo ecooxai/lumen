@@ -54,7 +54,7 @@ static int run_scripts(JsCtx *js, Document *d) {
         }
     }
     js_set_ready_state(js, 1);
-    js_dispatch(js, &d->node, "DOMContentLoaded", "Event", true, false, 0, 0, 0, NULL);
+    js_dispatch_document_event(js, JS_DOCUMENT_DOM_CONTENT_LOADED);
     js_fire_load(js);   /* now, or once the page's iframes have loaded */
     return nscripts;
 }
