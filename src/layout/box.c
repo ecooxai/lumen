@@ -256,6 +256,10 @@ static void build(BState *bs, Box *parent, Node *n, int *li) {
     bool to_viewport = n == L->doc->html || (n == L->doc->body && (!hs || (hs->overflow_x == OV_VISIBLE && hs->overflow_y == OV_VISIBLE)));
     b->scroller = !to_viewport && (st->overflow_x != OV_VISIBLE || st->overflow_y != OV_VISIBLE);
     b->bfc = b->abs || b->floated || atomic || b->scroller || st->display == D_FLOW_ROOT || st->display == D_TABLE_CELL || st->display == D_TABLE_CAPTION || n == L->doc->html;
+    /* Retain native geometry for explicit descendant queries. Hidden content
+       is isolated here and suppressed in paint/hit/selection traversal; this
+       path does not claim deferred style/layout or automatic viewport skipping. */
+    if (layout_contents_hidden(b)) b->bfc = true;
     switch (st->display) {
     case D_FLEX: case D_INLINE_FLEX: b->fmt = FMT_FLEX; break;
     case D_GRID: case D_INLINE_GRID: b->fmt = FMT_GRID; break;
@@ -398,6 +402,30 @@ void text_shape_cache_sweep(void) {
     pthread_mutex_unlock(&shape_cache.mu);
 }
 
+/* CSS Contain2 3.1/3.2 exclusions are about the principal box, not merely
+ * the element's declared display. Anonymous wrappers/text share styles but
+ * cannot acquire independent containment. Table captions remain eligible. */
+bool layout_contents_hidden(const Box *box) {
+    return box && box->st && box->node && !box->anon && box->kind != BX_TEXT &&
+        box->kind != BX_BR && box->kind != BX_INLINE && box->st->content_visibility == CV_HIDDEN;
+}
+bool layout_size_contained(const Box *box, bool horizontal) {
+    if (!box || !box->st || box->anon || !box->node || box->kind == BX_TEXT ||
+        box->kind == BX_BR || box->kind == BX_INLINE || box->fmt == FMT_TABLE) return false;
+    int display = box->st->display;
+    if (display == D_NONE || display == D_CONTENTS ||
+        (display >= D_TABLE_ROW && display <= D_TABLE_COLUMN_GROUP)) return false;
+    bool inline_axis = horizontal != (box->st->writing_mode != 0);
+    return layout_contents_hidden(box) ||
+        (box->st->size_containment & (inline_axis ? CONTAIN_INLINE_SIZE : CONTAIN_BLOCK_SIZE)) != 0;
+}
+float layout_contained_inner_size(const Box *box, bool horizontal) {
+    ContainIntrinsicSize value = box->st->contain_intrinsic[horizontal ? 0 : 1];
+    /* auto's fallback is used until skipped-content remembered-size support
+       exists. The auto keyword is retained in computed style. */
+    return value.flags & CIS_LENGTH ? value.length : 0;
+}
+
 /* ---------------- intrinsic sizes ---------------- */
 static bool cjk(uint32_t cp) { return (cp >= 0x2E80 && cp <= 0x9FFF) || (cp >= 0xAC00 && cp <= 0xD7AF) || (cp >= 0xF900 && cp <= 0xFAFF) || (cp >= 0xFF00 && cp <= 0xFFEF) || (cp >= 0x3000 && cp <= 0x303F); }
 bool text_break_after(const Box *t, int gi) {
@@ -468,21 +496,24 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
     compute_mbp(b, resolve_own ? cbw : 0);
     const ComputedStyle *st = b->st;
     float bp = hbp(b), mn = 0, mx = 0;
+    bool contained = layout_size_contained(b, true);
     if (st->width.kind == LK_STRETCH && resolve_own && cbw >= 0 && b->fmt != FMT_TABLE) {
         mn = mx = layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true) - bp;
     } else if (st->width.kind == LK_LEN && (resolve_own ? len_def(st->width, cbw) : st->width.pct == 0) && b->fmt != FMT_TABLE) {
         mn = mx = (resolve_own ? res(st->width, cbw) : st->width.px) - (st->box_sizing == BOX_BORDER ? bp : 0);
+    } else if (contained && (st->contain_intrinsic[0].flags & CIS_LENGTH) && b->fmt != FMT_REPLACED) {
+        mn = mx = st->contain_intrinsic[0].length;
     } else if (b->fmt == FMT_REPLACED) {
         float w, h; replaced_size(L, b, -1, -1, -1, -1, &w, &h); mn = mx = w;
         if (st->width.kind == LK_LEN && st->width.pct) mn = 0;
     } else if (b->fmt == FMT_INLINE) {
-        IState s = {0}; inline_intrinsic(L, b, &s);
+        IState s = {0}; if (!contained) inline_intrinsic(L, b, &s);
         mx = LMAX(s.mx, s.line - s.trailing_space); mn = LMAX(s.mn, s.word);
         if (st->white_space == WS_NOWRAP || st->white_space == WS_PRE) mn = mx;
         if (b->ctl == CTL_SELECT) { mn += 20; mx += 20; }
     } else if (b->fmt == FMT_FLEX) {
         bool row = st->flex_direction <= FD_ROW_REVERSE; int n = 0;
-        for (Box *c = b->first; c; c = c->next) {
+        for (Box *c = contained ? NULL : b->first; c; c = c->next) {
             if (!in_flow(c)) continue;
             float a, z; intrinsic_outer(L, c, &a, &z);
             if (row) { mx += z; mn = st->flex_wrap ? LMAX(mn, a) : mn + a; n++; }
@@ -490,20 +521,20 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
         }
         if (row && n > 1) { mx += st->column_gap * (n - 1); if (!st->flex_wrap) mn += st->column_gap * (n - 1); }
     } else if (b->fmt == FMT_GRID) {
-        if (!grid_intrinsic_explicit(L, b, &mn, &mx)) {
+        if (contained || !grid_intrinsic_explicit(L, b, &mn, &mx)) {
             int nc = LMAX(1, st->grid_ncols); bool fixed = st->grid_ncols > 0;
             float fsum = 0;
             for (int i = 0; i < st->grid_ncols; i++) {
                 const GridTrack *t = &st->grid_cols[i];
                 if (t->size.kind != LK_LEN || t->size.pct || t->fr) { fixed = false; continue; }
                 float w = t->size.px;
-                if (t->min.kind == LK_MIN_CONTENT && st->grid_ncols == 1) for (Box *c = b->first; c; c = c->next) if (in_flow(c)) w = LMAX(w, grid_item_auto_min(L, c, t->size.px));   /* minmax(auto, len); which items land in which of several columns is not known here */
+                if (t->min.kind == LK_MIN_CONTENT && st->grid_ncols == 1) for (Box *c = contained ? NULL : b->first; c; c = c->next) if (in_flow(c)) w = LMAX(w, grid_item_auto_min(L, c, t->size.px));   /* minmax(auto, len); which items land in which of several columns is not known here */
                 fsum += w;
             }
             if (fixed) mn = mx = fsum + st->column_gap * (nc - 1);
             else {
                 float cmx = 0, cmn = 0;
-                for (Box *c = b->first; c; c = c->next) { if (!in_flow(c)) continue; float a, z; intrinsic_outer(L, c, &a, &z); cmx = LMAX(cmx, z); cmn = LMAX(cmn, a); }
+                for (Box *c = contained ? NULL : b->first; c; c = c->next) { if (!in_flow(c)) continue; float a, z; intrinsic_outer(L, c, &a, &z); cmx = LMAX(cmx, z); cmn = LMAX(cmn, a); }
                 mx = cmx * nc + st->column_gap * (nc - 1); mn = cmn * nc + st->column_gap * (nc - 1);
             }
         }
@@ -512,7 +543,7 @@ static void intrinsic_measure(Layout *L, Box *b, float cbw, bool resolve_own, fl
         mn -= bp; mx -= bp;
         if (st->width.kind == LK_LEN && !st->width.pct) { float w = st->width.px - (st->box_sizing == BOX_BORDER ? bp : 0); mn = LMAX(mn, w); mx = LMAX(mx, w); }
     } else {
-        for (Box *c = b->first; c; c = c->next) {
+        for (Box *c = contained ? NULL : b->first; c; c = c->next) {
             if (c->abs) continue;
             float a, z; intrinsic_outer(L, c, &a, &z);
             mn = LMAX(mn, a); mx = LMAX(mx, z);
@@ -638,6 +669,14 @@ void replaced_size(Layout *L, Box *b, float cbw, float cbh, float fw, float fh, 
         if (aw) nw = (float)atof(aw); if (ah) nh = (float)atof(ah);
         if (nh > 0) natural_ratio = nw / nh;
     } else if (n && n->tag == A_audio) { nw = 300; nh = 54; }
+    bool contained_width = layout_size_contained(b, true), contained_height = layout_size_contained(b, false);
+    if (contained_width || contained_height) {
+        /* Suppress only natural dimensions/ratio. An author's preferred
+           aspect-ratio and definite sizes still pass through normal sizing. */
+        if (contained_width) { nw = layout_contained_inner_size(b, true); have_width = true; }
+        if (contained_height) nh = layout_contained_inner_size(b, false);
+        natural_ratio = ratio = 0; contained = true;
+    }
     /* A default object size (for example iframe300x150) is not a natural ratio. */
     if (!contained && natural_ratio > 0) ratio = natural_ratio;
     bool auto_ratio = replaced_auto_ratio(custom_get(st->gen_n, "aspect-ratio"));

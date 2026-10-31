@@ -76,8 +76,8 @@ void box_translate(Box *b, float dx, float dy) { if (dx || dy) tr(b, b, dx, dy);
 void add_abs(Layout *L, Box *c) {
     if (L->measure_only) return;
     Box *cb = L->root;
-    if (!c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && p->kind != BX_INLINE && (p->st->position != P_STATIC || p->st->has_transform) && p != c) { cb = p; break; }
-    if (c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && p->st->has_transform && p->kind != BX_INLINE) { cb = p; break; }
+    if (!c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && p->kind != BX_INLINE && (p->st->position != P_STATIC || p->st->has_transform || layout_contents_hidden(p)) && p != c) { cb = p; break; }
+    if (c->fixed) for (Box *p = c->parent; p; p = p->parent) if (p->st && (p->st->has_transform || layout_contents_hidden(p)) && p->kind != BX_INLINE) { cb = p; break; }
     c->cb = cb; cb->has_abs = true;
     if (L->nalog == L->calog) { L->calog = L->calog ? L->calog * 2 : 64; L->alog = xrealloc(L->alog, sizeof *L->alog * (size_t)L->calog); }
     L->alog[L->nalog++] = c;
@@ -802,6 +802,19 @@ static float clamph(Box *b, float h, float cbh, float bp) {
     return clamph_basis(b, h, cbh, bp, cbh, !b->abs && cbh >= 0);
 }
 
+/* For none, the element still retains its own grid tracks while being
+ * measured as empty. A shallow measurement box borrows immutable style and
+ * has no descendants, registrations or memo state. Actual children are laid
+ * out normally in the original box after its contained size is fixed. */
+static float contained_auto_height(Layout *L, Box *b, float content_width) {
+    if (b->st->contain_intrinsic[1].flags & CIS_LENGTH) return b->st->contain_intrinsic[1].length;
+    if (b->fmt != FMT_GRID) return 0;
+    Box empty = *b; empty.first = empty.last = empty.abs_head = NULL;
+    empty.grid_used = NULL; empty.memo = empty.intr_ok = false;
+    float height = layout_grid(L, &empty, 0, 0, content_width, -1);
+    if (empty.grid_used) { free(empty.grid_used->size[0]); free(empty.grid_used->size[1]); free(empty.grid_used); }
+    return LMAX(0, height);
+}
 static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
 /* flex/grid measure a child and then lay it out again, often with identical inputs; nested containers made that exponential */
 int g_lb_calls, g_lb_hits;
@@ -861,6 +874,11 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
         b->w = clampw(L, b, layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true), cbw, hb);
     }
     else if (len_def(s->width, cbw) && !is_cell) { b->w = clampw(L, b, res(s->width, cbw) + (bs ? 0 : hb), cbw, hb); if (b->w < hb) b->w = hb; }
+    else if (s->writing_mode && s->width.kind == LK_AUTO && layout_size_contained(b, true)) {
+        /* In a vertical flow physical width is the content-sized block axis.
+           Its contained intrinsic size does not fill the parent's width. */
+        b->w = LMAX(hb, clampw(L, b, layout_contained_inner_size(b, true) + hb, cbw, hb));
+    }
     else if (mode == SZ_FILL && b->fmt != FMT_TABLE && s->width.kind != LK_FIT_CONTENT && s->width.kind != LK_MAX_CONTENT && s->width.kind != LK_MIN_CONTENT) b->w = clampw(L, b, cbw - b->m[1] - b->m[3], cbw, hb);
     else {
         float mn, mx;
@@ -892,6 +910,8 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
         hdef = LMAX(0, layout_stretch_border_size(b, layout_percentage_cb(b), false, cbh, true) - vb);
     else if (len_def(s->height, cbh) && s->height.kind == LK_LEN) hdef = LMAX(0, res(s->height, cbh) - (bs ? vb : 0));
     else if (s->aspect_ratio > 0 && b->fmt != FMT_REPLACED && s->height.kind != LK_LEN) hdef = LMAX(0, (bs ? b->w : cw) / s->aspect_ratio - (bs ? vb : 0));
+    else if (b->fmt != FMT_REPLACED && layout_size_contained(b, false))
+        hdef = contained_auto_height(L, b, cw);
     /* children size against the used height: YouTube's theater player stretches in a flex row whose
        height:56.25vw is capped by max-height and then raised by min-height:480px */
     if (hdef >= 0 && fh < 0) hdef = LMAX(0, clamph(b, hdef + vb, cbh, vb) - vb);
@@ -956,6 +976,7 @@ static void rel_offset(const Length in[4], float cbw, float cbh, float *dx, floa
  * Looking only at immediate border boxes makes long conversations appear
  * to have no scroll range. Compute bottom-up once, stopping at clips. */
 static void overflow(Box *b) {
+    if (layout_contents_hidden(b)) { b->scroll_w = b->w; b->scroll_h = b->h; return; }
     float r = b->x + b->w, btm = b->y + b->h - b->p[2], bb = btm;
     for (Box *c = b->first; c; c = c->next) {
         if (c->fixed || (c->abs && c->cb && !box_within(c->cb, b))) continue;
@@ -1191,6 +1212,7 @@ static int hit_layer(const Box *c) {
 static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy, float sx, float sy, bool layers);
 typedef struct HitLayer { Box *box; int z; bool negative; } HitLayer;
 static void hit_layers(Box *b, float x, float y, float ox, float oy, float vx, float vy, float sx, float sy, HitLayer *best) {
+    if (layout_contents_hidden(b)) return;
     float lx = x + ox, ly = y + oy;
     if (b->scroller && b->node && !(lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h)) return;
     float cox = ox, coy = oy;
@@ -1219,6 +1241,8 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     float lx = x + ox, ly = y + oy;
     bool inside = lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h;
     if (b->scroller && b->node && !inside) return NULL;
+    if (layout_contents_hidden(b))
+        return inside && !hidden && b->st->pointer_events ? b : NULL;
     if (layers) {
         HitLayer best = {0};
         hit_layers(b, x, y, ox, oy, vx, vy, sx, sy, &best);

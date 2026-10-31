@@ -12,6 +12,7 @@ static SelR *g_r; static int g_nr, g_cr;
 
 typedef void (*WalkFn)(Box *b, float dx, float dy, void *ud);
 static void walk(Box *b, float dx, float dy, float psy, WalkFn fn, void *ud) {
+    if (layout_contents_hidden(b)) return;
     if (b->fixed) dy += psy;
     if (b->scroller && b->node) { dx -= b->node->scroll_x; dy -= box_scroll_y(b); }
     fn(b, dx, dy, ud);

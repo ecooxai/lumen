@@ -963,6 +963,70 @@ static bool alen_size(ACtx *c, const char *v, Length *out) {
     *out = value;
     return true;
 }
+/* CSS Sizing4 5.2: optional auto precedes one none/nonnegative length.
+ * Keep parsing at style computation; layout only reads these compact values. */
+static int contain_intrinsic_property(const char *p) {
+    if (!strcmp(p, "contain-intrinsic-size")) return -1;
+    if (!strcmp(p, "contain-intrinsic-width") || !strcmp(p, "contain-intrinsic-inline-size")) return 0;
+    if (!strcmp(p, "contain-intrinsic-height") || !strcmp(p, "contain-intrinsic-block-size")) return 1;
+    return -2;
+}
+static bool contain_intrinsic_parse(ACtx *c, const char *text, bool shorthand, ContainIntrinsicSize out[2]) {
+    char *tokens[5]; int count = split_ws(text, tokens, 5), i = 0, n = 0;
+    bool ok = count > 0 && count < 5;
+    ContainIntrinsicSize parsed[2] = {{0}, {0}};
+    while (ok && i < count && n < (shorthand ? 2 : 1)) {
+        if (str_ieq(tokens[i], "auto")) { parsed[n].flags |= CIS_AUTO; i++; }
+        if (i == count) { ok = false; break; }
+        const char *token = tokens[i++];
+        if (!str_ieq(token, "none")) {
+            Length length; MathType type;
+            ok = css_parse_length_context(token, &length, c->em, c->rem, c->mc, c->st,
+                !c->validation_only, c->e ? &c->e->uses_font_units : NULL, &type) &&
+                length.kind == LK_LEN && !len_has_pct(length);
+            if (ok && math_type_equal(type, math_type_unit(MATH_NUMBER))) {
+                char *end; double number = strtod(token, &end);
+                ok = end != token && !*end && number == 0; /* bare zero only */
+            }
+            if (ok) {
+                float value = len_resolve(length, 0);
+                bool math = strchr(token, '(') != NULL;
+                if (value < 0 && !math) ok = false;
+                else { parsed[n].length = isnan(value) || value <= 0 ? 0 : isinf(value) ? 3.4028234663852886e38f : value; parsed[n].flags |= CIS_LENGTH; }
+            }
+        }
+        n++;
+    }
+    ok = ok && i == count && n > 0;
+    free_toks(tokens, count);
+    if (ok) { out[0] = parsed[0]; out[1] = parsed[n == 2 ? 1 : 0]; }
+    return ok;
+}
+static bool contain_size_parse(const char *text, uint8_t *size) {
+    if (str_ieq(text, "strict")) { *size = CONTAIN_INLINE_SIZE | CONTAIN_BLOCK_SIZE; return true; }
+    if (str_ieq(text, "none") || str_ieq(text, "content")) { *size = 0; return true; }
+    char *tokens[5]; int n = split_ws(text, tokens, 5); unsigned seen = 0; bool ok = n > 0 && n < 5;
+    uint8_t value = 0;
+    for (int i = 0; ok && i < n; i++) {
+        unsigned bit = str_ieq(tokens[i], "size") ? 1 : str_ieq(tokens[i], "inline-size") ? 2 :
+            str_ieq(tokens[i], "layout") ? 4 : str_ieq(tokens[i], "style") ? 8 : str_ieq(tokens[i], "paint") ? 16 : 0;
+        if (!bit || (seen & bit) || ((bit & 3) && (seen & 3))) ok = false;
+        seen |= bit;
+        if (bit == 1) value = CONTAIN_INLINE_SIZE | CONTAIN_BLOCK_SIZE;
+        else if (bit == 2) value = CONTAIN_INLINE_SIZE;
+    }
+    free_toks(tokens, n); if (ok) *size = value; return ok;
+}
+bool css_containment_valid(const char *prop, const char *value) {
+    int axis = contain_intrinsic_property(prop);
+    if (axis == -2 && strcmp(prop, "contain")) return true;
+    if (str_ieq(value, "initial") || str_ieq(value, "inherit") || str_ieq(value, "unset") ||
+        str_ieq(value, "revert") || str_ieq(value, "revert-layer") || strstr(value, "var(") ||
+        strstr(value, "env(") || strstr(value, "attr(")) return true;
+    if (axis == -2) { uint8_t bits; return contain_size_parse(value, &bits); }
+    ACtx c = { .em = 16, .rem = 16, .validation_only = true }; ContainIntrinsicSize sizes[2];
+    return contain_intrinsic_parse(&c, value, axis < 0, sizes);
+}
 static float alen_px(ACtx *c, const char *v, float def) {
     Length l;
     if (!alen(c, v, &l) || l.kind != LK_LEN) return def;
@@ -2022,7 +2086,7 @@ static int border_corner(const char *P) {
 static bool inherit_copies_uncompared(const char *P) {
     static const char *const props[] = { "background-color","background","width","height","margin","padding","inset","border","position", NULL };
     for (int i = 0; props[i]; i++) if (!strcmp(P, props[i])) return true;
-    return !strncmp(P, "border-", 7) || border_corner(P) >= 0;
+    return !strncmp(P, "border-", 7) || border_corner(P) >= 0 || !strcmp(P, "contain") || contain_intrinsic_property(P) != -2;
 }
 static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block","inline-size","block-size","min-inline-size","max-inline-size","min-block-size","max-block-size", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0 || gen_prop(p); }
@@ -2160,6 +2224,9 @@ static const char *logical_size_prop(const char *p, bool vert) {
         if (!strcmp(p, "inline-size")) return vert ? "height" : "width";
     } else if (p[0] == 'b') {
         if (!strcmp(p, "block-size")) return vert ? "width" : "height";
+    } else if (p[0] == 'c') {
+        if (!strcmp(p, "contain-intrinsic-inline-size")) return vert ? "contain-intrinsic-height" : "contain-intrinsic-width";
+        if (!strcmp(p, "contain-intrinsic-block-size")) return vert ? "contain-intrinsic-width" : "contain-intrinsic-height";
     } else if (p[0] == 'm') {
         if (!strcmp(p, "min-inline-size")) return vert ? "min-height" : "min-width";
         if (!strcmp(p, "max-inline-size")) return vert ? "max-height" : "max-width";
@@ -2367,6 +2434,36 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             prepared_count = parse_grid_tracks(&c, val, &prepared_tracks);
             if (prepared_count < 0) goto out;
         } else if ((!strcmp(P, "grid") || !strcmp(P, "grid-template")) && !css_grid_repeat_valid(P, val)) goto out;
+    }
+    /* Intrinsic-size longhands share the final physical slots in cascade order.
+       Inherit of a logical longhand uses the parent's corresponding axis. */
+    int intrinsic_axis = contain_intrinsic_property(P);
+    if (intrinsic_axis != -2) {
+        ContainIntrinsicSize values[2] = {{0}, {0}};
+        if (inherit && par) {
+            if (intrinsic_axis < 0) memcpy(values, par->contain_intrinsic, sizeof values);
+            else { int from = contain_intrinsic_property(logical_box_prop(prop, par)); values[0] = par->contain_intrinsic[from]; }
+            st->parent_sensitive = true;
+        } else if (!inherit && !initial && !unset && !contain_intrinsic_parse(&c, val, intrinsic_axis < 0, values)) goto out;
+        if (intrinsic_axis < 0) memcpy(st->contain_intrinsic, values, sizeof values);
+        else st->contain_intrinsic[intrinsic_axis] = values[0];
+        goto out;
+    }
+    if (!strcmp(P, "content-visibility")) {
+        uint8_t value = CV_VISIBLE;
+        if (inherit && par) { value = par->content_visibility; st->parent_sensitive = true; }
+        else if (!inherit && !initial && !unset) {
+            if (str_ieq(val, "hidden")) value = CV_HIDDEN;
+            else if (str_ieq(val, "auto")) value = CV_AUTO;
+            else if (!str_ieq(val, "visible")) goto out;
+        }
+        st->content_visibility = value;
+    }
+    if (!strcmp(P, "contain")) {
+        uint8_t value = 0;
+        if (inherit && par) { value = par->size_containment; st->parent_sensitive = true; }
+        else if (!inherit && !initial && !unset && !contain_size_parse(val, &value)) goto out;
+        st->size_containment = value;
     }
     /* Reject unsupported repetition before replacing arrays or generic values. */
     st->indep_set |= indep_bit(P);
@@ -4862,7 +4959,7 @@ static void adopt(ComputedStyle *old, ComputedStyle *nw) {
  * retained by another computed style. Flattened maps take the normal path. */
 /* The parent values an explicit `inherit` of a non-inherited property copies (see apply's inherit). */
 static bool uncompared_differ(const ComputedStyle *a, const ComputedStyle *b) {
-    return a->bg_color != b->bg_color || memcmp(&a->width, &b->width, sizeof a->width) || memcmp(&a->height, &b->height, sizeof a->height) ||
+    return a->size_containment != b->size_containment || a->content_visibility != b->content_visibility || memcmp(a->contain_intrinsic, b->contain_intrinsic, sizeof a->contain_intrinsic) || a->bg_color != b->bg_color || memcmp(&a->width, &b->width, sizeof a->width) || memcmp(&a->height, &b->height, sizeof a->height) ||
         memcmp(&a->min_width, &b->min_width, sizeof a->min_width) || memcmp(&a->min_height, &b->min_height, sizeof a->min_height) ||
         memcmp(&a->max_width, &b->max_width, sizeof a->max_width) || memcmp(&a->max_height, &b->max_height, sizeof a->max_height) ||
         memcmp(a->margin, b->margin, sizeof a->margin) || memcmp(a->padding, b->padding, sizeof a->padding) ||
@@ -6047,6 +6144,11 @@ static const char *display_blockify(const char *d) {
     if (!strcmp(d, "math")) return "block math";
     return d;
 }
+static void contain_intrinsic_str(SB *out, ContainIntrinsicSize value) {
+    if (value.flags & CIS_AUTO) sb_puts(out, "auto ");
+    if (value.flags & CIS_LENGTH) sb_printf(out, "%gpx", (double)value.length);
+    else sb_puts(out, "none");
+}
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     SB b; sb_init(&b);
     if (s && (!strncmp(prop, "transition-", 11) || !strncmp(prop, "animation-", 10))) {
@@ -6080,6 +6182,15 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         free(a); free(z); return sb_take(&b);
     }
     prop = logical_box_prop(prop, s);
+    int intrinsic_axis = contain_intrinsic_property(prop);
+    if (intrinsic_axis != -2) {
+        contain_intrinsic_str(&b, s->contain_intrinsic[intrinsic_axis < 0 ? 0 : intrinsic_axis]);
+        if (intrinsic_axis < 0 && (s->contain_intrinsic[0].flags != s->contain_intrinsic[1].flags ||
+            s->contain_intrinsic[0].length != s->contain_intrinsic[1].length)) {
+            sb_putc(&b, ' '); contain_intrinsic_str(&b, s->contain_intrinsic[1]);
+        }
+        return sb_take(&b);
+    }
     if (!strcmp(prop, "background-position") || !strcmp(prop, "background-position-x") || !strcmp(prop, "background-position-y")) return bg_position_computed(s, !strcmp(prop, "background-position-x") ? 0 : !strcmp(prop, "background-position-y") ? 1 : -1);
     static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root" };
     static const char *const ps[] = { "static", "relative", "absolute", "fixed", "sticky" };

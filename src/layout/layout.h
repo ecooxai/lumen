@@ -82,6 +82,10 @@ void layout_dump(Box *b, int depth, int maxdepth);
 enum { SZ_FILL, SZ_SHRINK, SZ_FORCED };
 Box *build_box_tree(Layout *L, Document *d);
 void compute_mbp(Box *b, float cbw);
+/* Size containment affects intrinsic measurement, never descendant painting. */
+bool layout_size_contained(const Box *box, bool horizontal);
+bool layout_contents_hidden(const Box *box);
+float layout_contained_inner_size(const Box *box, bool horizontal);
 /* Anonymous/inline wrappers do not establish the percentage containing block. */
 bool layout_percentage_wrapper(const Box *box);
 const Box *layout_percentage_cb(const Box *box);

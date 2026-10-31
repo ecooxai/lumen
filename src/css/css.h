@@ -149,6 +149,12 @@ typedef struct GridTrack { Length size; float fr; Length min; } GridTrack;
 typedef struct GridLine { int number, span; } GridLine; /* both zero: auto */
 typedef struct GridAxis { GridLine start, end; } GridAxis;
 
+/* Intrinsic inner size is independent of width/height and box-sizing.
+ * NONE differs from an explicit zero (notably for empty grid tracks). */
+enum { CIS_LENGTH = 1, CIS_AUTO = 2 };
+typedef struct ContainIntrinsicSize { float length; uint8_t flags; } ContainIntrinsicSize;
+enum { CONTAIN_INLINE_SIZE = 1, CONTAIN_BLOCK_SIZE = 2 };
+enum { CV_VISIBLE, CV_AUTO, CV_HIDDEN };
 typedef struct ComputedStyle {
     int refs;
     uint8_t display, position, float_, clear, overflow_x, overflow_y, visibility, box_sizing;
@@ -174,6 +180,9 @@ typedef struct ComputedStyle {
     float row_gap, column_gap; Length row_gap_l, column_gap_l;
     float vertical_align_len;
     Length width, height, min_width, min_height, max_width, max_height;
+    ContainIntrinsicSize contain_intrinsic[2]; /* physical width, height; computed CSS pixels */
+    uint8_t size_containment; /* logical-axis bits from contain; not a claim of paint/layout containment */
+    uint8_t content_visibility; /* hidden's observable containment; auto viewport skipping remains unsupported */
     Length margin[4], padding[4], inset[4]; /* top right bottom left */
     float border_width[4];
     float border_spacing[2]; /* computed absolute horizontal and vertical gaps; inherited */
@@ -414,6 +423,7 @@ bool css_media_matches(const char *q, const MediaCtx *mc);
 bool css_media_valid(const char *q);
 bool css_supports(const char *cond);
 bool css_flex_valid(const char *prop, const char *value);
+bool css_containment_valid(const char *prop, const char *value);
 /* Grid1/2 automatic-repeat constraint; not a complete property grammar validator. */
 bool css_grid_repeat_valid(const char *property, const char *value);
 /* Caller owns *out. Used for implicit grid track-size patterns. */
