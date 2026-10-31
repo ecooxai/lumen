@@ -1,15 +1,15 @@
 {
   "candidate": 234,
-  "qualification_utc": "2026-10-31T10:55:26.672673+00:00",
+  "qualification_utc": "2026-10-31T11:08:14.013075+00:00",
   "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
   "tested_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
-  "reviewed_public_parent": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+  "reviewed_public_parent": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
   "proposed_public_branch": "gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
   "recorded_inputs": 650,
   "all_recorded_inputs_and_modes_exact": true,
-  "public_source_manifest_file_sha256": "214eba5e85b7e21cbbcbbf3d0aadc62091ea3d51ac163afe2e612265381f77b1",
-  "root_decision_sha256": "dd26f9b2829006d58158e5863d93ce51a6de6ce5400c31bbbcc792c80fc0d18b",
-  "independent_final_review_sha256": "353dc945e3766fcd49175d61dd2cdd8d463384b3d63b303e9eaf02f518ab547e",
+  "public_source_manifest_file_sha256": "e53fb55ac4f9a089b8299cac7a192d720d35e858606bffc9b47ce1f896dca2db",
+  "root_decision_sha256": "46c7331def623f465d306203087e9b128f512bcf919c459ce536479cf79d3d08",
+  "independent_final_review_sha256": "63bbbe783fb2dbf70c0fddb052631ae2ffea788e8f2bd30c83447320742d5c65",
   "public_report_sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
   "accepted_gate_audit_hashes": {
     "native147": "16b937c1ea3658f7140cd3ba088bfc440c004ca77ddfa52e6b2aaa48c07eab5e",
@@ -34,5 +34,15 @@
   "private_history_or_raw_evidence_exported": false,
   "independent_rebuild_performed": false,
   "portable_binary_distribution": false,
-  "publication_performed_by_this_qualifier": false
+  "publication_performed_by_this_qualifier": false,
+  "documentation_only_correction": {
+    "prior_public_commit": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
+    "prior_public_tree": "40016234061f6494d7519e15e9546c35169f4f0a",
+    "original_engine_export_parent": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+    "original_qualification_sha256": "27e156638d45671a9015c9a06841ef178ad83c70adf2ae1326f621fc684bcd40",
+    "guide_old_sha256": "8af57a3d4f51f75fd843c515d2af1a2e1720e04cc3d3fb052f49df8c75a02e57",
+    "guide_new_sha256": "72b42ab31800634f508e14f14d15153ce7ac06582479e2dc52ec562aa9407c5c",
+    "all_650_measured_inputs_unchanged": true,
+    "technical_report_and_all_16_gate_hashes_unchanged": true
+  }
 }

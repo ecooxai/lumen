@@ -217,7 +217,7 @@ The interactive page runs in the browser opening it. Open it in Lumen to exercis
 After satisfying the runtime prerequisites, open the included file in Lumen:
 
 ```sh
-./build/codex-native/lumen "$PWD/examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html"
+./build/codex-native/lumen "file://$PWD/examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html"
 ```
 
 The original measured HTML is included byte-for-byte. See `docs/gpt-6-astra-pro-builtin-rubywebterm-live-demo-evidence.json` for its hash and recorded native observations.

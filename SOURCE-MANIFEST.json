@@ -5,7 +5,7 @@
   "recorded_input_digest": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
   "recorded_input_count": 650,
   "source_manifest_file_sha256": "58a936e5da8f063bf666dbe9c988696139a3f8e4a89b2dcae0fcbc8508909c5f",
-  "public_parent": "2287d7fc602954c85a51c36f45ab5faa2473decc",
+  "public_parent": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
   "public_branch": "gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
   "recorded_inputs": {
     "CMakeLists.txt": {
@@ -2621,7 +2621,7 @@
       "mode": "100644"
     },
     "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md": {
-      "sha256": "8af57a3d4f51f75fd843c515d2af1a2e1720e04cc3d3fb052f49df8c75a02e57",
+      "sha256": "72b42ab31800634f508e14f14d15153ce7ac06582479e2dc52ec562aa9407c5c",
       "mode": "100644"
     },
     "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json": {
