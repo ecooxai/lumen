@@ -1,0 +1,35 @@
+{
+  "created_utc": "2026-10-31T07:24:33.235601+00:00",
+  "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "selection": "Complete unmodified checkVisibility file and actual CSSContain hidden IO/RO files030/031; selected before follow-up engine changes. These differ from css-sizing contain-intrinsic-size numbered030/031.",
+  "testharness_files": 3,
+  "reftest_files": 0,
+  "nominal_registered_subtests": 23,
+  "deadline_seconds": 15,
+  "max_total_browser_workers": 2,
+  "rows": [
+    {
+      "url": "/css/cssom-view/checkVisibility.html",
+      "source_path": "css/cssom-view/checkVisibility.html",
+      "source_sha256": "be5364b8add798476806693b5096f2b571daf29d06f0e159a8de54ca103c7ec9",
+      "type": "testharness"
+    },
+    {
+      "url": "/css/css-contain/content-visibility/content-visibility-030.html",
+      "source_path": "css/css-contain/content-visibility/content-visibility-030.html",
+      "source_sha256": "414013f9e4333d9f30b0375f6ab298be2ee09513f21441ace1aaac05048cf52b",
+      "type": "testharness"
+    },
+    {
+      "url": "/css/css-contain/content-visibility/content-visibility-031.html",
+      "source_path": "css/css-contain/content-visibility/content-visibility-031.html",
+      "source_sha256": "3c683b1ff5ef61deaca78b0d614790f3f76cf197d480695240ef849e31a29397",
+      "type": "testharness"
+    }
+  ],
+  "support_pins": {
+    "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+    "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+  },
+  "qualification": "Whole checkVisibility file includes content-visibility:auto and other existing visibility options outside hidden-only implementation; all outcomes must remain visible, with no selective filtering."
+}

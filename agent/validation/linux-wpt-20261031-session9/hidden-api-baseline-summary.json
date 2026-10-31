@@ -1,0 +1,100 @@
+{
+  "manifest_sha256": "4f3f2c0a63fb3afdadb7b67cc4f59b2b84d1f2af400fabc6466624938a1236ae",
+  "scope": "Three additional whole upstream files; auto and other residuals remain reported. Separate from original39 selected files.",
+  "results": {
+    "lumen226": {
+      "files": [
+        {
+          "url": "/css/cssom-view/checkVisibility.html",
+          "harness": "OK",
+          "assertions": {
+            "FAIL": 11,
+            "PASS": 10
+          }
+        },
+        {
+          "url": "/css/css-contain/content-visibility/content-visibility-030.html",
+          "harness": "OK",
+          "assertions": {
+            "FAIL": 1
+          }
+        },
+        {
+          "url": "/css/css-contain/content-visibility/content-visibility-031.html",
+          "harness": "OK",
+          "assertions": {
+            "FAIL": 1
+          }
+        }
+      ],
+      "result_path": "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen226-assertions/native/results.jsonl",
+      "result_sha256": "27b28e80b1fc65d4d1290218ed559ba579181014ba788312e40e39f54bf1f899",
+      "assertions": {
+        "FAIL": 13,
+        "PASS": 10
+      }
+    },
+    "lumen227": {
+      "files": [
+        {
+          "url": "/css/cssom-view/checkVisibility.html",
+          "harness": "OK",
+          "assertions": {
+            "FAIL": 11,
+            "PASS": 10
+          }
+        },
+        {
+          "url": "/css/css-contain/content-visibility/content-visibility-030.html",
+          "harness": "OK",
+          "assertions": {
+            "FAIL": 1
+          }
+        },
+        {
+          "url": "/css/css-contain/content-visibility/content-visibility-031.html",
+          "harness": "OK",
+          "assertions": {
+            "FAIL": 1
+          }
+        }
+      ],
+      "result_path": "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/lumen227-assertions/native/results.jsonl",
+      "result_sha256": "d5a751a914dc5dbad77123a58f67c6b41173460afab56365a772720a7ca46e60",
+      "assertions": {
+        "FAIL": 13,
+        "PASS": 10
+      }
+    },
+    "chrome156": {
+      "files": [
+        {
+          "url": "/css/cssom-view/checkVisibility.html",
+          "harness": "OK",
+          "assertions": {
+            "PASS": 21
+          }
+        },
+        {
+          "url": "/css/css-contain/content-visibility/content-visibility-030.html",
+          "harness": "OK",
+          "assertions": {
+            "PASS": 1
+          }
+        },
+        {
+          "url": "/css/css-contain/content-visibility/content-visibility-031.html",
+          "harness": "OK",
+          "assertions": {
+            "PASS": 1
+          }
+        }
+      ],
+      "result_path": "agent/validation/linux-wpt-20261031-session9/qa-hidden-observer-visibility/chrome156-assertions/reference/results.jsonl",
+      "result_sha256": "db4ca68f96bcc5cc349ad139286116ea7d6981778c8402debff9b52899ce0dc4",
+      "assertions": {
+        "PASS": 23
+      }
+    }
+  }
+}

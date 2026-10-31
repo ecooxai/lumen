@@ -1,0 +1,19 @@
+{
+  "started_utc": "2026-10-31T07:29:16.319480+00:00",
+  "finished_utc": "2026-10-31T07:29:18.427332+00:00",
+  "duration_s": 2.1078534970001783,
+  "returncode": 0,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "libraries_unchanged": true,
+  "libraries_after": {
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/liblumen_engine.a": "375cc613c903794975e42f2dad4d94c43bd15c7215200751704b13f38721ad4f",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/liblumen_net.a": "a96e2dcf2d5d2986cc67af61c1e3c7268a518bf858956bc78c8d94730b99a79a",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/liblumen_base.a": "c86229f8757779bb219eab4b6c2c78bb04cf0c1d223448f1d5224badd6928948",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/liblumen_rtc.a": "a13c349f4754f8d7d6cbe3f9c4929cec9a3778858d46e4792b82675550a8e76d"
+  },
+  "source_archive_sha256": "d7036f31eee4a00fa47d29754764286063410c5f95fe05abfa3216df36acae3e",
+  "probe_source_sha256": "9cfb48d208b631d0fe0da355ecc17797415802f98b229558aa6a4e5e7b43231d"
+}

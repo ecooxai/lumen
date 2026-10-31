@@ -1,0 +1,212 @@
+{
+  "iteration": 1,
+  "candidate": 227,
+  "started_utc": "2026-10-31T07:09:52.459971+00:00",
+  "finished_utc": "2026-10-31T07:26:26.647332+00:00",
+  "duration_minutes": 16.56978935,
+  "cumulative_minutes": 26.2441222,
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ],
+  "source_commit": "55248ac10c99ffae7f0b6ea29b2f332b8f1d3e4d",
+  "binary_sha256": "db0589fe022744558d597f256299c945323b2c44c4a88032d73a57e8bf1cd8ea",
+  "recorded_build_inputs": 647,
+  "acceptance": "REJECTED; continued228 repair. No broad640 was run and acceptedpublicrelease226 remains unchanged.",
+  "build": {
+    "started_utc": "2026-10-31T07:20:59.178712+00:00",
+    "finished_utc": "2026-10-31T07:21:31.307638+00:00",
+    "duration_s": 32.12892602299689,
+    "command": [
+      "python3",
+      "tools/codex_compile.py",
+      "python3",
+      "agent/validation/build_candidate.py",
+      "--iteration",
+      "227",
+      "--jobs",
+      "2",
+      "--startup"
+    ],
+    "pid": 2229836,
+    "exit_code": 0,
+    "source_commit": "55248ac10c99ffae7f0b6ea29b2f332b8f1d3e4d",
+    "git_head_after": "55248ac10c99ffae7f0b6ea29b2f332b8f1d3e4d",
+    "git_unchanged": true,
+    "monitor_returncodes": [
+      0,
+      0
+    ]
+  },
+  "native": {
+    "tests": 144,
+    "passing": 143,
+    "new_containment_checks": 134,
+    "new_containment_passing": 132,
+    "prior_test_count": 143,
+    "missing_or_failed_prior_tests": [],
+    "receipt": {
+      "started_utc": "2026-10-31T07:21:31.311406+00:00",
+      "finished_utc": "2026-10-31T07:22:51.390908+00:00",
+      "duration_s": 80.07950594701106,
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "ctest",
+        "--test-dir",
+        "build/codex-native",
+        "-j1",
+        "--output-on-failure",
+        "-E",
+        "^(url|url_host_nul|data_url)$",
+        "--output-junit",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/native227/ctest.xml"
+      ],
+      "pid": 2232234,
+      "exit_code": 8,
+      "source_commit": "55248ac10c99ffae7f0b6ea29b2f332b8f1d3e4d",
+      "git_head_after": "55248ac10c99ffae7f0b6ea29b2f332b8f1d3e4d",
+      "git_unchanged": true,
+      "monitor_returncodes": [
+        0,
+        0
+      ]
+    },
+    "failures": [
+      "physical39px!important lost to later logical22px normal",
+      "scaled1x1 opaque replaced-image exactpixel restored incorrectly"
+    ]
+  },
+  "scoped_WPT": {
+    "primary_logical_assertions": [
+      48,
+      48
+    ],
+    "primary_logical_reftests": [
+      2,
+      2
+    ],
+    "parsing_assertions": [
+      88,
+      88
+    ],
+    "numbered_assertions": [
+      135,
+      150
+    ],
+    "numbered_reftests": [
+      24,
+      26
+    ],
+    "all_original39_assertions": [
+      271,
+      286
+    ],
+    "all_original39_reftests": [
+      26,
+      28
+    ],
+    "assertion_gains": 191,
+    "prior_assertion_losses": 1,
+    "prior_pixel_losses": 0,
+    "exact_prior_loss": [
+      "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+      ".test 1",
+      0
+    ],
+    "pixel_failures": [
+      {
+        "file": "contain-intrinsic-size-025.html",
+        "different_pixels": 6510,
+        "max_channel_difference": 230
+      },
+      {
+        "file": "contain-intrinsic-size-027.html",
+        "different_pixels": 6400,
+        "max_channel_difference": 1
+      }
+    ]
+  },
+  "scores": {
+    "primary_assertion_percent": 100,
+    "primary_pixel_percent": 100,
+    "parsing_assertion_percent": 100,
+    "all_original39_assertion_percent": 94.75524475524476,
+    "all_original39_pixel_percent": 92.85714285714286,
+    "whole_browser_98_established": false
+  },
+  "additional_API_baseline": {
+    "lumen226": [
+      10,
+      23
+    ],
+    "lumen227": [
+      10,
+      23
+    ],
+    "chromium156": [
+      23,
+      23
+    ],
+    "summary_sha256": "03d89f104acb1f3925824e04826aacc1a170c28f03f4dbc728a398c5b06caa0a"
+  },
+  "evidence": {
+    "identity_lifecycle_audit": "agent/validation/linux-wpt-20261031-session9/candidate227-containment-audit.json",
+    "identity_lifecycle_audit_sha256": "fd73289de542f3eaa60f78429ffbfe0a5393ed0dde43857664be069c42b26886",
+    "native_xml_sha256": "06d72d15f61a125e9c4d54d5c79f6f11f481fbc05de65ce2fb731d37001cacf9",
+    "all_feature_native_processes": 67,
+    "lifecycle_valid": true,
+    "source_and_git_pins_valid": true
+  },
+  "followup_reasons": [
+    "Nativepriorityprecedence",
+    "Realpreexistingrasterinterpolationprecisiondefect",
+    "Select/button/emptycolumnintrinsics andgridrepeat025",
+    "HiddenSVGhit/tableapplicability/visibilityobservercoherence"
+  ],
+  "resource_summaries": {
+    "build227": {
+      "label": "session9 owned build227 process tree",
+      "started_utc": "2026-10-31T07:20:59.266280+00:00",
+      "finished_utc": "2026-10-31T07:21:31.286879+00:00",
+      "root_pid": 2229836,
+      "comm": null,
+      "exe": null,
+      "interval_seconds": 1,
+      "samples": 32,
+      "elapsed_seconds": 32.021,
+      "cpu_one_core_equals_100": true,
+      "cpu_min": 0.0,
+      "cpu_median": 62.002,
+      "cpu_max": 195.0,
+      "cpu_last10_median": 22.499499999999998,
+      "rss_peak_mb": 582.263,
+      "rss_final_mb": 41.964,
+      "pss_peak_mb": 393.699,
+      "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/build227/resources.csv",
+      "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+    },
+    "native227": {
+      "label": "session9 owned native227 process tree",
+      "started_utc": "2026-10-31T07:21:31.398347+00:00",
+      "finished_utc": "2026-10-31T07:22:50.420112+00:00",
+      "root_pid": 2232234,
+      "comm": null,
+      "exe": null,
+      "interval_seconds": 1,
+      "samples": 79,
+      "elapsed_seconds": 79.022,
+      "cpu_one_core_equals_100": true,
+      "cpu_min": 0.0,
+      "cpu_median": 13.999500000000001,
+      "cpu_max": 78.0,
+      "cpu_last10_median": 2.5,
+      "rss_peak_mb": 226.574,
+      "rss_final_mb": 61.579,
+      "pss_peak_mb": 186.224,
+      "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/native227/resources.csv",
+      "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+    }
+  }
+}
