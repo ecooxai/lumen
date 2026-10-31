@@ -1,0 +1,524 @@
+{
+  "reference": "chromium156-v3",
+  "native": "jsrun230-v3",
+  "snapshot_count": 30,
+  "different_snapshots": 11,
+  "rows": [
+    {
+      "id": "retain-both-axes",
+      "phase": "revealed",
+      "differences": [
+        {
+          "field": "owner.before.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "owner.before.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "owner.after.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "owner.after.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "ownerAfterDescendantReads.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "ownerAfterDescendantReads.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "leafBounds.x",
+          "native230": 0,
+          "chromium156": -80
+        },
+        {
+          "field": "leafBounds.y",
+          "native230": 0,
+          "chromium156": -90
+        }
+      ]
+    },
+    {
+      "id": "hidden-set-zero",
+      "phase": "revealed",
+      "differences": [
+        {
+          "field": "owner.before.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "owner.before.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "owner.after.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "owner.after.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "ownerAfterDescendantReads.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "ownerAfterDescendantReads.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "leafBounds.x",
+          "native230": 0,
+          "chromium156": -80
+        },
+        {
+          "field": "leafBounds.y",
+          "native230": 0,
+          "chromium156": -90
+        }
+      ]
+    },
+    {
+      "id": "hidden-set-positive",
+      "phase": "revealed",
+      "differences": [
+        {
+          "field": "owner.before.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "owner.before.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "owner.after.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "owner.after.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "ownerAfterDescendantReads.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "ownerAfterDescendantReads.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "leafBounds.x",
+          "native230": 0,
+          "chromium156": -80
+        },
+        {
+          "field": "leafBounds.y",
+          "native230": 0,
+          "chromium156": -90
+        }
+      ]
+    },
+    {
+      "id": "range-shrink-and-regrow",
+      "phase": "hidden-shrunk",
+      "differences": [
+        {
+          "field": "leafBounds.width",
+          "native230": 150,
+          "chromium156": 400
+        },
+        {
+          "field": "leafBounds.height",
+          "native230": 130,
+          "chromium156": 400
+        }
+      ]
+    },
+    {
+      "id": "range-shrink-and-regrow",
+      "phase": "revealed-shrunk",
+      "differences": [
+        {
+          "field": "owner.before.x",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "owner.before.y",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "owner.after.x",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "owner.after.y",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "ownerAfterDescendantReads.x",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "ownerAfterDescendantReads.y",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "leafBounds.x",
+          "native230": 0,
+          "chromium156": -30
+        },
+        {
+          "field": "leafBounds.y",
+          "native230": 0,
+          "chromium156": -30
+        }
+      ]
+    },
+    {
+      "id": "range-shrink-and-regrow",
+      "phase": "visible-regrown",
+      "differences": [
+        {
+          "field": "owner.before.x",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "owner.before.y",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "owner.after.x",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "owner.after.y",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "ownerAfterDescendantReads.x",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "ownerAfterDescendantReads.y",
+          "native230": 0,
+          "chromium156": 30
+        },
+        {
+          "field": "leafBounds.x",
+          "native230": 0,
+          "chromium156": -30
+        },
+        {
+          "field": "leafBounds.y",
+          "native230": 0,
+          "chromium156": -30
+        }
+      ]
+    },
+    {
+      "id": "overflow-mode-change",
+      "phase": "hidden-overflow-visible",
+      "differences": [
+        {
+          "field": "owner.scroll.width",
+          "native230": 400,
+          "chromium156": 120
+        },
+        {
+          "field": "owner.scroll.height",
+          "native230": 400,
+          "chromium156": 100
+        },
+        {
+          "field": "owner.max.x",
+          "native230": 280,
+          "chromium156": 0
+        },
+        {
+          "field": "owner.max.y",
+          "native230": 300,
+          "chromium156": 0
+        }
+      ]
+    },
+    {
+      "id": "overflow-mode-change",
+      "phase": "scroll-container-restored",
+      "differences": [
+        {
+          "field": "owner.before.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "owner.before.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "owner.after.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "owner.after.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "ownerAfterDescendantReads.x",
+          "native230": 0,
+          "chromium156": 80
+        },
+        {
+          "field": "ownerAfterDescendantReads.y",
+          "native230": 0,
+          "chromium156": 90
+        },
+        {
+          "field": "leafBounds.x",
+          "native230": 0,
+          "chromium156": -80
+        },
+        {
+          "field": "leafBounds.y",
+          "native230": 0,
+          "chromium156": -90
+        }
+      ]
+    },
+    {
+      "id": "nested-outer-hidden-inner-setter",
+      "phase": "outer-revealed",
+      "differences": [
+        {
+          "field": "owner.before.x",
+          "native230": 0,
+          "chromium156": 40
+        },
+        {
+          "field": "owner.before.y",
+          "native230": 0,
+          "chromium156": 50
+        },
+        {
+          "field": "owner.after.x",
+          "native230": 0,
+          "chromium156": 40
+        },
+        {
+          "field": "owner.after.y",
+          "native230": 0,
+          "chromium156": 50
+        },
+        {
+          "field": "ownerAfterDescendantReads.x",
+          "native230": 0,
+          "chromium156": 40
+        },
+        {
+          "field": "ownerAfterDescendantReads.y",
+          "native230": 0,
+          "chromium156": 50
+        },
+        {
+          "field": "inner.bounds.x",
+          "native230": 40,
+          "chromium156": 0
+        },
+        {
+          "field": "inner.bounds.y",
+          "native230": 70,
+          "chromium156": 20
+        },
+        {
+          "field": "leafBounds.x",
+          "native230": 9,
+          "chromium156": -31
+        },
+        {
+          "field": "leafBounds.y",
+          "native230": 23,
+          "chromium156": -27
+        }
+      ]
+    },
+    {
+      "id": "nested-independently-hidden",
+      "phase": "outer-revealed-inner-hidden",
+      "differences": [
+        {
+          "field": "owner.before.x",
+          "native230": 0,
+          "chromium156": 40
+        },
+        {
+          "field": "owner.before.y",
+          "native230": 0,
+          "chromium156": 50
+        },
+        {
+          "field": "owner.after.x",
+          "native230": 0,
+          "chromium156": 40
+        },
+        {
+          "field": "owner.after.y",
+          "native230": 0,
+          "chromium156": 50
+        },
+        {
+          "field": "ownerAfterDescendantReads.x",
+          "native230": 0,
+          "chromium156": 40
+        },
+        {
+          "field": "ownerAfterDescendantReads.y",
+          "native230": 0,
+          "chromium156": 50
+        },
+        {
+          "field": "inner.bounds.x",
+          "native230": 40,
+          "chromium156": 0
+        },
+        {
+          "field": "inner.bounds.y",
+          "native230": 70,
+          "chromium156": 20
+        },
+        {
+          "field": "leafBounds.x",
+          "native230": 40,
+          "chromium156": 0
+        },
+        {
+          "field": "leafBounds.y",
+          "native230": 70,
+          "chromium156": 20
+        }
+      ]
+    },
+    {
+      "id": "nested-independently-hidden",
+      "phase": "both-revealed",
+      "differences": [
+        {
+          "field": "owner.before.x",
+          "native230": 0,
+          "chromium156": 40
+        },
+        {
+          "field": "owner.before.y",
+          "native230": 0,
+          "chromium156": 50
+        },
+        {
+          "field": "owner.after.x",
+          "native230": 0,
+          "chromium156": 40
+        },
+        {
+          "field": "owner.after.y",
+          "native230": 0,
+          "chromium156": 50
+        },
+        {
+          "field": "ownerAfterDescendantReads.x",
+          "native230": 0,
+          "chromium156": 40
+        },
+        {
+          "field": "ownerAfterDescendantReads.y",
+          "native230": 0,
+          "chromium156": 50
+        },
+        {
+          "field": "inner.before.x",
+          "native230": 0,
+          "chromium156": 60
+        },
+        {
+          "field": "inner.before.y",
+          "native230": 0,
+          "chromium156": 70
+        },
+        {
+          "field": "inner.after.x",
+          "native230": 0,
+          "chromium156": 60
+        },
+        {
+          "field": "inner.after.y",
+          "native230": 0,
+          "chromium156": 70
+        },
+        {
+          "field": "inner.bounds.x",
+          "native230": 40,
+          "chromium156": 0
+        },
+        {
+          "field": "inner.bounds.y",
+          "native230": 70,
+          "chromium156": 20
+        },
+        {
+          "field": "innerAfterDescendantReads.x",
+          "native230": 0,
+          "chromium156": 60
+        },
+        {
+          "field": "innerAfterDescendantReads.y",
+          "native230": 0,
+          "chromium156": 70
+        },
+        {
+          "field": "leafBounds.x",
+          "native230": 40,
+          "chromium156": -60
+        },
+        {
+          "field": "leafBounds.y",
+          "native230": 70,
+          "chromium156": -50
+        }
+      ]
+    }
+  ]
+}

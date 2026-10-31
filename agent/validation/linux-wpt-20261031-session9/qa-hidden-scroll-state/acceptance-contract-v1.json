@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "kind": "pre-edit field acceptance contract for hidden-owner element-scroll retention; not WPT",
+  "fixture": "hidden-scroll-state-matrix-v3.html",
+  "fixture_sha256": "f51b1799025c08d900c8b31393f3606a16b104db00709db76eab4c48856de375",
+  "reference_observations": "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/chromium156-v3/observations.json",
+  "reference_sha256": "4e13f504121ceedec9e65a5056b0f1052551d1e6bb861c428dedf50999aae094",
+  "native_baseline_observations": "agent/validation/linux-wpt-20261031-session9/qa-hidden-scroll-state/jsrun230-v3/observations.json",
+  "native_baseline_sha256": "182dd27b5e7b4d461dd6215386aa932be23508e07959e22367cb2b5f2a04aeaf",
+  "required_cases": 7,
+  "required_snapshots": 30,
+  "matching": "Exact equality for listed fields on the unchanged ordered case/phase identities",
+  "strict_fields": [
+    "owner.before",
+    "owner.after",
+    "owner.client",
+    "owner.scroll",
+    "owner.max",
+    "owner.bounds",
+    "owner.contentVisibility",
+    "owner.overflowX",
+    "owner.overflowY",
+    "ownerAfterDescendantReads",
+    "inner.before (when present)",
+    "inner.after (when present)",
+    "inner.client (when present)",
+    "inner.scroll (when present)",
+    "inner.max (when present)",
+    "inner.bounds (when present)",
+    "inner.contentVisibility (when present)",
+    "inner.overflowX (when present)",
+    "inner.overflowY (when present)",
+    "innerAfterDescendantReads (when present)",
+    "leafBounds.x",
+    "leafBounds.y"
+  ],
+  "conditional_strict_fields": {
+    "leafBounds.width,leafBounds.height": "Require reference equality when no measured owner or inner has contentVisibility:hidden. Otherwise retain and report the observations without claiming stale hidden-descendant layout equivalence."
+  },
+  "always_observed_but_not_compared": [
+    "time"
+  ],
+  "explicit_known_layout_difference": {
+    "case": "range-shrink-and-regrow",
+    "phase": "hidden-shrunk",
+    "reference_leaf_size": [
+      400,
+      400
+    ],
+    "native230_leaf_size": [
+      150,
+      130
+    ],
+    "classification": "eager retained descendant layout versus Chromium cached hidden layout; separately disclosed; do not fabricate stale geometry"
+  },
+  "pass_language": "All7 retention cases and30 phase records satisfy offset/range/effective-coordinate contract; this is not full snapshot byte equivalence, full content-visibility conformance, or additional WPT pass count",
+  "separate_required_gates": [
+    "unchanged upstream content-visibility-hidden-scrollTop-left-width-height.html passes1/1",
+    "original cadence v1 retains its unchanged unhide expectation",
+    "v2 cadence idle/lifecycle stays green",
+    "existing native/selected39/API/paint/stretch/broad640 gates remain independently qualified"
+  ]
+}
