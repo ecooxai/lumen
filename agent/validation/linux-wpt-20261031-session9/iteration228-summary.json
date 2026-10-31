@@ -1,0 +1,72 @@
+{
+  "iteration": 2,
+  "candidate": 228,
+  "started_utc": "2026-10-31T07:26:26.647332+00:00",
+  "finished_utc": "2026-10-31T07:53:55.093155+00:00",
+  "duration_minutes": 27.47409705,
+  "cumulative_task_minutes": 53.71821925,
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ],
+  "source_commit": "326f57a3deea9d55d759bd47c69ca2861235c1e5",
+  "binary_sha256": "365bb34ebd17b809b6cda472e003985b85ddd856ea2859b71afb7c4890b4ede0",
+  "source_input_count": 647,
+  "native": {
+    "tests": 144,
+    "passed": 143,
+    "failed": [
+      "css_stepped_math"
+    ],
+    "containment_checks_passed": 300,
+    "containment_checks_failed": 0,
+    "prior_old_native_passes_preserved": 142,
+    "prior_old_native_total": 143
+  },
+  "scores": {
+    "native_test_percent": 99.30555555555556,
+    "containment_native_check_percent": 100,
+    "candidate_WPT_not_run": true,
+    "last_measured39_WPT_candidate": 227,
+    "whole_browser_98_established": false
+  },
+  "qualification": "REJECTED: unchanged existing native math test crashes after canonical column-count storage was bypassed. No WPT qualification or accepted-release promotion.",
+  "diagnosis": {
+    "gdb": "native228-crash-diagnostic/backtrace.log",
+    "sanitizer": "native228-math-sanitizer/ctest.log",
+    "precise_error": "test_css_stepped_math.c:283 NULL first argument to strcmp(custom_get(style->gen_n, column-count),4)",
+    "planned_fix": "Preserve canonical storage alongside typed columns; reuse existing integer grammar; keep old test unchanged"
+  },
+  "build_seconds": 57.12716263401671,
+  "native_seconds": 80.13953319299617,
+  "math_sanitizer_seconds": 47.1163643829932,
+  "provenance": {
+    "build_monitors": [
+      0,
+      0
+    ],
+    "native_monitors": [
+      0,
+      0
+    ],
+    "math_monitors": [
+      0,
+      0
+    ],
+    "math_source_unchanged": true,
+    "math_git_unchanged": true
+  },
+  "accepted_release_candidate": 226,
+  "additional_proof": {
+    "raster_three_way": "raster228-independent-proof/receipt.json",
+    "raster_full_pixel_equivalence": "raster228-independent-proof/independent-frame-audit.json",
+    "exact_six_golden_update": "raster228-independent-proof/golden-correction-receipt.json",
+    "ARM64_NEON_compile": "raster228-neon-compile/receipt.json",
+    "ARM_runtime": "untested"
+  },
+  "private_checkpoint227": {
+    "url": "https://chatgpt.com/space/page_553cc5fa5ecc819191a13f3337e23659",
+    "scope": "Durable incremental report plus reviewed14-file patch and648 file hashes; not a full archive upload"
+  }
+}

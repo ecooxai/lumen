@@ -1,0 +1,54 @@
+{
+  "purpose": "Independent correction proof for image interpolation and six image-bearing integrated golden frames; not WPT evidence.",
+  "frozen_header_commit": "55248ac",
+  "frozen_include_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint",
+  "frozen_util_c": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/base/util.c",
+  "inputs": {
+    "actual": {
+      "raster": "agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/actual-raster.c",
+      "raster_sha256": "d8118fd89bf5f30ac6a5a75d5595c9125e080cf33d563e6511470f3058688ac0",
+      "test": "agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/actual-test.c",
+      "test_sha256": "01749f79f6a1b3032a4d807fa31edf97b0c5ed1ca8db18a325fc68203f9faf04"
+    },
+    "reference": {
+      "raster": "agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/reference-raster.c",
+      "raster_sha256": "b657053895ba67c21c2a6f4409926d9ecbb95a557c1ee5dfdff8cb6f3bf56510",
+      "test": "agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/reference-test.c",
+      "test_sha256": "447953c1f2c7f5d069f15f636c0f3bfbb7d2d7c1b103948c98542c9402d21444"
+    },
+    "prior227": {
+      "raster": "agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/prior227-raster.c",
+      "raster_sha256": "56c7295956e0d53bb25e2d45920ff0dab4799e020a25f45873b804dbf60206c3",
+      "test": "agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/prior227-test.c",
+      "test_sha256": "6c449f3de275dd4071ec43c7ae8cc2c5971be97fa3f45b432970b8cb6a24bcd1"
+    }
+  },
+  "current_production_sha256": "d8118fd89bf5f30ac6a5a75d5595c9125e080cf33d563e6511470f3058688ac0",
+  "current_test_sha256": "b47a6422b302fe429510e0a123af3407c9abea5ff6538df985bbfe1a67fc237a",
+  "compiler_flags": [
+    "-std=gnu11",
+    "-Wall",
+    "-Wextra",
+    "-Wno-misleading-indentation",
+    "-fsanitize=address,undefined",
+    "-fno-sanitize-recover=all",
+    "-g",
+    "-O2"
+  ],
+  "link_flags": [
+    "-lm",
+    "-lz",
+    "-pthread"
+  ],
+  "run_args": [
+    "--print-golden",
+    "<label>-frames.bin"
+  ],
+  "expected_checks": [
+    "actual and independent reference all 12 frames match byte-for-byte",
+    "prior227 six punched frames unchanged",
+    "prior227 differences limited to sampled image pixel bounds",
+    "original exact red unhide oracle unchanged"
+  ],
+  "execution": "repo_baseline schedules all compilation/execution under shared capped wrapper with 1-second tree and cgroup monitors."
+}

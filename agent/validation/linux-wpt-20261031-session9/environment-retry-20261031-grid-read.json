@@ -1,0 +1,10 @@
+{
+  "operation": "webterm read15551 --full",
+  "initial_failure": "MCP internal error; no command rerun",
+  "retry_wait_seconds": 30,
+  "retry_count": 1,
+  "result": "Recovered on first retry; retained original terminal output with exit0",
+  "local_fallback": "Not used; primary RubyWebterm recovered. Separate bounded local pwd check found no usable execution environment.",
+  "recorded_utc": "2026-10-31T07:54:10.461478+00:00",
+  "first_failure_utc": "Not separately timestamped"
+}

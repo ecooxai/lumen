@@ -1,0 +1,69 @@
+{
+  "commands": [
+    {
+      "label": "configure",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "cmake",
+        "-S",
+        "/mnt/p3/project/browser/lumen-android/lumen-android",
+        "-B",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize"
+      ]
+    },
+    {
+      "label": "build-targets",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "cmake",
+        "--build",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize",
+        "--target",
+        "test_css_stepped_math",
+        "-j2"
+      ]
+    },
+    {
+      "label": "ctest",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "ctest",
+        "--test-dir",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize",
+        "-j1",
+        "--output-on-failure",
+        "-R",
+        "^css_stepped_math$",
+        "--output-junit",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/native228-math-sanitizer/ctest.xml"
+      ]
+    }
+  ],
+  "candidate": 228,
+  "source_commit": "326f57a3deea9d55d759bd47c69ca2861235c1e5",
+  "source_manifest_sha256": "d1557e3f651b3ca7d592ea4b08ef6491e8160dfa88c2e8ffd2ba8a591c7a5136",
+  "flags": {
+    "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -DV8_CPPGC_MICROTASK_QUEUE",
+    "CMAKE_C_FLAGS": "-fsanitize=address,undefined",
+    "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined -Wl,-rpath-link,/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec"
+  },
+  "extra_inputs": {
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/run-math-sanitizer.py": "4a22f89b83a8d25461dd648efda9070b4c02e12df2131b91133a63eb5bbce083",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-228/build-state.json": "259cfff8edb6463a21230608012597f7dabd445463e438d6b8437f5abe74d31f",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-228/source-manifest-before.json": "9784a8053488122cb443468ebc47cc880471e1124203a5b169c0c0a183d1cbeb",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/iteration-228/source-manifest-after.json": "9784a8053488122cb443468ebc47cc880471e1124203a5b169c0c0a183d1cbeb",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tests/test_css_stepped_math.c": "02e867e8fd1f69b0e471936cb54347cf1870707d081cbddeec5cfd66a6a0b7ea",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tools/codex_compile.py": "969cbe8df729bd340e46d1a25fc2069573249b4395aba3e7ecce8f6e583ae298"
+  },
+  "sanitizers": [
+    "address",
+    "undefined"
+  ],
+  "targets": [
+    "test_css_stepped_math"
+  ],
+  "reason": "Diagnose unchanged css_stepped_math SIGSEGV after native column-count registration; no test weakening"
+}

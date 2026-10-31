@@ -1,0 +1,21 @@
+{
+  "label": "frozen actual reference and prior raster sanitizer proof",
+  "started_utc": "2026-10-31T07:35:47.266358+00:00",
+  "finished_utc": "2026-10-31T07:36:12.290590+00:00",
+  "root_pid": 2288494,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 25,
+  "elapsed_seconds": 25.024,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 0.0,
+  "cpu_median": 98.0,
+  "cpu_max": 100.004,
+  "cpu_last10_median": 97.9865,
+  "rss_peak_mb": 249.819,
+  "rss_final_mb": 21.856,
+  "pss_peak_mb": 227.169,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

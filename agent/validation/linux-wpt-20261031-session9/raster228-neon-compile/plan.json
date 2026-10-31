@@ -1,0 +1,44 @@
+{
+  "commands": [
+    {
+      "label": "compiler-version",
+      "command": [
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-android-toolchain/sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang",
+        "--version"
+      ]
+    },
+    {
+      "label": "compile-neon",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-android-toolchain/sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang",
+        "-std=gnu11",
+        "-O2",
+        "-Wall",
+        "-Wextra",
+        "-Wno-misleading-indentation",
+        "-I/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint",
+        "-c",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/actual-raster.c",
+        "-o",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-neon-compile/raster-aarch64.o"
+      ]
+    },
+    {
+      "label": "target-macros",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-android-toolchain/sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang",
+        "-dM",
+        "-E",
+        "-x",
+        "c",
+        "/dev/null"
+      ]
+    }
+  ],
+  "source_sha256": "d8118fd89bf5f30ac6a5a75d5595c9125e080cf33d563e6511470f3058688ac0",
+  "scope": "Compilation only; ARM runtime untested on x86 host"
+}

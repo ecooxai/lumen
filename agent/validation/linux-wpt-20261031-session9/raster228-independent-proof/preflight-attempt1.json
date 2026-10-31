@@ -1,0 +1,7 @@
+{
+  "terminal": 15502,
+  "phase": "preflight_before_any_compile",
+  "failure": "one-level parent directory calculation pointed above frozen227",
+  "correction": "use exact frozen227 parent of src/paint include dir",
+  "inputs_or_expectations_changed": false
+}

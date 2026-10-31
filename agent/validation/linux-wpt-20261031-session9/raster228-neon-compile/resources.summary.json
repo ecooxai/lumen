@@ -1,0 +1,21 @@
+{
+  "label": "frozen raster ARM64 NEON compile only",
+  "started_utc": "2026-10-31T07:38:59.714691+00:00",
+  "finished_utc": "2026-10-31T07:39:01.739102+00:00",
+  "root_pid": 2299994,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 2,
+  "elapsed_seconds": 2.024,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 78.005,
+  "cpu_median": 78.005,
+  "cpu_max": 78.005,
+  "cpu_last10_median": 78.005,
+  "rss_peak_mb": 95.994,
+  "rss_final_mb": 95.994,
+  "pss_peak_mb": 7.032,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-neon-compile/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

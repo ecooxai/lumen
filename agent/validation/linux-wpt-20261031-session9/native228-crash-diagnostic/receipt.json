@@ -1,0 +1,14 @@
+{
+  "started_utc": "2026-10-31T07:52:31.732828+00:00",
+  "finished_utc": "2026-10-31T07:52:33.834472+00:00",
+  "duration_s": 2.1016456579964142,
+  "debugger_returncode": 0,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "source_unchanged": true,
+  "binary_unchanged": true,
+  "git_unchanged": true,
+  "diagnostic_not_test_acceptance": true
+}

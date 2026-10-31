@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="(empty)"
+	tests="1"
+	failures="1"
+	disabled="0"
+	skipped="0"
+	hostname=""
+	time="5"
+	timestamp="2026-10-31T00:53:48"
+	>
+	<testcase name="css_stepped_math" classname="css_stepped_math" time="5.31032" status="fail">
+		<failure message="Failed"/>
+		<properties/>
+		<system-out>/mnt/p3/project/browser/lumen-android/lumen-android/tests/test_css_stepped_math.c:283:5: runtime error: null pointer passed as argument 1, which is declared to never be null
+/usr/include/string.h:172:33: note: nonnull attribute specified here
+    #0 0x5628aba08ca6 in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/test_css_stepped_math.c:283:13
+    #1 0x7ff393827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #2 0x7ff393827dca in __libc_start_main (/usr/lib/libc.so.6+0x27dca) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #3 0x5628ab88b744 in _start (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/test_css_stepped_math+0x1d1744) (BuildId: fd06a540843b053fe22332a4396c617d5733b663)
+
+SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior /mnt/p3/project/browser/lumen-android/lumen-android/tests/test_css_stepped_math.c:283:5 
+</system-out>
+	</testcase>
+</testsuite>

@@ -1,0 +1,35 @@
+In file included from /mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/../layout/layout.h:3,
+                 from /mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/paint.h:3,
+                 from /mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/prior227-test.c:1:
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/../layout/../css/css.h: In function ‘L_px’:
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/../layout/../css/css.h:47:1: warning: missing initializer for field ‘pctu’ of ‘Length’ [-Wmissing-field-initializers]
+   47 | static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
+      | ^~~~~~
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/../layout/../css/css.h:8:52: note: ‘pctu’ declared here
+    8 | typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm, math_pct_mask; float px2, pct2, px3, pct3; } Length;
+      |                                                    ^~~~
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/../layout/../css/css.h: In function ‘L_auto’:
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/../layout/../css/css.h:48:1: warning: missing initializer for field ‘pctu’ of ‘Length’ [-Wmissing-field-initializers]
+   48 | static inline Length L_auto(void) { Length l = { 0, 0, LK_AUTO }; return l; }
+      | ^~~~~~
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/../layout/../css/css.h:8:52: note: ‘pctu’ declared here
+    8 | typedef struct { float px, pct; uint8_t kind; bool pctu; uint8_t mm, math_pct_mask; float px2, pct2, px3, pct3; } Length;
+      |                                                    ^~~~
+In file included from /mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/prior227-test.c:13:
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/prior227-raster.c: At top level:
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/prior227-raster.c:780:1: warning: missing initializer for field ‘threads’ of ‘struct <anonymous>’ [-Wmissing-field-initializers]
+  780 | } pool = { PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, PTHREAD_COND_INITIALIZER };
+      | ^
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/prior227-raster.c:777:9: note: ‘threads’ declared here
+  777 |     int threads, active; unsigned gen;
+      |         ^~~~~~~
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/base/util.c: In function ‘atom_lower’:
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/base/util.c:88:21: warning: ‘buf’ may be used uninitialized [-Wmaybe-uninitialized]
+   88 |     const char *r = atomn(b, n); if (b != buf) free(b); return r;
+      |                     ^~~~~~~~~~~
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/base/util.c:75:13: note: by argument 1 of type ‘const char *’ to ‘atomn’ declared here
+   75 | const char *atomn(const char *s, size_t n) {
+      |             ^~~~~
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/base/util.c:86:10: note: ‘buf’ declared here
+   86 |     char buf[128]; char *b = n < sizeof buf ? buf : xmalloc(n + 1);
+      |          ^~~

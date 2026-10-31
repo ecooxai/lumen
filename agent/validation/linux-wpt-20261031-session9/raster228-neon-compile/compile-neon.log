@@ -1,0 +1,13 @@
+In file included from /mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/actual-raster.c:2:
+In file included from /mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/paint.h:3:
+In file included from /mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/../layout/layout.h:3:
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/../layout/../css/css.h:47:64: warning: missing field 'pctu' initializer [-Wmissing-field-initializers]
+   47 | static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
+      |                                                                ^
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster227-diagnostic/frozen227/src/paint/../layout/../css/css.h:48:64: warning: missing field 'pctu' initializer [-Wmissing-field-initializers]
+   48 | static inline Length L_auto(void) { Length l = { 0, 0, LK_AUTO }; return l; }
+      |                                                                ^
+/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/raster228-independent-proof/actual-raster.c:789:117: warning: missing field 'threads' initializer [-Wmissing-field-initializers]
+  789 | } pool = { PTHREAD_MUTEX_INITIALIZER, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, PTHREAD_COND_INITIALIZER };
+      |                                                                                                                     ^
+3 warnings generated.

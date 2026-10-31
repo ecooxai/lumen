@@ -1,0 +1,28 @@
+{
+  "candidate": 228,
+  "source_commit": "326f57a3deea9d55d759bd47c69ca2861235c1e5",
+  "frozen_utc": "2026-10-31T07:48:29.734062+00:00",
+  "owned_source_files": {
+    "src/css/css.h": "af92df71fed041bb9d7aada3aba0042c7eff45436677f69ca1a315731f7f5d21",
+    "src/css/parse.c": "304607d8251953db18ad743831ec0541e4d39f87c4287f8adace6f7dfcca9511",
+    "src/css/props_generated.inc": "47e148caf02b9a0db9330a974617914cf434c6f0a3cb5c1614f9017cafca7913",
+    "src/css/style.c": "212c43426391e3235bd6591a4b39af4c45c458a0d2e4db1e7541153ecf78502e",
+    "src/css/ua.c": "5b907951bf0a42a7dfada2df45541eba8d4b8a48b31c8fe4caa29ac1011f78a8",
+    "src/js/jsglue.c": "4da3c90aaf84428893f5657f4f1f121f2b8aa75673d2de96e0e95bf980fe4dd6",
+    "src/js/jsglue.h": "bafd1b210ab7671fbfb78002cd707873a081addb2b35a36d78d9d7a33e97af46",
+    "src/js/jsnative.cc": "38ffe15e72f8f6bc43539fa90ceb2406714d5d9997538553dff9d3f289156a42",
+    "src/js/prelude/03-element.js": "78607a98e28f88eacc61c8c49837d80840b292d1583c43ce7d323c898f032ff2",
+    "src/js/prelude/08-window.js": "97fc654411b2a81b5b25d9b75c9f3d0c49a89ec65b80ed0e192c2b6169f6b9f2",
+    "src/layout/block.c": "9b2ea743fd302f646643d6aa60e88d31d9b3afafc37832b83b5bc14b747076bb",
+    "src/layout/box.c": "3d241c78b4943e5bede8b9b55bbffe69e1d380c0d09f69f238dfecccd08206df",
+    "src/layout/grid.c": "a07166e0fd1cc566c01f7179f1ace6e9a56ed25cf4d085b4adec0ab97f0e0f3d",
+    "src/layout/layout.h": "223833bc8555f3ca61249aed794f5a7e6f3caa24da8df3170707bfaaaef7abb0",
+    "src/paint/raster.c": "d8118fd89bf5f30ac6a5a75d5595c9125e080cf33d563e6511470f3058688ac0",
+    "src/paint/svg.c": "5c3230bcbf4b707e194aac83fc6c8a3f94d3e29d0ae074dc7d9be3f904ba72cf",
+    "tests/raster_layers.c": "161734d31af5713d7c3877e063cf03ed16de2b309e5f5a21ba4d2ada8021274e",
+    "tests/test_css_containment.c": "3d306c7c0353f26e0d59691bc3efb88c4710c6f9fc24e3a91eb8e13db22500cf",
+    "tools/gen_css_props.py": "aa4f4af12360ab2b3381914b6285009d4e32da8cd4b308a716a0028a2749d1ea"
+  },
+  "static_review": "No blocker; bounded family priority uses existing origin order, grid gap aliases retain two owners, strict raster proof and ARM compile pass. Actual native/WPT/sanitizer qualification pending.",
+  "accepted_release_candidate": 226
+}

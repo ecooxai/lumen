@@ -1,0 +1,15 @@
+{
+  "started_utc": "2026-10-31T07:35:47.229363+00:00",
+  "finished_utc": "2026-10-31T07:36:13.337034+00:00",
+  "duration_s": 26.107667862001108,
+  "returncode": 0,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "frozen_inputs_unchanged": true,
+  "source_header_commit": "55248ac10c99ffae7f0b6ea29b2f332b8f1d3e4d",
+  "source_archive_sha256": "d7036f31eee4a00fa47d29754764286063410c5f95fe05abfa3216df36acae3e",
+  "production_raster_unchanged_during_proof": true,
+  "source_scope": "Immutable raster/test snapshots and exact227headers/util; concurrent unrelated228CSSedits not used"
+}

@@ -1,0 +1,44 @@
+{
+  "source": "independent-frame-audit.json",
+  "old_goldens": [
+    "0xac1b9841eb26b0ffull",
+    "0xd2919cc3e0c6e3efull",
+    "0x3c00bddca1d6dc14ull",
+    "0x0cc6d1d7432a0bc5ull",
+    "0x1886e0b75e735828ull",
+    "0x418260ad99718ebdull",
+    "0x9f8fa8a840de087eull",
+    "0x9c225d6cccd8348dull",
+    "0x23aa68835221cf02ull",
+    "0xb21ec2badfc5db47ull",
+    "0x5fb5e224ffb25047ull",
+    "0x1e9b6f94f8a0694cull"
+  ],
+  "corrected_goldens": [
+    "0xb23c20692aee367cull",
+    "0x4c5d4a09111554edull",
+    "0x36df1ef40a677728ull",
+    "0x78949eff613f3fd6ull",
+    "0xba0a10aeafa40da4ull",
+    "0x19906c10f42cea45ull",
+    "0x9f8fa8a840de087eull",
+    "0x9c225d6cccd8348dull",
+    "0x23aa68835221cf02ull",
+    "0xb21ec2badfc5db47ull",
+    "0x5fb5e224ffb25047ull",
+    "0x1e9b6f94f8a0694cull"
+  ],
+  "changed_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "production_sha256": "d8118fd89bf5f30ac6a5a75d5595c9125e080cf33d563e6511470f3058688ac0",
+  "test_sha256": "161734d31af5713d7c3877e063cf03ed16de2b309e5f5a21ba4d2ada8021274e",
+  "independent_audit_sha256": "d876d4fa0b10f21dfc172e37d43bff6bb050f0061f59aaa5713fa37feae2c4e4",
+  "only_proven_six_golden_entries_changed": true,
+  "tolerance_unchanged": true
+}

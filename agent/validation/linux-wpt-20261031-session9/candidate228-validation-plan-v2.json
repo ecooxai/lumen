@@ -1,0 +1,73 @@
+{
+  "prepared_utc": "2026-10-31T07:41:48.044079+00:00",
+  "candidate": 228,
+  "source_status": "Implementation in progress; no candidate228 compilation or browser validation yet",
+  "baseline_candidate": 226,
+  "baseline_binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
+  "manifest_sha256": {
+    "qa-css-logical-containment/manifest.json": "784d38780a2a3a8501599996b656dba07dcf11a8480d6c2f7c15b68194a6318c",
+    "qa-css-containment-numbered/manifest.json": "388397d632d9cd40f54eec086e926e510b9e9a138a57e6f06b8694f5c8768d06",
+    "qa-css-containment-parsing/manifest.json": "5e8c795f1fb95977ffabfa2f46237921f6d922058e13000273da924a7ea9191a",
+    "qa-hidden-observer-visibility/manifest.json": "4f3f2c0a63fb3afdadb7b67cc4f59b2b84d1f2af400fabc6466624938a1236ae",
+    "qa-normal-layout-performance/manifest.json": "eee43ae44dcdbb4e752510c22908db27aa5cf91dd4c1b1f8daa8e383dfe1ed62"
+  },
+  "constraints": [
+    "URL tests deferred",
+    "No modified upstream WPT files or expectations",
+    "Source and Git freeze throughout actual candidate build/test runs",
+    "At most two browser processes across all agents",
+    "1-second owned process-tree and shared-cgroup resource sampling",
+    "Immutable binaries and fresh output directories; retain failed attempts",
+    "Accepted public download stays226 until final qualification",
+    "No full-WPT or hardware-GPU claim"
+  ],
+  "gates_in_order": [
+    {
+      "gate": "build and native",
+      "requirement": "Capped immutable candidate build/startup and all URL-excluded native tests, including original scaled red and priority controls"
+    },
+    {
+      "gate": "real-source raster sanitizer",
+      "requirement": "Existing tests/test_raster_layers.py with ASan/UBSan, exact corrected independent-oracle goldens, all strict invariants"
+    },
+    {
+      "gate": "targeted native sanitizer",
+      "requirement": "Existing ASan/UBSan configuration; only css_containment, grid_used_values and grid_absolute; leak detection and halt-on-error; source/Git pins, actual exits and 1s monitors"
+    },
+    {
+      "gate": "39 selected upstream files",
+      "requirement": "Primary48 assertions and2 pixels complete; target all286 assertions and28 pixels; preserve all prior226 PASS identities, whole files and harness statuses"
+    },
+    {
+      "gate": "3 hidden API upstream files",
+      "requirement": "Report all23 actual assertion identities against226/227/156; preserve native priorPASS. Auto residuals are visible and not claimed complete"
+    },
+    {
+      "gate": "40 prior rendering controls",
+      "requirement": "Unchanged29 stretch and11 paint reftests; all80 real captures, exit/profile cleanup/source pins"
+    },
+    {
+      "gate": "matched ordinary-layout workload",
+      "requirement": "Same authored normal-layout workload on226/candidate/156, completed checks and phases, 1-second samples; no whole-browser performance claim"
+    },
+    {
+      "gate": "fixed640 broad comparison",
+      "requirement": "Only stable candidate; unchanged manifest and schedule, exact priorPASS union/no harness regressions; actual comparison with226 and pinned156"
+    },
+    {
+      "gate": "independent final review",
+      "requirement": "Do not promote accepted release until all material native, preservation, provenance and reviewed behavior risks resolved"
+    }
+  ],
+  "raster_preproof": {
+    "three_way_sanitizer": "raster228-independent-proof/receipt.json",
+    "byte_audit": "raster228-independent-proof/independent-frame-audit.json",
+    "golden_receipt": "raster228-independent-proof/golden-correction-receipt.json",
+    "ARM64_compile": "raster228-neon-compile/receipt.json",
+    "ARM_runtime": "untested on x86 host"
+  },
+  "previous_plan_sha256": "de1fab513e18dd47722abc6a06af388bfd697b0fe1d131b95685cda57719f344",
+  "updated_utc": "2026-10-31T07:45:00.673635+00:00",
+  "approved_addition": "Root approved bounded existing native ASan/UBSan targets for enlarged GridUsedTracks array bounds before candidate outcomes",
+  "native_sanitizer_controller_sha256": "ae68e120bdac31fa13bb54741796b42b3860b647a873efaad5953ad594d0bafe"
+}

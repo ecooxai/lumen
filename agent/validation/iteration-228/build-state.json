@@ -1,0 +1,16 @@
+{
+  "source_manifest_before": "d1557e3f651b3ca7d592ea4b08ef6491e8160dfa88c2e8ffd2ba8a591c7a5136",
+  "source_diff_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "head": "326f57a3deea9d55d759bd47c69ca2861235c1e5",
+  "started_utc": "2026-10-31T07:48:46Z",
+  "pid": 2334584,
+  "build_exit_code": 0,
+  "binary": "build/codex-native/lumen-astra-i228",
+  "binary_sha256": "365bb34ebd17b809b6cda472e003985b85ddd856ea2859b71afb7c4890b4ede0",
+  "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "startup_exit_code": 0,
+  "source_diff_after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "source_manifest_after": "d1557e3f651b3ca7d592ea4b08ef6491e8160dfa88c2e8ffd2ba8a591c7a5136",
+  "source_unchanged_during_build": true,
+  "finished_utc": "2026-10-31T07:49:42Z"
+}

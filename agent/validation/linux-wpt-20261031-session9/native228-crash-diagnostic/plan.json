@@ -1,0 +1,22 @@
+{
+  "command": [
+    "python3",
+    "tools/codex_compile.py",
+    "gdb",
+    "-q",
+    "-batch",
+    "-ex",
+    "set disable-randomization off",
+    "-ex",
+    "run",
+    "-ex",
+    "bt 12",
+    "-ex",
+    "info program",
+    "--args",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/test_css_stepped_math"
+  ],
+  "source_commit": "326f57a3deea9d55d759bd47c69ca2861235c1e5",
+  "binary_sha256": "35ac6c52cde95c556eedb4a2caf46f039dc465e98a68eb00954fd5e822d9eb20",
+  "purpose": "Diagnose retained css_stepped_math SIGSEGV; debugger exit is not a passing test"
+}

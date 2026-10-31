@@ -1,0 +1,21 @@
+{
+  "label": "candidate228 targeted native ASan UBSan",
+  "started_utc": "2026-10-31T07:53:08.012667+00:00",
+  "finished_utc": "2026-10-31T07:53:54.040961+00:00",
+  "root_pid": 2350620,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 46,
+  "elapsed_seconds": 46.028,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 0.0,
+  "cpu_median": 173.166,
+  "cpu_max": 198.0,
+  "cpu_last10_median": 16.4985,
+  "rss_peak_mb": 923.357,
+  "rss_final_mb": 153.358,
+  "pss_peak_mb": 649.823,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/native228-math-sanitizer/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

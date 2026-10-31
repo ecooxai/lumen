@@ -1,0 +1,16 @@
+{
+  "started_utc": "2026-10-31T07:38:59.677464+00:00",
+  "finished_utc": "2026-10-31T07:39:02.772714+00:00",
+  "duration_s": 3.095250077021774,
+  "returncode": 0,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "frozen_inputs_unchanged": true,
+  "aarch64_and_neon_macros_verified": true,
+  "compiler": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-android-toolchain/sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang",
+  "compiler_version": "Android (13624864, +pgo, +bolt, +lto, +mlgo, based on r530567e) clang version 19.0.1 (https://android.googlesource.com/toolchain/llvm-project 97a699bf4812a18fb657c2779f5296a4ab2694d2)\nTarget: aarch64-unknown-linux-android21\nThread model: posix\nInstalledDir: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-android-toolchain/sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/linux-x86_64/bin\n",
+  "object_sha256": "e190f6a424ed2d3376f68e59746578a43a70f948301232b55546f2517753ba11",
+  "runtime_coverage": "Not run; x86 host. Compilation validates ARM64 intrinsics only."
+}

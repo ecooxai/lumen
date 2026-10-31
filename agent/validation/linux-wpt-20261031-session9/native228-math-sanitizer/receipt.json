@@ -1,0 +1,24 @@
+{
+  "candidate": 228,
+  "started_utc": "2026-10-31T07:53:07.976796+00:00",
+  "finished_utc": "2026-10-31T07:53:55.093155+00:00",
+  "duration_s": 47.1163643829932,
+  "returncode": 8,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "source_unchanged": true,
+  "extra_inputs_unchanged": true,
+  "git_unchanged": true,
+  "source_commit": "326f57a3deea9d55d759bd47c69ca2861235c1e5",
+  "runtime_sanitizer_options": {
+    "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
+    "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
+    "LSAN_OPTIONS": "exitcode=23"
+  },
+  "target_binaries": {
+    "test_css_stepped_math": "fcf7b9cb04cdb67d48ceb4bd3e0cb37fae50bffbf62be1d5298194484b3cfeeb"
+  },
+  "source_manifest_limit": "Recorded build inputs plus explicit sanitizer files, not a full transitive system-toolchain closure"
+}
