@@ -1,0 +1,1 @@
+{"kind": "lumen", "actual_inner_returncode": 0, "monitor_returncodes": [0, 0], "cleanup_valid": true, "transport_complete": true, "case_count": 12, "observation_row_count": 127, "recorded_case_errors": 2, "pins_unchanged": true, "source_unchanged": true, "git_unchanged": true, "measurement_integrity_valid": true, "errors": []}

@@ -1,0 +1,23 @@
+{
+  "candidate": 232,
+  "source_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "immutable_binary_sha256": "846c0ef7d12424059f280c07b96d06b3d8bd4a5039af85b47b4f4d3d96ffb579",
+  "fixture_sha256": "cc4c6cfe1372b603cf395d9181a0e4bfaf133c4078ea10f99609c0b4c42c7d04",
+  "actual_native_command": [
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i232-lifecycle-sanitized",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/document-lifecycle.html",
+    "12000"
+  ],
+  "quota_wrapper": "tools/codex_compile.py",
+  "native_environment": {
+    "JSRUN_LAYOUT": "1",
+    "JSRUN_UNTIL_ATTR": "data-document-lifecycle-complete",
+    "LUMEN_CONSOLE": "0",
+    "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
+    "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
+    "LSAN_OPTIONS": "exitcode=23"
+  },
+  "resource_interval_seconds": 1,
+  "maximum_browser_lanes": 1,
+  "diagnostic_reason": "Preserve actual native exit independently of CTest PASS_REGULAR_EXPRESSION; unchanged fixture and leak settings"
+}

@@ -1,0 +1,16 @@
+{
+  "rows": [
+    {
+      "source_path": "html/syntax/parsing/the-end.html",
+      "source_sha256": "e21070561723ab807ac0e92408dcfdf8f3aac62f3e39bdd06b084b25384e9abd",
+      "url": "/html/syntax/parsing/the-end.html",
+      "kind": "testharness",
+      "declared_subtests": 4
+    }
+  ],
+  "support_pins": {
+    "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+    "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+  },
+  "scope": "one unchanged whole upstream document lifecycle file"
+}

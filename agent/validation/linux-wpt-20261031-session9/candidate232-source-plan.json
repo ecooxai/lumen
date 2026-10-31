@@ -1,0 +1,43 @@
+{
+  "candidate": 232,
+  "iteration": 6,
+  "started_utc": "2026-10-31T09:42:30.017048+00:00",
+  "previous_iteration_end_utc": "2026-10-31T09:35:38.382631+00:00",
+  "source_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "files": {
+    "src/js/frames.cc": "d1b26d07b91633b9ee7c00e1fe72ad1f055c6e6903f506f07874ec2706fe7f65",
+    "src/js/js_int.h": "e4be820f677e7991c055d77c90888067a9b8abd5fdaed1ffabf572f57df7a0e6",
+    "src/js/js.cc": "e23cb28e15cfa2c690aac1a7c6ded12bb4b7321e18fcd26cf487ee0eb95072ff",
+    "src/js/js.h": "abb0d8e272c413ade53c724bb93e7dc2e4973cf14b44fb93a7889b9b06bf06a7",
+    "src/js/prelude/01-events.js": "306cb27d9f75a006ade228c1a0e2a0be157469378089ecca2f2ff6bf81bfec72",
+    "src/js/prelude/08-window.js": "27d00e008660b3fd8f4029a99d0c05eb4b90a068a3d4f9b2e2f878534cb6b6ef",
+    "src/app/main.c": "56b8a5f406d19fbf4293119e880143b6a861bee3a8257085c8b8a6252973fc8f",
+    "tests/jsrun.c": "9db1437eeb33b08dcf02678c863e34b0ed63f3864821e7bcc50593dca778f08e",
+    "tests/js/document-lifecycle.html": "cc4c6cfe1372b603cf395d9181a0e4bfaf133c4078ea10f99609c0b4c42c7d04",
+    "CMakeLists.txt": "6cf1ee1927045acd74d03cb653b1a787bc41dd7ea15b8e30655ea9efb0ef2af9"
+  },
+  "approved_contract_sha256": "7044502e5d3974e2ce7b67e30cf18907c17c28731f9b6f713c316940ac1f6c82",
+  "source_frozen": true,
+  "accepted_public_release_remains": 226,
+  "required_first_gates": [
+    "native146",
+    "unchanged the-end4",
+    "immutable authored v4 exact114 canonical rows plus declared residuals",
+    "durable12case finish boundary",
+    "actual C++ lifecycle ASan UBSan"
+  ],
+  "required_followup": [
+    "retained39",
+    "observer and scroll controls",
+    "exact640 preserving2319246assertions416files",
+    "retained40render",
+    "matched normal-layout resources"
+  ],
+  "source_freeze_target_utc": "2026-10-31T11:00:00Z",
+  "deadline_utc": "2026-10-31T12:00:00Z",
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ]
+}

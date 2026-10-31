@@ -1,0 +1,96 @@
+{
+  "candidate": 232,
+  "reviewed_utc": "2026-10-31T09:48:34.225595+00:00",
+  "source_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "binary_sha256": "c4c60dd709a497b9b3135c6d06bc5c292cc2882d366c39272d3e519f70d886da",
+  "recorded_input_count": 649,
+  "native_ctest": {
+    "passed": 146,
+    "total": 146,
+    "actual_outer_exit_code": 0,
+    "monitor_returncodes": [
+      0,
+      0
+    ]
+  },
+  "upstream_the_end": {
+    "whole_file_pass": true,
+    "assertions": 4,
+    "harness": "OK",
+    "actual_owned_exit": 0,
+    "profile_removed": true,
+    "exact_native_reference_baseline_identities": true
+  },
+  "lifecycle_contract": {
+    "cases": 12,
+    "canonical_records": 114,
+    "bounded_observable_contract_pass": true,
+    "full_trace_equivalence_claimed": false,
+    "durable_finish_and_zero_late_bounds": "Verified source assertions plus all12 actual per-case PASS markers; exact finish values are not independently printed",
+    "pageshow_open_initial_microtask_active_generation": "replacement, matching the one predeclared scheduling allowance",
+    "optional_after_remove_author_rows": 2,
+    "stale_after_removal_native_event_rows": 0
+  },
+  "actual_sanitizer": {
+    "qualification_pass": false,
+    "behavioral_contract_markers_pass": true,
+    "leaked_bytes": 54207,
+    "leaked_allocations": 48,
+    "ctest_reported_exit": 0,
+    "actual_child_exit_not_directly_captured": true,
+    "failure_detected_by": "Unsuppressed raw LeakSanitizer report despite CTest PASS_REGULAR_EXPRESSION override",
+    "instrumented_binary_sha256": "846c0ef7d12424059f280c07b96d06b3d8bd4a5039af85b47b4f4d3d96ffb579",
+    "compiled_object_proof": {
+      "CMakeFiles/lumen_engine.dir/src/js/frames.cc.o": {
+        "sha256": "e47442ef1f610bba062f7f6fadd9a00c463a3148b966ee5b93144d13e9b82dc6",
+        "asan_symbols": true,
+        "ubsan_symbols": true
+      },
+      "CMakeFiles/lumen_engine.dir/src/js/js.cc.o": {
+        "sha256": "a9c030e53045445309342a1754808d200d12531cc76d796121f328bc884f4ef5",
+        "asan_symbols": true,
+        "ubsan_symbols": true
+      },
+      "CMakeFiles/jsrun.dir/tests/jsrun.c.o": {
+        "sha256": "4db12bf5de59bc639861ba237f8d9d36a0bd33a0b2fad70b5a80851a0f814db0",
+        "asan_symbols": true,
+        "ubsan_symbols": true
+      }
+    },
+    "compile_link_proof": {
+      "CMakeFiles/lumen_engine.dir/flags.make": {
+        "sha256": "140bfa04da29877a0819e814914f4b0bbcb07a2bc7f2ff88bf8bc4d12a207981",
+        "address_undefined_flags": true
+      },
+      "CMakeFiles/jsrun.dir/flags.make": {
+        "sha256": "16db78a5bc4bcce69624d72cca348090ce956b6101677bc68cac22b7445630d8",
+        "address_undefined_flags": true
+      },
+      "CMakeFiles/jsrun.dir/link.txt": {
+        "sha256": "ae51c6f669cdff74247f7d9533ff860f86a64ff97af9317482318e60c46c31a0",
+        "address_undefined_flags": true
+      }
+    },
+    "prebuilt_V8_itself_instrumented": false,
+    "monitor_returncodes": [
+      0,
+      0
+    ],
+    "source_unchanged": true,
+    "git_unchanged": true
+  },
+  "evidence_sha256": {
+    "native232/receipt.json": "c59e4781894cf676dfd70f4d165b1ee73c007d7018a30d0b31e18ba74d27437b",
+    "native232/ctest.xml": "bf59902aba9ad2f7d2f07812f35d02a097c697a02fcd90d23561bd9516779996",
+    "native232/strict-control-verification.json": "75412134afcb0824298afb7bf66ad078284036f5bc0df65c9f520a0d81b24cc1",
+    "candidate232-lifecycle-first-execution.json": "205a0146b67be80386de953e7d5e8ae21f4e5587a6371a6c2e67a6f122bee939",
+    "candidate232-document-lifecycle-contract-audit.json": "f46547db4ed7dd638568ee3f16d0d4f3bd74b034a435dc6dee7d3e46558cded8",
+    "native232-lifecycle-sanitizer/receipt.json": "3f135a7b67b28c905338ca2ea965eb39164adf6f3ea87cd02d56c359bcd221a8",
+    "native232-lifecycle-sanitizer/full-ctest-log.txt": "282d03d6cd99bb2f111c70130c97ab5f56822ecc1373a79547299eda94abd7bd"
+  },
+  "release_qualified": false,
+  "blockers": [
+    "Actual unsuppressed lifecycle LeakSanitizer failure; direct child exit should be captured in a versioned followup controller"
+  ],
+  "publication": "Held; accepted public release remains226"
+}

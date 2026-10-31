@@ -1,0 +1,16 @@
+{
+  "started_utc": "2026-10-31T09:46:10.642416+00:00",
+  "source_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "controller_pid": 2744669,
+  "command": [
+    "/home/a/.local/bin/python3",
+    "-c",
+    "recorded command sequence in plan.json"
+  ],
+  "sanitizer_options": {
+    "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
+    "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
+    "LSAN_OPTIONS": "exitcode=23"
+  },
+  "resource_interval_seconds": 1
+}

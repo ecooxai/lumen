@@ -1,0 +1,74 @@
+{
+  "iteration": 6,
+  "candidate": 232,
+  "source_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "started_utc": "2026-10-31T09:35:38.382631+00:00",
+  "finished_utc": "2026-10-31T09:53:58.848202+00:00",
+  "duration_minutes": 18.34109285,
+  "cumulative_task_minutes": 173.78080336666667,
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ],
+  "immutable_app_sha256": "c4c60dd709a497b9b3135c6d06bc5c292cc2882d366c39272d3e519f70d886da",
+  "native_tests": {
+    "passed": 146,
+    "total": 146,
+    "outer_terminal": 15984,
+    "actual_outer_exit": 0
+  },
+  "whole_unchanged_the_end": {
+    "passed": 4,
+    "total": 4,
+    "harness": "OK",
+    "actual_owned_exit": 0,
+    "profile_removed": true
+  },
+  "authored_lifecycle_contract": {
+    "passed_cases": 12,
+    "total_cases": 12,
+    "exact_canonical_rows": 114,
+    "declared_microtask_and_removal_residuals_remain_explicit": true,
+    "durable_finish_boundary": "Pinned fixture asserts finish sequence and zero late records; not directly printed in v4 rows",
+    "behavioral_scope_score": 100
+  },
+  "actual_sanitizer": {
+    "qualified": false,
+    "actual_jsrun_exit": 23,
+    "leaked_bytes": 54207,
+    "leaked_allocations": 48,
+    "all12_behavioral_cases_pass": true,
+    "CTest_masked_nonzero_exit_via_PASS_REGULAR_EXPRESSION": true,
+    "strict_outer_gate_rejected": true,
+    "immutable_sanitized_sha256": "846c0ef7d12424059f280c07b96d06b3d8bd4a5039af85b47b4f4d3d96ffb579",
+    "direct_outer_terminal": 16020,
+    "actual_direct_outer_exit": 2
+  },
+  "ownership_only_QA_proof": {
+    "passed": true,
+    "actual_jsrun_exit": 0,
+    "only_changes": "Three genuine js_release_pins calls at completed test-host event batches",
+    "same_engine_libraries_and_fixture": true,
+    "all_structured_behavioral_rows_unchanged": true,
+    "no_sanitizer_diagnostics": true,
+    "proof_binary_sha256": "5cd8a075b77144c8457045b5f7260e302939609d0c80f7097e8e4e6ed006fa23",
+    "outer_terminal": 16033,
+    "actual_outer_exit": 0,
+    "not_a_promoted_production_candidate": true
+  },
+  "candidate_release_readiness": "BLOCKED until host cleanup and default actual-exit test gate are corrected in new candidate233",
+  "candidate232_full640": "NOT RUN; last broad measurement remains231416/640files and9246/10540assertions",
+  "candidate232_selected39_API_retention": "Not rerun after sanitizer blocker; prior231 evidence remains preserved",
+  "accepted_public_release_candidate": 226,
+  "next_scope": {
+    "candidate": 233,
+    "files": [
+      "tests/jsrun.c",
+      "CMakeLists.txt"
+    ],
+    "changes": "Proven host pin release plus opt-in expected completion attribute exit status and removal of lifecycle PASS_REGEX",
+    "options234": "Conditional only after233 gates pass"
+  },
+  "deadline_utc": "2026-10-31T12:00:00Z"
+}

@@ -1,0 +1,14 @@
+{
+  "started_utc": "2026-10-31T09:50:29.554519+00:00",
+  "finished_utc": "2026-10-31T09:50:42.658066+00:00",
+  "duration_s": 13.103547574981349,
+  "pid": 2759960,
+  "actual_jsrun_returncode": 23,
+  "timed_out": false,
+  "owned_cleanup_signals": [],
+  "command": [
+    "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i232-lifecycle-sanitized",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/document-lifecycle.html",
+    "12000"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "candidate": 232,
+  "source_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "started_utc": "2026-10-31T09:50:29.273602+00:00",
+  "finished_utc": "2026-10-31T09:50:43.769981+00:00",
+  "duration_s": 14.496377565985313,
+  "actual_quota_wrapper_returncode": 23,
+  "actual_jsrun_returncode": 23,
+  "actual_native_exit_receipt_sha256": "b40223f43bc3700efd61cde1d558273d649452f9d356812f1254e3c0dfe76b20",
+  "immutable_binary_sha256": "846c0ef7d12424059f280c07b96d06b3d8bd4a5039af85b47b4f4d3d96ffb579",
+  "fixture_sha256": "cc4c6cfe1372b603cf395d9181a0e4bfaf133c4078ea10f99609c0b4c42c7d04",
+  "recorded_input_count": 649,
+  "source_unchanged": true,
+  "pins_unchanged": true,
+  "git_unchanged": true,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "monitor_forced_stop": false,
+  "behavioral12_cases_pass": true,
+  "sanitizer_diagnostics_present": true,
+  "leak_summaries": [
+    {
+      "bytes": 54207,
+      "allocations": 48
+    }
+  ],
+  "measurement_integrity_valid": true,
+  "sanitizer_qualification_pass": false,
+  "errors": [],
+  "runtime_log_sha256": "87f238aefd20dae63fa8009417186a05fdf77469cc61ef119808e0607178b034"
+}

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="(empty)"
+	tests="1"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname=""
+	time="12"
+	timestamp="2026-10-31T02:46:46"
+	>
+	<testcase name="js_document_lifecycle" classname="js_document_lifecycle" time="12.5054" status="run">
+		<properties/>
+		<system-out>jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+[js log] LIFECYCLE_CASE {"index":0,"id":"top-initial","finished":true,"eventCount":5,"actionCount":1,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"top","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"top","type":"...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+</testsuite>

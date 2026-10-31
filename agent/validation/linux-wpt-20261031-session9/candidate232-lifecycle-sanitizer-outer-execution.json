@@ -1,0 +1,7 @@
+{
+  "candidate": 232,
+  "started_utc": "2026-10-31T09:46:10.550084+00:00",
+  "finished_utc": "2026-10-31T09:47:00.065125+00:00",
+  "actual_wrapper_returncode": 2,
+  "controller_sha256": "4f7efdc4a2dbd66b21580b1ad54341a7809c3e4a9ad8ecd01a7f5bd453309221"
+}

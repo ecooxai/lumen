@@ -1,0 +1,789 @@
+Start testing: Oct 31 02:46 PDT
+----------------------------------------------------------
+78/149 Testing: js_document_lifecycle
+78/149 Test: js_document_lifecycle
+Command: "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun" "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/document-lifecycle.html" "12000"
+Directory: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize
+"js_document_lifecycle" start time: Oct 31 02:46 PDT
+Output:
+----------------------------------------------------------
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+[js log] LIFECYCLE_CASE {"index":0,"id":"top-initial","finished":true,"eventCount":5,"actionCount":1,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"top","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"top","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"top","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"top","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"top","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"actions","index":0,"value":{"sequence":3,"action":"load-microtask"}}
+[js log] LIFECYCLE_CASE {"index":1,"id":"synthetic-events","finished":true,"eventCount":3,"actionCount":0,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":1,"caseId":"synthetic-events","kind":"events","index":0,"value":{"sequence":0,"listener":"synthetic-window","generation":"top","type":"load","className":"[object Event]","target":"window","currentTarget":"window","path":["window"],"phase":2,"trusted":false,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":1,"caseId":"synthetic-events","kind":"events","index":1,"value":{"sequence":1,"listener":"synthetic-window","generation":"top","type":"pageshow","className":"[object PageTransitionEvent]","target":"window","currentTarget":"window","path":["window"],"phase":2,"trusted":false,"bubbles":true,"cancelable":true,"composed":false,"persisted":true,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":1,"caseId":"synthetic-events","kind":"events","index":2,"value":{"sequence":2,"listener":"synthetic-element","generation":"top","type":"load","className":"[object Event]","target":"div","currentTarget":"div","path":["div","body","html","document"],"phase":2,"trusted":false,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"top"}}
+[js log] LIFECYCLE_CASE {"index":2,"id":"frame-initial","finished":true,"eventCount":5,"actionCount":3,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"actions","index":1,"value":{"sequence":6,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":2,"caseId":"frame-initial","kind":"actions","index":2,"value":{"sequence":7,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_CASE {"index":3,"id":"repeated-close","finished":true,"eventCount":5,"actionCount":5,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"actions","index":1,"value":{"sequence":6,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"actions","index":2,"value":{"sequence":7,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"actions","index":3,"value":{"sequence":8,"action":"before-redundant-close"}}
+[js log] LIFECYCLE_ROW {"caseIndex":3,"caseId":"repeated-close","kind":"actions","index":4,"value":{"sequence":9,"action":"after-redundant-close"}}
+[js log] LIFECYCLE_CASE {"index":4,"id":"load-document-open","finished":true,"eventCount":6,"actionCount":5,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":3,"value":{"sequence":4,"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":4,"value":{"sequence":7,"listener":"window-bubble","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"events","index":5,"value":{"sequence":8,"listener":"window-capture","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"actions","index":0,"value":{"sequence":3,"action":"before-load-open","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"actions","index":1,"value":{"sequence":5,"action":"after-load-open","generation":"initial","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"actions","index":2,"value":{"sequence":6,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"actions","index":3,"value":{"sequence":9,"action":"load-microtask","generation":"initial","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":4,"caseId":"load-document-open","kind":"actions","index":4,"value":{"sequence":10,"action":"pageshow-microtask","generation":"replacement","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_CASE {"index":5,"id":"load-frame-removal","finished":true,"eventCount":3,"actionCount":3,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"actions","index":0,"value":{"sequence":3,"action":"before-remove","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"actions","index":1,"value":{"sequence":4,"action":"after-remove","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":5,"caseId":"load-frame-removal","kind":"actions","index":2,"value":{"sequence":5,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_CASE {"index":6,"id":"load-srcdoc-navigation","finished":true,"eventCount":10,"actionCount":9,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":3,"value":{"sequence":7,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":4,"value":{"sequence":8,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":5,"value":{"sequence":11,"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":6,"value":{"sequence":12,"listener":"window-bubble","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":7,"value":{"sequence":13,"listener":"window-capture","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":8,"value":{"sequence":16,"listener":"window-bubble","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"events","index":9,"value":{"sequence":17,"listener":"window-capture","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":0,"value":{"sequence":3,"action":"before-navigate-srcdoc","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":1,"value":{"sequence":4,"action":"navigation-requested","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":2,"value":{"sequence":5,"action":"after-navigate-srcdoc","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":3,"value":{"sequence":6,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":4,"value":{"sequence":9,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":5,"value":{"sequence":10,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":6,"value":{"sequence":14,"action":"load-microtask","generation":"replacement","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":7,"value":{"sequence":15,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":6,"caseId":"load-srcdoc-navigation","kind":"actions","index":8,"value":{"sequence":18,"action":"pageshow-microtask","generation":"replacement","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_CASE {"index":7,"id":"pageshow-document-open","finished":true,"eventCount":6,"actionCount":5,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"events","index":5,"value":{"sequence":7,"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"actions","index":1,"value":{"sequence":6,"action":"before-pageshow-open","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"actions","index":2,"value":{"sequence":8,"action":"after-pageshow-open","generation":"initial","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"actions","index":3,"value":{"sequence":9,"action":"load-microtask","generation":"initial","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":7,"caseId":"pageshow-document-open","kind":"actions","index":4,"value":{"sequence":10,"action":"pageshow-microtask","generation":"initial","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_CASE {"index":8,"id":"post-load-child-insertion","finished":true,"eventCount":5,"actionCount":5,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"actions","index":1,"value":{"sequence":6,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"actions","index":2,"value":{"sequence":7,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"actions","index":3,"value":{"sequence":8,"action":"before-late-child"}}
+[js log] LIFECYCLE_ROW {"caseIndex":8,"caseId":"post-load-child-insertion","kind":"actions","index":4,"value":{"sequence":9,"action":"after-late-child"}}
+[js log] LIFECYCLE_CASE {"index":9,"id":"load-listener-throws","finished":true,"eventCount":5,"actionCount":6,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"events","index":3,"value":{"sequence":7,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"events","index":4,"value":{"sequence":8,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":0,"value":{"sequence":3,"action":"before-listener-throw","generation":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":1,"value":{"sequence":4,"action":"listener-error-reported","generation":"initial","message":"lifecycle-load-listener-sentinel"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":2,"value":{"sequence":5,"action":"listener-after-throw","generation":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":3,"value":{"sequence":6,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":4,"value":{"sequence":9,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":9,"caseId":"load-listener-throws","kind":"actions","index":5,"value":{"sequence":10,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_CASE {"index":10,"id":"pageshow-cancel","finished":true,"eventCount":5,"actionCount":4,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"actions","index":1,"value":{"sequence":6,"action":"pageshow-canceled","generation":"initial","defaultPrevented":true}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"actions","index":2,"value":{"sequence":7,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":10,"caseId":"pageshow-cancel","kind":"actions","index":3,"value":{"sequence":8,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_CASE {"index":11,"id":"post-completion-document-open","finished":true,"eventCount":10,"actionCount":11,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"initial","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":2,"value":{"sequence":2,"listener":"window-capture","generation":"initial","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":3,"value":{"sequence":4,"listener":"window-bubble","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":4,"value":{"sequence":5,"listener":"window-capture","generation":"initial","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":5,"value":{"sequence":11,"listener":"document-dcl","generation":"replacement","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":6,"value":{"sequence":12,"listener":"window-bubble","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":7,"value":{"sequence":13,"listener":"window-capture","generation":"replacement","type":"load","className":"[object Event]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":false,"cancelable":false,"composed":false,"persisted":null,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":8,"value":{"sequence":15,"listener":"window-bubble","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"events","index":9,"value":{"sequence":16,"listener":"window-capture","generation":"replacement","type":"pageshow","className":"[object PageTransitionEvent]","target":"document","currentTarget":"window","path":["window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":true,"composed":false,"persisted":false,"readyState":"complete","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":0,"value":{"sequence":3,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":1,"value":{"sequence":6,"action":"load-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":2,"value":{"sequence":7,"action":"pageshow-microtask","generation":"initial","activeGeneration":"initial"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":3,"value":{"sequence":8,"action":"before-post-completion-open","readyState":"complete"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":4,"value":{"sequence":9,"action":"replacement-listeners-installed","generation":"replacement","readyState":"loading"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":5,"value":{"sequence":10,"action":"before-replacement-close","readyState":"loading"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":6,"value":{"sequence":14,"action":"iframe-element-load","targetIsFrame":true,"currentTargetIsFrame":true,"trusted":true,"activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":7,"value":{"sequence":17,"action":"after-replacement-close","readyState":"complete"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":8,"value":{"sequence":18,"action":"load-microtask","generation":"replacement","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":9,"value":{"sequence":19,"action":"pageshow-microtask","generation":"replacement","activeGeneration":"replacement"}}
+[js log] LIFECYCLE_ROW {"caseIndex":11,"caseId":"post-completion-document-open","kind":"actions","index":10,"value":{"sequence":20,"action":"post-completion-observation-finished","readyState":"complete"}}
+[js log] LIFECYCLE_CONTRACT top-initial:PASS
+[js log] LIFECYCLE_CONTRACT synthetic-events:PASS
+[js log] LIFECYCLE_CONTRACT frame-initial:PASS
+[js log] LIFECYCLE_CONTRACT repeated-close:PASS
+[js log] LIFECYCLE_CONTRACT load-document-open:PASS
+[js log] LIFECYCLE_CONTRACT load-frame-removal:PASS
+[js log] LIFECYCLE_CONTRACT load-srcdoc-navigation:PASS
+[js log] LIFECYCLE_CONTRACT pageshow-document-open:PASS
+[js log] LIFECYCLE_CONTRACT post-load-child-insertion:PASS
+[js log] LIFECYCLE_CONTRACT load-listener-throws:PASS
+[js log] LIFECYCLE_CONTRACT pageshow-cancel:PASS
+[js log] LIFECYCLE_CONTRACT post-completion-document-open:PASS
+[js log] LIFECYCLE_CONTRACT_SUMMARY {"cases":12,"passed":12,"failed":0}
+[js log] MEASUREMENTS document-lifecycle {"cases":12,"finished":12,"complete":true}
+[js log] RESULTS document-lifecycle:PASS
+jsrun: context 181.4ms, 1 scripts 28.5ms, dom_version 83
+
+=================================================================
+==2745842==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 1216 byte(s) in 4 object(s) allocated from:
+    #0 0x55cffd2413e9 in calloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x8973e9) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f9894 in xcalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:9:48
+    #2 0x55cffd495778 in alloc_node /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:111:60
+    #3 0x55cffd495618 in node_new_element /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:112:74
+    #4 0x55cffd9b8710 in n_create(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:372:63
+    #5 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #6 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #7 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #8 0x7b5dad9c52aa  (<unknown module>)
+    #9 0x7b5dad9b0183  (<unknown module>)
+    #10 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #11 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #12 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #13 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #14 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #15 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #16 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #17 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #18 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #19 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #20 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #21 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #22 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #23 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #24 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #25 0x7ffc6ec5a355  (<unknown module>)
+
+Direct leak of 912 byte(s) in 3 object(s) allocated from:
+    #0 0x55cffd2413e9 in calloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x8973e9) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f9894 in xcalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:9:48
+    #2 0x55cffd495778 in alloc_node /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:111:60
+    #3 0x55cffd495618 in node_new_element /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:112:74
+    #4 0x55cffd9b8710 in n_create(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:372:63
+    #5 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #6 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #7 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #8 0x7b5dad9c52aa  (<unknown module>)
+    #9 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #10 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #11 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #12 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #13 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #14 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #15 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #16 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #17 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #18 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #19 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #20 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #21 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #22 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #23 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #24 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #25 0x7ffc6ec5a355  (<unknown module>)
+
+Direct leak of 304 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd2413e9 in calloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x8973e9) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f9894 in xcalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:9:48
+    #2 0x55cffd495778 in alloc_node /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:111:60
+    #3 0x55cffd495618 in node_new_element /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:112:74
+    #4 0x55cffd9b8710 in n_create(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:372:63
+    #5 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #6 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #7 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #8 0x7b5dad9c52aa  (<unknown module>)
+    #9 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #10 0x7b5dad9b09f3  (<unknown module>)
+    #11 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #12 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #13 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #14 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #15 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #16 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #17 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #18 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #19 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #20 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #21 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #22 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #23 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #24 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #25 0x7ffc6ec5a355  (<unknown module>)
+
+Direct leak of 304 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd2413e9 in calloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x8973e9) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f9894 in xcalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:9:48
+    #2 0x55cffd495778 in alloc_node /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:111:60
+    #3 0x55cffd495618 in node_new_element /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:112:74
+    #4 0x55cffd9b8710 in n_create(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:372:63
+    #5 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #6 0x7b5dad9e16dd  (<unknown module>)
+    #7 0x7b5dad9e073e  (<unknown module>)
+    #8 0x7b5dad9c52aa  (<unknown module>)
+    #9 0x7b5dad9b0183  (<unknown module>)
+    #10 0x7b5dad9dee24  (<unknown module>)
+    #11 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #12 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #13 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #14 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #15 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #16 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #17 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #18 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #19 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #20 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #21 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #22 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #23 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #24 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #25 0x7ffc6ec5a355  (<unknown module>)
+
+Direct leak of 304 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd2413e9 in calloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x8973e9) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f9894 in xcalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:9:48
+    #2 0x55cffd495778 in alloc_node /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:111:60
+    #3 0x55cffd495618 in node_new_element /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:112:74
+    #4 0x55cffd9b8710 in n_create(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:372:63
+    #5 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #6 0x7b5dad9e16dd  (<unknown module>)
+    #7 0x7b5dad9e073e  (<unknown module>)
+    #8 0x7b5dad9c52aa  (<unknown module>)
+    #9 0x7b5dad9b0183  (<unknown module>)
+    #10 0x7b5dad9decd0  (<unknown module>)
+    #11 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #12 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #13 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #14 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #15 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #16 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #17 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #18 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #19 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #20 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #21 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #22 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #23 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #24 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #25 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 15264 byte(s) in 9 object(s) allocated from:
+    #0 0x55cffd2413e9 in calloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x8973e9) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f9894 in xcalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:9:48
+    #2 0x55cffd2f74be in style_new_default /mnt/p3/project/browser/lumen-android/lumen-android/src/css/style.c:29:24
+    #3 0x55cffd2f99cb in style_inherit /mnt/p3/project/browser/lumen-android/lumen-android/src/css/style.c:99:24
+    #4 0x55cffd456e67 in compute /mnt/p3/project/browser/lumen-android/lumen-android/src/css/style.c:4922:25
+    #5 0x55cffd3b0c3e in recalc /mnt/p3/project/browser/lumen-android/lumen-android/src/css/style.c:5221:33
+    #6 0x55cffd3b4498 in recalc /mnt/p3/project/browser/lumen-android/lumen-android/src/css/style.c:5288:60
+    #7 0x55cffd3b4498 in recalc /mnt/p3/project/browser/lumen-android/lumen-android/src/css/style.c:5288:60
+    #8 0x55cffd3b5893 in recalc /mnt/p3/project/browser/lumen-android/lumen-android/src/css/style.c:5307:50
+    #9 0x55cffd39d5c4 in style_recalc /mnt/p3/project/browser/lumen-android/lumen-android/src/css/style.c:5845:5
+    #10 0x55cffd2a24e8 in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:156:70
+    #11 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #12 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 11479 byte(s) in 3 object(s) allocated from:
+    #0 0x55cffd241001 in malloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x897001) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f97a8 in xmalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:8:37
+    #2 0x55cffe4f9a74 in xstrndup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:12:53
+    #3 0x55cffe4f9a3a in xstrdup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:11:39
+    #4 0x55cffd4ab633 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:624:51
+    #5 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #6 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #7 0x7b5dad9b6577  (<unknown module>)
+    #8 0x7b5dad9c49c8  (<unknown module>)
+    #9 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #10 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #11 0x7f5df5a5e9c4 in Builtins_StoreIC crtstuff.c
+    #12 0x7b5dad9b02f7  (<unknown module>)
+    #13 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #14 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #15 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #16 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #17 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #18 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #19 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #20 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #21 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #22 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #23 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #24 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #25 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #26 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #27 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #28 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 11447 byte(s) in 3 object(s) allocated from:
+    #0 0x55cffd241001 in malloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x897001) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f97a8 in xmalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:8:37
+    #2 0x55cffe4f9a74 in xstrndup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:12:53
+    #3 0x55cffe4f9a3a in xstrdup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:11:39
+    #4 0x55cffd4ab633 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:624:51
+    #5 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #6 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #7 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #8 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #9 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #10 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #11 0x7f5df5a0185b in Builtins_JSEntryTrampoline crtstuff.c
+    #12 0x7f5df5a015aa in Builtins_JSEntry crtstuff.c
+    #13 0x7f5df5d4ef79 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #14 0x7f5df5d4e306 in v8::internal::Execution::Call(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, v8::base::Vector<v8::internal::DirectHandle<v8::internal::Object> const>) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb4e306) (BuildId: dae7aa8c7649e2b5)
+    #15 0x7f5df60a0402 in v8::internal::Object::SetPropertyWithAccessor(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::Maybe<v8::internal::ShouldThrow>) objects.cc
+    #16 0x7f5df60a1f77 in v8::internal::Object::SetPropertyInternal(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::Maybe<v8::internal::ShouldThrow>, v8::internal::StoreOrigin, bool*) objects.cc
+    #17 0x7f5df609ee27 in v8::internal::Object::SetProperty(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::StoreOrigin, v8::Maybe<v8::internal::ShouldThrow>) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xe9ee27) (BuildId: dae7aa8c7649e2b5)
+    #18 0x7f5df5eddea5 in v8::internal::StoreIC::Store(v8::internal::Handle<v8::internal::Union<v8::internal::Smi, v8::internal::HeapNumber, v8::internal::BigInt, v8::internal::String, v8::internal::Symbol, v8::internal::Boolean, v8::internal::Null, v8::internal::Undefined, v8::internal::JSReceiver>>, v8::internal::Handle<v8::internal::Name>, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::StoreOrigin) ic.cc
+    #19 0x7f5df5ee23ad in v8::internal::Runtime_StoreIC_Miss(int, unsigned long*, v8::internal::Isolate*) ic.cc
+    #20 0x7f5df5ac2fb5 in Builtins_CEntry_Return1_ArgvOnStack_NoBuiltinExit crtstuff.c
+    #21 0x7f5df5bcdbe8 in Builtins_SetNamedPropertyHandler crtstuff.c
+    #22 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #23 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #24 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #25 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #26 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #27 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #28 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #29 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+
+Indirect leak of 3828 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd241001 in malloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x897001) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f97a8 in xmalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:8:37
+    #2 0x55cffe4f9a74 in xstrndup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:12:53
+    #3 0x55cffe4f9a3a in xstrdup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:11:39
+    #4 0x55cffd4ab633 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:624:51
+    #5 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #6 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #7 0x7b5dad9b6577  (<unknown module>)
+    #8 0x7b5dad9c49c8  (<unknown module>)
+    #9 0x7b5dad9e1d80  (<unknown module>)
+    #10 0x7b5dad9e1c0e  (<unknown module>)
+    #11 0x7f5df5a5e9c4 in Builtins_StoreIC crtstuff.c
+    #12 0x7b5dad9b02f7  (<unknown module>)
+    #13 0x7b5dad9dee24  (<unknown module>)
+    #14 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #15 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #16 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #17 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #18 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #19 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #20 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #21 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #22 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #23 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #24 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #25 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #26 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #27 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #28 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 3825 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd241001 in malloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x897001) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f97a8 in xmalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:8:37
+    #2 0x55cffe4f9a74 in xstrndup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:12:53
+    #3 0x55cffe4f9a3a in xstrdup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:11:39
+    #4 0x55cffd4ab633 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:624:51
+    #5 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #6 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #7 0x7b5dad9b6577  (<unknown module>)
+    #8 0x7b5dad9c49c8  (<unknown module>)
+    #9 0x7b5dad9e1d80  (<unknown module>)
+    #10 0x7b5dad9e1c0e  (<unknown module>)
+    #11 0x7f5df5a5e9c4 in Builtins_StoreIC crtstuff.c
+    #12 0x7b5dad9b02f7  (<unknown module>)
+    #13 0x7b5dad9decd0  (<unknown module>)
+    #14 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #15 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #16 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #17 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #18 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #19 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #20 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #21 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #22 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #23 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #24 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #25 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #26 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #27 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #28 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 3825 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd241001 in malloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x897001) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f97a8 in xmalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:8:37
+    #2 0x55cffe4f9a74 in xstrndup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:12:53
+    #3 0x55cffe4f9a3a in xstrdup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:11:39
+    #4 0x55cffd4aac24 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:621:64
+    #5 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #6 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #7 0x7b5dad9b6577  (<unknown module>)
+    #8 0x7b5dad9c49c8  (<unknown module>)
+    #9 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #10 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #11 0x7f5df5a0185b in Builtins_JSEntryTrampoline crtstuff.c
+    #12 0x7f5df5a015aa in Builtins_JSEntry crtstuff.c
+    #13 0x7f5df5d4ef79 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #14 0x7f5df5d4e306 in v8::internal::Execution::Call(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, v8::base::Vector<v8::internal::DirectHandle<v8::internal::Object> const>) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb4e306) (BuildId: dae7aa8c7649e2b5)
+    #15 0x7f5df60a0402 in v8::internal::Object::SetPropertyWithAccessor(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::Maybe<v8::internal::ShouldThrow>) objects.cc
+    #16 0x7f5df60a1f77 in v8::internal::Object::SetPropertyInternal(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::Maybe<v8::internal::ShouldThrow>, v8::internal::StoreOrigin, bool*) objects.cc
+    #17 0x7f5df609ee27 in v8::internal::Object::SetProperty(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::StoreOrigin, v8::Maybe<v8::internal::ShouldThrow>) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xe9ee27) (BuildId: dae7aa8c7649e2b5)
+    #18 0x7f5df5eddea5 in v8::internal::StoreIC::Store(v8::internal::Handle<v8::internal::Union<v8::internal::Smi, v8::internal::HeapNumber, v8::internal::BigInt, v8::internal::String, v8::internal::Symbol, v8::internal::Boolean, v8::internal::Null, v8::internal::Undefined, v8::internal::JSReceiver>>, v8::internal::Handle<v8::internal::Name>, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::StoreOrigin) ic.cc
+    #19 0x7f5df5ee23ad in v8::internal::Runtime_StoreIC_Miss(int, unsigned long*, v8::internal::Isolate*) ic.cc
+    #20 0x7f5df5ac2fb5 in Builtins_CEntry_Return1_ArgvOnStack_NoBuiltinExit crtstuff.c
+    #21 0x7f5df5bcdbe8 in Builtins_SetNamedPropertyHandler crtstuff.c
+    #22 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #23 0x7b5dad9c6b93  (<unknown module>)
+    #24 0x7b5dad9c8ff1  (<unknown module>)
+    #25 0x7b5dad9b5dbe  (<unknown module>)
+    #26 0x7f5df5a0185b in Builtins_JSEntryTrampoline crtstuff.c
+    #27 0x7f5df5a015aa in Builtins_JSEntry crtstuff.c
+    #28 0x7f5df5d4ef79 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #29 0x7f5df5d4e306 in v8::internal::Execution::Call(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, v8::base::Vector<v8::internal::DirectHandle<v8::internal::Object> const>) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb4e306) (BuildId: dae7aa8c7649e2b5)
+
+Indirect leak of 512 byte(s) in 4 object(s) allocated from:
+    #0 0x55cffd2401a1 in realloc.part.0 asan_malloc_linux.cpp.o
+    #1 0x55cffe4f9968 in xrealloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:10:41
+    #2 0x55cffd4ab391 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:623:97
+    #3 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #4 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #5 0x7b5dad9b6577  (<unknown module>)
+    #6 0x7b5dad9c49c8  (<unknown module>)
+    #7 0x7b5dad9c52aa  (<unknown module>)
+    #8 0x7b5dad9b0230  (<unknown module>)
+    #9 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #10 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #11 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #12 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #13 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #14 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #15 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #16 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #17 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #18 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #19 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #20 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #21 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #22 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #23 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #24 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 384 byte(s) in 3 object(s) allocated from:
+    #0 0x55cffd2401a1 in realloc.part.0 asan_malloc_linux.cpp.o
+    #1 0x55cffe4f9968 in xrealloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:10:41
+    #2 0x55cffd4ab391 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:623:97
+    #3 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #4 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #5 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #6 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #7 0x7b5dad9c52aa  (<unknown module>)
+    #8 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #9 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #10 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #11 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #12 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #13 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #14 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #15 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #16 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #17 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #18 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #19 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #20 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #21 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #22 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #23 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #24 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 128 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd2401a1 in realloc.part.0 asan_malloc_linux.cpp.o
+    #1 0x55cffe4f9968 in xrealloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:10:41
+    #2 0x55cffd4ab391 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:623:97
+    #3 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #4 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #5 0x7b5dad9b6577  (<unknown module>)
+    #6 0x7b5dad9c49c8  (<unknown module>)
+    #7 0x7b5dad9c52aa  (<unknown module>)
+    #8 0x7b5dad9b0230  (<unknown module>)
+    #9 0x7b5dad9dee24  (<unknown module>)
+    #10 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #11 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #12 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #13 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #14 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #15 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #16 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #17 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #18 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #19 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #20 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #21 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #22 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #23 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #24 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 128 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd2401a1 in realloc.part.0 asan_malloc_linux.cpp.o
+    #1 0x55cffe4f9968 in xrealloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:10:41
+    #2 0x55cffd4ab391 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:623:97
+    #3 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #4 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #5 0x7b5dad9b6577  (<unknown module>)
+    #6 0x7b5dad9c49c8  (<unknown module>)
+    #7 0x7b5dad9c52aa  (<unknown module>)
+    #8 0x7b5dad9b0230  (<unknown module>)
+    #9 0x7b5dad9decd0  (<unknown module>)
+    #10 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #11 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #12 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #13 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #14 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #15 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #16 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #17 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #18 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #19 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #20 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #21 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #22 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #23 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #24 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 128 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd2401a1 in realloc.part.0 asan_malloc_linux.cpp.o
+    #1 0x55cffe4f9968 in xrealloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:10:41
+    #2 0x55cffd4ab391 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:623:97
+    #3 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #4 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #5 0x7b5dad9b6577  (<unknown module>)
+    #6 0x7b5dad9c49c8  (<unknown module>)
+    #7 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #8 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #9 0x7f5df5a0185b in Builtins_JSEntryTrampoline crtstuff.c
+    #10 0x7f5df5a015aa in Builtins_JSEntry crtstuff.c
+    #11 0x7f5df5d4ef79 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #12 0x7f5df5d4e306 in v8::internal::Execution::Call(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, v8::base::Vector<v8::internal::DirectHandle<v8::internal::Object> const>) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb4e306) (BuildId: dae7aa8c7649e2b5)
+    #13 0x7f5df60a0402 in v8::internal::Object::SetPropertyWithAccessor(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::Maybe<v8::internal::ShouldThrow>) objects.cc
+    #14 0x7f5df60a1f77 in v8::internal::Object::SetPropertyInternal(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::Maybe<v8::internal::ShouldThrow>, v8::internal::StoreOrigin, bool*) objects.cc
+    #15 0x7f5df609ee27 in v8::internal::Object::SetProperty(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::StoreOrigin, v8::Maybe<v8::internal::ShouldThrow>) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xe9ee27) (BuildId: dae7aa8c7649e2b5)
+    #16 0x7f5df5eddea5 in v8::internal::StoreIC::Store(v8::internal::Handle<v8::internal::Union<v8::internal::Smi, v8::internal::HeapNumber, v8::internal::BigInt, v8::internal::String, v8::internal::Symbol, v8::internal::Boolean, v8::internal::Null, v8::internal::Undefined, v8::internal::JSReceiver>>, v8::internal::Handle<v8::internal::Name>, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::StoreOrigin) ic.cc
+    #17 0x7f5df5ee23ad in v8::internal::Runtime_StoreIC_Miss(int, unsigned long*, v8::internal::Isolate*) ic.cc
+    #18 0x7f5df5ac2fb5 in Builtins_CEntry_Return1_ArgvOnStack_NoBuiltinExit crtstuff.c
+    #19 0x7f5df5bcdbe8 in Builtins_SetNamedPropertyHandler crtstuff.c
+    #20 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #21 0x7b5dad9b09f3  (<unknown module>)
+    #22 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #23 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #24 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #25 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #26 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #27 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #28 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #29 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+
+Indirect leak of 93 byte(s) in 4 object(s) allocated from:
+    #0 0x55cffd241001 in malloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x897001) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f97a8 in xmalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:8:37
+    #2 0x55cffe4f9a74 in xstrndup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:12:53
+    #3 0x55cffe4f9a3a in xstrdup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:11:39
+    #4 0x55cffd4ab633 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:624:51
+    #5 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #6 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #7 0x7b5dad9b6577  (<unknown module>)
+    #8 0x7b5dad9c49c8  (<unknown module>)
+    #9 0x7b5dad9c52aa  (<unknown module>)
+    #10 0x7b5dad9b0230  (<unknown module>)
+    #11 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #12 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #13 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #14 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #15 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #16 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #17 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #18 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #19 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #20 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #21 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #22 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #23 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #24 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #25 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #26 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 48 byte(s) in 3 object(s) allocated from:
+    #0 0x55cffd241001 in malloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x897001) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f97a8 in xmalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:8:37
+    #2 0x55cffe4f9a74 in xstrndup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:12:53
+    #3 0x55cffe4f9a3a in xstrdup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:11:39
+    #4 0x55cffd4ab633 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:624:51
+    #5 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #6 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #7 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #8 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #9 0x7b5dad9c52aa  (<unknown module>)
+    #10 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #11 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #12 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #13 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #14 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #15 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #16 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #17 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #18 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #19 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #20 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #21 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #22 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #23 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #24 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #25 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #26 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 32 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd241001 in malloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x897001) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f97a8 in xmalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:8:37
+    #2 0x55cffe4f9a74 in xstrndup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:12:53
+    #3 0x55cffe4f9a3a in xstrdup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:11:39
+    #4 0x55cffd4ab633 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:624:51
+    #5 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #6 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #7 0x7b5dad9b6577  (<unknown module>)
+    #8 0x7b5dad9c49c8  (<unknown module>)
+    #9 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #10 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #11 0x7f5df5a0185b in Builtins_JSEntryTrampoline crtstuff.c
+    #12 0x7f5df5a015aa in Builtins_JSEntry crtstuff.c
+    #13 0x7f5df5d4ef79 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #14 0x7f5df5d4e306 in v8::internal::Execution::Call(v8::internal::Isolate*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::DirectHandle<v8::internal::Object>, v8::base::Vector<v8::internal::DirectHandle<v8::internal::Object> const>) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb4e306) (BuildId: dae7aa8c7649e2b5)
+    #15 0x7f5df60a0402 in v8::internal::Object::SetPropertyWithAccessor(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::Maybe<v8::internal::ShouldThrow>) objects.cc
+    #16 0x7f5df60a1f77 in v8::internal::Object::SetPropertyInternal(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::Maybe<v8::internal::ShouldThrow>, v8::internal::StoreOrigin, bool*) objects.cc
+    #17 0x7f5df609ee27 in v8::internal::Object::SetProperty(v8::internal::LookupIterator*, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::StoreOrigin, v8::Maybe<v8::internal::ShouldThrow>) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xe9ee27) (BuildId: dae7aa8c7649e2b5)
+    #18 0x7f5df5eddea5 in v8::internal::StoreIC::Store(v8::internal::Handle<v8::internal::Union<v8::internal::Smi, v8::internal::HeapNumber, v8::internal::BigInt, v8::internal::String, v8::internal::Symbol, v8::internal::Boolean, v8::internal::Null, v8::internal::Undefined, v8::internal::JSReceiver>>, v8::internal::Handle<v8::internal::Name>, v8::internal::DirectHandle<v8::internal::Object>, v8::internal::StoreOrigin) ic.cc
+    #19 0x7f5df5ee23ad in v8::internal::Runtime_StoreIC_Miss(int, unsigned long*, v8::internal::Isolate*) ic.cc
+    #20 0x7f5df5ac2fb5 in Builtins_CEntry_Return1_ArgvOnStack_NoBuiltinExit crtstuff.c
+    #21 0x7f5df5bcdbe8 in Builtins_SetNamedPropertyHandler crtstuff.c
+    #22 0x7f5df5a04803 in Builtins_InterpreterEntryTrampoline crtstuff.c
+    #23 0x7b5dad9b09f3  (<unknown module>)
+    #24 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #25 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #26 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #27 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #28 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #29 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+
+Indirect leak of 30 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd241001 in malloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x897001) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f97a8 in xmalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:8:37
+    #2 0x55cffe4f9a74 in xstrndup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:12:53
+    #3 0x55cffe4f9a3a in xstrdup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:11:39
+    #4 0x55cffd4ab633 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:624:51
+    #5 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #6 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #7 0x7b5dad9b6577  (<unknown module>)
+    #8 0x7b5dad9c49c8  (<unknown module>)
+    #9 0x7b5dad9c52aa  (<unknown module>)
+    #10 0x7b5dad9b0230  (<unknown module>)
+    #11 0x7b5dad9dee24  (<unknown module>)
+    #12 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #13 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #14 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #15 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #16 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #17 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #18 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #19 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #20 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #21 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #22 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #23 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #24 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #25 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #26 0x7ffc6ec5a355  (<unknown module>)
+
+Indirect leak of 16 byte(s) in 1 object(s) allocated from:
+    #0 0x55cffd241001 in malloc (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun+0x897001) (BuildId: 5b22eb521de3fd7299ee8b5dda780a4e3f75c591)
+    #1 0x55cffe4f97a8 in xmalloc /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:8:37
+    #2 0x55cffe4f9a74 in xstrndup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:12:53
+    #3 0x55cffe4f9a3a in xstrdup /mnt/p3/project/browser/lumen-android/lumen-android/src/base/util.c:11:39
+    #4 0x55cffd4ab633 in node_set_attr_at /mnt/p3/project/browser/lumen-android/lumen-android/src/dom/dom.c:624:51
+    #5 0x55cffd97b18f in n_setAttrQ(v8::FunctionCallbackInfo<v8::Value> const&) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/jsnative.cc:284:9
+    #6 0x7f5df5a06128 in Builtins_CallApiCallbackGeneric crtstuff.c
+    #7 0x7b5dad9b6577  (<unknown module>)
+    #8 0x7b5dad9c49c8  (<unknown module>)
+    #9 0x7b5dad9c52aa  (<unknown module>)
+    #10 0x7b5dad9b0230  (<unknown module>)
+    #11 0x7b5dad9decd0  (<unknown module>)
+    #12 0x7f5df5a47e6d in Builtins_AsyncFunctionAwaitResolveClosure crtstuff.c
+    #13 0x7f5df5a36261 in Builtins_RunMicrotasks crtstuff.c
+    #14 0x7f5df5a017aa in Builtins_JSRunMicrotasksEntry crtstuff.c
+    #15 0x7f5df5d4ef12 in v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #16 0x7f5df5d4f4e8 in v8::internal::(anonymous namespace)::InvokeWithTryCatch(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&) execution.cc
+    #17 0x7f5df5d4f651 in v8::internal::Execution::TryRunMicrotasks(v8::internal::Isolate*, v8::internal::MicrotaskQueue*) execution.cc
+    #18 0x7f5df5d86fbc in v8::internal::MicrotaskQueue::RunMicrotasks(v8::internal::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86fbc) (BuildId: dae7aa8c7649e2b5)
+    #19 0x7f5df5d86ead in v8::internal::MicrotaskQueue::PerformCheckpointInternal(v8::Isolate*) (/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/libv8.so+0xb86ead) (BuildId: dae7aa8c7649e2b5)
+    #20 0x55cffd628ca2 in settle(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:186:13
+    #21 0x55cffd628574 in jcall(JsCtx*, v8::Local<v8::Function>, v8::Local<v8::Value>, int, v8::Local<v8::Value>*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:213:5
+    #22 0x55cffd6d9f50 in tick_one(JsCtx*) /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2209:19
+    #23 0x55cffd6d4174 in js_tick /mnt/p3/project/browser/lumen-android/lumen-android/src/js/js.cc:2120:5
+    #24 0x55cffd2a230d in main /mnt/p3/project/browser/lumen-android/lumen-android/tests/jsrun.c:153:9
+    #25 0x7f5df0827c8d  (/usr/lib/libc.so.6+0x27c8d) (BuildId: e40d0fb39fa49848e0042984207f7c80fdbc8c7e)
+    #26 0x7ffc6ec5a355  (<unknown module>)
+
+SUMMARY: AddressSanitizer: 54207 byte(s) leaked in 48 allocation(s).
+<end of output>
+Test time =  12.51 sec
+----------------------------------------------------------
+Test Pass Reason:
+Required regular expression found. Regex=[RESULTS document-lifecycle:PASS]
+"js_document_lifecycle" end time: Oct 31 02:46 PDT
+"js_document_lifecycle" time elapsed: 00:00:12
+----------------------------------------------------------
+
+End testing: Oct 31 02:46 PDT

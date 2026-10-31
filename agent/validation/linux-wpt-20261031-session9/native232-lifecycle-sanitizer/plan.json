@@ -1,0 +1,64 @@
+{
+  "candidate": 232,
+  "source_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "source_manifest_sha256": "2ebc57c8be7b357a098f99201726d5ee13a37fc895ac061f9867316fd482a828",
+  "recorded_input_count": 649,
+  "fixture_sha256": "cc4c6cfe1372b603cf395d9181a0e4bfaf133c4078ea10f99609c0b4c42c7d04",
+  "commands": [
+    {
+      "label": "configure",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "cmake",
+        "-S",
+        "/mnt/p3/project/browser/lumen-android/lumen-android",
+        "-B",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize"
+      ]
+    },
+    {
+      "label": "build-jsrun",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "cmake",
+        "--build",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize",
+        "--target",
+        "jsrun",
+        "-j2"
+      ]
+    },
+    {
+      "label": "ctest",
+      "command": [
+        "python3",
+        "tools/codex_compile.py",
+        "ctest",
+        "--test-dir",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize",
+        "-j1",
+        "--output-on-failure",
+        "-R",
+        "^js_document_lifecycle$",
+        "--output-junit",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/native232-lifecycle-sanitizer/ctest.xml"
+      ]
+    }
+  ],
+  "flags": {
+    "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -DV8_CPPGC_MICROTASK_QUEUE",
+    "CMAKE_C_FLAGS": "-fsanitize=address,undefined",
+    "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined -Wl,-rpath-link,/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-deps/v8/bottle/v8/15.6.75.8/libexec"
+  },
+  "actual_cpp_paths": [
+    "src/js/frames.cc",
+    "src/js/js.cc"
+  ],
+  "runtime_host": "actual instrumented jsrun including iframe creation, document completion, removal and reentry",
+  "maximum_browser_lanes": 1,
+  "resource_interval_seconds": 1,
+  "prebuilt_V8_itself_instrumented": false,
+  "scope": "Existing target and sanitizer configuration; no suppressions, fake host or changed behavioral oracle"
+}

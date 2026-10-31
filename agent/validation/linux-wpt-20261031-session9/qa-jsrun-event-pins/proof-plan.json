@@ -1,0 +1,19 @@
+{
+  "kind": "isolated_frozen_host_pin_release_proof",
+  "base_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "base_source": "tests/jsrun.c",
+  "base_sha256": "9db1437eeb33b08dcf02678c863e34b0ed63f3864821e7bcc50593dca778f08e",
+  "proof_source": "agent/validation/linux-wpt-20261031-session9/qa-jsrun-event-pins/jsrun-event-pins.c",
+  "proof_sha256": "df22d864e74be5bdfd6de3424c4a1c5bf09453aeaff50cf51ed69d59513011fa",
+  "delta_sha256": "635d81f929fc00ff7755cfcc1272389527f4f9308c821f03803fb66df1efdc5c",
+  "added_calls": 3,
+  "boundaries": [
+    "after initial run_scripts returns",
+    "after complete net/media/JS/secondary-window/style batch",
+    "after optional post-script returns, before context/document destruction"
+  ],
+  "unchanged_fixture": "tests/js/document-lifecycle.html",
+  "fixture_sha256": "cc4c6cfe1372b603cf395d9181a0e4bfaf133c4078ea10f99609c0b4c42c7d04",
+  "compile_note": "Use the exact frozen232 sanitizer C flags/link inputs, replacing only the test-host object; -iquote PROJECT/tests resolves the copied host relative includes without modifying source text.",
+  "required_outcome": "All12 behavior cases retained; actual process exit0 and no ASan/UBSan/LSan findings; source/library/fixture hashes unchanged."
+}

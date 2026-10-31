@@ -1,0 +1,21 @@
+{
+  "label": "candidate232 actual immutable sanitizer exit",
+  "started_utc": "2026-10-31T09:50:29.517177+00:00",
+  "finished_utc": "2026-10-31T09:50:43.543392+00:00",
+  "root_pid": 2759941,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 14,
+  "elapsed_seconds": 14.026,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 0.0,
+  "cpu_median": 2.0,
+  "cpu_max": 61.004,
+  "cpu_last10_median": 0.0,
+  "rss_peak_mb": 649.351,
+  "rss_final_mb": 649.351,
+  "pss_peak_mb": 608.094,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/native232-lifecycle-sanitizer-direct/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

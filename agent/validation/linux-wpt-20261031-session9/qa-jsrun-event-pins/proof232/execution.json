@@ -1,0 +1,20 @@
+[
+  {
+    "label": "compile-host",
+    "started_utc": "2026-10-31T09:53:07.957063+00:00",
+    "finished_utc": "2026-10-31T09:53:08.097598+00:00",
+    "actual_returncode": 0
+  },
+  {
+    "label": "link-real-runtime",
+    "started_utc": "2026-10-31T09:53:08.097814+00:00",
+    "finished_utc": "2026-10-31T09:53:09.567596+00:00",
+    "actual_returncode": 0
+  },
+  {
+    "label": "runtime",
+    "started_utc": "2026-10-31T09:53:09.567811+00:00",
+    "finished_utc": "2026-10-31T09:53:13.857063+00:00",
+    "actual_returncode": 0
+  }
+]

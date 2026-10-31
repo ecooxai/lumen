@@ -1,0 +1,18 @@
+{
+  "candidate": 232,
+  "created_utc": "2026-10-31T09:45:32.172611+00:00",
+  "native_tests_passed": 146,
+  "native_tests_total": 146,
+  "source_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "recorded_input_count": 649,
+  "all_recorded_inputs_unchanged": true,
+  "immutable_app_sha256": "c4c60dd709a497b9b3135c6d06bc5c292cc2882d366c39272d3e519f70d886da",
+  "immutable_jsrun": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/jsrun-astra-i232",
+  "immutable_jsrun_sha256": "01f2fd0b97342343590edefaa25731623f0aaf2bce077edb06e3677e41740c6e",
+  "full_ctest_log_sha256": "1c22728b817d0dba309dd6c8125a785ef9ee672cb0de8c33f4c27344a8c6039a",
+  "all12_durable_lifecycle_contracts_pass": true,
+  "durable_finish_boundary": "Asserted internally by the pinned strict fixture and all12 per-case PASS markers; finish fields are not printed by its legacy row protocol",
+  "fixture_sha256": "cc4c6cfe1372b603cf395d9181a0e4bfaf133c4078ea10f99609c0b4c42c7d04",
+  "actual_outer_terminal": 15984,
+  "actual_outer_exit_code": 0
+}

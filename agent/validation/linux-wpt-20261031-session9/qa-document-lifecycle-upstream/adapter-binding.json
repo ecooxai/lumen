@@ -1,0 +1,19 @@
+{
+  "created_utc": "2026-10-31T09:39:53.528220+00:00",
+  "purpose": "Exact byte aliases required by unchanged public run-cohort-v3.py scope layout; no upstream/selection/expectation changes",
+  "pins": {
+    "upstream-manifest-v1.json": {
+      "source_path": "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/upstream-manifest-v1.json",
+      "copied_path": "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle-upstream/manifest.json",
+      "sha256": "471d089dbcb8fb9c3212ffdd3b36bb7f94524ebafa68fb27b1caf63229251db0"
+    },
+    "upstream-urls.json": {
+      "source_path": "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/upstream-urls.json",
+      "copied_path": "agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle-upstream/urls.json",
+      "sha256": "35a0247479be7218f5ec7c0148d1385ec0fa0aadd4ce6816f3a4df20e7fe2837"
+    }
+  },
+  "assertion_files": 1,
+  "assertions": 4,
+  "reference_and_231_baseline": "Existing completed frozen640 exact identities; no duplicate reference run requested"
+}

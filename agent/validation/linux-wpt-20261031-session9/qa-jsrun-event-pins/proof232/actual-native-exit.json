@@ -1,0 +1,16 @@
+{
+  "started_utc": "2026-10-31T09:53:09.645538+00:00",
+  "finished_utc": "2026-10-31T09:53:13.690291+00:00",
+  "duration_s": 4.044755871000234,
+  "pid": 2769254,
+  "actual_jsrun_returncode": 0,
+  "timed_out": false,
+  "owned_cleanup_signals": [],
+  "binary_sha256": "5cd8a075b77144c8457045b5f7260e302939609d0c80f7097e8e4e6ed006fa23",
+  "binary_unchanged": true,
+  "command": [
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-event-pins/proof232/jsrun-event-pins-sanitized",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/document-lifecycle.html",
+    "12000"
+  ]
+}

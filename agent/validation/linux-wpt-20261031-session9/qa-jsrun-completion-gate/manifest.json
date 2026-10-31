@@ -1,0 +1,23 @@
+{
+  "kind": "authored_negative_test_host_completion_controls",
+  "rows": [
+    {
+      "source_path": "agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/missing-completion.html",
+      "source_sha256": "6f40fe0f2d5c18670e5cfcb9021eebed4107a7d776b0dea67fdb96323f47d649",
+      "expected_actual_process_exit": 1,
+      "duration_argument_ms": 20
+    },
+    {
+      "source_path": "agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/failed-completion.html",
+      "source_sha256": "f5cddf34bead9d6b98deffa6753ffc72bfc2778b152a3ed9bf82cc8c0ba119f2",
+      "expected_actual_process_exit": 1,
+      "duration_argument_ms": 20
+    }
+  ],
+  "environment": {
+    "JSRUN_UNTIL_ATTR": "data-document-lifecycle-complete",
+    "JSRUN_EXPECT_ATTR_VALUE": "PASS"
+  },
+  "positive_control": "The unchanged strict twelve-case document-lifecycle fixture must exit0 under the same completion contract.",
+  "assertion": "Both a missing completion attribute and an explicit FAIL value must produce a real nonzero process status after normal cleanup. No output regex is a substitute for exit status."
+}

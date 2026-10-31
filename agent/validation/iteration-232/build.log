@@ -1,0 +1,245 @@
+-- Configuring done (0.3s)
+-- Generating done (0.5s)
+-- Build files have been written to: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+[  3%] Built target lumen_base
+[  4%] Built target test_trust
+[  6%] Built target test_android_back
+[  7%] Built target test_android_launch
+[  9%] Built target test_android_fling
+[  9%] Built target test_android_touch
+[ 12%] Built target test_media_icon
+[ 12%] Built target test_workspace
+[ 13%] Built target test_viewer
+[ 14%] Built target lumen_rtc
+[ 14%] Checking embedded browser assets
+[ 15%] Built target test_worker_tasks
+[ 16%] Built target test_js_viewport_state
+[ 17%] Built target test_fontconfig_match
+[ 19%] Built target test_linux_capture_refusal
+[ 20%] Building C object CMakeFiles/lumen_net.dir/src/net/fetch_metadata.c.o
+[ 20%] Built target lumen_embedded
+[ 21%] Built target test_url
+[ 22%] Linking C static library liblumen_net.a
+[ 23%] Built target test_platform
+[ 24%] Built target test_url_host_nul
+[ 26%] Built target lumen_net
+[ 27%] Built target test_encoding_labels
+[ 28%] Linking C executable test_file
+[ 28%] Linking C executable test_data_url
+[ 28%] Built target test_file
+[ 28%] Built target test_data_url
+[ 28%] Linking C executable test_http_range
+[ 28%] Linking C executable test_http_zstd
+[ 29%] Built target test_http_range
+[ 30%] Built target test_http_zstd
+[ 30%] Linking C executable test_mime_policy
+[ 31%] Linking C executable test_fetch_metadata
+[ 32%] Built target test_mime_policy
+[ 32%] Built target test_fetch_metadata
+[ 33%] Linking C executable test_net_redirect
+[ 34%] Linking C executable test_auth_user_agent
+[ 34%] Built target test_net_redirect
+[ 34%] Built target test_auth_user_agent
+[ 34%] Linking C executable test_desktop_sites
+[ 35%] Linking C executable test_cookie_site
+[ 36%] Built target test_desktop_sites
+[ 36%] Built target test_cookie_site
+[ 36%] Linking C executable test_http_cache
+[ 36%] Linking C executable test_proxy
+[ 37%] Built target test_http_cache
+[ 38%] Built target test_proxy
+[ 39%] Linking C executable test_net_stream
+[ 39%] Linking C executable test_download
+[ 39%] Built target test_net_stream
+[ 40%] Built target test_download
+[ 41%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/clone.cc.o
+[ 41%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/broadcast.cc.o
+[ 42%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/compressjs.cc.o
+[ 42%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/cryptojs.cc.o
+[ 42%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/encodingjs.cc.o
+/mnt/p3/project/browser/lumen-android/lumen-android/src/js/cryptojs.cc:168:19: warning: 'HMAC_CTX_new' is deprecated [-Wdeprecated-declarations]
+  168 |     HMAC_CTX *h = HMAC_CTX_new(); bool ok = h != nullptr;
+      |                   ^
+/usr/include/openssl/hmac.h:33:1: note: 'HMAC_CTX_new' has been explicitly marked deprecated here
+   33 | OSSL_DEPRECATEDIN_3_0 HMAC_CTX *HMAC_CTX_new(void);
+      | ^
+/usr/include/openssl/macros.h:229:31: note: expanded from macro 'OSSL_DEPRECATEDIN_3_0'
+  229 | #define OSSL_DEPRECATEDIN_3_0 OSSL_DEPRECATED(3.0)
+      |                               ^
+/usr/include/openssl/macros.h:61:47: note: expanded from macro 'OSSL_DEPRECATED'
+   61 | #define OSSL_DEPRECATED(since) __attribute__((deprecated))
+      |                                               ^
+/mnt/p3/project/browser/lumen-android/lumen-android/src/js/cryptojs.cc:170:14: warning: 'HMAC_Init_ex' is deprecated [-Wdeprecated-declarations]
+  170 |         ok = HMAC_Init_ex(h, prk, (int)pl, md, nullptr) && HMAC_Update(h, t, tl) && HMAC_Update(h, info.p, info.n) && HMAC_Update(h, &i, 1) && HMAC_Final(h, t, &tl);
+      |              ^
+/usr/include/openssl/hmac.h:43:1: note: 'HMAC_Init_ex' has been explicitly marked deprecated here
+   43 | OSSL_DEPRECATEDIN_3_0 int HMAC_Init_ex(HMAC_CTX *ctx, const void *key, int len,
+      | ^
+/usr/include/openssl/macros.h:229:31: note: expanded from macro 'OSSL_DEPRECATEDIN_3_0'
+  229 | #define OSSL_DEPRECATEDIN_3_0 OSSL_DEPRECATED(3.0)
+      |                               ^
+/usr/include/openssl/macros.h:61:47: note: expanded from macro 'OSSL_DEPRECATED'
+   61 | #define OSSL_DEPRECATED(since) __attribute__((deprecated))
+      |                                               ^
+/mnt/p3/project/browser/lumen-android/lumen-android/src/js/cryptojs.cc:170:60: warning: 'HMAC_Update' is deprecated [-Wdeprecated-declarations]
+  170 |         ok = HMAC_Init_ex(h, prk, (int)pl, md, nullptr) && HMAC_Update(h, t, tl) && HMAC_Update(h, info.p, info.n) && HMAC_Update(h, &i, 1) && HMAC_Final(h, t, &tl);
+      |                                                            ^
+/usr/include/openssl/hmac.h:45:1: note: 'HMAC_Update' has been explicitly marked deprecated here
+   45 | OSSL_DEPRECATEDIN_3_0 int HMAC_Update(HMAC_CTX *ctx, const unsigned char *data,
+      | ^
+/usr/include/openssl/macros.h:229:31: note: expanded from macro 'OSSL_DEPRECATEDIN_3_0'
+  229 | #define OSSL_DEPRECATEDIN_3_0 OSSL_DEPRECATED(3.0)
+      |                               ^
+/usr/include/openssl/macros.h:61:47: note: expanded from macro 'OSSL_DEPRECATED'
+   61 | #define OSSL_DEPRECATED(since) __attribute__((deprecated))
+      |                                               ^
+/mnt/p3/project/browser/lumen-android/lumen-android/src/js/cryptojs.cc:170:85: warning: 'HMAC_Update' is deprecated [-Wdeprecated-declarations]
+  170 |         ok = HMAC_Init_ex(h, prk, (int)pl, md, nullptr) && HMAC_Update(h, t, tl) && HMAC_Update(h, info.p, info.n) && HMAC_Update(h, &i, 1) && HMAC_Final(h, t, &tl);
+      |                                                                                     ^
+/usr/include/openssl/hmac.h:45:1: note: 'HMAC_Update' has been explicitly marked deprecated here
+   45 | OSSL_DEPRECATEDIN_3_0 int HMAC_Update(HMAC_CTX *ctx, const unsigned char *data,
+      | ^
+/usr/include/openssl/macros.h:229:31: note: expanded from macro 'OSSL_DEPRECATEDIN_3_0'
+  229 | #define OSSL_DEPRECATEDIN_3_0 OSSL_DEPRECATED(3.0)
+      |                               ^
+/usr/include/openssl/macros.h:61:47: note: expanded from macro 'OSSL_DEPRECATED'
+   61 | #define OSSL_DEPRECATED(since) __attribute__((deprecated))
+      |                                               ^
+/mnt/p3/project/browser/lumen-android/lumen-android/src/js/cryptojs.cc:170:119: warning: 'HMAC_Update' is deprecated [-Wdeprecated-declarations]
+  170 |         ok = HMAC_Init_ex(h, prk, (int)pl, md, nullptr) && HMAC_Update(h, t, tl) && HMAC_Update(h, info.p, info.n) && HMAC_Update(h, &i, 1) && HMAC_Final(h, t, &tl);
+      |                                                                                                                       ^
+/usr/include/openssl/hmac.h:45:1: note: 'HMAC_Update' has been explicitly marked deprecated here
+   45 | OSSL_DEPRECATEDIN_3_0 int HMAC_Update(HMAC_CTX *ctx, const unsigned char *data,
+      | ^
+/usr/include/openssl/macros.h:229:31: note: expanded from macro 'OSSL_DEPRECATEDIN_3_0'
+  229 | #define OSSL_DEPRECATEDIN_3_0 OSSL_DEPRECATED(3.0)
+      |                               ^
+/usr/include/openssl/macros.h:61:47: note: expanded from macro 'OSSL_DEPRECATED'
+   61 | #define OSSL_DEPRECATED(since) __attribute__((deprecated))
+      |                                               ^
+/mnt/p3/project/browser/lumen-android/lumen-android/src/js/cryptojs.cc:170:144: warning: 'HMAC_Final' is deprecated [-Wdeprecated-declarations]
+  170 |         ok = HMAC_Init_ex(h, prk, (int)pl, md, nullptr) && HMAC_Update(h, t, tl) && HMAC_Update(h, info.p, info.n) && HMAC_Update(h, &i, 1) && HMAC_Final(h, t, &tl);
+      |                                                                                                                                                ^
+/usr/include/openssl/hmac.h:47:1: note: 'HMAC_Final' has been explicitly marked deprecated here
+   47 | OSSL_DEPRECATEDIN_3_0 int HMAC_Final(HMAC_CTX *ctx, unsigned char *md,
+      | ^
+/usr/include/openssl/macros.h:229:31: note: expanded from macro 'OSSL_DEPRECATEDIN_3_0'
+  229 | #define OSSL_DEPRECATEDIN_3_0 OSSL_DEPRECATED(3.0)
+      |                               ^
+/usr/include/openssl/macros.h:61:47: note: expanded from macro 'OSSL_DEPRECATED'
+   61 | #define OSSL_DEPRECATED(since) __attribute__((deprecated))
+      |                                               ^
+/mnt/p3/project/browser/lumen-android/lumen-android/src/js/cryptojs.cc:173:5: warning: 'HMAC_CTX_free' is deprecated [-Wdeprecated-declarations]
+  173 |     HMAC_CTX_free(h);
+      |     ^
+/usr/include/openssl/hmac.h:35:1: note: 'HMAC_CTX_free' has been explicitly marked deprecated here
+   35 | OSSL_DEPRECATEDIN_3_0 void HMAC_CTX_free(HMAC_CTX *ctx);
+      | ^
+/usr/include/openssl/macros.h:229:31: note: expanded from macro 'OSSL_DEPRECATEDIN_3_0'
+  229 | #define OSSL_DEPRECATEDIN_3_0 OSSL_DEPRECATED(3.0)
+      |                               ^
+/usr/include/openssl/macros.h:61:47: note: expanded from macro 'OSSL_DEPRECATED'
+   61 | #define OSSL_DEPRECATED(since) __attribute__((deprecated))
+      |                                               ^
+7 warnings generated.
+[ 43%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/event_target.cc.o
+[ 43%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/frames.cc.o
+[ 44%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/js.cc.o
+[ 45%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/jsnative.cc.o
+[ 45%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/rtc.cc.o
+[ 46%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/urljs.cc.o
+[ 46%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/wasm.cc.o
+[ 47%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/webgl.cc.o
+[ 47%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/webgpu.cc.o
+[ 48%] Building CXX object CMakeFiles/lumen_engine.dir/src/js/worker.cc.o
+[ 48%] Linking CXX static library liblumen_engine.a
+[ 61%] Built target lumen_engine
+[ 61%] Building C object CMakeFiles/jsrun.dir/tests/jsrun.c.o
+[ 61%] Building C object CMakeFiles/lumen.dir/src/app/main.c.o
+[ 61%] Linking CXX executable jsrun
+[ 61%] Built target jsrun
+[ 61%] Linking CXX executable test_broadcast_site
+[ 62%] Built target test_broadcast_site
+[ 62%] Building CXX object CMakeFiles/test_js_node_lifetime.dir/tests/test_js_node_lifetime.cc.o
+[ 63%] Linking CXX executable test_js_node_lifetime
+[ 63%] Built target test_js_node_lifetime
+[ 63%] Building CXX object CMakeFiles/test_invoker_commands.dir/tests/test_invoker_commands.cc.o
+[ 63%] Linking CXX executable lumen
+[ 69%] Built target lumen
+[ 70%] Linking CXX executable test_background_clip
+[ 70%] Built target test_background_clip
+[ 70%] Linking CXX executable test_starting_style
+[ 71%] Built target test_starting_style
+[ 71%] Linking CXX executable test_dom_style_tracking
+[ 72%] Linking CXX executable test_invoker_commands
+[ 73%] Built target test_dom_style_tracking
+[ 73%] Linking CXX executable test_html5lib
+[ 73%] Built target test_html5lib
+[ 73%] Linking CXX executable test_id_map
+[ 73%] Built target test_invoker_commands
+[ 74%] Linking CXX executable test_has_filter
+[ 75%] Built target test_id_map
+[ 76%] Linking CXX executable test_nested_overflow
+[ 76%] Built target test_has_filter
+[ 77%] Linking CXX executable test_scale_text
+[ 77%] Built target test_scale_text
+[ 77%] Built target test_nested_overflow
+[ 78%] Linking CXX executable test_round_clip
+[ 78%] Linking CXX executable test_svg_gradient_img
+[ 79%] Built target test_svg_gradient_img
+[ 79%] Built target test_round_clip
+[ 80%] Linking CXX executable test_raster_bands
+[ 81%] Linking CXX executable test_raster_spans
+[ 81%] Built target test_raster_bands
+[ 81%] Built target test_raster_spans
+[ 81%] Linking CXX executable test_font_woff2
+[ 81%] Linking CXX executable test_shape_cache
+[ 82%] Built target test_font_woff2
+[ 82%] Built target test_shape_cache
+[ 83%] Building C object CMakeFiles/test_code_cache.dir/tests/test_code_cache.c.o
+[ 84%] Linking CXX executable test_inset_move
+[ 84%] Linking CXX executable test_code_cache
+[ 84%] Built target test_inset_move
+[ 84%] Linking CXX executable test_sticky_geometry
+[ 84%] Built target test_code_cache
+[ 84%] Linking CXX executable test_paint_cull
+[ 85%] Built target test_sticky_geometry
+[ 86%] Linking CXX executable test_grid_used_values
+[ 86%] Built target test_paint_cull
+[ 87%] Linking CXX executable test_css_stepped_math
+[ 87%] Built target test_grid_used_values
+[ 88%] Linking CXX executable test_css_stretch
+[ 88%] Built target test_css_stepped_math
+[ 89%] Linking CXX executable test_css_containment
+[ 89%] Built target test_css_stretch
+[ 90%] Linking CXX executable test_grid_repeat_validation
+[ 90%] Built target test_css_containment
+[ 90%] Linking CXX executable test_grid_alignment
+[ 90%] Built target test_grid_repeat_validation
+[ 90%] Linking CXX executable test_grid_item_width
+[ 91%] Built target test_grid_alignment
+[ 92%] Linking CXX executable test_logical_size
+[ 93%] Built target test_grid_item_width
+[ 93%] Linking CXX executable test_break_spaces
+[ 93%] Built target test_logical_size
+[ 93%] Linking CXX executable test_flex_declaration
+[ 93%] Built target test_break_spaces
+[ 93%] Linking CXX executable test_grid_absolute
+[ 94%] Built target test_flex_declaration
+[ 94%] Linking CXX executable test_flex_alignment
+[ 95%] Built target test_grid_absolute
+[ 95%] Linking CXX executable test_font_units
+[ 95%] Built target test_flex_alignment
+[ 96%] Linking CXX executable test_anon_block_size
+[ 97%] Built target test_font_units
+[ 97%] Linking CXX executable test_button_center
+[ 97%] Built target test_anon_block_size
+[ 97%] Linking CXX executable test_radius_inherit
+[ 98%] Built target test_button_center
+[ 98%] Building C object CMakeFiles/test_js_viewport_runtime.dir/tests/test_js_viewport_runtime.c.o
+[ 98%] Linking CXX executable test_js_viewport_runtime
+[ 99%] Built target test_radius_inherit
+[100%] Building C object CMakeFiles/test_keyboard_editing.dir/tests/test_keyboard_editing.c.o
+[100%] Linking CXX executable test_keyboard_editing
+[100%] Built target test_js_viewport_runtime
+[100%] Built target test_keyboard_editing

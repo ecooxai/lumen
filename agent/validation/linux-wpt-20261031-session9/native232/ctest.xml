@@ -1,0 +1,916 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="(empty)"
+	tests="146"
+	failures="0"
+	disabled="0"
+	skipped="0"
+	hostname=""
+	time="84"
+	timestamp="2026-10-31T02:43:20"
+	>
+	<testcase name="platform" classname="platform" time="0.00336061" status="run">
+		<properties/>
+		<system-out>platform tests ok: RSS=14905344 bytes, CPU=2491 us
+</system-out>
+	</testcase>
+	<testcase name="encoding_labels" classname="encoding_labels" time="0.00254062" status="run">
+		<properties/>
+		<system-out>encoding label native controls: 221/221 PASS
+</system-out>
+	</testcase>
+	<testcase name="file" classname="file" time="0.00432426" status="run">
+		<properties/>
+		<system-out>file tests ok
+</system-out>
+	</testcase>
+	<testcase name="http_range" classname="http_range" time="0.0072588" status="run">
+		<properties/>
+		<system-out>HTTP Range controls: 42/42 PASS across 14 wire requests
+</system-out>
+	</testcase>
+	<testcase name="http_zstd" classname="http_zstd" time="0.120636" status="run">
+		<properties/>
+		<system-out>HTTP zstd controls: 258/258 PASS across sync, stream and sink paths
+</system-out>
+	</testcase>
+	<testcase name="mime_policy" classname="mime_policy" time="0.00434437" status="run">
+		<properties/>
+		<system-out>MIME response policy: 165/165 checks passed
+</system-out>
+	</testcase>
+	<testcase name="fetch_metadata" classname="fetch_metadata" time="0.011855" status="run">
+		<properties/>
+		<system-out>fetch-metadata: 195/195 checks passed (pinned full PSL)
+</system-out>
+	</testcase>
+	<testcase name="auth_user_agent" classname="auth_user_agent" time="0.00512237" status="run">
+		<properties/>
+		<system-out>Authentication browser identity passed
+</system-out>
+	</testcase>
+	<testcase name="net_redirect" classname="net_redirect" time="0.00607233" status="run">
+		<properties/>
+		<system-out>network redirect tests ok
+</system-out>
+	</testcase>
+	<testcase name="desktop_sites" classname="desktop_sites" time="0.00423154" status="run">
+		<properties/>
+		<system-out>saved: * -youtube.com
+</system-out>
+	</testcase>
+	<testcase name="cookie_site" classname="cookie_site" time="0.00410591" status="run">
+		<properties/>
+		<system-out>ok
+</system-out>
+	</testcase>
+	<testcase name="http_cache" classname="http_cache" time="0.00901174" status="run">
+		<properties/>
+		<system-out>http cache: ok
+</system-out>
+	</testcase>
+	<testcase name="proxy" classname="proxy" time="0.0161048" status="run">
+		<properties/>
+		<system-out>proxy ok
+</system-out>
+	</testcase>
+	<testcase name="net_stream" classname="net_stream" time="0.231927" status="run">
+		<properties/>
+		<system-out>stream byte ordering, bounded batching, live delivery and truncation passed
+</system-out>
+	</testcase>
+	<testcase name="download" classname="download" time="0.113991" status="run">
+		<properties/>
+		<system-out>requests 6 ranged 5 max parallel 6
+download classification, names, page bytes and parallel ranged downloads with cookies passed
+</system-out>
+	</testcase>
+	<testcase name="android_trust_import" classname="android_trust_import" time="0.00738473" status="run">
+		<properties/>
+		<system-out>Android trust import tests ok
+</system-out>
+	</testcase>
+	<testcase name="android_launch" classname="android_launch" time="0.00227124" status="run">
+		<properties/>
+		<system-out>Android launch queue tests ok
+</system-out>
+	</testcase>
+	<testcase name="android_back" classname="android_back" time="0.00255155" status="run">
+		<properties/>
+		<system-out>Android Back policy and bounded concurrent dispatch PASS
+</system-out>
+	</testcase>
+	<testcase name="android_fling_release" classname="android_fling_release" time="0.00143517" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_slow" classname="android_fling_slow" time="0.00118558" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_hold" classname="android_fling_hold" time="0.0011833" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_cancel" classname="android_fling_cancel" time="0.0013644" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_invalid" classname="android_fling_invalid" time="0.00130156" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_stall" classname="android_fling_stall" time="0.00131844" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_pixels" classname="android_fling_pixels" time="0.00134616" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_cadence" classname="android_fling_cadence" time="0.00151756" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_stop" classname="android_fling_stop" time="0.00143317" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_reverse" classname="android_fling_reverse" time="0.00133559" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_bounded" classname="android_fling_bounded" time="0.00128812" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_fling_independent" classname="android_fling_independent" time="0.00124699" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="android_touch_tap" classname="android_touch_tap" time="0.00124327" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_drag" classname="android_touch_drag" time="0.00124321" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_slop" classname="android_touch_slop" time="0.00123034" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_cancel" classname="android_touch_cancel" time="0.00125929" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_chrome" classname="android_touch_chrome" time="0.00133396" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_multitouch" classname="android_touch_multitouch" time="0.00121323" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_identity" classname="android_touch_identity" time="0.00134209" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_invalid" classname="android_touch_invalid" time="0.00112331" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_release_delta" classname="android_touch_release_delta" time="0.00115383" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_capacity" classname="android_touch_capacity" time="0.00126727" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_reverse" classname="android_touch_reverse" time="0.00129607" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="android_touch_independent" classname="android_touch_independent" time="0.00117745" status="run">
+		<properties/>
+		<system-out>Android touch scenario PASS
+</system-out>
+	</testcase>
+	<testcase name="workspace" classname="workspace" time="0.00126" status="run">
+		<properties/>
+		<system-out>workspace icon tests ok
+</system-out>
+	</testcase>
+	<testcase name="media_icon" classname="media_icon" time="0.00122091" status="run">
+		<properties/>
+		<system-out>media icon tests ok
+</system-out>
+	</testcase>
+	<testcase name="viewer" classname="viewer" time="0.00331399" status="run">
+		<properties/>
+		<system-out>local viewer tests ok
+</system-out>
+	</testcase>
+	<testcase name="viewport_events" classname="viewport_events" time="0.140985" status="run">
+		<properties/>
+		<system-out>TAP version 13
+# Subtest: root scroll targets the document and bubbles to window without resize or visual pan
+ok 1 - root scroll targets the document and bubbles to window without resize or visual pan
+  ---
+  duration_ms: 6.764246
+  type: 'test'
+  ...
+# Subtest: scroll propagation honors stopPropagation and reports listener errors
+ok 2 - scroll propagation honors stopPropagation and reports listener errors
+  ---
+  duration_ms: 2.786954
+  type: 'test'
+  ...
+# Subtest: visual viewport is a stable EventTarget with read-only CSS geometry
+ok 3 - visual viewport is a stable EventTarget with read-only CSS geometry
+  ---
+  duration_ms: 1.893397
+  type: 'test'
+  ...
+# Subtest: resize dispatches window then visual then changed media lists
+ok 4 - resize dispatches window then visual then changed media lists
+  ---
+  duration_ms: 2.797044
+  type: 'test'
+  ...
+# Subtest: DPR changes notify resolution queries without resize
+ok 5 - DPR changes notify resolution queries without resize
+  ---
+  duration_ms: 1.60613
+  type: 'tes...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="viewer_script" classname="viewer_script" time="0.0398138" status="run">
+		<properties/>
+		<system-out>viewer script tests ok
+</system-out>
+	</testcase>
+	<testcase name="embedded_assets" classname="embedded_assets" time="0.334297" status="run">
+		<properties/>
+		<system-out>..
+----------------------------------------------------------------------
+Ran 2 tests in 0.271s
+
+OK
+</system-out>
+	</testcase>
+	<testcase name="android_dependency_plan" classname="android_dependency_plan" time="0.0871485" status="run">
+		<properties/>
+		<system-out>.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.028s
+
+OK
+</system-out>
+	</testcase>
+	<testcase name="worker_tasks" classname="worker_tasks" time="0.0483625" status="run">
+		<properties/>
+		<system-out>foreground task queue: ordering, deadlines, wakeup, non-nesting, reentrancy, concurrent shutdown passed
+</system-out>
+	</testcase>
+	<testcase name="js_viewport_state" classname="js_viewport_state" time="0.00213388" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+	<testcase name="broadcast_site" classname="broadcast_site" time="0.0585745" status="run">
+		<properties/>
+		<system-out>BroadcastChannel site invariants: 30 passed, 0 failed; PSL available
+</system-out>
+	</testcase>
+	<testcase name="js_node_lifetime_root" classname="js_node_lifetime_root" time="0.336074" status="run">
+		<properties/>
+		<system-out>cross-realm node and ownerDocument lifetime PASS; all nodes released
+</system-out>
+	</testcase>
+	<testcase name="js_node_lifetime_child" classname="js_node_lifetime_child" time="0.338066" status="run">
+		<properties/>
+		<system-out>cross-realm node and ownerDocument lifetime PASS; all nodes released
+</system-out>
+	</testcase>
+	<testcase name="invoker_native" classname="invoker_native" time="0.212252" status="run">
+		<properties/>
+		<system-out>native passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_cancel" classname="invoker_cancel" time="0.217192" status="run">
+		<properties/>
+		<system-out>cancel passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_close" classname="invoker_close" time="0.211607" status="run">
+		<properties/>
+		<system-out>close passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_properties" classname="invoker_properties" time="0.212073" status="run">
+		<properties/>
+		<system-out>properties passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_custom" classname="invoker_custom" time="0.217846" status="run">
+		<properties/>
+		<system-out>custom passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_form" classname="invoker_form" time="0.224766" status="run">
+		<properties/>
+		<system-out>form passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_shadow" classname="invoker_shadow" time="0.21854" status="run">
+		<properties/>
+		<system-out>shadow passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_lifecycle" classname="invoker_lifecycle" time="0.218625" status="run">
+		<properties/>
+		<system-out>lifecycle passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_events" classname="invoker_events" time="0.241455" status="run">
+		<properties/>
+		<system-out>events passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_reentrant" classname="invoker_reentrant" time="0.245518" status="run">
+		<properties/>
+		<system-out>reentrant passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_toggle" classname="invoker_toggle" time="0.234639" status="run">
+		<properties/>
+		<system-out>toggle passed
+</system-out>
+	</testcase>
+	<testcase name="invoker_modal-order" classname="invoker_modal-order" time="0.21376" status="run">
+		<properties/>
+		<system-out>modal-order passed
+</system-out>
+	</testcase>
+	<testcase name="background_clip" classname="background_clip" time="0.0521322" status="run">
+		<properties/>
+		<system-out>background color clip: 25 independent cascade checks passed
+</system-out>
+	</testcase>
+	<testcase name="dom_style_tracking" classname="dom_style_tracking" time="0.759543" status="run">
+		<properties/>
+		<system-out>style presence .group :not([style]): root edit matched 4
+style presence .group &gt; p:not([style]) span: root edit matched 4
+style presence [style] &gt; span: root edit matched 4
+style presence .group &gt; p[style] + p span: root edit matched 4
+style presence p:nth-child(1 of :not([style])) span: root edit matched 4
+style presence .group:has(p[style]) span: root edit matched 4
+style presence :is(.group [style]) span: root edit matched 4
+style presence [mZ] :first-child:nth-child(1 of :not([style])): root edit matched 5
+style presence [style*='0'] &gt; span: root edit matched 4
+style presence .group &gt; p:not([style*=margin]) span: root edit matched 4
+style presence p:nth-child(1 of :not([style*=margin])) span: root edit matched 4
+style presence .group:has(p[style*='1px']) span: root edit matched 4
+style presence [mZ] :first-child:nth-child(1 of :not([style*=x])): root edit matched 5
+style presence :is(.group [style$=px]) span: root edit matched 4
+Stylesheet invalidation and class cache passed
+</system-out>
+	</testcase>
+	<testcase name="html5lib" classname="html5lib" time="0.0629973" status="run">
+		<properties/>
+		<system-out>adoption01.dat                                     18/18  
+adoption02.dat                                      4/4   
+blocks.dat                                         48/48  
+comments01.dat                                     16/16  
+doctype01.dat                                      37/37  
+domjs-unsafe.dat                                   49/49  
+entities01.dat                                     75/75  
+entities02.dat                                     26/26  
+foreign-fragment.dat                               66/66  
+html5test-com.dat                                  30/30  
+inbody01.dat                                        4/4   
+isindex.dat                                         4/4   
+main-element.dat                                    3/3   
+math.dat                                            8/8   
+menuitem-element.dat                               20/20  
+namespace-sensitivity.dat                           1/1   
+noscript01.dat                                      0/0   
+pending-spec-changes-...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="id_map" classname="id_map" time="0.0535392" status="run">
+		<properties/>
+		<system-out>id map ok
+</system-out>
+	</testcase>
+	<testcase name="has_filter" classname="has_filter" time="0.0554685" status="run">
+		<properties/>
+		<system-out>:has() name filter matches full subtree walks
+</system-out>
+	</testcase>
+	<testcase name="js_fullscreen" classname="js_fullscreen" time="4.20861" status="run">
+		<properties/>
+		<system-out>jsrun: fullscreen 1
+jsrun: fullscreen 0
+jsrun: fullscreen 1
+jsrun: fullscreen 0
+[js log] RESULTS fullscreen:PASS
+jsrun: context 138.0ms, 1 scripts 2.4ms, dom_version 46
+</system-out>
+	</testcase>
+	<testcase name="js_intersection_geometry" classname="js_intersection_geometry" time="4.11486" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS intersection-geometry:PASS
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":297.02323800325394,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":297.71701100468636,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-enter","start":297.334439009428,"end":313.42671701312065,"frames":[{"stamp":297.6141570210457,"now":297.67492002248764},{"stamp":313.2855370044708,"now":313.39494401216507}],"expected":true,"records":[{"time":297.71701100468636,"intersecting":true,"ratio":1,"top":120,"scrollTop":200}],"geometryReads":2,"scrollTop":200}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"callback","records":[{"time":313.65366899967194,"intersecting":false,"ratio":0,"top":320,"scrollTop":0}]}
+[js log] DIAGNOSTIC io-frame-cadence {"phase":"scroll-exit","start":313.5184600055218,"end":344.90961199998856,"frames":[{"stamp":329.30433800816...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="js_hidden_scroll_retention" classname="js_hidden_scroll_retention" time="1.36942" status="run">
+		<properties/>
+		<system-out>[js log] DIAGNOSTIC hidden-scroll-parent-overflow [{"phase":"hidden","width":160,"height":140},{"phase":"revealed","width":400,"height":400},{"phase":"hidden-again","width":160,"height":140}]
+[js log] hidden-scroll-retention: 7 cases, 30 phases, 921 fields, documented eager hidden size differences 1
+[js log] RESULTS hidden-scroll-retention:PASS
+[js log] MEASUREMENTS hidden-scroll-state:COMPLETE {"completed":["retain-both-axes","hidden-set-zero","hidden-set-positive","range-shrink-and-regrow","overflow-mode-change","nested-outer-hidden-inner-setter","nested-independently-hidden"],"records":30}
+[js log] RESULTS hidden-scroll-state:PASS
+jsrun: context 140.4ms, 1 scripts 14.3ms, dom_version 130
+</system-out>
+	</testcase>
+	<testcase name="js_document_lifecycle" classname="js_document_lifecycle" time="3.50106" status="run">
+		<properties/>
+		<system-out>jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+jsrun: frame about:srcdoc
+[js log] LIFECYCLE_CASE {"index":0,"id":"top-initial","finished":true,"eventCount":5,"actionCount":1,"errorCount":0}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":0,"value":{"sequence":0,"listener":"document-dcl","generation":"top","type":"DOMContentLoaded","className":"[object Event]","target":"document","currentTarget":"document","path":["document","window"],"phase":2,"trusted":true,"bubbles":true,"cancelable":false,"composed":false,"persisted":null,"readyState":"interactive","activeGeneration":"top"}}
+[js log] LIFECYCLE_ROW {"caseIndex":0,"caseId":"top-initial","kind":"events","index":1,"value":{"sequence":1,"listener":"window-bubble","generation":"top","type":"...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="js_minmax_definite" classname="js_minmax_definite" time="2.25368" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS minmax-definite:PASS
+jsrun: context 156.9ms, 1 scripts 13.8ms, dom_version 37
+</system-out>
+	</testcase>
+	<testcase name="js_image_bitmap" classname="js_image_bitmap" time="3.21184" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS image-bitmap:PASS
+jsrun: context 139.9ms, 1 scripts 2.7ms, dom_version 16
+</system-out>
+	</testcase>
+	<testcase name="js_gsi_button" classname="js_gsi_button" time="2.22098" status="run">
+		<properties/>
+		<system-out>[js log] gsi b=0.0,0.0 355.0x40.0 i=95.1,11.0 18.0x18.0 g=95.1,11.0 18.0x18.0 t=121.1,11.5 138.8x17.0
+[js log] RESULTS gsi-button:PASS
+jsrun: context 138.5ms, 1 scripts 12.5ms, dom_version 62
+</system-out>
+	</testcase>
+	<testcase name="js_dom_webidl" classname="js_dom_webidl" time="2.27117" status="run">
+		<properties/>
+		<system-out>jsrun: frame about:srcdoc
+[js log] RESULTS dom-webidl:PASS
+jsrun: context 136.2ms, 1 scripts 64.9ms, dom_version 30
+</system-out>
+	</testcase>
+	<testcase name="js_empty_input" classname="js_empty_input" time="2.22241" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS empty-input:PASS
+jsrun: context 138.7ms, 1 scripts 13.9ms, dom_version 44
+</system-out>
+	</testcase>
+	<testcase name="js_indexeddb" classname="js_indexeddb" time="2.21521" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS indexeddb:PASS
+jsrun: context 140.2ms, 1 scripts 2.2ms, dom_version 14
+</system-out>
+	</testcase>
+	<testcase name="js_web_locks" classname="js_web_locks" time="2.21125" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS web-locks:PASS
+jsrun: context 138.1ms, 1 scripts 2.3ms, dom_version 14
+</system-out>
+	</testcase>
+	<testcase name="js_unhandled_rejection" classname="js_unhandled_rejection" time="2.22027" status="run">
+		<properties/>
+		<system-out>[js warn] Unhandled promise rejection: Error: loud
+    at file:///mnt/p3/project/browser/lumen-android/lumen-android/tests/js/unhandled-rejection.html:10:29
+[js log] RESULTS unhandled-rejection:PASS
+jsrun: context 145.6ms, 1 scripts 2.1ms, dom_version 14
+</system-out>
+	</testcase>
+	<testcase name="js_window_ports" classname="js_window_ports" time="2.21138" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS window-ports:PASS
+jsrun: context 135.6ms, 1 scripts 2.4ms, dom_version 20
+</system-out>
+	</testcase>
+	<testcase name="js_pointer_events" classname="js_pointer_events" time="1.22496" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS pointer-events:PASS
+jsrun: context 148.2ms, 1 scripts 4.2ms, dom_version 19
+</system-out>
+	</testcase>
+	<testcase name="js_xpath" classname="js_xpath" time="2.23409" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS xpath:PASS
+jsrun: context 148.0ms, 1 scripts 13.3ms, dom_version 65
+</system-out>
+	</testcase>
+	<testcase name="js_get_animations" classname="js_get_animations" time="1.21841" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS get-animations:PASS
+jsrun: context 142.9ms, 1 scripts 4.5ms, dom_version 23
+</system-out>
+	</testcase>
+	<testcase name="browser_input_modifier" classname="browser_input_modifier" time="1.41412" status="run">
+		<properties/>
+		<system-out>RESULTS browser-input-modifier:PASS 7/7 [{"name":"cancelled modifier request reports AbortError","status":"PASS","detail":"AbortError"},{"name":"cancelled modifier does not affect replacement input","status":"PASS","detail":"{\"value\":\"a\",\"events\":[{\"key\":\"a\",\"ctrl\":false,\"shift\":false}]}"},{"name":"queued modifier changes apply in dispatch order","status":"PASS","detail":"[{\"key\":\"ArrowLeft\",\"ctrl\":true,\"shift\":false}]"},{"name":"released modifier does not affect later input","status":"PASS","detail":"{\"value\":\"b\",\"events\":[{\"key\":\"b\",\"ctrl\":false,\"shift\":false}]}"},{"name":"cancelled release request reports AbortError","status":"PASS","detail":"AbortError"},{"name":"cancelled release preserves an already delivered modifier","status":"PASS","detail":"[{\"key\":\"ArrowLeft\",\"ctrl\":true,\"shift\":false}]"},{"name":"explicit release clears delivered virtual state","status":"PASS","detail":"{\"value\":\"b\",\"events\":[{\"key\":\"b\",\"ctrl\":false,\"shift\":false}]}"}]
+Reso...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="browser_popup_input" classname="browser_popup_input" time="1.5181" status="run">
+		<properties/>
+		<system-out>RESULTS browser-popup-input:PASS 2/2 [{"name":"queued input completion reaches its originating document after popup and navigation","status":"PASS","detail":"settled=true"},{"name":"trusted text input reaches its originating textarea","status":"PASS","detail":"value=\"x\""}]
+Resource peak: 48.8% CPU, 158.9 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-popup-input/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_input_queue" classname="browser_input_queue" time="1.51893" status="run">
+		<properties/>
+		<system-out>RESULTS browser-input-queue:PASS 11/11 [{"name":"control metadata survives navigation","status":"PASS","detail":"present"},{"name":"navigation cancels a live origin request with AbortError","status":"PASS","detail":"AbortError"},{"name":"cancelled input is not delivered to the departing document","status":"PASS","detail":""},{"name":"cancelled input is not delivered to the replacement document","status":"PASS","detail":"\"\""},{"name":"closed target receives no further input in another document","status":"PASS","detail":"\"\""},{"name":"closed scripted target is retired","status":"PASS","detail":"true"},{"name":"later tab does not receive an earlier target request","status":"PASS","detail":""},{"name":"concurrent input requests complete in queue order","status":"PASS","detail":"true:\"abc\""},{"name":"queued text retains its UTF-8 bytes through dispatch","status":"PASS","detail":"true:\"é中\""},{"name":"pointer actions reach the originating page behind a popup","status":"PASS","detail":"true:1"},{"name":"ro...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="browser_module_errors" classname="browser_module_errors" time="1.36403" status="run">
+		<properties/>
+		<system-out>RESULTS browser-module-errors:PASS 43/43
+Resource peak: 74.7% CPU, 161.4 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-module-errors/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_module_identity" classname="browser_module_identity" time="1.35357" status="run">
+		<properties/>
+		<system-out>RESULTS browser-module-identity:PASS 25/25
+Resource peak: 48.8% CPU, 174.4 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-module-identity/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_module_graph_identity" classname="browser_module_graph_identity" time="1.43488" status="run">
+		<properties/>
+		<system-out>RESULTS browser-module-graph-identity:PASS 42/42
+Resource peak: 39.8% CPU, 157.4 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-module-graph-identity/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_body_event" classname="browser_body_event" time="1.14345" status="run">
+		<properties/>
+		<system-out>RESULTS browser-body-event:PASS 10/10 [{"name":"null and undefined body values reject with HierarchyRequestError","status":"PASS"},{"name":"non-HTML element body values reject during interface conversion","status":"PASS"},{"name":"body descriptor validates its receiver","status":"PASS"},{"name":"setting the same body does not mutate the tree","status":"PASS"},{"name":"replacement adopts a foreign body and its descendants","status":"PASS"},{"name":"body replacement creates one combined target mutation record","status":"PASS"},{"name":"body replacement ignores author overrides of public mutation methods","status":"PASS"},{"name":"non-HTML root accepts an HTML body while getter remains null","status":"PASS"},{"name":"body replacement adopts nodes from a different Window realm","status":"PASS"},{"name":"standard global handler properties dispatch real Event objects","status":"PASS"}]
+Resource peak: 37.8% CPU, 150.0 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="browser_grid_typed_values" classname="browser_grid_typed_values" time="1.14336" status="run">
+		<properties/>
+		<system-out>RESULTS browser-grid-typed-values:PASS 62/62
+Resource peak: 29.9% CPU, 130.0 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-typed-values/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_grid_used_tracks" classname="browser_grid_used_tracks" time="1.14728" status="run">
+		<properties/>
+		<system-out>RESULTS browser-grid-used-tracks:PASS 47/47
+Resource peak: 41.8% CPU, 149.4 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-used-tracks/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_grid_repeat_count" classname="browser_grid_repeat_count" time="1.14364" status="run">
+		<properties/>
+		<system-out>RESULTS browser-grid-repeat-count:PASS 128/128
+Resource peak: 32.9% CPU, 130.7 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-repeat-count/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_grid_repeat" classname="browser_grid_repeat" time="1.15951" status="run">
+		<properties/>
+		<system-out>RESULTS browser-grid-repeat:PASS 84/84
+Resource peak: 29.9% CPU, 129.7 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-repeat/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_grid_cssom" classname="browser_grid_cssom" time="1.14101" status="run">
+		<properties/>
+		<system-out>RESULTS browser-grid-cssom:PASS 28/28 [{"name":"invalid track assignment preserves previous valid declaration","status":"PASS"},{"name":"invalid auto-flow does not replace a valid value","status":"PASS"},{"name":"track grammar agrees with two-argument CSS.supports","status":"PASS"},{"name":"area shorthand expands custom identifiers across all four lines","status":"PASS"},{"name":"line shorthand serializes an omitted auto end","status":"PASS"},{"name":"span line order and redundant one canonicalization","status":"PASS"},{"name":"invalid span token ordering preserves the declaration","status":"PASS"},{"name":"escaped identifier equivalence permits shortest serialization","status":"PASS"},{"name":"template areas expand to longhand rows columns and areas","status":"PASS"},{"name":"template row boundary names merge and trailing empty lists disappear","status":"PASS"},{"name":"nonrectangular named areas are rejected","status":"PASS"},{"name":"grid shorthand resets implicit properties","status":"PASS"},{"name":"impo...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="browser_grid_track_regression" classname="browser_grid_track_regression" time="1.14779" status="run">
+		<properties/>
+		<system-out>RESULTS browser-grid-track-regression:PASS 18/18
+Resource peak: 31.9% CPU, 130.4 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-grid-track-regression/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_replaced_sizing" classname="browser_replaced_sizing" time="1.14838" status="run">
+		<properties/>
+		<system-out>RESULTS browser-replaced-sizing:PASS 20/20
+Resource peak: 27.9% CPU, 129.8 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-replaced-sizing/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_position_cssom_regression" classname="browser_position_cssom_regression" time="1.15908" status="run">
+		<properties/>
+		<system-out>RESULTS browser-position-cssom-regression:PASS 7/7 [{"name":"Specified background-position preserves its pending variable token stream","status":"PASS","message":""},{"name":"Last shorthand declaration overrides earlier axis for backgroundPosition","status":"PASS","message":""},{"name":"Pending shorthand axes are empty while computed substitution resolves","status":"PASS","message":""},{"name":"Direct pending axis preserves its token stream and resolves at computed value","status":"PASS","message":""},{"name":"Explicit setProperty replaces an important value with a normal value","status":"PASS","message":""},{"name":"Explicit property assignment replaces an important value with a normal value","status":"PASS","message":""},{"name":"Custom-property identifiers remain case-sensitive in specified and computed positions","status":"PASS","message":""}]
+Resource peak: 28.9% CPU, 129.1 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-position-cssom-regressio...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="browser_image_lifecycle" classname="browser_image_lifecycle" time="1.33793" status="run">
+		<properties/>
+		<system-out>RESULTS browser-image-lifecycle:PASS 16/16
+Resource peak: 29.9% CPU, 130.8 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-image-lifecycle/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_control_selection" classname="browser_control_selection" time="1.14502" status="run">
+		<properties/>
+		<system-out>RESULTS control-selection:PASS 37/37
+Resource peak: 36.8% CPU, 130.6 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-control-selection/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="browser_react_message_replacement" classname="browser_react_message_replacement" time="1.32657" status="run">
+		<properties/>
+		<system-out>RESULTS react-message-replacement:PASS 4/4
+Resource peak: 33.9% CPU, 130.8 MiB RSS; one-second samples: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/browser-react-message-replacement/resources.csv
+</system-out>
+	</testcase>
+	<testcase name="js_performance_startup" classname="js_performance_startup" time="3.21734" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS performance-startup:PASS
+jsrun: context 137.0ms, 1 scripts 4.1ms, dom_version 23
+</system-out>
+	</testcase>
+	<testcase name="js_worker_global_listener" classname="js_worker_global_listener" time="2.22148" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS worker-global-listener dispatch:PASS listen:PASS
+jsrun: context 143.9ms, 1 scripts 2.8ms, dom_version 14
+</system-out>
+	</testcase>
+	<testcase name="js_worker_xhr" classname="js_worker_xhr" time="3.21973" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS worker-xhr:PASS
+jsrun: context 138.0ms, 1 scripts 2.9ms, dom_version 14
+</system-out>
+	</testcase>
+	<testcase name="js_touch_action" classname="js_touch_action" time="0.722931" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS touch-action:PASS
+jsrun: context 136.8ms, 1 scripts 3.8ms, dom_version 49
+</system-out>
+	</testcase>
+	<testcase name="js_raf_throttle" classname="js_raf_throttle" time="3.7146" status="run">
+		<properties/>
+		<system-out>[js log] RESULTS raf-throttle:PASS
+jsrun: context 144.2ms, 1 scripts 1.8ms, dom_version 14
+</system-out>
+	</testcase>
+	<testcase name="nested_overflow" classname="nested_overflow" time="0.0642902" status="run">
+		<properties/>
+		<system-out>Nested visible overflow, clipping, resizing and fixed descendants passed
+</system-out>
+	</testcase>
+	<testcase name="scale_text" classname="scale_text" time="0.0647514" status="run">
+		<properties/>
+		<system-out>Uniform scale transforms scale text with the subtree passed
+</system-out>
+	</testcase>
+	<testcase name="round_clip" classname="round_clip" time="0.0633222" status="run">
+		<properties/>
+		<system-out>Rounded image, outline and overflow clips passed
+</system-out>
+	</testcase>
+	<testcase name="svg_gradient_img" classname="svg_gradient_img" time="0.0527955" status="run">
+		<properties/>
+		<system-out>ring left ff3186ff centre 00000000
+SVG image gradients passed
+</system-out>
+	</testcase>
+	<testcase name="raster_bands" classname="raster_bands" time="0.180376" status="run">
+		<properties/>
+		<system-out>rect 0: one pass 37.2 ms, bands 12.5 ms, 0 differing px, punched 1/1
+rect 1: one pass 24.4 ms, bands 7.2 ms, 0 differing px, punched 1/1
+rect 2: one pass 4.1 ms, bands 2.4 ms, 0 differing px, punched 1/1
+rect 3: one pass 7.9 ms, bands 3.3 ms, 0 differing px, punched 1/1
+Banded parallel raster matches one pass
+</system-out>
+	</testcase>
+	<testcase name="raster_spans" classname="raster_spans" time="0.812162" status="run">
+		<properties/>
+		<system-out>146 items, 12 layers, 18 clips in view
+scale 1 rect 0: spans 10.5 ms, per pixel 14.5 ms, 0 differing px
+scale 1 rect 1: spans 5.4 ms, per pixel 10.3 ms, 0 differing px
+scale 1 rect 2: spans 0.7 ms, per pixel 1.4 ms, 0 differing px
+scale 1 rect 3: spans 0.3 ms, per pixel 0.5 ms, 0 differing px
+scale 1 rect 4: spans 1.0 ms, per pixel 2.2 ms, 0 differing px
+scale 2 rect 0: spans 36.4 ms, per pixel 57.9 ms, 0 differing px
+scale 2 rect 1: spans 24.7 ms, per pixel 44.9 ms, 0 differing px
+scale 2 rect 2: spans 1.7 ms, per pixel 2.2 ms, 0 differing px
+scale 2 rect 3: spans 1.1 ms, per pixel 1.4 ms, 0 differing px
+scale 2 rect 4: spans 2.7 ms, per pixel 4.7 ms, 0 differing px
+scale 1.75 rect 0: spans 24.8 ms, per pixel 41.4 ms, 0 differing px
+scale 1.75 rect 1: spans 19.7 ms, per pixel 34.3 ms, 0 differing px
+scale 1.75 rect 2: spans 1.3 ms, per pixel 1.9 ms, 0 differing px
+scale 1.75 rect 3: spans 0.9 ms, per pixel 1.1 ms, 0 differing px
+scale 1.75 rect 4: spans 2.7 ms, per pixel 4.8 ms, 0 differing px
+scale 2.62 rec...
+[This part of the test output was removed since it exceeds the threshold of 1024 bytes.]
+</system-out>
+	</testcase>
+	<testcase name="fontconfig_match" classname="fontconfig_match" time="0.666015" status="run">
+		<properties/>
+		<system-out>Fontconfig oracle: 718 comparisons, 0 mismatches, peak snapshot 920 patterns, version 21801
+</system-out>
+	</testcase>
+	<testcase name="linux_capture_refusal" classname="linux_capture_refusal" time="0.00149535" status="run">
+		<properties/>
+		<system-out>production Linux capture refusal: 19 checks; no SDL backend linked or called
+</system-out>
+	</testcase>
+	<testcase name="font_woff2" classname="font_woff2" time="0.0554445" status="run">
+		<properties/>
+		<system-out>woff2 face: 5 glyphs, 51.0 px wide, H 26x28
+WOFF2 web font loaded
+</system-out>
+	</testcase>
+	<testcase name="shape_cache" classname="shape_cache" time="0.0651615" status="run">
+		<properties/>
+		<system-out>shape cache: ok
+</system-out>
+	</testcase>
+	<testcase name="code_cache" classname="code_cache" time="0.366536" status="run">
+		<properties/>
+		<system-out>code cache: ok
+</system-out>
+	</testcase>
+	<testcase name="inset_move" classname="inset_move" time="0.0642463" status="run">
+		<properties/>
+		<system-out>inset move: ok
+</system-out>
+	</testcase>
+	<testcase name="sticky_geometry" classname="sticky_geometry" time="0.0635589" status="run">
+		<properties/>
+		<system-out>Sticky scroll geometry, painting, hit tests and containing-block bounds passed
+</system-out>
+	</testcase>
+	<testcase name="paint_cull" classname="paint_cull" time="0.093209" status="run">
+		<properties/>
+		<system-out>page sy=0: 2 items in view; built 306 full, 4 culled
+page sy=150: 0 items in view; built 305 full, 3 culled
+page sy=1000: 0 items in view; built 304 full, 2 culled
+page sy=2600: 0 items in view; built 304 full, 2 culled
+page sy=4000: 0 items in view; built 304 full, 2 culled
+page sy=5900: 221 items in view; built 517 full, 232 culled
+page sy=6100: 269 items in view; built 562 full, 281 culled
+page sy=20958: 195 items in view; built 493 full, 206 culled
+moved sy=0: 1 items in view; built 305 full, 3 culled
+</system-out>
+	</testcase>
+	<testcase name="grid_used_values" classname="grid_used_values" time="0.0787412" status="run">
+		<properties/>
+		<system-out>grid used values: 17 ordinary checks and120 layout/animation replacement cycles passed
+</system-out>
+	</testcase>
+	<testcase name="css_stepped_math" classname="css_stepped_math" time="0.0526748" status="run">
+		<properties/>
+		<system-out>PASS css_stepped_math 199 native boundary checks
+</system-out>
+	</testcase>
+	<testcase name="css_stretch" classname="css_stretch" time="0.0713258" status="run">
+		<properties/>
+		<system-out>CSS stretch: 153/153 native checks passed
+</system-out>
+	</testcase>
+	<testcase name="css_containment" classname="css_containment" time="0.0710724" status="run">
+		<properties/>
+		<system-out>containment: 339 checks, 0 failures
+</system-out>
+	</testcase>
+	<testcase name="grid_repeat_validation" classname="grid_repeat_validation" time="0.0528865" status="run">
+		<properties/>
+		<system-out>grid repeat validation: atomic arrays/metadata and fixed-size grammar PASS
+</system-out>
+	</testcase>
+	<testcase name="grid_alignment" classname="grid_alignment" time="0.072721" status="run">
+		<properties/>
+		<system-out>grid alignment: 75 geometry cases passed
+</system-out>
+	</testcase>
+	<testcase name="grid_item_width" classname="grid_item_width" time="0.0637506" status="run">
+		<properties/>
+		<system-out>a: x 550 w 680 h 600 (want w 680)
+b: x 10 w 1060 h 22 (want w 1060)
+c: x 10 w 1060 h 22 (want w 1060)
+e: x 10 w 1060 h 22 (want w 1060)
+m: x 10 w 1060 h 22 (want w 1060)
+minified computed: [10px minmax(0,1fr)10px] [minmax(20px,.8fr)auto minmax(20px,1fr)]
+minified resolved: [10px 1060px 10px] [230.222px 22px 287.778px]
+</system-out>
+	</testcase>
+	<testcase name="logical_size" classname="logical_size" time="0.15732" status="run">
+		<properties/>
+		<system-out>p: w 200 h 88; b: w 100 h 60
+22 logical cascade controls passed
+186 logical border controls passed
+1638 logical edge checks passed
+1662 logical edge and mutation checks passed
+</system-out>
+	</testcase>
+	<testcase name="break_spaces" classname="break_spaces" time="0.0682588" status="run">
+		<properties/>
+		<system-out>22 preserved-space line-break controls passed
+</system-out>
+	</testcase>
+	<testcase name="flex_declaration" classname="flex_declaration" time="0.0643775" status="run">
+		<properties/>
+		<system-out>336 native flex declaration controls passed
+</system-out>
+	</testcase>
+	<testcase name="grid_absolute" classname="grid_absolute" time="0.0662908" status="run">
+		<properties/>
+		<system-out>Grid absolute containing-block controls: 96/96 passed
+</system-out>
+	</testcase>
+	<testcase name="flex_alignment" classname="flex_alignment" time="0.0665321" status="run">
+		<properties/>
+		<system-out>Flex alignment geometry: 393/393 passed
+</system-out>
+	</testcase>
+	<testcase name="font_units" classname="font_units" time="0.0778503" status="run">
+		<properties/>
+		<system-out>74 font-unit controls passed; external Ahem loaded (21768 bytes), zero-advance font loaded (1056 bytes)
+</system-out>
+	</testcase>
+	<testcase name="anon_block_size" classname="anon_block_size" time="0.0647883" status="run">
+		<properties/>
+		<system-out>overlay y 0 h 414, row y 4
+box y 0 h 300 w 540, row y 24
+square y 700 h 200, row y 724
+</system-out>
+	</testcase>
+	<testcase name="button_center" classname="button_center" time="0.0636417" status="run">
+		<properties/>
+		<system-out>b1 y 0 h 48, svg y 12 h 24
+b2 y 48 h 60, span y 69.9338 h 16.1324
+b3 y 108, svg y 108; div y 156, svg y 156
+</system-out>
+	</testcase>
+	<testcase name="radius_inherit" classname="radius_inherit" time="0.0524814" status="run">
+		<properties/>
+		<system-out>a 26 26 0 0, c 4 26, b 9 0, i 0
+</system-out>
+	</testcase>
+	<testcase name="starting_style_top" classname="starting_style_top" time="0.0540248" status="run">
+		<properties/>
+		<system-out>top passed
+</system-out>
+	</testcase>
+	<testcase name="starting_style_nested" classname="starting_style_nested" time="0.0588261" status="run">
+		<properties/>
+		<system-out>nested passed
+</system-out>
+	</testcase>
+	<testcase name="starting_style_conditional" classname="starting_style_conditional" time="0.0531513" status="run">
+		<properties/>
+		<system-out>conditional passed
+</system-out>
+	</testcase>
+	<testcase name="starting_style_reopen" classname="starting_style_reopen" time="0.0528109" status="run">
+		<properties/>
+		<system-out>reopen passed
+</system-out>
+	</testcase>
+	<testcase name="js_viewport_runtime" classname="js_viewport_runtime" time="0.225879" status="run">
+		<properties/>
+		<system-out>viewport runtime assertions passed
+</system-out>
+	</testcase>
+	<testcase name="keyboard_editing" classname="keyboard_editing" time="0.238138" status="run">
+		<properties/>
+		<system-out></system-out>
+	</testcase>
+</testsuite>

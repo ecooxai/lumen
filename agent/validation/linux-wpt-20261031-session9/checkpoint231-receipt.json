@@ -1,0 +1,15 @@
+{
+  "created_utc": "2026-10-31T09:35:38.821768+00:00",
+  "candidate": 231,
+  "tested_source_commit": "554d59472954585bfd39c579ee122f9f21194847",
+  "evidence_commit": "cc270592844edea21881200d2917e3dcd27337ca",
+  "staged_file_count": 429,
+  "path_allowlist_sha256": "30526a932d99e2ac34c130503a21d71c4fc970c571f9a53c4dcfff57e64f264d",
+  "all648_recorded_inputs_unchanged": true,
+  "immutable_binary_unchanged": true,
+  "source_frozen_until_explicit_release": true,
+  "private_working_history_only": true,
+  "iteration_duration_minutes": 61.6443847,
+  "cumulative_task_minutes": 155.43971051666668,
+  "contract_sha256": "7044502e5d3974e2ce7b67e30cf18907c17c28731f9b6f713c316940ac1f6c82"
+}

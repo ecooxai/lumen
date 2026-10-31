@@ -1,0 +1,15 @@
+{
+  "candidate": 232,
+  "source_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "command": [
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/run-build-native.py",
+    "--iteration",
+    "232",
+    "--source",
+    "571e388a0cfd84ff35a853188e6c96053e024606"
+  ],
+  "started_utc": "2026-10-31T09:42:30.017048+00:00",
+  "finished_utc": "2026-10-31T09:44:45.349648+00:00",
+  "actual_wrapper_returncode": 0
+}

@@ -1,0 +1,21 @@
+{
+  "label": "frozen232 actual host pin-release proof",
+  "started_utc": "2026-10-31T09:53:07.973065+00:00",
+  "finished_utc": "2026-10-31T09:53:13.999775+00:00",
+  "root_pid": 2769185,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 6,
+  "elapsed_seconds": 6.027,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 40.0,
+  "cpu_median": 46.999,
+  "cpu_max": 87.011,
+  "cpu_last10_median": 46.999,
+  "rss_peak_mb": 543.937,
+  "rss_final_mb": 543.937,
+  "pss_peak_mb": 504.814,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-event-pins/proof232/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}
