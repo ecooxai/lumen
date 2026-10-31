@@ -1,0 +1,26 @@
+{
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "rows": [
+    {
+      "case": "localName",
+      "assigned": true,
+      "hasBox": true,
+      "actual": false,
+      "reads": 0,
+      "error": null,
+      "pass": true
+    },
+    {
+      "case": "namespaceURI",
+      "assigned": true,
+      "hasBox": true,
+      "actual": false,
+      "reads": 0,
+      "error": null,
+      "pass": true
+    }
+  ],
+  "behavior": "PASS"
+}

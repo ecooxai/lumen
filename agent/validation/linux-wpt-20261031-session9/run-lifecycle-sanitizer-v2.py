@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""Real instrumented runtime exits, strict lifecycle behavior, and two required negative host controls."""
+from pathlib import Path
+import argparse,datetime,hashlib,json,os,re,subprocess,sys,time
+ROOT=Path('/mnt/p3/project/browser/lumen-android/lumen-android');BASE=ROOT/'agent/validation/linux-wpt-20261031-session9';SAN=ROOT/'build/codex-style-sanitize'
+def sha(p):
+ with Path(p).open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
+def now():return datetime.datetime.now(datetime.timezone.utc).isoformat()
+def write(p,v):p.write_text(json.dumps(v,indent=2,allow_nan=False)+'\n')
+def require(v,msg):
+ if not v:raise ValueError(msg)
+def load(p):return json.loads(Path(p).read_text())
+def git():return {'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'source_diff_sha256':hashlib.sha256(subprocess.check_output(['git','diff','--binary','--','src','tests','CMakeLists.txt','tools/gen_css_props.py'],cwd=ROOT)).hexdigest()}
+ap=argparse.ArgumentParser();ap.add_argument('--iteration',type=int,required=True);a=ap.parse_args();require(Path.cwd().resolve()==ROOT,'Project cwd required');require(a.iteration>=233,'Use new candidate after preserved failed232')
+build=ROOT/f'agent/validation/iteration-{a.iteration}';out=BASE/f'native{a.iteration}-lifecycle-sanitizer-v2';require(not out.exists(),'Fresh output required');state=load(build/'build-state.json');manifest=load(build/'source-manifest-before.json');require(manifest==load(build/'source-manifest-after.json'),'Build manifests differ');require(state['build_exit_code']==state['startup_exit_code']==0 and state['source_unchanged_during_build'],'Successful unchanged normal build required');require(all(sha(ROOT/n)==h for n,h in manifest['files'].items()),'Recorded inputs changed');before_git=git();require(before_git['head']==state['head'] and before_git['source_diff_sha256']==hashlib.sha256(b'').hexdigest(),'Frozen clean source required')
+fixture=ROOT/'tests/js/document-lifecycle.html';contract=BASE/'qa-document-lifecycle/acceptance-contract-v1.json';negative=BASE/'qa-jsrun-completion-gate/manifest.json';require(sha(fixture)=='cc4c6cfe1372b603cf395d9181a0e4bfaf133c4078ea10f99609c0b4c42c7d04','Unchanged strict fixture required');require(sha(contract)=='7044502e5d3974e2ce7b67e30cf18907c17c28731f9b6f713c316940ac1f6c82','Contract changed');require(sha(negative)=='f144baa3631b7f312e55ffa3fe754bd1e7b787dbb1c7b5ea66ce8c7e2599f29b','Negative controls changed');np=load(negative);require(np['environment']=={'JSRUN_UNTIL_ATTR':'data-document-lifecycle-complete','JSRUN_EXPECT_ATTR_VALUE':'PASS'} and len(np['rows'])==2,'Unexpected completion contract')
+cases=[{'label':'positive-lifecycle','fixture':str(fixture),'duration_ms':12000,'expected_exit':0}]
+for i,r in enumerate(np['rows']):
+ p=ROOT/r['source_path'];require(sha(p)==r['source_sha256'] and r['expected_actual_process_exit']==1 and r['duration_argument_ms']==20,'Negative control pin differs');cases.append({'label':['missing-completion','failed-completion'][i],'fixture':str(p),'duration_ms':20,'expected_exit':1})
+cache=(SAN/'CMakeCache.txt').read_text();flags={l.split(':',1)[0]:l.split('=',1)[1] for l in cache.splitlines() if l.startswith(('CMAKE_C_FLAGS:','CMAKE_CXX_FLAGS:','CMAKE_EXE_LINKER_FLAGS:'))};require(len(flags)==3 and all('-fsanitize=address,undefined' in v for v in flags.values()),'Existing genuine sanitizer flags required')
+paths=[Path(__file__).resolve(),fixture,contract,negative,ROOT/'tools/codex_compile.py',ROOT/'agent/progress/monitor.py',ROOT/'agent/progress/cgroup_monitor.py']+[Path(c['fixture']) for c in cases[1:]]+[build/n for n in ['build-state.json','source-manifest-before.json','source-manifest-after.json','build.log']];pins={str(p):sha(p) for p in paths};out.mkdir();write(out/'pins-before.json',pins);(out/'cache-before.txt').write_text(cache)
+immutable=SAN/f'jsrun-astra-i{a.iteration}-lifecycle-sanitized';require(not immutable.exists(),'Fresh immutable instrumented target required')
+runtime_inner='import subprocess,pathlib,json,datetime,time,os,signal,sys,hashlib,shutil\nsource=pathlib.Path('+repr(str(SAN/'jsrun'))+');binary=pathlib.Path('+repr(str(immutable))+');out=pathlib.Path('+repr(str(out))+');cases='+repr(cases)+'\nwith source.open("rb") as i,binary.open("xb") as o:shutil.copyfileobj(i,o)\nbinary.chmod(0o555);before=hashlib.sha256(binary.read_bytes()).hexdigest();rows=[]\nfor case in cases:\n command=[str(binary),case["fixture"],str(case["duration_ms"])];start=datetime.datetime.now(datetime.timezone.utc).isoformat();clock=time.monotonic();timeout=False;signals=[]\n with (out/(case["label"]+".log")).open("x") as log:\n  p=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)\n  try:rc=p.wait(timeout=30)\n  except subprocess.TimeoutExpired:\n   timeout=True;os.killpg(p.pid,signal.SIGTERM);signals.append("SIGTERM")\n   try:rc=p.wait(timeout=5)\n   except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL);signals.append("SIGKILL");rc=p.wait()\n row={**case,"started_utc":start,"finished_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"duration_s":time.monotonic()-clock,"pid":p.pid,"actual_jsrun_returncode":rc,"timed_out":timeout,"owned_cleanup_signals":signals,"command":command,"binary_sha256":before,"binary_unchanged":hashlib.sha256(binary.read_bytes()).hexdigest()==before};rows.append(row);(out/"actual-native-exits.json").write_text(json.dumps(rows,indent=2)+"\\n")\n if rc!=case["expected_exit"] or timeout or signals or not row["binary_unchanged"]:sys.exit(2)\n'
+commands=[{'label':'configure','command':['python3','tools/codex_compile.py','cmake','-S',str(ROOT),'-B',str(SAN)]},{'label':'build-jsrun','command':['python3','tools/codex_compile.py','cmake','--build',str(SAN),'--target','jsrun','-j2']},{'label':'actual-runtime-controls','command':['python3','tools/codex_compile.py',sys.executable,'-c',runtime_inner]}]
+write(out/'plan.json',{'candidate':a.iteration,'source_commit':state['head'],'recorded_input_count':len(manifest['files']),'commands_without_embedded_worker':[{'label':c['label'],'command':c['command'] if c['label']!='actual-runtime-controls' else c['command'][:4]+['recorded worker in pinned controller source']} for c in commands],'cases':cases,'flags':flags,'actual_cpp_paths':['src/js/frames.cc','src/js/js.cc'],'resource_interval_seconds':1,'maximum_browser_lanes':1,'prebuilt_V8_itself_instrumented':False,'acceptance':'Real OS exits0/1/1, all12 strict lifecycle cases, no ASan/UBSan/LSan diagnostics; no CTest PASS regex inference'})
+inner='import subprocess,pathlib,json,datetime,sys\ncommands='+repr(commands)+'\nout=pathlib.Path('+repr(str(out))+')\nrows=[]\nfor item in commands:\n start=datetime.datetime.now(datetime.timezone.utc).isoformat()\n with (out/(item["label"]+".log")).open("x") as f:p=subprocess.run(item["command"],stdout=f,stderr=subprocess.STDOUT)\n rows.append({"label":item["label"],"started_utc":start,"finished_utc":datetime.datetime.now(datetime.timezone.utc).isoformat(),"actual_returncode":p.returncode});(out/"execution.json").write_text(json.dumps(rows,indent=2)+"\\n")\n if p.returncode:sys.exit(p.returncode)\n'
+env=dict(os.environ)
+for key in ['JSRUN_PRE','JSRUN_POST','JSRUN_DUMP','LUMEN_FRAME_PRE','LUMEN_PRE','LUMEN_PRE_FILE','LUMEN_WPT_CTRL','LUMEN_WPT_PRE','LUMEN_SHOT','LUMEN_SHOT_MS']:env.pop(key,None)
+env.update({'TMPDIR':str(ROOT/'agent/t'),'JSRUN_LAYOUT':'1','JSRUN_UNTIL_ATTR':'data-document-lifecycle-complete','JSRUN_EXPECT_ATTR_VALUE':'PASS','LUMEN_CONSOLE':'0','LUMEN_ICU_DATA':str(ROOT/'build/codex-deps/v8/bottle/v8/15.6.75.8/libexec/icudtl.dat'),'ASAN_OPTIONS':'detect_leaks=1:halt_on_error=1','UBSAN_OPTIONS':'halt_on_error=1:print_stacktrace=1','LSAN_OPTIONS':'exitcode=23'})
+started=now();clock=time.monotonic();mon=[];handles=[];p=None;rc=None;forced=False;errors=[]
+try:
+ h=(out/'cgroup-monitor.log').open('x');handles.append(h);cg=subprocess.Popen(['python3','agent/progress/cgroup_monitor.py','--output',str(out/'cgroup.csv')],cwd=ROOT,stdout=h,stderr=subprocess.STDOUT);mon.append(cg)
+ end=time.monotonic()+3
+ while not (out/'cgroup.csv').exists() and cg.poll() is None and time.monotonic()<end:time.sleep(.05)
+ require(cg.poll() is None and (out/'cgroup.csv').exists(),'Cgroup monitor startup failed')
+ h=(out/'controller.log').open('x');handles.append(h);p=subprocess.Popen([sys.executable,'-c',inner],cwd=ROOT,env=env,stdout=h,stderr=subprocess.STDOUT)
+ h=(out/'tree-monitor.log').open('x');handles.append(h);tm=subprocess.Popen(['python3','agent/progress/monitor.py','--root-pid',str(p.pid),'--output',str(out/'resources.csv'),'--label',f'candidate{a.iteration} actual lifecycle C++ sanitizers and completion exits'],cwd=ROOT,stdout=h,stderr=subprocess.STDOUT);mon.append(tm);rc=p.wait()
+except Exception as e:errors.append(type(e).__name__+': '+str(e))
+finally:
+ if p is not None and p.poll() is None:rc=p.wait()
+ for i,m in enumerate(mon):
+  if i==1 and m.poll() is None:
+   try:m.wait(6)
+   except subprocess.TimeoutExpired:forced=True
+  if m.poll() is None:m.terminate()
+  try:m.wait(6)
+  except subprocess.TimeoutExpired:forced=True;m.kill();m.wait(3)
+ for h in handles:h.close()
+actual=load(out/'actual-native-exits.json') if (out/'actual-native-exits.json').exists() else [];behavior=False;instrumentation={};diagnostics={}
+try:
+ require(len(actual)==3 and [r['label'] for r in actual]==[c['label'] for c in cases],'All three actual runtime controls required');require([r['actual_jsrun_returncode'] for r in actual]==[0,1,1],'Actual completion statuses must be0/1/1');require(all(r['timed_out'] is False and r['owned_cleanup_signals']==[] and r['binary_unchanged'] is True for r in actual),'Runtime lifecycle failed')
+ require(all(r['binary_sha256']==sha(immutable) for r in actual),'Runtime identity changed')
+ for c in cases:
+  text=(out/(c['label']+'.log')).read_text();diagnostics[c['label']]=bool(re.search(r'ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:|SUMMARY: (AddressSanitizer|UndefinedBehaviorSanitizer)',text))
+ require(not any(diagnostics.values()),'Unsuppressed sanitizer diagnostics found')
+ raw=(out/'positive-lifecycle.log').read_text();ids=[c['id'] for c in load(contract)['cases']];require(re.findall(r'LIFECYCLE_CONTRACT ([A-Za-z0-9-]+):(PASS|FAIL)',raw)==[(n,'PASS') for n in ids],'All12 strict lifecycle cases required');require(re.findall(r'RESULTS document-lifecycle:(PASS|FAIL)',raw)==['PASS'] and 'LIFECYCLE_FATAL ' not in raw,'Positive completion marker missing')
+ summaries=[json.loads(l.split('LIFECYCLE_CONTRACT_SUMMARY ',1)[1]) for l in raw.splitlines() if 'LIFECYCLE_CONTRACT_SUMMARY ' in l];require(summaries==[{'cases':12,'passed':12,'failed':0}],'Strict lifecycle summary differs');behavior=True
+ for rel in ['CMakeFiles/lumen_engine.dir/flags.make','CMakeFiles/jsrun.dir/flags.make','CMakeFiles/jsrun.dir/link.txt']:
+  path=SAN/rel;text=path.read_text();require('-fsanitize=address,undefined' in text,'Instrumentation flags missing');instrumentation[rel]={'sha256':sha(path),'text':text}
+ for rel in ['CMakeFiles/lumen_engine.dir/src/js/frames.cc.o','CMakeFiles/lumen_engine.dir/src/js/js.cc.o','CMakeFiles/jsrun.dir/tests/jsrun.c.o']:
+  path=SAN/rel;symbols=subprocess.check_output(['nm','-u',str(path)],text=True);require('__asan' in symbols and '__ubsan' in symbols,'Actual object instrumentation absent');instrumentation[rel]={'sha256':sha(path),'address_and_undefined_instrumentation_present':True}
+ write(out/'instrumentation.json',instrumentation)
+except Exception as e:errors.append(type(e).__name__+': '+str(e))
+post={str(p):sha(p) for p in paths};source_stable=all(sha(ROOT/n)==h for n,h in manifest['files'].items());after_git=git();write(out/'pins-after.json',post);(out/'cache-after.txt').write_text((SAN/'CMakeCache.txt').read_text());valid=rc==0 and behavior and bool(instrumentation) and not errors and not forced and [m.returncode for m in mon]==[0,0] and source_stable and pins==post and before_git==after_git
+r={'candidate':a.iteration,'source_commit':state['head'],'started_utc':started,'finished_utc':now(),'duration_s':time.monotonic()-clock,'actual_outer_sequence_returncode':rc,'actual_native_returncodes':[x['actual_jsrun_returncode'] for x in actual],'immutable_sanitized_binary':str(immutable),'immutable_sanitized_sha256':sha(immutable) if immutable.exists() else None,'all12_strict_lifecycle_cases_pass':behavior,'durable_finish_boundaries_asserted':behavior,'positive_and_negative_completion_contract_pass':len(actual)==3 and [x['actual_jsrun_returncode'] for x in actual]==[0,1,1],'sanitizer_diagnostics':diagnostics,'recorded_input_count':len(manifest['files']),'source_unchanged':source_stable,'pins_unchanged':pins==post,'git_unchanged':before_git==after_git,'monitor_returncodes':[m.returncode for m in mon],'monitor_forced_stop':forced,'sanitizer_options':{k:env[k] for k in ['ASAN_OPTIONS','UBSAN_OPTIONS','LSAN_OPTIONS']},'errors':errors,'qualification_pass':valid,'prebuilt_V8_itself_instrumented':False};write(out/'receipt.json',r);print(json.dumps(r),flush=True);sys.exit(0 if valid else 2)

@@ -1,0 +1,217 @@
+{
+  "subtests": [
+    [
+      "e.style['contain-intrinsic-size'] = \"legacy\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-size'] = \"auto legacy\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-size'] = \"auto legacy auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-size'] = \"10%\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-size'] = \"2em 3px 5px\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-size'] = \"1px 1%\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-size'] = \"1px auto auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-size'] = \"-1px\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-size'] = \"auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-size'] = \"auto 1px 1px auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-size'] = \"1px 1px auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-width'] = \"legacy\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-width'] = \"-1px\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-width'] = \"1px 1px\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-width'] = \"1px none\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-width'] = \"auto 1px auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-width'] = \"20%\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-width'] = \"1px auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-height'] = \"legacy\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-height'] = \"-1px\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-height'] = \"1px 1px\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-height'] = \"1px none\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-height'] = \"auto 1px auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-height'] = \"20%\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-height'] = \"1px auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-inline-size'] = \"legacy\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-inline-size'] = \"-1px\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-inline-size'] = \"1px 1px\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-inline-size'] = \"1px none\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-inline-size'] = \"auto 1px auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-inline-size'] = \"20%\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-inline-size'] = \"1px auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-block-size'] = \"legacy\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-block-size'] = \"-1px\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-block-size'] = \"1px 1px\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-block-size'] = \"1px none\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-block-size'] = \"auto 1px auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-block-size'] = \"20%\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-block-size'] = \"1px auto\" should not set the property value",
+      "PASS",
+      null
+    ],
+    [
+      "e.style['contain-intrinsic-block-size'] = \"none auto\" should not set the property value",
+      "PASS",
+      null
+    ]
+  ],
+  "status": "OK",
+  "message": null,
+  "environment": {
+    "width": 748,
+    "height": 596,
+    "dpr": 1,
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+  },
+  "elapsed_s": 0.4532,
+  "errors": [],
+  "url": "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+  "repeat": 0,
+  "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen233-assertions/native/00-001"
+}

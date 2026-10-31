@@ -1,0 +1,40 @@
+{
+  "candidate": 233,
+  "source_commit": "58ce02b803e6f3cac42d195b8fc5426d41727bdd",
+  "started_utc": "2026-10-31T09:58:09.343617+00:00",
+  "finished_utc": "2026-10-31T09:58:19.148333+00:00",
+  "duration_s": 9.804713157995138,
+  "actual_outer_sequence_returncode": 0,
+  "actual_native_returncodes": [
+    0,
+    1,
+    1
+  ],
+  "immutable_sanitized_binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i233-lifecycle-sanitized",
+  "immutable_sanitized_sha256": "97c0352c22c402db968085e8f2ab1305f52238a83e62fcce9a1cccffc88d6bb6",
+  "all12_strict_lifecycle_cases_pass": true,
+  "durable_finish_boundaries_asserted": true,
+  "positive_and_negative_completion_contract_pass": true,
+  "sanitizer_diagnostics": {
+    "positive-lifecycle": false,
+    "missing-completion": false,
+    "failed-completion": false
+  },
+  "recorded_input_count": 649,
+  "source_unchanged": true,
+  "pins_unchanged": true,
+  "git_unchanged": true,
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "monitor_forced_stop": false,
+  "sanitizer_options": {
+    "ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1",
+    "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
+    "LSAN_OPTIONS": "exitcode=23"
+  },
+  "errors": [],
+  "qualification_pass": true,
+  "prebuilt_V8_itself_instrumented": false
+}

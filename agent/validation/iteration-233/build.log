@@ -1,0 +1,138 @@
+-- Configuring done (0.3s)
+-- Generating done (0.5s)
+-- Build files have been written to: /mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native
+[  3%] Built target test_trust
+[  4%] Built target lumen_base
+[  6%] Built target test_android_launch
+[  7%] Built target test_android_back
+[  8%] Built target test_android_fling
+[  9%] Built target test_android_touch
+[ 11%] Built target test_workspace
+[ 12%] Built target test_media_icon
+[ 13%] Built target test_viewer
+[ 14%] Built target lumen_rtc
+[ 14%] Checking embedded browser assets
+[ 15%] Built target test_worker_tasks
+[ 16%] Built target test_js_viewport_state
+[ 17%] Built target test_fontconfig_match
+[ 19%] Built target test_linux_capture_refusal
+[ 20%] Building C object CMakeFiles/lumen_net.dir/src/net/fetch_metadata.c.o
+[ 20%] Built target lumen_embedded
+[ 21%] Built target test_url
+[ 22%] Linking C static library liblumen_net.a
+[ 23%] Built target test_platform
+[ 24%] Built target test_url_host_nul
+[ 26%] Built target lumen_net
+[ 27%] Built target test_encoding_labels
+[ 28%] Linking C executable test_file
+[ 28%] Linking C executable test_data_url
+[ 28%] Built target test_file
+[ 28%] Built target test_data_url
+[ 28%] Linking C executable test_http_range
+[ 28%] Linking C executable test_http_zstd
+[ 29%] Built target test_http_range
+[ 30%] Built target test_http_zstd
+[ 30%] Linking C executable test_mime_policy
+[ 31%] Linking C executable test_fetch_metadata
+[ 32%] Built target test_mime_policy
+[ 32%] Built target test_fetch_metadata
+[ 34%] Linking C executable test_net_redirect
+[ 34%] Linking C executable test_auth_user_agent
+[ 34%] Built target test_auth_user_agent
+[ 34%] Built target test_net_redirect
+[ 34%] Linking C executable test_desktop_sites
+[ 35%] Linking C executable test_cookie_site
+[ 36%] Built target test_desktop_sites
+[ 36%] Built target test_cookie_site
+[ 36%] Linking C executable test_proxy
+[ 36%] Linking C executable test_http_cache
+[ 37%] Built target test_proxy
+[ 38%] Built target test_http_cache
+[ 39%] Linking C executable test_net_stream
+[ 39%] Linking C executable test_download
+[ 39%] Built target test_net_stream
+[ 40%] Built target test_download
+[ 61%] Built target lumen_engine
+[ 61%] Building C object CMakeFiles/jsrun.dir/tests/jsrun.c.o
+[ 61%] Linking CXX executable lumen
+[ 61%] Linking CXX executable jsrun
+[ 67%] Built target lumen
+[ 67%] Linking CXX executable test_broadcast_site
+[ 67%] Built target jsrun
+[ 68%] Linking CXX executable test_js_node_lifetime
+[ 69%] Built target test_broadcast_site
+[ 70%] Linking CXX executable test_invoker_commands
+[ 70%] Built target test_js_node_lifetime
+[ 71%] Linking CXX executable test_background_clip
+[ 71%] Built target test_invoker_commands
+[ 71%] Linking CXX executable test_starting_style
+[ 71%] Built target test_background_clip
+[ 71%] Linking CXX executable test_dom_style_tracking
+[ 72%] Built target test_starting_style
+[ 72%] Linking CXX executable test_html5lib
+[ 73%] Built target test_dom_style_tracking
+[ 73%] Linking CXX executable test_id_map
+[ 73%] Built target test_html5lib
+[ 74%] Linking CXX executable test_has_filter
+[ 75%] Built target test_id_map
+[ 76%] Linking CXX executable test_nested_overflow
+[ 76%] Built target test_has_filter
+[ 77%] Linking CXX executable test_scale_text
+[ 77%] Built target test_nested_overflow
+[ 78%] Linking CXX executable test_round_clip
+[ 78%] Built target test_scale_text
+[ 78%] Linking CXX executable test_svg_gradient_img
+[ 78%] Built target test_round_clip
+[ 79%] Linking CXX executable test_raster_bands
+[ 80%] Built target test_svg_gradient_img
+[ 81%] Linking CXX executable test_raster_spans
+[ 81%] Built target test_raster_bands
+[ 81%] Linking CXX executable test_font_woff2
+[ 81%] Built target test_raster_spans
+[ 81%] Linking CXX executable test_shape_cache
+[ 82%] Built target test_font_woff2
+[ 82%] Linking CXX executable test_code_cache
+[ 82%] Built target test_shape_cache
+[ 83%] Linking CXX executable test_inset_move
+[ 84%] Built target test_code_cache
+[ 84%] Linking CXX executable test_sticky_geometry
+[ 84%] Built target test_inset_move
+[ 84%] Linking CXX executable test_paint_cull
+[ 85%] Built target test_sticky_geometry
+[ 86%] Linking CXX executable test_grid_used_values
+[ 86%] Built target test_paint_cull
+[ 87%] Linking CXX executable test_css_stepped_math
+[ 87%] Built target test_grid_used_values
+[ 88%] Linking CXX executable test_css_stretch
+[ 88%] Built target test_css_stepped_math
+[ 89%] Linking CXX executable test_css_containment
+[ 89%] Built target test_css_stretch
+[ 90%] Linking CXX executable test_grid_repeat_validation
+[ 90%] Built target test_css_containment
+[ 90%] Linking CXX executable test_grid_alignment
+[ 90%] Built target test_grid_repeat_validation
+[ 90%] Linking CXX executable test_grid_item_width
+[ 91%] Built target test_grid_alignment
+[ 92%] Linking CXX executable test_logical_size
+[ 93%] Built target test_grid_item_width
+[ 93%] Linking CXX executable test_break_spaces
+[ 93%] Built target test_logical_size
+[ 93%] Linking CXX executable test_flex_declaration
+[ 93%] Built target test_break_spaces
+[ 93%] Linking CXX executable test_grid_absolute
+[ 94%] Built target test_flex_declaration
+[ 94%] Linking CXX executable test_flex_alignment
+[ 95%] Built target test_grid_absolute
+[ 95%] Linking CXX executable test_font_units
+[ 95%] Built target test_flex_alignment
+[ 96%] Linking CXX executable test_anon_block_size
+[ 97%] Built target test_font_units
+[ 97%] Linking CXX executable test_button_center
+[ 97%] Built target test_anon_block_size
+[ 97%] Linking CXX executable test_radius_inherit
+[ 98%] Built target test_button_center
+[ 98%] Linking CXX executable test_js_viewport_runtime
+[ 99%] Built target test_radius_inherit
+[ 99%] Linking CXX executable test_keyboard_editing
+[ 99%] Built target test_js_viewport_runtime
+[100%] Built target test_keyboard_editing

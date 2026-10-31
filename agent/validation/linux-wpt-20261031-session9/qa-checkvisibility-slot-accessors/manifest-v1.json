@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "purpose": "Separate predeclared private-slot getter regression; not part of frozen49 options denominator",
+  "source_path": "agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-slot-accessors/checkvisibility-slot-accessors-v1.html",
+  "source_sha256": "e23c504b9684614b74ddf4cb57aed465dd7f4b96e646b49b0718514f760ca8db",
+  "case_count": 2,
+  "ordered_cases": [
+    "localName",
+    "namespaceURI"
+  ],
+  "expected_each": {
+    "assigned": true,
+    "hasBox": true,
+    "actual": false,
+    "reads": 0,
+    "error": null,
+    "pass": true
+  },
+  "marker": "checkvisibility-slot-accessors",
+  "completion_attribute": "data-checkvisibility-slot-accessors-complete",
+  "global_results": "__checkVisibilitySlotAccessors",
+  "semantics": "Named slot under a zero-opacity wrapper in a closed shadow root; accessor overridden only after stable assignment and genuine box check, restored before cleanup. No geometry replacements."
+}

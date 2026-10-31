@@ -1,0 +1,20 @@
+[
+  {
+    "label": "configure",
+    "started_utc": "2026-10-31T09:58:09.478452+00:00",
+    "finished_utc": "2026-10-31T09:58:10.305280+00:00",
+    "actual_returncode": 0
+  },
+  {
+    "label": "build-jsrun",
+    "started_utc": "2026-10-31T09:58:10.305526+00:00",
+    "finished_utc": "2026-10-31T09:58:12.305258+00:00",
+    "actual_returncode": 0
+  },
+  {
+    "label": "actual-runtime-controls",
+    "started_utc": "2026-10-31T09:58:12.305465+00:00",
+    "finished_utc": "2026-10-31T09:58:17.784785+00:00",
+    "actual_returncode": 0
+  }
+]

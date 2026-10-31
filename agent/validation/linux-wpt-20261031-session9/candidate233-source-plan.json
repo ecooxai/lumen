@@ -1,0 +1,27 @@
+{
+  "candidate": 233,
+  "iteration": 7,
+  "started_utc": "2026-10-31T09:55:45.429079+00:00",
+  "source_commit": "58ce02b803e6f3cac42d195b8fc5426d41727bdd",
+  "source_files": {
+    "tests/jsrun.c": "9c4c1368c65a0fa33342c10466a76cfbd9ad03aad274574077ecd686aee4ac81",
+    "CMakeLists.txt": "d9e8807e0ae9d000f9c6a7b589c96ba32af5246d7e80eab1b4c1e16717161309"
+  },
+  "previous_failed_candidate": 232,
+  "proof_source_sha256": "df22d864e74be5bdfd6de3424c4a1c5bf09453aeaff50cf51ed69d59513011fa",
+  "same_engine_and_behavioral_fixture": true,
+  "required_gates": [
+    "native146",
+    "actual instrumented lifecycle OSexit0/no diagnostics",
+    "missing and FAIL completion actualexit1 aftercleanup",
+    "strict12cases114rows"
+  ],
+  "options234": "Not yet released; conditional on successful correction gates",
+  "accepted_public_release_candidate": 226,
+  "source_frozen": true,
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ]
+}

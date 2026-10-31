@@ -1,0 +1,33 @@
+LUMEN_CAPTURE_GUARD_READY 2793104 5fbbeda57a54cb7dcd264918503d4520
+lumen: presenting with cpu
+lumen: lite mode off
+lumen: http://web-platform.test:8000/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-valid.html loaded in 2ms, first frame 18.5ms (layout+paint+present), 2 boxes
+[js error] ASTRAWPT-H {"status":"OK","message":null,"environment":{"width":748,"height":596,"dpr":1,"userAgent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"}}
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-size'] = \"none\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-size'] = \"1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-size'] = \"2em 3px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-size'] = \"5px 5px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-size'] = \"none none\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-size'] = \"1px none\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-size'] = \"none 1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-size'] = \"auto 1px 1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-size'] = \"1px auto 1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-size'] = \"auto 1px auto 1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-width'] = \"none\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-width'] = \"1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-width'] = \"2em\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-width'] = \"auto 1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-height'] = \"none\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-height'] = \"1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-height'] = \"2em\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-height'] = \"auto 1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-inline-size'] = \"none\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-inline-size'] = \"1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-inline-size'] = \"2em\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-inline-size'] = \"auto 1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-block-size'] = \"none\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-block-size'] = \"1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-block-size'] = \"2em\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-block-size'] = \"auto 1px\" should set the property value","PASS",null]
+[js error] ASTRAWPT-S ["e.style['contain-intrinsic-block-size'] = \"auto none\" should set the property value","PASS",null]
+[js error] ASTRAWPT-E

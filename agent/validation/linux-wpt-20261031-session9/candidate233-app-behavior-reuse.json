@@ -1,0 +1,47 @@
+{
+  "candidate": 233,
+  "created_utc": "2026-10-31T10:01:35.739095+00:00",
+  "scope": "Reuse only the unchanged production-app the-end4 run; corrected-host authored contract was freshly repeated",
+  "source_before": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "source_after": "58ce02b803e6f3cac42d195b8fc5426d41727bdd",
+  "exact_changed_recorded_inputs": [
+    "CMakeLists.txt",
+    "tests/jsrun.c"
+  ],
+  "recorded_input_count": 649,
+  "all_current_recorded_inputs_match233": true,
+  "both_immutable_app_sha256": "c4c60dd709a497b9b3135c6d06bc5c292cc2882d366c39272d3e519f70d886da",
+  "source_and_build_receipt_pins": {
+    "232": {
+      "agent/validation/iteration-232/build-state.json": "d28f46d21219826f3321f8b0f1df83d322b0c966ecb3639dc97815c297390116",
+      "agent/validation/iteration-232/source-manifest-before.json": "3f096f20654fba333769847d433c405334ce0afa8bb51a8aea9ee083b0020fa8",
+      "agent/validation/iteration-232/source-manifest-after.json": "3f096f20654fba333769847d433c405334ce0afa8bb51a8aea9ee083b0020fa8",
+      "agent/validation/iteration-232/build.log": "7c921bf9ee5bb240530cd3e23c51ac9790d745f25cef78e2cf2f11433289f33b"
+    },
+    "233": {
+      "agent/validation/iteration-233/build-state.json": "9cd63679bae15c02cd58eac1ce9c180dd5405a96a988cbfebc64e3bd6037b876",
+      "agent/validation/iteration-233/source-manifest-before.json": "f3588104a282b0a49018d2a3f68e047af2be3235c8f4167247970e13fdf8fd38",
+      "agent/validation/iteration-233/source-manifest-after.json": "f3588104a282b0a49018d2a3f68e047af2be3235c8f4167247970e13fdf8fd38",
+      "agent/validation/iteration-233/build.log": "4d161722e467a451eabe02f331e0750aa9f845612f746fe48cbd9deb17cebff1"
+    }
+  },
+  "reused_WPT": {
+    "path": "/html/syntax/parsing/the-end.html",
+    "passed": 4,
+    "total": 4,
+    "source_candidate": 232,
+    "result_sha256": "3f079d92f342dee92e7601c8ce340029b09a7f594f0e17d32396c3a1590f33a1",
+    "execution_audit_sha256": "205a0146b67be80386de953e7d5e8ae21f4e5587a6371a6c2e67a6f122bee939",
+    "owned_exit0_and_profile_cleanup_verified": true,
+    "actual_outer_terminal": 15998,
+    "actual_outer_exit": 0
+  },
+  "fresh_corrected_host_contract": {
+    "cases": 12,
+    "canonical_rows": 114,
+    "passed": true,
+    "audit_sha256": "1cb448c419ee697a0e997fb36c513e1e484308193bb1fc1b79df80060363a035"
+  },
+  "no_raw_results_copied_or_relabelled": true,
+  "no_new_full640_measurement": true
+}

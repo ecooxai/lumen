@@ -1,0 +1,14 @@
+{
+  "candidate": 232,
+  "evidence_commit": "26f0cef2fd55ae64aa4ef330a029bc9c4f7fbda4",
+  "tested_source_commit": "571e388a0cfd84ff35a853188e6c96053e024606",
+  "created_utc": "2026-10-31T09:53:59.005705+00:00",
+  "staged_file_count": 137,
+  "all649_recorded_inputs_unchanged": true,
+  "immutable_app_unchanged": true,
+  "sanitizer_rejection_preserved": true,
+  "causal_QA_proof_preserved": true,
+  "source_frozen_until_explicit_release": true,
+  "duration_minutes": 18.34109285,
+  "cumulative_task_minutes": 173.78080336666667
+}

@@ -1,0 +1,11 @@
+[ 10%] Built target lumen_base
+[ 13%] Built target lumen_rtc
+[ 13%] Checking embedded browser assets
+[ 17%] Building C object CMakeFiles/lumen_net.dir/src/net/fetch_metadata.c.o
+[ 20%] Linking C static library liblumen_net.a
+[ 27%] Built target lumen_net
+[ 27%] Built target lumen_embedded
+[100%] Built target lumen_engine
+[100%] Building C object CMakeFiles/jsrun.dir/tests/jsrun.c.o
+[100%] Linking CXX executable jsrun
+[100%] Built target jsrun

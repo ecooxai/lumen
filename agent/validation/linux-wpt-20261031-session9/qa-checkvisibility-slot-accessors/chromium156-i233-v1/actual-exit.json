@@ -1,0 +1,21 @@
+{
+  "started_utc": "2026-10-31T10:05:08.352940+00:00",
+  "finished_utc": "2026-10-31T10:05:12.636236+00:00",
+  "duration_s": 4.283303389005596,
+  "pid": 2812332,
+  "actual_returncode": 0,
+  "timed_out": false,
+  "owned_cleanup_signals": [],
+  "command": [
+    "python3",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261030-session7/qa-script-scheduling/authored/run-cft156-fixture.py",
+    "--fixture",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-slot-accessors/checkvisibility-slot-accessors-v1.html",
+    "--marker",
+    "checkvisibility-slot-accessors",
+    "--output",
+    "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-slot-accessors/chromium156-i233-v1/browser",
+    "--timeout",
+    "20"
+  ]
+}

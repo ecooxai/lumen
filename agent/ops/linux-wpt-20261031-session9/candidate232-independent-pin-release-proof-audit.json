@@ -1,0 +1,30 @@
+{
+  "reviewed_utc": "2026-10-31T09:54:10.765688+00:00",
+  "baseline_candidate": 232,
+  "production_source_unchanged": true,
+  "actual_proof_exit": 0,
+  "actual_compile_link_runtime_exits": [
+    0,
+    0,
+    0
+  ],
+  "actual_baseline_exit": 23,
+  "baseline_leak_bytes": 54207,
+  "baseline_leak_allocations": 48,
+  "proof_unsuppressed_sanitizer_findings": 0,
+  "all_structured_behavioral_rows_unchanged": true,
+  "durable_behavior_cases_passed": 12,
+  "exact_host_delta": "Only three temporary-dispatch pin releases after completed host batches",
+  "frozen_engine_and_explicit_link_inputs_unchanged": true,
+  "proof_binary_sha256": "5cd8a075b77144c8457045b5f7260e302939609d0c80f7097e8e4e6ed006fa23",
+  "monitor_returncodes": [
+    0,
+    0
+  ],
+  "proof_receipt_sha256": "5c958556e0b401a918eb19595866d1a1ef3f525801242848fa9a56d7fe8d185a",
+  "runtime_log_sha256": "e2bb1cfde6854e9423f12a05155037781818b145bc069efc6e098dcfb06939f2",
+  "actual_exit_receipt_sha256": "02692184e342fa6011a2b50e1753d82392cc9d6530151d008a331da5a3887058",
+  "causal_conclusion": "The three missing test-host pin releases account for the observed leak in this matched fixture; no generic ownership or lifecycle-engine change was needed for the proof",
+  "production_candidate233_required": true,
+  "release_qualified": false
+}

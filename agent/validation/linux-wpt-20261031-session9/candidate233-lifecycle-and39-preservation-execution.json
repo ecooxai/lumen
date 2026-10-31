@@ -1,0 +1,64 @@
+{
+  "candidate": 233,
+  "started_utc": "2026-10-31T09:59:03.499476+00:00",
+  "execution": [
+    {
+      "label": "lifecycle-matrix",
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/run-matrix-candidate-v5.py",
+        "--kind",
+        "lumen",
+        "--iteration",
+        "233"
+      ],
+      "started_utc": "2026-10-31T09:59:03.499488+00:00",
+      "finished_utc": "2026-10-31T09:59:11.849199+00:00",
+      "actual_returncode": 0
+    },
+    {
+      "label": "lifecycle-audit",
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/ops/linux-wpt-20261031-session9/audit-document-lifecycle.py",
+        "--candidate",
+        "233",
+        "--run",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-document-lifecycle/jsrun233-v4",
+        "--controller-sha256",
+        "9cd4091e07f5eced384ec7d35d5ca646784cb3b11d28d660d2f84286506ae4a2",
+        "--output",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/candidate233-document-lifecycle-contract-audit.json",
+        "--check-current-source"
+      ],
+      "started_utc": "2026-10-31T09:59:11.849481+00:00",
+      "finished_utc": "2026-10-31T09:59:12.849983+00:00",
+      "actual_returncode": 0
+    },
+    {
+      "label": "containment39",
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/run-focused-candidate.py",
+        "--iteration",
+        "233"
+      ],
+      "started_utc": "2026-10-31T09:59:12.850241+00:00",
+      "finished_utc": "2026-10-31T10:01:16.441103+00:00",
+      "actual_returncode": 0
+    },
+    {
+      "label": "containment39-audit",
+      "command": [
+        "python3",
+        "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/audit-containment.py",
+        "--iteration",
+        "233"
+      ],
+      "started_utc": "2026-10-31T10:01:16.441403+00:00",
+      "finished_utc": "2026-10-31T10:01:16.493842+00:00",
+      "actual_returncode": 0
+    }
+  ],
+  "maximum_browser_lanes": 2
+}

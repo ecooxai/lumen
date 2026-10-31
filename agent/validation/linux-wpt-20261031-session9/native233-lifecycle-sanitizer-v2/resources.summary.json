@@ -1,0 +1,21 @@
+{
+  "label": "candidate233 actual lifecycle C++ sanitizers and completion exits",
+  "started_utc": "2026-10-31T09:58:09.484681+00:00",
+  "finished_utc": "2026-10-31T09:58:18.511701+00:00",
+  "root_pid": 2789705,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 9,
+  "elapsed_seconds": 9.027,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 6.987,
+  "cpu_median": 47.0,
+  "cpu_max": 71.996,
+  "cpu_last10_median": 47.0,
+  "rss_peak_mb": 528.646,
+  "rss_final_mb": 257.536,
+  "pss_peak_mb": 423.427,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/native233-lifecycle-sanitizer-v2/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

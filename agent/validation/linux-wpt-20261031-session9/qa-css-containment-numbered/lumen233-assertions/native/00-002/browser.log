@@ -1,0 +1,14 @@
+LUMEN_CAPTURE_GUARD_READY 2793484 a4af79c81179ee99b7cc2f0ee19777f7
+lumen: presenting with cpu
+lumen: lite mode off
+lumen: http://web-platform.test:8000/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html loaded in 3ms, first frame 19.2ms (layout+paint+present), 2 boxes
+[js error] ASTRAWPT-H {"status":"OK","message":null,"environment":{"width":748,"height":596,"dpr":1,"userAgent":"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"}}
+[js error] ASTRAWPT-S [".test 1","PASS",null]
+[js error] ASTRAWPT-S [".test 2","PASS",null]
+[js error] ASTRAWPT-S [".test 3","PASS",null]
+[js error] ASTRAWPT-S [".test 4","PASS",null]
+[js error] ASTRAWPT-S [".test 5","PASS",null]
+[js error] ASTRAWPT-S [".test 6","PASS",null]
+[js error] ASTRAWPT-S [".test 7","PASS",null]
+[js error] ASTRAWPT-S [".test 8","PASS",null]
+[js error] ASTRAWPT-E

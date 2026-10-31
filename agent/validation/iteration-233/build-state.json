@@ -1,0 +1,16 @@
+{
+  "source_manifest_before": "635ae155404fbeaf53f804bae80d067401128db5e005b28889e8785b67cbb590",
+  "source_diff_before": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "head": "58ce02b803e6f3cac42d195b8fc5426d41727bdd",
+  "started_utc": "2026-10-31T09:55:45Z",
+  "pid": 2779524,
+  "build_exit_code": 0,
+  "binary": "build/codex-native/lumen-astra-i233",
+  "binary_sha256": "c4c60dd709a497b9b3135c6d06bc5c292cc2882d366c39272d3e519f70d886da",
+  "diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "startup_exit_code": 0,
+  "source_diff_after": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "source_manifest_after": "635ae155404fbeaf53f804bae80d067401128db5e005b28889e8785b67cbb590",
+  "source_unchanged_during_build": true,
+  "finished_utc": "2026-10-31T09:56:00Z"
+}

@@ -1,0 +1,47 @@
+{
+  "reviewed_utc": "2026-10-31T09:59:02.329258+00:00",
+  "candidate": 233,
+  "source_commit": "58ce02b803e6f3cac42d195b8fc5426d41727bdd",
+  "recorded_input_count": 649,
+  "native_programs": {
+    "passed": 146,
+    "total": 146,
+    "actual_outer_exit": 0
+  },
+  "actual_instrumented_runtime_exits": {
+    "positive_lifecycle": 0,
+    "missing_completion": 1,
+    "failed_completion": 1
+  },
+  "all12_durable_cases_pass": true,
+  "all125_structured_rows_match_proven_host_copy": true,
+  "durable_finish_and_zero_late_bounds": "Assertions in unchanged pinned fixture; verified12 actual PASS markers",
+  "unsuppressed_sanitizer_findings": 0,
+  "actual_instrumentation_verified": true,
+  "prebuilt_V8_itself_instrumented": false,
+  "all_owned_child_PIDs_gone": true,
+  "one_second_monitor_returncodes": [
+    0,
+    0
+  ],
+  "source_and_explicit_pins_unchanged": true,
+  "lifecycle_CTest_no_longer_uses_PASS_regex": true,
+  "browser_binary_identical_to232": true,
+  "browser_binary_sha256": "c4c60dd709a497b9b3135c6d06bc5c292cc2882d366c39272d3e519f70d886da",
+  "upstream_lifecycle_measurement": "232 exact4/4 browser evidence remains the measured execution;233 app bytes identical and onlyhost/CMake source changed",
+  "latest_full640_measured_candidate": 231,
+  "host_correction_gate_pass": true,
+  "release_qualified": false,
+  "pending": "Final-source containment/API/retention/lifecycle/full640/render40/resource qualification",
+  "evidence_sha256": {
+    "agent/validation/linux-wpt-20261031-session9/native233-lifecycle-sanitizer-v2/receipt.json": "6b2a4b4e84f87a7d5cddfab09f772dca58493227fd5f2f61d197f2566e5d7227",
+    "agent/validation/linux-wpt-20261031-session9/native233-lifecycle-sanitizer-v2/actual-native-exits.json": "fb3c44656b1618874b14c2af28fc5965ed2d3ca6e20a65705ef9511dbfe46c04",
+    "agent/validation/linux-wpt-20261031-session9/native233-lifecycle-sanitizer-v2/instrumentation.json": "bb315cc8f70cb584a4cbb2f1f0f4220611b2af12777dc4640eb85eb9e66e4b63",
+    "agent/validation/linux-wpt-20261031-session9/native233-lifecycle-sanitizer-v2/positive-lifecycle.log": "34c01b25dde48cfb8dd98f1c24bffb64369d4c6c419ecfe63bb8b5a51e718535",
+    "agent/validation/linux-wpt-20261031-session9/native233-lifecycle-sanitizer-v2/missing-completion.log": "8cebe194c316c7627c0a66c84de3f564675c8b93e5d67d4739693ed55082afad",
+    "agent/validation/linux-wpt-20261031-session9/native233-lifecycle-sanitizer-v2/failed-completion.log": "28c7a5111c2de1493bfae41777ff57573f8979c595a21cebcab6e75bed78f6a8",
+    "agent/validation/linux-wpt-20261031-session9/native233/receipt.json": "d34f3e7cf72e0217be2a8d40c1a00599b51092d665f837b5056ab7aebd6cd096",
+    "agent/validation/linux-wpt-20261031-session9/native233/ctest.xml": "d5e1cf5e623c6826d0d0f4dcb89e2eaa4ebf18993d237ca22b722415e5eb110c",
+    "agent/validation/linux-wpt-20261031-session9/native233/strict-control-verification.json": "14a50a9c1bf1b6271aa5e346df26550daa70e4d9d0788b58843eaa58cf6c16c1"
+  }
+}

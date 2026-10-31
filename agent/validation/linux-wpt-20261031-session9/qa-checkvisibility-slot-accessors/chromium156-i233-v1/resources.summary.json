@@ -1,0 +1,21 @@
+{
+  "label": "chromium156 private slot accessor control",
+  "started_utc": "2026-10-31T10:05:08.308453+00:00",
+  "finished_utc": "2026-10-31T10:05:13.334679+00:00",
+  "root_pid": 2812329,
+  "comm": null,
+  "exe": null,
+  "interval_seconds": 1,
+  "samples": 5,
+  "elapsed_seconds": 5.026,
+  "cpu_one_core_equals_100": true,
+  "cpu_min": 9.0,
+  "cpu_median": 98.501,
+  "cpu_max": 171.006,
+  "cpu_last10_median": 98.501,
+  "rss_peak_mb": 1258.844,
+  "rss_final_mb": 63.709,
+  "pss_peak_mb": 3.9,
+  "csv": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-checkvisibility-slot-accessors/chromium156-i233-v1/resources.csv",
+  "caveat": "Interval snapshots can miss processes that start and exit between samples; RSS can double-count shared pages across processes. PSS sampled separately."
+}

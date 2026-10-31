@@ -1,0 +1,73 @@
+{
+  "iteration": 7,
+  "candidate": 233,
+  "source_commit": "58ce02b803e6f3cac42d195b8fc5426d41727bdd",
+  "started_utc": "2026-10-31T09:53:58.848202+00:00",
+  "finished_utc": "2026-10-31T10:06:13.077038+00:00",
+  "duration_minutes": 12.237147266666666,
+  "cumulative_task_minutes": 186.01795063333333,
+  "subagents": [
+    "repo_baseline",
+    "conformance_review",
+    "delivery_audit"
+  ],
+  "verified_host_correction_scope_score": 100,
+  "production_app_sha256": "c4c60dd709a497b9b3135c6d06bc5c292cc2882d366c39272d3e519f70d886da",
+  "production_app_byte_identical_to232": true,
+  "exact_changed_inputs_from232": [
+    "tests/jsrun.c",
+    "CMakeLists.txt"
+  ],
+  "native_tests": {
+    "passed": 146,
+    "total": 146,
+    "actual_outer_terminal": 16049,
+    "actual_exit": 0
+  },
+  "actual_sanitized_completion_controls": {
+    "positive": 0,
+    "missing": 1,
+    "explicit_FAIL": 1,
+    "unsuppressed_diagnostics": false,
+    "strict_lifecycle_cases": 12,
+    "binary_sha256": "97c0352c22c402db968085e8f2ab1305f52238a83e62fcce9a1cccffc88d6bb6",
+    "actual_outer_terminal": 16057,
+    "actual_exit": 0
+  },
+  "fresh_paired_lifecycle_contract": {
+    "passed_cases": 12,
+    "canonical_rows": 114,
+    "actual_rows": 125,
+    "declared_residuals_preserved": true
+  },
+  "selected39": {
+    "assertions_passed": 286,
+    "assertions_total": 286,
+    "reftests_passed": 28,
+    "reftests_total": 28,
+    "all_prior_passes_and_harnesses_preserved": true,
+    "actual_outer_terminal": 16060,
+    "actual_exit": 0
+  },
+  "whole_the_end4": "Reused232 exact-app-byte/provenance evidence; no result relabeling; corrected-host contract freshly repeated",
+  "accessor_reference": {
+    "pinned_chromium156": true,
+    "passed": 2,
+    "total": 2,
+    "assigned_and_real_box": true,
+    "opacity_result_false": true,
+    "public_getter_reads": 0,
+    "actual_outer_terminal": 16080,
+    "actual_exit": 0,
+    "separate_from_frozen49": true
+  },
+  "full640": "NOT RUN for233; last actual broad measurement231416/640 and9246/10540",
+  "other_remaining_final_gates": "Final candidate must run fixed640, retained40 rendering, matched resources and remainingAPI/retention controls; no release promotion yet",
+  "accepted_public_release_candidate": 226,
+  "next_candidate234_scope": [
+    "src/js/prelude/03-element.js",
+    "tests/js/checkvisibility-options.html",
+    "CMakeLists.txt"
+  ],
+  "next_candidate234_contract": "Unchanged49 oracle plus separately pinned2 accessor controls; no geometry/native/auto/unslotted/option-box expansion"
+}

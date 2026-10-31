@@ -1,0 +1,57 @@
+{
+  "subtests": [
+    [
+      ".test 1",
+      "PASS",
+      null
+    ],
+    [
+      ".test 2",
+      "PASS",
+      null
+    ],
+    [
+      ".test 3",
+      "PASS",
+      null
+    ],
+    [
+      ".test 4",
+      "PASS",
+      null
+    ],
+    [
+      ".test 5",
+      "PASS",
+      null
+    ],
+    [
+      ".test 6",
+      "PASS",
+      null
+    ],
+    [
+      ".test 7",
+      "PASS",
+      null
+    ],
+    [
+      ".test 8",
+      "PASS",
+      null
+    ]
+  ],
+  "status": "OK",
+  "message": null,
+  "environment": {
+    "width": 748,
+    "height": 596,
+    "dpr": 1,
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+  },
+  "elapsed_s": 0.4512,
+  "errors": [],
+  "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+  "repeat": 0,
+  "evidence_dir": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen233-assertions/native/00-002"
+}

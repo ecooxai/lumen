@@ -1,0 +1,62 @@
+[
+  {
+    "label": "positive-lifecycle",
+    "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/document-lifecycle.html",
+    "duration_ms": 12000,
+    "expected_exit": 0,
+    "started_utc": "2026-10-31T09:58:12.632380+00:00",
+    "finished_utc": "2026-10-31T09:58:16.510880+00:00",
+    "duration_s": 3.8784944399958476,
+    "pid": 2789989,
+    "actual_jsrun_returncode": 0,
+    "timed_out": false,
+    "owned_cleanup_signals": [],
+    "command": [
+      "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i233-lifecycle-sanitized",
+      "/mnt/p3/project/browser/lumen-android/lumen-android/tests/js/document-lifecycle.html",
+      "12000"
+    ],
+    "binary_sha256": "97c0352c22c402db968085e8f2ab1305f52238a83e62fcce9a1cccffc88d6bb6",
+    "binary_unchanged": true
+  },
+  {
+    "label": "missing-completion",
+    "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/missing-completion.html",
+    "duration_ms": 20,
+    "expected_exit": 1,
+    "started_utc": "2026-10-31T09:58:16.673222+00:00",
+    "finished_utc": "2026-10-31T09:58:17.088160+00:00",
+    "duration_s": 0.41494086498278193,
+    "pid": 2790112,
+    "actual_jsrun_returncode": 1,
+    "timed_out": false,
+    "owned_cleanup_signals": [],
+    "command": [
+      "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i233-lifecycle-sanitized",
+      "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/missing-completion.html",
+      "20"
+    ],
+    "binary_sha256": "97c0352c22c402db968085e8f2ab1305f52238a83e62fcce9a1cccffc88d6bb6",
+    "binary_unchanged": true
+  },
+  {
+    "label": "failed-completion",
+    "fixture": "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/failed-completion.html",
+    "duration_ms": 20,
+    "expected_exit": 1,
+    "started_utc": "2026-10-31T09:58:17.251434+00:00",
+    "finished_utc": "2026-10-31T09:58:17.616286+00:00",
+    "duration_s": 0.36485265102237463,
+    "pid": 2790152,
+    "actual_jsrun_returncode": 1,
+    "timed_out": false,
+    "owned_cleanup_signals": [],
+    "command": [
+      "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-style-sanitize/jsrun-astra-i233-lifecycle-sanitized",
+      "/mnt/p3/project/browser/lumen-android/lumen-android/agent/validation/linux-wpt-20261031-session9/qa-jsrun-completion-gate/failed-completion.html",
+      "20"
+    ],
+    "binary_sha256": "97c0352c22c402db968085e8f2ab1305f52238a83e62fcce9a1cccffc88d6bb6",
+    "binary_unchanged": true
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "selected": 26,
+  "observed": 26,
+  "statuses": {
+    "PASS": 26
+  },
+  "finished_utc": "2026-10-31T10:01:15.960065+00:00",
+  "note": "Raw reftest outcomes; intentionally failing infrastructure controls are not relabeled PASS."
+}

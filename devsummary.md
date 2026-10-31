@@ -1970,3 +1970,13 @@ Native146/146, unchanged whole `the-end.html`4/4, paired12-case114-canonical-row
 A reviewed QA-only real-host copy adding exactly three existing js_release_pins calls at completed event-batch boundaries, linked to unchanged232 sanitized engine libraries and unchanged fixture, exits0 with no ASan/UBSan/LSan diagnostics; every structured behavioral row matches the failing control. This is causal evidence for the pre-existing test-host cleanup omission, not a promoted production repair. Candidate233 is reserved for tests/jsrun.c+CMake cleanup/completion-exit correction; options234 remains conditional.
 
 No232 full640 run or later selected39/API/retention replay was started after the sanitizer blocker. Last measured broad sample remains231416/640files (65.00%) and9246/10540assertions (87.72%), with all prior226 gains preserved. Accepted public release remains226.
+
+### Session9 iteration7 — candidate233 fixes actual host ownership and completion exit gating
+
+Start 2026-10-31T09:53:58.848202+00:00; end 2026-10-31T10:06:13.077038+00:00; duration 12.237min; cumulative 186.018min. Agents: repo_baseline, conformance_review, delivery_audit. Source `58ce02b803e6f3cac42d195b8fc5426d41727bdd`.
+
+Exactly tests/jsrun.c+CMake changed. The proven three host-batch pin releases eliminate the measured leak under unchanged ASan/UBSan/LSan settings. Direct positive/missing/FAIL controls return actualOS0/1/1, all12 lifecycle cases pass and no sanitizer diagnostics occur. The lifecycle CTest target now uses the actual completion-attribute exit status and default exit checking; PASS_REGEX masking is removed for this target. Verified host-correction score100/100; full release remains held.
+
+Native146/146 passes. The paired lifecycle contract is freshly repeated (12 cases/114 canonical rows;125 actual rows with the declared residuals). Selected39 upstream files remain complete:286/286 assertions+28/28 exact pixels, all prior identities/harnesses preserved. The production app is byte-identical to232, so its4/4 the-end evidence is explicitly reused with exact build/input provenance; no raw result is relabeled.
+
+The separate predeclared Chromium156 accessor reference passes2/2: assigned real boxes returnfalse for opacity with0 localName/namespaceURI getter reads. Frozen49 remains unchanged. Candidate234 is restricted to03-element.js, its unchanged49 durable fixture and CMake, with separate accessor controls. No233 fixed640, retained40 or matched-resource campaign was run; last measured broad sample remains231416/640 and9246/10540. Accepted public release remains226 until finalqualification.

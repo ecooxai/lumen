@@ -1,0 +1,14 @@
+{
+  "kind": "lumen",
+  "binary": "/mnt/p3/project/browser/lumen-android/lumen-android/build/codex-native/lumen-astra-i233",
+  "binary_sha256": "c4c60dd709a497b9b3135c6d06bc5c292cc2882d366c39272d3e519f70d886da",
+  "started_utc": "2026-10-31T09:59:16Z",
+  "urls": [
+    "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+    "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+    "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-valid.html"
+  ],
+  "repeat": 1,
+  "method": "fresh browser process and empty profile per URL; WPT resources unchanged; offscreen software Lumen vs headless Chromium; no display/GPU claim",
+  "finished_utc": "2026-10-31T09:59:23Z"
+}
