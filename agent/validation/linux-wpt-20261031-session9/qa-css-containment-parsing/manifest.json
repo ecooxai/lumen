@@ -1,0 +1,36 @@
+{
+  "created_utc": "2026-10-31T07:05:49.387540+00:00",
+  "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "selection": "Complete three-file upstream intrinsic size containment parsing family from nested parsing directory, frozen before baseline and edits.",
+  "testharness_files": 3,
+  "reftest_files": 0,
+  "deadline_seconds": 15,
+  "reftest_timeout_seconds": 30,
+  "max_total_browser_workers": 2,
+  "rows": [
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-computed.html",
+      "source_sha256": "52b96b3dba602aacfaaa53538a73afa8a213aa0d588f3151823c4d47b019d03f",
+      "type": "testharness"
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-invalid.html",
+      "source_sha256": "a71ae4c5d7c0b21d98e92ef691f7cb92f3c5448bed2f133f901270f756f7e5c0",
+      "type": "testharness"
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-valid.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/parsing/contain-intrinsic-size-valid.html",
+      "source_sha256": "e6be1ffc2a201397873445cb25f0227a02f5ae73b94dcbbf3ef9eb617c32e8f6",
+      "type": "testharness"
+    }
+  ],
+  "support_pins": {
+    "css/support/computed-testcommon.js": "20bd767e8a8bd9e4857a29aecfd52cad305ed4af1cf73a5064916a8a1d38ab01",
+    "css/support/parsing-testcommon.js": "ac482e1e1908e9b98f8f1c4b2c457ec77ae5ad2baa074205c4b0f7812f4024b5",
+    "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+    "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+  }
+}

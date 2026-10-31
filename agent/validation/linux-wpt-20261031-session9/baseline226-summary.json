@@ -1,0 +1,135 @@
+{
+  "measured_candidate": 226,
+  "source_commit": "3f8f41434bfca738a7a23ddd9448e6acf1fe6c4d",
+  "binary_sha256": "0305887bb666840e82857f13d28e6c5af5e33c7e2071e015c2e47c669cbf35b2",
+  "started_utc": "2026-10-31T07:00:12Z",
+  "finished_utc": "2026-10-31T07:09:52.459971+00:00",
+  "scope_selection": "Complete logical001-003 subgroup; complete numbered001-033 and parsing3 are separately labeled neighboring controls. auto-* and full containment directory are not completed claims.",
+  "cohorts": {
+    "qa-css-logical-containment": {
+      "manifest_sha256": "784d38780a2a3a8501599996b656dba07dcf11a8480d6c2f7c15b68194a6318c",
+      "lumen": {
+        "assertion_files": 1,
+        "fully_passing_assertion_files": 0,
+        "assertions": {
+          "FAIL": 48
+        },
+        "assertion_total": 48,
+        "harnesses": {
+          "OK": 1
+        },
+        "assertion_evidence": "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen226-assertions/native/results.jsonl",
+        "assertion_evidence_sha256": "d82edba8ada8823974fecaeb813490cabb582c8ab6a4301bed681efa26e0ef26",
+        "reftests": 2,
+        "reftest_statuses": {
+          "FAIL": 2
+        },
+        "reftest_evidence": "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/lumen226-reftests/native/results.jsonl",
+        "reftest_evidence_sha256": "a7f04099abebdc42276aebc8f0169708db422c4a15a75e6b0f499b0372a2d83b"
+      },
+      "chromium156": {
+        "assertion_files": 1,
+        "fully_passing_assertion_files": 1,
+        "assertions": {
+          "PASS": 48
+        },
+        "assertion_total": 48,
+        "harnesses": {
+          "OK": 1
+        },
+        "assertion_evidence": "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/chrome156-retry1-assertions/reference/results.jsonl",
+        "assertion_evidence_sha256": "573c7f723824e397e84bd465df13336cc6db5b248832e2848cf63c51253eacf5",
+        "reftests": 2,
+        "reftest_statuses": {
+          "PASS": 2
+        },
+        "reftest_evidence": "agent/validation/linux-wpt-20261031-session9/qa-css-logical-containment/chrome156-reftests/cohort/chromium/report.json",
+        "reftest_evidence_sha256": "b33d0b468c8aebe43800c9b676d21b68c9f5a779545f82755643761a79d17155"
+      }
+    },
+    "qa-css-containment-numbered": {
+      "manifest_sha256": "388397d632d9cd40f54eec086e926e510b9e9a138a57e6f06b8694f5c8768d06",
+      "lumen": {
+        "assertion_files": 7,
+        "fully_passing_assertion_files": 1,
+        "assertions": {
+          "FAIL": 107,
+          "PASS": 43
+        },
+        "assertion_total": 150,
+        "harnesses": {
+          "OK": 7
+        },
+        "assertion_evidence": "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen226-assertions/native/results.jsonl",
+        "assertion_evidence_sha256": "e4c39ac7b9bbf76bf0cbb67294b7736412a5389bcdd98aa67caa9eec67c5b3b4",
+        "reftests": 26,
+        "reftest_statuses": {
+          "FAIL": 25,
+          "PASS": 1
+        },
+        "reftest_evidence": "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/lumen226-reftests/native/results.jsonl",
+        "reftest_evidence_sha256": "96cab9f2bcfabe0c1bef72f18e35f9dd27ba4599989d339026fbb610f0fe539d"
+      },
+      "chromium156": {
+        "assertion_files": 7,
+        "fully_passing_assertion_files": 7,
+        "assertions": {
+          "PASS": 150
+        },
+        "assertion_total": 150,
+        "harnesses": {
+          "OK": 7
+        },
+        "assertion_evidence": "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/chrome156-assertions/reference/results.jsonl",
+        "assertion_evidence_sha256": "5dd78a582a19d83813266c23500bff3f16e193be265096585e130b56ace26926",
+        "reftests": 26,
+        "reftest_statuses": {
+          "PASS": 26
+        },
+        "reftest_evidence": "agent/validation/linux-wpt-20261031-session9/qa-css-containment-numbered/chrome156-reftests/cohort/chromium/report.json",
+        "reftest_evidence_sha256": "998a1e5e977a6331f5cb8c0be56d8b200fe89f7faea42a312451991c8edcf713"
+      }
+    },
+    "qa-css-containment-parsing": {
+      "manifest_sha256": "5e8c795f1fb95977ffabfa2f46237921f6d922058e13000273da924a7ea9191a",
+      "lumen": {
+        "assertion_files": 3,
+        "fully_passing_assertion_files": 0,
+        "assertions": {
+          "PASS": 38,
+          "FAIL": 50
+        },
+        "assertion_total": 88,
+        "harnesses": {
+          "OK": 3
+        },
+        "assertion_evidence": "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/lumen226-assertions/native/results.jsonl",
+        "assertion_evidence_sha256": "ccaf8ad306b57b8d201c6e7518075e1c769aece4e8ccc8e75ba8771d6fe09132"
+      },
+      "chromium156": {
+        "assertion_files": 3,
+        "fully_passing_assertion_files": 3,
+        "assertions": {
+          "PASS": 88
+        },
+        "assertion_total": 88,
+        "harnesses": {
+          "OK": 3
+        },
+        "assertion_evidence": "agent/validation/linux-wpt-20261031-session9/qa-css-containment-parsing/chrome156-assertions/reference/results.jsonl",
+        "assertion_evidence_sha256": "43a728bb6369306ad26233e64e57fd9f3d98d8fbb87916a590f40d0f0c92d039"
+      }
+    }
+  },
+  "scores": {
+    "logical_assertions": 0,
+    "logical_reftests": 0
+  },
+  "limits": [
+    "This baseline is not full WPT or whole-browser quality.",
+    "First Chromium logical assertion attempt failed before test registration from Unix socket path length and is excluded from conformance counts; original receipt remains.",
+    "Version2 redundant outer process sampler was SIGTERM terminated (-15) on some completed scopes; controller returned2. Actual unchanged supported per-browser process samplers/cgroup data and real outcomes remain. Independent audit accepts baseline with explicit monitor limitation.",
+    "Subsecond/short per-browser samples may not have CPU deltas; do not infer zero CPU or a performance advantage."
+  ],
+  "reference_version": "156.0.8078.80"
+}

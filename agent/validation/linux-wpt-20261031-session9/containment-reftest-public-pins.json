@@ -1,0 +1,19 @@
+{
+  "created_utc": "2026-10-31T07:05:49.390319+00:00",
+  "published_configuration_source": "agent/ops/linux-wpt-20261030-session8/stretch-reftest-plan/pins.json",
+  "published_configuration_sha256": "20f2b20b0c6c44d862894d5f91c7182b766044c21437fd596979414301831da7",
+  "upstream_readiness_and_comparator": {
+    "tools/wptrunner/wptrunner/executors/base.py": "5e838d06466c1f2e1a1385264a44df3f8a3fe966bba39cccf4c0046241b88723",
+    "tools/wptrunner/wptrunner/executors/test-wait.js": "2a1152de8f5a88cc33fea74d262de12c369916333d20cc7d74023fd0363d2f6b"
+  },
+  "published_public_runner_pins": {
+    "agent/validation/reftest_pilot.py": "43b4d31a0eeec3773993fa573b7e24844532b71e4c32034a07a060af2c3b6d39",
+    "agent/progress/monitor.py": "57c216199f5a685f4d6a730bb0c53c92f004bb04b8f1f2d437505281e84e5a8c",
+    "agent/progress/cgroup_monitor.py": "0f1292f190f9cd40ce048526a4028d5a5fe1b8dfe1639bc14742d4e8d0eeb1f0",
+    "tools/codex_compile.py": "969cbe8df729bd340e46d1a25fc2069573249b4395aba3e7ecce8f6e583ae298",
+    "agent/ops/linux-wpt-20261030-session8/reftest156-config/official_reftest156.py": "bf0a5575f3f2aea7c1f862de2bf4d7b93a7139e2b3514a731f54e87a0dc1f7a5",
+    "agent/ops/linux-wpt-20261030-session8/reftest156-config/run_chromium156_cohort.py": "152d4837343889693cf9bbf2d0a94a0e6cb806a03195ee93c469d81f3bacc488"
+  },
+  "guard_bytes_read_or_rehashed": false,
+  "current_upstream_readiness_matches": true
+}

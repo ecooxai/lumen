@@ -1,0 +1,399 @@
+{
+  "created_utc": "2026-10-31T07:05:14.020818+00:00",
+  "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "selection": "Complete numbered 001 through033 neighboring containment cohort frozen before changes. This includes dynamic/controls/content-visibility and is not described as fully supported static containment.",
+  "testharness_files": 7,
+  "reftest_files": 26,
+  "deadline_seconds": 15,
+  "reftest_timeout_seconds": 30,
+  "max_total_browser_workers": 2,
+  "rows": [
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-001.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-001.html",
+      "source_sha256": "fcdfb81b604244e0c0e7553e54824bc84f9bce9c5bd10695e5d982dcb0d8d79c",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-001-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-002.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-002.html",
+      "source_sha256": "c0a0d9bd49bd0f9a1ba7d4efd3bec7fa91b3cd6fa080dd68316fd849304006a4",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-002-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-003.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-003.html",
+      "source_sha256": "3ede6d93347f64b391d641b3563d0e229674b12c00c826e1114e1c1c5f887e11",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-003-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004.html",
+      "source_sha256": "97d6dc9c0e5bcdf2fe7b73587d4428525e904b11bd88cb93593c03209123ca57",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-005.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-005.html",
+      "source_sha256": "ee178b3786ee51cd83900e4fde0cde29210a58dc0b638f52717334a7df72c3a4",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-006.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-006.html",
+      "source_sha256": "8ddec4191d0716711aa4337c48cfc8ceb322f8a1df84b0cb186d568e15527472",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-006-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-007.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-007.html",
+      "source_sha256": "c669713e5b67573caa6acb1548d38570d473c36d1a16ea7bf2fbe8543a438fe6",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-007-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-008.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-008.html",
+      "source_sha256": "6629d6b357225f459ec33dbb26fb75f8c752a5f26106768f02800083133f3c6c",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-008-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-009.html",
+      "source_sha256": "b12fc722d4967bb6992e1849311b49d6f08c04f40023806fbe3f207ce1ca4384",
+      "type": "testharness"
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010.html",
+      "source_sha256": "9720bc6dfb51a87a4bdd2de9037c093052cd8581983eddf0c1e3a3a24bfe6e0a",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-011.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-011.html",
+      "source_sha256": "3916694be1ba46f49978c2a70f06d286be84836e9772734ed8c6a047e907cc01",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-011-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-012.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-012.html",
+      "source_sha256": "c9f7ba542e9df8a58ea2308486bc359ecf5c5001e5e97ff187debbb068101879",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-012-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-013.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-013.html",
+      "source_sha256": "bbd62920eff32ba4aa0432a0460b27142131748b570df790aa737174bd9a3e0c",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-013-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-014.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-014.html",
+      "source_sha256": "ec089309b36d93f2ff42cc9dcca872c24265192f6169c710bedd50b725908b3a",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-014-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-015.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-015.html",
+      "source_sha256": "12c1ac6aaaf98d2ba3c87c8974bc6b9ff6636284fb5367dcf96b3de1e8d5d380",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-015-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-016.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-016.html",
+      "source_sha256": "0ce3d178650acda80a9bc71f3bd724bcbc4db468bc120c838ff3f81abc6f033d",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-016-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-017.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-017.html",
+      "source_sha256": "400df1fa8d7f81f0678658e15431e6d6cee475000e4f9d91d25214b748c7a6bf",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-017-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-018.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-018.html",
+      "source_sha256": "65b67e82eb16dccc6368eb35a4412ede8a8f228772ae2e3d5013f61666c3fc34",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-018-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-019.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-019.html",
+      "source_sha256": "57efc0a5c1dd838d4415060ccf4279b766c91521f1b22eee2cae73507f2671c4",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-019-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-020.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-020.html",
+      "source_sha256": "665349f1fba0a94c9e37a1426df7cc5cc27e39207af62e33d05da484749a864d",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-020-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-021.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-021.html",
+      "source_sha256": "d2c1eb7d9bc62d7294e3973c097573d8e44e26c9505440bffe952387c214cf64",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-021-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-022.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-022.html",
+      "source_sha256": "0d314dd664f42fc55a6429ffc30d40ded23b230554276f3d26698d53d7f2873d",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-022-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-023.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-023.html",
+      "source_sha256": "f43012c4ba9ff1a618200ca5229cb18daaa2374f6d76276b61024d346a401421",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-023-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-024.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-024.html",
+      "source_sha256": "f655c66bbd11797bb2f8f9cf11a76c2a52455e7c5a720296b43f743479c4e076",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-024-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-025.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-025.html",
+      "source_sha256": "75b9d91b7c113594984602dce5694183d7cb7dfb63072f93d2baed0dc6e5603f",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-025-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-026.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-026.html",
+      "source_sha256": "0e67b3c1d6f6ae54e57c8321dc31662a41bd0057b7f9117631ee3524a8485487",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-026-ref.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-027.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-027.html",
+      "source_sha256": "b6c61aa1b3666b4aefa35afb7b946882d9548669b466e243361ba41162e20c47",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/reference/ref-filled-green-100px-square-only.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-028.html",
+      "source_sha256": "2b29fac058197a6c9cb57e7b870421e44c424f22709a3637e79809e323d4f03e",
+      "type": "testharness"
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-029.html",
+      "source_sha256": "372022faf10f52a601694c2078c21e9734b394b0c04268fd276d058dbe82a328",
+      "type": "testharness"
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-030.html",
+      "source_sha256": "ab61e44672815097828d5b89078bd097a2866ca74f6c125c389334c0c20826ee",
+      "type": "testharness"
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-031.html",
+      "source_sha256": "0cc696a5e9f8869a1de167eeb2c021f679c3b407d229631b44f1f012ca3e06f9",
+      "type": "testharness"
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-032.html",
+      "source_sha256": "77b4155072b8b01aa70e815d7195f6fc8dced63e23360940eec2644c8ef97287",
+      "type": "testharness"
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-033.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-033.html",
+      "source_sha256": "00ecdcee3bdf05eea6aca8a132900076ff760c427bf6e839ac3bff2cdf5fb656",
+      "type": "testharness"
+    }
+  ],
+  "support_pins": {
+    "common/reftest-wait.js": "d4a7992dfa6020b92a59955753e2e2ba7219047cd2a4ccb1fcd989a64e899b42",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-001-ref.html": "958cddbad4e052a314b5e1fe27b4d38d5eb25c18f0ed316435d07c02e8e9b94f",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-002-ref.html": "592de47721d456b642c9222152f946489620014e85cd0280498c353bd7e93533",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-003-ref.html": "d53532c174a9bf62d81464aa0bb5ef57b8863d0129a10676718a4839f392598d",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-004-ref.html": "31b055b21940a214ca68c815e44584759091d7d362d1c6b8d1202be7ccbec018",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-006-ref.html": "02c489fc993782249fe313a4b30e2c90639d654bdbdbec99bd029995b8df4ab5",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-007-ref.html": "649591e336d3ab5ccf3666a8f52788fe63b6d5f2cf3a3a7b1c8684e789ba0d51",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-008-ref.html": "4e080213a04e7d4a9cc9b5be1ffe4f1dacdb038d6bd85f5ffc2b6cbbaf34e686",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-010-ref.html": "25f02940173b7a838b60768d0421f6386e38491ea2f3c82c057b000e51ec8287",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-011-ref.html": "a0b096736453298dd2a80629265dae8b1ec58cd786bf4aceda34ef07299fcdf9",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-012-ref.html": "e612ed1990c1dbd19d1b1d4b7adacd62800d6df9b195ad639f2a70bd4241b213",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-013-ref.html": "5bf6fd7e2cf001d8bb6e640540d8332cd6221a09ee2fc2bc232e16a13bb3f665",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-014-ref.html": "c3621036696dd471b168b95a543a1aa677997ce3aeaa19ea5a96db0fdd841d40",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-015-ref.html": "46fe95fe7695a14c5d9724c958db557e4732dd7a2e0189b609d0833de5643eed",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-016-ref.html": "7f65fca3beac4d33aafab710f8a35f589a874efc58e0f435b914e6baf15c4fb6",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-017-ref.html": "9a742f2fcb08ee84fca67fd0eaa6f9bceb38f9419ed9e1a556c86d007df30e5f",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-018-ref.html": "e9580ec8b3c8077c9d669a9bb8da8283035d52fbf7963afcd55600f2c63198b2",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-019-ref.html": "2afa5d195a203ef3e5411849d986a80ef2fa934257eadda999f9596a6d7c0c23",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-020-ref.html": "90712ce89b330b867ed3b57ada5f5d3284945aab4268136adbdb162d52ae663c",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-021-ref.html": "97cce17bec35be6c2770e7cd428134b1dbfc81e922e076d74f29cc4386797e70",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-022-ref.html": "c6d6e4113897e08f8fd852618a38ef42f7821260361db2306c151e4ff9f088bd",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-023-ref.html": "871373433760b09200446e9424043c08645a5923ac35601740a2339cb6ce5fd3",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-024-ref.html": "f76dc93f44b933f12cc3cb2cbf2a6d58e29135e63680c5386f79067387818cc4",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-025-ref.html": "ecf0e4957b56008eb4a2785b5cf29d29facbc85c0ad261555e2585d62f06d589",
+    "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-026-ref.html": "40f70fea67bb0011ad5a5308a7ee2bddfe373227f27ecc44d215b6025144798d",
+    "css/css-sizing/contain-intrinsic-size/resources/dice.png": "75008d58c9f5564824e4bdef69ea6f8b1bae77cbae7d17c933e22c2a096b46bb",
+    "css/reference/ref-filled-green-100px-square-only.html": "16374b3cb3d9ecd468a0a6bd73977b8613a71623c556a556cb15b555dedfe95b",
+    "css/support/60x60-green.png": "38a9a0ea560a60b9ce79be68126b1e57bbbbcab0c013b9893f4f43fce7ebc3c4",
+    "resources/check-layout-th.js": "b15666105c99548df947b3b9182e78cbadc2871e53f51e26c7c7aa27cf0bef1c",
+    "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+    "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+  }
+}

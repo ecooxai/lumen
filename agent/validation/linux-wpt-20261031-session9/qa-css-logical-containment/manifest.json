@@ -1,0 +1,49 @@
+{
+  "created_utc": "2026-10-31T07:05:13.994610+00:00",
+  "wpt_revision": "0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb",
+  "selection": "Complete three-file upstream logical intrinsic-size containment subgroup, selected before fresh baseline or engine edits.",
+  "testharness_files": 1,
+  "reftest_files": 2,
+  "deadline_seconds": 15,
+  "reftest_timeout_seconds": 30,
+  "max_total_browser_workers": 2,
+  "rows": [
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-001.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-001.html",
+      "source_sha256": "9df17262309833799b1954d2ab167c4c8b46981d6d61d550b2952a513bc92c28",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/reference/ref-filled-green-100px-square-only.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-002.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-002.html",
+      "source_sha256": "d6345fdd46fccd258c371e19366bbf1644edbe57ae7b9c302008e914cef20fd3",
+      "type": "reftest",
+      "references": [
+        {
+          "url": "/css/reference/ref-filled-green-100px-square-only.html",
+          "relation": "=="
+        }
+      ]
+    },
+    {
+      "url": "/css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+      "source_path": "css/css-sizing/contain-intrinsic-size/contain-intrinsic-size-logical-003.html",
+      "source_sha256": "db55ec1d892c1eb3ba1648060736cc856f9a3025b2caa6f64e3417b32be3cb7c",
+      "type": "testharness"
+    }
+  ],
+  "support_pins": {
+    "css/reference/ref-filled-green-100px-square-only.html": "16374b3cb3d9ecd468a0a6bd73977b8613a71623c556a556cb15b555dedfe95b",
+    "css/support/60x60-green.png": "38a9a0ea560a60b9ce79be68126b1e57bbbbcab0c013b9893f4f43fce7ebc3c4",
+    "resources/check-layout-th.js": "b15666105c99548df947b3b9182e78cbadc2871e53f51e26c7c7aa27cf0bef1c",
+    "resources/testharness.js": "7a108d7cfa98ac413ddb38f82fd509fb2037dfcc25ccf466567520cbb6bdf1fa",
+    "resources/testharnessreport.js": "629fcb14ee933811465bbf28880de46737885c9d0d8a0a6d717b1e541d180c5a"
+  }
+}
