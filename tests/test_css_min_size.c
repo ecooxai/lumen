@@ -28,6 +28,9 @@ int main(void) {
         "fit-content(10px) 20px", "fit-content()", "fit-content(10px, 20px)", "fit-content(-1px)",
         "-10%", "-0.5em", "1py", "min(1py)", "min(1s)", "calc(0)", "fit-content(2)",
         "fit-content(1s)", "calc(1px + 1s)", "calc(1px/**/+/**/2px)", "1/**/px",
+        "calc(10p\\78 + 2px)", /* escape terminator is not calc whitespace */
+        "min(1px) + 2px", "min(1px)/2", "min(1px)*2", "min(1px) min(2px)",
+        "1px + 2px", "1px/2", "1px*2", "min(1p\\78\\2c 2px)", "calc(1p\\78\\2f 2)", "1p\\78\\20",
         "m\\69 n-content extra", "calc(1px))", "10px;min-width:0", "fit-content(0s)"
     };
     const char *const valid[] = {
@@ -36,7 +39,7 @@ int main(void) {
         "min(10px, 20%)", "fit-content(10%)", "fit-content(0.5em)", "fit-content(calc(10% - 0.5em))",
         "inherit", "initial", "unset", "revert", "revert-layer", "var(--minimum)", "var(--missing, 17px)",
         "MIN-CONTENT", " /* lead */ 10px /* tail */ ", "m\\69 n-content", "10p\\78",
-        "calc(10p\\78 + 2px)", "calc(10px + 2px", "clamp(none, 10px, 20px)",
+        "calc(10p\\78  + 2px)", "calc(10px + 2px", "clamp(none, 10px, 20px)",
         "clamp(0px, 10px, none)", "calc(1px * sign(1em - 18px))", "1rex", "1rcap"
     };
     for (unsigned p = 0; p < sizeof props / sizeof *props; p++) {

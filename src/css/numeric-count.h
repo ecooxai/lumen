@@ -15,6 +15,18 @@ static void css_number_ws(CssNumberParser *p) { while (is_ws((unsigned char)*p->
 static bool css_number_scalar(const CssNumber *n) { for (int i = 0; i < CN_DIMS; i++) if (n->power[i]) return false; return true; }
 static bool css_number_same(const CssNumber *a, const CssNumber *b) { return !memcmp(a->power, b->power, sizeof a->power); }
 static bool css_number_angle(const CssNumber *n) { for (int i = 0; i < CN_DIMS; i++) if (n->power[i] != (i == CN_ANGLE)) return false; return true; }
+/* Syntax validation must not require a live document or font metrics.
+ * The nominal length magnitude is used only for temporary validation values. */
+static bool css_number_length_unit(const char *unit) {
+    static const char *const units[] = {
+        "px", "em", "rem", "ex", "rex", "ch", "rch", "cap", "rcap", "ic", "ric", "lh", "rlh",
+        "cm", "mm", "q", "in", "pt", "pc", "vw", "vh", "vi", "vb", "vmin", "vmax",
+        "svw", "svh", "svi", "svb", "svmin", "svmax", "lvw", "lvh", "lvi", "lvb", "lvmin", "lvmax",
+        "dvw", "dvh", "dvi", "dvb", "dvmin", "dvmax", "cqw", "cqh", "cqi", "cqb", "cqmin", "cqmax"
+    };
+    for (size_t i = 0; i < ARRLEN(units); i++) if (!strcmp(unit, units[i])) return true;
+    return false;
+}
 static bool css_number_function(const char *name, CssNumber *args, int n, int strategy, bool no_clamp, CssNumber *out) {
     if (!n) return false;
     *out = args[0]; double a = args[0].value, b = n > 1 ? args[1].value : 1, v = a;
@@ -91,10 +103,8 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
             else {
                 size_t len = (size_t)(q - s); if (len >= 160) return false;
                 char token[160]; memcpy(token, s, len); token[len] = 0; Length value;
-                if (p->validation_only && !strcmp(u, "rex")) {
-                    /* Syntax validation has no document font. The nominal
-                       magnitude never escapes this boolean validation path. */
-                    value = L_px((float)out->value * p->rem * .5f);
+                if (p->validation_only && css_number_length_unit(u)) {
+                    value = L_px((float)out->value);
                 } else if (p->font_context) {
                     LCtx context = *p->font_context; context.scalar_percentage_type = false;
                     const char *cursor = token;
@@ -138,11 +148,24 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
             if (n) { css_number_ws(p); if (*p->p != ',') return false; p->p++; }
         } else p->p = begin;
     }
-    CssNumber args[64]; int n = 0;
+    CssNumber args[64]; int n = 0; unsigned unbounded = 0;
     for (;;) {
-        if (n == (int)ARRLEN(args) || !css_number_sum(p, &args[n++])) return false;
+        if (n == (int)ARRLEN(args)) return false;
+        css_number_ws(p);
+        if (!strcmp(name, "clamp") && !strncasecmp(p->p, "none", 4) &&
+            (is_ws((unsigned char)p->p[4]) || p->p[4] == ',' || p->p[4] == ')')) {
+            if (n != 0 && n != 2) return false;
+            memset(&args[n], 0, sizeof args[n]); unbounded |= 1u << n; p->p += 4;
+        } else if (!css_number_sum(p, &args[n])) return false;
+        n++;
         css_number_ws(p); if (*p->p == ',') { p->p++; continue; }
         if (*p->p != ')') return false; p->p++; break;
+    }
+    if (unbounded) {
+        if (n != 3) return false;
+        for (int i = 0; i < 3; i += 2) if (unbounded & (1u << i)) {
+            args[i] = args[1]; args[i].value = i == 0 ? -INFINITY : INFINITY;
+        }
     }
     return css_number_function(name, args, n, strategy, no_clamp, out);
 }
