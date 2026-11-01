@@ -437,6 +437,10 @@ char *css_min_size_parse(const char *value); /* caller owns normalized syntax te
 bool css_numeric_dimension_property(const char *prop);
 bool css_numeric_dimension_valid(const char *prop, const char *value);
 char *css_numeric_dimension_parse(const char *prop, const char *value); /* caller owns result; NULL if invalid */
+/* Shared standalone transition-property list grammar and identifier serialization. */
+bool css_transition_property_valid(const char *property, const char *value);
+char *css_transition_property_parse(const char *value); /* caller owns result; NULL if invalid */
+void css_serialize_ident(SB *output, const char *identifier);
 /* Grid1/2 automatic-repeat constraint; not a complete property grammar validator. */
 bool css_grid_repeat_valid(const char *property, const char *value);
 /* Caller owns *out. Used for implicit grid track-size patterns. */

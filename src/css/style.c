@@ -2387,6 +2387,56 @@ static bool inherit_copies_uncompared(const char *P) {
 static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block","inline-size","block-size","min-inline-size","max-inline-size","min-block-size","max-block-size", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0 || gen_prop(p); }
 
+/* A transition-property list preserves unknown identifiers and duplicates so
+ * its positions continue to line up with duration, delay and easing lists. */
+char *css_transition_property_parse(const char *value) {
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    SB result; sb_init(&result);
+    bool need_identifier = true, singleton = false;
+    unsigned count = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer);
+        if (token.type == CT_WS) { free(token.str); continue; }
+        if (token.type == CT_EOF) {
+            free(token.str);
+            if (!need_identifier) return sb_take(&result);
+            break;
+        }
+        if (!need_identifier) {
+            bool comma = token.type == CT_COMMA && !singleton;
+            free(token.str);
+            if (!comma) break;
+            need_identifier = true;
+            continue;
+        }
+        if (token.type != CT_IDENT || !token.str) { free(token.str); break; }
+        const char *wide = var_wide_keyword(token.str);
+        bool one = wide || str_ieq(token.str, "none");
+        if (str_ieq(token.str, "default") || (count && one)) { free(token.str); break; }
+        if (count) sb_puts(&result, ", ");
+        char *lower = xstrdup(token.str);
+        for (char *p = lower; *p; p++) *p = (char)lc((unsigned char)*p);
+        const char *identifier = wide ? wide :
+            ((!strcmp(lower, "none") || !strcmp(lower, "all") || css_property_known(lower)) ? lower : token.str);
+        css_serialize_ident(&result, identifier);
+        free(lower); free(token.str);
+        singleton = one;
+        need_identifier = false;
+        count++;
+    }
+    free(sb_take(&result));
+    return NULL;
+}
+bool css_transition_property_valid(const char *property, const char *value) {
+    if (!str_ieq(property, "transition-property")) return true;
+    char *parsed = css_transition_property_parse(value);
+    bool valid = parsed != NULL;
+    free(parsed);
+    return valid;
+}
+
 static char *parse_grid_areas(const char *v) {
     if (str_ieq(v, "none")) return NULL;
     SB b; sb_init(&b); bool any = false;
@@ -2503,7 +2553,7 @@ static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
             layer[l] = prop;
         }
         st->tr_prop = layer_list(layer, nl);
-    } else if (!strcmp(Q, "transition-property")) st->tr_prop = layer_list(layer, nl);
+    } else if (!strcmp(Q, "transition-property")) st->tr_prop = atom(val);
     else if (!strcmp(Q, "transition-duration") || !strcmp(Q, "transition-delay")) {
         float m = 0;
         for (int l = 0; l < nl; l++) if (css_time(layer[l], &f) && f > m) m = f;
@@ -2686,7 +2736,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         v = subst;
     }
     char *vbuf = min_size_property(prop) ? css_min_size_parse(v) :
-        css_numeric_dimension_property(prop) ? css_numeric_dimension_parse(prop, v) : xstrdup(v);
+        css_numeric_dimension_property(prop) ? css_numeric_dimension_parse(prop, v) :
+        !strcmp(prop, "transition-property") ? css_transition_property_parse(v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);
     if (min_size_property(prop) && (str_ieq(val, "-webkit-min-content") ||
@@ -6464,15 +6515,20 @@ static void tr_scan_gen(Node *n, const ComputedStyle *o, const ComputedStyle *s,
 void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s, void (*cb)(Node *, const char *, const char *, const char *)) {
     const char *list = s->tr_prop;
     bool all = !list;
-    if (list) for (const char *p = list;;) {
-        const char *e = strchr(p, ','); size_t len = e ? (size_t)(e - p) : strlen(p);
-        char name[64];
-        while (len && *p == ' ') { p++; len--; }
-        while (len && p[len - 1] == ' ') len--;
-        if (len == 3 && !strncmp(p, "all", 3)) all = true;
-        else if (len && len < sizeof name) { memcpy(name, p, len); name[len] = 0; if (gen_prop(name)) tr_scan_one(n, o, s, name, cb); }
-        if (!e) break;
-        p = e + 1;
+    if (list) {
+        CLexer lexer; clex_init(&lexer, list, strlen(list));
+        int depth = 0;
+        for (;;) {
+            CTok token = clex_next(&lexer); int type = token.type;
+            if (!depth && type == CT_IDENT && token.str) {
+                if (str_ieq(token.str, "all")) all = true;
+                else if (gen_prop(token.str)) tr_scan_one(n, o, s, token.str, cb);
+            }
+            if (type == CT_FUNC || type == CT_LPAREN || type == CT_LBRACK || type == CT_LBRACE) depth++;
+            else if (depth && (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE)) depth--;
+            free(token.str);
+            if (type == CT_EOF) break;
+        }
     }
     if (!all) return;
     for (size_t i = 0; i < sizeof gen_props / sizeof *gen_props; i++) if (gen_props[i].native && strcmp(gen_props[i].name, "display")) tr_scan_one(n, o, s, gen_props[i].name, cb);

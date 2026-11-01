@@ -951,13 +951,18 @@ class CSSTransition extends Animation {
     get transitionProperty() { return this._trProp; }
 }
 const trTime = s => { const m = /^(-?[\d.]+(?:e[+-]?\d+)?)(m?s)$/i.exec(String(s).trim()); return m ? +m[1] * (m[2].toLowerCase() === 'ms' ? 1 : 1000) : 0; };
-const trList = (el, p) => tomSplitTop(N.computed(el, p) || '', ',').map(s => s.trim());
+const trList = (el, p) => {
+    const value = N.computed(el, p) || '';
+    /* Keep escaped commas inside identifiers, so unknown names retain their
+       duration/delay index without creating another transition property. */
+    return p === 'transition-property' ? (cssGridTokens(value) || []).filter(s => s !== ',').map(cssGridDecode) : tomSplitTop(value, ',').map(s => s.trim());
+};
 function trStart(el, packed) {
     const [prop, from, to] = packed.split('\x01');
     const sup = trSuppress.get(el);
     if (sup && sup.has(prop)) { sup.delete(prop); if (!sup.size) trSuppress.delete(el); return; }
     const names = trList(el, 'transition-property');
-    let i = names.lastIndexOf(prop); if (i < 0) i = names.lastIndexOf('all'); if (i < 0) return;
+    const i = Math.max(names.lastIndexOf(prop), names.lastIndexOf('all')); if (i < 0) return;
     const at = (p, d) => { const l = trList(el, p); return l.length && l[0] ? l[i % l.length] : d; };
     const duration = Math.max(0, trTime(at('transition-duration', '0s'))), delay = trTime(at('transition-delay', '0s'));
     const running = trRunning.get(el), old = running && running.get(prop);

@@ -47,7 +47,7 @@ function parseDecls(s) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
 /* CSS Sizing4 intrinsic-size grammar. Keep specified physical longhands in
@@ -673,6 +673,7 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 }
 function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
+    if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
     if (CSS_MIN_SIZE.test(p)) return N.cssSupports('(' + p + ':' + v + ')');
     if (CSS_NUMERIC_DIMENSION.test(p)) return N.cssNumericDimension(p, v) !== null;
     if (cssCisRelevant(p)) return cssCisParse(p, v) !== null;
@@ -1068,6 +1069,13 @@ class CSSStyleDeclaration {
         if (v !== '' && ((pri && !/^important$/i.test(pri)) || !cssVarSyntax(v))) return;
         if (CSS_MIN_SIZE.test(p)) {
             const value = v === '' ? '' : cssMinSizeParse(p, v);
+            if (value === null) return;
+            const m = new SMap(this._m()); m.delete(p);
+            if (value !== '') m.set(p, [value, pri ? 'important' : '']);
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (p === 'transition-property') {
+            const value = v === '' ? '' : N.cssTransitionProperty(v);
             if (value === null) return;
             const m = new SMap(this._m()); m.delete(p);
             if (value !== '') m.set(p, [value, pri ? 'important' : '']);

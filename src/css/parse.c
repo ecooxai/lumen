@@ -783,7 +783,7 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         /* A stray closing token invalidates the declaration, not just its
            suffix. Continue to the next semicolon so later declarations survive. */
         if (name_valid && !bad_close && math_valid && (custom || v[0]) && css_var_syntax_valid(v) &&
-            (custom || css_numeric_dimension_valid(property, v))) vec_push(*d, dc); else free(dc.value);
+            (custom || (css_numeric_dimension_valid(property, v) && css_transition_property_valid(property, v)))) vec_push(*d, dc); else free(dc.value);
         free(val);
     }
     return d;
@@ -1087,9 +1087,10 @@ bool css_supports(const char *cond) {
             bool minimum = !strcmp(p, "min-width") || !strcmp(p, "min-height") ||
                            !strcmp(p, "min-inline-size") || !strcmp(p, "min-block-size");
             r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) &&
-                (minimum || !strstr(v, "-webkit-")) && !strstr(p, "-webkit-"));
+                (minimum || !strcmp(p, "transition-property") || !strstr(v, "-webkit-")) && !strstr(p, "-webkit-"));
             if (r && minimum) r = css_min_size_valid(p, v);
             if (r) r = css_numeric_dimension_valid(p, v);
+            if (r) r = css_transition_property_valid(p, v);
             if (!strcmp(p, "display") && (strstr(v, "contents") || strstr(v, "subgrid"))) r = !strstr(v, "subgrid");
             if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
             if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);
@@ -1362,6 +1363,7 @@ static void ser_ident(SB *b, const char *s) {
         else { sb_putc(b, '\\'); sb_putc(b, (char)c); }
     }
 }
+void css_serialize_ident(SB *b, const char *s) { ser_ident(b, s); }
 static void ser_string(SB *b, const char *s) {
     sb_putc(b, '"');
     for (const unsigned char *u = (const unsigned char *)s; *u; u++) {
