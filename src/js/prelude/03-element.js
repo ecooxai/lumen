@@ -1509,7 +1509,10 @@ methods(HTMLElement.prototype, {
         });
         def(this, '__ds', ds); return ds;
     },
-    get innerText() { return innerTextOf(this); }, set innerText(v) { this.textContent = v; }, get outerText() { return N.text(this); },
+    get innerText() { renderedTextCheck(this); return innerTextOf(this); },
+    set innerText(v) { renderedTextSet(this, v, false); },
+    get outerText() { renderedTextCheck(this); return innerTextOf(this); },
+    set outerText(v) { renderedTextSet(this, v, true); },
     get tabIndex() { const m = /^[\t\n\f\r ]*([-+]?\d+)/.exec(N.attr(this, 'tabindex') || ''), v = m && +m[1] >= -(2 ** 31) && +m[1] < 2 ** 31 ? +m[1] || 0 : NaN; return isNaN(v) ? (/^(a|button|input|select|textarea)$/.test(N.name(this)) ? 0 : -1) : v; },
     set tabIndex(v) { this.setAttribute('tabindex', String(v | 0)); },
     get offsetParent() {
@@ -1641,6 +1644,70 @@ for (const [p, a] of [['ariaControlsElements', 'aria-controls'], ['ariaDescribed
 
 /* innerText (HTML "rendered text collection steps"), from computed display, white-space, visibility and
    text-transform; elements that aren't rendered give their text content */
+/* HTML's rendered text fragment and mutation algorithms. These use private
+ * capabilities, not author-overridable textContent/replaceWith/creation methods.
+ * Keep the established DOM primitives so observers and live ranges see the
+ * same replacement and character-data operations as other native mutations. */
+const renderedTextString = String, renderedTextSlice = String.prototype.slice,
+      renderedTextApply = Reflect.apply, renderedTextTypeError = TypeError,
+      renderedTextDOMException = DOMException,
+      renderedTextReplaceAll = ParentNode.replaceChildren,
+      renderedTextReplaceChild = Node.prototype.replaceChild;
+function renderedTextCheck(element) {
+    if (!N.isNode(element) || N.type(element) !== 1 || N.ns(element) !== 0)
+        throw new renderedTextTypeError('Illegal invocation');
+}
+function renderedTextConvert(value) {
+    if (value === null) return '';
+    if (typeof value === 'symbol') throw new renderedTextTypeError('Cannot convert a Symbol value to a string');
+    return renderedTextString(value);
+}
+function renderedTextFragment(value, doc) {
+    const fragment = N.frag(doc);
+    let start = 0;
+    for (let i = 0; i < value.length; ++i) {
+        const c = value[i];
+        if (c !== '\r' && c !== '\n') continue;
+        if (i > start) N.insert(fragment, N.textNode(renderedTextApply(renderedTextSlice, value, [start, i]), doc), null);
+        N.insert(fragment, N.create('br', 0, doc), null);
+        if (c === '\r' && value[i + 1] === '\n') ++i;
+        start = i + 1;
+    }
+    if (start < value.length) N.insert(fragment, N.textNode(renderedTextApply(renderedTextSlice, value, [start]), doc), null);
+    return fragment;
+}
+function renderedTextMergeNext(node) {
+    const next = N.next(node);
+    if (!next || !isTextNode(next)) return;
+    replaceData(node, N.text(node).length, 0, N.text(next));
+    removeNode(next);
+}
+function renderedTextSet(element, input, outer) {
+    renderedTextCheck(element);
+    const value = renderedTextConvert(input);
+    const parent = outer ? N.parent(element) : null;
+    if (outer && !parent)
+        throw new renderedTextDOMException('The element has no parent.', 'NoModificationAllowedError');
+    const previousQueue = ceReactionQueue, queue = [];
+    ceReactionQueue = queue;
+    try {
+        const next = outer ? N.next(element) : null, previous = outer ? N.prev(element) : null;
+        const fragment = renderedTextFragment(value, N.ownerDoc(element));
+        if (!outer) {
+            renderedTextApply(renderedTextReplaceAll, element, [fragment]);
+            return;
+        }
+        if (!N.first(fragment)) N.insert(fragment, N.textNode('', N.ownerDoc(element)), null);
+        renderedTextApply(renderedTextReplaceChild, parent, [fragment, element]);
+        // Merge only the immediate boundaries, right before left. normalize()
+        // would merge unrelated neighbors and give different node identities.
+        if (next) { const beforeNext = N.prev(next); if (beforeNext && isTextNode(beforeNext)) renderedTextMergeNext(beforeNext); }
+        if (previous && isTextNode(previous)) renderedTextMergeNext(previous);
+    } finally {
+        ceReactionQueue = previousQueue;
+        ceInvoke(queue);
+    }
+}
 function innerTextOf(el) {
     const cs = (e, p) => N.computed(e, p) || '';
     for (let a = el; a; a = a.parentElement) if (cs(a, 'display') === 'none') return el.textContent;
