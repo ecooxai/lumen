@@ -6,7 +6,7 @@
 const { ReadableStream, ReadableStreamDefaultReader, ReadableStreamBYOBReader, ReadableStreamDefaultController,
         ReadableByteStreamController, ReadableStreamBYOBRequest, WritableStream, WritableStreamDefaultWriter,
         WritableStreamDefaultController, TransformStream, TransformStreamDefaultController, ByteLengthQueuingStrategy,
-        CountQueuingStrategy, streamDisturbed, streamTee } = (() => {
+        CountQueuingStrategy, streamDisturbed, streamTee, streamReadAllBytes } = (() => {
 const $Promise = Promise, thenP = Promise.prototype.then, PResolve = Promise.resolve.bind(Promise), PReject = Promise.reject.bind(Promise);
 const noop = () => {}, one = () => 1;
 const INTERNAL = Symbol('streams internal'), END = Symbol('end of iteration');
@@ -1646,11 +1646,97 @@ for (const [name, C] of Object.entries(classes)) {
 }
 for (const k of ['next', 'return']) { const d = Object.getOwnPropertyDescriptor(RSAsyncIterator.prototype, k); d.enumerable = true; Object.defineProperty(RSAsyncIterator.prototype, k, d); }
 
+/* Fetch byte consumption uses private read requests, never public read-result promises.
+ * Only consume()'s final public value enters Promise resolution. */
+const bodyByteSet = taProto.set, bodyPartPush = Array.prototype.push;
+
+// consume receives private bytes directly. Its return value is the final result.
+const streamReadAllBytes = (stream, consume) => {
+    const result = cap();
+    let reader, parts = [], total = 0, finished = false;
+
+    const fail = e => {
+        if (finished) return;
+        finished = true;
+        parts = [];
+        capReject(result, e);
+    };
+
+    const request = {
+        __proto__: null,
+        chunk(value) {
+            if (finished) return;
+            try {
+                // Intrinsic getter checks [[TypedArrayName]], not prototypes
+                // or an author-controlled Symbol.toStringTag.
+                if (taTag.call(value) !== 'Uint8Array')
+                    throw new TypeError(
+                        'The body stream must contain Uint8Array chunks.');
+
+                const n = taLen.call(value);
+                if (n > 0x1fffffffffffff - total)
+                    throw new RangeError('Body is too large.');
+
+                const copy = new $Uint8Array(n);
+                // Intrinsic typed-array copying: no slice/species/iterator.
+                bodyByteSet.call(copy, new $Uint8Array(taBuf.call(value), taOff.call(value), n));
+                bodyPartPush.call(parts, copy);
+                total += n;
+                micro(read);
+            } catch (e) {
+                fail(e);
+                return;
+            }
+        },
+        close() {
+            if (finished) return;
+            finished = true;
+            // Keep final conversion/thenable resolution off the controller stack.
+            try { micro(() => {
+                try {
+                    const bytes = new $Uint8Array(total);
+                    let offset = 0;
+                    for (let i = 0; i < parts.length; ++i) {
+                        const part = parts[i];
+                        bodyByteSet.call(bytes, part, offset);
+                        offset += taLen.call(part);
+                    }
+                    parts = [];
+                    capResolve(result, consume(bytes));
+                } catch (e) {
+                    parts = [];
+                    capReject(result, e);
+                }
+            }); } catch (e) { parts = []; capReject(result, e); }
+        },
+        error(e) {
+            fail(e);
+        },
+    };
+
+    function read() {
+        if (finished) return;
+        try {
+            defaultReaderRead(reader, request);
+        } catch (e) {
+            fail(e);
+        }
+    }
+
+    try {
+        reader = acquireDefaultReader(rsOf(stream));
+        read();
+    } catch (e) {
+        fail(e);
+    }
+    return result.p;
+};
+
 const streamDisturbed = s => rsIs(s) && rsOf(s).disturbed;
 // Internal consumers must not invoke an author-overridden public tee method.
 const streamTee = (s, cloneForBranch2) => {
     const branches = rsTee(rsOf(s), cloneForBranch2);
     return [branches[0].pub, branches[1].pub];
 };
-return { ...classes, streamDisturbed, streamTee };
+return { ...classes, streamDisturbed, streamTee, streamReadAllBytes };
 })();
