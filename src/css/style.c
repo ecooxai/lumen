@@ -1887,14 +1887,42 @@ static bool min_size_property(const char *prop) {
     return !strcmp(prop, "min-width") || !strcmp(prop, "min-height") ||
            !strcmp(prop, "min-inline-size") || !strcmp(prop, "min-block-size");
 }
+/* Conditional substitution retains its existing pending-value path. This
+ * structural check excludes branchless if(), but does not evaluate queries
+ * or implement the full conditional/custom-function grammar. */
+static bool min_size_pending_if(CLexer lexer) {
+    unsigned depth = 1; bool condition = false;
+    for (;;) {
+        CTok t = clex_next(&lexer); int type = t.type;
+        bool branch = depth == 1 && type == CT_COLON && condition;
+        if (depth == 1 && type != CT_WS && type != CT_COLON) condition = true;
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) depth--;
+        free(t.str);
+        if (branch || !depth || type == CT_EOF) return branch;
+    }
+}
 static bool min_size_deferred(const char *value) {
     CLexer lexer; clex_init(&lexer, value, strlen(value));
     for (;;) {
         CTok t = clex_next(&lexer); int type = t.type;
         bool pending = type == CT_FUNC && t.str &&
-            (str_ieq(t.str, "var") || str_ieq(t.str, "env") || str_ieq(t.str, "attr"));
+            (str_ieq(t.str, "var") || str_ieq(t.str, "env") || str_ieq(t.str, "attr") ||
+             (t.str[0] == '-' && t.str[1] == '-') ||
+             (str_ieq(t.str, "if") && min_size_pending_if(lexer)));
         free(t.str);
         if (pending || type == CT_EOF) return pending;
+    }
+}
+/* A dashed identifier already starts with two safe hyphens; preserve its
+ * case and escape punctuation/control bytes without changing token identity. */
+static void min_size_dashed_text(SB *out, const char *name) {
+    for (const unsigned char *q = (const unsigned char *)name; *q; q++) {
+        unsigned char ch = *q;
+        if (ch >= 0x80 || isalnum(ch) || ch == '-' || ch == '_') sb_putc(out, (char)ch);
+        else if (ch < 0x20 || ch == 0x7f) {
+            char escaped[12]; snprintf(escaped, sizeof escaped, "\\%x ", ch); sb_puts(out, escaped);
+        } else { sb_putc(out, '\\'); sb_putc(out, (char)ch); }
     }
 }
 /* Decode identifier/unit escapes without joining tokens separated by a
@@ -1909,7 +1937,9 @@ static char *min_size_parser_text(const char *value) {
         if (offset > copied) sb_putc(&out, ' ');
         if (type == CT_EOF) { free(t.str); break; }
         bool valid = true;
-        if (type == CT_IDENT || type == CT_FUNC) {
+        if (type == CT_IDENT && t.str && t.str[0] == '-' && t.str[1] == '-') {
+            min_size_dashed_text(&out, t.str);
+        } else if (type == CT_IDENT || type == CT_FUNC) {
             for (const unsigned char *q = (const unsigned char *)t.str; q && *q; q++)
                 if (!isalnum(*q) && *q != '-' && *q != '_') valid = false;
             if (valid) {
@@ -1966,15 +1996,22 @@ static bool min_size_numeric(const char *text) {
     return math || n.value >= 0;
 }
 static bool min_size_function(const char *text, const char *name) {
-    size_t n = strlen(name);
-    if (!str_istarts(text, name) || text[n] != '(') return false;
-    unsigned depth = 1; const char *p = text + n + 1;
-    if (*p == ')') return false;
-    for (; *p; p++) {
-        if (*p == '(') depth++;
-        else if (*p == ')' && !--depth) return p[1] == 0;
+    CLexer lexer; clex_init(&lexer, text, strlen(text));
+    CTok first = clex_next(&lexer);
+    bool function = first.type == CT_FUNC && first.str && str_ieq(first.str, name);
+    free(first.str); if (!function) return false;
+    unsigned depth = 1; bool content = false;
+    while (depth) {
+        CTok t = clex_next(&lexer); int type = t.type;
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) depth--;
+        if (depth && type != CT_WS) content = true;
+        free(t.str);
+        if (type == CT_EOF || depth > 256) return false;
     }
-    return false;
+    CTok end;
+    do { end = clex_next(&lexer); free(end.str); } while (end.type == CT_WS);
+    return content && end.type == CT_EOF;
 }
 char *css_min_size_parse(const char *value) {
     if (!css_var_syntax_valid(value)) return NULL;
@@ -1984,7 +2021,8 @@ char *css_min_size_parse(const char *value) {
     if (!buffer) return NULL;
     char *text = str_trim(buffer); bool valid = var_wide_keyword(text) != NULL;
     static const char *const keywords[] = { "auto", "min-content", "max-content",
-        "fit-content", "stretch", "-webkit-fill-available", NULL };
+        "fit-content", "stretch", "-webkit-fill-available", "-webkit-min-content",
+        "-webkit-max-content", "-webkit-fit-content", NULL };
     for (int i = 0; !valid && keywords[i]; i++) valid = str_ieq(text, keywords[i]);
     if (!valid && min_size_function(text, "fit-content")) {
         char *argument = xstrndup(text + 12, strlen(text) - 13);
@@ -1993,7 +2031,7 @@ char *css_min_size_parse(const char *value) {
     /* These existing deferred sizing forms keep their separate evaluator.
        This patch neither expands their grammar nor changes their layout. */
     if (!valid) valid = min_size_function(text, "calc-size") ||
-        min_size_function(text, "anchor") || min_size_function(text, "anchor-size");
+        min_size_function(text, "anchor-size"); /* anchor() belongs to inset destinations */
     if (!valid) valid = min_size_numeric(text);
     if (!valid) { free(buffer); return NULL; }
     if (text != buffer) memmove(buffer, text, strlen(text) + 1);
@@ -2555,6 +2593,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     char *vbuf = min_size_property(prop) ? css_min_size_parse(v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);
+    if (min_size_property(prop) && (str_ieq(val, "-webkit-min-content") ||
+        str_ieq(val, "-webkit-max-content") || str_ieq(val, "-webkit-fit-content"))) val += 8;
     ACtx c = { st, par, e, el, st->font_size, 16, e ? &e->media : NULL };
     g_cq[0] = g_cq[1] = 0;
     if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)

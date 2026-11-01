@@ -130,6 +130,12 @@ static bool css_number_atom(CssNumberParser *p, CssNumber *out) {
         return true;
     }
     p->p++; int strategy = 0; bool no_clamp = false;
+    if (p->validation_only && (!strcmp(name, "sibling-index") || !strcmp(name, "sibling-count"))) {
+        /* Syntax-only scalar typing. No fabricated tree value may escape
+           into evaluation; actual tree-scoped resolution is a separate path. */
+        css_number_ws(p); if (*p->p != ')') return false;
+        p->p++; out->value = 1; return true;
+    }
     if (!strcmp(name, "progress")) {
         css_number_ws(p);
         if (!strncasecmp(p->p, "no-clamp", 8) && is_ws((unsigned char)p->p[8])) {

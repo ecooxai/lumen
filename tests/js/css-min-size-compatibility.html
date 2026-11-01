@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><title>Minimum-size compatibility preservation</title><body><script>
+(()=>{'use strict';let total=0,passed=0;
+function check(ok,message){if(!ok)throw Error(message);}
+function test(name,fn){total++;try{fn();passed++;console.log('MIN_COMPAT_ROW '+JSON.stringify({name,pass:true}));}catch(e){console.log('MIN_COMPAT_ROW '+JSON.stringify({name,pass:false,error:String(e)}));}}
+const properties=['min-width','min-height','min-inline-size','min-block-size'];
+const aliases=['-webkit-min-content','-webkit-max-content','-webkit-fit-content'];
+const trees=['calc(sibling-index() * 1px)','calc(sibling-count() * 1px)','calc(sibling-index() * 1px + 1%)','calc(sibling-count( ) * 1px)'];
+const names=[['anchor-size(--Anchor WIDTH, 10px)','anchor-size(--Anchor width, 10px)'],['anchor-size(--MiXeD inline)','anchor-size(--MiXeD inline)'],['ANCHOR-SIZE(--Änchor WIDTH, 10px)','anchor-size(--Änchor width, 10px)'],[String.raw`anchor-size(--\41 nchor width)`,'anchor-size(--Anchor width)'],[String.raw`anchor-size(--A\(B width)`,String.raw`anchor-size(--A\(B width)`]];
+const invalid=['-webkit-min-content-more','-webkit-fit-content(10px)','sibling-index()','calc(sibling-index(1) * 1px)','calc(sibling-count(1) * 1px)','calc(sibling-unknown() * 1px)','anchor(--Anchor left, 10px)','anchor-size(--Anchor width) junk'];
+for(const p of properties){
+ for(const value of aliases)test(p+' legacy intrinsic keyword '+value,()=>{const e=document.createElement('div');e.style.setProperty(p,value);check(e.style.getPropertyValue(p)===value,'specified alias lost');check(CSS.supports(p,value)&&CSS.supports('('+p+':'+value+')'),'alias syntax rejected');});
+ // These checks preserve specified syntax; they do not assert tree-counting evaluation.
+ for(const value of trees)test(p+' tree function syntax '+value,()=>{const e=document.createElement('div');e.style.setProperty(p,value);check(e.style.getPropertyValue(p)!=='','specified tree function lost');check(CSS.supports(p,value)&&CSS.supports('('+p+':'+value+')'),'tree syntax rejected');});
+ // Anchor lookup/layout is a separate gate; case-sensitive names must survive parsing.
+ for(const [value,expected] of names)test(p+' dashed identifier '+value,()=>{const e=document.createElement('div');e.style.setProperty(p,value);check(e.style.getPropertyValue(p)===expected,'specified '+e.style.getPropertyValue(p)+' != '+expected);check(CSS.supports(p,value)&&CSS.supports('('+p+':'+value+')'),'valid anchor-size syntax rejected');const text=e.style.cssText;e.style.cssText=text;check(e.style.getPropertyValue(p)===expected,'round trip changed the anchor name');});
+ for(const value of invalid)test(p+' invalid compatibility form '+value,()=>{const e=document.createElement('div');e.style.setProperty(p,'17px','important');e.style.setProperty(p,value);check(e.style.getPropertyValue(p)==='17px'&&e.style.getPropertyPriority(p)==='important','invalid setter replaced valid declaration');check(!CSS.supports(p,value)&&!CSS.supports('('+p+':'+value+')'),'invalid syntax accepted');e.style.cssText=p+':17px;'+p+':'+value;check(e.style.getPropertyValue(p)==='17px','invalid declaration list value accepted');});
+}
+const result=passed===total?'PASS':'FAIL';console.log('RESULTS css-min-size-compatibility:'+result+' '+JSON.stringify({passed,total}));document.documentElement.setAttribute('data-css-min-size-compatibility',result);
+})();</script>

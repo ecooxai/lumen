@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>Minimum-size deferred syntax preservation</title><body><script>
+(()=>{'use strict';let total=0,passed=0;
+function check(ok,message){if(!ok)throw Error(message);}
+function test(name,fn){total++;try{fn();passed++;console.log('MIN_DEFER_ROW '+JSON.stringify({name,pass:true}));}catch(e){console.log('MIN_DEFER_ROW '+JSON.stringify({name,pass:false,error:String(e)}));}}
+const valid=['if(style(--x: yes): 10px; else: 20px)','if(supports(display: grid): 10px; else: 20px)','if(media(width > 0px): 10px; else: 20px)','calc(if(style(--x: yes): 1; else: 2) * 1px)','--foo()','--MiXeD(10px)','calc(--foo() * 1px)','env(safe-area-inset-left, 10px)','attr(data-min type(<length>), 10px)'];
+for(const p of ['min-width','min-height','min-inline-size','min-block-size']){
+ // Only specified syntax is tested. No conditional/custom-function execution claim.
+ for(const value of valid)test(p+' preserves pending '+value,()=>{const e=document.createElement('div');e.style.setProperty(p,value);check(e.style.getPropertyValue(p)===value,'pending token text changed: '+e.style.getPropertyValue(p));check(CSS.supports(p,value)&&CSS.supports('('+p+':'+value+')'),'pending syntax rejected');e.style.cssText=p+':'+value;check(e.style.getPropertyValue(p)===value,'declaration list changed pending tokens');});
+ for(const value of ['if()','if(foo)'])test(p+' rejects branchless '+value,()=>{const e=document.createElement('div');e.style.setProperty(p,'17px','important');e.style.setProperty(p,value);check(e.style.getPropertyValue(p)==='17px'&&e.style.getPropertyPriority(p)==='important','branchless conditional replaced valid value');check(!CSS.supports(p,value)&&!CSS.supports('('+p+':'+value+')'),'branchless conditional syntax accepted');});
+}
+const result=passed===total?'PASS':'FAIL';console.log('RESULTS css-min-size-deferred:'+result+' '+JSON.stringify({passed,total}));document.documentElement.setAttribute('data-css-min-size-deferred',result);
+})();</script>
