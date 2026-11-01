@@ -431,6 +431,7 @@ bool css_supports(const char *cond);
 bool css_flex_valid(const char *prop, const char *value);
 bool css_containment_valid(const char *prop, const char *value);
 bool css_columns_valid(const char *prop, const char *value);
+bool css_min_size_valid(const char *prop, const char *value);
 /* Grid1/2 automatic-repeat constraint; not a complete property grammar validator. */
 bool css_grid_repeat_valid(const char *property, const char *value);
 /* Caller owns *out. Used for implicit grid track-size patterns. */

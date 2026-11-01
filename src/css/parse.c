@@ -1060,7 +1060,11 @@ bool css_supports(const char *cond) {
         char *colon = strchr(in, ':');
         if (colon && in[0] != '(' && !str_istarts(in, "not ")) {
             *colon = 0; char *p = str_trim(in); char *v = str_trim(colon + 1);
-            r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) && !strstr(v, "-webkit-") && !strstr(p, "-webkit-"));
+            bool minimum = !strcmp(p, "min-width") || !strcmp(p, "min-height") ||
+                           !strcmp(p, "min-inline-size") || !strcmp(p, "min-block-size");
+            r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) &&
+                (minimum || !strstr(v, "-webkit-")) && !strstr(p, "-webkit-"));
+            if (r && minimum) r = css_min_size_valid(p, v);
             if (!strcmp(p, "display") && (strstr(v, "contents") || strstr(v, "subgrid"))) r = !strstr(v, "subgrid");
             if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
             if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);

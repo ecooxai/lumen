@@ -1880,6 +1880,112 @@ static bool grid_repeat_count(ACtx *c, const char *text, long *count) {
     *count = rounded <= 1 ? 1 : rounded >= 1000 ? 1000 : (long)rounded;
     return true;
 }
+/* Minimum sizing has a narrower grammar than the shared Length storage:
+ * in particular, none and nonzero unitless numbers cannot replace a prior
+ * declaration. Keep this gate local; width/max-size/flex retain their parsers. */
+static bool min_size_property(const char *prop) {
+    return !strcmp(prop, "min-width") || !strcmp(prop, "min-height") ||
+           !strcmp(prop, "min-inline-size") || !strcmp(prop, "min-block-size");
+}
+static bool min_size_deferred(const char *value) {
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    for (;;) {
+        CTok t = clex_next(&lexer); int type = t.type;
+        bool pending = type == CT_FUNC && t.str &&
+            (str_ieq(t.str, "var") || str_ieq(t.str, "env") || str_ieq(t.str, "attr"));
+        free(t.str);
+        if (pending || type == CT_EOF) return pending;
+    }
+}
+/* Decode identifier/unit escapes without joining tokens separated by a
+ * comment. Only numeric grammar is serialized here; pending substitution
+ * retains its original, case-sensitive custom-property/attribute tokens. */
+static char *min_size_parser_text(const char *value) {
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    SB out = {0}; size_t copied = 0; unsigned depth = 0;
+    for (;;) {
+        CTok t = clex_next(&lexer); int type = t.type;
+        size_t offset = (size_t)(t.start - value);
+        if (offset > copied) sb_putc(&out, ' ');
+        if (type == CT_EOF) { free(t.str); break; }
+        bool valid = true;
+        if (type == CT_IDENT || type == CT_FUNC) {
+            for (const unsigned char *q = (const unsigned char *)t.str; q && *q; q++)
+                if (!isalnum(*q) && *q != '-' && *q != '_') valid = false;
+            if (valid) { sb_puts(&out, t.str); if (type == CT_FUNC) { sb_putc(&out, '('); depth++; } }
+        } else if (type == CT_DIM) {
+            char *end; strtod(t.start, &end);
+            if (end == t.start || (size_t)(end - t.start) > t.len) valid = false;
+            else { sb_put(&out, t.start, (size_t)(end - t.start)); sb_puts(&out, t.unit); }
+        } else if (type == CT_LPAREN) { depth++; sb_putc(&out, '('); }
+        else if (type == CT_RPAREN) { if (!depth) valid = false; else { depth--; sb_putc(&out, ')'); } }
+        else if (type == CT_NUMBER || type == CT_PERCENT || type == CT_WS || type == CT_COMMA ||
+                 (type == CT_DELIM && strchr("+-*/", *t.start))) sb_put(&out, t.start, t.len);
+        else valid = false;
+        copied = lexer.i; free(t.str);
+        if (!valid || depth > 256) { sb_free(&out); return NULL; }
+    }
+    while (depth) { sb_putc(&out, ')'); depth--; } /* CSS Syntax closes EOF-open functions. */
+    return sb_take(&out);
+}
+static bool min_size_numeric(const char *text) {
+    bool math = strchr(text, '(') != NULL;
+    if (math ? !(isalpha((unsigned char)*text) || *text == '-') :
+               !(isdigit((unsigned char)*text) || *text == '+' || *text == '-' || *text == '.')) return false;
+    CssNumber n;
+    if (!css_number_parse_context(text, 16, 16, NULL, true, NULL, true, &n)) {
+        /* The native Length evaluator also implements unbounded clamp()
+           sides. Preserve its already supported typed length expressions. */
+        Length value; MathType type;
+        return math && css_parse_length_context(text, &value, 16, 16, NULL,
+            NULL, false, NULL, &type) && value.kind == LK_LEN &&
+            math_type_equal(type, math_type_unit(MATH_LENGTH));
+    }
+    bool length = n.power[CN_LENGTH] == 1;
+    for (int i = 1; i < CN_DIMS; i++) if (n.power[i]) length = false;
+    if (!length && !(css_number_scalar(&n) && !math && n.value == 0)) return false;
+    return math || n.value >= 0;
+}
+static bool min_size_function(const char *text, const char *name) {
+    size_t n = strlen(name);
+    if (!str_istarts(text, name) || text[n] != '(') return false;
+    unsigned depth = 1; const char *p = text + n + 1;
+    if (*p == ')') return false;
+    for (; *p; p++) {
+        if (*p == '(') depth++;
+        else if (*p == ')' && !--depth) return p[1] == 0;
+    }
+    return false;
+}
+static char *min_size_value(const char *value) {
+    if (!css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    if (!css_math_spacing_valid(value)) return NULL;
+    char *buffer = min_size_parser_text(value);
+    if (!buffer) return NULL;
+    char *text = str_trim(buffer); bool valid = var_wide_keyword(text) != NULL;
+    static const char *const keywords[] = { "auto", "min-content", "max-content",
+        "fit-content", "stretch", "-webkit-fill-available", NULL };
+    for (int i = 0; !valid && keywords[i]; i++) valid = str_ieq(text, keywords[i]);
+    if (!valid && min_size_function(text, "fit-content")) {
+        char *argument = xstrndup(text + 12, strlen(text) - 13);
+        valid = min_size_numeric(str_trim(argument)); free(argument);
+    }
+    /* These existing deferred sizing forms keep their separate evaluator.
+       This patch neither expands their grammar nor changes their layout. */
+    if (!valid) valid = min_size_function(text, "calc-size") ||
+        min_size_function(text, "anchor") || min_size_function(text, "anchor-size");
+    if (!valid) valid = min_size_numeric(text);
+    if (!valid) { free(buffer); return NULL; }
+    if (text != buffer) memmove(buffer, text, strlen(text) + 1);
+    return buffer;
+}
+bool css_min_size_valid(const char *prop, const char *value) {
+    if (!min_size_property(prop)) return true;
+    char *parsed = min_size_value(value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
 static bool column_property(const char *prop) {
     return !strcmp(prop, "columns") || !strcmp(prop, "column-width") || !strcmp(prop, "column-count");
 }
@@ -2427,7 +2533,9 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         char *parsed = wide ? xstrdup(wide) : var_parser_text(subst); free(subst); subst = parsed;
         v = subst;
     }
-    char *vbuf = xstrdup(v); char *val = str_trim(vbuf);
+    char *vbuf = min_size_property(prop) ? min_size_value(v) : xstrdup(v);
+    if (!vbuf) { free(subst); return; } /* substitution already applied unset */
+    char *val = str_trim(vbuf);
     ACtx c = { st, par, e, el, st->font_size, 16, e ? &e->media : NULL };
     g_cq[0] = g_cq[1] = 0;
     if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)
