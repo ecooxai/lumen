@@ -7045,6 +7045,28 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         free(a); free(z); return sb_take(&b);
     }
     prop = logical_box_prop(prop, s);
+    if (!strcmp(prop, "border-width") || !strcmp(prop, "border-style") ||
+        !strcmp(prop, "border-color")) {
+        /* Project this supplied computed snapshot through the same physical
+           getters, including hidden/none widths and resolved colors. */
+        static const char *const sides[] = { "top", "right", "bottom", "left" };
+        char *v[4], component[40];
+        for (int i = 0; i < 4; i++) {
+            snprintf(component, sizeof component, "border-%s-%s", sides[i], prop + 7);
+            v[i] = computed_of(el, s, component);
+        }
+        int count = 4;
+        if (!strcmp(v[3], v[1])) {
+            count = 3;
+            if (!strcmp(v[2], v[0])) {
+                count = 2;
+                if (!strcmp(v[1], v[0])) count = 1;
+            }
+        }
+        for (int i = 0; i < count; i++) { if (i) sb_putc(&b, ' '); sb_puts(&b, v[i]); }
+        for (int i = 0; i < 4; i++) free(v[i]);
+        return sb_take(&b);
+    }
     if (column_property(prop)) {
         bool shorthand = !strcmp(prop, "columns"), width = s->column_width.kind != LK_AUTO;
         if (!strcmp(prop, "column-width") || (shorthand && width)) {

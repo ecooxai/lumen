@@ -142,6 +142,50 @@ int main(void) {
     near(((Box *)target->box)->h, 24, "all inherit copies real parent top and bottom widths");
     computed(target, "border-image-width", "9");
     assert(checks == 191);
+    /* Computed groups project actual side values, including style-dependent
+       zero widths, inherited computed units and a distinct pseudo snapshot. */
+    set_style(target, "font-size:20px;color:green;border-width:1em 2px 3px 4px;border-style:none hidden solid dashed;border-color:currentcolor red blue currentcolor", doc, engine, layout);
+    computed(target, "border-width", "0px 0px 3px 4px");
+    computed(target, "border-style", "none hidden solid dashed");
+    computed(target, "border-color", "rgb(0, 128, 0) rgb(255, 0, 0) rgb(0, 0, 255) rgb(0, 128, 0)");
+    near(((Box *)target->box)->w, 104, "computed zero hidden width agrees with real border box");
+    near(((Box *)target->box)->h, 23, "computed zero none width agrees with real border box");
+    set_style(parent, "font-size:30px;border-width:.5em 1px 2px 3px;border-style:solid;border-color:blue", doc, engine, layout);
+    set_style(target, "font-size:10px;border-width:inherit;border-style:inherit;border-color:inherit", doc, engine, layout);
+    computed(target, "border-width", "15px 1px 2px 3px");
+    computed(target, "border-style", "solid");
+    computed(target, "border-color", "rgb(0, 0, 255)");
+    near(((Box *)target->box)->w, 104, "inherited side widths use parent computed font basis");
+    near(((Box *)target->box)->h, 37, "inherited top width stays fifteen pixels");
+    set_style(target, "border-width:2px 4px;border-style:solid;border-color:currentcolor;color:red", doc, engine, layout);
+    computed(target, "border-color", "rgb(255, 0, 0)");
+    computed(target, "border-width", "2px 4px");
+    set_style(target, "border-width:2px 4px;border-style:solid;border-color:currentcolor;color:green", doc, engine, layout);
+    computed(target, "border-color", "rgb(0, 128, 0)");
+    computed(target, "border-width", "2px 4px");
+    near(((Box *)target->box)->w, 108, "color mutation does not change real border widths");
+    set_style(target, "display:none;border-width:2px 4px;border-style:solid;border-color:green", doc, engine, layout);
+    require(target->box == NULL, "computed border groups do not require a fabricated box");
+    computed(target, "border-width", "2px 4px");
+    computed(target, "border-style", "solid");
+    computed(target, "border-color", "rgb(0, 128, 0)");
+    set_style(target, "display:block;border-width:2px 4px;border-style:solid;border-color:green;border-bottom-width:6px", doc, engine, layout);
+    computed(target, "border-width", "2px 4px 6px");
+    near(((Box *)target->box)->w, 108, "physical side change preserves horizontal border geometry");
+    near(((Box *)target->box)->h, 28, "physical side change reaches vertical border geometry");
+    const char *pseudo_sheet = "#target::before{content:'';display:block;width:1px;height:1px;border-width:1px 2px 3px 4px;border-style:solid;border-color:red}";
+    style_engine_add_sheet(engine, css_parse_sheet(pseudo_sheet, strlen(pseudo_sheet), doc->url, 1, &engine->media));
+    set_style(target, "border:9px solid blue", doc, engine, layout);
+    static const struct { const char *property, *value; } pseudo_group[] = {
+        {"border-width", "1px 2px 3px 4px"}, {"border-style", "solid"}, {"border-color", "rgb(255, 0, 0)"}
+    };
+    for (unsigned i = 0; i < 3; i++) {
+        char *value = css_get_computed_pseudo(target, 1, pseudo_group[i].property);
+        require(value && !strcmp(value, pseudo_group[i].value), "computed group uses supplied pseudo style, not host style");
+        free(value);
+    }
+    computed(target, "border-width", "9px");
+    assert(checks == 217);
     layout_free(layout); style_engine_free(engine); doc_free(doc);
     printf("PASS css_border_declarations %u native checks\n", checks);
     return 0;
