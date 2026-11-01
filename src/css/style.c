@@ -6388,6 +6388,36 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
     return sb_take(&out);
 }
 static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop) {
+    /* Animation consumes computed inset values. CSSOM's geometry-dependent
+       resolution must not enter neutral keyframes or old/new style snapshots. */
+    if (s) {
+        int group, side; bool block;
+        if (logical_edge_pair(prop, &group, &block) && group == 2) {
+            char *a = animation_value_of(n, s, physical_edge_props[2][logical_edge_side(s, block, false)]);
+            char *z = animation_value_of(n, s, physical_edge_props[2][logical_edge_side(s, block, true)]);
+            SB out; sb_init(&out); sb_puts(&out, a);
+            if (strcmp(a, z)) { sb_putc(&out, ' '); sb_puts(&out, z); }
+            free(a); free(z); return sb_take(&out);
+        }
+        if (!strcmp(prop, "inset")) {
+            char *v[4];
+            for (int i = 0; i < 4; i++) v[i] = animation_value_of(n, s, physical_edge_props[2][i]);
+            int count = 4;
+            if (!strcmp(v[3], v[1])) {
+                count = 3;
+                if (!strcmp(v[2], v[0])) { count = 2; if (!strcmp(v[1], v[0])) count = 1; }
+            }
+            SB out; sb_init(&out);
+            for (int i = 0; i < count; i++) { if (i) sb_putc(&out, ' '); sb_puts(&out, v[i]); }
+            for (int i = 0; i < 4; i++) free(v[i]);
+            return sb_take(&out);
+        }
+        const char *physical = logical_box_prop(prop, s);
+        if (physical_edge_prop(physical, &group, &side) && group == 2 && !s->anchor_ins[side]) {
+            SB out; sb_init(&out); len_str(&out, s->inset[side], "auto");
+            return sb_take(&out);
+        }
+    }
     /* Animation combines computed values, before CSSOM resolves an automatic
        minimum to zero. Keep the keyword for discrete interpolation and for
        underlying/neutral keyframes, independent of box or aspect-ratio state. */
@@ -6408,8 +6438,8 @@ static char *animation_value_of(Node *n, const ComputedStyle *s, const char *pro
     tracks_str(&out, rows ? s->grid_rows : s->grid_cols, rows ? s->grid_nrows : s->grid_ncols);
     return sb_take(&out);
 }
-/* Animation keeps computed track structure and minimum-size keywords. CSSOM
-   intentionally resolves those values differently and keeps its public behavior. */
+/* Animation keeps computed track structure, inset values and minimum-size
+   keywords. CSSOM intentionally resolves those values differently. */
 char *css_get_animation_value(Node *el, const char *prop) {
     computed_prepare(el);
     const ComputedStyle *s = el && el->type == NODE_ELEMENT ? el->style : NULL;
