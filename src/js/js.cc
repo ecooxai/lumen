@@ -2275,8 +2275,11 @@ static void tick_one(JsCtx *c) {
         v8::Local<v8::Value> fa;
         if (!due_ev.empty() && !c->api.IsEmpty() && c->api.Get(iso)->Get(ctx, jstr(iso, "fireAnim")).ToLocal(&fa) && fa->IsFunction())
             for (auto &e : due_ev) {
-                v8::Local<v8::Value> argv[5] = { e.target.Get(iso), jstr(iso, e.type.c_str()), jstr(iso, e.name.c_str()), v8::Number::New(iso, e.elapsed), v8::Boolean::New(iso, e.anim) };
-                (void)jcall(c, fa.As<v8::Function>(), v8::Undefined(iso), 5, argv);
+                /* Internal style jobs carry their original document-timeline
+                   timestamp through the asynchronous delivery path. Public
+                   animation/transition events retain their elapsedTime. */
+                v8::Local<v8::Value> argv[6] = { e.target.Get(iso), jstr(iso, e.type.c_str()), jstr(iso, e.name.c_str()), v8::Number::New(iso, e.elapsed), v8::Boolean::New(iso, e.anim), v8::Number::New(iso, e.due - c->t0) };
+                (void)jcall(c, fa.As<v8::Function>(), v8::Undefined(iso), 6, argv);
             }
     }
     TICK_MARK(6);

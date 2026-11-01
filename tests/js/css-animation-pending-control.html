@@ -1,0 +1,54 @@
+<!doctype html><meta charset="utf-8"><title>Author control during initial CSS animation play</title>
+<style>@keyframes pending_control_left{from{left:100px}to{left:400px}}.pending-control-item{position:relative;width:20px;height:20px;animation:1s linear infinite alternate pending_control_left;animation-delay:100ms}</style>
+<body><script>
+(async()=>{
+    const rows=[],observations=[],frame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+    const driver=document.createElement('div');document.body.appendChild(driver);
+    const driven=driver.animate([{opacity:1},{opacity:.5}],{duration:1000,iterations:Infinity});
+    function require(condition,message){if(!condition)throw Error(message);}
+    function timeEquals(animation,expected,message){
+        const actual=animation.currentTime,scale=Math.max(1,Math.abs(actual),Math.abs(expected),Math.abs(animation.startTime||0),Math.abs(document.timeline.currentTime));
+        require(Number.isFinite(actual)&&Math.abs(actual-expected)<=16*Number.EPSILON*scale,message+': '+actual+' != '+expected);
+    }
+    async function ready(animation){let timeout;try{await Promise.race([animation.ready,new Promise((_,reject)=>timeout=setTimeout(()=>reject(Error('pending play did not resolve')),3000))]);}finally{clearTimeout(timeout);}}
+    await frame();
+    for(const mode of ['seek zero','seek midpoint','pause then resume']){
+        let item,animation;
+        try{
+            await new Promise((resolve,reject)=>requestAnimationFrame(()=>{
+                try{
+                    item=document.createElement('div');item.className='pending-control-item';document.body.appendChild(item);
+                    getComputedStyle(item).left;
+                    const list=item.getAnimations();require(list.length===1,'one initial CSS animation');animation=list[0];
+                    observations.push({name:mode+' initial',currentTime:animation.currentTime,startTime:animation.startTime,pending:animation.pending});
+                    if(mode==='seek zero')animation.currentTime=0;
+                    else if(mode==='seek midpoint')animation.currentTime=600;
+                    else animation.pause();
+                    resolve();
+                }catch(error){reject(error);}
+            }));
+            await ready(animation);
+            if(mode==='pause then resume'){
+                timeEquals(animation,0,'pause preserves zero hold');
+                require(animation.playState==='paused'&&animation.startTime===null,'paused pending animation has no running origin');
+                animation.play();await ready(animation);
+            }
+            const expected=mode==='seek midpoint'?600:0;
+            timeEquals(animation,expected,'author time survives pending task resolution');
+            const left=getComputedStyle(item).left;
+            const expectedLeft=mode==='seek midpoint'?250:0;
+            require(Math.abs(parseFloat(left)-expectedLeft)<.2,'author-controlled effect reaches computed style: '+left);
+            require(animation.playState==='running'&&!animation.pending,'ready resolves into the requested running state');
+            observations.push({name:mode+' ready',currentTime:animation.currentTime,startTime:animation.startTime,pending:animation.pending,left});
+            rows.push({name:mode,pass:true});
+        }catch(error){rows.push({name:mode,pass:false,error:String(error)});}
+        finally{if(animation)animation.cancel();if(item)item.remove();}
+    }
+    driven.cancel();driver.remove();
+    for(const observation of observations)console.log('CSS_PENDING_CONTROL_OBSERVATION '+JSON.stringify(observation));
+    for(const row of rows)console.log('CSS_PENDING_CONTROL_ROW '+JSON.stringify(row));
+    const passed=rows.filter(row=>row.pass).length,ok=passed===3&&rows.length===3;
+    document.documentElement.setAttribute('data-css-pending-control',ok?'PASS':'FAIL');
+    console.log('RESULTS css-pending-control:'+(ok?'PASS':'FAIL')+' '+JSON.stringify({passed,total:rows.length}));
+})().catch(error=>{document.documentElement.setAttribute('data-css-pending-control','FAIL');console.log('RESULTS css-pending-control:FAIL '+JSON.stringify({error:String(error)}));});
+</script>

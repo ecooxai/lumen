@@ -789,8 +789,8 @@ FN(trTake) {
     CTX; v8::Local<v8::Array> out = v8::Array::New(iso); uint32_t k = 0;
     for (size_t i = 0; i < c->anims.size();)
         if (c->anims[i].type == "lumen-transition" || c->anims[i].type == "lumen-animation") {
-            v8::Local<v8::Value> job[3] = { c->anims[i].target.Get(iso), jstr(iso, c->anims[i].name.c_str()), jstr(iso, c->anims[i].type.c_str()) };
-            (void)out->Set(ctx, k++, v8::Array::New(iso, job, 3));
+            v8::Local<v8::Value> job[4] = { c->anims[i].target.Get(iso), jstr(iso, c->anims[i].name.c_str()), jstr(iso, c->anims[i].type.c_str()), v8::Number::New(iso, c->anims[i].due - c->t0) };
+            (void)out->Set(ctx, k++, v8::Array::New(iso, job, 4));
             c->anims.erase(c->anims.begin() + (long)i);
         } else i++;
     RET(out);

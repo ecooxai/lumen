@@ -721,7 +721,7 @@ class Animation extends EventTarget {
             throw waTypeErr("Failed to construct 'Animation': parameter 2 is not of type 'AnimationTimeline'.");
         }
         Object.defineProperties(this, Object.fromEntries(Object.entries({ _seq: ++waSeqN, _timeline: timeline, _effect: null, _start: null, _hold: null, _rate: 1, _pendRate: null,
-            _task: null, _ready: Object.assign(waDefer(), { done: true }), _finished: waDefer(), _prevCT: null, _id: '', _replace: 'active', _finTask: null,
+            _task: null, _cssStartOrigin: null, _ready: Object.assign(waDefer(), { done: true }), _finished: waDefer(), _prevCT: null, _id: '', _replace: 'active', _finTask: null,
             onfinish: null, oncancel: null, onremove: null }).map(([k, v]) => [k, { value: v, writable: true, configurable: true, enumerable: k[0] !== '_' }])));
         this._ready.res(this);
         if (effect) this.effect = effect;
@@ -741,6 +741,7 @@ class Animation extends EventTarget {
     set timeline(tl) {
         if (tl === this._timeline) return;
         if (tl !== null && !waIsTimeline(tl)) throw waTypeErr("Failed to set the 'timeline' property on 'Animation': The provided value is not of type 'AnimationTimeline'.");
+        this._cssStartOrigin = null;
         const prevState = this.playState, prevCT = this.currentTime;
         this._timeline = tl;
         if (this._start !== null) this._hold = null;
@@ -756,6 +757,7 @@ class Animation extends EventTarget {
     get playbackRate() { return this._rate; }
     set playbackRate(r) {
         r = +r; if (!isFinite(r)) throw waTypeErr("Failed to set the 'playbackRate' property on 'Animation': The provided double value is non-finite.");
+        this._cssStartOrigin = null;
         this._pendRate = null;
         const prev = this.currentTime; this._rate = r;
         if (prev !== null) this.currentTime = prev;
@@ -770,6 +772,7 @@ class Animation extends EventTarget {
         const tt = this._tlTime();
         if (tt === null && v !== null) this._hold = null;
         const prevCT = this.currentTime;
+        this._cssStartOrigin = null;
         this._applyPendRate();
         this._start = v;
         if (v !== null) { if (this._rate !== 0) this._hold = null; } else this._hold = prevCT;
@@ -785,6 +788,7 @@ class Animation extends EventTarget {
     set currentTime(v) {
         if (v === null) { if (this._hold !== null || this._start !== null) throw waTypeErr("Failed to set the 'currentTime' property on 'Animation': currentTime may not be changed from resolved to unresolved."); return; }
         v = +v; if (!isFinite(v)) throw waTypeErr("Failed to set the 'currentTime' property on 'Animation': The provided double value is non-finite.");
+        this._cssStartOrigin = null;
         this._silentSetCT(v);
         if (this._task === 'pause') { this._hold = v; this._applyPendRate(); this._start = null; this._task = null; this._resolveReady(); }
         this._updateFinished(true, false); waInvalidate();
@@ -823,6 +827,7 @@ class Animation extends EventTarget {
             if (end === Infinity) throw new DOMException("Failed to execute 'play' on 'Animation': Cannot play reversed Animation with infinite target effect end.", 'InvalidStateError');
             seek = end;
         } else if (rate === 0 && ct === null) seek = 0;
+        this._cssStartOrigin = null;
         if (seek !== null) { this._start = null; this._hold = seek; }
         if (this._hold !== null) this._start = null;
         if (this._task) { this._task = null; hasPendReady = true; }
@@ -840,15 +845,24 @@ class Animation extends EventTarget {
             else { if (this._end() === Infinity) throw new DOMException("Failed to execute 'pause' on 'Animation': Cannot pause, Animation has infinite target effect end.", 'InvalidStateError'); seek = this._end(); }
         }
         if (seek !== null) { this._hold = seek; this._start = null; }
+        this._cssStartOrigin = null;
         if (this._task === 'play') this._task = null; else this._newReady();
         this._task = 'pause';
         this._updateFinished(false, false); waInvalidate();
     }
     _tick() {
         const tt = this._tlTime();
+        if (!this._task) this._cssStartOrigin = null;
         if (this._task && tt !== null) {
+            const origin = this._cssStartOrigin;
+            const cssInitialPlay = origin !== null && this._task === 'play' && this._hold === 0 && this._effRate() === 1;
+            /* A style flush can happen after the current frame's timestamp.
+               Keep its zero hold/pending promise until the sampled timeline
+               reaches that origin; never expose a negative initial time. */
+            if (cssInitialPlay && tt < origin) return;
+            this._cssStartOrigin = null;
             if (this._task === 'play') {
-                if (this._hold !== null) { this._applyPendRate(); this._start = this._rate === 0 ? tt : tt - this._hold / this._rate; if (this._rate !== 0) this._hold = null; }
+                if (this._hold !== null) { this._applyPendRate(); this._start = this._rate === 0 ? tt : cssInitialPlay ? origin : tt - this._hold / this._rate; if (this._rate !== 0) this._hold = null; }
                 else if (this._start !== null && this._pendRate !== null) { const ct = (tt - this._start) * this._rate; this._applyPendRate(); this._start = this._rate === 0 ? tt : tt - ct / this._rate; }
             } else {
                 if (this._start !== null && this._hold === null) this._hold = (tt - this._start) * this._rate;
@@ -882,6 +896,7 @@ class Animation extends EventTarget {
     finish() {
         const rate = this._effRate(), end = this._end();
         if (rate === 0 || (rate > 0 && end === Infinity)) throw new DOMException("Failed to execute 'finish' on 'Animation': Cannot finish Animation with a playbackRate of 0 or an infinite target effect end.", 'InvalidStateError');
+        this._cssStartOrigin = null;
         this._applyPendRate();
         const lim = this._rate > 0 ? end : 0;
         this._silentSetCT(lim);
@@ -892,6 +907,7 @@ class Animation extends EventTarget {
         this._updateFinished(true, true); waInvalidate();
     }
     cancel() {
+        this._cssStartOrigin = null;
         if (this.playState !== 'idle') {
             if (this._task) { this._task = null; this._ready.done = true; this._ready.rej(new DOMException('The user aborted a request.', 'AbortError')); this._ready = Object.assign(waDefer(), { done: true }); this._ready.res(this); }
             if (!this._finished.done) { this._finished.done = true; this._finished.rej(new DOMException('The user aborted a request.', 'AbortError')); }
@@ -911,6 +927,7 @@ class Animation extends EventTarget {
     }
     updatePlaybackRate(r) {
         r = +r; if (!isFinite(r)) throw waTypeErr("Failed to execute 'updatePlaybackRate' on 'Animation': The provided double value is non-finite.");
+        this._cssStartOrigin = null;
         const prev = this.playState; this._pendRate = r;
         if (this._task) return;
         if (prev === 'idle' || prev === 'paused' || this._tlTime() === null) this._applyPendRate();
@@ -996,7 +1013,7 @@ function trCancelUnrendered() {
 }
 function trPoll() {
     const l = N.trTake();
-    for (const [el, packed, type] of l) type === 'lumen-animation' ? caStart(el, packed) : trStart(el, packed);
+    for (const [el, packed, type, origin] of l) type === 'lumen-animation' ? caStart(el, packed, origin) : trStart(el, packed);
     if (l.length) { waDirty = true; waFlush(); }
     return l.length > 0;
 }
@@ -1014,7 +1031,7 @@ function caFindKeyframes(el, name) {
     return found;
 }
 const caKey = p => p === 'float' ? 'cssFloat' : p.replace(/^-webkit-/, 'webkit-').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
-function caStart(el, names) {
+function caStart(el, names, origin) {
     const old = caRunning.get(el) || [];
     caRunning.delete(el);
     for (const a of old) a.cancel();
@@ -1045,6 +1062,9 @@ function caStart(el, names) {
         a._caName = name;
         a.play();
         if (at('animation-play-state', i, 'running') === 'paused') a.pause();
+        /* Keep the initial pending play/zero hold until a rendering frame
+           can resolve the native style-generation clock. */
+        else if (Number.isFinite(origin)) a._cssStartOrigin = origin;
         made.push(a);
     });
     if (made.length) caRunning.set(el, made);
