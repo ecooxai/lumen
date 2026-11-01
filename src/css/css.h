@@ -439,6 +439,9 @@ bool css_numeric_dimension_valid(const char *prop, const char *value);
 char *css_numeric_dimension_parse(const char *prop, const char *value); /* caller owns result; NULL if invalid */
 /* Pending var/env/attr/if/custom-function tokens use deferred math validation. */
 bool css_math_substitution_pending(const char *value);
+/* Physical border grammar shared by CSS source, CSSOM and supports. */
+bool css_border_valid(const char *property, const char *value);
+char *css_border_parse(const char *property, const char *value); /* caller owns result */
 /* Shared box-shadow list grammar; specified color tokens remain contextual. */
 bool css_box_shadow_valid(const char *property, const char *value);
 char *css_box_shadow_parse(const char *value); /* caller owns result; NULL if invalid */

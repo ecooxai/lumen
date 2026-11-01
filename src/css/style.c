@@ -2334,6 +2334,106 @@ bool css_box_shadow_valid(const char *property, const char *value) {
     free(parsed); return valid;
 }
 
+/* Physical border shorthands share their concrete grammar with the declaration
+ * engine and CSSOM. A pending substitution remains an opaque token stream. */
+static int border_decl_kind(const char *property) {
+    if (!strcmp(property, "border")) return 0;
+    if (!strcmp(property, "border-width")) return 1;
+    if (!strcmp(property, "border-style")) return 2;
+    if (!strcmp(property, "border-color")) return 3;
+    static const char *const sides[] = { "top", "right", "bottom", "left" };
+    if (strncmp(property, "border-", 7)) return -1;
+    for (unsigned i = 0; i < 4; i++) {
+        const char *tail = property + 7; size_t n = strlen(sides[i]);
+        if (strncmp(tail, sides[i], n)) continue;
+        tail += n;
+        if (!*tail) return 4;
+        if (!strcmp(tail, "-width")) return 5;
+        if (!strcmp(tail, "-style")) return 6;
+        if (!strcmp(tail, "-color")) return 7;
+    }
+    return -1;
+}
+static bool border_style_keyword(const char *text) {
+    static const char *const styles[] = { "none", "hidden", "dotted", "dashed",
+        "solid", "double", "groove", "ridge", "inset", "outset", NULL };
+    for (unsigned i = 0; styles[i]; i++) if (str_ieq(text, styles[i])) return true;
+    return false;
+}
+char *css_border_parse(const char *property, const char *value) {
+    int kind = border_decl_kind(property);
+    if (kind < 0 || !value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    char *buffer = css_math_value_text(value); if (!buffer) return NULL;
+    CLexer lexer; clex_init(&lexer, buffer, strlen(buffer));
+    char *parts[4] = {0}; unsigned count = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_EOF) { free(token.str); break; }
+        char *component = shadow_component_text(&lexer, &token); free(token.str);
+        if (!component || count == 4) { free(component); goto invalid; }
+        parts[count++] = component;
+    }
+    if (!count) goto invalid;
+    if (var_wide_keyword(parts[0])) {
+        if (count != 1) goto invalid;
+        char *result = parts[0]; free(buffer); return result;
+    }
+    for (unsigned i = 0; i < count; i++) if (var_wide_keyword(parts[i])) goto invalid;
+    if (kind >= 5 && count != 1) goto invalid;
+    if (kind == 0 || kind == 4) {
+        if (count > 3) goto invalid;
+        char *width = NULL; const char *style = NULL, *color = NULL;
+        for (unsigned i = 0; i < count; i++) {
+            if (border_style_keyword(parts[i])) {
+                if (style) { free(width); goto invalid; }
+                style = parts[i]; continue;
+            }
+            char *length = css_numeric_dimension_parse("border-top-width", parts[i]);
+            if (length) {
+                if (width) { free(length); free(width); goto invalid; }
+                width = length; continue;
+            }
+            CssColor parsed;
+            if (color || !css_color_parse(parts[i], &parsed, NULL)) { free(width); goto invalid; }
+            color = parts[i];
+        }
+        SB result = {0};
+        sb_puts(&result, width ? width : "medium"); sb_putc(&result, ' ');
+        sb_puts(&result, style ? style : "none"); sb_putc(&result, ' ');
+        sb_puts(&result, color ? color : "currentcolor");
+        free(width); for (unsigned i = 0; i < count; i++) free(parts[i]);
+        free(buffer); return sb_take(&result);
+    }
+    for (unsigned i = 0; i < count; i++) {
+        int component_kind = kind >= 5 ? kind - 4 : kind;
+        if (component_kind == 1) {
+            char *length = css_numeric_dimension_parse("border-top-width", parts[i]);
+            if (!length) goto invalid;
+            free(parts[i]); parts[i] = length;
+        } else if (component_kind == 2) {
+            if (!border_style_keyword(parts[i])) goto invalid;
+        } else {
+            CssColor parsed; if (!css_color_parse(parts[i], &parsed, NULL)) goto invalid;
+        }
+    }
+    SB result = {0};
+    for (unsigned i = 0; i < count; i++) {
+        if (i) sb_putc(&result, ' ');
+        sb_puts(&result, parts[i]); free(parts[i]);
+    }
+    free(buffer); return sb_take(&result);
+invalid:
+    for (unsigned i = 0; i < count; i++) free(parts[i]);
+    free(buffer); return NULL;
+}
+bool css_border_valid(const char *property, const char *value) {
+    if (border_decl_kind(property) < 0) return true;
+    char *parsed = css_border_parse(property, value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
 static bool column_property(const char *prop) {
     return !strcmp(prop, "columns") || !strcmp(prop, "column-width") || !strcmp(prop, "column-count");
 }
@@ -2921,6 +3021,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
        Valid pending values are checked again after their tokens resolve. */
     if (!strcmp(prop, "transition-property") && !css_transition_property_valid(prop, value_in)) return;
     if (!css_box_shadow_valid(prop, value_in)) return;
+    if (!css_border_valid(prop, value_in)) return;
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
@@ -2938,11 +3039,21 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     char *vbuf = min_size_property(prop) ? css_min_size_parse(v) :
         css_numeric_dimension_property(prop) ? css_numeric_dimension_parse(prop, v) :
         !strcmp(prop, "transition-property") ? css_transition_property_parse(v) :
-        !strcmp(prop, "box-shadow") ? css_box_shadow_parse(v) : xstrdup(v);
+        !strcmp(prop, "box-shadow") ? css_box_shadow_parse(v) :
+        border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);
     if (min_size_property(prop) && (str_ieq(val, "-webkit-min-content") ||
         str_ieq(val, "-webkit-max-content") || str_ieq(val, "-webkit-fit-content"))) val += 8;
+    if (!strcmp(prop, "border")) {
+        /* Reset-only subproperties also receive CSS-wide keywords. Perform
+           their updates before setting the outer length/container context. */
+        static const char *const image[] = { "border-image-source", "border-image-slice",
+            "border-image-width", "border-image-outset", "border-image-repeat" };
+        const char *wide = var_wide_keyword(val);
+        for (unsigned i = 0; i < sizeof image / sizeof image[0]; i++)
+            css_apply_decl(st, par, image[i], wide ? wide : "initial", e, el);
+    }
     ACtx c = { st, par, e, el, st->font_size, 16, e ? &e->media : NULL };
     g_cq[0] = g_cq[1] = 0;
     if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)

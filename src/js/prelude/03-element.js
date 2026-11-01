@@ -47,9 +47,120 @@ function parseDecls(s) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
+/* Physical border declarations are stored as real longhands. The native
+ * grammar validates the complete value before any declaration is changed. */
+const CSS_BORDER_SIDES = ['top', 'right', 'bottom', 'left'];
+const CSS_BORDER_KINDS = ['width', 'style', 'color'];
+const CSS_BORDER_IMAGE = [
+    ['border-image-source', 'none'], ['border-image-slice', '100%'],
+    ['border-image-width', '1'], ['border-image-outset', '0'], ['border-image-repeat', 'stretch']
+];
+const CSS_BORDER_SHORTHANDS = ['border', ...CSS_BORDER_SIDES.map(s => 'border-' + s), ...CSS_BORDER_KINDS.map(k => 'border-' + k)];
+const cssBorderRelevant = p => /^border(?:-(?:(?:top|right|bottom|left)(?:-(?:width|style|color))?|width|style|color))?$/.test(p);
+const cssBorderWide = value => /^(inherit|initial|unset|revert|revert-layer)$/i.test(value);
+const cssBorderPending = value => /(?:^|[^a-z0-9_-])(?:var|env|attr|if)\(|--/i.test(value);
+function cssBorderChildren(p) {
+    if (p === 'border') return CSS_BORDER_KINDS.flatMap(k => CSS_BORDER_SIDES.map(s => 'border-' + s + '-' + k)).concat(CSS_BORDER_IMAGE.map(x => x[0]));
+    const tail = p.slice(7);
+    if (CSS_BORDER_KINDS.includes(tail)) return CSS_BORDER_SIDES.map(s => 'border-' + s + '-' + tail);
+    if (CSS_BORDER_SIDES.includes(tail)) return CSS_BORDER_KINDS.map(k => p + '-' + k);
+    return [p];
+}
+function cssBorderParse(p, value) {
+    const parsed = N.cssBorder(p, String(value));
+    if (parsed === null) return null;
+    if (cssBorderPending(parsed)) return { names: [p], values: [parsed], pending: true };
+    const names = cssBorderChildren(p);
+    if (cssBorderWide(parsed)) return { names, values: names.map(() => parsed.toLowerCase()) };
+    const tokens = cssGridTokens(parsed); if (!tokens || !tokens.length) return null;
+    const normalize = (kind, text) => kind === 'color' ? specColor(text, 'border-top-color') : kind === 'width' ? cssNumericDimensionParse('border-top-width', text) : text.toLowerCase();
+    let values;
+    if (p === 'border' || CSS_BORDER_SIDES.includes(p.slice(7))) {
+        const side = tokens.map((text, i) => normalize(CSS_BORDER_KINDS[i], text));
+        if (side.length !== 3 || side.some(x => x === null)) return null;
+        values = p === 'border' ? side.flatMap(v => CSS_BORDER_SIDES.map(() => v)).concat(CSS_BORDER_IMAGE.map(x => x[1])) : side;
+    } else {
+        const kind = p.slice(p.lastIndexOf('-') + 1), parts = tokens.map(text => normalize(kind, text));
+        if (parts.some(x => x === null)) return null;
+        values = names.length === 1 ? parts : [parts[0], parts[1] ?? parts[0], parts[2] ?? parts[0], parts[3] ?? parts[1] ?? parts[0]];
+    }
+    return values.length === names.length ? { names, values } : null;
+}
+function cssBorderValue(m, p, priority = false) {
+    const names = cssBorderChildren(p), direct = m.get(p);
+    if (direct) {
+        if (names.length === 1) return direct[priority ? 1 : 0];
+        let after = false;
+        for (const [name] of m) {
+            if (name === p) { after = true; continue; }
+            if (after && (names.includes(name) || CSS_BORDER_SHORTHANDS.includes(name) && cssBorderChildren(name).some(n => names.includes(n)))) return '';
+        }
+        return direct[priority ? 1 : 0];
+    }
+    const entries = names.map(name => m.get(name));
+    if (entries.some(e => !e) || entries.some(e => e[1] !== entries[0][1])) return '';
+    if (priority) return entries[0][1];
+    const values = entries.map(e => e[0]);
+    if (values.some(cssBorderWide)) return values.every(v => v === values[0]) ? values[0] : '';
+    if (values.some(cssBorderPending)) return '';
+    if (p === 'border') {
+        if (CSS_BORDER_IMAGE.some((entry, i) => values[12 + i] !== entry[1])) return '';
+        for (let k = 0; k < 3; k++) if (values.slice(k * 4, k * 4 + 4).some(v => v !== values[k * 4])) return '';
+        return [values[0], values[4], values[8] === 'currentcolor' ? '' : values[8]].filter(Boolean).join(' ');
+    }
+    if (CSS_BORDER_SIDES.includes(p.slice(7))) return [values[0], values[1], values[2] === 'currentcolor' ? '' : values[2]].filter(Boolean).join(' ');
+    if (names.length === 4) {
+        const [a, b, c, d] = values;
+        return b === d ? a === c ? a === b ? a : a + ' ' + b : a + ' ' + b + ' ' + c : values.join(' ');
+    }
+    return values[0];
+}
+function cssBorderSet(m, p, value, priority, cascading = false) {
+    const parsed = cssBorderParse(p, value); if (!parsed) return false;
+    const children = cssBorderChildren(p);
+    if (cascading && m.get(p)?.[1] && !priority) return true;
+    m.delete(p);
+    if (parsed.pending && children.length > 1) {
+        for (const name of children) if (!cascading || !m.get(name)?.[1] || priority) m.delete(name);
+    }
+    for (const shorthand of CSS_BORDER_SHORTHANDS) {
+        const entry = m.get(shorthand);
+        if (entry && cssBorderChildren(shorthand).every(name => children.includes(name)) && (!cascading || !entry[1] || priority)) m.delete(shorthand);
+    }
+    for (let i = 0; i < parsed.names.length; i++) {
+        const name = parsed.names[i];
+        if (cascading && !priority && (m.get(name)?.[1] || CSS_BORDER_SHORTHANDS.some(s => m.get(s)?.[1] && cssBorderChildren(s).includes(name)))) continue;
+        /* CSSOM permits moving a changed declaration to the end, and requires
+           it after later declarations in the same logical property group. */
+        m.delete(name);
+        m.set(name, [parsed.values[i], priority]);
+    }
+    return true;
+}
+function cssBorderRemove(m, p) {
+    const value = cssBorderValue(m, p), names = cssBorderChildren(p);
+    m.delete(p); for (const name of names) m.delete(name);
+    for (const shorthand of CSS_BORDER_SHORTHANDS) if (cssBorderChildren(shorthand).every(name => names.includes(name))) m.delete(shorthand);
+    return value;
+}
+function cssBorderPacks(m) {
+    const keys = [...m.keys()], selected = new SMap(), used = new SSet();
+    for (const shorthand of CSS_BORDER_SHORTHANDS) {
+        if (m.has(shorthand)) continue;
+        const names = cssBorderChildren(shorthand);
+        if (names.some(n => used.has(n) || !m.has(n))) continue;
+        const value = cssBorderValue(m, shorthand); if (!value) continue;
+        const positions = names.map(n => keys.indexOf(n)), start = Math.min(...positions), end = Math.max(...positions);
+        if (keys.slice(start, end + 1).some(n => !names.includes(n) && (n === 'all' || n.startsWith('border')))) continue;
+        const pack = { name: shorthand, value, first: keys[start], priority: m.get(names[0])[1] };
+        for (const name of names) { selected.set(name, pack); used.add(name); }
+    }
+    return selected;
+}
+
 /* CSS Sizing4 intrinsic-size grammar. Keep specified physical longhands in
  * declaration order so interleaved logical longhands cascade natively. */
 const CSS_CIS_PARTS = ['contain-intrinsic-width', 'contain-intrinsic-height'];
@@ -202,8 +313,12 @@ function serDecls(m) {
     }
     const out = [], flex = mergeFlex ? cssFlexValue(m, 'flex') : '';
     let flexWritten = false;
+    const borderPacks = cssBorderPacks(m);
     for (const [k, [v, i]] of m) {
-        if (CSS_FLEX_PARTS.includes(k) && flex && !m.has('flex')) {
+        const packed = borderPacks.get(k);
+        if (packed) {
+            if (k === packed.first) out.push(packed.name + ': ' + packed.value + (packed.priority ? ' !important' : '') + ';');
+        } else if (CSS_FLEX_PARTS.includes(k) && flex && !m.has('flex')) {
             if (!flexWritten) out.push('flex: ' + flex + (i ? ' !important' : '') + ';');
             flexWritten = true;
         } else out.push(k + ': ' + v + (i ? ' !important' : '') + ';');
@@ -686,6 +801,7 @@ function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
     if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
     if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
+    if (cssBorderRelevant(p)) return cssBorderParse(p, v) !== null;
     if (CSS_MIN_SIZE.test(p)) return N.cssSupports('(' + p + ':' + v + ')');
     if (CSS_NUMERIC_DIMENSION.test(p)) return N.cssNumericDimension(p, v) !== null;
     if (cssCisRelevant(p)) return cssCisParse(p, v) !== null;
@@ -1073,8 +1189,8 @@ class CSSStyleDeclaration {
     get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
-    getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); return e ? e[0] : shorthandPart(m, p); }
-    getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p); return e ? e[1] : ''; }
+    getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); return e ? e[0] : shorthandPart(m, p); }
+    getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p); return e ? e[1] : ''; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
         v = v == null ? '' : String(v);
         pri = pri == null ? '' : String(pri);
@@ -1084,6 +1200,12 @@ class CSSStyleDeclaration {
             if (value === null) return;
             const m = new SMap(this._m()); m.delete(p);
             if (value !== '') m.set(p, [value, pri ? 'important' : '']);
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (cssBorderRelevant(p)) {
+            const m = new SMap(this._m());
+            if (v === '') cssBorderRemove(m, p);
+            else if (!cssBorderSet(m, p, v, pri ? 'important' : '')) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
         if (p === 'box-shadow') {
@@ -1127,7 +1249,7 @@ class CSSStyleDeclaration {
         }
         if (v !== '' && !p.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null) return; }
         if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },

@@ -241,7 +241,11 @@ class CSSRuleStyle extends CSSStyleDeclaration {
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v))); }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m();
-        if (p === 'box-shadow') {
+        if (cssBorderRelevant(p)) {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (value === '') cssBorderRemove(m, p);
+            else if (priority && !/^important$/i.test(priority) || !cssBorderSet(m, p, value, priority ? 'important' : '')) return;
+        } else if (p === 'box-shadow') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (value === '') m.delete(p);
             else {
@@ -278,7 +282,7 @@ class CSSRuleStyle extends CSSStyleDeclaration {
             m.set(p, [specNormalize(p, value), priority ? 'important' : '']);
         } else m.set(p, [String(v), pri ? 'important' : '']); this._w(m);
     }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
 }
 class CSSRule {
     constructor() { illegal(); }

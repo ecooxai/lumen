@@ -783,7 +783,7 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         /* A stray closing token invalidates the declaration, not just its
            suffix. Continue to the next semicolon so later declarations survive. */
         if (name_valid && !bad_close && math_valid && (custom || v[0]) && css_var_syntax_valid(v) &&
-            (custom || (css_numeric_dimension_valid(property, v) && css_transition_property_valid(property, v) && css_box_shadow_valid(property, v)))) vec_push(*d, dc); else free(dc.value);
+            (custom || (css_numeric_dimension_valid(property, v) && css_transition_property_valid(property, v) && css_box_shadow_valid(property, v) && css_border_valid(property, v)))) vec_push(*d, dc); else free(dc.value);
         free(val);
     }
     return d;
@@ -1092,6 +1092,7 @@ bool css_supports(const char *cond) {
             if (r) r = css_numeric_dimension_valid(p, v);
             if (r) r = css_transition_property_valid(p, v);
             if (r) r = css_box_shadow_valid(p, v);
+            if (r) r = css_border_valid(p, v);
             if (!strcmp(p, "display") && (strstr(v, "contents") || strstr(v, "subgrid"))) r = !strstr(v, "subgrid");
             if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
             if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);
