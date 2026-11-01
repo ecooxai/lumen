@@ -759,7 +759,8 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         Decl dc; dc.prop = property; dc.value = xstrdup(v); dc.important = imp;
         /* A stray closing token invalidates the declaration, not just its
            suffix. Continue to the next semicolon so later declarations survive. */
-        if (name_valid && !bad_close && math_valid && (custom || v[0]) && css_var_syntax_valid(v)) vec_push(*d, dc); else free(dc.value);
+        if (name_valid && !bad_close && math_valid && (custom || v[0]) && css_var_syntax_valid(v) &&
+            (custom || css_numeric_dimension_valid(property, v))) vec_push(*d, dc); else free(dc.value);
         free(val);
     }
     return d;
@@ -1065,6 +1066,7 @@ bool css_supports(const char *cond) {
             r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) &&
                 (minimum || !strstr(v, "-webkit-")) && !strstr(p, "-webkit-"));
             if (r && minimum) r = css_min_size_valid(p, v);
+            if (r) r = css_numeric_dimension_valid(p, v);
             if (!strcmp(p, "display") && (strstr(v, "contents") || strstr(v, "subgrid"))) r = !strstr(v, "subgrid");
             if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
             if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);

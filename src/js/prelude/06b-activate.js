@@ -241,7 +241,15 @@ class CSSRuleStyle extends CSSStyleDeclaration {
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v))); }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m();
-        if (cssGridRelevant(p)) {
+        if (CSS_NUMERIC_DIMENSION.test(p)) {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (value === '') m.delete(p);
+            else {
+                if (priority && !/^important$/i.test(priority)) return;
+                const parsed = cssNumericDimensionParse(p, value); if (parsed === null) return;
+                m.delete(p); m.set(p, [parsed, priority ? 'important' : '']);
+            }
+        } else if (cssGridRelevant(p)) {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (value === '') cssGridRemove(m, p);
             else if (priority && !/^important$/i.test(priority) || !cssGridSet(m, p, value, priority ? 'important' : '')) return;

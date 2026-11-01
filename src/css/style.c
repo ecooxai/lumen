@@ -2043,6 +2043,101 @@ bool css_min_size_valid(const char *prop, const char *value) {
     free(parsed); return valid;
 }
 
+/* Pure lengths and times do not acquire the length-percentage hint used by
+ * sizing. Share this bounded grammar between native declarations and CSSOM;
+ * invalid literal syntax must not overwrite an earlier valid declaration. */
+static int numeric_dimension_kind(const char *prop) {
+    if (!prop) return 0;
+    if (prop[0] == 'b' && !strncmp(prop, "border-", 7)) {
+        static const char *const sides[] = { "top-width", "right-width", "bottom-width", "left-width",
+            "inline-start-width", "inline-end-width", "block-start-width", "block-end-width", NULL };
+        for (int i = 0; sides[i]; i++) if (!strcmp(prop + 7, sides[i])) return 1;
+    } else if (prop[0] == 'o' && !strcmp(prop, "outline-width")) return 1;
+    else if (prop[0] == 'a' && !strncmp(prop, "animation-", 10))
+        return !strcmp(prop + 10, "duration") || !strcmp(prop + 10, "delay") ? 2 : 0;
+    else if (prop[0] == 't' && !strncmp(prop, "transition-", 11))
+        return !strcmp(prop + 11, "duration") || !strcmp(prop + 11, "delay") ? 2 : 0;
+    return 0;
+}
+bool css_numeric_dimension_property(const char *prop) { return numeric_dimension_kind(prop) != 0; }
+static bool numeric_dimension_component(const char *text, int kind, bool duration, bool auto_duration) {
+    if (kind == 1 && (str_ieq(text, "thin") || str_ieq(text, "medium") || str_ieq(text, "thick"))) return true;
+    if (auto_duration && str_ieq(text, "auto")) return true;
+    const char *open = strchr(text, '('); bool math = open != NULL;
+    if (math) {
+        if (!(isalpha((unsigned char)*text) || *text == '-')) return false;
+        unsigned depth = 1; const char *cursor = open + 1;
+        for (; *cursor && depth; cursor++) {
+            if (*cursor == '(') depth++; else if (*cursor == ')') depth--;
+        }
+        if (depth || *cursor) return false; /* exactly one component, no bare trailing arithmetic */
+    } else {
+        CLexer lexer; clex_init(&lexer, text, strlen(text));
+        CTok first = clex_next(&lexer), end;
+        do { end = clex_next(&lexer); if (end.type == CT_WS) free(end.str); } while (end.type == CT_WS);
+        bool literal = (first.type == CT_NUMBER || first.type == CT_DIM) && end.type == CT_EOF;
+        free(first.str); free(end.str); if (!literal) return false;
+    }
+    CssNumber number;
+    if (!css_number_parse_context(text, 16, 16, NULL, false, NULL, true, &number)) return false;
+    bool dimension = true; int expected = kind == 1 ? CN_LENGTH : CN_TIME;
+    for (int i = 0; i < CN_DIMS; i++) if (number.power[i] != (i == expected)) dimension = false;
+    if (!dimension && !(kind == 1 && !math && css_number_scalar(&number) && number.value == 0)) return false;
+    return math || !(kind == 1 || duration) || number.value >= 0;
+}
+char *css_numeric_dimension_parse(const char *prop, const char *value) {
+    int kind = numeric_dimension_kind(prop); if (!kind || !value) return NULL;
+    bool duration = kind == 2 && strstr(prop, "duration") != NULL;
+    bool auto_duration = !strcmp(prop, "animation-duration");
+    /* Common literal values need no token allocations. Other units, comments,
+       escapes and calculations still pass through the complete grammar. */
+    if (isdigit((unsigned char)*value) || *value == '+' || *value == '-' || *value == '.') {
+        const char *cursor = value; if (*cursor == '+' || *cursor == '-') cursor++;
+        bool digits = false;
+        while (isdigit((unsigned char)*cursor)) { digits = true; cursor++; }
+        if (*cursor == '.' && isdigit((unsigned char)cursor[1])) {
+            cursor++; while (isdigit((unsigned char)*cursor)) { digits = true; cursor++; }
+        }
+        if ((*cursor == 'e' || *cursor == 'E') && (isdigit((unsigned char)cursor[1]) ||
+            ((cursor[1] == '+' || cursor[1] == '-') && isdigit((unsigned char)cursor[2])))) {
+            cursor++; if (*cursor == '+' || *cursor == '-') cursor++;
+            while (isdigit((unsigned char)*cursor)) cursor++;
+        }
+        char *end; double number = strtod(value, &end);
+        if (digits && end == cursor && (!(kind == 1 || duration) || number >= 0) &&
+            (kind == 1 ? !strcmp(end, "px") || (!*end && number == 0) : !strcmp(end, "s") || !strcmp(end, "ms")))
+            return xstrdup(value);
+    }
+    if (!css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value); /* retain case-sensitive pending tokens */
+    if (!css_math_spacing_valid(value)) return NULL;
+    char *buffer = min_size_parser_text(value); if (!buffer) return NULL;
+    char *text = str_trim(buffer); bool valid = var_wide_keyword(text) != NULL;
+    if (!valid && kind == 1) valid = numeric_dimension_component(text, kind, false, false);
+    else if (!valid) {
+        unsigned depth = 0; char *start = text; valid = true;
+        for (char *cursor = text;; cursor++) {
+            if (*cursor == '(') depth++; else if (*cursor == ')') depth--;
+            if (!*cursor || (*cursor == ',' && !depth)) {
+                char *component_text = xstrndup(start, (size_t)(cursor - start));
+                bool component = numeric_dimension_component(str_trim(component_text), kind, duration, auto_duration);
+                free(component_text);
+                if (!component) { valid = false; break; }
+                if (!*cursor) break;
+                start = cursor + 1;
+            }
+        }
+    }
+    if (!valid) { free(buffer); return NULL; }
+    if (text != buffer) memmove(buffer, text, strlen(text) + 1);
+    return buffer;
+}
+bool css_numeric_dimension_valid(const char *prop, const char *value) {
+    if (!numeric_dimension_kind(prop)) return true;
+    char *parsed = css_numeric_dimension_parse(prop, value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
 static bool column_property(const char *prop) {
     return !strcmp(prop, "columns") || !strcmp(prop, "column-width") || !strcmp(prop, "column-count");
 }
@@ -2590,7 +2685,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         char *parsed = wide ? xstrdup(wide) : var_parser_text(subst); free(subst); subst = parsed;
         v = subst;
     }
-    char *vbuf = min_size_property(prop) ? css_min_size_parse(v) : xstrdup(v);
+    char *vbuf = min_size_property(prop) ? css_min_size_parse(v) :
+        css_numeric_dimension_property(prop) ? css_numeric_dimension_parse(prop, v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);
     if (min_size_property(prop) && (str_ieq(val, "-webkit-min-content") ||

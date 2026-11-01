@@ -47,7 +47,7 @@ function parseDecls(s) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
 /* CSS Sizing4 intrinsic-size grammar. Keep specified physical longhands in
@@ -565,6 +565,11 @@ function cssMinSizeParse(property, value) {
     const folded = /^calc\(/i.test(parsed) && mathEval(parsed);
     return specNormalize(property, folded ? mathSer(folded) : parsed);
 }
+const CSS_NUMERIC_DIMENSION = /^(?:border-(?:top|right|bottom|left|(?:inline|block)-(?:start|end))-width|outline-width|(?:animation|transition)-(?:delay|duration))$/;
+function cssNumericDimensionParse(property, value) {
+    const parsed = N.cssNumericDimension(property, value);
+    return parsed === null ? null : specNormalize(property, parsed);
+}
 const MATH_NUM_PROPS = /^((fill-|stroke-|stop-|flood-)?opacity|flex-grow|flex-shrink)$/;
 /* the <color-interpolation-method> of gradients: only "in <space> [<hue> hue]" at the start or end of the first argument */
 const GRAD_SPACES = /^(srgb|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020|lab|oklab|xyz|xyz-d50|xyz-d65|hsl|hwb|lch|oklch)$/i;
@@ -655,6 +660,7 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
     if (CSS_MIN_SIZE.test(p)) return N.cssSupports('(' + p + ':' + v + ')');
+    if (CSS_NUMERIC_DIMENSION.test(p)) return N.cssNumericDimension(p, v) !== null;
     if (cssCisRelevant(p)) return cssCisParse(p, v) !== null;
     if (/^(columns|column-width|column-count)$/.test(p)) return N.cssSupports('(' + p + ':' + v + ')');
     if (cssFlexRelevant(p)) return cssFlexParse(p, v) !== null;
@@ -1047,6 +1053,13 @@ class CSSStyleDeclaration {
         if (v !== '' && ((pri && !/^important$/i.test(pri)) || !cssVarSyntax(v))) return;
         if (CSS_MIN_SIZE.test(p)) {
             const value = v === '' ? '' : cssMinSizeParse(p, v);
+            if (value === null) return;
+            const m = new SMap(this._m()); m.delete(p);
+            if (value !== '') m.set(p, [value, pri ? 'important' : '']);
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (CSS_NUMERIC_DIMENSION.test(p)) {
+            const value = v === '' ? '' : cssNumericDimensionParse(p, v);
             if (value === null) return;
             const m = new SMap(this._m()); m.delete(p);
             if (value !== '') m.set(p, [value, pri ? 'important' : '']);
