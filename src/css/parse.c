@@ -1096,6 +1096,10 @@ bool css_supports(const char *cond) {
             if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);
             if (r && p[0] == 'f') r = css_flex_valid(p, v);
             if (r && p[0] == 'c') r = css_containment_valid(p, v) && css_columns_valid(p, v);
+            /* Use the same original-token spacing rule as declarations. A
+             * custom property or pending substitution keeps its token stream. */
+            if (r && !(p[0] == '-' && p[1] == '-') && !css_math_substitution_pending(v))
+                r = css_math_spacing_valid(v);
         } else r = css_supports(in);
     }
     free(s);

@@ -437,6 +437,8 @@ char *css_min_size_parse(const char *value); /* caller owns normalized syntax te
 bool css_numeric_dimension_property(const char *prop);
 bool css_numeric_dimension_valid(const char *prop, const char *value);
 char *css_numeric_dimension_parse(const char *prop, const char *value); /* caller owns result; NULL if invalid */
+/* Pending var/env/attr/if/custom-function tokens use deferred math validation. */
+bool css_math_substitution_pending(const char *value);
 /* Shared standalone transition-property list grammar and identifier serialization. */
 bool css_transition_property_valid(const char *property, const char *value);
 char *css_transition_property_parse(const char *value); /* caller owns result; NULL if invalid */

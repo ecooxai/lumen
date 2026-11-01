@@ -1941,6 +1941,11 @@ static bool min_size_deferred(const char *value) {
         if (pending || type == CT_EOF) return pending;
     }
 }
+/* Shared support-query boundary: deferred substitutions retain their tokens
+ * until the property grammar can be checked after substitution. */
+bool css_math_substitution_pending(const char *value) {
+    return strchr(value, '(') && min_size_deferred(value);
+}
 /* A dashed identifier already starts with two safe hyphens; preserve its
  * case and escape punctuation/control bytes without changing token identity. */
 static void min_size_dashed_text(SB *out, const char *name) {
