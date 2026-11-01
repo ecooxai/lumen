@@ -586,16 +586,29 @@ static uint32_t compute_spec(const Selector *s) {
     uint32_t a = 0, b = 0, c = 0;
     for (int i = 0; i < s->n; i++) for (int k = 0; k < s->c[i].n; k++) {
         SimpleSel *x = &s->c[i].s[k];
+        uint32_t sp = 0;
         switch (x->kind) {
         case SK_ID: a++; break;
         case SK_CLASS: case SK_ATTR: b++; break;
-        case SK_TYPE: case SK_PSEUDO_EL: c++; break;
+        case SK_TYPE: c++; break;
+        case SK_PSEUDO_EL:
+            c++;
+            if (x->sub && x->name == atom("slotted")) sp = spec_of_list(x->sub);
+            break;
         case SK_PSEUDO:
             if (x->name == atom("where")) break;
-            if (x->sub && (x->name == atom("not") || x->name == atom("is") || x->name == atom("has") || x->name == atom("matches"))) { uint32_t sp = spec_of_list(x->sub); a += sp >> 20; b += (sp >> 10) & 1023; c += sp & 1023; }
-            else b++;
+            /* The relative anchor is syntax machinery, not an authored :scope. */
+            if (x->name == atom("scope") && x->op == 2) break;
+            if (x->sub && (x->name == atom("not") || x->name == atom("is") || x->name == atom("has") || x->name == atom("matches"))) sp = spec_of_list(x->sub);
+            else {
+                b++;
+                if (x->sub && (x->name == atom("nth-child") || x->name == atom("nth-last-child") ||
+                               x->name == atom("host") || x->name == atom("host-context")))
+                    sp = spec_of_list(x->sub);
+            }
             break;
         }
+        a += sp >> 20; b += (sp >> 10) & 1023; c += sp & 1023;
     }
     return (LMIN(a, 1023u) << 20) | (LMIN(b, 1023u) << 10) | LMIN(c, 1023u);
 }
