@@ -236,11 +236,21 @@ class MediaList {
     deleteMedium(m) { const i = this._m.indexOf(String(m).trim()); if (i < 0) throw new DOMException('Failed to delete the medium.', 'NotFoundError'); this._m.splice(i, 1); this._o && this._o._changed(); }
 }
 class CSSRuleStyle extends CSSStyleDeclaration {
-    constructor(rule, text) { super(null); def(this, '_rule', rule); def(this, '_map', parseDecls(text || '')); }
+    constructor(rule, text) { super(null); def(this, '_rule', rule); def(this, '_map', parseDecls(text || '', rule instanceof CSSFontFaceRule)); }
     _m() { return new SMap(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
-    get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v))); }
+    get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v), this._rule instanceof CSSFontFaceRule)); }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m();
+        if (this._rule instanceof CSSFontFaceRule && p === 'unicode-range') {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (value === '') m.delete(p);
+            else {
+                if (priority && !/^important$/i.test(priority)) return;
+                const range = cssUnicodeRangeText(value); if (range === null) return;
+                m.delete(p); m.set(p, [range, priority ? 'important' : '']);
+            }
+            this._w(m); return;
+        }
         if (cssBorderRelevant(p)) {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (value === '') cssBorderRemove(m, p);
@@ -292,7 +302,7 @@ class CSSRule {
 }
 for (const [k, v] of Object.entries({ STYLE_RULE: 1, CHARSET_RULE: 2, IMPORT_RULE: 3, MEDIA_RULE: 4, FONT_FACE_RULE: 5, PAGE_RULE: 6, KEYFRAMES_RULE: 7, KEYFRAME_RULE: 8, MARGIN_RULE: 9, NAMESPACE_RULE: 10, COUNTER_STYLE_RULE: 11, SUPPORTS_RULE: 12, FONT_FEATURE_VALUES_RULE: 14 })) { Object.defineProperty(CSSRule, k, { value: v, enumerable: true }); Object.defineProperty(CSSRule.prototype, k, { value: v, enumerable: true }); }
 const ruleStyle = (r) => r._style || (r._style = new Proxy(new CSSRuleStyle(r, r._body), styleHandler));
-const blockText = (r) => { const d = r._style ? r._style.cssText : serDecls(parseDecls(r._body || '')); return d ? `{ ${d} }` : '{ }'; };
+const blockText = (r) => { const d = r._style ? r._style.cssText : serDecls(parseDecls(r._body || '', r instanceof CSSFontFaceRule)); return d ? `{ ${d} }` : '{ }'; };
 class CSSStyleRule extends CSSRule {
     get type() { return 1; }
     get selectorText() { return this._sel; }

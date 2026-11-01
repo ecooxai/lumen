@@ -1,0 +1,116 @@
+<!doctype html><meta charset="utf-8"><title>Font-face Unicode range descriptor CSSOM</title>
+<script>
+(() => {
+    const rows = [], owner = document.createElement('style');
+    document.head.appendChild(owner);
+    const base = 'font-family: RangeDescriptorProbe; src: local("RangeDescriptorProbe");';
+    const equal = (actual, expected, label) => { if (actual !== expected) throw new Error(label + ': ' + JSON.stringify(actual) + ' != ' + JSON.stringify(expected)); };
+    const yes = (value, label) => { if (!value) throw new Error(label); };
+    function test(name, callback) {
+        try { callback(); rows.push({name, pass:true}); }
+        catch (error) { rows.push({name, pass:false, error:String(error)}); }
+    }
+    function rule(body = '') {
+        while (owner.sheet.cssRules.length) owner.sheet.deleteRule(0);
+        owner.sheet.insertRule('@font-face {' + base + body + '}', 0);
+        return owner.sheet.cssRules[0];
+    }
+    const value = style => style.getPropertyValue('unicode-range');
+    const valid = [
+        ['U+000041', 'U+41'],
+        ['u+a?', 'U+A0-AF'],
+        ['U+10????', 'U+100000-10FFFF'],
+        ['u+0041-005a', 'U+41-5A'],
+        ['U+001234-001234', 'U+1234'],
+        ['u+0-10ffff', 'U+0-10FFFF'],
+        [' /**/U+41/**/,/**/u+1f6??/**/ ', 'U+41, U+1F600-1F6FF'],
+        ['U+1e-20', 'U+1E-20']
+    ];
+    for (const [input, expected] of valid) for (const mode of ['setter', 'cssText', 'insertRule'])
+        test(mode + ' canonical range ' + input, () => {
+            const r = rule(mode === 'insertRule' ? 'unicode-range:' + input : '');
+            if (mode === 'setter') r.style.setProperty('unicode-range', input);
+            if (mode === 'cssText') r.style.cssText = base + 'unicode-range:' + input;
+            equal(value(r.style), expected, 'descriptor value');
+            yes(r.cssText.includes('unicode-range: ' + expected + ';'), 'rule serializer uses canonical descriptor');
+            equal(r.style.getPropertyPriority('unicode-range'), '', 'normal descriptor priority');
+        });
+    const invalid = [
+        'U+110000', 'U+43-41', 'U+41-110000', 'U+??????', 'U+41,', 'U+41,,U+42',
+        'U+41 U+42', 'u/**/+41', 'U+4/**/1', 'U+41/**/-42', 'U+41\0', '\u00a0U+41'
+    ];
+    for (const input of invalid) for (const mode of ['setter', 'cssText duplicate'])
+        test(mode + ' rejects complete invalid range ' + JSON.stringify(input), () => {
+            const r = rule('unicode-range:U+1357;');
+            const before = r.style.cssText;
+            if (mode === 'setter') r.style.setProperty('unicode-range', input);
+            else r.style.cssText = base + 'unicode-range:U+1357;unicode-range:' + input;
+            equal(value(r.style), 'U+1357', 'last valid declaration retained');
+            equal(r.style.cssText, before, 'invalid declaration is atomic');
+        });
+    test('IDL setter shares canonical descriptor storage', () => {
+        const r = rule(); r.style.unicodeRange = 'u+00a?';
+        equal(value(r.style), 'U+A0-AF', 'IDL to method');
+        equal(r.style.unicodeRange, 'U+A0-AF', 'IDL getter');
+    });
+    test('invalid IDL assignment preserves previous descriptor', () => {
+        const r = rule('unicode-range:U+41;'); r.style.unicodeRange = 'U+43-41';
+        equal(r.style.unicodeRange, 'U+41', 'invalid IDL retention');
+    });
+    test('empty setter removes only its descriptor', () => {
+        const r = rule('unicode-range:U+41;'); r.style.setProperty('unicode-range', '');
+        equal(value(r.style), '', 'descriptor removed');
+        yes(r.style.getPropertyValue('font-family'), 'other descriptor retained');
+    });
+    test('null setter uses LegacyNullToEmptyString removal', () => {
+        const r = rule('unicode-range:U+41;'); r.style.unicodeRange = null;
+        equal(value(r.style), '', 'null removes descriptor');
+    });
+    test('removeProperty returns the canonical prior range', () => {
+        const r = rule('unicode-range:u+00ff;');
+        equal(r.style.removeProperty('unicode-range'), 'U+FF', 'prior descriptor return');
+        equal(value(r.style), '', 'descriptor removed');
+    });
+    test('cssText replacement clears the previous descriptor map', () => {
+        const r = rule('unicode-range:U+41;'); r.style.cssText = 'unicode-range:u+42;';
+        equal(value(r.style), 'U+42', 'replacement descriptor');
+        equal(r.style.getPropertyValue('font-family'), '', 'prior family removed');
+        equal(r.style.length, 1, 'one declaration'); equal(r.style.item(0), 'unicode-range', 'enumeration');
+    });
+    test('invalid-only descriptor is absent without losing other descriptors', () => {
+        const r = rule('unicode-range:U+110000;');
+        equal(value(r.style), '', 'invalid range absent');
+        yes(r.style.getPropertyValue('font-family'), 'valid family retained');
+        yes(!r.cssText.includes('unicode-range'), 'invalid range omitted from rule');
+    });
+    test('rule serialization canonicalizes before style is observed', () => {
+        const r = rule('unicode-range:u+00a?;');
+        yes(r.cssText.includes('unicode-range: U+A0-AF;'), 'lazy rule serializer');
+        equal(value(r.style), 'U+A0-AF', 'later style shares representation');
+    });
+    test('serialized descriptor survives stylesheet round trip', () => {
+        const r = rule('unicode-range:u+00ff,U+1f600-1f64f;'), text = r.cssText;
+        owner.sheet.insertRule(text, 1);
+        equal(value(owner.sheet.cssRules[1].style), 'U+FF, U+1F600-1F64F', 'round-trip list');
+    });
+    test('initial stylesheet parsing retains the last valid raw descriptor', () => {
+        const style = document.createElement('style');
+        style.textContent = '@font-face {' + base + 'unicode-range:u+0041;unicode-range:u/**/+42;}';
+        document.head.appendChild(style);
+        try { equal(value(style.sheet.cssRules[0].style), 'U+41', 'raw comments do not join a token'); }
+        finally { style.remove(); }
+    });
+    test('descriptor parsing does not advertise an element CSS property', () => {
+        equal(CSS.supports('unicode-range', 'U+41'), false, 'descriptor is not a property');
+    });
+    test('range tokenization remains contextual to the descriptor', () => {
+        owner.sheet.insertRule('u+a {}', owner.sheet.cssRules.length);
+        equal(owner.sheet.cssRules[owner.sheet.cssRules.length - 1].selectorText, 'u + a', 'ordinary selector tokenization');
+    });
+    for (const row of rows) console.log('UNICODE_RANGE_DESCRIPTOR_ROW ' + JSON.stringify(row));
+    owner.remove();
+    const passed = rows.filter(row => row.pass).length, total = rows.length, ok = total === 60 && passed === total;
+    document.documentElement.setAttribute('data-css-unicode-range-descriptor', ok ? 'PASS' : 'FAIL');
+    console.log('RESULTS css-unicode-range-descriptor:' + (ok ? 'PASS' : 'FAIL') + ' ' + JSON.stringify({passed,total}));
+})();
+</script>

@@ -9,7 +9,59 @@ const camelToKebab = (p) => {
 /* Pending substitution has one grammar in the native declaration parser and
  * CSSOM. Ordinary values avoid crossing into the tokenizer. */
 function cssVarSyntax(value) { return !/var|\\/i.test(value) || N.cssVarValid(value); }
-function parseDecls(s) {
+/* CSS Syntax's unicode-range token is contextual: consume original source
+   only for this font-face descriptor. Comments may separate range tokens,
+   but cannot splice the U+, hexadecimal digits, wildcard or range suffix.
+   This validates CSSOM descriptor text; this does not change font selection. */
+function cssUnicodeRangeText(value) {
+    const s = String(value), ranges = [];
+    let i = 0;
+    const hex = c => c !== undefined && /[0-9a-f]/i.test(c);
+    const trivia = () => {
+        while (i < s.length) {
+            if (/[\t\n\f\r ]/.test(s[i])) { i++; continue; }
+            if (s[i] === '/' && s[i + 1] === '*') {
+                const end = s.indexOf('*/', i + 2);
+                i = end < 0 ? s.length : end + 2;
+                continue;
+            }
+            break;
+        }
+    };
+    trivia();
+    while (i < s.length) {
+        if ((s[i] !== 'U' && s[i] !== 'u') || s[i + 1] !== '+') return null;
+        i += 2;
+        const first = i;
+        while (i - first < 6 && hex(s[i])) i++;
+        const digits = i;
+        while (i - first < 6 && s[i] === '?') i++;
+        if (i === first) return null;
+        let start, end;
+        if (i > digits) {
+            const token = s.slice(first, i);
+            start = parseInt(token.replace(/\?/g, '0'), 16);
+            end = parseInt(token.replace(/\?/g, 'F'), 16);
+        } else {
+            start = end = parseInt(s.slice(first, i), 16);
+            if (s[i] === '-' && hex(s[i + 1])) {
+                const last = ++i;
+                while (i - last < 6 && hex(s[i])) i++;
+                end = parseInt(s.slice(last, i), 16);
+            }
+        }
+        if (end > 0x10ffff || start > end) return null;
+        const a = start.toString(16).toUpperCase(), b = end.toString(16).toUpperCase();
+        ranges.push('U+' + a + (start === end ? '' : '-' + b));
+        trivia();
+        if (i === s.length) return ranges.join(', ');
+        if (s[i++] !== ',') return null;
+        trivia();
+        if (i === s.length) return null;
+    }
+    return null;
+}
+function parseDecls(s, fontFace = false) {
     const m = new SMap(); if (!s) return m;
     let depth = 0, q = '', colon = -1, name = ''; const parts = [];
     const finish = end => {
@@ -47,7 +99,7 @@ function parseDecls(s) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
 /* Physical border declarations are stored as real longhands. The native
