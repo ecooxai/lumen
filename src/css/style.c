@@ -2976,6 +2976,10 @@ static bool custom_defer;
 static _Thread_local const CustomProps *custom_origin_base;
 static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop);
 static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc, const ComputedStyle *basis, bool *used);
+/* The late containment cascade projects all only onto its intrinsic-size
+ * slots. Scope the projection to the same style so recursive substitution
+ * retains normal all validation and nested other-style work is unaffected. */
+static _Thread_local const ComputedStyle *contain_intrinsic_projection_style;
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     if (prop[0] == '-' && prop[1] == '-') {
         char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
@@ -3339,7 +3343,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             /* Preserve authored all ordering for these native families. The
                CSS-wide branch has already validated the reset keyword. */
             css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
-            css_apply_decl(st, par, "border", val, e, el);
+            if (contain_intrinsic_projection_style != st)
+                css_apply_decl(st, par, "border", val, e, el);
         }
         else if (!inherit && !(unset && gp && gp->inherited) && gp && gp->native && gp->initial && *gp->initial) {
             /* other natively modelled properties: apply the textual initial value */
@@ -5486,15 +5491,18 @@ static bool contain_intrinsic_family(const char *prop) {
 }
 static void apply_contain_intrinsic_declarations(ComputedStyle *st, const ComputedStyle *par,
         MDecl *v, int n, StyleEngine *e, Node *el) {
+    const ComputedStyle *previous_projection = contain_intrinsic_projection_style;
+    contain_intrinsic_projection_style = st;
     for (int phase = 0; phase < 3; phase++) for (int i = 0; i < n; i++) {
         const Decl *d = v[i].d;
         if (!contain_intrinsic_family(d->prop)) continue;
         int priority = (v[i].key >> 62) == 3 ? 2 : !v[i].key && d->important ? 1 : 0;
         if (priority != phase) continue;
-        /* all follows its ordinary substitution/CSS-wide validation path;
-           that path projects only the new intrinsic-size slots. */
+        /* Keep all's ordinary substitution/CSS-wide validation, but project
+           only intrinsic-size slots during this priority-ordered replay. */
         css_apply_decl(st, par, d->prop, d->value, e, el);
     }
+    contain_intrinsic_projection_style = previous_projection;
 }
 static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el, bool author) {
     /* Dependencies precede their consumers: custom values, writing-mode/direction/text-orientation,
