@@ -60,6 +60,8 @@ int main(void) {
         char condition[1024]; snprintf(condition, sizeof condition, "(transition-property:%s)", invalid[i]);
         assert(!css_supports(condition));
         css_apply_decl(style, NULL, "transition-property", invalid[i], NULL, NULL);
+        if (!style->tr_prop || strcmp(style->tr_prop, "opacity, width"))
+            fprintf(stderr, "invalid literal transition-property:%s changed prior list to '%s'\n", invalid[i], style->tr_prop ? style->tr_prop : "<initial all>");
         assert(style->tr_prop && !strcmp(style->tr_prop, "opacity, width"));
         checks += 3;
         /* A semicolon and !important are invalid inside a standalone value,

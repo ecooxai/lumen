@@ -2553,7 +2553,7 @@ static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
             layer[l] = prop;
         }
         st->tr_prop = layer_list(layer, nl);
-    } else if (!strcmp(Q, "transition-property")) st->tr_prop = atom(val);
+    } else if (!strcmp(Q, "transition-property")) st->tr_prop = *val ? atom(val) : NULL;
     else if (!strcmp(Q, "transition-duration") || !strcmp(Q, "transition-delay")) {
         float m = 0;
         for (int l = 0; l < nl; l++) if (css_time(layer[l], &f) && f > m) m = f;
@@ -2721,6 +2721,9 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         free(old);
         return;
     }
+    /* Authored parse errors are ignored before substitution can apply unset.
+       Valid pending values are checked again after their tokens resolve. */
+    if (!strcmp(prop, "transition-property") && !css_transition_property_valid(prop, value_in)) return;
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
