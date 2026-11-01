@@ -1,9 +1,7 @@
 /* Exercise actual media locks against an SDL stream locked as it is in a callback. */
 #include "../src/media/media.c"
 #include <assert.h>
-/* This synthetic fixture never opens a URL. Fail, rather than mock success,
- * if production teardown unexpectedly attempts a network cancellation. */
-void net_cancel(uint64_t id) { (void)id; abort(); }
+#include "media_idle_pumps.h"
 static SDL_Semaphore *locked, *go, *done;
 static MediaPlayer *player;
 static int operation;
@@ -75,5 +73,6 @@ int main(void) {
     player->nst=0;
     mp_free(player);SDL_DestroySemaphore(locked);SDL_DestroySemaphore(go);SDL_DestroySemaphore(done);
     SDL_QuitSubSystem(SDL_INIT_AUDIO);
+    media_test_check_idle_pumps();
     puts("PASS callback lock order, paused clock, audio device pause/resume");
 }

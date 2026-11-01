@@ -1,9 +1,7 @@
 /* Exercise the real presentation pump without decoder threads or network I/O. */
 #include "../src/media/media.c"
 #include <assert.h>
-/* This synthetic fixture never opens a URL. Fail, rather than mock success,
- * if production teardown unexpectedly attempts a network cancellation. */
-void net_cancel(uint64_t id) { (void)id; abort(); }
+#include "media_idle_pumps.h"
 static void enqueue(MediaPlayer *m, double pts, bool hidden) {
     assert(m->vqn < VQ_MAX);
     m->vq[m->vqn++] = (VFrame){pts,tiny_image(),640,360,hidden};
@@ -60,5 +58,6 @@ int main(void) {
     m->nst=0;mp_free(m);
     m=mp_new(NULL);mp_state(m,&s);assert(!s.presented_frames && !s.dropped_frames && !s.frame_serial);
     enqueue(m,0,false);media_tick();assert(media_image_serial(m->cur)>serial);mp_free(m);
+    media_test_check_idle_pumps();
     puts("PASS presentation/drop accounting, paused idle, seek, hidden frames and reload");
 }
