@@ -124,7 +124,12 @@ class XMLHttpRequest extends XMLHttpRequestEventTarget {
         this._ctl = ctl;
         (async () => {
             const st = respState.get(fetchResponse(R, await fetchMain(R, ctl)));
-            const b = !st.body ? new Uint8Array(0) : st.body.bytes !== null ? st.body.bytes : await bodyReadAll(st.body.stream);
+            let b;
+            if (!st.body) b = new Uint8Array(0);
+            else if (st.body.bytes !== null) b = st.body.bytes;
+            // The shared consumer keeps internal bytes out of Promise resolution.
+            // XHR uses the same callback contract as Fetch's body consumers.
+            else await bodyReadAll(st.body.stream, bytes => { b = bytes; });
             return [st.status, st.statusText, st.urlList.length ? st.urlList[st.urlList.length - 1] : this._u, hdrOf(st.headers).list.flat(), b.slice().buffer, false];
         })().then(r => { if (!ctl.aborted) this._done(gen, ...r); }, () => { if (!ctl.aborted) this._done(gen, 0, '', this._u, [], null, true); });
     }
