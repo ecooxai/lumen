@@ -1401,10 +1401,10 @@ static void bg_length_str(SB *b, Length value) {
     else sb_printf(b, "%gpx", value.px == 0 ? 0.0 : (double)value.px);
 }
 /* Cache computed lengths where the declaration's font context is known, so
- * inherited text-indent does not get re-evaluated in a descendant's font.
- * Separate hanging/each-line components and unresolved percentage/math values
- * keep their existing representation. */
-static char *text_indent_computed_value(ACtx *context, const char *value) {
+ * inherited text lengths do not get re-evaluated in a descendant's font.
+ * Separate indent qualifiers and unresolved percentage/math values keep
+ * their existing representation. */
+static char *text_length_computed_value(ACtx *context, const char *value) {
     CLexer lexer; clex_init(&lexer, value, strlen(value));
     int depth = 0; bool component = false, valid = true;
     for (;;) {
@@ -3227,6 +3227,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
         else if (!strcmp(P, "font-family")) st->font_family = src->font_family;
         else if (!strcmp(P, "line-height")) { st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
+        else if (!strcmp(P, "letter-spacing")) st->letter_spacing = (unset && par ? par : src)->letter_spacing;
+        else if (!strcmp(P, "word-spacing")) st->word_spacing = (unset && par ? par : src)->word_spacing;
         else if (!strcmp(P, "box-shadow")) {
             st->box_shadow = src->box_shadow; st->has_shadow = src->has_shadow;
             if (inherit) {
@@ -3570,7 +3572,12 @@ apply:
             }
             else if (alen(&c, val, &l) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = 0; st->line_height = len_resolve(l, st->font_size); }
         }
-        else if (!strcmp(P, "letter-spacing")) st->letter_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
+        else if (!strcmp(P, "letter-spacing")) {
+            st->letter_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
+            char *computed = str_ieq(val, "normal") ? xstrdup("normal") : text_length_computed_value(&c, val);
+            if (computed && st->letter_spacing == 0) { free(computed); computed = xstrdup("normal"); }
+            if (computed) gen_put(&st->gen_i, P, computed);
+        }
         else if (!strcmp(P, "list-style-type") || !strcmp(P, "list-style")) {
             static const char *const ls[] = { "none", "disc", "circle", "square", "decimal", "lower-alpha", "upper-alpha", "lower-roman", "upper-roman", NULL };
             char *t[3]; int n = split_ws(val, t, 3); for (int i = 0; i < n; i++) { k = kw(t[i], ls); if (k >= 0) st->list_style = (uint8_t)k; else if (str_ieq(t[i], "lower-latin")) st->list_style = LST_LOWER_ALPHA; else if (str_ieq(t[i], "upper-latin")) st->list_style = LST_UPPER_ALPHA; } free_toks(t, n);
@@ -3651,7 +3658,7 @@ apply:
         else if (!strcmp(P, "text-transform")) st->text_transform = str_ieq(val, "uppercase") ? TT_UPPER : str_ieq(val, "lowercase") ? TT_LOWER : str_ieq(val, "capitalize") ? TT_CAPITALIZE : TT_NONE;
         else if (!strcmp(P, "text-indent")) {
             st->text_indent = alen_px(&c, val, 0);
-            char *computed = text_indent_computed_value(&c, val);
+            char *computed = text_length_computed_value(&c, val);
             if (computed) gen_put(&st->gen_i, P, computed);
         }
         else if (!strcmp(P, "text-overflow")) st->text_overflow = str_ieq(val, "ellipsis") ? TO_ELLIPSIS : TO_CLIP;
@@ -3678,7 +3685,12 @@ apply:
         if (!strcmp(P, "width")) alen_size(&c, val, &st->width);
         else if (!strcmp(P, "white-space") || !strcmp(P, "white-space-collapse")) { static const char *const ws[] = { "normal", "nowrap", "pre", "pre-wrap", "pre-line", "break-spaces", NULL }; k = kw(val, ws); if (k >= 0) st->white_space = (uint8_t)k; else if (str_ieq(val, "preserve")) st->white_space = WS_PRE_WRAP; }
         else if (!strcmp(P, "word-break")) st->word_break = str_ieq(val, "break-all") ? 1 : str_ieq(val, "break-word") ? 2 : 0;
-        else if (!strcmp(P, "word-spacing")) st->word_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
+        else if (!strcmp(P, "word-spacing")) {
+            st->word_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
+            char *computed = str_ieq(val, "normal") ? xstrdup("0px") : text_length_computed_value(&c, val);
+            if (computed && st->word_spacing == 0) { free(computed); computed = xstrdup("0px"); }
+            if (computed) gen_put(&st->gen_i, P, computed);
+        }
         else if (!strcmp(P, "writing-mode")) st->writing_mode = str_ieq(val, "vertical-rl") ? 2 : str_ieq(val, "vertical-lr") ? 1 : 0;   /* 2: vertical-rl; sideways layout remains unsupported */
         break;
     case 'z':
@@ -6777,6 +6789,12 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
     return sb_take(&out);
 }
 static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop) {
+    /* The legacy public zero spelling is normal; animation interpolates the
+       numeric computed value from the supplied snapshot on either endpoint. */
+    if (s && !strcmp(prop, "letter-spacing")) {
+        const char *value = gen_value(s, gen_prop(prop));
+        if (!value || str_ieq(value, "normal")) return xstrdup("0px");
+    }
     /* Preferred sizes belong to the supplied computed snapshot, not the
        element's single current used box. Keep keywords and percentage bases
        on both sides so an auto/length pair cannot become two pixel values. */
