@@ -383,7 +383,31 @@ static bool match_has(const SimpleSel *s, Node *el) {
         const Selector *sel = &s->sub->v[i];
         uint8_t comb = sel->n > 1 ? sel->c[1].comb : CB_DESC;
         if (comb == CB_ADJ || comb == CB_SIB) {
-            for (Node *x = next_el(el); x; x = next_el(x)) { if (css_match_selector(sel, x, el)) return true; if (comb == CB_ADJ) break; }
+            /* The subject can be several siblings away, or inside a sibling's
+             * subtree. Count the initial sibling-only prefix to find its first
+             * possible root. A prefix made only of '+' has exactly one root;
+             * '~' permits later roots. Once the path descends it cannot leave
+             * that root's subtree, so unrelated subtrees need not be visited. */
+            int sibling_hops = 1;
+            bool adjacent_only = comb == CB_ADJ;
+            while (sibling_hops + 1 < sel->n) {
+                uint8_t next = sel->c[sibling_hops + 1].comb;
+                if (next != CB_ADJ && next != CB_SIB) break;
+                adjacent_only = adjacent_only && next == CB_ADJ;
+                sibling_hops++;
+            }
+            Node *root = el;
+            for (int j = 0; root && j < sibling_hops; j++) root = next_el(root);
+            bool descend = sibling_hops + 1 < sel->n;
+            HAS_DBG(sel, tests, 1);
+            for (; root; root = next_el(root)) {
+                for (Node *x = descend ? root->first : root; x;
+                        x = descend ? node_next_in_tree(x, root) : NULL) {
+                    css_has_stats[1]++; HAS_DBG(sel, nodes, 1);
+                    if (x->type == NODE_ELEMENT && css_match_selector(sel, x, el)) return true;
+                }
+                if (adjacent_only) break;
+            }
         } else if (comb == CB_CHILD && sel->n == 2 && !css_has_unfiltered) {
             for (Node *x = el->first; x; x = x->next) { css_has_stats[1]++; if (x->type == NODE_ELEMENT && css_match_selector(sel, x, el)) return true; }
         } else {
