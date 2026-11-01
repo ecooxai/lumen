@@ -25,6 +25,29 @@ static float stored(const ComputedStyle *style, unsigned index) {
 }
 int main(void) {
     dom_init(); font_init();
+    static const char *const token_cases[][2] = {
+        { "calc(1px + 2px", "calc(1px + 2px)" },
+        { "rotate(calc(min(90deg, 1.58rad) / 2", "rotate(calc(min(90deg, 1.58rad) / 2))" },
+        { "max(20px, calc(5px + 5px", "max(20px, calc(5px + 5px))" },
+        { "calc(1px + 2px)", "calc(1px + 2px)" },
+        { "calc(1px /*tail", "calc(1px /*tail*/)" },
+        { "f(\"open", "f(\"open\")" },
+        { "f([{}]", "f([{}])" },
+        { "calc(1px))", NULL }, { "calc(1px]", NULL },
+        { "calc(1px);color:red", NULL }, { "calc(1px) !important", NULL },
+        { "calc(1px/**/+/**/2px)", NULL }, { "calc(1px+2px)", NULL }
+    };
+    for (unsigned i = 0; i < sizeof token_cases / sizeof *token_cases; i++) {
+        char *actual = css_math_value_text(token_cases[i][0]);
+        if (token_cases[i][1]) {
+            if (!actual || strcmp(actual, token_cases[i][1])) fprintf(stderr, "token closure %s got %s expected %s\n", token_cases[i][0], actual ? actual : "NULL", token_cases[i][1]);
+            assert(actual && !strcmp(actual, token_cases[i][1]));
+            char *twice = css_math_value_text(actual); assert(twice && !strcmp(twice, actual)); free(twice); checks++;
+        } else assert(!actual);
+        free(actual); checks++;
+    }
+    assert(css_math_value_text(NULL) == NULL); checks++;
+
     static const char *const properties[] = {
         "border-top-width", "border-right-width", "border-bottom-width", "border-left-width",
         "border-inline-start-width", "border-inline-end-width", "border-block-start-width", "border-block-end-width",

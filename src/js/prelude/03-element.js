@@ -47,7 +47,7 @@ function parseDecls(s) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
 /* CSS Sizing4 intrinsic-size grammar. Keep specified physical longhands in
@@ -255,7 +255,7 @@ function shorthandPart(m, p) {
 const SPEC_PAIR = new SSet(['gap', 'grid-gap', 'place-items', 'place-self', 'place-content', 'overflow', 'overscroll-behavior', 'border-spacing', 'scroll-snap-align', 'contain-intrinsic-size', 'margin-block', 'margin-inline', 'padding-block', 'padding-inline', 'inset-block', 'inset-inline', 'scroll-margin-block', 'scroll-margin-inline', 'scroll-padding-block', 'scroll-padding-inline', 'border-block-width', 'border-inline-width', 'border-block-style', 'border-inline-style', 'border-block-color', 'border-inline-color']);
 const SPEC_BOX = new SSet(['margin', 'padding', 'inset', 'border-width', 'border-style', 'border-color', 'scroll-margin', 'scroll-padding', 'border-image-outset', 'border-image-width']);
 /* constant folding of math functions whose arguments are all numbers or same-type dimensions (Chrome folds these when parsing) */
-const MATH_UNIT = { deg: ['deg', 1], rad: ['deg', 180 / Math.PI], grad: ['deg', 0.9], turn: ['deg', 360], s: ['s', 1], ms: ['s', 0.001], px: ['px', 1], '': ['', 1] };
+const MATH_UNIT = { in: ['px', 96], cm: ['px', 96 / 2.54], mm: ['px', 96 / 25.4], q: ['px', 96 / 101.6], pt: ['px', 4 / 3], pc: ['px', 16], deg: ['deg', 1], rad: ['deg', 180 / Math.PI], grad: ['deg', 0.9], turn: ['deg', 360], s: ['s', 1], ms: ['s', 0.001], px: ['px', 1], '': ['', 1] };
 function mathEval(src) {
     let i = 0, progressDepth = 0;
     const ws = () => { while (/\s/.test(src[i])) i++; };
@@ -286,6 +286,9 @@ function mathEval(src) {
         if (name === 'progress') progressDepth--;
         const n = a => { if (a.u) fail(); return a.v; }, ang = a => a.u === 'deg' ? a.v * Math.PI / 180 : n(a), D = r => ({ v: r * 180 / Math.PI, u: 'deg' });
         const F = {
+            min: () => { for (const a of args) same(args[0], a); return { v: Math.min(...args.map(a => a.v)), u: args[0].u }; },
+            max: () => { for (const a of args) same(args[0], a); return { v: Math.max(...args.map(a => a.v)), u: args[0].u }; },
+            clamp: () => { if (args.length !== 3) fail(); same(args[0], args[1]); same(args[1], args[2]); return { v: Math.max(args[0].v, Math.min(args[1].v, args[2].v)), u: args[0].u }; },
             calc: () => args[0], sin: () => ({ v: Math.sin(ang(args[0])), u: '' }), cos: () => ({ v: Math.cos(ang(args[0])), u: '' }), tan: () => ({ v: Math.tan(ang(args[0])), u: '' }),
             asin: () => D(Math.asin(n(args[0]))), acos: () => D(Math.acos(n(args[0]))), atan: () => D(Math.atan(n(args[0]))),
             atan2: () => { same(args[0], args[1]); return D(Math.atan2(args[0].v, args[1].v)); },
@@ -328,7 +331,7 @@ function mathEval(src) {
                 return { v, u: '' };
             },
         };
-        if (!F[name] || !['atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
+        if (!F[name] || !['min', 'max', 'clamp', 'atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
         const r = F[name](); if (args.some(a => Number.isNaN(a.v))) r.v = NaN; r.v *= neg; return r;
     }
     function prod() {
@@ -351,7 +354,7 @@ const mathSer = r => {
 function specFoldMath(t) {
     /* Evaluate an outer calculation before its children so a nested signed
        zero or NaN is not clamped before division/multiplication consumes it. */
-    const re = /\b(?:calc|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/gi;
+    const re = /\b(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/gi;
     let out = '', previous = 0, match;
     while ((match = re.exec(t))) {
         let end = re.lastIndex, depth = 1;
@@ -575,6 +578,12 @@ function cssNumericDimensionParse(property, value) {
     return /^(animation|transition)-/.test(property) && !/\\|(?:var|env|attr|if)\(|--/i.test(parsed) ?
         tomSplitTop(text, ',').map(component => component.trim()).join(', ') : text;
 }
+/* Recognized concrete math uses native component-token completion before
+ * declaration serialization. Pending substitution retains its original text. */
+const CSS_MATH_VALUE = /(?:^|[^a-z0-9_-])(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan2?|sqrt|exp|pow|log|hypot|abs|sign|round|mod|rem|progress)\(/i;
+function cssMathValueText(value) {
+    return /(?:^|[^a-z0-9_-])(?:var|env|attr|if)\(|--/i.test(value) ? value : N.cssMathText(value);
+}
 const MATH_NUM_PROPS = /^((fill-|stroke-|stop-|flood-)?opacity|flex-grow|flex-shrink)$/;
 /* the <color-interpolation-method> of gradients: only "in <space> [<hue> hue]" at the start or end of the first argument */
 const GRAD_SPACES = /^(srgb|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020|lab|oklab|xyz|xyz-d50|xyz-d65|hsl|hwb|lch|oklch)$/i;
@@ -700,6 +709,7 @@ function mathValid(p, v) {
             /^margin(?:-(?:top|right|bottom|left|block(?:-start|-end)?|inline(?:-start|-end)?))?$/.test(p);
         const st = m.index + m[1].length, [t, n] = mathType(v.slice(st), false, lengthDestination ? 'length' : '');
         if (t === null) return false;
+        if (st === 0 && /^(?:width|height|(?:min|max)-(?:width|height|inline-size|block-size)|inline-size|block-size|(?:margin|padding)-(?:top|right|bottom|left)|top|right|bottom|left|font-size|line-height|letter-spacing|word-spacing|outline-offset)$/.test(p) && v.slice(n).trim()) return false;
         re.lastIndex = st + Math.max(n, 1);
         if (t === undefined || st !== 0 && v.slice(0, st).trim()) continue;   /* only a whole-value function is checked against the property */
         if (MATH_NUM_PROPS.test(p) && !(t === '' || (t === '%^1' && /opacity$/.test(p)))) return false;
@@ -937,7 +947,7 @@ function specNormalize(p, v) {
         });
     if (p === 'position-area') { const n = posArea(v); if (n !== null) return n; }
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
-    const preserveMathZero = /\b(?:calc|round|mod|rem|progress)\(/i.test(v);
+    const preserveMathZero = /\b(?:min|max|clamp|calc|round|mod|rem|progress)\(/i.test(v);
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
         const n = Number(num + (exp || ''));
         if (!isFinite(n)) return m;
@@ -946,7 +956,7 @@ function specNormalize(p, v) {
     }).replace(/\s+/g, ' ');
     if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return CSS_POSITION.test(p) ? t.toLowerCase() : t;
     if (CSS_POSITION.test(p)) return cssPositionSpecified(t, cssPositionAxis(p)) || t;
-    if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
+    if (/\b(min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
     if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
     if (p === 'display') { const w = t.toLowerCase().split(' '); if (w.length === 2 && w.includes('list-item') && w.includes('flow')) t = 'list-item'; else if (w.length === 2 && w[1] === 'flow' && /^(block|inline|run-in)$/.test(w[0])) t = w[0]; else if (w.length === 2 && w[0] === 'block' && /^(flex|grid|table|flow-root|math)$/.test(w[1])) t = w[1]; else if (w.length === 2 && w[0] === 'inline' && w[1] === 'flow-root') t = 'inline-block'; else if (w.length === 2 && w[0] === 'inline' && /^(flex|grid|table)$/.test(w[1])) t = 'inline-' + w[1]; }
@@ -1088,6 +1098,7 @@ class CSSStyleDeclaration {
             else if (priority && !/^important$/i.test(priority) || !cssGridSet(m, p, value, priority ? 'important' : '')) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
+        if (v !== '' && !p.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null) return; }
         if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
     removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }

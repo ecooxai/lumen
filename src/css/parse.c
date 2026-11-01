@@ -328,6 +328,13 @@ static char *css_declaration_text(const char *source, size_t length, bool custom
     }
     return sb_take(&out);
 }
+/* CSSOM receives standalone component values, not declaration text. Finish
+ * valid EOF-open tokens before a declaration serializer appends its semicolon.
+ * Original pending-substitution text is handled separately by the caller. */
+char *css_math_value_text(const char *value) {
+    if (!value || !css_var_syntax_valid(value) || !css_math_spacing_valid(value)) return NULL;
+    return css_declaration_text(value, strlen(value), true);
+}
 static char *css_important_start(char *value) {
     CLexer l; clex_init(&l, value, strlen(value));
     int depth = 0; char *bang = NULL; bool keyword = false, other = false;
