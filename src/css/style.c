@@ -6495,6 +6495,59 @@ static void contain_intrinsic_str(SB *out, ContainIntrinsicSize value) {
     if (value.flags & CIS_LENGTH) sb_printf(out, "%gpx", (double)value.length);
     else sb_puts(out, "none");
 }
+/* CSSOM resolved insets use the same laid-out box and containing block as
+ * native positioning. Explicit lengths retain their existing serialization;
+ * only auto and percentage-dependent values need this resolution. */
+static bool computed_inset_native(Node *el, const ComputedStyle *s, int side, float *value) {
+    const Box *box = grid_style_box(el, s);
+    if (!box || s->position == P_STATIC || s->position == P_STICKY ||
+        s->display == D_NONE || s->display == D_CONTENTS ||
+        s->display == D_TABLE_COLUMN || s->display == D_TABLE_COLUMN_GROUP) return false;
+    /* Existing anchor/position-area handling has its own adjusted rectangle.
+       Do not infer that rectangle from the unadjusted layout CB. */
+    if (s->anchor_ins[side] || s->pos_area) return false;
+    Length inset = s->inset[side];
+    bool absolute = s->position == P_ABSOLUTE || s->position == P_FIXED;
+    bool vertical = side == 0 || side == 2;
+    const Box *cb = layout_percentage_cb(box);
+    float x = 0, y = 0, width = 0, height = 0;
+    if (absolute) {
+        cb = box->cb;
+        if (!cb) return false;
+        if (!cb->parent) {
+            if (!el || !el->doc) return false;
+            width = el->doc->layout_vw; height = el->doc->layout_vh;
+        } else {
+            x = cb->x + cb->b[3]; y = cb->y + cb->b[0];
+            width = cb->w - cb->b[1] - cb->b[3];
+            height = cb->h - cb->b[0] - cb->b[2];
+        }
+        grid_absolute_containing_block(cb, box, &x, &y, &width, &height);
+    } else {
+        if (!cb) return false;
+        width = cb->w - cb->b[1] - cb->b[3] - cb->p[1] - cb->p[3];
+        height = cb->h - cb->b[0] - cb->b[2] - cb->p[0] - cb->p[2];
+    }
+    float basis = LMAX(0, vertical ? height : width);
+    if (inset.kind == LK_AUTO) {
+        if (s->position == P_RELATIVE) {
+            Length opposite = s->inset[(side + 2) & 3];
+            *value = opposite.kind == LK_LEN ? -len_resolve(opposite, basis) : 0;
+            return true;
+        }
+        if (!absolute) return false;
+        *value = side == 0 ? box->y - box->m[0] - y :
+                 side == 3 ? box->x - box->m[3] - x :
+                 side == 1 ? x + width - box->x - box->w - box->m[1] :
+                             y + height - box->y - box->h - box->m[2];
+        return true;
+    }
+    if (inset.kind == LK_LEN && len_has_pct(inset)) {
+        *value = len_resolve(inset, basis);
+        return true;
+    }
+    return false;
+}
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     SB b; sb_init(&b);
     if (s && (!strncmp(prop, "transition-", 11) || !strncmp(prop, "animation-", 10))) {
@@ -6648,26 +6701,30 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     else if (!strcmp(prop, "max-height")) len_str(&b, s->max_height, "none");
     else if (!strcmp(prop, "top") || !strcmp(prop, "right") || !strcmp(prop, "bottom") || !strcmp(prop, "left")) {
         int i = prop[0] == 't' ? 0 : prop[0] == 'r' ? 1 : prop[0] == 'b' ? 2 : 3;
-        Length l = s->inset[i];
-        const Box *cb = NULL;
-        /* positioned boxes resolve percentages against the containing block */
-        if (el && el->box && s->position != P_STATIC && l.kind == LK_LEN && l.pct) {
-            bool abs = s->position == P_ABSOLUTE || s->position == P_FIXED;
-            for (const Node *a = el->parent; a && !cb; a = a->parent)
-                if (a->type == NODE_ELEMENT && a->box && (!abs || (a->style && a->style->position != P_STATIC) || !a->parent || a->parent->type != NODE_ELEMENT)) cb = a->box;
+        float resolved;
+        if (computed_inset_native(el, s, i, &resolved)) sb_printf(&b, "%gpx", resolved == 0 ? 0.0 : (double)resolved);
+        else {
+            Length l = s->inset[i];
+            const Box *cb = NULL;
+            /* positioned boxes resolve percentages against the containing block */
+            if (el && el->box && s->position != P_STATIC && l.kind == LK_LEN && l.pct) {
+                bool abs = s->position == P_ABSOLUTE || s->position == P_FIXED;
+                for (const Node *a = el->parent; a && !cb; a = a->parent)
+                    if (a->type == NODE_ELEMENT && a->box && (!abs || (a->style && a->style->position != P_STATIC) || !a->parent || a->parent->type != NODE_ELEMENT)) cb = a->box;
+            }
+            const Box *ab = el && el->box && s->anchor_ins[i] ? el->box : NULL;
+            if (ab && ab->cb && (ab->anchor_ok >> i & 1)) {   /* a resolved anchor() inset: the used value */
+                const Box *c = ab->cb;
+                float v = i == 3 ? ab->x - ab->m[3] - (c->x + c->b[3]) : i == 0 ? ab->y - ab->m[0] - (c->y + c->b[0])
+                        : i == 1 ? c->x + c->w - c->b[1] - (ab->x + ab->w + ab->m[1]) : c->y + c->h - c->b[2] - (ab->y + ab->h + ab->m[2]);
+                sb_printf(&b, "%gpx", v);
+            } else if (cb) {
+                bool vert = i == 0 || i == 2;
+                float size = vert ? cb->h - cb->b[0] - cb->b[2] : cb->w - cb->b[1] - cb->b[3];
+                if (!(s->position == P_ABSOLUTE || s->position == P_FIXED)) size -= vert ? cb->p[0] + cb->p[2] : cb->p[1] + cb->p[3];
+                sb_printf(&b, "%gpx", l.px + l.pct * size / 100);
+            } else len_str(&b, l, "auto");
         }
-        const Box *ab = el && el->box && s->anchor_ins[i] ? el->box : NULL;
-        if (ab && ab->cb && (ab->anchor_ok >> i & 1)) {   /* a resolved anchor() inset: the used value */
-            const Box *c = ab->cb;
-            float v = i == 3 ? ab->x - ab->m[3] - (c->x + c->b[3]) : i == 0 ? ab->y - ab->m[0] - (c->y + c->b[0])
-                    : i == 1 ? c->x + c->w - c->b[1] - (ab->x + ab->w + ab->m[1]) : c->y + c->h - c->b[2] - (ab->y + ab->h + ab->m[2]);
-            sb_printf(&b, "%gpx", v);
-        } else if (cb) {
-            bool vert = i == 0 || i == 2;
-            float size = vert ? cb->h - cb->b[0] - cb->b[2] : cb->w - cb->b[1] - cb->b[3];
-            if (!(s->position == P_ABSOLUTE || s->position == P_FIXED)) size -= vert ? cb->p[0] + cb->p[2] : cb->p[1] + cb->p[3];
-            sb_printf(&b, "%gpx", l.px + l.pct * size / 100);
-        } else len_str(&b, l, "auto");
     }
     else if (!strcmp(prop, "flex-grow")) sb_printf(&b, "%g", s->flex_grow);
     else if (!strcmp(prop, "flex-shrink")) sb_printf(&b, "%g", s->flex_shrink);
