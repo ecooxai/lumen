@@ -753,7 +753,13 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
         }
         if (c->collapse_top) { /* child's margins absorbed: nothing */ }
         bool empty = c->h == 0 && c->nlines == 0 && !c->first && !c->bfc && c->fmt != FMT_REPLACED;
-        if (empty) { pending = collapse2(collapse2(first && b->collapse_top ? 0 : pending, mt), c->m[2]); cursor = y - (first && b->collapse_top ? 0 : collapse2(0, 0)); if (!(first && b->collapse_top)) cursor = y - collapse2(pending, 0) + collapse2(pending, 0) - 0; cursor = LMIN(cursor, y); continue; }
+        if (empty) {
+            pending = collapse2(collapse2(first && b->collapse_top ? 0 : pending, mt), c->m[2]);
+            /* A through-collapsing margin stays pending. Advancing the flow
+             * cursor as well would charge it again to the next block. */
+            if (!empty_margin_through(c, cbh)) cursor = y;
+            continue;
+        }
         cursor = c->y + c->h; pending = c->eff_mb;
         if (c->has_baseline) { b->has_baseline = true; b->baseline = c->baseline; }
         first = false;
