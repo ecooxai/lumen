@@ -3336,10 +3336,10 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             else st->border_radius[k] = src->border_radius[k];
         }
         else if (!strcmp(P, "all")) {
-            /* Extend all only to this newly implemented non-inherited family.
-               Its resolved CSS-wide grammar is checked above; arbitrary all
-               values must never become intrinsic lengths. */
+            /* Preserve authored all ordering for these native families. The
+               CSS-wide branch has already validated the reset keyword. */
             css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
+            css_apply_decl(st, par, "border", val, e, el);
         }
         else if (!inherit && !(unset && gp && gp->inherited) && gp && gp->native && gp->initial && *gp->initial) {
             /* other natively modelled properties: apply the textual initial value */
@@ -7174,7 +7174,10 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
                                    : (prop[6] == 'i' ? s->align_items : prop[6] == 's' ? s->align_self : s->align_content);
         sb_puts(&b, al[v % 12]);
     }
-    else if (!strncmp(prop, "border-", 7) && (strstr(prop, "-width") || strstr(prop, "-style") || strstr(prop, "-color") || strstr(prop, "-radius"))) {
+    /* Border-image components keep their actual generic computed values;
+       they are not physical border sides or corners. */
+    else if (!strncmp(prop, "border-", 7) && strncmp(prop, "border-image-", 13) &&
+             (strstr(prop, "-width") || strstr(prop, "-style") || strstr(prop, "-color") || strstr(prop, "-radius"))) {
         static const char *const sides[] = { "top-", "right-", "bottom-", "left-" }, *const corners[] = { "top-left-", "top-right-", "bottom-right-", "bottom-left-" };
         const char *q = prop + 7; int i = -1;
         if (strstr(q, "-radius")) { for (int k = 0; k < 4; k++) if (!strncmp(q, corners[k], strlen(corners[k]))) i = k; if (i >= 0) len_str(&b, s->border_radius[i], "0px"); }

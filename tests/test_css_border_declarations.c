@@ -123,6 +123,25 @@ int main(void) {
     for (unsigned i = 0; i < 5; i++) computed(target, image[i].property, image[i].initial);
     require(css_border_parse("border", NULL) == NULL, "null value");
     require(css_border_valid("box-shadow", "unrelated-validator-input"), "unrelated properties retain their own parser");
+    /* The original181 checks above remain unchanged. Exercise the actual
+       noninitial image value and each newly reached all reset path. */
+    assert(checks == 181);
+    set_style(target, "border-image-width:7", doc, engine, layout);
+    computed(target, "border-image-width", "7");
+    set_style(parent, "border:2px dotted green;border-image-width:9", doc, engine, layout);
+    set_style(target, "border:8px solid blue;border-image-width:7;all:initial;border-style:solid;width:100px;height:20px;display:block", doc, engine, layout);
+    near(((Box *)target->box)->w, 106, "all initial restores real medium side widths");
+    near(((Box *)target->box)->h, 26, "all initial restores top and bottom widths");
+    computed(target, "border-image-width", "1");
+    set_style(target, "border:8px solid blue;border-image-width:7;all:unset;border-style:solid;width:100px;height:20px;display:block", doc, engine, layout);
+    near(((Box *)target->box)->w, 106, "all unset does not inherit noninherited border widths");
+    near(((Box *)target->box)->h, 26, "all unset restores top and bottom widths");
+    computed(target, "border-image-width", "1");
+    set_style(target, "border:8px solid blue;border-image-width:7;all:inherit;width:100px;height:20px;display:block", doc, engine, layout);
+    near(((Box *)target->box)->w, 104, "all inherit copies real parent side widths");
+    near(((Box *)target->box)->h, 24, "all inherit copies real parent top and bottom widths");
+    computed(target, "border-image-width", "9");
+    assert(checks == 191);
     layout_free(layout); style_engine_free(engine); doc_free(doc);
     printf("PASS css_border_declarations %u native checks\n", checks);
     return 0;
