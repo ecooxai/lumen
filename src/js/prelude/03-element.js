@@ -568,7 +568,12 @@ function cssMinSizeParse(property, value) {
 const CSS_NUMERIC_DIMENSION = /^(?:border-(?:top|right|bottom|left|(?:inline|block)-(?:start|end))-width|outline-width|(?:animation|transition)-(?:delay|duration))$/;
 function cssNumericDimensionParse(property, value) {
     const parsed = N.cssNumericDimension(property, value);
-    return parsed === null ? null : specNormalize(property, parsed);
+    if (parsed === null) return null;
+    const text = specNormalize(property, parsed);
+    /* Pending substitution is still an unparsed token stream; only concrete
+       time lists serialize their top-level commas as comma + space. */
+    return /^(animation|transition)-/.test(property) && !/\\|(?:var|env|attr|if)\(|--/i.test(parsed) ?
+        tomSplitTop(text, ',').map(component => component.trim()).join(', ') : text;
 }
 const MATH_NUM_PROPS = /^((fill-|stroke-|stop-|flood-)?opacity|flex-grow|flex-shrink)$/;
 /* the <color-interpolation-method> of gradients: only "in <space> [<hue> hue]" at the start or end of the first argument */
