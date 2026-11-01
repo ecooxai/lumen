@@ -35,7 +35,18 @@ int main(void) {
         { "f([{}]", "f([{}])" },
         { "calc(1px))", NULL }, { "calc(1px]", NULL },
         { "calc(1px);color:red", NULL }, { "calc(1px) !important", NULL },
-        { "calc(1px/**/+/**/2px)", NULL }, { "calc(1px+2px)", NULL }
+        { "calc(1px/**/+/**/2px)", NULL }, { "calc(1px+2px)", NULL },
+        { "calc(1px +2px)", NULL }, { "calc(1px -2px)", NULL },
+        { "calc(1px/**/+2px)", NULL }, { "calc((1px)+2px)", NULL },
+        { "calc(min(1px, 2px)+2px)", NULL }, { "calc(pi+2)", NULL },
+        { "calc(+2px)", "calc(+2px)" }, { "calc(-2px)", "calc(-2px)" },
+        { "calc(1px + -2px)", "calc(1px + -2px)" },
+        { "calc(1px*-2)", "calc(1px*-2)" },
+        { "calc((1px) / +2)", "calc((1px) / +2)" },
+        { "min(1px,-2px)", "min(1px,-2px)" },
+        { "progress(no-clamp -2px, 0px, 100px)", "progress(no-clamp -2px, 0px, 100px)" },
+        { "f(1px+2px)", "f(1px+2px)" },
+        { "calc(var(--Value, 1px+2px))", "calc(var(--Value, 1px+2px))" }
     };
     for (unsigned i = 0; i < sizeof token_cases / sizeof *token_cases; i++) {
         char *actual = css_math_value_text(token_cases[i][0]);
@@ -43,7 +54,10 @@ int main(void) {
             if (!actual || strcmp(actual, token_cases[i][1])) fprintf(stderr, "token closure %s got %s expected %s\n", token_cases[i][0], actual ? actual : "NULL", token_cases[i][1]);
             assert(actual && !strcmp(actual, token_cases[i][1]));
             char *twice = css_math_value_text(actual); assert(twice && !strcmp(twice, actual)); free(twice); checks++;
-        } else assert(!actual);
+        } else {
+            if (actual) fprintf(stderr, "invalid token math %s was accepted as %s\n", token_cases[i][0], actual);
+            assert(!actual);
+        }
         free(actual); checks++;
     }
     assert(css_math_value_text(NULL) == NULL); checks++;
@@ -57,12 +71,12 @@ int main(void) {
         "min(1py)", "max(1py)", "min(0)", "min(0%)", "min(0s)", "min(0Hz)", "min(0dpi)", "min(0fr)",
         "min(1px, 0%)", "max(1px, 0%)", "calc(1px + 1s)", "-1px", "2", "1py", "none", "auto",
         "min(1px) * 2", "1px + 2px", "min(1px) 2px", "1/**/px", "calc(1p\\78 + 2px)",
-        "0x1p2px", "1.px", "1e+px", "calc(1px/**/+/**/2px)", "if()", "if(foo)"
+        "0x1p2px", "1.px", "1e+px", "calc(1px/**/+/**/2px)", "calc(1px +2px)", "calc(1px -2px)", "calc((1px)+2px)", "if()", "if(foo)"
     };
     static const char *const bad_time[] = {
         "min(1mt)", "max(1dag)", "min(0)", "min(0%)", "min(0px)", "min(0deg)", "min(0Hz)", "min(0dpi)",
         "min(0fr)", "max(0)", "max(0%)", "calc(1s + 1px)", "0", "none", "1s 2s", "1s,", ",1s", "1s,,2s",
-        "min(1s) * 2", "min(1s), min(2px)", "1/**/s", "0x1p2s", "1.s", "1e+s", "if()", "if(foo)"
+        "min(1s) * 2", "min(1s), min(2px)", "1/**/s", "0x1p2s", "1.s", "1e+s", "calc(1s +2s)", "calc(1s -2s)", "if()", "if(foo)"
     };
     static const char *const good_length[] = {
         "0", "-0", "1px", ".5px", "1e2px", "1em", "1rex", "thin", "medium", "THICK",

@@ -154,10 +154,18 @@ static bool css_math_function(const char *name) {
 }
 bool css_math_spacing_valid(const char *value) {
     CLexer l; clex_init(&l, value, strlen(value));
-    bool math[256]; int closes[256], depth = 0, previous = CT_EOF;
+    bool math[256], after_operand = false, progress_prefix = false; int closes[256], depth = 0, previous = CT_EOF;
     for (;;) {
         CTok t = clex_next(&l); int type = t.type;
         if (type == CT_EOF) { free(t.str); return true; }
+        /* A sign touching a number belongs to that numeric token, rather
+         * than becoming a binary operator. After an operand this is an
+         * invalid adjacent value, even when whitespace precedes the sign.
+         * Unary signed values remain valid after an opening token, comma,
+         * or operator; opaque non-math function arguments are unaffected. */
+        if (depth && math[depth - 1] && after_operand &&
+            (type == CT_NUMBER || type == CT_DIM || type == CT_PERCENT) &&
+            (*t.start == '+' || *t.start == '-')) { free(t.str); return false; }
         if (depth && math[depth - 1] && type == CT_DELIM && (*t.start == '+' || *t.start == '-')) {
             CLexer look = l; CTok next = clex_next(&look);
             bool valid = previous == CT_WS && next.type == CT_WS;
@@ -172,6 +180,14 @@ bool css_math_spacing_valid(const char *value) {
             closes[depth++] = close;
         } else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
             if (!depth || closes[--depth] != type) { free(t.str); return false; }
+        }
+        if (type != CT_WS) {
+            /* progress() accepts an optional no-clamp keyword before its
+             * first calculation, with no comma between the two. */
+            bool prefix = progress_prefix && type == CT_IDENT && t.str && str_ieq(t.str, "no-clamp");
+            after_operand = !close && type != CT_COMMA && !prefix &&
+                !(type == CT_DELIM && (*t.start == '+' || *t.start == '-' || *t.start == '*' || *t.start == '/'));
+            progress_prefix = type == CT_FUNC && t.str && str_ieq(t.str, "progress");
         }
         previous = type; free(t.str);
     }
