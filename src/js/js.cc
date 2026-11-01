@@ -1379,17 +1379,31 @@ JsCtx *js_new_ex(Document *d, const JsHost *host, JsCtx *parent, Node *frame) {
     v8::Local<v8::Script> s;
     v8::Local<v8::Value> fv, api;
     v8::Local<v8::Value> argv[2] = { N, ctx->Global() };
-    /* The prelude's bytecode, made by the first context, spares every later page compiling it. */
+    /* Serialize once across isolates, but retain the unbound script within
+       each existing root isolate. Re-consuming bytecode for every iframe
+       duplicates compilation work and memory. Binding still creates a fresh
+       script in this context: its factory receives only this context's N and
+       global, so closures, prototypes and DOM capabilities remain separate. */
     static std::mutex prelude_mu;
     static std::shared_ptr<std::string> prelude_code;
-    std::shared_ptr<std::string> code;
-    { std::lock_guard<std::mutex> lk(prelude_mu); code = prelude_code; }
-    v8::ScriptCompiler::Source psrc(jstr(iso, kPrelude, (int)sizeof kPrelude - 1), origin,
-        code ? new v8::ScriptCompiler::CachedData((const uint8_t *)code->data(), (int)code->size()) : nullptr);
-    bool compiled = v8::ScriptCompiler::Compile(ctx, &psrc, code ? v8::ScriptCompiler::kConsumeCodeCache : v8::ScriptCompiler::kNoCompileOptions).ToLocal(&s);
+    bool compiled = false, refresh_code = false;
+    if (!bc_root->prelude_script.IsEmpty()) {
+        s = bc_root->prelude_script.Get(iso)->BindToCurrentContext();
+        compiled = true;
+    } else {
+        std::shared_ptr<std::string> code;
+        { std::lock_guard<std::mutex> lk(prelude_mu); code = prelude_code; }
+        v8::ScriptCompiler::Source psrc(jstr(iso, kPrelude, (int)sizeof kPrelude - 1), origin,
+            code ? new v8::ScriptCompiler::CachedData((const uint8_t *)code->data(), (int)code->size()) : nullptr);
+        compiled = v8::ScriptCompiler::Compile(ctx, &psrc, code ? v8::ScriptCompiler::kConsumeCodeCache : v8::ScriptCompiler::kNoCompileOptions).ToLocal(&s);
+        if (compiled) {
+            bc_root->prelude_script.Reset(iso, s->GetUnboundScript());
+            refresh_code = !code || psrc.GetCachedData()->rejected;
+        }
+    }
     if (compiled && s->Run(ctx).ToLocal(&fv) && fv->IsFunction() &&
         fv.As<v8::Function>()->Call(ctx, v8::Undefined(iso), 2, argv).ToLocal(&api) && api->IsObject()) {
-        if (!code || psrc.GetCachedData()->rejected) {
+        if (refresh_code) {
             std::unique_ptr<v8::ScriptCompiler::CachedData> cd(v8::ScriptCompiler::CreateCodeCache(s->GetUnboundScript()));
             if (cd) { std::lock_guard<std::mutex> lk(prelude_mu); prelude_code = std::make_shared<std::string>((const char *)cd->data, (size_t)cd->length); }
         }
@@ -1519,7 +1533,7 @@ static void js_free_collect(JsCtx *c, std::vector<Node *> &roots, std::vector<Do
         c->protos.clear();
         c->protoFor.Reset(); c->fire.Reset(); c->report.Reset(); c->viewportChanged.Reset(); c->pick_cb.Reset(); c->rejs.clear();   /* before Dispose: ~JsCtx must not release handles */
         c->tt_script.Reset(); c->tt_parser_script.Reset(); c->tt_eval.Reset(); c->code_like.Reset();
-        c->api.Reset(); c->node_tmpl.Reset();
+        c->api.Reset(); c->node_tmpl.Reset(); c->prelude_script.Reset();
         c->mods.clear(); c->mod_errors.clear(); c->mod_url.clear(); c->mod_jobs.clear(); c->code_refresh.clear(); if (!c->parent) mod_synth_drop(c->iso);
         for (Node *n : c->wrapped) { delete static_cast<v8::Global<v8::Object> *>(n->js); n->js = nullptr; }
         for (Node *n : c->wrapped)
