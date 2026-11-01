@@ -182,6 +182,9 @@ typedef struct {
     const ComputedStyle *root_font_basis;
     bool resolve_font_metrics;
     bool *used_root_font_units;
+    /* font-size uses parent font metrics, but viewport logical axes belong
+       to the element whose computed value is being resolved. */
+    const ComputedStyle *flow_basis;
 } LCtx;
 static float ch_advance(LCtx *c) {
     if (c->used_font_units) *c->used_font_units = true;
@@ -199,6 +202,33 @@ static float g_cq[2];
 /* set when a length used the viewport height, so a height-only viewport change (the on-screen
    keyboard) restyles just those elements */
 static bool g_vh_used;
+/* The current host supplies one viewport rectangle. Its existing small/large/
+   dynamic dimensions coincide; preserve that basis for every unit variant. */
+static int viewport_unit_axis(const char *unit) {
+    if ((lc(unit[0]) == 's' || lc(unit[0]) == 'l' || lc(unit[0]) == 'd') && lc(unit[1]) == 'v') unit++;
+    if (str_ieq(unit, "vw")) return 1;
+    if (str_ieq(unit, "vh")) return 2;
+    if (str_ieq(unit, "vi")) return 3;
+    if (str_ieq(unit, "vb")) return 4;
+    if (str_ieq(unit, "vmin")) return 5;
+    if (str_ieq(unit, "vmax")) return 6;
+    return 0;
+}
+static float viewport_unit_basis(const LCtx *c, int axis) {
+    float width = c->mc ? c->mc->vw : 1024, height = c->mc ? c->mc->vh : 768;
+    if (axis == 3 || axis == 4) {
+        const ComputedStyle *flow = c->flow_basis ? c->flow_basis : c->font_basis;
+        bool vertical = flow && flow->writing_mode;
+        if (flow && !vertical) {
+            const char *mode = custom_get(flow->gen_i, "writing-mode");
+            vertical = mode && (str_ieq(mode, "sideways-rl") || str_ieq(mode, "sideways-lr"));
+        }
+        /* Context-free uses (including media queries) use horizontal-tb. */
+        axis = (axis == 3) != vertical ? 1 : 2;
+    }
+    if (axis != 1) g_vh_used = true;
+    return axis == 1 ? width : axis == 2 ? height : axis == 5 ? LMIN(width, height) : LMAX(width, height);
+}
 static float cq_dim(const LCtx *c, int h) { if (g_cq[h] > 0) return g_cq[h]; if (h) { g_vh_used = true; return c->mc ? c->mc->vh : 768; } return c->mc ? c->mc->vw : 1024; }
 static bool calc_expr(const char **pp, Length *out, LCtx *c);
 static float calculation_font_metric(LCtx *c, bool root, bool line_height) {
@@ -434,7 +464,7 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     p = e;
     Length l = { 0, 0, LK_LEN };
     char u[8] = {0}; int k = 0; while (isalpha((unsigned char)*p) && k < 7) u[k++] = (char)lc(*p++);
-    int unit = MATH_LENGTH;
+    int unit = MATH_LENGTH, viewport_axis;
     if (*p == '%') { l.pct = v; l.pctu = true; if (c->scalar_percentage_type) unit = MATH_PERCENT; p++; }
     else if (!k || !strcmp(u, "px")) { l.px = v; if (!k) unit = MATH_NUMBER; }
     else if (!strcmp(u, "em")) l.px = v * c->em;
@@ -453,14 +483,11 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     else if (!strcmp(u, "cm")) l.px = v * 96 / 2.54f;
     else if (!strcmp(u, "mm")) l.px = v * 96 / 25.4f;
     else if (!strcmp(u, "q")) l.px = v * 96 / 101.6f;
-    else if (!strcmp(u, "vw") || !strcmp(u, "svw") || !strcmp(u, "lvw") || !strcmp(u, "dvw")) l.px = v * (c->mc ? c->mc->vw : 1024) / 100;
-    else if (!strcmp(u, "vh") || !strcmp(u, "svh") || !strcmp(u, "lvh") || !strcmp(u, "dvh")) { l.px = v * (c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
+    else if ((viewport_axis = viewport_unit_axis(u))) l.px = v * viewport_unit_basis(c, viewport_axis) / 100;
     else if (!strcmp(u, "cqw") || !strcmp(u, "cqi")) l.px = v * cq_dim(c, 0) / 100;
     else if (!strcmp(u, "cqh") || !strcmp(u, "cqb")) l.px = v * cq_dim(c, 1) / 100;
     else if (!strcmp(u, "cqmin")) l.px = v * LMIN(cq_dim(c, 0), cq_dim(c, 1)) / 100;
     else if (!strcmp(u, "cqmax")) l.px = v * LMAX(cq_dim(c, 0), cq_dim(c, 1)) / 100;
-    else if (!strcmp(u, "vmin")) { l.px = v * LMIN(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
-    else if (!strcmp(u, "vmax")) { l.px = v * LMAX(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
     else if (!strcmp(u, "fr")) { l.px = v; unit = MATH_FLEX; }
     else if (!strcmp(u, "deg")) { l.px = v; unit = MATH_ANGLE; }
     else if (!strcmp(u, "s")) { l.px = v; unit = MATH_TIME; }
@@ -564,7 +591,8 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
     return true;
 }
 static bool css_parse_length_context(const char *s, Length *out, float em, float rem, const MediaCtx *mc,
-                                     const ComputedStyle *basis, bool actual, bool *used, MathType *type_out) {
+                                     const ComputedStyle *basis, const ComputedStyle *flow_basis,
+                                     bool actual, bool *used, MathType *type_out) {
     if (type_out) *type_out = math_type_unit(MATH_LENGTH);
     while (is_ws((unsigned char)*s)) s++;
     if (str_istarts(s, "auto")) { *out = L_auto(); return true; }
@@ -572,7 +600,7 @@ static bool css_parse_length_context(const char *s, Length *out, float em, float
     if (str_istarts(s, "min-content")) { *out = (Length){0, 0, LK_MIN_CONTENT}; return true; }
     if (str_istarts(s, "max-content")) { *out = (Length){0, 0, LK_MAX_CONTENT}; return true; }
     if (str_istarts(s, "fit-content") || str_istarts(s, "-webkit-fit-content") || str_istarts(s, "-moz-fit-content")) { *out = (Length){0, 0, LK_FIT_CONTENT}; return true; }
-    LCtx c = { em, rem, mc, basis, actual, used };
+    LCtx c = { em, rem, mc, basis, actual, used }; c.flow_basis = flow_basis;
     const char *p = s; Length parsed;
     if (!parse_dim(&p, &parsed, &c)) return false;
     /* Length consumers must not accept another dimension merely because its
@@ -587,7 +615,7 @@ static bool css_parse_length_context(const char *s, Length *out, float em, float
 }
 
 bool css_parse_length(const char *s, Length *out, float em, float rem, const MediaCtx *mc) {
-    return css_parse_length_context(s, out, em, rem, mc, NULL, false, NULL, NULL);
+    return css_parse_length_context(s, out, em, rem, mc, NULL, NULL, false, NULL, NULL);
 }
 
 /* Typed scalar consumers share the same evaluator as native length math. */
@@ -913,7 +941,7 @@ static bool css_transform_number(ACtx *c, const char *text, float *out, bool per
 }
 static bool alen(ACtx *c, const char *v, Length *out) {
     Length value; MathType type;
-    if (!css_parse_length_context(v, &value, c->em, c->rem, c->mc, c->st, true,
+    if (!css_parse_length_context(v, &value, c->em, c->rem, c->mc, c->st, c->st, true,
                                   c->e ? &c->e->uses_font_units : NULL, &type)) return false;
     /* Numeric internal callers use css_scalar_math. A length property cannot
        consume a number-valued function, even when its storage contains %. */
@@ -981,7 +1009,7 @@ static bool contain_intrinsic_parse(ACtx *c, const char *text, bool shorthand, C
         const char *token = tokens[i++];
         if (!str_ieq(token, "none")) {
             Length length; MathType type;
-            ok = css_parse_length_context(token, &length, c->em, c->rem, c->mc, c->st,
+            ok = css_parse_length_context(token, &length, c->em, c->rem, c->mc, c->st, c->st,
                 !c->validation_only, c->e ? &c->e->uses_font_units : NULL, &type) &&
                 length.kind == LK_LEN && !len_has_pct(length);
             if (ok && math_type_equal(type, math_type_unit(MATH_NUMBER))) {
@@ -1263,9 +1291,7 @@ static bool bg_length(ACtx *c, const char *text, Length *out) {
             && !str_ieq(end, "ex") && !str_ieq(end, "ch") && !str_ieq(end, "cap") && !str_ieq(end, "ic")
             && !str_ieq(end, "lh") && !str_ieq(end, "pt") && !str_ieq(end, "pc") && !str_ieq(end, "in")
             && !str_ieq(end, "cm") && !str_ieq(end, "mm") && !str_ieq(end, "q")
-            && !str_ieq(end, "vw") && !str_ieq(end, "vh") && !str_ieq(end, "vmin") && !str_ieq(end, "vmax")
-            && !str_ieq(end, "svw") && !str_ieq(end, "svh") && !str_ieq(end, "lvw") && !str_ieq(end, "lvh")
-            && !str_ieq(end, "dvw") && !str_ieq(end, "dvh") && !str_ieq(end, "cqw") && !str_ieq(end, "cqh")
+            && !viewport_unit_axis(end) && !str_ieq(end, "cqw") && !str_ieq(end, "cqh")
             && !str_ieq(end, "cqi") && !str_ieq(end, "cqb") && !str_ieq(end, "cqmin") && !str_ieq(end, "cqmax")) return false;
     } else if (!str_istarts(text, "calc(") && !str_istarts(text, "min(") && !str_istarts(text, "max(")
                && !str_istarts(text, "clamp(") && !str_istarts(text, "round(") && !str_istarts(text, "mod(")
@@ -3195,7 +3221,7 @@ apply:
             if (k >= 0) st->font_size = szv[k];
             else if (str_ieq(val, "smaller")) st->font_size = pf / 1.2f;
             else if (str_ieq(val, "larger")) st->font_size = pf * 1.2f;
-            else if (css_parse_length_context(val, &l, pf, c.rem, c.mc, par, true,
+            else if (css_parse_length_context(val, &l, pf, c.rem, c.mc, par, st, true,
                      e ? &e->uses_font_units : NULL, &font_type) && l.kind == LK_LEN &&
                      (!strchr(val, '(') || !math_type_equal(font_type, math_type_unit(MATH_NUMBER))))
                 st->font_size = LMAX(0, len_resolve(l, pf));
@@ -6467,7 +6493,7 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
                 if (u > end && length < 128 && !str_ieqn(end, "fr", (size_t)(u - end))) {
                     char token[128]; memcpy(token, p, length); token[length] = 0;
                     Length l;
-                    if (css_parse_length_context(token, &l, em, rem, mc, basis, true, used, NULL) && l.kind == LK_LEN) {
+                    if (css_parse_length_context(token, &l, em, rem, mc, basis, basis, true, used, NULL) && l.kind == LK_LEN) {
                         len_str(&out, l, "auto"); p = u; continue;
                     }
                 }
