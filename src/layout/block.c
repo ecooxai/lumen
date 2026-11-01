@@ -320,6 +320,36 @@ static void flex_static_position(const Box *a, bool auto_x, bool auto_y, float *
     if (auto_y) *sy = p->y + p->b[0] + p->p[0] + (horizontal ? cross_off : main_off);
 }
 
+/* CSS2.2 10.3.3 and Position3 3.5.3 use the containing formatting
+ * context's axes, independently of the child's own writing mode. Sideways
+ * text flow is retained as generic style data and is not horizontal. */
+static bool horizontal_flow_mode(const ComputedStyle *style) {
+    if (!style || style->writing_mode) return false;
+    const char *mode = custom_get(style->gen_i, "writing-mode");
+    return !mode || (!str_ieq(mode, "sideways-lr") && !str_ieq(mode, "sideways-rl"));
+}
+static void block_static_position(const Box *a, bool auto_x, float *sx) {
+    if (!auto_x || a->kind != BX_BLOCK) return;
+    int display = a->st->display;
+    /* Positioning blockifies pseudo boxes during tree construction. Their
+     * hypothetical static display still determines inline cursor placement.
+     * Retain unmodeled compound display values on their existing path too. */
+    if (a->st->display_text || display == D_INLINE || display == D_INLINE_BLOCK ||
+        display == D_INLINE_FLEX || display == D_INLINE_GRID || display == D_INLINE_TABLE) return;
+    const Box *parent = a->parent;
+    while (parent && layout_percentage_wrapper(parent)) parent = parent->parent;
+    if (!parent || (parent->fmt != FMT_FLOW && parent->fmt != FMT_INLINE) ||
+        !horizontal_flow_mode(parent->st) || !parent->st->direction) return;
+    int alignment = a->st->justify_self;
+    if (alignment != AL_AUTO && alignment != AL_NORMAL && alignment != AL_STRETCH) return;
+    /* Empty block containers use the inline formatter, but this block-level
+     * hypothetical box still aligns its margin end to the content end. Its
+     * absolute containing block may be another ancestor. Keep the recorded
+     * block-axis position, including preceding normal-flow content. */
+    *sx = parent->x + parent->w - parent->b[1] - parent->p[1] -
+          a->w - a->m[1] - a->m[3];
+}
+
 /* places one absolutely positioned box, with a position-area and flips (1 block, 2 inline) from its style or a
    position-try fallback; true when its margin box fits the containing block */
 static float clampw_basis(Layout *L, Box *b, float w, float cbw, float bp, float available, bool definite);
@@ -503,7 +533,10 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
     }
     float x, y;
     float sx = a->sx, sy = a->sy;
-    if (!area) flex_static_position(a, lA && rA, tA && bA, &sx, &sy);
+    if (!area) {
+        block_static_position(a, lA && rA, &sx);
+        flex_static_position(a, lA && rA, tA && bA, &sx, &sy);
+    }
     if (!lA) x = px + l + a->m[3]; else if (!rA) x = px + pw - r - a->m[1] - ow; else x = sx + a->m[3];
     if (!tA) y = py + t + a->m[0]; else if (!bA) y = py + ph - bt - a->m[2] - oh; else y = sy + a->m[0];
     /* Normal/stretch alignment keeps the stronger logical-start edge even
@@ -935,7 +968,30 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     if (mode == SZ_FILL && !b->abs && !b->floated && !(b->parent && b->parent->fmt == FMT_FLEX)) {   /* flex items: auto margins are resolved by flex alignment */
         bool mlA = s->margin[3].kind == LK_AUTO, mrA = s->margin[1].kind == LK_AUTO;
         float free = cbw - b->w - (mlA ? 0 : b->m[3]) - (mrA ? 0 : b->m[1]);
-        if (free > 0 && (mlA || mrA)) {
+        const Box *parent = b->parent;
+        bool ordinary_flow = parent && parent->parent && parent->fmt == FMT_FLOW &&
+            b->kind == BX_BLOCK && !b->anon && !b->bfc &&
+            horizontal_flow_mode(parent->st) && (!fc || !fc->n);
+        if (ordinary_flow) {
+            float old = b->m[3];
+            if (free >= 0 && (mlA || mrA)) {
+                if (mlA && mrA) b->m[3] = b->m[1] = free / 2;
+                else if (mlA) b->m[3] = free;
+                else b->m[1] = free;
+            } else {
+                /* In an overconstrained normal block, auto margins first
+                 * become zero and the containing block's end margin absorbs
+                 * the remainder, even when it is negative. The child starts
+                 * layout at that used position, so descendants and memo keys
+                 * see the same geometry. Float-avoidance/BFC sizing keeps its
+                 * existing path until its available rectangle is resolved. */
+                if (mlA) b->m[3] = 0;
+                if (mrA) b->m[1] = 0;
+                if (parent->st->direction) b->m[3] = cbw - b->w - b->m[1];
+                else b->m[1] = cbw - b->w - b->m[3];
+            }
+            b->x += b->m[3] - old;
+        } else if (free > 0 && (mlA || mrA)) {
             float old = b->m[3];
             if (mlA && mrA) b->m[3] = b->m[1] = free / 2; else if (mlA) b->m[3] = free; else b->m[1] = free;
             b->x += b->m[3] - old;
