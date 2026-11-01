@@ -173,7 +173,7 @@ function submitForm(form, submitter) {
     }
 }
 function cssSplit(s) {
-    const out = []; const n = s.length; let i = 0, pre = '';
+    const out = []; const n = s.length; let i = 0, pre = '', start = 0;
     const skipStr = (j, q) => { j++; while (j < n && s[j] !== q) { if (s[j] === '\\') j++; j++; } return j; };
     while (i < n) {
         const c = s[i];
@@ -183,10 +183,14 @@ function cssSplit(s) {
         if (c === '{') {
             let d = 1, j = i + 1;
             while (j < n && d) { const k = s[j]; if (k === '\\') j++; else if (k === '"' || k === "'") j = skipStr(j, k); else if (k === '/' && s[j + 1] === '*') { const e = s.indexOf('*/', j + 2); j = e < 0 ? n : e + 1; } else if (k === '{') d++; else if (k === '}') d--; j++; }
-            out.push({ pre: pre.trim(), body: s.slice(i + 1, d ? j : j - 1) }); pre = ''; i = j; continue;
+            /* Page selectors forbid whitespace between components. Retain their
+               original prelude: comment removal and whitespace folding would
+               otherwise change escaped identifiers or invent separators. */
+            const text = pre.trim(), pagePre = /^@page(?:\s|:|$)/i.test(text) ? s.slice(start, i) : null;
+            out.push({ pre: text, pagePre, body: s.slice(i + 1, d ? j : j - 1) }); pre = ''; i = j; start = j; continue;
         }
-        if (c === ';' && pre.trim()[0] === '@') { out.push({ pre: pre.trim(), body: null }); pre = ''; i++; continue; }
-        if (c === '}') { pre = ''; i++; continue; }
+        if (c === ';' && pre.trim()[0] === '@') { out.push({ pre: pre.trim(), body: null }); pre = ''; i++; start = i; continue; }
+        if (c === '}') { pre = ''; i++; start = i; continue; }
         pre += c; i++;
     }
     if (pre.trim()[0] === '@') out.push({ pre: pre.trim(), body: null });
@@ -296,7 +300,82 @@ class CSSPositionTryRule extends CSSRule {
     get style() { return this._style || (this._style = new Proxy(new CSSPositionTryDescriptors(this, this._body), styleHandler)); }
     get cssText() { const d = this.style.cssText; return `@position-try ${this._name} ${d ? `{ ${d} }` : '{ }'}`; }
 }
-class CSSPageRule extends CSSRule { get type() { return 6; } get selectorText() { return this._sel; } set selectorText(v) { this._sel = String(v); this._changed(); } get style() { return ruleStyle(this); } get cssText() { return `@page ${this._sel ? this._sel + ' ' : ''}${blockText(this)}`; } }
+/* CSS Paged Media3 page-selector-list. This is deliberately separate from
+ * element selectors: page names are identifiers (including auto), pseudo names
+ * are ASCII-insensitive, and whitespace is forbidden within each selector.
+ * Comments separate tokens but are not whitespace; they must not join names.
+ * https://drafts.csswg.org/css-page-3/#syntax-page-selector */
+function cssPageSelectorText(input, atRule = false) {
+    const s = input.replace(/\r\n?|\f/g, '\n').replace(/\0|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, '\ufffd');
+    let i = 0;
+    const whitespace = c => c !== undefined && /[ \t\n]/.test(c);
+    const nameStart = c => c !== undefined && (/[_a-z]/i.test(c) || c.charCodeAt(0) >= 128);
+    const escapeAt = j => s[j] === '\\' && s[j + 1] !== '\n';
+    const comments = () => {
+        while (s[i] === '/' && s[i + 1] === '*') {
+            const end = s.indexOf('*/', i + 2); i = end < 0 ? s.length : end + 2;
+        }
+    };
+    const trivia = () => { for (;;) { const before = i; while (whitespace(s[i])) i++; comments(); if (i === before) return; } };
+    const ident = () => {
+        if (!(nameStart(s[i]) || escapeAt(i) || s[i] === '-' && (s[i + 1] === '-' || nameStart(s[i + 1]) || escapeAt(i + 1)))) return null;
+        let value = '';
+        while (i < s.length) {
+            const c = s[i];
+            if (nameStart(c) || /[-0-9]/.test(c)) { value += c; i++; continue; }
+            if (!escapeAt(i)) break;
+            i++;
+            const start = i;
+            while (i < s.length && i - start < 6 && /[0-9a-f]/i.test(s[i])) i++;
+            if (i !== start) {
+                const n = parseInt(s.slice(start, i), 16);
+                value += n && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : '\ufffd';
+                if (whitespace(s[i])) i++;
+            } else value += i < s.length ? s[i++] : '\ufffd';
+        }
+        return value;
+    };
+    const serialize = text => {
+        let out = '';
+        for (let j = 0; j < text.length; j++) {
+            const c = text[j], n = text.charCodeAt(j);
+            if (n < 32 || n === 127 || /[0-9]/.test(c) && (j === 0 || j === 1 && text[0] === '-')) out += '\\' + n.toString(16) + ' ';
+            else if (c === '-' && text.length === 1) out += '\\-';
+            else out += n >= 128 || /[-_a-z0-9]/i.test(c) ? c : '\\' + c;
+        }
+        return out;
+    };
+    trivia();
+    if (atRule) { if (s.slice(i, i + 5).toLowerCase() !== '@page') return null; i += 5; trivia(); }
+    if (i === s.length) return '';
+    const selectors = [];
+    for (;;) {
+        let selector = '';
+        if (s[i] !== ':') { const name = ident(); if (name === null) return null; selector = serialize(name); }
+        comments();
+        while (s[i] === ':') {
+            i++; comments(); const name = ident();
+            if (name === null || !/^(left|right|first|blank)$/i.test(name)) return null;
+            selector += ':' + name.toLowerCase(); comments();
+        }
+        if (!selector) return null;
+        selectors.push(selector); trivia();
+        if (i === s.length) return selectors.join(', ');
+        if (s[i++] !== ',') return null;
+        trivia(); if (i === s.length) return null;
+    }
+}
+class CSSPageRule extends CSSRule {
+    get type() { return 6; }
+    get selectorText() { return this._sel; }
+    set selectorText(v) {
+        if (typeof v === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
+        const text = cssPageSelectorText(String(v));
+        if (text !== null) { this._sel = text; this._changed(); }
+    }
+    get style() { return ruleStyle(this); }
+    get cssText() { return `@page ${this._sel ? this._sel + ' ' : ''}${blockText(this)}`; }
+}
 class CSSKeyframeRule extends CSSRule { get type() { return 8; } get keyText() { return this._key; } set keyText(v) { this._key = String(v); this._changed(); } get style() { return ruleStyle(this); } get cssText() { return `${this._key} ${blockText(this)}`; } }
 class CSSKeyframesRule extends CSSRule {
     get type() { return 7; } get name() { return this._name; } set name(v) { this._name = String(v); this._changed(); }
@@ -343,7 +422,11 @@ function cssMkRule(it, sheet, parent) {
     else if (kw === 'namespace' && !blk) { const q = /^(?:([-\w]+)\s+)?(?:url\(\s*["']?([^"')]*)["']?\s*\)|"([^"]*)"|'([^']*)')$/.exec(rest); if (!q) return null; return cssMk(CSSNamespaceRule, { ...base, _prefix: q[1] || '', _ns: q[2] ?? q[3] ?? q[4] }); }
     else if (kw === 'font-face' && blk) return cssMk(CSSFontFaceRule, { ...base, _body: it.body, _style: null });
     else if (kw === 'position-try' && blk && /^--\S+$/.test(rest)) return cssMk(CSSPositionTryRule, { ...base, _name: rest, _body: it.body, _style: null });
-    else if (kw === 'page' && blk) return cssMk(CSSPageRule, { ...base, _sel: rest, _body: it.body, _style: null });
+    else if (kw === 'page' && blk) {
+        const raw = typeof it.pagePre === 'string', selector = cssPageSelectorText(raw ? it.pagePre : m[2], raw);
+        if (selector === null) return null;
+        return cssMk(CSSPageRule, { ...base, _sel: selector, _body: it.body, _style: null });
+    }
     else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { r = cssMk(CSSKeyframesRule, { ...base, _name: rest, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
     else return null;
     def(r, '_list', cssParseList(it.body, sheet, r));
