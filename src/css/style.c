@@ -6442,6 +6442,25 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
     return sb_take(&out);
 }
 static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop) {
+    /* Preferred sizes belong to the supplied computed snapshot, not the
+       element's single current used box. Keep keywords and percentage bases
+       on both sides so an auto/length pair cannot become two pixel values. */
+    if (s) {
+        const char *size = logical_size_prop(prop, s->writing_mode != 0);
+        int axis = !strcmp(size, "width") ? 0 : !strcmp(size, "height") ? 1 : -1;
+        if (axis >= 0 && !s->anchor_sz[axis]) {
+            Length value = axis ? s->height : s->width;
+            bool finite = isfinite(value.px) && isfinite(value.pct) &&
+                (!value.mm || (isfinite(value.px2) && isfinite(value.pct2) &&
+                               isfinite(value.px3) && isfinite(value.pct3)));
+            if (value.kind != LK_LEN || finite) {
+                SB out; sb_init(&out);
+                if (value.kind == LK_LEN) bg_length_str(&out, value);
+                else len_str(&out, value, "auto");
+                return sb_take(&out);
+            }
+        }
+    }
     /* Animation consumes computed inset values. CSSOM's geometry-dependent
        resolution must not enter neutral keyframes or old/new style snapshots. */
     if (s) {
