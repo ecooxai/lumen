@@ -42,7 +42,12 @@ int main(void) {
       {"escaping-normal-flow", "", "<div class='empty'></div>",0},
       {"escaping-two-empty", "", "<div class='a'></div><div class='b'></div>",0},
       {"explicit-height", "display:flow-root;height:20px", "<div class='empty'></div>",20},
-      {"minimum-height", "display:flow-root;min-height:150px", "<div class='empty'></div>",150}
+      {"minimum-height", "display:flow-root;min-height:150px", "<div class='empty'></div>",150},
+      {"normal-clearance", "", "<div style='float:left;height:60px'></div><div style='clear:both;margin-top:20px'></div>",60},
+      {"flow-root-clearance", "display:flow-root", "<div style='float:left;height:60px'></div><div style='clear:both;margin-top:20px'></div>",60},
+      {"unresolved-percentage-height", "display:flow-root", "<div style='margin-bottom:100px'></div><div style='height:30%'></div><div style='margin-top:100px'></div>",100},
+      {"overflow-unresolved-percentage-height", "overflow:hidden", "<div style='margin-bottom:100px'></div><div style='height:30%'></div><div style='margin-top:100px'></div>",100},
+      {"unresolved-percentage-minimum", "display:flow-root", "<div style='margin-bottom:100px'></div><div style='min-height:30%'></div><div style='margin-top:100px'></div>",100}
     };
     dom_init();font_init();int failures=0;
     for(size_t i=0;i<sizeof cases/sizeof cases[0];++i)failures+=run(&cases[i]);

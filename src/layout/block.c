@@ -593,8 +593,10 @@ static Box *next_inflow_block(Box *b) { for (b = b->next; b; b = b->next) { if (
 static bool empty_margin_through(const Box *b, float cbh) {
     if (b->bfc || b->fmt == FMT_REPLACED || b->first || b->st->clear || vbp(b) != 0) return false;
     Length h = b->st->height, mn = b->st->min_height;
-    bool zero_h = h.kind == LK_AUTO || (h.kind == LK_LEN && len_def(h, cbh) && res(h, cbh) == 0);
-    bool zero_min = mn.kind == LK_AUTO || (mn.kind == LK_LEN && len_def(mn, cbh) && res(mn, cbh) <= 0);
+    /* An unresolved percentage block height behaves as auto; its minimum
+       behaves as zero, just as in layout_box's used-height resolution. */
+    bool zero_h = h.kind == LK_AUTO || (h.kind == LK_LEN && (!len_def(h, cbh) || res(h, cbh) == 0));
+    bool zero_min = mn.kind == LK_AUTO || (mn.kind == LK_LEN && (!len_def(mn, cbh) || res(mn, cbh) <= 0));
     return zero_h && zero_min;
 }
 /* Resolve the preferred width again when float exclusion changes the
@@ -689,7 +691,7 @@ static float top_chain(Layout *L, Box *c, float cbw, float cbh, FloatCtx *fc, fl
 }
 
 float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, FloatCtx *fc) {
-    float cursor = cy, pending = 0; bool first = true;
+    float cursor = cy, pending = 0; bool first = true, only_through_empty = true;
     b->has_baseline = false;
     for (Box *c = b->first; c; c = c->next) {
         if (c->abs) { c->sx = cx; c->sy = cursor + (first && b->collapse_top ? 0 : pending); add_abs(L, c); continue; }
@@ -757,7 +759,7 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
             pending = collapse2(collapse2(first && b->collapse_top ? 0 : pending, mt), c->m[2]);
             /* A through-collapsing margin stays pending. Advancing the flow
              * cursor as well would charge it again to the next block. */
-            if (!empty_margin_through(c, cbh)) cursor = y;
+            if (!empty_margin_through(c, cbh)) { cursor = y; only_through_empty = false; }
             continue;
         }
         cursor = c->y + c->h; pending = c->eff_mb;
@@ -769,10 +771,11 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
     if (cb_bottom && !first) { b->eff_mb = collapse2(b->m[2], pending); end = cursor; }
     else {
         b->eff_mb = b->m[2];
-        /* Empty in-flow boxes can leave a collapsed margin without advancing
-         * the cursor. Keep it inside a BFC root, where it cannot escape into
-         * the parent's top margin. */
-        end = cursor + (first && b->collapse_top ? 0 : pending);
+        /* A BFC root retains a margin left only by through-collapsing empty
+         * children. A positioned empty box (for example after clearance)
+         * has already charged its margin to the cursor and must not add it
+         * again. Ordinary parent/child collapse keeps the existing path. */
+        end = cursor + (!first || (b->bfc && only_through_empty) ? pending : 0);
     }
     return end - cy;
 }
