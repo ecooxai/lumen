@@ -1374,6 +1374,33 @@ static void bg_length_str(SB *b, Length value) {
     else if (value.pctu || value.pct) sb_printf(b, "%g%%", value.pct);
     else sb_printf(b, "%gpx", value.px == 0 ? 0.0 : (double)value.px);
 }
+/* Cache computed lengths where the declaration's font context is known, so
+ * inherited text-indent does not get re-evaluated in a descendant's font.
+ * Separate hanging/each-line components and unresolved percentage/math values
+ * keep their existing representation. */
+static char *text_indent_computed_value(ACtx *context, const char *value) {
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    int depth = 0; bool component = false, valid = true;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_EOF) { free(token.str); break; }
+        if (type == CT_WS) { free(token.str); continue; }
+        if (!depth) {
+            if (component || (type != CT_DIM && type != CT_PERCENT && type != CT_FUNC &&
+                              !(type == CT_NUMBER && token.num == 0))) valid = false;
+            component = true;
+        }
+        if (type == CT_FUNC || type == CT_LPAREN || type == CT_LBRACK || type == CT_LBRACE) depth++;
+        else if (depth && (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE)) depth--;
+        free(token.str);
+        if (!valid) break;
+    }
+    Length computed;
+    if (!valid || !component || !alen(context, value, &computed) || computed.kind != LK_LEN ||
+        computed.mm || computed.pct || computed.pctu || !isfinite(computed.px)) return NULL;
+    SB out; sb_init(&out); bg_length_str(&out, computed);
+    return sb_take(&out);
+}
 /* Logical origins remain part of an axis longhand's computed value, including
    in lists. Keep its computed offset separate from the physical used position. */
 static bool bg_logical_axis_str(SB *out, ACtx *c, const char *text, int axis) {
@@ -3327,7 +3354,11 @@ apply:
         else if (!strcmp(P, "text-align")) { static const char *const ta[] = { "start", "left", "right", "center", "justify", "end", NULL }; k = kw(val, ta); if (k >= 0) st->text_align = (uint8_t)k; else if (strstr(val, "center")) st->text_align = TA_CENTER; else if (strstr(val, "right")) st->text_align = TA_RIGHT; else if (strstr(val, "left")) st->text_align = TA_LEFT; }
         else if (!strcmp(P, "text-decoration") || !strcmp(P, "text-decoration-line")) { st->text_decoration = 0; if (strstr(val, "underline")) st->text_decoration |= TD_UNDERLINE; if (strstr(val, "overline")) st->text_decoration |= TD_OVERLINE; if (strstr(val, "line-through")) st->text_decoration |= TD_LINE_THROUGH; }
         else if (!strcmp(P, "text-transform")) st->text_transform = str_ieq(val, "uppercase") ? TT_UPPER : str_ieq(val, "lowercase") ? TT_LOWER : str_ieq(val, "capitalize") ? TT_CAPITALIZE : TT_NONE;
-        else if (!strcmp(P, "text-indent")) st->text_indent = alen_px(&c, val, 0);
+        else if (!strcmp(P, "text-indent")) {
+            st->text_indent = alen_px(&c, val, 0);
+            char *computed = text_indent_computed_value(&c, val);
+            if (computed) gen_put(&st->gen_i, P, computed);
+        }
         else if (!strcmp(P, "text-overflow")) st->text_overflow = str_ieq(val, "ellipsis") ? TO_ELLIPSIS : TO_CLIP;
         else if (!strcmp(P, "touch-action")) {   /* pinch-zoom alone allows no panning; manipulation pans both ways */
             bool x = str_ieq(val, "auto") || strstr(val, "manipulation") || strstr(val, "pan-x") || strstr(val, "pan-left") || strstr(val, "pan-right");
