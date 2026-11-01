@@ -559,7 +559,11 @@ const CSS_CANONICAL_PX_SIZE = /^(?:0|[1-9]\d{0,8})(?:\.\d{0,5}[1-9])?px$/;
 function cssMinSizeParse(property, value) {
     if (CSS_CANONICAL_PX_SIZE.test(value)) return value;
     const parsed = N.cssMinSize(value);
-    return parsed === null ? null : specNormalize(property, parsed);
+    if (parsed === null) return null;
+    /* Only the existing constant evaluator may collapse a calc. Relative
+       units and percentages remain dependent on the eventual style context. */
+    const folded = /^calc\(/i.test(parsed) && mathEval(parsed);
+    return specNormalize(property, folded ? mathSer(folded) : parsed);
 }
 const MATH_NUM_PROPS = /^((fill-|stroke-|stop-|flood-)?opacity|flex-grow|flex-shrink)$/;
 /* the <color-interpolation-method> of gradients: only "in <space> [<hue> hue]" at the start or end of the first argument */
