@@ -59,6 +59,10 @@ float fc_bottom(FloatCtx *fc) { return fc ? fc_clear(fc, CLEAR_BOTH) : -1e30f; }
 
 /* ---------------- translate ---------------- */
 static bool within(Box *x, Box *root) { for (; x; x = x->parent) if (x == root) return true; return false; }
+static bool abs_outside_translation(Box *box, Box *root) {
+    if (box->fixed && (!box->cb || !box->cb->parent)) return true;
+    return box->cb && !within(box->cb, root);
+}
 static void tr(Box *root, Box *b, float dx, float dy) {
     b->x += dx; b->y += dy;
     if (b->has_baseline) b->baseline += dy;
@@ -66,7 +70,9 @@ static void tr(Box *root, Box *b, float dx, float dy) {
     for (int i = 0; i < b->nlines; i++) { b->lines[i].y += dy; b->lines[i].base += dy; }
     for (int i = 0; i < b->nir; i++) { b->ir[i].x += dx; b->ir[i].y += dy; }
     for (Box *c = b->first; c; c = c->next) {
-        if (c->abs && (c->fixed || (c->cb && !within(c->cb, root)))) { c->sx += dx; c->sy += dy; continue; }   /* placed later from its static position */
+        /* A fixed descendant follows a transformed CB inside this subtree.
+           Viewport or external-CB descendants keep their independent placement. */
+        if (c->abs && abs_outside_translation(c, root)) { c->sx += dx; c->sy += dy; continue; }
         tr(root, c, dx, dy);
     }
 }
@@ -871,7 +877,7 @@ void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, Float
             Box *c = L->alog[i];
             if (c->astamp == stamp) continue;
             c->astamp = stamp;
-            if (c->fixed || (c->cb && !within(c->cb, b))) { c->sx += dx; c->sy += dy; }   /* positioned by an outer box: tr left it alone */
+            if (abs_outside_translation(c, b)) { c->sx += dx; c->sy += dy; }   /* positioned by an outer box: tr left it alone */
             add_abs(L, c);
         }
         return;
