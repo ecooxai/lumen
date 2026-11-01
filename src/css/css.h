@@ -168,6 +168,7 @@ typedef struct ComputedStyle {
     uint8_t flex_direction, flex_wrap, justify_content, align_items, align_self, align_content, justify_items, justify_self;
     uint8_t vertical_align, bg_repeat, bg_size_kind, object_fit, text_overflow, word_break, overflow_wrap, direction;
     uint8_t bg_origin, bg_clip, bg_color_clip;
+    uint8_t static_inline;         /* non-inherited inline outer display before positioned blockification; occupies existing alignment padding */
     uint32_t bg_layers;             /* includes none layers; color uses the last layer clip */
     uint8_t border_style[4];
     uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, container_type, resize, writing_mode, pos_try_order;   /* pos_try_order: 0 normal, 1 most-width, 2 most-height */

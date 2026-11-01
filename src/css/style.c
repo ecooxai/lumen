@@ -5588,6 +5588,12 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     if (owned) free(md);
     /* fixups */
     if (st->line_height_factor > 0) st->line_height = st->line_height_factor * st->font_size;
+    /* Static placement needs the hypothetical outer display even though the
+       public computed display and native Box kind are blockified. This is
+       per-element layout provenance, not an inherited display value. */
+    st->static_inline = (st->position == P_ABSOLUTE || st->position == P_FIXED) &&
+        (st->display == D_INLINE || st->display == D_INLINE_BLOCK ||
+         st->display == D_INLINE_FLEX || st->display == D_INLINE_GRID || st->display == D_INLINE_TABLE);
     if (st->position == P_ABSOLUTE || st->position == P_FIXED || st->float_ != F_NONE) {
         if (st->display == D_INLINE || st->display == D_INLINE_BLOCK || st->display == D_TABLE_CELL || st->display == D_TABLE_ROW) st->display = D_BLOCK;
         else if (st->display == D_INLINE_FLEX) st->display = D_FLEX;

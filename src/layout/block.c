@@ -334,7 +334,7 @@ static void block_static_position(const Box *a, bool auto_x, float *sx) {
     /* Positioning blockifies pseudo boxes during tree construction. Their
      * hypothetical static display still determines inline cursor placement.
      * Retain unmodeled compound display values on their existing path too. */
-    if (a->st->display_text || display == D_INLINE || display == D_INLINE_BLOCK ||
+    if (a->st->static_inline || a->st->display_text || display == D_INLINE || display == D_INLINE_BLOCK ||
         display == D_INLINE_FLEX || display == D_INLINE_GRID || display == D_INLINE_TABLE) return;
     const Box *parent = a->parent;
     while (parent && layout_percentage_wrapper(parent)) parent = parent->parent;

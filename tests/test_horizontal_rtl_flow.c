@@ -139,22 +139,27 @@ static void cached_subtree(void) {
     number(flow->y,33,"memo negative block translation parent"); number(lead->y,38,"memo negative block translation descendant");
     finish(&f);
 }
+/* The ordinary element style is blockified before Box construction. These
+ * cursor coordinates were recorded while the absolute CB was laid out at
+ * (0,0), then its entire contained subtree moved by the CB's actual position.
+ * Keep that translation in the oracle: the pseudo path independently shows
+ * x == sx + cb.x and y == sy + cb.y, not a different static margin edge. */
 static void original_inline_cursor(void) {
     Fixture f = fixture("<div id='cb'><div id='flow'><span id='text'>inline</span><span id='target'></span></div></div>",
                         "#cb{direction:rtl}#flow{direction:rtl;text-align:left}#target{display:inline;margin:0}");
     Box *target=box(&f,"target");
-    assert(target->kind==BX_INLINE && target->st->display==D_INLINE); checks++;
-    number(target->x,target->sx,"original inline keeps native recorded cursor");
-    number(target->y,target->sy,"original inline keeps native recorded line");
+    assert(target->kind==BX_BLOCK && target->st->display==D_BLOCK && target->st->static_inline); checks++;
+    number(target->x,target->sx+target->cb->x,"original inline keeps native recorded cursor");
+    number(target->y,target->sy+target->cb->y,"original inline keeps native recorded line");
     finish(&f);
 }
 static void original_inline_block_cursor(void) {
     Fixture f = fixture("<div id='cb'><div id='flow'><span id='text'>inline</span><span id='target'></span></div></div>",
                         "#cb{direction:rtl}#flow{direction:rtl;text-align:left}#target{display:inline-block;margin:0}");
     Box *target=box(&f,"target");
-    assert(target->kind==BX_ATOMIC && target->st->display==D_INLINE_BLOCK); checks++;
-    number(target->x,target->sx,"original inline-block keeps native recorded cursor");
-    number(target->y,target->sy,"original inline-block keeps native recorded line");
+    assert(target->kind==BX_BLOCK && target->st->display==D_BLOCK && target->st->static_inline); checks++;
+    number(target->x,target->sx+target->cb->x,"original inline-block keeps native recorded cursor");
+    number(target->y,target->sy+target->cb->y,"original inline-block keeps native recorded line");
     finish(&f);
 }
 static void positioned_pseudo_inline_cursor(void) {
@@ -163,14 +168,70 @@ static void positioned_pseudo_inline_cursor(void) {
                         "#flow::after{content:'';display:inline-block;position:absolute;width:20px;height:10px;margin:0}");
     Box *pseudo=box(&f,"flow")->last;
     assert(pseudo && pseudo->anon && pseudo->abs && pseudo->kind==BX_BLOCK && pseudo->st->display==D_INLINE_BLOCK); checks++;
-    number(pseudo->x,pseudo->sx,"blockified pseudo retains original inline cursor");
-    number(pseudo->y,pseudo->sy,"blockified pseudo retains recorded line");
+    number(pseudo->x,pseudo->sx+pseudo->cb->x,"blockified pseudo retains original inline cursor");
+    number(pseudo->y,pseudo->sy+pseudo->cb->y,"blockified pseudo retains recorded line");
+    finish(&f);
+}
+static void computed_display(Node *node, const char *expected) {
+    char *value=css_get_computed_value(node,"display");
+    assert(value && !strcmp(value,expected)); checks++; free(value);
+}
+static void inline_provenance_lifecycle(void) {
+    ComputedStyle *initial=style_new_default();
+    assert(!initial->static_inline); checks++;
+    initial->static_inline=1;
+    ComputedStyle *inherited=style_inherit(initial);
+    assert(!inherited->static_inline); checks++;
+    style_free(inherited); style_free(initial);
+    Fixture f=fixture("<div id='cb'><div id='flow'><span id='text'>inline</span>"
+                      "<div id='target'>anonymous<div id='child'></div></div></div></div>",
+                      "#cb{direction:rtl}#flow{direction:rtl;text-align:left}"
+                      "#target{display:inline;margin:0}#child{display:inherit}");
+    Node *node=doc_get_element_by_id(f.doc,"target"), *child=doc_get_element_by_id(f.doc,"child");
+    Box *target=box(&f,"target");
+    assert(target->st->static_inline && target->st->display==D_BLOCK); checks++;
+    computed_display(node,"block");
+    assert(child && child->style && !child->style->static_inline && child->style->display==D_BLOCK); checks++;
+    computed_display(child,"block");
+    /* Normal block wrappers intentionally share/copy parent style in this
+       engine. Their actual Box remains in flow, so copied style provenance
+       must never make this anonymous wrapper use absolute placement. */
+    Box *anonymous=NULL;
+    for (Box *b=target->first;b;b=b->next) if (b->anon && !b->abs) { anonymous=b; break; }
+    assert(anonymous && anonymous->st && !anonymous->abs &&
+           fabsf(anonymous->x-target->x)<=.01f && fabsf(anonymous->y-target->y)<=.01f); checks++;
+    number(target->x,target->sx+target->cb->x,"inline provenance actual cursor and CB translation");
+    number(target->y,target->sy+target->cb->y,"inline provenance actual line and CB translation");
+    node_set_attr(node,"style","display:block");
+    style_recalc(f.engine,&f.doc->node,false); layout_run(f.layout,f.doc,640,480); target=box(&f,"target");
+    assert(!target->st->static_inline && target->st->display==D_BLOCK); checks++;
+    number(target->x,317,"inline to block restyle selects real static right edge");
+    number(target->y,57,"inline to block keeps line position");
+    node_set_attr(node,"style","display:inline-block");
+    style_recalc(f.engine,&f.doc->node,false); layout_run(f.layout,f.doc,640,480); target=box(&f,"target");
+    assert(target->st->static_inline && target->st->display==D_BLOCK); checks++;
+    number(target->x,target->sx+target->cb->x,"block to inline-block restyle restores cursor");
+    number(target->y,target->sy+target->cb->y,"block to inline-block keeps translated line");
+    computed_display(node,"block");
+    node_set_attr(node,"style","position:static;display:inline");
+    style_recalc(f.engine,&f.doc->node,false); layout_run(f.layout,f.doc,640,480);
+    assert(!node->style->static_inline && node->style->display==D_INLINE); checks++;
+    computed_display(node,"inline");
+    node_set_attr(node,"style","display:initial");
+    style_recalc(f.engine,&f.doc->node,false); layout_run(f.layout,f.doc,640,480);
+    assert(node->style->static_inline && node->style->display==D_BLOCK); checks++;
+    computed_display(node,"block");
+    node_set_attr(node,"style","display:unset");
+    style_recalc(f.engine,&f.doc->node,false); layout_run(f.layout,f.doc,640,480);
+    assert(node->style->static_inline && node->style->display==D_BLOCK); checks++;
+    computed_display(node,"block");
     finish(&f);
 }
 int main(void) {
     dom_init(); font_init();
     static_rectangles(); margin_constraints(); resized_container(); cached_subtree(); original_inline_cursor();
-    original_inline_block_cursor(); positioned_pseudo_inline_cursor();
+    original_inline_block_cursor(); positioned_pseudo_inline_cursor(); inline_provenance_lifecycle();
+    assert(checks==500);
     printf("PASS horizontal_rtl_flow %u native checks\n",checks);
     return 0;
 }
