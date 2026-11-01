@@ -73,6 +73,9 @@ void layout_run(Layout *L, Document *d, float vw, float vh);
 uint64_t layout_generation(void); /* changes after any completed document layout */
 Box *layout_hit(Layout *layout, float x, float y, float scroll_x, float scroll_y);   /* document coordinates */
 void box_sticky_offset(const Box *b, float scroll_x, float scroll_y, float *dx, float *dy);
+/* Unscrolled native sticky constraint; NULL owner denotes the viewport. */
+bool box_sticky_constraint_rect(const Box *b, const Box **port,
+                                float *x, float *y, float *w, float *h);
 Font *style_font(const ComputedStyle *s);
 float style_line_height(const ComputedStyle *s, Font *f);
 bool layout_contents_hidden(const Box *box);

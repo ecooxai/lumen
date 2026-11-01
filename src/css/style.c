@@ -6961,7 +6961,7 @@ static void contain_intrinsic_str(SB *out, ContainIntrinsicSize value) {
  * only auto and percentage-dependent values need this resolution. */
 static bool computed_inset_native(Node *el, const ComputedStyle *s, int side, float *value) {
     const Box *box = grid_style_box(el, s);
-    if (!box || s->position == P_STATIC || s->position == P_STICKY ||
+    if (!box || s->position == P_STATIC ||
         s->display == D_NONE || s->display == D_CONTENTS ||
         s->display == D_TABLE_COLUMN || s->display == D_TABLE_COLUMN_GROUP) return false;
     /* Existing anchor/position-area handling has its own adjusted rectangle.
@@ -6972,7 +6972,10 @@ static bool computed_inset_native(Node *el, const ComputedStyle *s, int side, fl
     bool vertical = side == 0 || side == 2;
     const Box *cb = layout_percentage_cb(box);
     float x = 0, y = 0, width = 0, height = 0;
-    if (absolute) {
+    if (s->position == P_STICKY) {
+        const Box *port;
+        if (!box_sticky_constraint_rect(box, &port, &x, &y, &width, &height)) return false;
+    } else if (absolute) {
         cb = box->cb;
         if (!cb) return false;
         if (!cb->parent) {

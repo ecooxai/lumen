@@ -1266,24 +1266,47 @@ static float sticky_axis(float pos, float size, float margin0, float margin1,
     if (shift < 0) shift = LMAX(shift, LMIN(0, cb0 - pos + LMIN(margin0, pos - cb0)));
     return shift;
 }
+/* The retained Chromium interoperability model contracts the scrollport by
+   its padding for both sticky geometry and CSSOM percentage insets. Keep that
+   content constraint in one native helper; the current Position/Overflow
+   draft describes a padding-box scrollport, which remains a known divergence.
+   Viewport fallback and the existing fixed-ancestor boundary are unchanged. */
+bool box_sticky_constraint_rect(const Box *b, const Box **port,
+                                float *x, float *y, float *w, float *h) {
+    *port = NULL;
+    *x = *y = *w = *h = 0;
+    if (!b || !b->node || !b->node->doc) return false;
+    for (const Box *a = b->parent; a; a = a->parent) {
+        if (a->scroller && a->node && a->st &&
+            ((a->st->overflow_x != OV_VISIBLE && a->st->overflow_x != OV_CLIP) ||
+             (a->st->overflow_y != OV_VISIBLE && a->st->overflow_y != OV_CLIP))) {
+            *port = a;
+            *x = a->x + a->b[3] + a->p[3];
+            *y = a->y + a->b[0] + a->p[0];
+            *w = LMAX(0, a->w - a->b[3] - a->b[1] - a->p[3] - a->p[1]);
+            *h = LMAX(0, a->h - a->b[0] - a->b[2] - a->p[0] - a->p[2]);
+            return true;
+        }
+        if (a->fixed) break;
+    }
+    *w = b->node->doc->layout_vw;
+    *h = b->node->doc->layout_vh;
+    return true;
+}
 void box_sticky_offset(const Box *b, float scroll_x, float scroll_y, float *dx, float *dy) {
     *dx = *dy = 0;
     if (!b->st || b->st->position != P_STICKY || !b->node || !b->parent) return;
     const Box *port = NULL;
+    float px, py, pw, ph;
+    if (!box_sticky_constraint_rect(b, &port, &px, &py, &pw, &ph)) return;
     float parent_dx = 0, parent_dy = 0;
-    for (const Box *a = b->parent; a; a = a->parent) {
-        if (a->scroller && a->node && a->st &&
-            ((a->st->overflow_x != OV_VISIBLE && a->st->overflow_x != OV_CLIP) ||
-             (a->st->overflow_y != OV_VISIBLE && a->st->overflow_y != OV_CLIP))) { port = a; break; }
+    for (const Box *a = b->parent; a && a != port; a = a->parent) {
         float ax, ay; box_sticky_offset(a, scroll_x, scroll_y, &ax, &ay);
         parent_dx += ax; parent_dy += ay;
         if (a->fixed) { scroll_x = scroll_y = 0; break; }
     }
-    Document *d = b->node->doc;
-    float px = port ? port->x + port->b[3] + box_scroll_left(port) : scroll_x;
-    float py = port ? port->y + port->b[0] + box_scroll_y(port) : scroll_y;
-    float pw = port ? port->w - port->b[3] - port->b[1] : d->layout_vw;
-    float ph = port ? port->h - port->b[0] - port->b[2] : d->layout_vh;
+    px += port ? box_scroll_left(port) : scroll_x;
+    py += port ? box_scroll_y(port) : scroll_y;
     const Box *cb = b->parent;
     while (cb->kind == BX_INLINE && cb->parent) cb = cb->parent;
     float cx = cb->x + cb->b[3] + cb->p[3], cy = cb->y + cb->b[0] + cb->p[0];
