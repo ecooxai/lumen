@@ -192,6 +192,36 @@ function cssSplit(s) {
     if (pre.trim()[0] === '@') out.push({ pre: pre.trim(), body: null });
     return out;
 }
+/* Only ownership lives here; rule contents and list objects are retained. */
+const cssOwners = new WeakMap();
+const cssOwnerGet = Function.prototype.call.bind(WeakMap.prototype.get, cssOwners);
+const cssOwnerSet = Function.prototype.call.bind(WeakMap.prototype.set, cssOwners);
+const cssListDefine = Object.defineProperty;
+const cssListOwn = Object.getOwnPropertyDescriptor;
+function cssRuleSheet(rule) {
+    let d = cssOwnerGet(rule);
+    while (d.parent) d = cssOwnerGet(d.parent);
+    return d.owner ? d.owner.sheet : null;
+}
+function cssDetachRule(rule) {
+    const d = cssOwnerGet(rule);
+    d.parent = null; d.owner = null;
+}
+function cssReplaceRules(sheet, next) {
+    const d = cssOwnerGet(sheet), owner = { sheet }, list = d.list;
+    for (let i = 0; i < next.length; i++) cssOwnerGet(next[i]).owner = owner;
+    /* Keep the sheet's live list; never walk old public rules or lists. */
+    cssListDefine(list, 'length', { value: 0 });
+    for (let i = 0; i < next.length; i++)
+        cssListDefine(list, i, { value: next[i], writable: true, enumerable: true, configurable: true });
+    d.owner.sheet = null;
+    d.owner = owner;
+}
+function cssReplaceSheet(sheet, text) {
+    const next = cssParseList(String(text), sheet, null);
+    cssReplaceRules(sheet, next);
+    sheet._sync();
+}
 class CSSRuleList extends Array { static get [Symbol.species]() { return Array; } item(i) { return this[i] ?? null; } }
 class MediaList {
     constructor(t, o) { def(this, '_m', []); def(this, '_o', o); this._set(t); }
@@ -217,9 +247,9 @@ class CSSRuleStyle extends CSSStyleDeclaration {
 }
 class CSSRule {
     constructor() { illegal(); }
-    get parentRule() { return this._parent || null; } get parentStyleSheet() { return this._sheet || null; }
+    get parentRule() { return cssOwnerGet(this).parent; } get parentStyleSheet() { return cssRuleSheet(this); }
     get cssText() { return ''; } set cssText(v) {}
-    _changed() { for (let r = this; r; r = r._parent) r._text = null; if (this._sheet) this._sheet._sync(); }
+    _changed() { for (let r = this; r; r = cssOwnerGet(r).parent) r._text = null; const s = cssRuleSheet(this); if (s) s._sync(); }
 }
 for (const [k, v] of Object.entries({ STYLE_RULE: 1, CHARSET_RULE: 2, IMPORT_RULE: 3, MEDIA_RULE: 4, FONT_FACE_RULE: 5, PAGE_RULE: 6, KEYFRAMES_RULE: 7, KEYFRAME_RULE: 8, MARGIN_RULE: 9, NAMESPACE_RULE: 10, COUNTER_STYLE_RULE: 11, SUPPORTS_RULE: 12, FONT_FEATURE_VALUES_RULE: 14 })) { Object.defineProperty(CSSRule, k, { value: v, enumerable: true }); Object.defineProperty(CSSRule.prototype, k, { value: v, enumerable: true }); }
 const ruleStyle = (r) => r._style || (r._style = new Proxy(new CSSRuleStyle(r, r._body), styleHandler));
@@ -233,7 +263,7 @@ class CSSStyleRule extends CSSRule {
 }
 class CSSGroupingRule extends CSSRule {
     get cssRules() { return this._list; }
-    insertRule(rule, i = 0) { const r = cssInsert(this._list, rule, i, this._sheet, this); this._changed(); return r; }
+    insertRule(rule, i = 0) { const r = cssInsert(this._list, rule, i, cssRuleSheet(this), this); this._changed(); return r; }
     deleteRule(i) { cssDelete(this._list, i); this._changed(); }
     _inner() { return this._list.length ? `{\n${this._list.map(r => '  ' + r.cssText).join('\n')}\n}` : '{\n}'; }
 }
@@ -271,12 +301,21 @@ class CSSKeyframeRule extends CSSRule { get type() { return 8; } get keyText() {
 class CSSKeyframesRule extends CSSRule {
     get type() { return 7; } get name() { return this._name; } set name(v) { this._name = String(v); this._changed(); }
     get cssRules() { return this._list; } get length() { return this._list.length; }
-    appendRule(t) { const it = cssSplit(String(t)); const r = it.length === 1 && cssMkKeyframe(it[0], this._sheet, this); if (r) { this._list.push(r); this._changed(); } }
-    deleteRule(k) { const i = this._list.findIndex(r => r._key === String(k).trim()); if (i >= 0) { this._list.splice(i, 1); this._changed(); } }
+    appendRule(t) { const it = cssSplit(String(t)); const r = it.length === 1 && cssMkKeyframe(it[0], cssRuleSheet(this), this); if (r) { this._list.push(r); this._changed(); } }
+    deleteRule(k) {
+        const key = String(k).trim();
+        const i = this._list.findIndex(r => r._key === key);
+        if (i >= 0) { cssDelete(this._list, i); this._changed(); }
+    }
     findRule(k) { return this._list.find(r => r._key === String(k).trim()) || null; }
     get cssText() { return `@keyframes ${this._name} ${CSSGroupingRule.prototype._inner.call(this)}`; }
 }
-function cssMk(C, props) { const r = Object.create(C.prototype); for (const k in props) def(r, k, props[k]); def(r, '_text', null); return r; }
+function cssMk(C, props) {
+    const r = Object.create(C.prototype), parent = props._parent;
+    cssOwnerSet(r, { parent, owner: !parent && props._sheet ? cssOwnerGet(props._sheet).owner : null });
+    for (const k in props) if (k !== '_sheet' && k !== '_parent') def(r, k, props[k]);
+    def(r, '_text', null); return r;
+}
 function cssMkKeyframe(it, sheet, parent) {
     if (it.body == null || !it.pre) return null;
     const key = it.pre.split(',').map(k => { k = k.trim().toLowerCase(); return k === 'from' ? '0%' : k === 'to' ? '100%' : k; });
@@ -321,16 +360,20 @@ function cssInsert(list, rule, index, sheet, parent) {
 function cssDelete(list, i) {
     i = toU32(i);
     if (i >= list.length) throw new DOMException(`Failed to execute 'deleteRule' on 'CSSStyleSheet': The index provided (${i}) is larger than the maximum index (${list.length - 1}).`, 'IndexSizeError');
-    list.splice(i, 1);
+    const removed = cssListOwn(list, i).value;
+    for (let j = i + 1; j < list.length; j++)
+        cssListDefine(list, j - 1, { value: cssListOwn(list, j).value, writable: true, enumerable: true, configurable: true });
+    cssListDefine(list, 'length', { value: list.length - 1 });
+    cssDetachRule(removed);
 }
 class StyleSheet {}
 class CSSStyleSheet extends StyleSheet {
-    constructor(opts) { super(); def(this, '_owner', null); def(this, '_src', null); def(this, '_list', new CSSRuleList()); def(this, '_media', new MediaList(opts && opts.media != null ? String(opts.media) : '', null)); this.disabled = false; }
+    constructor(opts) { super(); const list = new CSSRuleList(); cssOwnerSet(this, { owner: { sheet: this }, list }); def(this, '_owner', null); def(this, '_src', null); def(this, '_list', list); def(this, '_media', new MediaList(opts && opts.media != null ? String(opts.media) : '', null)); this.disabled = false; }
     get ownerNode() { return this._owner; } get type() { return 'text/css'; } get parentStyleSheet() { return null; } get ownerRule() { return null; }
     get href() { const o = this._owner; return o && N.name(o) === 'link' ? o.href : null; }
     get title() { const o = this._owner; return (o && N.attr(o, 'title')) || null; }
     get media() { return this._media; }
-    _load() { const o = this._owner; if (o && N.name(o) === 'style') { const t = N.text(o); if (t !== this._src) { this._src = t; this._list = cssParseList(t, this, null); } } }
+    _load() { const o = this._owner; if (o && N.name(o) === 'style') { const t = N.text(o); if (t !== this._src) { cssReplaceRules(this, cssParseList(t, this, null)); this._src = t; } } }
     get cssRules() { this._load(); return this._list; } get rules() { return this.cssRules; }
     insertRule(rule, i = 0) {
         this._load(); const r = cssInsert(this._list, rule, i, this, null), o = this._owner;
@@ -342,8 +385,8 @@ class CSSStyleSheet extends StyleSheet {
     deleteRule(i) { this._load(); cssDelete(this._list, i); this._sync(); }
     addRule(sel = 'undefined', style = 'undefined', i) { this._load(); this.insertRule(`${sel} { ${style} }`, i === undefined ? this._list.length : i); return -1; }
     removeRule(i = 0) { this.deleteRule(i); }
-    replace(t) { this.replaceSync(t); return Promise.resolve(this); }
-    replaceSync(t) { this._list = cssParseList(String(t), this, null); this._sync(); }
+    replace(t) { cssReplaceSheet(this, t); return Promise.resolve(this); }
+    replaceSync(t) { cssReplaceSheet(this, t); }
     _text() { return this._list.map(r => r.cssText).join('\n'); }
     _sync() {   /* constructed sheets apply only through adoptedStyleSheets: mirror their text into each adopting scope */
         const o = this._owner;
