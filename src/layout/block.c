@@ -1315,8 +1315,22 @@ void box_sticky_offset(const Box *b, float scroll_x, float scroll_y, float *dx, 
         cr += LMAX(0, cb->scroll_w - cb->w);
         cbottom += LMAX(0, cb->scroll_h - cb->h);
     }
-    *dx = sticky_axis(b->x, b->w, b->m[3], b->m[1], cx, cr, px - parent_dx, pw, b->st->inset[3], b->st->inset[1], b->st->direction != 0);
-    *dy = sticky_axis(b->y, b->h, b->m[0], b->m[2], cy, cbottom, py - parent_dy, ph, b->st->inset[0], b->st->inset[2], false);
+    /* Match Chromium's computed-margin constraint model. Normal block
+       layout can distribute free space into used margins, which must not
+       consume sticky travel. Percentages use the actual CB content inline size,
+       independent of the scrollport size or its extended overflow bounds. */
+    const Box *margin_cb = layout_percentage_cb(b);
+    if (!margin_cb) margin_cb = cb;
+    bool vertical_cb = margin_cb->st && margin_cb->st->writing_mode;
+    /* As in stretch sizing, sideways metadata selects the numeric axis even
+       though general sideways text layout remains outside this change. */
+    if (!vertical_cb && margin_cb->st) {
+        const char *mode = custom_get(margin_cb->st->gen_i, "writing-mode");
+        vertical_cb = mode && (str_ieq(mode, "sideways-rl") || str_ieq(mode, "sideways-lr"));
+    }
+    const float margin_width = LMAX(0, vertical_cb ? margin_cb->h - vbp(margin_cb) : margin_cb->w - hbp(margin_cb));
+    *dx = sticky_axis(b->x, b->w, res(b->st->margin[3], margin_width), res(b->st->margin[1], margin_width), cx, cr, px - parent_dx, pw, b->st->inset[3], b->st->inset[1], b->st->direction != 0);
+    *dy = sticky_axis(b->y, b->h, res(b->st->margin[0], margin_width), res(b->st->margin[2], margin_width), cy, cbottom, py - parent_dy, ph, b->st->inset[0], b->st->inset[2], false);
 }
 
 /* ---------------- hit testing ---------------- */
