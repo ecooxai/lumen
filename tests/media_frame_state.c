@@ -1,6 +1,9 @@
 /* Exercise the real presentation pump without decoder threads or network I/O. */
 #include "../src/media/media.c"
 #include <assert.h>
+/* This synthetic fixture never opens a URL. Fail, rather than mock success,
+ * if production teardown unexpectedly attempts a network cancellation. */
+void net_cancel(uint64_t id) { (void)id; abort(); }
 static void enqueue(MediaPlayer *m, double pts, bool hidden) {
     assert(m->vqn < VQ_MAX);
     m->vq[m->vqn++] = (VFrame){pts,tiny_image(),640,360,hidden};

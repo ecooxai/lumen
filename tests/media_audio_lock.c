@@ -1,6 +1,9 @@
 /* Exercise actual media locks against an SDL stream locked as it is in a callback. */
 #include "../src/media/media.c"
 #include <assert.h>
+/* This synthetic fixture never opens a URL. Fail, rather than mock success,
+ * if production teardown unexpectedly attempts a network cancellation. */
+void net_cancel(uint64_t id) { (void)id; abort(); }
 static SDL_Semaphore *locked, *go, *done;
 static MediaPlayer *player;
 static int operation;
