@@ -1798,36 +1798,47 @@ static void parse_transform(ACtx *c, const char *v) {
 }
 static bool parse_one_shadow(ACtx *c, char *v, Shadow *sh) {
     char *t[7]; int n = split_ws(v, t, 7); float nums[4] = {0}; int nn = 0;
-    memset(sh, 0, sizeof *sh); sh->color = c->st->color;
+    memset(sh, 0, sizeof *sh); sh->color = c->st->color; sh->color_tokens = atom("currentcolor");
     for (int i = 0; i < n; i++) {
-        Color col;
+        Color col; Length length;
         if (str_ieq(t[i], "inset")) sh->inset = true;
-        else if (nn < 4 && (isdigit((unsigned char)t[i][0]) || t[i][0] == '-' || t[i][0] == '.' || str_istarts(t[i], "calc"))) nums[nn++] = alen_px(c, t[i], 0);
-        else if (css_parse_color(t[i], &col, c->st->color)) sh->color = col;
+        else if (css_parse_color(t[i], &col, c->st->color)) { sh->color = col; sh->color_tokens = atom(t[i]); }
+        else if (nn < 4 && alen(c, t[i], &length) && length.kind == LK_LEN && !len_has_pct(length)) {
+            float value = len_resolve(length, 0);
+            /* A concrete math result is clamped at computed-value time, before
+               it reaches geometry. Preserve negative offsets and spread. */
+            nums[nn++] = isnan(value) ? 0 : isinf(value) ? copysignf(3.4028234663852886e38f, value) : value;
+        }
     }
-    sh->x = nums[0]; sh->y = nums[1]; sh->blur = nums[2]; sh->spread = nums[3];
+    sh->x = nums[0]; sh->y = nums[1]; sh->blur = LMAX(nums[2], 0); sh->spread = nums[3];
     free_toks(t, n);
-    return nn >= 2 && COLOR_A(sh->color) > 0;
+    return nn >= 2;
 }
 /* one shadow is painted: the first visible outer one, else the first visible inset one
    (Tailwind stacks several, most of them `0 0 #0000`) */
 static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
-    *has = false;
+    *has = false; memset(sh, 0, sizeof *sh);
     if (str_ieq(v, "none")) return;
-    char *all = xstrdup(v), *seg = all; int d = 0; Shadow cur, inset = {0}; bool have_inset = false;
+    char *all = xstrdup(v), *seg = all; int d = 0; Shadow cur, inset = {0}, fallback = {0};
+    bool have_inset = false, have_fallback = false;
     for (char *q = all; ; q++) {
         if (*q == '(') d++; else if (*q == ')') d--;
         else if ((*q == ',' && !d) || !*q) {
             bool end = !*q; *q = 0;
             if (parse_one_shadow(c, seg, &cur)) {
-                if (!cur.inset) { *sh = cur; *has = true; break; }
-                if (!have_inset) { inset = cur; have_inset = true; }
+                bool visible = COLOR_A(cur.color) > 0;
+                if (visible && !cur.inset) { *sh = cur; *has = true; break; }
+                if (visible && !have_inset) { inset = cur; have_inset = true; }
+                /* Keep a transparent representative's computed geometry and
+                   color identity: inherited currentcolor can become visible. */
+                if (!have_fallback || (fallback.inset && !cur.inset)) { fallback = cur; have_fallback = true; }
             }
             if (end) break;
             seg = q + 1;
         }
     }
     if (!*has && have_inset) { *sh = inset; *has = true; }
+    else if (!*has && have_fallback) *sh = fallback;
     free(all);
 }
 /* Grid1/2 automatic repetition requires fixed-size tracks throughout the
@@ -2193,6 +2204,133 @@ char *css_numeric_dimension_parse(const char *prop, const char *value) {
 bool css_numeric_dimension_valid(const char *prop, const char *value) {
     if (!numeric_dimension_kind(prop)) return true;
     char *parsed = css_numeric_dimension_parse(prop, value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
+/* A shadow is one contiguous group of two to four lengths, with optional
+ * color and inset on either side. Lengths have no percentage hint; only a
+ * literal blur radius is range-checked before computed-value time.
+ * https://drafts.csswg.org/css-backgrounds/#box-shadow */
+static bool shadow_token_text(SB *out, const CTok *token) {
+    int type = token->type;
+    if (type == CT_WS) {
+        if (out->n && out->s[out->n - 1] != ' ' && out->s[out->n - 1] != '(') sb_putc(out, ' ');
+    } else if (type == CT_IDENT || type == CT_FUNC) {
+        for (const unsigned char *p = (const unsigned char *)token->str; p && *p; p++)
+            if (*p < 0x80 && !isalnum(*p) && *p != '-' && *p != '_') return false;
+        for (const char *p = token->str; p && *p; p++) sb_putc(out, (char)lc(*p));
+        if (type == CT_FUNC) sb_putc(out, '(');
+    } else if (type == CT_HASH) {
+        sb_putc(out, '#');
+        for (const unsigned char *p = (const unsigned char *)token->str; p && *p; p++) {
+            if (!isxdigit(*p)) return false;
+            sb_putc(out, (char)lc(*p));
+        }
+    } else if (type == CT_NUMBER || type == CT_DIM || type == CT_PERCENT) {
+        /* Preserve an out-of-range numeric token for the existing evaluator;
+         * never manufacture an invalid infpx literal while serializing it. */
+        if (isfinite(token->num)) sb_printf(out, "%.15g", token->num);
+        else {
+            char *end; strtod(token->start, &end);
+            if (end == token->start || (size_t)(end - token->start) > token->len) return false;
+            sb_put(out, token->start, (size_t)(end - token->start));
+        }
+        if (type == CT_PERCENT) sb_putc(out, '%');
+        if (type == CT_DIM) for (const unsigned char *p = (const unsigned char *)token->unit; *p; p++) {
+            if (!isalpha(*p)) return false;
+            sb_putc(out, (char)lc(*p));
+        }
+    } else if (type == CT_COMMA) {
+        while (out->n && out->s[out->n - 1] == ' ') out->s[--out->n] = 0;
+        sb_puts(out, ", ");
+    } else if (type == CT_LPAREN) sb_putc(out, '(');
+    else if (type == CT_RPAREN) {
+        while (out->n && out->s[out->n - 1] == ' ') out->s[--out->n] = 0;
+        sb_putc(out, ')');
+    } else if (type == CT_DELIM && strchr("+-*/", *token->start)) sb_put(out, token->start, token->len);
+    else return false;
+    return true;
+}
+static char *shadow_component_text(CLexer *lexer, const CTok *first) {
+    if (first->type != CT_IDENT && first->type != CT_HASH && first->type != CT_NUMBER &&
+        first->type != CT_DIM && first->type != CT_FUNC) return NULL;
+    SB out = {0};
+    if (!shadow_token_text(&out, first)) { sb_free(&out); return NULL; }
+    unsigned depth = first->type == CT_FUNC; size_t copied = lexer->i;
+    while (depth) {
+        CTok token = clex_next(lexer); int type = token.type;
+        size_t offset = (size_t)(token.start - lexer->s);
+        if (offset > copied && out.n && out.s[out.n - 1] != ' ' && out.s[out.n - 1] != '(') sb_putc(&out, ' ');
+        bool ok = type != CT_EOF && shadow_token_text(&out, &token);
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) depth--;
+        copied = lexer->i; free(token.str);
+        if (!ok || depth > 256) { sb_free(&out); return NULL; }
+    }
+    return sb_take(&out);
+}
+static bool shadow_length_component(const char *text, bool blur, bool math, bool *zero) {
+    CssNumber number;
+    if (!css_number_parse_context(text, 16, 16, NULL, false, NULL, true, &number)) return false;
+    bool length = true;
+    for (int i = 0; i < CN_DIMS; i++) if (number.power[i] != (i == CN_LENGTH)) length = false;
+    *zero = !math && css_number_scalar(&number) && number.value == 0;
+    return (length || *zero) && (math || !blur || number.value >= 0);
+}
+char *css_box_shadow_parse(const char *value) {
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    char *buffer = css_math_value_text(value); if (!buffer) return NULL;
+    CLexer lexer; clex_init(&lexer, buffer, strlen(buffer));
+    SB out = {0}; char *lengths[4] = {0}, *color = NULL;
+    unsigned count = 0; bool inset = false, ended = false;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_COMMA || type == CT_EOF) {
+            free(token.str);
+            if (count < 2) goto invalid;
+            if (out.n) sb_puts(&out, ", ");
+            if (color) { sb_puts(&out, color); sb_putc(&out, ' '); free(color); color = NULL; }
+            for (unsigned i = 0; i < count; i++) {
+                if (i) sb_putc(&out, ' ');
+                sb_puts(&out, lengths[i]); free(lengths[i]); lengths[i] = NULL;
+            }
+            if (inset) sb_puts(&out, " inset");
+            count = 0; inset = ended = false;
+            if (type == CT_EOF) { free(buffer); return sb_take(&out); }
+            continue;
+        }
+        char *component = shadow_component_text(&lexer, &token); free(token.str);
+        if (!component) goto invalid;
+        if (!out.n && !count && !color && !inset && type == CT_IDENT &&
+            (str_ieq(component, "none") || var_wide_keyword(component))) {
+            CTok end; do { end = clex_next(&lexer); free(end.str); } while (end.type == CT_WS);
+            if (end.type == CT_EOF) { free(buffer); sb_free(&out); return component; }
+            free(component); goto invalid;
+        }
+        bool zero = false;
+        if (shadow_length_component(component, count == 2, type == CT_FUNC, &zero)) {
+            if (ended || count == 4) { free(component); goto invalid; }
+            if (zero) { free(component); component = xstrdup("0px"); }
+            lengths[count++] = component;
+        } else if (str_ieq(component, "inset") && !inset) {
+            inset = true; ended |= count != 0; free(component);
+        } else {
+            CssColor parsed;
+            if (color || !css_color_parse(component, &parsed, NULL)) { free(component); goto invalid; }
+            /* Keep specified color tokens, especially currentcolor, relative
+             * colors and light-dark(). CSSOM uses its shared color serializer. */
+            color = component; ended |= count != 0;
+        }
+    }
+invalid:
+    for (unsigned i = 0; i < count; i++) free(lengths[i]);
+    free(color); free(buffer); sb_free(&out); return NULL;
+}
+bool css_box_shadow_valid(const char *property, const char *value) {
+    if (strcmp(property, "box-shadow")) return true;
+    char *parsed = css_box_shadow_parse(value); bool valid = parsed != NULL;
     free(parsed); return valid;
 }
 
@@ -2782,6 +2920,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     /* Authored parse errors are ignored before substitution can apply unset.
        Valid pending values are checked again after their tokens resolve. */
     if (!strcmp(prop, "transition-property") && !css_transition_property_valid(prop, value_in)) return;
+    if (!css_box_shadow_valid(prop, value_in)) return;
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
@@ -2798,7 +2937,8 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     }
     char *vbuf = min_size_property(prop) ? css_min_size_parse(v) :
         css_numeric_dimension_property(prop) ? css_numeric_dimension_parse(prop, v) :
-        !strcmp(prop, "transition-property") ? css_transition_property_parse(v) : xstrdup(v);
+        !strcmp(prop, "transition-property") ? css_transition_property_parse(v) :
+        !strcmp(prop, "box-shadow") ? css_box_shadow_parse(v) : xstrdup(v);
     if (!vbuf) { free(subst); return; } /* substitution already applied unset */
     char *val = str_trim(vbuf);
     if (min_size_property(prop) && (str_ieq(val, "-webkit-min-content") ||
@@ -2972,6 +3112,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
         else if (!strcmp(P, "font-family")) st->font_family = src->font_family;
         else if (!strcmp(P, "line-height")) { st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
+        else if (!strcmp(P, "box-shadow")) {
+            st->box_shadow = src->box_shadow; st->has_shadow = src->has_shadow;
+            if (inherit) {
+                st->parent_sensitive = true;
+                if (st->box_shadow.color_tokens && css_parse_color(st->box_shadow.color_tokens, &st->box_shadow.color, st->color))
+                    st->has_shadow = COLOR_A(st->box_shadow.color) > 0;
+            }
+        }
         else if (!strcmp(P, "background-repeat")) st->bg_repeat = src->bg_repeat;
         else if (!strcmp(P, "background-origin")) st->bg_origin = src->bg_origin;
         else if (!strcmp(P, "background-clip")) st->bg_clip = src->bg_clip;

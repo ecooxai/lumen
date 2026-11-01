@@ -47,7 +47,7 @@ function parseDecls(s) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
     return m;
 }
 /* CSS Sizing4 intrinsic-size grammar. Keep specified physical longhands in
@@ -578,6 +578,17 @@ function cssNumericDimensionParse(property, value) {
     return /^(animation|transition)-/.test(property) && !/\\|(?:var|env|attr|if)\(|--/i.test(parsed) ?
         tomSplitTop(text, ',').map(component => component.trim()).join(', ') : text;
 }
+/* The native grammar keeps color functions and pending substitutions intact.
+ * Reuse the same specified-color and math serializers as other properties. */
+function cssBoxShadowParse(value) {
+    const parsed = N.cssBoxShadow(value);
+    if (parsed === null || /(?:^|[^a-z0-9_-])(?:var|env|attr|if)\(|--/i.test(parsed)) return parsed;
+    return specSplit(parsed, true).map(layer => {
+        const parts = specSplit(layer);
+        const color = N.cssColor(parts[0]) === null ? null : specColor(parts[0], 'color');
+        return parts.map((part, index) => index === 0 && color !== null ? color : specNormalize('box-shadow', CSS_MATH_VALUE.test(part) ? specFoldMath(part) : part)).join(' ');
+    }).join(', ');
+}
 /* Recognized concrete math uses native component-token completion before
  * declaration serialization. Pending substitution retains its original text. */
 const CSS_MATH_VALUE = /(?:^|[^a-z0-9_-])(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan2?|sqrt|exp|pow|log|hypot|abs|sign|round|mod|rem|progress)\(/i;
@@ -674,6 +685,7 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
     if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
+    if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
     if (CSS_MIN_SIZE.test(p)) return N.cssSupports('(' + p + ':' + v + ')');
     if (CSS_NUMERIC_DIMENSION.test(p)) return N.cssNumericDimension(p, v) !== null;
     if (cssCisRelevant(p)) return cssCisParse(p, v) !== null;
@@ -1069,6 +1081,13 @@ class CSSStyleDeclaration {
         if (v !== '' && ((pri && !/^important$/i.test(pri)) || !cssVarSyntax(v))) return;
         if (CSS_MIN_SIZE.test(p)) {
             const value = v === '' ? '' : cssMinSizeParse(p, v);
+            if (value === null) return;
+            const m = new SMap(this._m()); m.delete(p);
+            if (value !== '') m.set(p, [value, pri ? 'important' : '']);
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (p === 'box-shadow') {
+            const value = v === '' ? '' : cssBoxShadowParse(v);
             if (value === null) return;
             const m = new SMap(this._m()); m.delete(p);
             if (value !== '') m.set(p, [value, pri ? 'important' : '']);

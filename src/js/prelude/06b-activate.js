@@ -241,7 +241,15 @@ class CSSRuleStyle extends CSSStyleDeclaration {
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v))); }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m();
-        if (p === 'transition-property') {
+        if (p === 'box-shadow') {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (value === '') m.delete(p);
+            else {
+                if (priority && !/^important$/i.test(priority)) return;
+                const parsed = cssBoxShadowParse(value); if (parsed === null) return;
+                m.delete(p); m.set(p, [parsed, priority ? 'important' : '']);
+            }
+        } else if (p === 'transition-property') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (value === '') m.delete(p);
             else {

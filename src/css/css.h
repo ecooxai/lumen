@@ -130,7 +130,7 @@ enum { TO_CLIP, TO_ELLIPSIS };
 typedef struct { float pos; Color color; } GradStop;
 typedef struct Gradient { uint8_t type; /* 0 linear 1 radial */ float angle; int nstops; GradStop stops[8]; bool repeating; const char *ser; /* computed value text, in the same allocation (or NULL) */ } Gradient;
 
-typedef struct { float x, y, blur, spread; Color color; bool inset; } Shadow;
+typedef struct { float x, y, blur, spread; Color color; bool inset; const char *color_tokens; /* interned: inherit currentcolor without recomputing lengths */ } Shadow;
 
 typedef struct { uint64_t w[4]; } CustomMask; /* 256-bit bloom of custom property names */
 typedef struct CustomProps { int refs, depth; HMap map; struct CustomProps *parent; } CustomProps; /* own name -> char* value, then parent's */
@@ -439,6 +439,9 @@ bool css_numeric_dimension_valid(const char *prop, const char *value);
 char *css_numeric_dimension_parse(const char *prop, const char *value); /* caller owns result; NULL if invalid */
 /* Pending var/env/attr/if/custom-function tokens use deferred math validation. */
 bool css_math_substitution_pending(const char *value);
+/* Shared box-shadow list grammar; specified color tokens remain contextual. */
+bool css_box_shadow_valid(const char *property, const char *value);
+char *css_box_shadow_parse(const char *value); /* caller owns result; NULL if invalid */
 /* Shared standalone transition-property list grammar and identifier serialization. */
 bool css_transition_property_valid(const char *property, const char *value);
 char *css_transition_property_parse(const char *value); /* caller owns result; NULL if invalid */
