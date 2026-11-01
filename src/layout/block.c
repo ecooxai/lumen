@@ -767,7 +767,13 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
     bool cb_bottom = !b->bfc && b->b[2] == 0 && b->p[2] == 0 && b->st->height.kind == LK_AUTO && b->fmt == FMT_FLOW && b->st->display != D_TABLE_CELL;
     float end;
     if (cb_bottom && !first) { b->eff_mb = collapse2(b->m[2], pending); end = cursor; }
-    else { b->eff_mb = b->m[2]; end = cursor + (first ? 0 : pending); }
+    else {
+        b->eff_mb = b->m[2];
+        /* Empty in-flow boxes can leave a collapsed margin without advancing
+         * the cursor. Keep it inside a BFC root, where it cannot escape into
+         * the parent's top margin. */
+        end = cursor + (first && b->collapse_top ? 0 : pending);
+    }
     return end - cy;
 }
 
