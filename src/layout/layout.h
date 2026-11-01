@@ -81,7 +81,15 @@ float style_line_height(const ComputedStyle *s, Font *f);
 bool layout_contents_hidden(const Box *box);
 /* Stored element offsets survive skipped contents and a temporarily absent
  * scroll container. Only the owner's effective offsets enter geometry. */
-static inline bool box_scroll_active(const Box *b) { return b && b->scroller && b->node && !layout_contents_hidden(b); }
+static inline bool box_scroll_active(const Box *b) {
+    if (!b || !b->scroller || !b->node || layout_contents_hidden(b)) return false;
+    /* scroller also marks clipping boxes. A visible/clip pair has no scroll
+       container, so retained offsets and setters must remain inactive.
+       Preserve the already-computed overflow pair and viewport propagation. */
+    const ComputedStyle *s = b->st;
+    return !s || (s->overflow_x != OV_VISIBLE && s->overflow_x != OV_CLIP) ||
+                 (s->overflow_y != OV_VISIBLE && s->overflow_y != OV_CLIP);
+}
 static inline float box_scroll_left(const Box *b) { return box_scroll_active(b) ? b->node->scroll_x : 0; }
 static inline float box_scroll_top(const Box *b) { return box_scroll_active(b) ? b->node->scroll_y : 0; }
 /* column-reverse scrollers start at the end: scrollTop 0 is the bottom, negative scrolls up */

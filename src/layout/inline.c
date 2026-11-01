@@ -185,10 +185,45 @@ static void place_text(IC *c, Box *t) {
     }
 }
 
+/* A soft wrap at an atomic-inline boundary uses the nearest common
+ * ancestor's white-space, not the atomic box's internal formatting mode.
+ * https://drafts.csswg.org/css-text-3/#line-breaking */
+static bool atomic_wrap_allowed(const IC *c, const Box *next) {
+    const Box *previous = NULL; const TextFrag *last = NULL;
+    for (int i = c->blk->nfrags - 1; i >= c->line_f0; i--) {
+        const TextFrag *fragment = &c->blk->frags[i];
+        if (fragment->box && (fragment->g0 < 0 || fragment->g1 > fragment->g0)) {
+            previous = fragment->box; last = fragment; break;
+        }
+    }
+    /* A wrapping space supplies its own opportunity, independently of the
+       following atomic boundary's common-ancestor rule. Keep that preexisting
+       opportunity when the text child enables wrapping inside a nowrap parent. */
+    if (previous && previous->kind == BX_TEXT && last->g1 > last->g0 &&
+        last->g1 <= previous->sh.n && previous->st) {
+        int cluster = previous->sh.g[last->g1 - 1].cluster;
+        int whitespace = previous->st->white_space;
+        if (cluster >= 0 && cluster < previous->text_len && previous->text[cluster] == ' ' &&
+            whitespace != WS_NOWRAP && whitespace != WS_PRE) return true;
+    }
+    const Box *scope = c->blk;
+    if (previous) {
+        const Box *a = next, *b = previous; int da = 0, db = 0;
+        for (const Box *p = a; p; p = p->parent) da++;
+        for (const Box *p = b; p; p = p->parent) db++;
+        while (da > db) { a = a->parent; da--; }
+        while (db > da) { b = b->parent; db--; }
+        while (a && b && a != b) { a = a->parent; b = b->parent; }
+        if (a && a->st) scope = a;
+    }
+    int whitespace = scope->st->white_space;
+    return whitespace != WS_NOWRAP && whitespace != WS_PRE;
+}
+
 static void place_atomic(IC *c, Box *a) {
     layout_box(c->L, a, 0, 0, c->W, c->cbh, NULL, SZ_SHRINK, 0, -1);
     float ow = a->w + a->m[1] + a->m[3], oh = a->h + a->m[0] + a->m[2];
-    if (c->line_has_content && c->pen + ow > c->right + 0.01f) finish_line(c, false);
+    if (c->line_has_content && c->pen + ow > c->right + 0.01f && atomic_wrap_allowed(c, a)) finish_line(c, false);
     float itemA;
     bool use_bl = a->has_baseline && a->fmt != FMT_REPLACED && !a->scroller;
     if (use_bl) itemA = a->baseline - a->y + a->m[0]; else itemA = oh;
