@@ -1230,6 +1230,32 @@ function specColor(v, p) {
     const [r, g, b] = (c.legacy ? c.c : colorTo(c, 'srgb')).map(x => Math.round(Math.min(1, Math.max(0, x)) * 255));
     return c.alpha >= 1 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${specAlpha(c.alpha)})`;
 }
+/* Imperative shorthand assignment replaces its physical declarations before
+ * serialization. Raw declaration parsing keeps its existing cascade order. */
+function cssOverflowSet(m, value, priority) {
+    if (value !== '') {
+        if (priority && !/^important$/i.test(priority) || !cssVarSyntax(value)) return false;
+        /* Keep the existing pending-substitution path and its original text. */
+        if (cssBorderPending(value) && value.includes('(')) {
+            if (!N.cssSupports('(overflow:' + value + ')')) return false;
+        } else {
+            const tokens = cssGridTokens(value);
+            if (!tokens || !tokens.length) return false;
+            const words = tokens.map(text => cssGridDecode(text).toLowerCase());
+            const wide = words.length === 1 && /^(inherit|initial|unset|revert|revert-layer)$/.test(words[0]);
+            const concrete = words.length <= 2 && words.every(word => /^(visible|hidden|scroll|auto|clip|overlay)$/.test(word));
+            if (wide) value = words[0];
+            else if (concrete) {
+                const values = words.map(word => word === 'overlay' ? 'auto' : word);
+                value = values.length === 2 && values[0] === values[1] ? values[0] : values.join(' ');
+            } else return false;
+        }
+    }
+    m.delete('overflow'); m.delete('overflow-x'); m.delete('overflow-y');
+    if (value !== '') m.set('overflow', [value, priority ? 'important' : '']);
+    return true;
+}
+
 class CSSStyleDeclaration {
     constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); }
     /* parsed declarations of the current style attribute; callers that modify take a copy */
@@ -1242,11 +1268,16 @@ class CSSStyleDeclaration {
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
     getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); return e ? e[0] : shorthandPart(m, p); }
-    getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p); return e ? e[1] : ''; }
+    getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
         v = v == null ? '' : String(v);
         pri = pri == null ? '' : String(pri);
         if (v !== '' && ((pri && !/^important$/i.test(pri)) || !cssVarSyntax(v))) return;
+        if (p === 'overflow') {
+            const m = new SMap(this._m());
+            if (!cssOverflowSet(m, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
         if (CSS_MIN_SIZE.test(p)) {
             const value = v === '' ? '' : cssMinSizeParse(p, v);
             if (value === null) return;

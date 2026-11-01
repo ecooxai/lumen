@@ -1,0 +1,48 @@
+<!doctype html><meta charset="utf-8"><title>Imperative overflow shorthand replaces its physical longhands</title><style>html,body{margin:0;padding:0;border:0}</style><body><script>
+(async()=>{
+ const rows=[],frame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+ const eq=(actual,expected,label)=>{if(actual!==expected)throw Error(label+': '+JSON.stringify(actual)+' expected '+JSON.stringify(expected));};
+ const near=(actual,expected,label)=>{if(!Number.isFinite(actual)||Math.abs(actual-expected)>.1)throw Error(label+': '+actual+' expected '+expected);};
+ const geometry='position:absolute;left:40px;top:30px;width:200px;height:120px;margin:0;padding:0;border:0;';
+ for(const surface of ['inline','rule']){
+  const element=document.createElement('div'),inner=document.createElement('div'),target=document.createElement('div'),sheetNode=document.createElement('style');
+  element.id='overflow-shorthand-'+surface;element.style.cssText=geometry;
+  inner.style.cssText='position:relative;width:600px;height:400px;margin:0;padding:0;border:0';
+  target.style.cssText='position:absolute;left:120px;top:80px;width:20px;height:20px;background:#456789;margin:0;padding:0;border:0';
+  inner.appendChild(target);element.appendChild(inner);document.body.appendChild(element);
+  sheetNode.textContent='#'+element.id+'{}';document.head.appendChild(sheetNode);
+  const declaration=surface==='inline'?element.style:sheetNode.sheet.cssRules[0].style;
+  const reset=value=>{declaration.cssText=(surface==='inline'?geometry:'')+value;};
+  const mixed='overflow:hidden;overflow-x:clip;overflow-y:visible;--unrelated:preserve;';
+  const values=(x,y,priority='')=>{
+   eq(declaration.getPropertyValue('overflow-x'),x,'specified overflow-x');eq(declaration.getPropertyValue('overflow-y'),y,'specified overflow-y');
+   eq(declaration.getPropertyPriority('overflow-x'),priority,'overflow-x priority');eq(declaration.getPropertyPriority('overflow-y'),priority,'overflow-y priority');
+  };
+  const computed=(x,y)=>{const style=getComputedStyle(element);eq(style.overflowX,x,'computed overflow-x');eq(style.overflowY,y,'computed overflow-y');};
+  const check=async(name,fn)=>{try{await fn();rows.push({name:surface+' '+name,pass:true});}catch(error){rows.push({name:surface+' '+name,pass:false,error:String(error)});}};
+  await check('shorthand replaces later mixed physical longhands',()=>{reset(mixed);declaration.setProperty('overflow','hidden');eq(declaration.getPropertyValue('overflow'),'hidden','shorthand');values('hidden','hidden');computed('hidden','hidden');eq(declaration.getPropertyValue('--unrelated'),'preserve','unrelated property retained');});
+  await check('normal shorthand replaces important physical longhands',()=>{reset('overflow-x:clip!important;overflow-y:visible!important');declaration.setProperty('overflow','hidden');values('hidden','hidden');eq(declaration.getPropertyPriority('overflow'),'','shorthand priority');computed('hidden','hidden');});
+  await check('important two-value shorthand replaces both physical values',()=>{reset(mixed);declaration.setProperty('overflow','scroll auto','important');eq(declaration.getPropertyValue('overflow'),'scroll auto','two-value shorthand');values('scroll','auto','important');computed('scroll','auto');});
+  await check('invalid shorthand value preserves full declaration and priority',()=>{reset('overflow-x:hidden!important;overflow-y:scroll;--unrelated:preserve');const before=declaration.cssText;declaration.setProperty('overflow','hidden invalid-overflow');eq(declaration.cssText,before,'invalid value is atomic');eq(declaration.getPropertyValue('overflow-x'),'hidden','preserved x');eq(declaration.getPropertyValue('overflow-y'),'scroll','preserved y');eq(declaration.getPropertyPriority('overflow-x'),'important','preserved mixed priority');});
+  await check('invalid priority preserves full declaration',()=>{reset(mixed);const before=declaration.cssText;declaration.setProperty('overflow','auto','urgent');eq(declaration.cssText,before,'invalid priority is atomic');});
+  await check('empty shorthand removes overlapping family and preserves unrelated property',()=>{reset(mixed);declaration.setProperty('overflow','');eq(declaration.getPropertyValue('overflow'),'','removed shorthand');values('','');computed('visible','visible');eq(declaration.getPropertyValue('--unrelated'),'preserve','unrelated property after removal');});
+  await check('pending shorthand replaces physical overrides before substitution',()=>{reset(mixed+'--mode:hidden');declaration.setProperty('overflow','var(--mode)');eq(declaration.getPropertyValue('overflow'),'var(--mode)','pending shorthand retained');eq(declaration.getPropertyValue('overflow-x'),'','pending x is opaque');eq(declaration.getPropertyValue('overflow-y'),'','pending y is opaque');computed('hidden','hidden');});
+  await check('malformed var shorthand preserves full declaration',()=>{reset(mixed);const before=declaration.cssText;declaration.setProperty('overflow','var()');eq(declaration.cssText,before,'invalid var is atomic');});
+  await check('initial shorthand resets both specified and computed axes',()=>{reset('overflow-x:hidden;overflow-y:scroll');declaration.setProperty('overflow','initial');eq(declaration.getPropertyValue('overflow'),'initial','wide shorthand');values('initial','initial');computed('visible','visible');});
+  await check('restored shorthand reactivates stored offsets and real descendant geometry',async()=>{
+   reset('overflow:hidden');element.getBoundingClientRect();element.scrollLeft=100;element.scrollTop=60;await frame();
+   near(element.scrollLeft,100,'initial stored x');near(element.scrollTop,60,'initial stored y');
+   declaration.setProperty('overflow-x','clip');declaration.setProperty('overflow-y','visible');await frame();
+   let r=target.getBoundingClientRect();near(element.scrollLeft,0,'inactive x');near(element.scrollTop,0,'inactive y');near(r.x,160,'inactive actual x');near(r.y,110,'inactive actual y');
+   declaration.setProperty('overflow','hidden');await frame();r=target.getBoundingClientRect();
+   near(element.scrollLeft,100,'restored stored x');near(element.scrollTop,60,'restored stored y');near(r.x,60,'restored actual x');near(r.y,50,'restored actual y');
+   if(document.elementFromPoint(r.x+5,r.y+5)!==target)throw Error('hit disagrees with restored actual geometry');
+  });
+  sheetNode.remove();element.remove();
+ }
+ for(const row of rows)console.log('OVERFLOW_SHORTHAND_ROW '+JSON.stringify(row));
+ const passed=rows.filter(row=>row.pass).length,ok=rows.length===20&&passed===20;
+ document.documentElement.setAttribute('data-css-overflow-shorthand',ok?'PASS':'FAIL');
+ console.log('RESULTS css-overflow-shorthand:'+(ok?'PASS':'FAIL')+' '+JSON.stringify({passed,total:rows.length}));
+})().catch(error=>{document.documentElement.setAttribute('data-css-overflow-shorthand','FAIL');console.log('RESULTS css-overflow-shorthand:FAIL '+JSON.stringify({error:String(error)}));});
+</script>

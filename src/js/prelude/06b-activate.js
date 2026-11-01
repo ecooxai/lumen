@@ -241,6 +241,11 @@ class CSSRuleStyle extends CSSStyleDeclaration {
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v), this._rule instanceof CSSFontFaceRule)); }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m();
+        if (p === 'overflow') {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (!cssOverflowSet(m, value, priority)) return;
+            this._w(m); return;
+        }
         if (this._rule instanceof CSSFontFaceRule && p === 'unicode-range') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (value === '') m.delete(p);
