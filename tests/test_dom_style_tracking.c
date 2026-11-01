@@ -1216,6 +1216,7 @@ static void test_tree_attribute_subjects(void) {
         if (round % 2) node_set_attr(a, "class", "a");
         assert_incremental_matches_full(e);
         assert(x->style->color != RGBA(255,0,0,255) && b->style->bg_color != RGBA(0,0,255,255) && st->style->color != RGBA(0,128,0,255));
+        node_free_tree(em);   /* detached after the removal assertions */
     }
     style_engine_free(e); doc_free(d);
 }
@@ -1455,7 +1456,7 @@ static void test_unborne_attribute_edit(void) {
         node_append(tile, img);
         style_recalc(e, &d->node, false);
         assert(e->stats_matched <= 2 && d->body->style->color == RGBA(0, 0, 0, 255));
-        if (i % 2) { node_remove(img); style_recalc(e, &d->node, false); assert(e->stats_matched <= 1); }
+        if (i % 2) { node_remove(img); style_recalc(e, &d->node, false); assert(e->stats_matched <= 1); node_free_tree(img); }
     }
     Node *late = node_new_element(d, "div", NS_HTML); node_set_attr(late, "class", "srp"); node_set_attr(late, "style", "overflow:hidden");
     node_append(sec, late);   /* a witness inserted with its style */
@@ -1470,6 +1471,7 @@ static void test_unborne_attribute_edit(void) {
     node_remove(late);
     style_recalc(e, &d->node, false);
     assert(d->body->style->color == RGBA(0, 0, 0, 255));
+    node_free_tree(late);
     style_engine_free(e); doc_free(d);
 }
 
