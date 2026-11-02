@@ -9,7 +9,7 @@ typedef struct Image { int w, h, refs; uint32_t *px; float scale; /* device px p
 static inline float image_css_w(const Image *im) { return im->scale > 0 ? im->w / im->scale : (float)im->w; }
 static inline float image_css_h(const Image *im) { return im->scale > 0 ? im->h / im->scale : (float)im->h; }
 
-enum DOp { DO_RECT, DO_BORDER, DO_TEXT, DO_IMAGE, DO_GRADIENT, DO_SHADOW, DO_LINE,
+enum DOp { DO_RECT, DO_BORDER, DO_TEXT, DO_IMAGE, DO_GRADIENT, DO_SHADOW, DO_LINE, DO_TRANSFORM,
            DO_PUSH_CLIP, DO_POP_CLIP, DO_PUSH_LAYER, DO_POP_LAYER };
 
 typedef struct DGlyph { uint32_t gid; float x, y; Font *font; } DGlyph;
@@ -38,9 +38,11 @@ typedef struct DItem {
     bool sticky;                /* fixed only because inside a position:sticky box that still moves with the page scroll */
     const void *mv;             /* innermost scroller box the item moves with when it scrolls; NULL = the document */
     const void *sc;             /* DO_PUSH_CLIP: the scroller box whose clip this is */
+    struct DTransform *transform; /* frame-arena-owned affine subtree */
 } DItem;
+#include "affine-ink.h"
 
-typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; PaintRegions fixed; } DisplayList;
+typedef struct DisplayList { VEC(DItem) items; Arena arena; float vw, vh; PaintRegions fixed; int fixed_first; } DisplayList;
 
 extern Image *(*paint_image_hook)(Node *n);
 extern Image *(*paint_url_image_hook)(const char *url);
@@ -60,6 +62,9 @@ void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float 
 extern bool dl_caret_on; /* paint the caret in the focused text control */
 extern bool dl_cull; /* skip normal-flow subtrees outside the viewport (off only to compare, in tests) */
 void dl_clear(DisplayList *dl);
+/* Before damage signatures, refresh affine ink at the actual canvas scale.
+ * Raster itself queries differing scales without modifying the display list. */
+void dl_prepare_ink(DisplayList *dl, float scale);
 
 /* punch: image whose pixels raster leaves as alpha-0 holes (composited by the GPU); punched is set when it was hit.
    punch_more: up to three more such images (NULL-terminated); bit i of punched_more is set when punch_more[i] was hit. */
@@ -81,6 +86,11 @@ void raster_set_threads(int n);
 extern bool raster_pixel_rows;   /* test hook: no constant-coverage spans for rounded rects and shadows, no item culling */
 extern unsigned long long g_raster_px, g_layer_px;   /* paint profile: pixels rastered / composited from opacity layers */
 extern unsigned g_raster_calls, g_layer_n;
+/* Actual affine window/opacity storage, limited to4MiB per raster band,
+ * plus a depth-proportional stack fallback. Existing primitive row arrays
+ * and process-lifetime glyph caches are separate from this counter. */
+extern unsigned long long g_affine_scratch_peak;
+extern unsigned g_affine_windows, g_affine_sample_fallbacks;
 bool png_write(const char *path, const uint32_t *px, int w, int h, int stride);
 
 /* native text selection (anchor/focus = text node + byte offset into its layout text) */

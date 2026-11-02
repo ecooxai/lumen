@@ -1,0 +1,47 @@
+<!doctype html><meta charset="utf-8"><title>Affine geometry and hit testing</title>
+<style>
+html,body{margin:0;padding:0;border:0}
+#affine-parent{position:absolute;left:100px;top:100px;width:200px;height:200px;transform-origin:0 0}
+#affine-target{position:absolute;left:20px;top:20px;width:20px;height:10px;background:#e02030;transform-origin:0 0}
+#affine-fixed{display:none;position:fixed;left:3px;top:4px;width:4px;height:3px;background:#20a040}
+#affine-spacer{display:none;width:300px;height:300px;pointer-events:none}
+</style><body><div id="affine-parent"><div id="affine-target"><div id="affine-fixed"></div></div><div id="affine-spacer"></div></div><script>
+(()=>{
+  const rows=[], parent=document.getElementById('affine-parent'),target=document.getElementById('affine-target');
+  const fixed=document.getElementById('affine-fixed'),spacer=document.getElementById('affine-spacer');
+  function check(value,message){if(!value)throw new Error(message);}
+  function near(actual,expected){if(!Number.isFinite(actual)||Math.abs(actual-expected)>.025)throw new Error(actual+' expected '+expected);}
+  function test(name,fn){try{fn();rows.push({name,pass:true});}catch(error){rows.push({name,pass:false,error:String(error)});}}
+  function setup(owner,child){parent.style.cssText=owner;target.style.cssText=child;fixed.style.display='none';spacer.style.display='none';parent.scrollLeft=0;parent.scrollTop=0;}
+  function rectangle(node,expected){const r=node.getBoundingClientRect();[r.x,r.y,r.width,r.height].forEach((x,i)=>near(x,expected[i]));}
+  function measured(node,expected,inside,outside){
+    rectangle(node,expected);
+    check(document.elementFromPoint(inside[0]+.5,inside[1]+.5)===node,'inverse hit must select transformed interior');
+    check(document.elementFromPoint(outside[0]+.5,outside[1]+.5)!==node,'inverse hit must exclude the old rectangle or clipped region');
+  }
+  const cases=[
+    ['positive off-diagonal rotation paints and hits','transform:rotate(90deg)',[110,120,10,20],[115,130],[135,125]],
+    ['negative off-diagonal rotation paints and hits','transform:rotate(-90deg)',[120,100,10,20],[125,110],[135,125]],
+    ['non-right rotation uses inverse polygon hit','transform:rotate(45deg)',[112.928932,120,21.213203,21.213203],[124,130],[113,121]],
+    ['skew uses the full off-diagonal matrix','transform:skewX(45deg)',[120,120,30,10],[135,125],[121,129]],
+    ['negative nonuniform scale paints the reflected box','transform:scale(-2,1.5)',[80,120,40,15],[100,127],[135,125]],
+    ['length transform origin is shared','transform:rotate(90deg);transform-origin:10px 5px',[125,115,10,20],[130,125],[121,121]],
+    ['percentage transform origin is shared','transform:rotate(90deg);transform-origin:100% 100%',[140,110,10,20],[145,120],[125,125]],
+    ['full matrix retains both skew and translation','transform:matrix(1,.5,.25,1,7,9)',[127,129,22.5,20],[138,139],[128,147]]
+  ];
+  for(const [name,value,rect,inside,outside] of cases)test(name,()=>{setup('',value);measured(target,rect,inside,outside);near(target.offsetWidth,20);near(target.offsetHeight,10);});
+  test('opposing nested rotations form one final corner union',()=>{setup('transform:rotate(45deg)','transform:rotate(-45deg)');measured(target,[100,128.284271,20,10],[110,133],[125,125]);});
+  test('outer clip stays in destination coordinates',()=>{setup('width:100px;height:100px;overflow:hidden','left:90px;top:80px;width:40px;height:20px;transform:rotate(90deg)');measured(target,[170,180,20,40],[180,190],[180,210]);});
+  test('inner clip rotates with its transformed owner',()=>{setup('width:100px;height:100px;overflow:hidden;transform:rotate(90deg)','left:80px;top:20px;width:50px;height:20px');measured(target,[60,180,20,50],[70,190],[70,220]);});
+  test('source outside viewport is retained when transformed into view',()=>{setup('left:1200px','left:0;top:0;width:40px;height:20px;transform:translateX(-1100px) rotate(90deg)');measured(target,[80,100,20,40],[90,120],[110,120]);});
+  test('fixed descendant uses its actual rotated containing block',()=>{setup('transform:rotate(90deg)','');fixed.style.display='block';measured(fixed,[93,103,3,4],[94,105],[100,110]);});
+  test('element scrolling precedes its owner transform',()=>{setup('width:100px;height:100px;overflow:hidden;transform:rotate(90deg)','top:30px');spacer.style.display='block';parent.scrollLeft=10;parent.scrollTop=20;near(parent.scrollLeft,10);near(parent.scrollTop,20);measured(target,[80,110,10,20],[85,120],[95,120]);});
+  test('singular matrix has degenerate bounds and no hit target',()=>{setup('','transform:scale(0,1)');rectangle(target,[120,120,0,10]);check(document.elementFromPoint(120.5,125.5)!==target,'singular transform must not be hittable');check(getComputedStyle(target).transform!=='none','singular matrix remains a transform');});
+  test('nested opacity preserves affine geometry and inverse hit',()=>{setup('transform:rotate(90deg);opacity:.5','opacity:.5');measured(target,[70,120,10,20],[75,130],[135,125]);near(Number(getComputedStyle(parent).opacity),.5);near(Number(getComputedStyle(target).opacity),.5);});
+  parent.remove();
+  for(const row of rows)console.log('AFFINE_RENDERING_ROW '+JSON.stringify(row));
+  const total=rows.length,passed=rows.filter(row=>row.pass).length,status=total===16&&passed===total?'PASS':'FAIL';
+  document.documentElement.setAttribute('data-css-affine-rendering',status);
+  console.log('RESULTS css-affine-rendering:'+status+' '+JSON.stringify({passed,total}));
+})();
+</script>

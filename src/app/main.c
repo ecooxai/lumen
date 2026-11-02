@@ -1986,10 +1986,22 @@ static uint64_t ditem_hash(const DItem *it, float dy) {
     if (it->img) HMIX(h, it->img->content_version);
     if (it->grad) { const Gradient *g = it->grad; HMIX(h, g->type); HMIX(h, g->angle); HMIX(h, g->nstops); HMIX(h, g->repeating); h = hmix(h, g->stops, sizeof g->stops[0] * (size_t)LCLAMP(g->nstops, 0, 8)); }
     for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; int64_t gy = hq(g->y + dy); HMIX(h, g->gid); HMIX(h, g->x); HMIX(h, gy); HMIX(h, g->font); }
+    if (it->op == DO_TRANSFORM && it->transform) {
+        const DTransform *group = it->transform;
+        Affine2D matrix = affine_conjugate_translation(group->matrix, 0, dy);
+        HMIX(h, matrix); HMIX(h, group->count);
+        for (int i = 0; i < group->count; i++) {
+            uint64_t child = ditem_hash(&group->items[i], dy); HMIX(h, child);
+        }
+    }
     return h;
 }
 static void bunion(float *a, const float *b) { a[0] = LMIN(a[0], b[0]); a[1] = LMIN(a[1], b[1]); a[2] = LMAX(a[2], b[2]); a[3] = LMAX(a[3], b[3]); }
 static void ditem_box(const DItem *it, float *b) {
+    if (it->op == DO_TRANSFORM && it->transform) {
+        for (int k = 0; k < 4; k++) b[k] = affine_float(it->transform->bounds[k] + (k < 2 ? -2 : 2));
+        return;
+    }
     float x0 = it->x, y0 = it->y, x1 = it->x + it->w, y1 = it->y + it->h, e = 2;
     if (it->op == DO_SHADOW) e += fabsf(it->spread) + fabsf(it->blur);
     if (it->op == DO_TEXT) {
@@ -2459,7 +2471,7 @@ static void render(App *a) {
             else { part = false; if (!sdmg) why = 5; else g_sdmg_no[0]++; g_pp_noblit[0]++; }
         }
         if (!blit) sdmg = false;
-        g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, page_width(a), page_height(a)); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
+        g_full_paint = (double)SDL_GetTicks(); { double q = now_ms(); dl_clear(&a->pdl); dl_build(&a->pdl, a->t->cur->L, 0, a->t->sy, page_width(a), page_height(a)); dl_prepare_ink(&a->pdl, a->page.scale); g_td += now_ms() - q; } a->vbars = video_bars(a, &a->pdl);
 #ifdef __ANDROID__
         tsel_overlay(a, &a->pdl);
         kbm_overlay(a, &a->pdl);
@@ -3430,6 +3442,7 @@ static bool frame_update(Page *p) {
     if (p->cv.w != pw || p->cv.h != ph || p->cv.scale != s || !p->cv.px) { canvas_free(&p->cv); canvas_init(&p->cv, pw, ph, s); p->drawn_ver = ~0ull; }
     if (p->drawn_ver == p->d->dom_version && p->drawn_paint_ver == p->d->paint_version && p->drawn_epoch == g_img_epoch) return false;
     dl_clear(&p->fdl); dl_build(&p->fdl, p->L, 0, p->fsy, w, h);
+    dl_prepare_ink(&p->fdl, p->cv.scale);
     raster(&p->cv, &p->fdl, 0);   /* a frame's canvas is transparent: the page shows through unless its root or body has a background */
     p->drawn_ver = p->d->dom_version; p->drawn_paint_ver = p->d->paint_version; p->drawn_epoch = g_img_epoch;
     uint64_t content_version = p->img.content_version + 1;

@@ -96,29 +96,30 @@ bool jsg_borders(Node *n, float r[4], bool *inl) {
     return true;
 }
 
-/* Viewport border box: a fixed ancestor stops document scrolling, while
-   element scrollers and translations still affect its descendants. */
+/* Transform all four corners through the same origin/matrix used by paint.
+   Form their union only after the complete ancestor chain: intermediate AABBs
+   would incorrectly grow a rectangle under opposing nested rotations. */
 bool jsg_vrect(Node *n, float r[4], float scroll_x, float scroll_y) {
     struct Box *b = n->box;
     if (!b) return false;
-    r[0] = b->x; r[1] = b->y; r[2] = b->w; r[3] = b->h;
+    Affine2D m = affine_identity();
+    bool fixed = false;
     for (struct Box *a = b; a; ) {
-        const ComputedStyle *s = a->st;
         float sticky_x, sticky_y;
         box_sticky_offset(a, scroll_x, scroll_y, &sticky_x, &sticky_y);
-        r[0] += sticky_x; r[1] += sticky_y;
-        if (s && s->has_transform) {
-            r[0] += s->transform[4] + s->translate_pending[0].pct * a->w / 100;
-            r[1] += s->transform[5] + s->translate_pending[1].pct * a->h / 100;
-        }
-        if (a->fixed) return true;
+        m = affine_multiply(box_transform_matrix(a), m);
+        m = affine_multiply(affine_translation(sticky_x, sticky_y), m);
+        if (a->fixed) { fixed = true; break; }
         struct Box *up = a->abs && a->cb ? a->cb : a->parent;
-        if (up && up->scroller && up->node && up->st && (up->st->overflow_x != OV_VISIBLE || up->st->overflow_y != OV_VISIBLE)) {
-            r[0] -= box_scroll_left(up); r[1] -= box_scroll_y(up);
-        }
+        if (up && up->scroller && up->node && up->st && (up->st->overflow_x != OV_VISIBLE || up->st->overflow_y != OV_VISIBLE))
+            m = affine_multiply(affine_translation(-box_scroll_left(up), -box_scroll_y(up)), m);
         a = up;
     }
-    r[0] -= scroll_x; r[1] -= scroll_y;
+    if (!fixed) m = affine_multiply(affine_translation(-scroll_x, -scroll_y), m);
+    double source[4] = {b->x, b->y, (double)b->x + b->w, (double)b->y + b->h}, bounds[4];
+    if (!affine_bounds(m, source, bounds)) return false;
+    r[0] = affine_float(bounds[0]); r[1] = affine_float(bounds[1]);
+    r[2] = affine_float(bounds[2] - bounds[0]); r[3] = affine_float(bounds[3] - bounds[1]);
     return true;
 }
 

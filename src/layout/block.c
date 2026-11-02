@@ -1369,10 +1369,14 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     bool hidden = b->st && b->st->visibility != VIS_VISIBLE;   /* not a target itself, but visible descendants are */
     float sticky_x, sticky_y; box_sticky_offset(b, sx, sy, &sticky_x, &sticky_y);
     ox -= sticky_x; oy -= sticky_y;
-    if (b->st && b->st->has_transform) {   /* painted shifted by its translation (paint_stacking) */
-        float tx = b->st->transform[4] + b->st->translate_pending[0].pct * b->w / 100;
-        float ty = b->st->transform[5] + b->st->translate_pending[1].pct * b->h / 100;
-        ox -= tx; oy -= ty; vx -= tx; vy -= ty;
+    if (b->st && b->st->has_transform) {
+        Affine2D inverse;
+        if (!affine_inverse(box_transform_matrix(b), &inverse)) return NULL;
+        AffinePoint local = affine_point(inverse, (double)x + ox, (double)y + oy);
+        AffinePoint viewport = affine_point(inverse, (double)x + vx, (double)y + vy);
+        if (!isfinite(local.x) || !isfinite(local.y) || !isfinite(viewport.x) || !isfinite(viewport.y)) return NULL;
+        ox = affine_float(local.x - x); oy = affine_float(local.y - y);
+        vx = affine_float(viewport.x - x); vy = affine_float(viewport.y - y);
     }
     float lx = x + ox, ly = y + oy;
     bool inside = lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h;
