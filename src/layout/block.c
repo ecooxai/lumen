@@ -360,6 +360,17 @@ static float clamph(Box *b, float h, float cbh, float bp);
    memo keys include mode, cbw and fw, so the two inputs remain independent. */
 enum { SZ_ABS_SHRINK = SZ_FORCED + 1 };
 
+/* abs_place resolves these auto/stretch bases as border-box sizes before
+ * passing them through SZ_FORCED/fh. Evaluate the sizing calculation here,
+ * once, in the property's box; general forced sizes are already resolved. */
+static float abs_calc_size_border(Length value, float border_basis, float bp,
+                                  bool border_box, float percentage_basis) {
+    double extra = border_box ? 0 : bp;
+    double basis = fmax((double)bp, border_basis) - extra;
+    double result = (double)len_calc_size_apply(value, basis, percentage_basis) + extra;
+    return (float)fmax((double)bp, fmin((double)FLT_MAX, result));
+}
+
 static float g_imcb[2];   /* the last abs_place's inset-modified containing block size */
 static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int src[4], const int kwm[4]) {
     float px, py, pw, ph;
@@ -431,7 +442,15 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
 #undef FI
     int mode = SZ_SHRINK; float fw = 0, fh = -1;
     bool wdef = len_def(s->width, pw) || s->width.kind == LK_STRETCH;
-    if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) { mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */ fw = pw - l - r - a->m[1] - a->m[3]; }
+    if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) {
+        mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */
+        fw = pw - l - r - a->m[1] - a->m[3];
+        if (len_calc_size(s->width) && a->fmt != FMT_TABLE) {
+            float bp = hbp(a);
+            fw = abs_calc_size_border(s->width, fw, bp, s->box_sizing == BOX_BORDER, pw);
+            fw = LMAX(bp, clampw_basis(L, a, fw, pw, bp, g_imcb[0], true));
+        }
+    }
     float avail = sizing_x ? g_imcb[0] : pw - (lA ? 0 : l) - (rA ? 0 : r);
     if (!len_def(s->height, ph) && !tA && !bA) {
         fh = ph - t - bt - a->m[0] - a->m[2];
@@ -440,8 +459,15 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
         bool stretch_height = (!cb->st || !cb->st->writing_mode) &&
             (s->align_self == AL_AUTO || s->align_self == AL_NORMAL ||
              s->align_self == AL_STRETCH);
-        if (stretch_height && s->height.kind == LK_AUTO && s->aspect_ratio <= 0 &&
+        if (len_calc_size(s->height) && s->height.kind == LK_AUTO &&
             a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE) {
+            /* The inset-resolved basis may be negative before its border-box
+               floor. Calculate before the element's final size constraints. */
+            float bp = vbp(a);
+            fh = abs_calc_size_border(s->height, fh, bp, s->box_sizing == BOX_BORDER, ph);
+            fh = LMAX(bp, clamph_basis(a, fh, ph, bp, g_imcb[1], true));
+        } else if (stretch_height && s->height.kind == LK_AUTO && s->aspect_ratio <= 0 &&
+                   a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE) {
             /* An inset-resolved auto height stays definite at its border-box
                floor. Apply min/max before positioning and preserve the
                existing intrinsic, ratio and table sizing paths. */
@@ -454,10 +480,14 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
     if (s->width.kind == LK_STRETCH) {
         mode = SZ_FORCED;
         fw = layout_stretch_border_size(a, cb, true, avail, true);
+        if (len_calc_size(s->width) && a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE)
+            fw = abs_calc_size_border(s->width, fw, hbp(a), s->box_sizing == BOX_BORDER, pw);
         fw = clampw_basis(L, a, fw, pw, hbp(a), avail, true);
     }
     if (s->height.kind == LK_STRETCH) {
         fh = layout_stretch_border_size(a, cb, false, stretch_avail_h, true);
+        if (len_calc_size(s->height) && a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE)
+            fh = abs_calc_size_border(s->height, fh, vbp(a), s->box_sizing == BOX_BORDER, ph);
         fh = clamph_basis(a, fh, ph, vbp(a), stretch_avail_h, true);
     }
     if (s->anchor_sz[0] || s->anchor_sz[1]) {   /* anchor-size() widths and heights are border-box sizes here */
@@ -889,7 +919,7 @@ static float contained_auto_height(Layout *L, Box *b, float content_width) {
 static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
 /* flex/grid measure a child and then lay it out again, often with identical inputs; nested containers made that exponential */
 int g_lb_calls, g_lb_hits;
-static bool pct_h(const ComputedStyle *s) { return s->height.kind == LK_STRETCH || s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH || s->height.pctu || s->height.pct || s->min_height.pctu || s->min_height.pct || s->max_height.pctu || s->max_height.pct; }
+static bool pct_h(const ComputedStyle *s) { return len_calc_size_has_percent(s->height) || s->height.kind == LK_STRETCH || s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH || s->height.pctu || s->height.pct || s->min_height.pctu || s->min_height.pct || s->max_height.pctu || s->max_height.pct; }
 static bool hdep(const Box *b) {
     if (b->has_abs) return true;
     for (const Box *c = b->first; c; c = c->next) {
@@ -932,6 +962,31 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     bool is_cell = s->display == D_TABLE_CELL;
     if (mode == SZ_FORCED) b->w = fw;
     else if (b->fmt == FMT_REPLACED) { float w, h; replaced_size(L, b, cbw, cbh, -1, fh, &w, &h); b->w = w + hb; }
+    else if (len_calc_size(s->width) && b->fmt != FMT_TABLE && !is_cell) {
+        Length value = s->width, basis = len_calc_size_basis(value);
+        double property_basis;
+        if (len_def(value, cbw)) property_basis = len_affine_operand(basis.px, basis.pct, basis.pctu, cbw);
+        else {
+            float border_basis;
+            if (basis.kind == LK_STRETCH && cbw >= 0)
+                border_basis = layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true);
+            else if (basis.kind == LK_AUTO && s->height.kind == LK_STRETCH &&
+                     s->aspect_ratio > 0 && (fh >= 0 || cbh >= 0)) {
+                float height = fh >= 0 ? fh : layout_stretch_border_size(b, layout_percentage_cb(b), false, cbh, true);
+                border_basis = (bs ? height : LMAX(0, height - vb)) * s->aspect_ratio + (bs ? 0 : hb);
+            } else if (mode == SZ_FILL && cbw >= 0 && !intrinsic_width_keyword(basis))
+                border_basis = cbw - b->m[1] - b->m[3];
+            else {
+                float minimum, maximum;
+                intrinsic_content_width(L, b, cbw, &minimum, &maximum);
+                float available = (mode == SZ_ABS_SHRINK ? fw : cbw) - b->m[1] - b->m[3];
+                border_basis = intrinsic_width_size(basis, minimum, maximum, available);
+            }
+            property_basis = LMAX(hb, border_basis) - (bs ? 0 : hb);
+        }
+        float width = len_calc_size_apply(value, property_basis, cbw) + (bs ? 0 : hb);
+        b->w = LMAX(hb, clampw(L, b, width, cbw, hb));
+    }
     else if (s->width.kind == LK_AUTO && s->height.kind == LK_STRETCH &&
              s->aspect_ratio > 0 && (fh >= 0 || cbh >= 0) && !is_cell) {
         /* A definite stretch height supplies the automatic width through the
@@ -998,14 +1053,26 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
         }
     }
     float cx = b->x + b->b[3] + b->p[3], cy = b->y + b->b[0] + b->p[0], cw = LMAX(0, b->w - hb);
+    bool calculate_height = len_calc_size(s->height) && fh < 0 && b->fmt != FMT_REPLACED;
+    Length height_basis = calculate_height ? len_calc_size_basis(s->height) : s->height;
     float hdef = -1;
     if (fh >= 0) hdef = LMAX(0, fh - vb);
-    else if (s->height.kind == LK_STRETCH && cbh >= 0)
+    else if (height_basis.kind == LK_STRETCH && cbh >= 0)
         hdef = LMAX(0, layout_stretch_border_size(b, layout_percentage_cb(b), false, cbh, true) - vb);
-    else if (len_def(s->height, cbh) && s->height.kind == LK_LEN) hdef = LMAX(0, res(s->height, cbh) - (bs ? vb : 0));
-    else if (s->aspect_ratio > 0 && b->fmt != FMT_REPLACED && s->height.kind != LK_LEN) hdef = LMAX(0, (bs ? b->w : cw) / s->aspect_ratio - (bs ? vb : 0));
+    else if (len_def(s->height, cbh) && height_basis.kind == LK_LEN)
+        hdef = LMAX(0, res(height_basis, cbh) - (bs ? vb : 0));
+    else if (s->aspect_ratio > 0 && b->fmt != FMT_REPLACED && height_basis.kind != LK_LEN)
+        hdef = LMAX(0, (bs ? b->w : cw) / s->aspect_ratio - (bs ? vb : 0));
     else if (b->fmt != FMT_REPLACED && layout_size_contained(b, false))
         hdef = contained_auto_height(L, b, cw);
+    if (calculate_height && len_def(s->height, cbh) && height_basis.kind == LK_LEN) {
+        /* A numeric border-box basis may be smaller than padding before the
+         * calculation; floor only its final used result. */
+        double numeric = len_affine_operand(height_basis.px, height_basis.pct, height_basis.pctu, cbh);
+        hdef = LMAX(0, len_calc_size_apply(s->height, numeric, cbh) - (bs ? vb : 0));
+    } else if (calculate_height && hdef >= 0)
+        hdef = LMAX(0, len_calc_size_apply(s->height, hdef + (bs ? vb : 0), cbh) - (bs ? vb : 0));
+    else if (hdef >= 0) hdef = LMAX(0, hdef);
     /* children size against the used height: YouTube's theater player stretches in a flex row whose
        height:56.25vw is capped by max-height and then raised by min-height:480px */
     if (hdef >= 0 && fh < 0) hdef = LMAX(0, clamph(b, hdef + vb, cbh, vb) - vb);
@@ -1013,7 +1080,7 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
        available viewport/parent space. It remains a minimum, not a content
        clip, and supplies the definite stretch basis to its direct children. */
     float quirks_height = -1;
-    bool quirks_candidate = L->doc->quirks && s->height.kind == LK_AUTO && fh < 0 &&
+    bool quirks_candidate = L->doc->quirks && s->height.kind == LK_AUTO && !len_calc_size(s->height) && fh < 0 &&
         b->node && b->node->ns == NS_HTML && (b->node == L->doc->html || b->node == L->doc->body);
     const char *quirks_wm = quirks_candidate && !s->writing_mode ? custom_get(s->gen_i, "writing-mode") : NULL;
     bool horizontal_quirk = !s->writing_mode && !(quirks_wm &&
@@ -1046,7 +1113,10 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     free(own.v);
     float content_h = ch;
     float h = (hdef >= 0 && b->fmt != FMT_REPLACED ? hdef : ch) + vb;
+    if (calculate_height && hdef < 0)
+        h = len_calc_size_apply(s->height, h - (bs ? 0 : vb), cbh) + (bs ? 0 : vb);
     if (fh < 0) h = clamph(b, h, cbh, vb);
+    if (calculate_height) h = LMAX(vb, h);
     if (quirks_height >= 0) h = LMAX(h, quirks_height);
     b->h = LMAX(0, h);
     if (b->fmt == FMT_REPLACED || (b->ctl && b->nlines)) b->has_baseline = b->ctl && b->nlines, b->baseline = b->nlines ? b->lines[0].base : b->y + b->h;
