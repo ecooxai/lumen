@@ -68,9 +68,9 @@ static inline bool paint_transform_ink(const DTransform *group, float scale,
 static inline bool paint_item_bounds(const DItem *it, float scale, double out[4]) {
     if (it->op > DO_TRANSFORM) return false;
     if (!(scale > 0) || !isfinite(scale)) scale = 1;
-    if (it->op == DO_TRANSFORM) {
+    if (it->transform) {
         double source[4];
-        return it->transform && paint_transform_ink(it->transform, scale, source, out);
+        return paint_transform_ink(it->transform, scale, source, out);
     }
     if (it->op == DO_TEXT) {
         if (!paint_text_bounds(it, scale, out)) return false;
@@ -84,5 +84,22 @@ static inline bool paint_item_bounds(const DItem *it, float scale, double out[4]
         }
     }
     return isfinite(out[0]) && isfinite(out[1]) && isfinite(out[2]) && isfinite(out[3]) && out[2] > out[0] && out[3] > out[1];
+}
+/* Application-generated damage uses the same exact cache as transformed
+ * raster ink. Ordinary preexisting text keeps its legacy estimate; flattened
+ * resized text has its envelope refreshed at the actual canvas scale. */
+static inline void paint_item_damage_bounds(const DItem *it, float *b) {
+    if (it->transform) {
+        for (int k = 0; k < 4; k++) b[k] = affine_float(it->transform->bounds[k] + (k < 2 ? -2 : 2));
+        return;
+    }
+    float x0 = it->x, y0 = it->y, x1 = it->x + it->w, y1 = it->y + it->h, e = 2;
+    if (it->op == DO_SHADOW) e += fabsf(it->spread) + fabsf(it->blur);
+    if (it->op == DO_TEXT && !it->precise_text_ink) {
+        x0 = y0 = 1e30f; x1 = y1 = -1e30f;
+        for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; float em = g->font ? g->font->size : 16; x0 = LMIN(x0, g->x - em); x1 = LMAX(x1, g->x + 2 * em); y0 = LMIN(y0, g->y - 1.5f * em); y1 = LMAX(y1, g->y + em); }
+    }
+    if (it->op == DO_POP_CLIP || it->op == DO_POP_LAYER || it->op == DO_PUSH_LAYER || x1 <= x0 || y1 <= y0) { b[0] = b[1] = 1e30f; b[2] = b[3] = -1e30f; return; }
+    b[0] = x0 - e; b[1] = y0 - e; b[2] = x1 + e; b[3] = y1 + e;
 }
 #endif

@@ -38,7 +38,8 @@ typedef struct DItem {
     bool sticky;                /* fixed only because inside a position:sticky box that still moves with the page scroll */
     const void *mv;             /* innermost scroller box the item moves with when it scrolls; NULL = the document */
     const void *sc;             /* DO_PUSH_CLIP: the scroller box whose clip this is */
-    struct DTransform *transform; /* frame-arena-owned affine subtree */
+    struct DTransform *transform; /* frame-arena-owned subtree or transformed primitive source; takes precedence over op */
+    bool precise_text_ink;      /* resized primitive text envelope is refreshed at the actual canvas scale */
 } DItem;
 #include "affine-ink.h"
 

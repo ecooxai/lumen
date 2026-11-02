@@ -565,6 +565,79 @@ static void paint_deferred(PB *p, Deferred *d) {
     int order = p->order; *p = saved; p->order = order;
 }
 
+/* Keep ordinary scale text as actual primitives: uniform text uses a resized
+ * face, while nonuniform glyphs carry one real affine source item. This path
+ * is deliberately limited to a complete, simple text/rectangle group. Clip,
+ * opacity, nesting, moving/fixed content and every other paint operation keep
+ * the general group compositor. Preflight and stage before changing items. */
+static bool paint_flat_scale(PB *p, int start, Affine2D matrix) {
+    if (matrix.b || matrix.c || !(matrix.a > 0) || !(matrix.d > 0)) return false;
+    int count = p->dl->items.n - start;
+    bool uniform = matrix.a == matrix.d, text = false;
+    for (int i = start; i < p->dl->items.n; i++) {
+        const DItem *it = &p->dl->items.v[i];
+        if ((it->op != DO_RECT && it->op != DO_TEXT) || it->transform ||
+            it->fixed || it->sticky || it->mv || it->sc) return false;
+        if (it->op == DO_RECT) {
+            if (it->r[0] || it->r[1] || it->r[2] || it->r[3] || it->tile.w || it->tile.h) return false;
+        } else {
+            if (!it->g || it->ng <= 0) return false;
+            text = true;
+            for (int k = 0; k < it->ng; k++) {
+                const DGlyph *g = &it->g[k];
+                AffinePoint point = affine_point(matrix, g->x, g->y);
+                if (!isfinite(point.x) || !isfinite(point.y) || fabs(point.x) > FLT_MAX || fabs(point.y) > FLT_MAX) return false;
+                if (uniform && g->font) {
+                    double size = (double)g->font->size * matrix.a;
+                    /* Larger/tiny faces remain bounded by the inverse-window
+                       compositor instead of creating a huge cached font. */
+                    if (!(size >= .25 && size <= 512)) return false;
+                }
+            }
+        }
+        double source[4] = {it->x, it->y, (double)it->x + it->w, (double)it->y + it->h}, bounds[4];
+        if (!affine_bounds(matrix, source, bounds)) return false;
+        for (int k = 0; k < 4; k++) if (fabs(bounds[k]) > FLT_MAX) return false;
+        if (bounds[2] - bounds[0] > FLT_MAX || bounds[3] - bounds[1] > FLT_MAX) return false;
+    }
+    if (!text) return false; /* Preserve rectangle-only adaptive group paths. */
+    DItem *staged = arena_alloc(&p->dl->arena, (size_t)count * sizeof *staged);
+    memcpy(staged, p->dl->items.v + start, (size_t)count * sizeof *staged);
+    for (int i = 0; i < count; i++) {
+        DItem *it = &staged[i];
+        if (it->op == DO_TEXT && !uniform) {
+            DTransform *source = arena_alloc(&p->dl->arena, sizeof *source);
+            memset(source, 0, sizeof *source); source->matrix = matrix; source->count = 1;
+            source->items = arena_alloc(&p->dl->arena, sizeof *source->items);
+            source->items[0] = *it;
+            it->transform = source;
+            /* Glyphs are the immutable source of this actual draw command.
+               Ink/damage/raster use the same payload before the opcode. */
+            continue;
+        }
+        if (it->op == DO_TEXT) {
+            DGlyph *glyphs = arena_alloc(&p->dl->arena, (size_t)it->ng * sizeof *glyphs);
+            memcpy(glyphs, it->g, (size_t)it->ng * sizeof *glyphs); it->g = glyphs;
+            Font *from = NULL, *to = NULL;
+            for (int k = 0; k < it->ng; k++) {
+                DGlyph *g = &glyphs[k]; AffinePoint point = affine_point(matrix, g->x, g->y);
+                g->x = (float)point.x; g->y = (float)point.y;
+                if (g->font && g->font != from) {
+                    from = g->font; to = font_resized(from, (float)(round((double)from->size * matrix.a * 4) / 4));
+                    if (!to) return false;
+                }
+                if (g->font) g->font = to;
+            }
+            it->precise_text_ink = true;
+        }
+        AffinePoint point = affine_point(matrix, it->x, it->y);
+        it->x = (float)point.x; it->y = (float)point.y;
+        it->w = (float)((double)it->w * matrix.a); it->h = (float)((double)it->h * matrix.d);
+    }
+    memcpy(p->dl->items.v + start, staged, (size_t)count * sizeof *staged);
+    return true;
+}
+
 /* Collapse a complete subtree into one paint group. No bitmap is allocated
  * here; the rasterizer later inverse-maps only actual destination damage. */
 static void paint_affine_group(PB *p, int start, Affine2D matrix) {
@@ -572,6 +645,7 @@ static void paint_affine_group(PB *p, int start, Affine2D matrix) {
     if (!count) return;
     Affine2D inverse;
     if (!affine_inverse(matrix, &inverse)) { p->dl->items.n = start; return; }
+    if (paint_flat_scale(p, start, matrix)) return;
     bool fixed_child = false; int depth = 0, maximum = 0;
     for (int i = start; i < p->dl->items.n; i++) {
         const DItem *it = &p->dl->items.v[i];
@@ -652,7 +726,16 @@ static void paint_stacking(PB *p, Box *b, bool context) {
 
 static void prepare_affine_ink(DItem *item, float scale) {
     DTransform *group = item->transform;
-    if (item->op != DO_TRANSFORM || !group) return;
+    if (!group) {
+        if (item->op == DO_TEXT && item->precise_text_ink) {
+            double ink[4];
+            if (paint_item_bounds(item, scale, ink)) {
+                item->x = affine_float(ink[0]); item->y = affine_float(ink[1]);
+                item->w = affine_float(ink[2] - ink[0]); item->h = affine_float(ink[3] - ink[1]);
+            } else item->x = item->y = item->w = item->h = 0;
+        }
+        return;
+    }
     for (int i = 0; i < group->count; i++) prepare_affine_ink(&group->items[i], scale);
     double source[4], bounds[4];
     group->ink_valid = paint_transform_ink(group, scale, source, bounds);

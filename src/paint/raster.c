@@ -664,6 +664,12 @@ static CullBox *cull_build(const Canvas *cv, const DisplayList *dl, float s) {
         const DItem *it = &dl->items.v[i];
         float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
         cb[i] = cull_rect(1, 1, 0, 0);
+        if (it->transform) {
+            double ink[4];
+            if (paint_item_bounds(it, s, ink)) cb[i] = cull_rect(ink[0] * s, ink[1] * s, ink[2] * s, ink[3] * s);
+            else cb[i] = (CullBox){0, 0, 0, 0, -1};
+            continue;
+        }
         switch (it->op) {
         case DO_RECT: case DO_LINE: case DO_BORDER: case DO_GRADIENT: cb[i] = cull_rect(x0, y0, x1, y1); break;
         case DO_TRANSFORM: {
@@ -711,7 +717,11 @@ static LayerRect *layer_bounds(const DisplayList *dl, const CullBox *cb, float s
             if (depth < 16) { stack[depth] = i; bounds[i] = (LayerRect){0}; }
             depth++;
         } else if (it->op == DO_POP_LAYER) { if (depth) depth--; }
-        else if (depth && it->op == DO_TEXT) {
+        else if (depth && it->transform) {
+            double ink[4];
+            if (paint_item_bounds(it, scale, ink)) layer_include(bounds, stack, depth, damage,
+                ink[0] * scale - 1, ink[1] * scale - 1, ink[2] * scale + 1, ink[3] * scale + 1);
+        } else if (depth && it->op == DO_TEXT) {
             if (text_outside(it, scale, damage.x0, damage.y0, damage.x1, damage.y1)) continue;
             for (int j = 0; j < it->ng; j++) {
                 const DGlyph *dg = &it->g[j];
@@ -722,10 +732,6 @@ static LayerRect *layer_bounds(const DisplayList *dl, const CullBox *cb, float s
                 double y = round((double)dg->y * scale) - gl->top;
                 layer_include(bounds, stack, depth, damage, x, y, x + gl->w, y + gl->h);
             }
-        } else if (depth && it->op == DO_TRANSFORM) {
-            double ink[4];
-            if (paint_item_bounds(it, scale, ink)) layer_include(bounds, stack, depth, damage,
-                ink[0] * scale - 1, ink[1] * scale - 1, ink[2] * scale + 1, ink[3] * scale + 1);
         } else if (depth && it->op <= DO_LINE) {
             float pad = it->op == DO_SHADOW ? fabsf(it->spread * scale) + LMAX(.5f, it->blur * scale) : 0;
             layer_include(bounds, stack, depth, damage, it->x * scale - pad, it->y * scale - pad,
@@ -745,7 +751,7 @@ static void raster_window(Canvas *cv, const DisplayList *dl, const CullBox *cb, 
     uint32_t cl = premul(clearc, 1);
     /* An opaque canvas background covering the band stores every pixel anyway: no clear first. */
     const DItem *bg = dl->items.n ? &dl->items.v[0] : NULL;
-    bool covered = !offset_x && !offset_y && bg && bg->op == DO_RECT && COLOR_A(bg->color) == 255 && !bg->r[0] && !bg->r[1] && !bg->r[2] && !bg->r[3] &&
+    bool covered = !offset_x && !offset_y && bg && !bg->transform && bg->op == DO_RECT && COLOR_A(bg->color) == 255 && !bg->r[0] && !bg->r[1] && !bg->r[2] && !bg->r[3] &&
         bg->x * r.s <= rx0 && bg->y * r.s <= ry0 && (bg->x + bg->w) * r.s >= rx1 && (bg->y + bg->h) * r.s >= ry1;
     for (int y = ry0; !covered && y < ry1; y++) store_span(canvas_row(cv, y) + rx0, rx1 - rx0, cl);
     r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
@@ -756,6 +762,7 @@ static void raster_window(Canvas *cv, const DisplayList *dl, const CullBox *cb, 
         const DItem *it = &dl->items.v[i];
         if (it->op == DO_PUSH_CLIP && cb && cb[i].skip >= 0 && cull_miss(cb, i, band)) { i = cb[i].skip; continue; }
         if (it->op <= DO_TRANSFORM && cull_miss(cb, i, band)) continue;
+        if (it->transform) { affine_draw(&r, it); continue; }
         switch (it->op) {
         case DO_RECT: case DO_LINE: { float rad[4]; for (int k = 0; k < 4; k++) rad[k] = it->r[k] * s; fill(&r, raster_x(&r, it->x), raster_y(&r, it->y), raster_x(&r, (double)it->x + it->w), raster_y(&r, (double)it->y + it->h), rad, it->color); break; }
         case DO_BORDER: border(&r, it); break;
@@ -826,7 +833,7 @@ static void materialize_transform_images(const DTransform *group) {
     if (!group) return;
     for (int i = 0; i < group->count; i++) {
         const DItem *it = &group->items[i]; Image *im = it->img;
-        if (it->op == DO_TRANSFORM) materialize_transform_images(it->transform);
+        if (it->transform) materialize_transform_images(it->transform);
         else if (it->op == DO_IMAGE && im && !im->px && (im->yuv || im->gpu) && it->w > 0 && it->h > 0)
             image_yuv_materialize(im);
     }
@@ -891,7 +898,7 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
     /* video frames convert to RGB once, before the bands read them; GPU frames are read back */
     for (int i = 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i]; Image *im = it->img;
-        if (it->op == DO_TRANSFORM) { materialize_transform_images(it->transform); continue; }
+        if (it->transform) { materialize_transform_images(it->transform); continue; }
         if (it->op != DO_IMAGE || !im || im->px || (!im->yuv && !im->gpu)) continue;
         if (!(it->tile.w > 0) && punch_image(cv, im)) continue;
         if (it->w > 0 && it->h > 0) image_yuv_materialize(im);

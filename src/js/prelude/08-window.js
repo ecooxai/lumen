@@ -724,7 +724,7 @@ function fire(target, type, init, Ctor = Event, legacyTargetOverride = false) {
     return ok;
 }
 function fireAnim(t, type, name, elapsed, anim, origin) {
-    if (type === 'lumen-transition' || type === 'lumen-animation') { if (type === 'lumen-animation') caStart(t, name, origin); else trStart(t, name); waDirty = true; waFlush(); return; }
+    if (type === 'lumen-transition' || type === 'lumen-animation') { trDispatchJob(t, name, type, origin); waDirty = true; waFlush(); return; }
     const init = anim ? { bubbles: true, animationName: name, elapsedTime: elapsed } : { bubbles: true, propertyName: name, elapsedTime: elapsed };
     return dispatch(t, new (anim ? AnimationEvent : TransitionEvent)(type, init), true);
 }

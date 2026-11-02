@@ -7670,21 +7670,24 @@ char *css_get_animation_value(Node *el, const char *prop) {
 }
 /* Properties whose computed value differs between o and s, for CSS transitions: the names in the
  * transition-property list, or for "all" every natively computed property plus the generic ones. */
-static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, void (*cb)(Node *, const char *, const char *, const char *)) {
+static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, HMap *seen, void (*cb)(Node *, const char *, const char *, const char *)) {
     if (!strncmp(prop, "transition", 10) || !strncmp(prop, "animation", 9) || !strcmp(prop, "interpolate-size")) return;
+    if (hm_get(seen, prop)) return;
+    hm_put(seen, prop, (void *)1);
     char *a = animation_value_of(n, o, prop), *b = animation_value_of(n, s, prop);
     if (strcmp(a, b)) cb(n, prop, a, b);
     free(a); free(b);
 }
 static void tr_scan_gen(Node *n, const ComputedStyle *o, const ComputedStyle *s, const CustomProps *c, HMap *seen, void (*cb)(Node *, const char *, const char *, const char *)) {
     for (; c; c = c->parent) hm_foreach((HMap *)&c->map, ent) {
-        if (hm_get(seen, ent->key)) continue;
-        hm_put(seen, ent->key, (void *)1);
         const GenProp *g = gen_prop(ent->key);
-        if (g && !g->native) tr_scan_one(n, o, s, g->name, cb);
+        if (g && !g->native) tr_scan_one(n, o, s, g->name, seen, cb);
     }
 }
 void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s, void (*cb)(Node *, const char *, const char *, const char *)) {
+    /* One computed change produces one job per property. Keep the authored
+     * list untouched: its last matching position still selects JS timing. */
+    HMap seen; memset(&seen, 0, sizeof seen);
     const char *list = s->tr_prop;
     bool all = !list;
     if (list) {
@@ -7694,7 +7697,7 @@ void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s
             CTok token = clex_next(&lexer); int type = token.type;
             if (!depth && type == CT_IDENT && token.str) {
                 if (str_ieq(token.str, "all")) all = true;
-                else if (gen_prop(token.str)) tr_scan_one(n, o, s, token.str, cb);
+                else if (gen_prop(token.str)) tr_scan_one(n, o, s, token.str, &seen, cb);
             }
             if (type == CT_FUNC || type == CT_LPAREN || type == CT_LBRACK || type == CT_LBRACE) depth++;
             else if (depth && (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE)) depth--;
@@ -7702,11 +7705,11 @@ void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s
             if (type == CT_EOF) break;
         }
     }
-    if (!all) return;
-    for (size_t i = 0; i < sizeof gen_props / sizeof *gen_props; i++) if (gen_props[i].native && strcmp(gen_props[i].name, "display")) tr_scan_one(n, o, s, gen_props[i].name, cb);
-    HMap seen; memset(&seen, 0, sizeof seen);
-    tr_scan_gen(n, o, s, o->gen_n, &seen, cb); tr_scan_gen(n, o, s, s->gen_n, &seen, cb);
-    tr_scan_gen(n, o, s, o->gen_i, &seen, cb); tr_scan_gen(n, o, s, s->gen_i, &seen, cb);
+    if (all) {
+        for (size_t i = 0; i < sizeof gen_props / sizeof *gen_props; i++) if (gen_props[i].native && strcmp(gen_props[i].name, "display")) tr_scan_one(n, o, s, gen_props[i].name, &seen, cb);
+        tr_scan_gen(n, o, s, o->gen_n, &seen, cb); tr_scan_gen(n, o, s, s->gen_n, &seen, cb);
+        tr_scan_gen(n, o, s, o->gen_i, &seen, cb); tr_scan_gen(n, o, s, s->gen_i, &seen, cb);
+    }
     hm_free(&seen, NULL);
 }
 /* Canonical form of a multi-keyword (or rare single-keyword) display value; NULL if invalid or not handled. */

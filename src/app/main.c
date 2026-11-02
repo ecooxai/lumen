@@ -1986,7 +1986,7 @@ static uint64_t ditem_hash(const DItem *it, float dy) {
     if (it->img) HMIX(h, it->img->content_version);
     if (it->grad) { const Gradient *g = it->grad; HMIX(h, g->type); HMIX(h, g->angle); HMIX(h, g->nstops); HMIX(h, g->repeating); h = hmix(h, g->stops, sizeof g->stops[0] * (size_t)LCLAMP(g->nstops, 0, 8)); }
     for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; int64_t gy = hq(g->y + dy); HMIX(h, g->gid); HMIX(h, g->x); HMIX(h, gy); HMIX(h, g->font); }
-    if (it->op == DO_TRANSFORM && it->transform) {
+    if (it->transform) {
         const DTransform *group = it->transform;
         Affine2D matrix = affine_conjugate_translation(group->matrix, 0, dy);
         HMIX(h, matrix); HMIX(h, group->count);
@@ -1997,20 +1997,7 @@ static uint64_t ditem_hash(const DItem *it, float dy) {
     return h;
 }
 static void bunion(float *a, const float *b) { a[0] = LMIN(a[0], b[0]); a[1] = LMIN(a[1], b[1]); a[2] = LMAX(a[2], b[2]); a[3] = LMAX(a[3], b[3]); }
-static void ditem_box(const DItem *it, float *b) {
-    if (it->op == DO_TRANSFORM && it->transform) {
-        for (int k = 0; k < 4; k++) b[k] = affine_float(it->transform->bounds[k] + (k < 2 ? -2 : 2));
-        return;
-    }
-    float x0 = it->x, y0 = it->y, x1 = it->x + it->w, y1 = it->y + it->h, e = 2;
-    if (it->op == DO_SHADOW) e += fabsf(it->spread) + fabsf(it->blur);
-    if (it->op == DO_TEXT) {
-        x0 = y0 = 1e30f; x1 = y1 = -1e30f;
-        for (int i = 0; i < it->ng; i++) { const DGlyph *g = &it->g[i]; float em = g->font ? g->font->size : 16; x0 = LMIN(x0, g->x - em); x1 = LMAX(x1, g->x + 2 * em); y0 = LMIN(y0, g->y - 1.5f * em); y1 = LMAX(y1, g->y + em); }
-    }
-    if (it->op == DO_POP_CLIP || it->op == DO_POP_LAYER || it->op == DO_PUSH_LAYER || x1 <= x0 || y1 <= y0) { b[0] = b[1] = 1e30f; b[2] = b[3] = -1e30f; return; }
-    b[0] = x0 - e; b[1] = y0 - e; b[2] = x1 + e; b[3] = y1 + e;
-}
+static void ditem_box(const DItem *it, float *b) { paint_item_damage_bounds(it, b); }
 /* dy: CSS px added to the items that scroll with the page (not fixed ones) before hashing */
 static int dl_sigs(const DisplayList *dl, struct DSig **v, int *cap, float dy) {
     int n = dl->items.n, st[64], ns = 0, depth = 0;

@@ -825,7 +825,7 @@ function waFlush() {
    Internal computed reads made while sampling must not poll partially applied
    layers or recurse into another animation sample. */
 function waSyncRead(afterStyle) {
-    if (waFlushing || waReading) return false;
+    if (waFlushing || waReading || trConstructing) return false;
     waReading = true;
     try {
         const pending = waDirty;
@@ -1133,6 +1133,15 @@ const waGetAnims = (pred) => [...waAll].filter(a => {
    becomes a CSSTransition animating from the old to the new value. Values the animation layer itself writes are
    suppressed once so animations don't start transitions. */
 const trRunning = new SMap(), trSuppress = new SMap();
+let trConstructing = false;
+/* Timing/keyframe metadata reads are part of one internal style job. Do not
+ * sample a cancelled layer or recursively poll while its replacement has not
+ * yet acquired the element/property slot. The native queue retains later jobs. */
+function trDispatchJob(el, packed, type, origin) {
+    const previous = trConstructing; trConstructing = true;
+    try { type === 'lumen-animation' ? caStart(el, packed, origin) : trStart(el, packed); }
+    finally { trConstructing = previous; }
+}
 class CSSTransition extends Animation {
     get transitionProperty() { return this._trProp; }
 }
@@ -1184,8 +1193,9 @@ function trCancelUnrendered() {
     for (const [el, l] of [...caRunning]) if (gone(el)) { caRunning.delete(el); for (const a of l) a.cancel(); }
 }
 function trPoll() {
+    if (trConstructing) return false;
     const l = N.trTake();
-    for (const [el, packed, type, origin] of l) type === 'lumen-animation' ? caStart(el, packed, origin) : trStart(el, packed);
+    for (const [el, packed, type, origin] of l) trDispatchJob(el, packed, type, origin);
     if (l.length) { waDirty = true; waFlush(); }
     return l.length > 0;
 }
