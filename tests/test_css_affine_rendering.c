@@ -254,6 +254,87 @@ static void anonymous_transform_owners(void) {
     destroy(&f);
 }
 
+/* The existing269 geometry/pixel/damage assertions above remain unchanged.
+ * Exercise actual scalar, span, image bulk/tail, layer and affine draws on
+ * transparent, translucent and opaque destinations. The independent oracle
+ * uses one channel at a time and the source-over equation, never packed lanes. */
+static uint32_t source_over_input(uint32_t straight) {
+    unsigned alpha = straight >> 24;
+    uint32_t result = alpha << 24;
+    for (int shift = 0; shift <= 16; shift += 8)
+        result |= (((straight >> shift) & 255) * alpha / 255) << shift;
+    return result;
+}
+static uint32_t source_over_expected(uint32_t destination, uint32_t source) {
+    uint32_t result = 0;
+    for (int shift = 0; shift <= 24; shift += 8) {
+        unsigned channel = ((source >> shift) & 255) +
+            ((((destination >> shift) & 255) * (255 - (source >> 24)) + 127) / 255);
+        assert(channel <= 255); result |= channel << shift;
+    }
+    return result;
+}
+static void source_over_paths(void) {
+    const unsigned source_alphas[] = {0, 1, 127, 128, 254, 255};
+    const unsigned destination_alphas[] = {0, 1, 128, 255};
+    const char *routes[] = {"source-over rectangle span", "source-over scalar rounded row",
+        "source-over image vector bulk and scalar tail", "source-over affine image",
+        "source-over ordinary opacity", "source-over affine opacity"};
+    Canvas canvas; canvas_init(&canvas, 40, 40, 1);
+    bool saved_pixel_rows = raster_pixel_rows;
+    for (unsigned a = 0; a < sizeof source_alphas / sizeof *source_alphas; a++)
+        for (unsigned b = 0; b < sizeof destination_alphas / sizeof *destination_alphas; b++)
+            for (int route = 0; route < 6; route++) {
+                case_name = routes[route];
+                uint32_t straight_source = (source_alphas[a] << 24) | 0x00c020a0u;
+                uint32_t straight_destination = (destination_alphas[b] << 24) | 0x0070b040u;
+                uint32_t source = source_over_input(straight_source);
+                uint32_t destination = source_over_input(straight_destination);
+                Image image = {.w=1, .h=1, .refs=1, .px=&source, .scale=1};
+                DItem primitive = {.op=DO_IMAGE, .x=4, .y=4, .w=23, .h=8, .img=&image};
+                if (route < 2) { primitive.op=DO_RECT; primitive.color=straight_source; }
+                if (route == 1) for (int k=0; k<4; k++) primitive.r[k]=1;
+                DItem items[3] = {primitive}; int count=1;
+                if (route >= 4) {
+                    items[0]=(DItem){.op=DO_PUSH_LAYER, .alpha=.75f};
+                    items[1]=primitive; items[2]=(DItem){.op=DO_POP_LAYER}; count=3;
+                }
+                /* (x,y)->(32-y,x), so every destination sample below maps
+                   exactly to a source pixel center without filtering loss. */
+                DTransform group = {.matrix={.a=0,.b=1,.c=-1,.d=0,.e=32,.f=0},
+                    .items=items, .count=count, .opacity_depth=route >= 4 ? 1 : 0};
+                DItem transformed = {.op=DO_TRANSFORM, .transform=&group};
+                bool affine = route == 3 || route == 5;
+                DisplayList list = {0}; list.items.v=affine ? &transformed : items;
+                list.items.n=affine ? 1 : count;
+                raster_pixel_rows = route == 1;
+                raster(&canvas, &list, straight_destination);
+                uint32_t composed_source=source;
+                if (route >= 4) {
+                    composed_source=0;
+                    for (int shift=0; shift<=24; shift+=8)
+                        composed_source |= (((source >> shift) & 255) * 192 / 256) << shift;
+                }
+                uint32_t expected=source_over_expected(destination, composed_source);
+                /* An image width23 exercises both complete vector groups and
+                   the scalar remainder on NEON hosts; other hosts use scalar.
+                   Rounded-row centers here have exactly full coverage. */
+                const int columns[] = {8,16,25}; bool same=true;
+                for (int k=0; k<3; k++) {
+                    int x=affine ? 27 : columns[k], y=affine ? columns[k] : 4;
+                    uint32_t actual=canvas.px[y*40+x];
+                    if (actual != expected) {
+                        fprintf(stderr,"%s alpha %u/%u pixel(%d,%d) %08x expected %08x\n",
+                            case_name,source_alphas[a],destination_alphas[b],x,y,actual,expected);
+                        same=false;
+                    }
+                }
+                same &= canvas.px[0] == destination;
+                yes(same,"actual compositing matches independent channel arithmetic and preserves outside pixels");
+            }
+    raster_pixel_rows=saved_pixel_rows; canvas_free(&canvas);
+}
+
 int main(void) {
     dom_init(); font_init(); Fixture f = create_fixture();
     static const struct { const char *name, *style; float rectangle[4]; int px, py, ox, oy; } cases[] = {
@@ -321,5 +402,7 @@ int main(void) {
     assert(checks == 242);
     anonymous_transform_owners();
     assert(checks == 269);
+    source_over_paths();
+    assert(checks == 413);
     destroy(&f); printf("PASS css_affine_rendering %u native checks\n",checks); return 0;
 }

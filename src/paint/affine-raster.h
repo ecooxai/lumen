@@ -43,15 +43,9 @@ static void affine_over(R *r, int x, int y, uint32_t pixel) {
         float coverage = clip_cov(r, x + .5f, y + .5f);
         pixel = scale_px(pixel, (unsigned)(LCLAMP(coverage, 0, 1) * 256));
     }
-    /* Reconstructed pixels already contain premultiplied color. Combine
-       each destination channel using exact rounded division by255: the
-       legacy256-step approximation can lose one alpha unit over an opaque
-       destination. This also preserves correct translucent destinations. */
-    uint32_t *destination = raster_row(r, y) + x - r->origin_x;
-    uint32_t inverse_alpha = 255 - (pixel >> 24), previous = *destination;
-    uint32_t rb = round_255_pair((previous & 0x00ff00ffu) * inverse_alpha);
-    uint32_t ag = round_255_pair(((previous >> 8) & 0x00ff00ffu) * inverse_alpha);
-    *destination = pixel + rb + (ag << 8);
+    /* The reconstructed source is premultiplied, just like an ordinary
+       decoded image or opacity group. Use the same destination arithmetic. */
+    over(raster_row(r, y) + x - r->origin_x, pixel);
 }
 
 /* A tile can have a very large inverse image under a near-singular transform.

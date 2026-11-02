@@ -43,20 +43,29 @@ static inline uint32_t scale_px(uint32_t p, uint32_t k) { /* k 0..256 */
     uint32_t rb = ((p & 0x00ff00ff) * k >> 8) & 0x00ff00ff, ag = (((p >> 8) & 0x00ff00ff) * k) & 0xff00ff00;
     return rb | ag;
 }
-static inline void over(uint32_t *d, uint32_t s) {
-    uint32_t sa = s >> 24;
-    if (sa == 255) { *d = s; return; }
-    if (!sa && !s) return;
-    *d = s + scale_px(*d, 256 - sa - (sa >> 7));
-}
-/* Straight-color coverage must be combined with the destination before
-   quantization. Separately truncating premultiplied source and destination
-   darkens text even when both colors are identical. Each packed 16-bit lane
-   is at most 255*255, so this is exact nearest division by 255 without carry. */
+/* Exact nearest division by255 for two independent16-bit lanes. Every
+   numerator is at most255*255; adding128 and its high byte cannot carry. */
 static inline uint32_t round_255_pair(uint32_t v) {
     v += 0x00800080u;
     return ((v + ((v >> 8) & 0x00ff00ffu)) >> 8) & 0x00ff00ffu;
 }
+/* Premultiplied source-over is shared by ordinary and affine paint. The
+   source is already quantized, so round only the destination contribution.
+   RGB<=alpha bounds each sum by255, including opaque destination alpha. */
+static inline uint32_t source_over_px(uint32_t destination, uint32_t source) {
+    uint32_t inverse_alpha = 255 - (source >> 24);
+    uint32_t rb = round_255_pair((destination & 0x00ff00ffu) * inverse_alpha);
+    uint32_t ag = round_255_pair(((destination >> 8) & 0x00ff00ffu) * inverse_alpha);
+    return source + rb + (ag << 8);
+}
+static inline void over(uint32_t *d, uint32_t s) {
+    if ((s >> 24) == 255) { *d = s; return; }
+    if (!s) return;
+    *d = source_over_px(*d, s);
+}
+/* Straight-color coverage still combines the two products before rounding:
+   separately truncating them darkens equal-color text. Its input has not yet
+   been premultiplied, unlike source_over_px's decoded or rastered pixels. */
 static inline void over_color_coverage(uint32_t *d, Color color, uint32_t a) {
     if (!a) return;
     color |= 0xff000000u;
@@ -76,8 +85,7 @@ static void over_span(uint32_t *dst, int count, uint32_t color) {
     uint32_t alpha = color >> 24;
     if (alpha == 255) { store_span(dst, count, color); return; }
     if (!color) return;
-    uint32_t k = 256 - alpha - (alpha >> 7);
-    for (int i = 0; i < count; i++) dst[i] = color + scale_px(dst[i], k);
+    for (int i = 0; i < count; i++) dst[i] = source_over_px(dst[i], color);
 }
 static inline const Clip *clip(R *r) { return &r->clips[r->nclip - 1]; }
 /* Clip finite raster coordinates before integer conversion. A valid affine
@@ -491,8 +499,8 @@ static void image_vertical(uint32_t *restrict dst, const uint32_t *restrict top,
 #ifdef IMAGE_NEON
     /* Deinterleave eight premultiplied pixels: each lane is one channel,
        avoiding repeated packed-channel masks. Add both interpolation products
-       before one rounded shift, exactly as image_lerp_px does. A 16-bit blend
-       factor represents 256, preserving the destination for transparent pixels. */
+       before one rounded shift, exactly as image_lerp_px does. Composition
+       then uses exact nearest /255, identical to source_over_px. */
     uint8x8_t wa = vdup_n_u8((uint8_t)(256 - weight)), wb = vdup_n_u8((uint8_t)weight);
     for (; x + 8 <= count; x += 8) {
         uint8x8x4_t p;
@@ -503,18 +511,20 @@ static void image_vertical(uint32_t *restrict dst, const uint32_t *restrict top,
             for (int c = 0; c < 4; c++)
                 p.val[c] = vrshrn_n_u16(vmlal_u8(vmull_u8(a.val[c], wa), b.val[c], wb), 8);
         }
-        uint16x8_t alpha = vmovl_u8(p.val[3]);
-        uint16x8_t k = vsubq_u16(vsubq_u16(vdupq_n_u16(256), alpha), vshrq_n_u16(alpha, 7));
+        uint8x8_t inverse_alpha = vsub_u8(vdup_n_u8(255), p.val[3]);
         uint8x8x4_t d = vld4_u8((const uint8_t *)(dst + x));
-        for (int c = 0; c < 4; c++)
-            d.val[c] = vadd_u8(p.val[c], vshrn_n_u16(vmulq_u16(vmovl_u8(d.val[c]), k), 8));
+        for (int c = 0; c < 4; c++) {
+            uint16x8_t product = vmull_u8(d.val[c], inverse_alpha);
+            uint16x8_t rounded = vaddq_u16(product, vdupq_n_u16(128));
+            rounded = vaddq_u16(rounded, vshrq_n_u16(rounded, 8));
+            d.val[c] = vadd_u8(p.val[c], vshrn_n_u16(rounded, 8));
+        }
         vst4_u8((uint8_t *)(dst + x), d);
     }
 #endif
     for (; x < count; x++) {
         uint32_t p = image_lerp_px(top[x], bottom[x], weight);
-        uint32_t alpha = p >> 24;
-        dst[x] = p + scale_px(dst[x], 256 - alpha - (alpha >> 7));
+        dst[x] = source_over_px(dst[x], p);
     }
 }
 static void image(R *r, const DItem *it) {

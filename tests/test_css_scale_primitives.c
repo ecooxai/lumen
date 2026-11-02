@@ -20,9 +20,13 @@ static void near(float value,float expected,const char *label) {
     checks++;if(!isfinite(value)||fabsf(value-expected)>.025f){fprintf(stderr,"%s: %s %g expected %g\n",case_name,label,value,expected);abort();}
 }
 typedef struct {Document *doc;StyleEngine *engine;Layout *layout;Node *target;DisplayList list;Canvas canvas;float scroll;} Fixture;
-static Fixture make(const char *style,float scroll) {
+/* Only the outer-clip case gets an ordinary local ancestor. BODY overflow
+ * propagates to the viewport while HTML overflow is visible. */
+static Fixture make_with_outer_clip(const char *style,float scroll,bool outer_clip) {
     Fixture f={0};f.doc=doc_new("https://scale-primitives.test/");
-    char html[6000];size_t used=(size_t)snprintf(html,sizeof html,"<!doctype html><html><body><div id=target>A</div>");
+    char html[6000];size_t used=(size_t)snprintf(html,sizeof html,"<!doctype html><html><body>%s<div id=target>A</div>%s",
+        outer_clip?"<div id=clip style='position:relative;width:132px;height:200px;overflow:hidden'>":"",
+        outer_clip?"</div>":"");
     for(int i=0;i<70;i++)used+=(size_t)snprintf(html+used,sizeof html-used,"<i class=pad style='left:%dpx'></i>",i+1);
     snprintf(html+used,sizeof html-used,"</body></html>");html_parse(f.doc,html,strlen(html));f.engine=style_engine_new(f.doc);
     f.engine->media=(MediaCtx){W,H,1,false};
@@ -34,12 +38,37 @@ static Fixture make(const char *style,float scroll) {
     f.layout=layout_new();style_recalc(f.engine,&f.doc->node,false);layout_run(f.layout,f.doc,W,H);
     f.scroll=scroll;dl_build(&f.list,f.layout,0,scroll,W,H);canvas_init(&f.canvas,W,H,1);raster(&f.canvas,&f.list,white);return f;
 }
+static Fixture make(const char *style,float scroll) { return make_with_outer_clip(style,scroll,false); }
 static void body_style(Fixture *f,const char *style) {
     node_set_attr(f->doc->body,"style",style);style_recalc(f->engine,&f->doc->node,false);layout_run(f->layout,f->doc,W,H);
     dl_build(&f->list,f->layout,0,f->scroll,W,H);raster(&f->canvas,&f->list,white);
 }
 static void destroy(Fixture *f) {canvas_free(&f->canvas);dl_clear(&f->list);free(f->list.items.v);layout_free(f->layout);style_engine_free(f->engine);doc_free(f->doc);}
 static const DItem *item(const Fixture *f,int op) {for(int i=0;i<f->list.items.n;i++)if(f->list.items.v[i].op==op)return &f->list.items.v[i];return NULL;}
+/* A moving local scroller legitimately keeps its transformed descendant in
+ * a general group. Inspect the real owned commands, honoring transform before
+ * opcode just as raster does, and require exactly one leaf inside the owner's
+ * destination clip. An inner source-frame clip cannot satisfy this predicate. */
+static int outer_clipped_affine_text(const DItem *items,int count,const Box *owner,
+                                    bool clipped,bool transformed,unsigned depth) {
+    if(depth>16)return -1;
+    bool stack[64];int nclip=0,found=0;
+    for(int i=0;i<count;i++) {
+        const DItem *it=&items[i];
+        if(it->transform) {
+            int child=outer_clipped_affine_text(it->transform->items,it->transform->count,
+                                               owner,clipped,true,depth+1);
+            if(child<0)return -1;found+=child;continue;
+        }
+        if(it->op==DO_PUSH_CLIP) {
+            if(nclip==64)return -1;stack[nclip++]=clipped;
+            if(!transformed&&(it->sc==owner||it->mv==owner)&&it->x==0&&it->y==0&&it->w==132&&it->h==200)clipped=true;
+        } else if(it->op==DO_POP_CLIP) {
+            if(!nclip)return -1;clipped=stack[--nclip];
+        } else if(it->op==DO_TEXT&&it->g&&it->ng==1&&it->mv==owner&&clipped&&transformed)found++;
+    }
+    return nclip?-1:found;
+}
 static void rectangle(Fixture *f,float x,float y,float w,float h) {
     float r[4];yes(jsg_vrect(f->target,r,0,f->scroll),"real corner union available");
     near(r[0],x,"viewport x");near(r[1],y,"viewport y");near(r[2],w,"viewport width");near(r[3],h,"viewport height");
@@ -178,9 +207,11 @@ int main(void) {
     destroy(&squeezed);destroy(&plain);
 
     case_name="outer clipping stays in destination coordinates";
-    squeezed=make("transform:scale(.5,1.5)",0);
-    body_style(&squeezed,"position:relative;width:132px;height:200px;overflow:hidden");
-    t=item(&squeezed,DO_TEXT);yes(t&&t->transform&&item(&squeezed,DO_PUSH_CLIP),"outer clip encloses actual affine text");
+    squeezed=make_with_outer_clip("transform:scale(.5,1.5)",0,true);
+    Node *clip_owner=doc_get_element_by_id(squeezed.doc,"clip");
+    yes(clip_owner&&clip_owner->box&&clip_owner->box->scroller&&
+        outer_clipped_affine_text(squeezed.list.items.v,squeezed.list.items.n,clip_owner->box,false,false,0)==1,
+        "outer clip encloses actual affine text");
     yes(squeezed.canvas.px[110*W+131]!=white&&squeezed.canvas.px[110*W+133]==white,"destination clip preserves mapped interior and clips mapped tail");
     rectangle(&squeezed,100,100,40,60);damage(&squeezed);destroy(&squeezed);
 
