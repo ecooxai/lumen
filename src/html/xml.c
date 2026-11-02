@@ -31,11 +31,23 @@ bool xml_mime(const char *t) {
     return n > 4 && !strncasecmp(t + n - 4, "+xml", 4) && memchr(t, '/', n);
 }
 
+/* Document metadata uses a valid MIME essence, independently of the parser's
+ * HTML/XML mode. Missing or invalid response headers retain the mode default. */
 char *mime_essence(const char *t) {
-    while (*t == ' ' || *t == '\t') t++;
-    size_t n = strcspn(t, "; \t");
+    if (!t) return NULL;
+    while (*t == ' ' || *t == '\t' || *t == '\r' || *t == '\n') t++;
+    size_t n = strcspn(t, ";");
+    while (n && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\r' || t[n - 1] == '\n')) n--;
+    const char *slash = memchr(t, '/', n);
+    if (!slash || slash == t || slash == t + n - 1) return NULL;
+    for (size_t i = 0; i < n; i++) {
+        unsigned char c = (unsigned char)t[i];
+        if (t + i == slash) continue;
+        if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') ||
+              (c >= 'a' && c <= 'z') || strchr("!#$%&'*+-.^_`|~", c))) return NULL;
+    }
     char *m = xstrndup(t, n);
-    for (char *c = m; *c; c++) *c = (char)tolower((unsigned char)*c);
+    for (char *c = m; *c; c++) if (*c >= 'A' && *c <= 'Z') *c += 'a' - 'A';
     return m;
 }
 

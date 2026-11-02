@@ -556,7 +556,7 @@ class DOMParser {
 }
 const xmlEscT = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const xmlEscA = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\t/g, '&#9;').replace(/\n/g, '&#10;').replace(/\r/g, '&#13;');
-function xmlDocOf(n) { const d = n.ownerDocument; return !!d && d.contentType !== 'text/html'; }
+function xmlDocOf(n) { const d = n.ownerDocument; return !!d && N.ns(d) === 3; }
 function xmlSer(n, dns, map) {
     switch (N.type(n)) {
     case 1: {
