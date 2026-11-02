@@ -2608,6 +2608,32 @@ bool css_box_shadow_valid(const char *property, const char *value) {
     free(parsed); return valid;
 }
 
+/* An inherited animation policy, kept in the existing generic computed store.
+ * This parser is shared by raw declarations, supports(), and direct application;
+ * pending substitution is checked again after the resolved tokens replace it. */
+static char *interpolate_size_parse(const char *value) {
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    CTok token;
+    do { token = clex_next(&lexer); if (token.type != CT_WS) break; free(token.str); } while (true);
+    const char *keyword = NULL;
+    if (token.type == CT_IDENT && token.str) {
+        static const char *const words[] = { "numeric-only", "allow-keywords",
+            "inherit", "initial", "unset", "revert", "revert-layer", NULL };
+        for (unsigned i = 0; words[i]; i++) if (str_ieq(token.str, words[i])) { keyword = words[i]; break; }
+    }
+    free(token.str);
+    do { token = clex_next(&lexer); if (token.type != CT_WS) break; free(token.str); } while (true);
+    bool end = token.type == CT_EOF; free(token.str);
+    return keyword && end ? xstrdup(keyword) : NULL;
+}
+bool css_interpolate_size_valid(const char *property, const char *value) {
+    if (!property || strcmp(property, "interpolate-size")) return true;
+    char *parsed = interpolate_size_parse(value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
 /* Physical border shorthands share their concrete grammar with the declaration
  * engine and CSSOM. A pending substitution remains an opaque token stream. */
 static int border_decl_kind(const char *property) {
@@ -3298,6 +3324,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     /* Authored parse errors are ignored before substitution can apply unset.
        Valid pending values are checked again after their tokens resolve. */
     if (!strcmp(prop, "transition-property") && !css_transition_property_valid(prop, value_in)) return;
+    if (!css_interpolate_size_valid(prop, value_in)) return;
     if (!css_box_shadow_valid(prop, value_in)) return;
     if (!css_border_valid(prop, value_in)) return;
     char *subst = NULL;
@@ -3316,6 +3343,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     }
     char *vbuf = min_size_property(prop) ? css_min_size_parse(v) :
         css_numeric_dimension_property(prop) ? css_numeric_dimension_parse(prop, v) :
+        !strcmp(prop, "interpolate-size") ? interpolate_size_parse(v) :
         !strcmp(prop, "transition-property") ? css_transition_property_parse(v) :
         !strcmp(prop, "box-shadow") ? css_box_shadow_parse(v) :
         border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) : xstrdup(v);
@@ -7172,7 +7200,7 @@ char *css_get_animation_value(Node *el, const char *prop) {
 /* Properties whose computed value differs between o and s, for CSS transitions: the names in the
  * transition-property list, or for "all" every natively computed property plus the generic ones. */
 static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, void (*cb)(Node *, const char *, const char *, const char *)) {
-    if (!strncmp(prop, "transition", 10) || !strncmp(prop, "animation", 9)) return;
+    if (!strncmp(prop, "transition", 10) || !strncmp(prop, "animation", 9) || !strcmp(prop, "interpolate-size")) return;
     char *a = animation_value_of(n, o, prop), *b = animation_value_of(n, s, prop);
     if (strcmp(a, b)) cb(n, prop, a, b);
     free(a); free(b);

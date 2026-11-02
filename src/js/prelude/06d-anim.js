@@ -350,7 +350,7 @@ function waGridMix(a, b, p, op = false, depth = 0) {
     return out.join(' ');
 }
 const WA_MIN_SIZE = /^min-(?:width|height|block-size|inline-size)$/;
-const waBaseValue = (el, prop) => N.computed(el, prop, WA_GRID.test(prop) || WA_MIN_SIZE.test(prop) ? 3 : 0) || '';
+const waBaseValue = (el, prop) => N.computed(el, prop, WA_GRID.test(prop) || WA_MIN_SIZE.test(prop) || WA_PREFERRED_SIZE.test(prop) ? 3 : 0) || '';
 function waGridSpecified(el, prop, value) {
     if (value === 'inherit') return el && el.parentElement ? (waBaseValue(el.parentElement, prop) || 'none') : (prop.startsWith('grid-auto-') ? 'auto' : 'none');
     if (value === 'initial' || value === 'unset') return prop.startsWith('grid-auto-') ? 'auto' : 'none';
@@ -429,6 +429,46 @@ function waPositionSpecified(el, prop, value) {
     }
     return value;
 }
+/* Preserve the intrinsic basis through the entire interpolation, including
+ * its endpoints and extrapolation. Layout resolves size and percentages after
+ * combining coefficients; a negative coefficient is not a negative used size. */
+const WA_PREFERRED_SIZE = /^(width|height)$/;
+const WA_SIZE_KEYWORD = /^(auto|min-content|max-content|fit-content|stretch)$/;
+function waPreferredSpecified(el, prop, value) {
+    const tokens = cssGridTokens(value);
+    const wide = tokens && tokens.length === 1 ? cssGridDecode(tokens[0]).toLowerCase() : '';
+    if (wide === 'inherit') return el && el.parentElement ? waBaseValue(el.parentElement, prop) || 'auto' : 'auto';
+    if (/^(initial|unset)$/.test(wide)) return 'auto';
+    return WA_SIZE_KEYWORD.test(wide) ? wide : value;
+}
+function waPreferredKeywordMix(a, b, progress, allowKeywords) {
+    const A = WA_SIZE_KEYWORD.test(a), B = WA_SIZE_KEYWORD.test(b);
+    if (!A && !B) return undefined; /* ordinary numeric/explicit-function path */
+    if (A && B) return a === b ? a : null;
+    if (!allowKeywords) return null;
+    const number = waGridNumeric(A ? b : a);
+    if (!number || number.has('fr')) return null;
+    const coefficient = A ? 1 - progress : progress, weight = A ? progress : 1 - progress;
+    if (!Number.isFinite(coefficient) || !Number.isFinite(weight)) return null;
+    let calculation = 'size * ' + waFmt(coefficient);
+    for (const [unit, value] of number) {
+        const term = value * weight;
+        if (!Number.isFinite(term)) return null;
+        /* A zero percentage keeps its type and the native indefinite-basis rule. */
+        if (term !== 0 || unit === 'percent') calculation += (term < 0 ? ' - ' : ' + ') + waFmt(Math.abs(term)) + (unit === 'percent' ? '%' : unit);
+    }
+    return 'calc-size(' + (A ? a : b) + ', ' + calculation + ')';
+}
+function waCapturePreferredPolicy(animation) {
+    const effect = animation._effect;
+    /* The policy belongs to this prepared keyframe effect. Cancellation and
+       reassociation change animation timing, not the effect's keyframes.
+       Explicit setKeyframes/new effects start a fresh conversion lifetime. */
+    if (!(effect instanceof KeyframeEffect) || effect._sizeKeywords !== null || !effect._target ||
+        !effect._kfs.some(frame => [...frame.props.keys()].some(property => WA_PREFERRED_SIZE.test(property)))) return;
+    effect._sizeKeywords = N.computed(effect._target, 'interpolate-size') === 'allow-keywords';
+}
+
 function waMix(prop, a, b, p, op) {   /* op: interpolate (p) or add (p ignored, b added to a) */
     if (WA_POSITION.test(prop)) return waPositionMix(prop, a, b, p, op);
     if (WA_GRID.test(prop)) return waGridMix(a, b, p, !!op);
@@ -512,7 +552,11 @@ function waTransform(a, b, p, op) {
     const L = (x, y) => x + (y - x) * p, th = L(t1, t2), sx = L(da.sx, db.sx), k = L(da.k, db.k), sy = L(da.sy, db.sy), cs = Math.cos(th), sn = Math.sin(th);
     return `matrix(${[cs * sx, sn * sx, cs * k - sn * sy, sn * k + cs * sy, L(da.tx, db.tx), L(da.ty, db.ty)].map(waFmt).join(', ')})`;
 }
-function waInterp(prop, a, b, p) {
+function waInterp(prop, a, b, p, sizeKeywords = false) {
+    if (WA_PREFERRED_SIZE.test(prop)) {
+        const value = waPreferredKeywordMix(a, b, p, sizeKeywords);
+        if (value !== undefined) return value !== null ? value : p < .5 ? a : b;
+    }
     if (WA_POSITION.test(prop)) { const r = waPositionMix(prop, a, b, p, false); return r !== null ? r : p < 0.5 ? a : b; }
     if (p === 0) return a; if (p === 1) return b;
     if (prop === 'transform') return waTransform(a, b, p);
@@ -546,6 +590,7 @@ class AnimationEffect {
 class KeyframeEffect extends AnimationEffect {
     constructor(target, keyframes, options) {
         waInternal = true; try { super(); } finally { waInternal = false; }
+        def(this, '_sizeKeywords', null);
         if (arguments.length === 1 && target instanceof KeyframeEffect) {
             const s = target;
             def(this, '_t', Object.assign({}, s._t)); def(this, '_target', s._target); def(this, '_pseudo', s._pseudo);
@@ -566,7 +611,7 @@ class KeyframeEffect extends AnimationEffect {
         def(this, '_t', waTiming(WA_T0, options)); def(this, '_kfs', kfs); def(this, '_comp', comp); def(this, '_icomp', icomp); def(this, '_pseudo', pseudo);
     }
     get target() { return this._target; }
-    set target(v) { if (v !== null && !(N.isNode(v) && N.type(v) === 1)) throw waTypeErr("Failed to set the 'target' property on 'KeyframeEffect': The provided value is not of type 'Element'."); this._target = v; waInvalidate(); }
+    set target(v) { if (v !== null && !(N.isNode(v) && N.type(v) === 1)) throw waTypeErr("Failed to set the 'target' property on 'KeyframeEffect': The provided value is not of type 'Element'."); if (this._target !== v) this._sizeKeywords = null; this._target = v; waInvalidate(); }
     get pseudoElement() { return this._pseudo; }
     set pseudoElement(v) { this._pseudo = v === null ? null : waPseudo(v, "set the 'pseudoElement' property on 'KeyframeEffect'"); waInvalidate(); }
     get composite() { return this._comp; } set composite(v) { this._comp = waEnum(v, WA_COMP, 'CompositeOperation'); waInvalidate(); }
@@ -578,7 +623,7 @@ class KeyframeEffect extends AnimationEffect {
             return o;
         });
     }
-    setKeyframes(kf) { this._kfs = waKeyframes(kf); this._defaultEase = WA_LINEAR; waInvalidate(); }
+    setKeyframes(kf) { this._kfs = waKeyframes(kf); this._sizeKeywords = null; this._defaultEase = WA_LINEAR; waInvalidate(); }
 }
 function waPseudo(v, what) {
     v = String(v);
@@ -595,6 +640,7 @@ function waEffectValue(eff, prop, under, c) {
         let v = k ? k.props.get(prop) : under;
         if (v != null && WA_GRID.test(prop)) v = waGridSpecified(eff._target, prop, v);
         if (v != null && WA_POSITION.test(prop)) v = waPositionSpecified(eff._target, prop, v);
+        if (v != null && WA_PREFERRED_SIZE.test(prop)) v = waPreferredSpecified(eff._target, prop, v);
         return k ? waCompose(prop, under, v, k.composite === 'auto' ? eff._comp : k.composite) : v;
     };
     let pts = kfs.map(k => ({ co: k.co, k }));
@@ -613,7 +659,7 @@ function waEffectValue(eff, prop, under, c) {
            easing; author-supplied Web Animations keyframes default to linear. */
         const d = e.co === s.co ? 0 : (p - s.co) / (e.co - s.co);
         const de = (s.k ? s.k.ease : eff._defaultEase || WA_LINEAR)(d, false);
-        res = waInterp(prop, val(s.k), val(e.k), de);
+        res = waInterp(prop, val(s.k), val(e.k), de, !!eff._sizeKeywords);
     }
     if (eff._icomp === 'accumulate' && c.currentIteration > 0 && isFinite(c.currentIteration)) {
         const last = pts[pts.length - 1].k, endV = last ? val(last) : under;
@@ -652,6 +698,7 @@ function waFlush() {
         const e = a._effect;
         if (!e || !(e instanceof KeyframeEffect) || !e._target || e._pseudo || a._replace === 'removed') continue;
         const c = waCompute(e); if (c.progress === null) continue;
+        waCapturePreferredPolicy(a);
         let l = byEl.get(e._target); if (!l) byEl.set(e._target, l = []); l.push([e, c]);
     }
     for (const el of waApplied.keys()) if (!byEl.has(el)) { trSuppressCss(el, waApplied.get(el), ''); N.setAnimStyle(el, ''); waApplied.delete(el); }
@@ -772,6 +819,7 @@ class Animation extends EventTarget {
         const tt = this._tlTime();
         if (tt === null && v !== null) this._hold = null;
         const prevCT = this.currentTime;
+        if (v !== null) waCapturePreferredPolicy(this);
         this._cssStartOrigin = null;
         this._applyPendRate();
         this._start = v;
@@ -794,6 +842,7 @@ class Animation extends EventTarget {
         this._updateFinished(true, false); waInvalidate();
     }
     _silentSetCT(v) {
+        waCapturePreferredPolicy(this);
         const tt = this._tlTime();
         if (this._hold !== null || this._start === null || tt === null || this._rate === 0) this._hold = v;
         else this._start = tt - v / this._rate;
@@ -827,6 +876,7 @@ class Animation extends EventTarget {
             if (end === Infinity) throw new DOMException("Failed to execute 'play' on 'Animation': Cannot play reversed Animation with infinite target effect end.", 'InvalidStateError');
             seek = end;
         } else if (rate === 0 && ct === null) seek = 0;
+        waCapturePreferredPolicy(this);
         this._cssStartOrigin = null;
         if (seek !== null) { this._start = null; this._hold = seek; }
         if (this._hold !== null) this._start = null;
@@ -844,6 +894,7 @@ class Animation extends EventTarget {
             if (this._rate >= 0) seek = 0;
             else { if (this._end() === Infinity) throw new DOMException("Failed to execute 'pause' on 'Animation': Cannot pause, Animation has infinite target effect end.", 'InvalidStateError'); seek = this._end(); }
         }
+        waCapturePreferredPolicy(this);
         if (seek !== null) { this._hold = seek; this._start = null; }
         this._cssStartOrigin = null;
         if (this._task === 'play') this._task = null; else this._newReady();
@@ -985,7 +1036,9 @@ function trStart(el, packed) {
     const running = trRunning.get(el), old = running && running.get(prop);
     if (old) { running.delete(prop); old.cancel(); }
     if (duration + delay <= 0 || !el.isConnected) return;
-    const discrete = prop !== 'transform' && prop !== 'visibility' && waMix(prop, from, to, 0.5) === null;
+    const sizeKeywords = WA_PREFERRED_SIZE.test(prop) && N.computed(el, 'interpolate-size') === 'allow-keywords';
+    const sizeMix = WA_PREFERRED_SIZE.test(prop) ? waPreferredKeywordMix(from, to, .5, sizeKeywords) : undefined;
+    const discrete = prop !== 'transform' && prop !== 'visibility' && (sizeMix === undefined ? waMix(prop, from, to, .5) : sizeMix) === null;
     if (discrete && at('transition-behavior', 'normal') !== 'allow-discrete') return;
     const key = prop === 'float' ? 'cssFloat' : prop.replace(/^-webkit-/, 'webkit-').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
     let eff;
@@ -993,6 +1046,7 @@ function trStart(el, packed) {
     catch (e) { eff = new KeyframeEffect(el, [{ [key]: from }, { [key]: to }], { duration, delay, fill: 'backwards' }); }
     const a = new CSSTransition(eff, document.timeline);
     a._trProp = prop;
+    if (WA_PREFERRED_SIZE.test(prop)) eff._sizeKeywords = sizeKeywords;
     const done = () => { const m = trRunning.get(el); if (m && m.get(prop) === a) { m.delete(prop); if (!m.size) trRunning.delete(el); } };
     const fire = (type, t) => dispatch(el, new TransitionEvent(type, { bubbles: true, propertyName: prop, elapsedTime: t / 1000 }), true);
     let started = false;
