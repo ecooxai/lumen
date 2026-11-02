@@ -240,7 +240,10 @@ class CSSRuleStyle extends CSSStyleDeclaration {
     _m() { return new SMap(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
     get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v), this._rule instanceof CSSFontFaceRule)); }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m();
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
+        v = v == null ? '' : String(v);
+        if (v !== '' && !cssVarSyntax(v)) return;
+        const m = this._m();
         if (p === 'overflow') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (!cssOverflowSet(m, value, priority)) return;
