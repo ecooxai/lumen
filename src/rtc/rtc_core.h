@@ -24,6 +24,12 @@ typedef struct {
     double n;            /* dc/open: stream id or -1 */
 } RtccEvent;
 
+#ifdef LUMEN_RTC_SHARED
+/* The shared transport cannot import the engine's hidden globals. Register a C callback before
+   creating connections; it must outlive transport workers. NULL disables notifications. */
+void rtcc_set_wakeup(void (*wakeup)(void));
+#endif
+
 /* new peer connection; urls/users/creds hold n ICE servers (users/creds entries may be NULL) */
 int rtcc_new(void *owner, const char *const *urls, const char *const *users, const char *const *creds, int n,
              bool relay_only, const char *cert_pem, const char *key_pem);

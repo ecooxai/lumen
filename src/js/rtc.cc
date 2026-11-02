@@ -5,6 +5,9 @@
    and played through SDL or read back for Web Audio. Network events are delivered in rtc_pump. */
 #include "js_int.h"
 #include "../rtc/rtc_core.h"
+#ifdef LUMEN_RTC_SHARED
+extern "C" void (*net_wakeup)(void);
+#endif
 #include <cstring>
 #include <map>
 #include <openssl/evp.h>
@@ -17,6 +20,14 @@
 using FCI = v8::FunctionCallbackInfo<v8::Value>;
 
 namespace {
+
+#ifdef LUMEN_RTC_SHARED
+/* This process-lifetime thunk carries no context or C++ object across the DSO boundary. */
+void rtc_wakeup_main() {
+    auto wakeup = net_wakeup;
+    if (wakeup) wakeup();
+}
+#endif
 
 std::map<JsCtx *, v8::Global<v8::Function>> g_cbs;
 
@@ -203,6 +214,9 @@ void n_rtcClose(const FCI &a) {
 }  // namespace
 
 void js_install_rtc(JsCtx *c, v8::Local<v8::Object> N) {
+#ifdef LUMEN_RTC_SHARED
+    rtcc_set_wakeup(rtc_wakeup_main);
+#endif
     v8::Isolate *iso = c->iso;
     v8::Local<v8::Context> ctx = iso->GetCurrentContext();
 #define REG(nm) (void)N->Set(ctx, jstr(iso, #nm), v8::Function::New(ctx, n_##nm).ToLocalChecked())

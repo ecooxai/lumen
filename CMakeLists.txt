@@ -295,9 +295,13 @@ if(NOT APPLE AND NOT ANDROID)
 endif()
 
 # WebRTC transport: libdatachannel (with libjuice, usrsctp and libsrtp2) and Opus. libdatachannel uses
-# the platform C++ runtime and exceptions, so src/rtc keeps a C interface and stays apart from the
-# engine, which on Android builds against V8's own libc++ without exceptions.
-add_library(lumen_rtc STATIC src/rtc/rtc_core.cc)
+# the platform C++ runtime and exceptions. The prebuilt Android V8 runtime is different, so its
+# C interface must also be a shared-library boundary: a static archive would merge both runtimes.
+if(ANDROID AND LUMEN_V8_PREBUILT_DIR)
+    add_library(lumen_rtc SHARED src/rtc/rtc_core.cc)
+else()
+    add_library(lumen_rtc STATIC src/rtc/rtc_core.cc)
+endif()
 foreach(name datachannel opus)
     lumen_library(NATIVE_${name} ${name})
     target_link_libraries(lumen_rtc PRIVATE "${NATIVE_${name}}")
@@ -318,6 +322,12 @@ target_compile_options(lumen_rtc PRIVATE -fexceptions)
 if(ANDROID AND LUMEN_V8_PREBUILT_DIR)
     target_include_directories(lumen_rtc SYSTEM PRIVATE "${sdl_cxx_headers}")
     target_link_libraries(lumen_rtc PRIVATE lumen_android_sdl_cxx)
+    target_compile_definitions(lumen_rtc PUBLIC LUMEN_RTC_SHARED=1)
+    set(lumen_rtc_exports "${CMAKE_CURRENT_SOURCE_DIR}/cmake/android-rtc.exports")
+    target_link_options(lumen_rtc PRIVATE -nostdlib++
+        "-Wl,--exclude-libs,ALL" "-Wl,--version-script=${lumen_rtc_exports}"
+        "-Wl,-z,max-page-size=16384" "-Wl,-z,defs" "-Wl,--threads=2")
+    set_property(TARGET lumen_rtc APPEND PROPERTY LINK_DEPENDS "${lumen_rtc_exports}")
 endif()
 
 file(GLOB ENGINE_SOURCES CONFIGURE_DEPENDS src/html/*.c src/dom/*.c src/css/*.c src/text/*.c src/layout/*.c src/paint/*.c src/media/*.c src/gpu/*.c src/js/*.c src/js/*.cc)

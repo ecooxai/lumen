@@ -1,0 +1,24 @@
+{
+  global:
+    rtcc_new;
+    rtcc_add_track;
+    rtcc_track_setup;
+    rtcc_local;
+    rtcc_remote;
+    rtcc_cand;
+    rtcc_dc;
+    rtcc_dc_send;
+    rtcc_dc_info;
+    rtcc_dc_close;
+    rtcc_send_pcm;
+    rtcc_play;
+    rtcc_read;
+    rtcc_stats;
+    rtcc_close;
+    rtcc_owner_free;
+    rtcc_pending;
+    rtcc_take;
+    rtcc_set_wakeup;
+  local:
+    *;
+};
