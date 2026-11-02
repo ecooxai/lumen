@@ -270,6 +270,134 @@ static bool css_string_closed(const CTok *token) {
     while (i && token->start[i - 1] == '\\') { slashes++; i--; }
     return !(slashes & 1);
 }
+/* Validate a declaration-value token stream without interpreting its functions
+ * as values of an ordinary property. EOF closes open blocks and strings, as
+ * required by CSS Syntax; a stray closing token is still invalid. */
+typedef struct {
+    bool sole_css_wide;
+    bool has_variable_reference;
+} DeclarationValueInfo;
+
+/* p points just after a backslash. The caller decides whether a literal
+ * newline is allowed (string continuation) or invalid (an unquoted URL). */
+static const char *css_declaration_escape_end(const char *p, const char *end) {
+    if (p == end) return p;
+    if (isxdigit((unsigned char)*p)) {
+        int digits = 0;
+        while (p < end && digits < 6 && isxdigit((unsigned char)*p)) { p++; digits++; }
+        if (p < end && is_ws((unsigned char)*p)) {
+            if (*p++ == '\r' && p < end && *p == '\n') p++;
+        }
+        return p;
+    }
+    if (*p++ == '\r' && p < end && *p == '\n') p++;
+    return p;
+}
+
+/* The compact tokenizer retains unquoted URL contents in CT_URL, including
+ * malformed contents. Check the original token so escaped quotes, parentheses
+ * and whitespace remain distinct from their invalid unescaped forms. */
+static bool css_declaration_url_token_valid(const CTok *token) {
+    const char *end = token->start + token->len;
+    const char *p = memchr(token->start, '(', token->len);
+    if (!p) return false;
+    p++;
+    while (p < end && is_ws((unsigned char)*p)) p++;
+    while (p < end) {
+        unsigned char c = (unsigned char)*p++;
+        if (c == ')') return p == end;
+        if (is_ws(c)) {
+            while (p < end && is_ws((unsigned char)*p)) p++;
+            return p == end || (*p == ')' && p + 1 == end);
+        }
+        if (c == '"' || c == '\'' || c == '(' || c <= 8 || c == 11 ||
+            (c >= 14 && c <= 31) || c == 127) return false;
+        if (c == '\\') {
+            if (p == end) return true;
+            if (*p == '\n' || *p == '\r' || *p == '\f') return false;
+            p = css_declaration_escape_end(p, end);
+        }
+    }
+    return true;
+}
+
+static bool css_declaration_value_valid(const char *value, DeclarationValueInfo *info) {
+    if (!value || !info) return false;
+    memset(info, 0, sizeof *info);
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    int closes[256], depth = 0, significant = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        bool valid = true;
+        if (type == CT_STRING) {
+            if (!css_string_closed(&token) && lexer.i < lexer.n) valid = false;
+            const char *p = token.start + 1, *end = token.start + token.len;
+            while (valid && p < end) {
+                char c = *p++;
+                if (c == '\\') p = css_declaration_escape_end(p, end);
+                else if (c == '\n' || c == '\r' || c == '\f') valid = false;
+            }
+        } else if (type == CT_URL) valid = css_declaration_url_token_valid(&token);
+        if (type != CT_WS && type != CT_EOF) {
+            if (significant < 2) significant++;
+            info->sole_css_wide = significant == 1 && type == CT_IDENT && token.str &&
+                (str_ieq(token.str, "initial") || str_ieq(token.str, "inherit") ||
+                 str_ieq(token.str, "unset") || str_ieq(token.str, "revert") ||
+                 str_ieq(token.str, "revert-layer"));
+        }
+        if (type == CT_FUNC && token.str && str_ieq(token.str, "var"))
+            info->has_variable_reference = true;
+        free(token.str);
+        if (!valid) return false;
+        if (type == CT_EOF) return true;
+        int close = css_var_closing(type);
+        if (close) {
+            if (depth == 256) return false;
+            closes[depth++] = close;
+        } else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
+            if (!depth || closes[--depth] != type) return false;
+        } else if (!depth && (type == CT_SEMI ||
+                   (type == CT_DELIM && *token.start == '!'))) return false;
+    }
+}
+
+/* Universal registration keeps its token stream, but CSS-wide defaulting and
+ * var() need an element/cascade context and cannot supply an initial value.
+ * Inspect decoded tokens: strings and comments containing these spellings are
+ * ordinary values, while escaped spellings retain their actual meaning. */
+bool css_universal_initial_valid(const char *value, size_t length) {
+    if (!value || length == SIZE_MAX) return false;
+    /* CSS input preprocessing is local to this registration check. Use the
+     * full supplied byte length: NUL is a replacement character, not EOF. */
+    size_t capacity = length;
+    for (size_t input = 0; input < length; input++) {
+        if (!value[input]) {
+            if (capacity > SIZE_MAX - 3) return false;
+            capacity += 2;
+        }
+    }
+    char *normalized = xmalloc(capacity + 1);
+    size_t output = 0;
+    for (size_t input = 0; input < length; input++) {
+        char c = value[input];
+        if (!c) {
+            normalized[output++] = (char)0xef;
+            normalized[output++] = (char)0xbf;
+            normalized[output++] = (char)0xbd;
+            continue;
+        }
+        if (c == '\r') { if (input + 1 < length && value[input + 1] == '\n') input++; c = '\n'; }
+        else if (c == '\f') c = '\n';
+        normalized[output++] = c;
+    }
+    normalized[output] = 0;
+    DeclarationValueInfo info;
+    bool valid = css_declaration_value_valid(normalized, &info) &&
+        !info.sole_css_wide && !info.has_variable_reference;
+    free(normalized);
+    return valid;
+}
+
 bool css_var_syntax_valid(const char *value) {
     if (!css_if_syntax_valid(value)) return false;
     CLexer l; clex_init(&l, value, strlen(value));

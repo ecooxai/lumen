@@ -1469,7 +1469,18 @@ FN(mediaValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_media_
 FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
 FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
 extern "C" bool css_var_syntax_valid(const char *value);
-FN(cssVarValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_var_syntax_valid(q.c_str()))); }
+extern "C" bool css_universal_initial_valid(const char *value, size_t length);
+FN(cssVarValid) {
+    CTX;
+    /* Registration requests declaration tokens without ordinary-value grammar.
+     * Preserve embedded NUL for CSS input preprocessing rather than truncating. */
+    if (a.Length() > 1 && a[1]->IsTrue()) {
+        v8::String::Utf8Value value(iso, a[0]);
+        RET(v8::Boolean::New(iso, css_universal_initial_valid(*value ? *value : "", *value ? (size_t)value.length() : 0)));
+        return;
+    }
+    std::string q = S(0); RET(v8::Boolean::New(iso, css_var_syntax_valid(q.c_str())));
+}
 extern "C" char *css_min_size_parse(const char *value);
 FN(cssMinSize) { CTX; std::string q = S(0); char *value = css_min_size_parse(q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
 extern "C" char *css_math_value_text(const char *value);

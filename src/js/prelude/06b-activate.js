@@ -600,7 +600,7 @@ function registerProperty(d) {
     const comps = rpParseSyntax(syntax);
     if (!comps) throw new DOMException(`The given syntax '${syntax}' is invalid.`, 'SyntaxError');
     if (comps !== '*' && iv === undefined) throw new DOMException('An initial value must be provided if the syntax is not "*"', 'SyntaxError');
-    if (iv !== undefined && (comps === '*' ? /var\(/i.test(iv) : !rpMatches(comps, iv))) throw new DOMException('The initial value provided does not parse for the given syntax.', 'SyntaxError');
+    if (iv !== undefined && (comps === '*' ? !N.cssVarValid(iv, true) : !rpMatches(comps, iv))) throw new DOMException('The initial value provided does not parse for the given syntax.', 'SyntaxError');
     if (registeredProps.has(name)) throw new DOMException('The name provided has already been registered.', 'InvalidModificationError');
     registeredProps.set(name, { syntax, inherits: !!d.inherits, initialValue: iv });
     N.registerProp(name, iv === undefined ? "" : iv.trim(), syntax.trim(), registeredProps.get(name).inherits ? "true" : "false", iv === undefined ? "false" : "true");
