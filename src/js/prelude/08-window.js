@@ -464,7 +464,14 @@ for (const u of CSS_UNIT_FACTORIES) CSS[u] = { [u](v) { return new CSSUnitValue(
 const timerFn = (repeat) => (fn, ms, ...args) => { if (typeof fn !== 'function') { const src = ttString(TrustedScript, fn, repeat ? 'Window setInterval' : 'Window setTimeout'); fn = () => { ttTimerSrc = src; (0, eval)(src); }; } return N.timer(() => { try { fn(...args); } catch (e) { report(e); } }, Math.max(0, +ms || 0), repeat); };
 const setTimeout = timerFn(false), setInterval = timerFn(true);
 const clearTimeout = (id) => { if (id) N.clearTimer(id); }, clearInterval = clearTimeout;
-const requestAnimationFrame = (fn) => N.raf((t) => { waFrameTime = t; waInFrame = true; try { fn(t); } catch (e) { report(e); } finally { waInFrame = false; } });
+const requestAnimationFrame = (fn) => N.raf((t) => {
+    /* Author callbacks can precede the animation loop's callback in a frame.
+       Advancing the timeline invalidates an earlier sample even when no
+       animation mutation occurred; native reads resample lazily below. */
+    if (waFrameTime !== t && waAll.size) waDirty = true;
+    waFrameTime = t; waInFrame = true;
+    try { fn(t); } catch (e) { report(e); } finally { waInFrame = false; }
+});
 const cancelAnimationFrame = (id) => N.cancelRaf(id);
 const requestIdleCallback = (fn, o) => setTimeout(() => fn({ didTimeout: false, timeRemaining() { return 10; } }), 1);
 const cancelIdleCallback = clearTimeout;
