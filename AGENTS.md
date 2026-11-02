@@ -1,6 +1,6 @@
 # Agent notes for Lumen
 
-Start with the dated Linux handoff at the end of this file and `devsummary.md`. `agents/continue.md` and `agents/archive/` retain historical context; their aggregate WPT standings are not current-branch validation.
+Start with `agent/continue.md` and `agent/devsummary.md`. The original user request is in `agent/task.md`. Historical root `devsummary.md`, `agents/archive/` and the archived prior AGENTS file remain evidence; their old candidate standings are not current-branch qualification.
 
 ## Host compilation CPU budget
 
@@ -64,31 +64,11 @@ as requested for this project session. A separate scripted monitor can satisfy
 the one-second requirement without consuming another model slot. Keep source
 and Git metadata frozen while a build records its provenance.
 
-## Device test pages
+## Android data and device tests
 
-`python3 tools/device_tests.py PAGE|GROUP ...` opens Lumen's test pages on the
-phone (debug build), samples Lumen's CPU every second and prints the pages'
-numeric results. Pages: cam, screen, mic, webgl, webgpu, aquarium, chatgpt
-(newest chat bookmark), google, youtube, utils (WebGPU Weather World is under
-its apps menu). For an explicitly authorized Android release, run the relevant approved
-groups before release; `all` includes physical-media pages and requires separate
-permission/isolation. It is not a gate for this Linux task. For a small authorized
-device fix, run only relevant pages (e.g. `google`, or `gfx` for WebGL/WebGPU work). Each page gets its own cold start; `--tabs` opens them together, one
-tab each (background tabs are throttled, so measure there only the front tab).
-The script never taps or types; screen recording needs its system prompt
-accepted. A settled site whose last-10-s CPU exceeds 5% is reported.
-Sites are tested in desktop mode (Desktop site is on for all sites by
-default): the desktop versions must work.
-
-## Scripted UI tests
-
-Prefer scripts over AI agents for UI tests; use an agent only when a script can't
-do it. `python3 tools/edit_bar_test.py --serial SERIAL [--install] [--only typing,bar,more,clip,hold,showkbd]`
-drives the Android edit bar on a local Draft.js page (tests/device/editbar), with
-no person or agent. It locates things through the page's posts and Lumen's
-`LumenBar` logcat lines, and samples CPU/RSS every second (that sampling counts as
-the run's monitor). When a step fails, find out whether the script or Lumen is
-wrong and fix that one.
+Preserve application data: install with `adb install -r`; never `pm clear`, uninstall, or broad `pkill -f`.
+Do not modify `build/codex-android-deps/SDL`. Physical media tests need explicit permission/isolation;
+ordinary installation/restart does not authorize them. Historical device/UI commands remain in the archived handoff.
 
 ## Collaboration and scope
 
@@ -119,106 +99,53 @@ accepted default binary on `DISPLAY=:0`, preserving the existing user profile.
 Do not inspect or record the user's existing display; use a fresh isolated Xvfb
 profile for showcase recording. Record the new exact PID for monitoring.
 
-## Linux engine handoff — session 9, 2026-10-31, accepted candidate 234
 
-Candidate **234** is the current technically accepted Linux engine. The CTO accepted all 16 independently reviewed gates. The selected static/parsing containment scope is **100/100: 286/286 assertions and 28/28 reftests**, not a whole-engine or full-WPT score. Dedicated URL work remains deferred. Final public artifacts and downloads are verified; use the dated delivery section, final receipts and `devsummary.md` for their exact identities.
+## Current development handoff — session 17, 2026-11-02
 
-The prior session8 handoff is archived intact at `agents/archive/gpt-6-astra-pro-builtin-rubywebterm-AGENTS-session8-20261031.md`. Its226-as-current standings are historical. The architecture/privacy/authorization boundaries reproduced below remain applicable.
+The new task branch is `gpt-6-astra-pro_builtin-agents_rubywebterm_session17-20261102`.
+The starting canonical source is `fe3e72d6d2248077abea748811ff9ca268e2fdae` (candidate 1603),
+with accepted development executable SHA-256 `b2591720be38f312a42654fab3d864094796d3d9a3dfc0bf19e19d34bc4f7202`.
+Its prior full handoff is `agent/validation/linux-wpt-20261102-session16/candidate1603-final-handoff/README.md` and `handoff.json`.
+The candidate 234/Oct27 standings in earlier files are historical. No session 17 engine change has yet been qualified.
 
-### Accepted identity and evidence
+| Frozen 1,248-URL sample | Lumen 1603 | Chromium 150 |
+|---|---:|---:|
+| Fully passing files |703/1,248 (56.33%)|1,062/1,248 (85.10%)|
+| Passing/registered assertions |22,604/26,245 (86.13%)|24,541/26,064 (94.16%)|
 
-- Tested source: `206bb89d161d91278c56899a3f664a99480374f8`.
-- Immutable app: `build/codex-native/lumen-astra-i234`; SHA-256 `253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282`.
-- **650** recorded build inputs, digest `61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f`; both manifests and build binding are in `agent/validation/iteration-234/`.
-- Independent acceptance: `agent/ops/linux-wpt-20261031-session9/candidate234-independent-final-review.json`, SHA-256 `aa0068187a3ddf7f4006c89543acd05a92b1a442f46ed9b7210042a7aa79f4af`.
-- Main evidence: `agent/validation/linux-wpt-20261031-session9/`. Accepted report preparation: `agent/ops/linux-wpt-20261031-session9/public-docs-preparation/`; delivery metadata may be versioned without changing the engine.
-- Working branch: `gpt-6-astra-pro-builtin-repo-baseline-rubywebterm-20261031-wpt-nonurl`. Later evidence/document commits are distinct from tested source. Start new engine work with a fresh immutable candidate; **235** is the next unused ID.
+These counts are recovered prior-session results bound to the same retained source/binary; they are not new session 17 runs.
+The sample is not full WPT. Each engine's assertion denominator is distinct. Do not turn focused100% results into whole-browser95% claims.
+The pinned WPT revision is `0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb`; URL-list SHA-256
+`4fbab34023a7fa57e1c6c85c9ecc17d884f200340c7ae65178d4ffbc4cc56ea2`, manifest SHA-256
+`a97bc7c43083140f02c5f7ae3a46de905c8da6506c6a834928dbaa99d3ae63a6`.
+Prior native218/218, authored45 fixtures/1,318 assertions, properties41 and matched-resource5 are separate scopes.
+All raw historical losses remain visible, including typed attr() lengths, random() and variable-substituted revert-layer.
 
-### Measured conformance — separate denominators
+### Ownership and working protocol
 
-| Scope | Accepted234 | Recorded226 / pinned Chromium156 |
-| --- | --- | --- |
-| Fixed640 non-URL WPT sample, whole-file passes | **417/640 (65.15625%)** | 411/640 / 560/640 |
-| Fixed640 native assertions | **9249/10540 (87.751423%)** | 9162/10540 / 9551/10552 |
-| Selected39 containment assertions | **286/286** | 81/286 / 286/286 |
-| Selected39 containment reftests | **28/28** | 1/28 / 28/28 |
-| Whole `/html/syntax/parsing/the-end.html` | **4/4** | Previously load-target/pageshow failures; reference4/4 |
-| Separate visibility/observer API3 | **18/23** | 10/23 / 23/23 |
-| Selected native tests | **147/147**, zero skipped | 150 registered; exactly3 URL targets excluded |
-| Retained rendering controls | **40/40** | 29 stretch plus11 paint cases preserved |
+- Root is CTO. Same-model built-in `integration_validation` owns Git, docs, coordinated builds/tests and qualification;
+  `engine_improvements` owns CSSPropertyRule/CSSOM and its focused source edits; `delivery_performance` owns runtime resources,
+  preview, checkpoint packaging and final Linux/Android deployment. Agree additional file ownership before editing.
+- Child Ruby MCP calls hung while root calls worked. Workers author JSON request files and inspect locally saved responses;
+  root relays only the exact MCP call. This is connector dispatch, not root coding/testing. Preserve every failed attempt and elapsed infrastructure time.
+- The session starts 2026-11-02 11:45 UTC, normal deadline 16:45 UTC, extension to17:45 only for important unresolved bugs.
+  Record actual iteration starts/ends, non-overlapping wall time, build/test duration and one-second CPU/RSS evidence.
+- Preserve pre-existing untracked outputs. Do not mass-add them, wipe caches, kill unrelated tasks, or recreate old candidate IDs.
+- Supported execution uses `agent/validation/build_candidate.py`, `run_guarded_cohort.py`, `run_guarded_fixture.py`, and the
+  existing session10 pinned/monitored wrappers. Inspect their public help/README rather than protected implementation.
+- Take the canonical `agent/validation/runtime/build.lock` and `source-edit.lock` during exclusive phases. Freeze both source
+  and Git metadata for build provenance. Keep one heavy build or broad native/browser campaign at a time.
+- Public exports must exclude private working history, the user prompt, private notes/evidence, authentication and profiles.
+  Use the established curated public ancestry/source export and verify recovery. Private checkpoints may retain complete Git history.
 
-The640 campaign is the existing frozen sample, not the WPT repository. Relative to226,234 gains **6 whole files and87 assertions**; relative to231,1 whole file and3 assertions. No prior assertion, whole-file, harness or identity regression was found. The engines share10538 assertion identities: reference-PASS/native-nonPASS1111, native-PASS/reference-nonPASS821, reference-only14 and native-only2. Do not normalize these into an invented common denominator.
+### Immediate remaining work
 
-The39-file containment group is exactly logical001/002/003, numbered001–033 and the three parsing files under `css/css-sizing/contain-intrinsic-size/`. Its primary logical subset is48/48 assertions plus2/2 reftests. This does not complete the separate remembered-size/auto/interpolation family.
+1. Measure focused CSSPropertyRule/property-registration failures on the retained1603 build and pinned Chromium, implement a genuine bounded fix, and compare exact assertion identities.
+2. Repeat/profile the matched registry workload: prior1603 work was29.53% above parent313 in single runs; no causal speed claim exists.
+3. Preserve all prior native/browser regressions, then replay the unchanged1,248-file sample on the meaningful integrated milestone.
+4. Publish truthful progress/source checkpoints and verify preview health. Restart only the final qualified binary on display`:0`
+   and install/restart the same source on the connected Android device, preserving profiles/data.
 
-Authored controls are not WPT: unchanged visibility-options49/49 (231 baseline15/49; reference49/49) and separate slot-accessors2/2 in both engines. The lifecycle contract has12 cases/114 canonical records with explicit residual allowances, not full trace equivalence. Hidden-scroll covers7 cases/30 phases with one declared hidden-size distinction; the unchanged upstream hidden-scroll control is1/1. Keep all these separate from640 and39.
-
-### Implementation boundaries to preserve
-
-- Containment has real typed physical/logical properties, final writing-mode mapping, strict grammar/support checks, canonical generator metadata and native intrinsic contributions. Author width/height/aspect ratio, min/max and content/border-box rules remain authoritative. Descendants still lay out; there is no getter geometry substitution.
-- The containment-family cascade replay preserves physical/logical declaration order and existing importance/origin ordering, resolves variables through the existing path, and projects `all` only to this family. It does **not** implement global revert/layer/origin rollback. Keep canonical generic `column-count` storage alongside its typed field and existing integer/math parser.
-- Hidden content retains the owner decoration and suppresses descendant/replaced painting/hit testing only where applicable. Shared effective element-scroll helpers retain backing offsets, ignore hidden-owner writes, clamp revealed ranges and preserve state through non-scroll-container overflow changes. Visible nested scrollers, signed/from-end conversion and viewport routing remain intact. No per-box allocation or Android focus rewrite was added.
-- Grid auto-repeat uses actual patterns, axes, gaps, auto-fit collapse and used/absolute track geometry; preserve gap-array ownership/bounds. Empty contained multicol max-content sizing is bounded, not general multicol layout. Normal button/select/video and authored dimensions have independent controls.
-- Image bilinear interpolation combines premultiplied products and rounds once per pass in scalar/NEON paths. Six changed goldens have independent per-channel reference proof; unchanged punch frames and sanitizer evidence remain. ARM64 NEON was compiled, not runtime-tested; no hardware-GPU claim.
-- Intersection updates remain change-driven: real rAF/RO opportunities,16ms fallback, dirty/pending gates and pre-callback generation snapshots. The settled3.3s control has zero geometry rescans/duplicate notifications. Hidden descendants preserve last-reported ResizeObserver size and do not intersect.
-- `checkVisibility` implements visibility/opacity aliases plus complete ordered dictionary conversion and receiver/error/getter semantics. Native styles/geometry and a method-local native flat-parent resolver use private manual-slot metadata, without public style/geometry/slot-name getters. Shared slot helpers, unslotted box generation and auto-skipping are outside this patch.
-- Genuine native DCL/load/pageshow use a private event route. Load/pageshow dispatch on Window with Document target override; synthetic/resource events stay unchanged. Pending/InProgress/Complete distinguishes active same-Document open, completed-open restart and actual context replacement/removal. Re-find live context identity before dereferencing after callbacks; retain measured Window registration/owner-load ordering.
-
-### Preserve rejected candidates and real failure evidence
-
-227 was incomplete: native priority/raster failures and a prior select pass loss remain recorded.228 exposed the unchanged old stepped-math test's NULL generic `column-count`;229 repaired canonical storage without weakening that test. All immutable candidate outputs remain.
-
-232 passed normal lifecycle/WPT behavior but the actual instrumented host exited23 with **54,207 bytes/48 leaked allocations**. Its former CTest PASS regex masked that exit; independent review rejected it. A QA host copy with only three completed-batch pin releases, the same frozen instrumented engine and unchanged fixture, produced actual0 with identical125 raw rows and no sanitizer findings.233 applied that host cleanup and opt-in `JSRUN_EXPECT_ATTR_VALUE=PASS` with actual-exit gating. Missing/FAIL completion controls return1/1 after cleanup. No suppression, engine ownership workaround or changed lifecycle oracle was used.
-
-Final234 passes targeted C/math/grid/raster sanitizers and the actual instrumented C++ lifecycle/options host, including49 options and the negative completion controls. This is targeted instrumentation, not every possible native configuration. Keep invalid adapter/transport attempts and corrected receipts separate; never replace historical evidence.
-
-### Known unresolved behavior and comparison limits
-
-- `checkVisibility.html` is **16/21**; separate IO and RO are1/1 each. Five failures remain: auto outside the viewport; auto with hidden content inside; unassigned child; child not assigned to the only named slot; and listbox option/optgroup boxes. No complete auto/remembered-size/layout-style-skipping or visibility-box implementation is claimed.
-- Explicit hidden geometry retains layout data. Only `range-shrink-and-regrow` / `hidden-shrunk` leaf dimensions differ in the30-phase contract: native150×130 versus reference cached400×400. Every other declared field remains strict; never fabricate stale geometry.
-- Initial child-load microtasks retain synchronous iframe-insertion timing. The specifically allowed pageshow-open load-microtask marker observes `activeGeneration=replacement` instead of reference initial. Post-removal author statements may finish, but stale native owner-load/pageshow follow-up is forbidden. Event metadata/counts are strict. Pinned Chromium owner-load-before-pageshow ordering is retained, not claimed as complete current-HTML ordering conformance.
-- The old authored IO “below threshold still reports intersecting” control disagrees with Chromium in preservedv1. No actual threshold entry was logged, so neither fixture error nor Chromium bug is established. Cadence/retention agreement is separate; see session9 `gpt-6-astra-pro-builtin-rubywebterm-io-threshold-handoff.json`.
-- XML fragments/full3D transforms, broad vertical/cyclic Grid, complete multicol, global CSS rollback and typed custom-property animation remain incomplete. `document.domain`/incumbent-global and asynchronous iframe/realm prerequisites are separate work; no origin shortcut or synchronous test-specific bridge was added.
-- Reference adapters expose their own completion/owned cleanup, not Chromium OS exit. Keep native harness statuses explicit. Native physical-capture refusal and reference fake-device behavior do not establish positive media conformance.
-- This is a dynamically linked Linux development executable. Exact dependencies are documented; there is no portable standalone package, fresh hermetic rebuild or byte-reproducible compilation claim.
-
-Planning-only next-scope inventory: `agent/validation/linux-wpt-20261031-session9/gpt-6-astra-pro-builtin-rubywebterm-next-scope-inventory.json`. It does not authorize reopening deferred or previously rejected broad work.
-
-### Reproduction, resources and supported execution
-
-Use fresh candidate/output IDs and the established quota wrapper; freeze source/Git during provenance-sensitive work. Session9 used jobs2, native testsj1 and at most two browser workers. Do not change upstream WPT inputs/expectations, protected helpers or runner semantics to obtain a pass.
-
-The exact147 names/portable commands are mapped in session9 `gpt-6-astra-pro-builtin-rubywebterm-native147-replay-inputs.json`. All650 exported inputs,457 tracked test files and241 canonical project dependencies match accepted source/base/extras. Generated embeds and the `viewer_fixture` producer/consumer are mapped separately.
-
-Native147 needs **64 external WPT inputs**, separate from650 project inputs:62 parser `.dat` files, `fonts/Ahem.ttf` and `css/css-values/resources/ChTestZeroWidthZero.woff`. They match WPT commit `0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb`, tree `473532b15684bbb7461cfcc6f5c1bb6adf909bc3`. Put WPT at `<source>/../../wpt` before CMake; a safe layout is source `<work>/browser/lumen/lumen` and WPT `<work>/browser/wpt`. Require the exact62-file parser set, all64 hashes, actual cached font bytes, all147 names and no skips. Missing WPT can silently omit `html5lib`; missing fonts are not equivalent coverage. The public Linux guide contains checked preflight/replay commands.
-
-Supported public launchers remain `build_candidate.py`, `run_guarded_cohort.py`, `run_guarded_fixture.py` and pinned reference adapters. The reftest pilot documents WPT reference-graph screenshots. No supported arbitrary owned-page screenshot route was established: do not invent a graph/root workaround, inspect protected implementation or bypass guards. The live demo uses marker-only owned-fixture validation; its settled marker is transport completion, not a WPT score.
-
-The sequential matched15s layout fixture completed the same200-node/50-step workload,10 checks and checksum21144 in226,234 and Chromium156. Final234 fixed-work CPU was0.289915 CPU-seconds over3.998444 covered seconds; late-idle0.039984 over4.004577 (about1% of one core). Sampled whole-window RSS/PSS maxima were167.748/152.391MiB (226:169.607/154.521; Chromium browser-only:1417.294/508.930). Fixed-work CPU rose0.019637 seconds versus226; memory was modestly lower; no predeclared material-regression threshold was met. These are single-run paced/sampled observations, not throughput/speedup or exact high-water marks. Keep ChromeDriver-inclusive values separate. Audit: `agent/ops/linux-wpt-20261031-session9/candidate234-independent-resource-audit.json`.
-
-### Delivery state and private/public boundaries — verified
-
-The accepted234 artifacts are published at **https://ecooxai.github.io/lumen/**. The final unauthenticated reader pass ended at **2026-10-31T11:12:51.252420Z**: all17 canonical files and the source checks returnedHTTP200 with exact expected bytes/hashes. The downloaded runtime contains the unchanged accepted app; both live-demo aliases match the measured fixture. Receipt: `agent/validation/linux-wpt-20261031-session9/qa-public-reader234-v2/receipt.json`, SHA-256 `0d0b4d86780fd180a019351f95c54e8a9e3ecee935fb5143229aeacec17d412e`.
-
-- Public source branch: `gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031`; final commit `b3702f8a5f2a1b41f5baf346cbc17e3c516001da`, tree `e7560b9d2cae7d6e7bd014a15182876a1784dde7`.
-- This is a normal three-file documentation child of engine export `d72c9d8225a733dd959e1b81389bb3dd699ebc86`. All650 measured engine inputs, the tested executable, report and16 technical gate hashes are unchanged. The corrected local commands use explicit `file://` URLs. The first published guide/package and all failed recovery attempts remain retained evidence.
-- Final Pages content commit: `bb9562d265d2d09f5a10bf4a069299713353e69a`, tree `96d6f130e98a5356e652a7a5c2791523af8d53bb`, on `gpt-6-astra-builtin-agents-rubywebterm-showcase-20261028`. Normal non-forced source and Pages pushes were remotely verified.
-- `/src.tar.gz`:9,755,285 bytes; SHA-256 `e23323d22d76ff0d655d38be5f7c8b4b1364e21d98dee0b131f2aff824c8ed29`.
-- `gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-source-i234.bundle`:4,937,370 bytes; SHA-256 `bff571dd105b6f7d7f289c7b961b6c70cc5c0a30a17f79bf1bc589a3f00e6e79`. It is offered separately and included in the source archive. ExactlyHEAD and the named public branch resolve to the same final public commit; both default and explicit-branch clones, fsck,217 public ancestors,749 files/modes and650 inputs were verified. Private history is excluded.
-- `gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-x86_64-i234.tar.gz`:2,566,009 bytes; SHA-256 `47e3794aa199129dc64c756ee97e834f6ecc0da0add905a33484d55c3ada44eb`. The extracted7,335,352-byte app has the accepted253f563c… hash above. This is the tested development executable with external library requirements, not a portable standalone build.
-- `gpt-6-astra-pro-builtin-rubywebterm-lumen-linux-i234-showcase.mp4`:556,783 bytes; SHA-256 `c5c0905d24f60ef8b676e81e82bb0be60d45de4546cb348df8f8c5929376d5e9`;40 seconds,960×720,H.264,24fps. Five extracted frames were visually reviewed. It is a measured-results motion presentation, not native desktop footage.
-
-The public build guide, reports, runtime identity and exact147 replay inventory are under `/docs/`; `ARTIFACTS234.json`, `SHA256SUMS234` and `PUBLIC-GIT-RECOVERY.json` bind the final downloads. The report is an immutable qualification-time snapshot; final delivery records supersede its earlier publication-preparation state without changing test results. Public publication review is `agent/ops/linux-wpt-20261031-session9/candidate234-independent-final-review-v3.json`, SHA-256 `63bbbe783fb2dbf70c0fddb052631ae2ffea788e8f2bd30c83447320742d5c65`.
-
-The live preview remains `https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz`. Its `/src.tar.gz` and `/showcase.mp4` were verified against the same final source/video hashes. Server/authentication/WebSocket/message controls stayed unchanged. See `agent/ops/linux-wpt-20261031-session9/preview-promotion234-v2/receipt.json`; the final inbox and telemetry health checks are recorded by delivery. Active-session polling is not an unattended response promise.
-
-The interactive demonstration is `gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html`. It runs in the browser that opens it; open it in Lumen to exercise Lumen. Its HTML is byte-identical to the marker-validated owned fixture9b330a84…; its real76×40 containment,80/90 retained scroll, visibility and genuine lifecycle readings are outside WPT scoring. No arbitrary-page screenshot workaround was used.
-
-The documented FileHarbor API returned403. Private Page checkpoints preserved the accepted engine code and earlier rejection history; the final delivery checkpoint adds the verified public links. Final artifact delivery elapsed31.083606 minutes after the221.570601-minute technical phase, reaching252.654207 cumulative minutes at reader acceptance. The final post-task bookkeeping/checkpoint end and total wall time are recorded in `agent/validation/linux-wpt-20261031-session9/final-accounting234.json`; do not sum overlapping agents.
-
-Public export is curated from approved public ancestry plus exact inputs and reviewed extras. Never push private working history, `agent/task.md`, these notes, authentication, profiles, private capture machinery or whole private evidence folders. The unchanged full user request remains in `agent/task.md`. Final private documentation commits must retain all650 source inputs and the accepted app; see the final handoff-equivalence receipt.
-
-The display restart rule in the first121 lines remains applicable. Final preflight found no `/tmp/lumen-display0.pid`, so no existing display/process/profile was inspected or changed and no desktop process was launched. The accepted default executable is ready. Receipt: `agent/ops/linux-wpt-20261031-session9/desktop234-preflight.json`. A missing/stale PID never authorizes terminating an unrelated process.
 
 ### Retained prior architecture and authorization boundaries
 
@@ -242,8 +169,7 @@ EventSource is currently undefined. If it is implemented later, SSE reconnection
 
 Full rule/layer/origin cascade rollback, typed custom-property animation and broader computed/shorthand serialization remain incomplete. Preserve existing native selector validity and realm/lifetime rules; never invoke author-overridden getters inside native style matching. The previous auto-review refusals above concern those specific protected or broad actions; they do not describe the resolved session8 OPS publication-preparation ambiguity.
 
-### Next-agent starting point
 
-Read this dated handoff, `devsummary.md`, accepted234 final review and actual final delivery receipts first. Keep the selected39 score distinct from fixed640 rates, API3 residuals, authored controls and native147. Treat234 as accepted/immutable; preserve source/binary hashes when documentation/publication commits advance branch HEAD.
+## Next agent
 
-For a new task, establish ownership and a fresh candidate/branch before editing. Choose one whole bounded non-URL scope and pin baseline/reference identities. Do not resume deferred XML/auto/realm/cascade work from an old plan without checking current authorization. Use retained failures and explicit residuals rather than rediscovering them or claiming broader parity.
+Read `agent/continue.md`, then the current iteration records in `agent/devsummary.md`. Preserve the exact tested source/binary identities and raw failures; continue from the latest qualified candidate, not an unqualified build or older public artifact.
