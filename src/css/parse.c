@@ -890,7 +890,7 @@ bool css_parse_selector_list(const char *src, SelList *out) {
 }
 
 /* ---------------- declarations ---------------- */
-DeclList *css_parse_decls(const char *s, size_t n) {
+static DeclList *css_parse_declarations(const char *s, size_t n, bool property_descriptors) {
     DeclList *d = xcalloc(1, sizeof *d);
     size_t i = 0;
     while (i < n) {
@@ -929,6 +929,7 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         while (name_end.type == CT_WS) { free(name_end.str); name_end = clex_next(&names); }
         bool name_valid = name.type == CT_IDENT && name.str && name_end.type == CT_EOF;
         bool custom = name_valid && name.str[0] == '-' && name.str[1] == '-' && name.str[2];
+        bool arbitrary = custom || (property_descriptors && name_valid && str_ieq(name.str, "initial-value"));
         char *val = css_declaration_text(s + vs, i - vs, true);
         char *v = str_trim(val), *bang = css_important_start(v);
         bool imp = bang != NULL;
@@ -936,8 +937,8 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         bool pending = css_value_has_var(v) || css_value_has_if(v);
         /* Comments do not supply whitespace tokens in calc grammar. Defer
          * this typed check until substitution when the value is pending. */
-        bool math_valid = custom || pending || css_math_spacing_valid(v);
-        if (!custom && !pending) {
+        bool math_valid = arbitrary || pending || css_math_spacing_valid(v);
+        if (!arbitrary && !pending) {
             char *text = css_declaration_text(v, strlen(v), false);
             free(val); val = text; v = str_trim(val);
         }
@@ -946,13 +947,86 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         Decl dc; dc.prop = property; dc.value = xstrdup(v); dc.important = imp;
         /* A stray closing token invalidates the declaration, not just its
            suffix. Continue to the next semicolon so later declarations survive. */
-        if (name_valid && !bad_close && math_valid && (custom || v[0]) && css_var_syntax_valid(v) &&
-            (custom || (css_numeric_dimension_valid(property, v) && css_transition_property_valid(property, v) && css_box_shadow_valid(property, v) && css_border_valid(property, v) && css_interpolate_size_valid(property, v)))) vec_push(*d, dc); else free(dc.value);
+        if (name_valid && !bad_close && math_valid && (arbitrary || v[0]) && css_var_syntax_valid(v) &&
+            (arbitrary || (css_numeric_dimension_valid(property, v) && css_transition_property_valid(property, v) && css_box_shadow_valid(property, v) && css_border_valid(property, v) && css_interpolate_size_valid(property, v)))) vec_push(*d, dc); else free(dc.value);
         free(val);
     }
     return d;
 }
+DeclList *css_parse_decls(const char *s, size_t n) { return css_parse_declarations(s, n, false); }
 void css_decls_free(DeclList *d) { if (!d) return; for (int i = 0; i < d->n; i++) free(d->v[i].value); vec_free(*d); free(d); }
+
+/* CSSOM reads descriptor tokens without changing the active registration set.
+ * Use the same declaration scanner as styles; only initial-value accepts the
+ * arbitrary (including explicitly empty) declaration-value grammar. */
+static char *css_property_input(const char *source, size_t length) {
+    SB text = {0};
+    for (size_t i = 0; i < length; i++) {
+        unsigned char ch = (unsigned char)source[i];
+        if (!ch) { sb_puts(&text, "\xef\xbf\xbd"); continue; }
+        if (ch == '\r') { if (i + 1 < length && source[i + 1] == '\n') i++; ch = '\n'; }
+        else if (ch == '\f') ch = '\n';
+        sb_putc(&text, (char)ch);
+    }
+    return text.s ? sb_take(&text) : xstrdup("");
+}
+static char *css_property_token(const char *source, int type) {
+    CLexer lexer; clex_init(&lexer, source, strlen(source));
+    CTok value;
+    do { value = clex_next(&lexer); if (value.type != CT_WS) break; free(value.str); } while (1);
+    bool valid = value.type == type && value.str;
+    CTok end;
+    do { end = clex_next(&lexer); if (end.type != CT_WS) break; free(end.str); } while (1);
+    valid = valid && end.type == CT_EOF;
+    free(end.str);
+    if (!valid) { free(value.str); return NULL; }
+    return value.str;
+}
+char *css_property_identifier(const char *source, size_t length) {
+    char *input = css_property_input(source, length);
+    char *identifier = css_property_token(input, CT_IDENT);
+    free(input);
+    return identifier;
+}
+bool css_property_rule_data(const char *name_source, size_t name_length,
+                            const char *body_source, size_t body_length,
+                            char **name, char ***syntaxes, int *syntax_count, char **initial, bool *inherits) {
+    *name = *initial = NULL; *syntaxes = NULL; *syntax_count = 0; *inherits = false;
+    *name = css_property_identifier(name_source, name_length);
+    if (!*name || strncmp(*name, "--", 2) || !(*name)[2]) { free(*name); *name = NULL; return false; }
+    char *body = css_property_input(body_source, body_length);
+    DeclList *descriptors = css_parse_declarations(body, strlen(body), true);
+    bool have_inherits = false;
+    /* Syntax strings are validated by the shared JS registration grammar.
+     * Preserve every string candidate so an invalid later descriptor cannot
+     * hide the last valid earlier descriptor. */
+    *syntaxes = xcalloc((size_t)descriptors->n + 1, sizeof **syntaxes);
+    for (int i = 0; i < descriptors->n; i++) {
+        const Decl *descriptor = &descriptors->v[i];
+        if (descriptor->important) continue;
+        if (!strcmp(descriptor->prop, "syntax")) {
+            char *value = css_property_token(descriptor->value, CT_STRING);
+            if (value) (*syntaxes)[(*syntax_count)++] = value;
+        } else if (!strcmp(descriptor->prop, "inherits")) {
+            char *value = css_property_token(descriptor->value, CT_IDENT);
+            if (value && (str_ieq(value, "true") || str_ieq(value, "false"))) {
+                *inherits = str_ieq(value, "true"); have_inherits = true;
+            }
+            free(value);
+        } else if (!strcmp(descriptor->prop, "initial-value")) {
+            char *value = css_declaration_text(descriptor->value, strlen(descriptor->value), false);
+            const char *trimmed = str_trim(value);
+            free(*initial); *initial = xstrdup(trimmed);
+            free(value);
+        }
+    }
+    css_decls_free(descriptors); free(body);
+    if (*syntax_count && have_inherits) return true;
+    for (int i = 0; i < *syntax_count; i++) free((*syntaxes)[i]);
+    free(*syntaxes); free(*name); free(*initial);
+    *name = *initial = NULL; *syntaxes = NULL; *syntax_count = 0;
+    return false;
+}
 
 /* ---------------- media queries ---------------- */
 /* set when a query uses an unknown feature: the whole query is then false, even under not */

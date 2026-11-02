@@ -310,6 +310,7 @@ class CSSRuleStyle extends CSSStyleDeclaration {
 class CSSRule {
     constructor() { illegal(); }
     get parentRule() { return cssOwnerGet(this).parent; } get parentStyleSheet() { return cssRuleSheet(this); }
+    get type() { const data = cssOwnerGet(this); if (!data || data.type === undefined) throw new TypeError('Illegal invocation'); return data.type; }
     get cssText() { return ''; } set cssText(v) {}
     _changed() { for (let r = this; r; r = cssOwnerGet(r).parent) r._text = null; const s = cssRuleSheet(this); if (s) s._sync(); }
 }
@@ -344,6 +345,53 @@ class CSSImportRule extends CSSRule {
     get cssText() { const m = this._media.mediaText; return `@import url("${this._href}")${m ? ' ' + m : ''};`; }
 }
 class CSSNamespaceRule extends CSSRule { get type() { return 10; } get namespaceURI() { return this._ns; } get prefix() { return this._prefix; } get cssText() { return `@namespace ${this._prefix ? this._prefix + ' ' : ''}url("${this._ns}");`; } }
+/* The rule is a read-only snapshot; parsing it must not reserve registration
+ * names or modify the document's active styles. Keep its metadata private. */
+const cssPropertyRules = new WeakMap();
+const cssPropertyGet = Function.prototype.call.bind(WeakMap.prototype.get, cssPropertyRules);
+const cssPropertySet = Function.prototype.call.bind(WeakMap.prototype.set, cssPropertyRules);
+const cssPropertyEscape = value => {
+    let output = '';
+    for (const ch of value) {
+        const cp = ch.codePointAt(0);
+        if (cp < 32 || cp === 127) output += '\\' + cp.toString(16) + ' ';
+        else output += cp >= 128 || /[-_a-z0-9]/i.test(ch) ? ch : '\\' + ch;
+    }
+    return output;
+};
+const cssPropertyQuote = value => '"' + value.replace(/["\\\x00-\x1f\x7f]/g, ch => {
+    const cp = ch.charCodeAt(0);
+    return cp < 32 || cp === 127 ? '\\' + cp.toString(16) + ' ' : '\\' + ch;
+}) + '"';
+class CSSPropertyRule extends CSSRule {
+    get name() { return cssPropertyGet(this)[0]; }
+    get syntax() { return cssPropertyGet(this)[1]; }
+    get inherits() { return cssPropertyGet(this)[2]; }
+    get initialValue() { return cssPropertyGet(this)[3]; }
+    get cssText() {
+        const [name, syntax, inherits, initial] = cssPropertyGet(this);
+        return '@property ' + cssPropertyEscape(name) + ' { syntax: ' + cssPropertyQuote(syntax) +
+            '; inherits: ' + (inherits ? 'true' : 'false') + ';' +
+            (initial === null ? '' : ' initial-value: ' + initial + ';') + ' }';
+    }
+}
+for (const key of ['name', 'syntax', 'inherits', 'initialValue'])
+    Object.defineProperty(CSSPropertyRule.prototype, key, {enumerable: true});
+function cssMkPropertyRule(name, body, base) {
+    const data = N.cssPropertyRule(name, body);
+    if (!data) return null;
+    let syntax = null;
+    for (let i = data[1].length - 1; i >= 0; i--) {
+        const candidate = data[1][i]; syntax = rpParseSyntax(candidate);
+        if (syntax) { data[1] = candidate; break; }
+    }
+    const initial = data[3];
+    if (!syntax || (syntax !== '*' && (initial === null || !rpMatches(syntax, initial))) ||
+        (initial !== null && syntax === '*' && !N.cssVarValid(initial, true))) return null;
+    const rule = cssMk(CSSPropertyRule, base);
+    cssPropertySet(rule, data);
+    return rule;
+}
 class CSSFontFaceRule extends CSSRule { get type() { return 5; } get style() { return ruleStyle(this); } get cssText() { return `@font-face ${blockText(this)}`; } }
 /* @position-try: only insets, margins, sizes, self-alignment, position-anchor and position-area */
 const PT_ALLOWED = /^(top|right|bottom|left|inset(-block|-inline)?(-start|-end)?|margin(-top|-right|-bottom|-left|-block|-inline)?(-start|-end)?|(min-|max-)?(width|height|block-size|inline-size)|align-self|justify-self|place-self|position-anchor|position-area)$/;
@@ -449,7 +497,10 @@ class CSSKeyframesRule extends CSSRule {
 }
 function cssMk(C, props) {
     const r = Object.create(C.prototype), parent = props._parent;
-    cssOwnerSet(r, { parent, owner: !parent && props._sheet ? cssOwnerGet(props._sheet).owner : null });
+    const type = C === CSSStyleRule ? 1 : C === CSSImportRule ? 3 : C === CSSMediaRule ? 4 :
+        C === CSSFontFaceRule ? 5 : C === CSSPageRule ? 6 : C === CSSKeyframesRule ? 7 :
+        C === CSSKeyframeRule ? 8 : C === CSSNamespaceRule ? 10 : C === CSSSupportsRule ? 12 : 0;
+    cssOwnerSet(r, { parent, type, owner: !parent && props._sheet ? cssOwnerGet(props._sheet).owner : null });
     for (const k in props) if (k !== '_sheet' && k !== '_parent') def(r, k, props[k]);
     def(r, '_text', null); return r;
 }
@@ -479,6 +530,7 @@ function cssMkRule(it, sheet, parent) {
     }
     else if (kw === 'namespace' && !blk) { const q = /^(?:([-\w]+)\s+)?(?:url\(\s*["']?([^"')]*)["']?\s*\)|"([^"]*)"|'([^']*)')$/.exec(rest); if (!q) return null; return cssMk(CSSNamespaceRule, { ...base, _prefix: q[1] || '', _ns: q[2] ?? q[3] ?? q[4] }); }
     else if (kw === 'font-face' && blk) return cssMk(CSSFontFaceRule, { ...base, _body: it.body, _style: null });
+    else if (kw === 'property' && blk) return cssMkPropertyRule(m[2], it.body, base);
     else if (kw === 'position-try' && blk && /^--\S+$/.test(rest)) return cssMk(CSSPositionTryRule, { ...base, _name: rest, _body: it.body, _style: null });
     else if (kw === 'page' && blk) {
         const raw = typeof it.pagePre === 'string', selector = cssPageSelectorText(raw ? it.pagePre : m[2], raw);
@@ -573,7 +625,17 @@ function rpParseSyntax(syn) {
     const out = [];
     for (const part of s.split('|')) {
         const m = /^\s*(?:<([a-z-]+)>|([-_a-zA-Z][\w-]*))([+#]?)\s*$/.exec(part);
-        if (!m) return null;
+        if (!m) {
+            /* Escaped and non-ASCII literal syntax components are identifiers,
+             * not words. The native lexer preserves their actual codepoints. */
+            const text = part.trim(); let ident = N.cssPropertyIdentifier(text), mult = '';
+            if (text.includes('/*')) return null;
+            if (ident === null && /[+#]$/.test(text)) {
+                mult = text.slice(-1); ident = N.cssPropertyIdentifier(text.slice(0, -1));
+            }
+            if (ident === null || /^(inherit|initial|unset|revert|revert-layer|default)$/i.test(ident)) return null;
+            out.push({ident, mult}); continue;
+        }
         if (m[1] && !RP_TYPES.has(m[1])) return null;
         if (m[2] && /^(inherit|initial|unset|revert|revert-layer|default)$/i.test(m[2])) return null;
         if (m[1] === 'transform-list' && m[3]) return null;
@@ -585,7 +647,7 @@ function rpMatches(comps, v) {
     v = v.replace(/\/\*[\s\S]*?\*\//g, ' ').trim();
     if (/var\(|env\(|attr\(/i.test(v)) return false;
     return comps.some(c => {
-        const one = x => c.ident ? x === c.ident : RP_CHECK[c.type](x);
+        const one = x => c.ident ? (x === c.ident || N.cssPropertyIdentifier(x) === c.ident) : RP_CHECK[c.type](x);
         if (!c.mult) return one(v);
         const items = (c.mult === '#' ? tomSplitTop(v, ',') : tomSplitTop(v, ' ')).map(x => x.trim()).filter(x => x || c.mult === '#');
         return items.length > 0 && items.every(x => x && one(x));

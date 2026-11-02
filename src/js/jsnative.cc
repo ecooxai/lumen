@@ -1481,6 +1481,33 @@ FN(cssVarValid) {
     }
     std::string q = S(0); RET(v8::Boolean::New(iso, css_var_syntax_valid(q.c_str())));
 }
+extern "C" char *css_property_identifier(const char *source, size_t length);
+extern "C" bool css_property_rule_data(const char *name_source, size_t name_length,
+                                      const char *body_source, size_t body_length,
+                                      char **name, char ***syntaxes, int *syntax_count, char **initial, bool *inherits);
+FN(cssPropertyIdentifier) {
+    CTX; v8::String::Utf8Value input(iso, a[0]);
+    char *value = css_property_identifier(*input ? *input : "", *input ? (size_t)input.length() : 0);
+    RET(nstr(iso, value)); free(value);
+}
+FN(cssPropertyRule) {
+    CTX; v8::String::Utf8Value name_input(iso, a[0]), body_input(iso, a[1]);
+    char *name = nullptr, **syntaxes = nullptr, *initial = nullptr; int syntax_count = 0; bool inherits = false;
+    if (!css_property_rule_data(*name_input ? *name_input : "", *name_input ? (size_t)name_input.length() : 0,
+                               *body_input ? *body_input : "", *body_input ? (size_t)body_input.length() : 0,
+                               &name, &syntaxes, &syntax_count, &initial, &inherits)) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Array> syntax_values = v8::Array::New(iso, syntax_count);
+    for (int i = 0; i < syntax_count; i++) {
+        (void)syntax_values->Set(ctx, i, nstr(iso, syntaxes[i])); free(syntaxes[i]);
+    }
+    free(syntaxes);
+    v8::Local<v8::Array> value = v8::Array::New(iso, 4);
+    (void)value->Set(ctx, 0, nstr(iso, name));
+    (void)value->Set(ctx, 1, syntax_values);
+    (void)value->Set(ctx, 2, v8::Boolean::New(iso, inherits));
+    (void)value->Set(ctx, 3, nstr(iso, initial));
+    free(name); free(initial); RET(value);
+}
 extern "C" char *css_min_size_parse(const char *value);
 FN(cssMinSize) { CTX; std::string q = S(0); char *value = css_min_size_parse(q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
 extern "C" char *css_math_value_text(const char *value);
@@ -1925,7 +1952,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(errPos); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(caret); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
-    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssMinSize); REG(cssMathText); REG(cssNumericDimension); REG(cssTransitionProperty); REG(cssBoxShadow); REG(cssBorder); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
+    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssPropertyIdentifier); REG(cssPropertyRule); REG(cssMinSize); REG(cssMathText); REG(cssNumericDimension); REG(cssTransitionProperty); REG(cssBoxShadow); REG(cssBorder); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
     REG(heap); REG(imgWatch); REG(imgSize); REG(imgDone); REG(imgRequest); REG(imgSrc); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);
