@@ -753,7 +753,7 @@ static void cm_or(CustomMask *a, const CustomMask *b) { for (int i = 0; i < 4; i
 #define VAR_RECURSION_LIMIT 256
 enum {
     QB_SIZE, QB_FAMILY, QB_WEIGHT, QB_STYLE, QB_LINE, QB_FLOW, QB_DIRECTION,
-    QB_ORIENTATION, QB_COLOR, QB_COUNT
+    QB_ORIENTATION, QB_COLOR, QB_STRETCH, QB_VARIANT_CAPS, QB_COUNT
 };
 enum {
     QD_SIZE = 1u << QB_SIZE, QD_FAMILY = 1u << QB_FAMILY,
@@ -768,7 +768,7 @@ enum {
 #define QD_FONT_METRICS (QD_SIZE | QD_FAMILY | QD_WEIGHT | QD_STYLE | QD_ORIENTATION | QD_FLOW)
 static const char *const query_basis_names[QB_COUNT] = {
     "font-size", "font-family", "font-weight", "font-style", "line-height",
-    "writing-mode", "direction", "text-orientation", "color"
+    "writing-mode", "direction", "text-orientation", "color", "font-stretch", "font-variant-caps"
 };
 
 typedef struct VarEntry {
@@ -6839,16 +6839,22 @@ static bool query_basis_value_valid(int index, const char *text) {
             str_ieq(value, "lighter") || (end != value && !*end && number >= 1 && number <= 1000);
     } else if (index == QB_STYLE) valid = str_ieq(value, "normal") || str_ieq(value, "italic") || str_istarts(value, "oblique");
     else if (index == QB_FAMILY) valid = *value != 0;
+    else if (index == QB_STRETCH || index == QB_VARIANT_CAPS)
+        valid = css_supports_declaration(query_basis_names[index], value, false);
     free(parsed); return valid;
 }
 /* The existing native font shorthand consumes these same component tokens.
  * Project a requested component rather than temporarily applying unrelated
  * font fields, whose query dependencies may belong to a different winner. */
 static char *query_font_component(const char *text, int index) {
-    if (index > QB_LINE) return NULL;
+    if (index > QB_LINE && index != QB_STRETCH && index != QB_VARIANT_CAPS) return NULL;
     const char *wide = var_wide_keyword(text); if (wide) return xstrdup(wide);
     IfInput in; if (!if_input_init(&in, text, strlen(text))) { if_input_free(&in); return NULL; }
-    char *values[5] = {NULL, NULL, xstrdup("normal"), xstrdup("normal"), xstrdup("normal")};
+    /* Native font shorthand also resets and applies these two inherited
+     * generic fields. Conditional basis projection must preserve them. */
+    char *values[QB_COUNT] = { [QB_WEIGHT] = xstrdup("normal"),
+        [QB_STYLE] = xstrdup("normal"), [QB_LINE] = xstrdup("normal"),
+        [QB_STRETCH] = xstrdup("normal"), [QB_VARIANT_CAPS] = xstrdup("normal") };
     int at = if_skip_ws(&in, 0, in.tokens.n); bool found = false, valid = true;
     if (at < in.tokens.n && if_after_component(&in, at) == if_trim_end(&in, at, in.tokens.n)) {
         const CTok *token = &in.tokens.v[at].token;
@@ -6864,12 +6870,15 @@ static char *query_font_component(const char *text, int index) {
     while (!found && valid && at < in.tokens.n) {
         int after = if_after_component(&in, at);
         char *part = if_declaration_value(&in, at, after);
-        if (str_ieq(part, "normal") || str_ieq(part, "small-caps") ||
-            str_ieq(part, "ultra-condensed") || str_ieq(part, "extra-condensed") ||
+        if (str_ieq(part, "normal")) {}
+        else if (str_ieq(part, "small-caps")) {
+            free(values[QB_VARIANT_CAPS]); values[QB_VARIANT_CAPS] = xstrdup(part);
+        } else if (str_ieq(part, "ultra-condensed") || str_ieq(part, "extra-condensed") ||
             str_ieq(part, "condensed") || str_ieq(part, "semi-condensed") ||
             str_ieq(part, "semi-expanded") || str_ieq(part, "expanded") ||
-            str_ieq(part, "extra-expanded") || str_ieq(part, "ultra-expanded")) {}
-        else if (str_ieq(part, "italic") || str_ieq(part, "oblique")) {
+            str_ieq(part, "extra-expanded") || str_ieq(part, "ultra-expanded")) {
+            free(values[QB_STRETCH]); values[QB_STRETCH] = xstrdup(part);
+        } else if (str_ieq(part, "italic") || str_ieq(part, "oblique")) {
             free(values[QB_STYLE]); values[QB_STYLE] = xstrdup(part);
         } else if (str_ieq(part, "bold") || str_ieq(part, "bolder") || str_ieq(part, "lighter") ||
                    (in.tokens.v[at].token.type == CT_NUMBER && query_basis_value_valid(QB_WEIGHT, part))) {
@@ -6893,13 +6902,14 @@ static char *query_font_component(const char *text, int index) {
         free(part); if (!found) at = if_skip_ws(&in, after, in.tokens.n);
     }
     char *result = valid && found && values[index] ? xstrdup(values[index]) : NULL;
-    for (int i = 0; i < 5; i++) free(values[i]); if_input_free(&in); return result;
+    for (int i = 0; i < QB_COUNT; i++) free(values[i]); if_input_free(&in); return result;
 }
 static bool query_basis_applies(const Decl *declaration, int index) {
     if (!strcmp(declaration->prop, query_basis_names[index])) return query_basis_value_valid(index, declaration->value);
     if (!strcmp(declaration->prop, "all")) return index != QB_DIRECTION &&
         (var_wide_keyword(declaration->value) || css_value_has_var(declaration->value) || css_value_has_if(declaration->value));
-    if (index <= QB_LINE && !strcmp(declaration->prop, "font")) {
+    if ((index <= QB_LINE || index == QB_STRETCH || index == QB_VARIANT_CAPS) &&
+        !strcmp(declaration->prop, "font")) {
         if (css_value_has_var(declaration->value) || css_value_has_if(declaration->value)) return true;
         char *component = query_font_component(declaration->value, index); bool valid = component != NULL;
         free(component); return valid;

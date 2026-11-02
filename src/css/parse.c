@@ -1362,19 +1362,24 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
                 SB nm; sb_init(&nm); sb_puts(&nm, pt + 9); char *name = str_trim(nm.s);
                 char *bd = xstrndup(body, bn), *iv = strstr(bd, "initial-value");
                 /* the rule is invalid without syntax and inherits, or without a matching initial value for a non-universal syntax */
-                char *sy = strstr(bd, "syntax"), *inh = strstr(bd, "inherits"), syn[64] = "";
+                char *sy = strstr(bd, "syntax"), syn[64] = "";
                 if (sy && (sy = strchr(sy, ':'))) { sy++; while (*sy == ' ' || *sy == '"' || *sy == '\'') sy++; size_t k = 0; while (sy[k] && sy[k] != '"' && sy[k] != '\'' && sy[k] != ';' && k < sizeof syn - 1) { syn[k] = sy[k]; k++; } syn[k] = 0; }
                 bool universal = !strcmp(str_trim(syn), "*");
                 bool inherit_value = false, inherit_valid = false;
-                if (inh) {
-                    char *colon = strchr(inh, ':');
-                    if (colon) {
-                        const char *start = colon + 1; size_t length = strcspn(start, ";");
-                        char *raw = xstrndup(start, length), *value = str_trim(raw);
-                        inherit_valid = str_ieq(value, "true") || str_ieq(value, "false");
-                        inherit_value = str_ieq(value, "true"); free(raw);
+                /* Descriptor names belong to declaration boundaries. A quoted
+                 * initial value or comment containing "inherits:" is not the
+                 * descriptor. Reuse the declaration parser's token boundaries
+                 * and retain the last valid, non-important boolean value. */
+                DeclList *descriptors = css_parse_decls(body, bn);
+                for (int i = 0; i < descriptors->n; i++) {
+                    const Decl *descriptor = &descriptors->v[i];
+                    if (strcmp(descriptor->prop, "inherits") || descriptor->important) continue;
+                    if (str_ieq(descriptor->value, "true") || str_ieq(descriptor->value, "false")) {
+                        inherit_value = str_ieq(descriptor->value, "true");
+                        inherit_valid = true;
                     }
                 }
+                css_decls_free(descriptors);
                 if (iv && (iv = strchr(iv, ':'))) { char *e = strchr(++iv, ';'); if (e) *e = 0; iv = str_trim(iv); }
                 bool ok = sy && inherit_valid && (universal || iv);
                 if (ok && iv && !universal) {

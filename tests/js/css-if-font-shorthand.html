@@ -1,0 +1,66 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Conditional style computation preserves font shorthand fields</title>
+<body>
+<script>
+(async()=>{
+ 'use strict';
+ const rows=[];
+ const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ const widths={'ultra-condensed':50,'extra-condensed':62.5,'condensed':75,'semi-condensed':87.5,
+  normal:100,'semi-expanded':112.5,expanded:125,'extra-expanded':150,'ultra-expanded':200};
+ const stretch=value=>Object.prototype.hasOwnProperty.call(widths,value)?widths[value]:
+  (/^(?:\d+(?:\.\d+)?|\.\d+)%$/.test(value)?parseFloat(value):NaN);
+ const eq=(actual,expected,label)=>{if(actual!==expected)throw Error(label+': '+String(actual)+' expected '+String(expected));};
+ const base='display:block;height:25px;margin:0;padding:0;border:0;';
+ const query='--font-query:yes;width:if(style(--font-query:yes):80px;else:40px);';
+ const cases=[
+  {name:'small-caps shorthand is preserved with a conditional width',font:'font:small-caps 20px/30px serif',caps:'small-caps',width:100},
+  {name:'condensed shorthand is preserved with a conditional width',font:'font:condensed 20px/30px serif',caps:'normal',width:75},
+  {name:'both shorthand fields are preserved',font:'font:small-caps condensed 20px/30px serif',caps:'small-caps',width:75},
+  {name:'ordinary shorthand resets inherited caps and stretch',font:'font:20px/30px serif',caps:'normal',width:100},
+  {name:'later font longhands retain precedence',font:'font:small-caps condensed 20px/30px serif;font-variant-caps:normal;font-stretch:expanded',caps:'normal',width:125},
+  {name:'important font longhands retain precedence',font:'font-variant-caps:small-caps!important;font-stretch:condensed!important;font:20px/30px serif',caps:'small-caps',width:75},
+  {name:'conditional shorthand updates both auxiliary fields across mutations',conditional:true},
+  {name:'explicit inherited shorthand preserves parent fields',font:'font:inherit',caps:'small-caps',width:75}
+ ];
+ for(const test of cases){
+  const parent=document.createElement('div'),control=document.createElement('div'),subject=document.createElement('div');
+  const observations=[];
+  try{
+   parent.style.cssText='position:absolute;left:20px;top:20px;width:300px;height:180px;margin:0;padding:0;border:0;font:small-caps condensed 24px/36px serif';
+   parent.appendChild(control);parent.appendChild(subject);document.body.appendChild(parent);
+   const observe=(caps,width,expectedWidth)=>{
+    const c=getComputedStyle(control),s=getComputedStyle(subject);
+    const data={controlCaps:c.fontVariantCaps,subjectCaps:s.fontVariantCaps,controlStretch:c.fontStretch,subjectStretch:s.fontStretch,
+     controlSize:c.fontSize,subjectSize:s.fontSize,controlLine:c.lineHeight,subjectLine:s.lineHeight,usedWidth:subject.getBoundingClientRect().width};
+    observations.push(data);
+    eq(data.controlCaps,caps,'ordinary control caps');eq(stretch(data.controlStretch),width,'ordinary control stretch');
+    eq(data.subjectCaps,caps,'conditional caps');eq(stretch(data.subjectStretch),width,'conditional stretch');
+    eq(data.subjectSize,data.controlSize,'font size matches ordinary shorthand');
+    eq(data.subjectLine,data.controlLine,'line height matches ordinary shorthand');eq(data.usedWidth,expectedWidth,'real conditional used width');
+   };
+   if(test.conditional){
+    subject.style.cssText=base+query+'font:if(style(--font-query:yes):small-caps condensed 20px/30px serif;else:20px/30px serif)';
+    for(const flag of ['yes','no','yes']){
+     subject.style.setProperty('--font-query',flag);
+     control.style.cssText=base+'width:80px;font:'+(flag==='yes'?'small-caps condensed ':'')+'20px/30px serif';
+     await frame();observe(flag==='yes'?'small-caps':'normal',flag==='yes'?75:100,flag==='yes'?80:40);
+    }
+   }else{
+    control.style.cssText=base+'width:80px;'+test.font;
+    subject.style.cssText=base+query+test.font;
+    const authored=subject.getAttribute('style');
+    await frame();observe(test.caps,test.width,80);
+    eq(subject.getAttribute('style'),authored,'computed reads preserve the authored style');
+   }
+   rows.push({name:test.name,pass:true,observations});
+  }catch(error){rows.push({name:test.name,pass:false,error:String(error),observations});}
+  finally{parent.remove();await frame();}
+ }
+ for(const row of rows)console.log('IF_FONT_SHORTHAND_ROW '+JSON.stringify(row));
+ const passed=rows.filter(row=>row.pass).length,ok=rows.length===8&&passed===8;
+ document.documentElement.setAttribute('data-css-if-font-shorthand',ok?'PASS':'FAIL');
+ console.log('RESULTS css-if-font-shorthand:'+(ok?'PASS':'FAIL')+' '+JSON.stringify({passed,total:rows.length}));
+})().catch(error=>{document.documentElement.setAttribute('data-css-if-font-shorthand','FAIL');console.log('RESULTS css-if-font-shorthand:FAIL '+JSON.stringify({error:String(error)}));});
+</script>
