@@ -1364,8 +1364,18 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
                 char *sy = strstr(bd, "syntax"), *inh = strstr(bd, "inherits"), syn[64] = "";
                 if (sy && (sy = strchr(sy, ':'))) { sy++; while (*sy == ' ' || *sy == '"' || *sy == '\'') sy++; size_t k = 0; while (sy[k] && sy[k] != '"' && sy[k] != '\'' && sy[k] != ';' && k < sizeof syn - 1) { syn[k] = sy[k]; k++; } syn[k] = 0; }
                 bool universal = !strcmp(str_trim(syn), "*");
+                bool inherit_value = false, inherit_valid = false;
+                if (inh) {
+                    char *colon = strchr(inh, ':');
+                    if (colon) {
+                        const char *start = colon + 1; size_t length = strcspn(start, ";");
+                        char *raw = xstrndup(start, length), *value = str_trim(raw);
+                        inherit_valid = str_ieq(value, "true") || str_ieq(value, "false");
+                        inherit_value = str_ieq(value, "true"); free(raw);
+                    }
+                }
                 if (iv && (iv = strchr(iv, ':'))) { char *e = strchr(++iv, ';'); if (e) *e = 0; iv = str_trim(iv); }
-                bool ok = sy && inh && (universal || iv);
+                bool ok = sy && inherit_valid && (universal || iv);
                 if (ok && iv && !universal) {
                     char *end; double num = strtod(iv, &end); (void)num;
                     if (!strcmp(syn, "<string>")) ok = *iv == '"' || *iv == '\'';
@@ -1373,7 +1383,7 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
                     else if (!strcmp(syn, "<length>")) ok = (end != iv && (!strcmp(end, "px") || !strcmp(end, "cm") || !strcmp(end, "mm") || !strcmp(end, "in") || !strcmp(end, "pt") || !strcmp(end, "pc") || (!*end && num == 0))) || str_istarts(iv, "calc(");
                     else if (!strcmp(syn, "<percentage>")) ok = end != iv && !strcmp(end, "%");
                 }
-                if (ok && iv) css_register_property(name, iv);
+                if (ok) css_register_property_full(name, iv, syn, inherit_value);
                 free(bd); sb_free(&nm);
             }
             /* @starting-style describes transition entry values, not the final
