@@ -232,7 +232,19 @@ static void anonymous_transform_owners(void) {
     style_engine_add_sheet(f.engine, css_parse_sheet(pseudo, strlen(pseudo), f.doc->url, 1, &f.engine->media));
     node_set_attr(f.parent,"style","transform:none");recalc(&f);draw(&f);
     Box *box=NULL;
-    for(Box *p=f.parent->box->first;p;p=p->next)if(p->anon&&p->node==f.parent&&p->st->has_transform)box=p;
+    /* A generated pseudo may be inside an anonymous formatting wrapper. Find
+       its actual element/style owner, independently of that internal topology. */
+    for (Box *p = f.parent->box->first; p;) {
+        if (p->anon && p->node == f.parent && p->st == f.parent->style->before && p->st->has_transform) {
+            if (box) { box = NULL; break; } /* Duplicate semantic owner fails the original assertion. */
+            box = p;
+        }
+        if (p->first) p = p->first;
+        else {
+            while (p != f.parent->box && !p->next) p = p->parent;
+            p = p != f.parent->box ? p->next : NULL;
+        }
+    }
     yes(box && box->node->type==NODE_ELEMENT,"actual transformed pseudo keeps an element owner despite anon flag");
     near(box->x,120,"pseudo normal x");near(box->y,120,"pseudo normal y");near(box->w,20,"pseudo normal width");near(box->h,10,"pseudo normal height");
     yes(f.canvas.px[130*W+115]==0xff2040e0u,"pseudo's own affine transform paints the rotated pixel");
