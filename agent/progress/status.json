@@ -1,14 +1,14 @@
 {
-  "title": "Lumen Linux \u00b7 WPT improvement session17",
-  "phase": "Linux WPT development active: baseline recovered; resource repeats and engine fixes under review",
-  "iteration": 1603,
-  "session_iteration": 0,
+  "title": "Lumen Linux · WPT improvement session17",
+  "phase": "Candidate 1701 qualified for its targeted Linux scopes; keyframe CSSOM and easing grammar improvements under review",
+  "iteration": 1701,
+  "session_iteration": 1,
   "score": 56.330128205128204,
   "selected_case_score": 56.330128205128204,
   "score_candidate": 1603,
-  "score_note": "56.33/100 is the frozen1248-file sample pass percentage. Whole-browser quality and full-WPT parity remain unmeasured.",
+  "score_note": "56.33/100 is the last measured fixed 1,248 file pass percentage from candidate 1603; it is a sample measurement. Candidate 1701 passes its separate targeted and retained gates.",
   "score_scope": "Same1248 frozen HTTP/default-timeout testharness URLs, fully passing files only; separate assertion denominators.",
-  "checkpoint": "fe3e72d6d2248077abea748811ff9ca268e2fdae",
+  "checkpoint": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
   "session_started_utc": "2026-11-02T11:45:42Z",
   "deadline_utc": "2026-11-02T16:45:42Z",
   "session_id": "20261102-session17",
@@ -21,20 +21,20 @@
   "goal_achieved": false,
   "goal_score": 98,
   "overall_assessment": "Linux browser improvements underway. Full-WPT rate and whole-browser95/98score are not established.",
-  "overall_result_label": "Frozen sample:703/1248 files; full-WPT rate unmeasured",
-  "accepted_iteration": 1603,
-  "active_iteration": 1603,
+  "overall_result_label": "Chromium parity incomplete; full official WPT unmeasured",
+  "accepted_iteration": 1701,
+  "active_iteration": 1701,
   "active_candidate": 1603,
   "accepted_binary_sha256": "b2591720be38f312a42654fab3d864094796d3d9a3dfc0bf19e19d34bc4f7202",
   "accepted_binary_scope": "Incrementally accepted candidate1603 development build from prior session; live Linux executable identity verified2026-11-02T12:25:39Z.",
-  "coverage": "Frozen1248-file WPT sample: Lumen1603 703/1248(56.33%); pinned Chromium150 1062/1248(85.10%). This is not the full WPT repository.",
+  "coverage": "Last fixed HTTP/default-timeout sample: candidate 1603 passed 703/1,248 files and 22,604/26,245 assertions; Chromium 150 passed 1,062/1,248 files and 24,541/26,064 assertions. Candidate 1701 separate properties sample: 18/41 files and 589/813 assertions, with 68 shared FAIL-to-PASS changes and zero lost passes. Full official WPT remains unmeasured.",
   "current_evidence": [
     [
-      "Lumen1603 \u00b7 frozen1248 URLs",
+      "Lumen1603 · frozen1248 URLs",
       "703/1248 fully passing files(56.33%);22604/26245 assertions(86.13%)."
     ],
     [
-      "Chromium150.0.7871.114 \u00b7 same1248 URLs",
+      "Chromium150.0.7871.114 · same1248 URLs",
       "1062/1248 fully passing files(85.10%);24541/26064 assertions(94.16%). Assertion denominators remain separate."
     ],
     [
@@ -85,6 +85,42 @@
   "public_status_url": "https://a0bb38e846444140.5x7aqstuceku.opentunnel.xyz/",
   "branch": "gpt-6-astra-pro_builtin-agents_rubywebterm_session17-20261102",
   "working_commit": "83f02aeb00fffa3f27667607f3d015639d464ccc",
-  "updated_utc": "2026-11-02T12:31:48.634858+00:00",
-  "updated_at": "2026-11-02T12:31:48.634858+00:00"
+  "updated_utc": "2026-11-02T13:20:52.911227+00:00",
+  "updated_at": "2026-11-02T12:31:48.634858+00:00",
+  "qualified_candidate_scope": {
+    "candidate": 1701,
+    "source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
+    "binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
+    "recorded_inputs": 734,
+    "native_contracts": {
+      "passed": 218,
+      "total": 218
+    },
+    "retained_authored": {
+      "fixtures": 45,
+      "passed": 1318,
+      "total": 1318
+    },
+    "new_property_rule_authored": {
+      "passed": 21,
+      "total": 21,
+      "baseline1603_passed": 2
+    },
+    "property_descriptor_equality": {
+      "passed": 13,
+      "total": 13
+    },
+    "targeted_properties_wpt": {
+      "files_passed": 18,
+      "files_total": 41,
+      "assertions_passed": 589,
+      "assertions_total": 813,
+      "baseline1603_files_passed": 16,
+      "baseline1603_assertions_passed": 521,
+      "shared_fail_to_pass": 68,
+      "lost_passes": 0
+    }
+  },
+  "runtime_candidate": 1603,
+  "runtime_note": "Desktop and connected Android still run the previously accepted candidate 1603 build until final qualified session deployment."
 }

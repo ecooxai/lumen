@@ -102,50 +102,71 @@ profile for showcase recording. Record the new exact PID for monitoring.
 
 ## Current development handoff — session 17, 2026-11-02
 
-The new task branch is `gpt-6-astra-pro_builtin-agents_rubywebterm_session17-20261102`.
-The starting canonical source is `fe3e72d6d2248077abea748811ff9ca268e2fdae` (candidate 1603),
-with accepted development executable SHA-256 `b2591720be38f312a42654fab3d864094796d3d9a3dfc0bf19e19d34bc4f7202`.
-Its prior full handoff is `agent/validation/linux-wpt-20261102-session16/candidate1603-final-handoff/README.md` and `handoff.json`.
-The candidate 234/Oct27 standings in earlier files are historical. No session 17 engine change has yet been qualified.
+The task branch is `gpt-6-astra-pro_builtin-agents_rubywebterm_session17-20261102`.
+Candidate **1701** is qualified for the explicitly listed incremental scopes below. Its source is
+`bcdefe495f5c0f975204731ebd609cd4494cf2d0`; immutable executable
+`build/codex-native/lumen-astra-i1701`, SHA-256
+`1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6`.
+The build source-manifest digest is `2c75e05834c127e4dc4f19b5b559e43fd6080118df146e427eb9cbb9779d9458`.
+Read `agent/validation/linux-wpt-20261102-session17/candidate1701-handoff/` for exact qualification paths.
+Later docs/progress commits do not change the identity of that immutable build.
 
-| Frozen 1,248-URL sample | Lumen 1603 | Chromium 150 |
-|---|---:|---:|
-| Fully passing files |703/1,248 (56.33%)|1,062/1,248 (85.10%)|
-| Passing/registered assertions |22,604/26,245 (86.13%)|24,541/26,064 (94.16%)|
+| Scope | Retained 1603 | Candidate 1701 | Pinned Chromium 150 |
+|---|---:|---:|---:|
+| Frozen 1,248-file sample, fully passing | 703/1,248 | Not replayed yet | 1,062/1,248 |
+| Separate properties41, fully passing | 16/41 | 18/41 | 34/41 |
+| Separate properties41 assertions | 521/813 | 589/813 | 1,097/1,137 |
+| New CSSPropertyRule fixture | 2/21 | 21/21 | 21/21 |
+| Retained native contracts | 218/218 | 218/218 | Not applicable |
+| Retained authored fixtures | 45 fixtures, 1,318 assertions | 45/45; 1,318/1,318 | Separate reference evidence |
+| Exact descriptor observation comparison | Not required | 13/13 unchanged objects | 13/13 control |
 
-These counts are recovered prior-session results bound to the same retained source/binary; they are not new session 17 runs.
-The sample is not full WPT. Each engine's assertion denominator is distinct. Do not turn focused100% results into whole-browser95% claims.
-The pinned WPT revision is `0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb`; URL-list SHA-256
-`4fbab34023a7fa57e1c6c85c9ecc17d884f200340c7ae65178d4ffbc4cc56ea2`, manifest SHA-256
+The fixed 1,248 sample is **not full WPT**. Its latest complete Lumen result remains candidate1603:
+703/1,248 files (56.33%), 22,604/26,245 assertions; Chromium1,062/1,248 files (85.10%),
+24,541/26,064 assertions. Engine assertion denominators differ. The properties41 sample has **zero
+URL overlap** with fixed1248: its 68 shared FAIL-to-PASS assertions and two whole-file gains are
+expanded coverage, not a new fixed1248 rate. Exact-identity comparison found no prior PASS losses,
+missing/new assertions, file losses, or harness regressions. The remaining224 failures and one
+pre-existing harness ERROR remain visible. IDL is now16/16 PASS; that ERROR is another file.
+Do not turn focused passing gates into a95/100 whole-browser claim. The score remains56/100.
+
+Pinned WPT revision: `0e1c0bce3defd59a76cf2f351c7da5c5a42b26fb`; fixed URL-list SHA-256
+`4fbab34023a7fa57e1c6c85c9ecc17d884f200340c7ae65178d4ffbc4cc56ea2`; manifest SHA-256
 `a97bc7c43083140f02c5f7ae3a46de905c8da6506c6a834928dbaa99d3ae63a6`.
-Prior native218/218, authored45 fixtures/1,318 assertions, properties41 and matched-resource5 are separate scopes.
-All raw historical losses remain visible, including typed attr() lengths, random() and variable-substituted revert-layer.
+Retained1603 handoff stays at `agent/validation/linux-wpt-20261102-session16/candidate1603-final-handoff/`.
+All historical failures remain evidence, including typed attr() lengths, random() and variable-substituted revert-layer.
 
 ### Ownership and working protocol
 
 - Root is CTO. Same-model built-in `integration_validation` owns Git, docs, coordinated builds/tests and qualification;
-  `engine_improvements` owns CSSPropertyRule/CSSOM and its focused source edits; `delivery_performance` owns runtime resources,
-  preview, checkpoint packaging and final Linux/Android deployment. Agree additional file ownership before editing.
-- Child Ruby MCP calls hung while root calls worked. Workers author JSON request files and inspect locally saved responses;
-  root relays only the exact MCP call. This is connector dispatch, not root coding/testing. Preserve every failed attempt and elapsed infrastructure time.
-- The session starts 2026-11-02 11:45 UTC, normal deadline 16:45 UTC, extension to17:45 only for important unresolved bugs.
-  Record actual iteration starts/ends, non-overlapping wall time, build/test duration and one-second CPU/RSS evidence.
-- Preserve pre-existing untracked outputs. Do not mass-add them, wipe caches, kill unrelated tasks, or recreate old candidate IDs.
-- Supported execution uses `agent/validation/build_candidate.py`, `run_guarded_cohort.py`, `run_guarded_fixture.py`, and the
-  existing session10 pinned/monitored wrappers. Inspect their public help/README rather than protected implementation.
-- Take the canonical `agent/validation/runtime/build.lock` and `source-edit.lock` during exclusive phases. Freeze both source
-  and Git metadata for build provenance. Keep one heavy build or broad native/browser campaign at a time.
-- Public exports must exclude private working history, the user prompt, private notes/evidence, authentication and profiles.
-  Use the established curated public ancestry/source export and verify recovery. Private checkpoints may retain complete Git history.
+  `engine_improvements` owns CSSOM/keyframes; `delivery_performance` owns runtime resources, preview, checkpoint packaging
+  and final Linux/Android delivery. Agree source ownership before editing.
+- Child Ruby MCP calls hung while root calls worked. Workers author exact JSON requests and inspect saved full responses;
+  root relays connector calls. Preserve infrastructure failures separately from build/test durations; never reexecute a
+  completed request when a `read_more` response is available.
+- Actual session start is **2026-11-02T11:45:32Z**, normal deadline16:45:32Z; extension to17:45:32Z only for an important
+  unresolved bug. The initial bootstrap used a minute-rounded start; retain its receipt and use the explicit correction
+  in `agent/devsummary.md`. Parallel agent intervals are not summed as elapsed wall time.
+- Preserve pre-existing untracked outputs. Do not mass-add them, wipe caches, kill unrelated tasks, or reuse candidate IDs.
+- Supported execution uses the existing build, pinned-cohort, monitored and guarded-fixture interfaces. Inspect public
+  help/README rather than protected implementation. The proven session16 v3 owned-fixture wrapper supplies required
+  capture-refusal-library and audit-directory pins. A standalone missing-pin launch is not an engine failure.
+- Take canonical `agent/validation/runtime/build.lock` and `source-edit.lock` during exclusive phases. Freeze source and
+  Git metadata for build provenance. Keep one heavy build/browser campaign at a time and retain one-second CPU/RSS data.
+- Public exports exclude private user/history/evidence/authentication/profiles. Use curated source ancestry and verify
+  recovery. Private checkpoints may retain complete Git history. Progress messages are visible only to the authenticated
+  current capability session and linked replies; anonymous telemetry remains public.
 
 ### Immediate remaining work
 
-1. Measure focused CSSPropertyRule/property-registration failures on the retained1603 build and pinned Chromium, implement a genuine bounded fix, and compare exact assertion identities.
-2. Repeat/profile the matched registry workload: prior1603 work was29.53% above parent313 in single runs; no causal speed claim exists.
-3. Preserve all prior native/browser regressions, then replay the unchanged1,248-file sample on the meaningful integrated milestone.
-4. Publish truthful progress/source checkpoints and verify preview health. Restart only the final qualified binary on display`:0`
-   and install/restart the same source on the connected Android device, preserving profiles/data.
-
+1. Candidate1703: ordinary keyframe grammar, exact selector identity, list mutation and EOF recovery. Named-range
+   enhancement is deferred by CTO scope decision; preserve its original reference fixture failures without rewriting expectations.
+2. Candidate1704: bounded timing-function token grammar and actual-context math. Unused1702 reservation is retired.
+   Reconcile current CSS Easing editor-draft changes and Chromium controls before finalizing linear() serialization.
+3. Replay unchanged fixed1248 after a meaningful integrated milestone, with exact identities and all raw regressions retained.
+4. Persist truthful source/progress checkpoints. Reserve45–60 minutes for broad replay and final packaging/restarts.
+   Restart only the final qualified executable on display`:0`, and install/restart the corresponding source on connected
+   Android while preserving profiles and data.
 
 ### Retained prior architecture and authorization boundaries
 
