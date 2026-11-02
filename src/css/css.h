@@ -414,6 +414,7 @@ DeclList *css_parse_decls(const char *src, size_t n);
 void css_decls_free(DeclList *d);
 bool css_parse_selector_list(const char *src, SelList *out);
 bool css_parse_query_selector_list(const char *src, SelList *out);   /* querySelector's stricter grammar */
+bool css_supports_selector(const char *src);   /* one complex selector, recursively supported */
 void css_sellist_free(SelList *l);
 char *css_selector_text(const char *src); /* canonical CSSOM serialization; NULL if invalid */
 /* Syntax only: matching always observes live DOM/state. Caller frees scratch. */
@@ -428,7 +429,10 @@ typedef VEC(Node *) NodeVec;
 Node *css_query(Node *root, const char *sel, bool all, NodeVec *out);
 bool css_media_matches(const char *q, const MediaCtx *mc);
 bool css_media_valid(const char *q);
+bool css_media_feature_matches(const char *feature, const MediaCtx *mc, bool *known);
 bool css_supports(const char *cond);
+bool css_supports_declaration(const char *property, const char *value, bool quirks);
+bool css_supports_native_value(const char *property, const char *value, bool quirks);
 bool css_flex_valid(const char *prop, const char *value);
 bool css_containment_valid(const char *prop, const char *value);
 bool css_columns_valid(const char *prop, const char *value);

@@ -384,7 +384,11 @@ static char *css_important_start(char *value) {
 
 
 /* ---------------- selectors ---------------- */
-typedef struct { const char *s; size_t i, n; bool query; } SP;   /* query: querySelector's grammar (no @namespace prefixes, only known pseudos) */
+typedef enum { SELECTOR_SHEET, SELECTOR_QUERY, SELECTOR_SUPPORTS } SelectorParseMode;
+typedef struct { const char *s; size_t i, n; SelectorParseMode query; } SP;
+/* Query and supports modes reject unknown pseudos and namespace prefixes.
+ * Supports additionally rejects unsupported branches recursively, including
+ * forgiving :is()/:where() lists; querySelector keeps its existing behavior. */
 /* the pseudo-classes and pseudo-elements Chrome parses; querySelector rejects others */
 static bool known_pseudo(const char *n, bool el) {
     static const char *const classes[] = { "active", "any-link", "autofill", "buffering", "checked", "closed", "default", "defined", "dir", "disabled",
@@ -581,8 +585,10 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                     SP q = { arg, 0, strlen(arg), p->query };
                     if (!parse_sellist(&q, s.sub, nmx == atom("has"), 0)) {
                         /* forgiving selector list for :is/:where */
-                        if (nmx == atom("not") || nmx == atom("has")) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
-                    } else if (nmx == atom("not") || nmx == atom("has")) {   /* no pseudo-elements inside :not()/:has() */
+                        if (p->query == SELECTOR_SUPPORTS || nmx == atom("not") || nmx == atom("has")) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
+                    } else if (p->query == SELECTOR_SUPPORTS || nmx == atom("not") || nmx == atom("has")) {
+                        /* Supports must reject pseudo-elements in nested real-selector
+                           lists; ordinary querySelector behavior is unchanged. */
                         bool bad = false;
                         for (int k = 0; k < s.sub->n && !bad; k++) for (int j = 0; j < s.sub->v[k].n; j++) if (has_pe(&s.sub->v[k].c[j])) bad = true;
                         if (bad) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
@@ -591,7 +597,17 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                     const char *rest = NULL;
                     if (!parse_nth(arg, &s.a, &s.b, &rest)) { free(arg); goto fail; }
                     if (rest && *rest && !str_istarts(rest, "of ")) { free(arg); goto fail; }
-                    if (rest && str_istarts(rest, "of ")) { s.sub = xcalloc(1, sizeof(SelList)); SP q = { rest + 3, 0, strlen(rest + 3), p->query }; parse_sellist(&q, s.sub, false, 0); }
+                    if (rest && str_istarts(rest, "of ")) {
+                        s.sub = xcalloc(1, sizeof(SelList));
+                        SP q = { rest + 3, 0, strlen(rest + 3), p->query };
+                        bool valid = parse_sellist(&q, s.sub, false, 0);
+                        if (p->query == SELECTOR_SUPPORTS) {
+                            for (int k = 0; k < s.sub->n && valid; k++)
+                                for (int j = 0; j < s.sub->v[k].n; j++)
+                                    if (has_pe(&s.sub->v[k].c[j])) valid = false;
+                            if (!valid) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
+                        }
+                    }
                 } else s.value = xstrdup(str_trim(arg));
                 free(arg);
             }
@@ -722,6 +738,14 @@ static bool parse_sellist(SP *p, SelList *out, bool relative, char endc) {
     if (v.n && v.n < v.cap) v.v = xrealloc(v.v, sizeof *v.v * (size_t)v.n);
     out->v = v.v; out->n = v.n;
     return ok && p->i >= p->n;
+}
+
+bool css_supports_selector(const char *src) {
+    SelList list = {0};
+    SP p = { src, 0, strlen(src), SELECTOR_SUPPORTS };
+    bool supported = parse_sellist(&p, &list, false, 0) && list.n == 1;
+    css_sellist_free(&list);
+    return supported;
 }
 
 bool css_parse_query_selector_list(const char *src, SelList *out) {
@@ -928,6 +952,18 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
     return false;
 }
 
+/* A feature leaf for an if(media()) condition. Preserve the caller's
+ * thread-local parser state and report unknown independently of false. */
+bool css_media_feature_matches(const char *feature, const MediaCtx *mc, bool *known) {
+    bool saved = g_mq_unknown; g_mq_unknown = false;
+    /* The existing feature parser has a bounded input buffer. Reject an
+     * oversized leaf instead of allowing its truncated prefix to decide. */
+    bool result = strlen(feature) < 256 && media_feature(feature, mc);
+    *known = strlen(feature) < 256 && !g_mq_unknown;
+    g_mq_unknown = saved;
+    return result;
+}
+
 /* Media conditions are three-valued: an unknown feature or <general-enclosed> is unknown, which "or" with a true
    operand and "and" with a false one still decide; "not unknown" stays unknown. */
 enum { MQ_FALSE, MQ_TRUE, MQ_UNKNOWN };
@@ -1076,6 +1112,32 @@ bool css_container_eval(const char *q, const CQEnv *env) {
 }
 
 extern bool css_property_known(const char *prop);
+bool css_supports_declaration(const char *p, const char *v, bool quirks) {
+    if (!p || !v || !*p) return false;
+    bool custom = p[0] == '-' && p[1] == '-' && p[2];
+    if (!custom && !*v) return false;
+    bool r;
+    bool minimum = !strcmp(p, "min-width") || !strcmp(p, "min-height") ||
+           !strcmp(p, "min-inline-size") || !strcmp(p, "min-block-size");
+    r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) &&
+        (minimum || !strcmp(p, "transition-property") || !strstr(v, "-webkit-")) && !strstr(p, "-webkit-"));
+    if (r) r = css_var_syntax_valid(v);
+    if (r && minimum) r = css_min_size_valid(p, v);
+    if (r) r = css_numeric_dimension_valid(p, v);
+    if (r) r = css_transition_property_valid(p, v);
+    if (r) r = css_box_shadow_valid(p, v);
+    if (r) r = css_border_valid(p, v);
+    if (r) r = css_supports_native_value(p, v, quirks);
+    if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
+    if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);
+    if (r && p[0] == 'f') r = css_flex_valid(p, v);
+    if (r && p[0] == 'c') r = css_containment_valid(p, v) && css_columns_valid(p, v);
+    /* Use the same original-token spacing rule as declarations. A
+     * custom property or pending substitution keeps its token stream. */
+    if (r && !(p[0] == '-' && p[1] == '-') && !css_math_substitution_pending(v))
+        r = css_math_spacing_valid(v);
+    return r;
+}
 bool css_supports(const char *cond) {
     char *s = xstrdup(cond); char *t = str_trim(s);
     bool r = true;
@@ -1096,25 +1158,7 @@ bool css_supports(const char *cond) {
         char *colon = strchr(in, ':');
         if (colon && in[0] != '(' && !str_istarts(in, "not ")) {
             *colon = 0; char *p = str_trim(in); char *v = str_trim(colon + 1);
-            bool minimum = !strcmp(p, "min-width") || !strcmp(p, "min-height") ||
-                           !strcmp(p, "min-inline-size") || !strcmp(p, "min-block-size");
-            r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) &&
-                (minimum || !strcmp(p, "transition-property") || !strstr(v, "-webkit-")) && !strstr(p, "-webkit-"));
-            if (r && css_value_has_if(v)) r = css_var_syntax_valid(v);
-            if (r && minimum) r = css_min_size_valid(p, v);
-            if (r) r = css_numeric_dimension_valid(p, v);
-            if (r) r = css_transition_property_valid(p, v);
-            if (r) r = css_box_shadow_valid(p, v);
-            if (r) r = css_border_valid(p, v);
-            if (!strcmp(p, "display") && (strstr(v, "contents") || strstr(v, "subgrid"))) r = !strstr(v, "subgrid");
-            if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
-            if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);
-            if (r && p[0] == 'f') r = css_flex_valid(p, v);
-            if (r && p[0] == 'c') r = css_containment_valid(p, v) && css_columns_valid(p, v);
-            /* Use the same original-token spacing rule as declarations. A
-             * custom property or pending substitution keeps its token stream. */
-            if (r && !(p[0] == '-' && p[1] == '-') && !css_math_substitution_pending(v))
-                r = css_math_spacing_valid(v);
+            r = css_supports_declaration(p, v, false);
         } else r = css_supports(in);
     }
     free(s);
