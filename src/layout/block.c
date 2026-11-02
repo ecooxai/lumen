@@ -59,6 +59,10 @@ float fc_bottom(FloatCtx *fc) { return fc ? fc_clear(fc, CLEAR_BOTH) : -1e30f; }
 
 /* ---------------- translate ---------------- */
 static bool within(Box *x, Box *root) { for (; x; x = x->parent) if (x == root) return true; return false; }
+static bool abs_outside_translation(Box *box, Box *root) {
+    if (box_fixed_to_viewport(box)) return true;
+    return box->cb && !within(box->cb, root);
+}
 static void tr(Box *root, Box *b, float dx, float dy) {
     b->x += dx; b->y += dy;
     if (b->has_baseline) b->baseline += dy;
@@ -66,7 +70,9 @@ static void tr(Box *root, Box *b, float dx, float dy) {
     for (int i = 0; i < b->nlines; i++) { b->lines[i].y += dy; b->lines[i].base += dy; }
     for (int i = 0; i < b->nir; i++) { b->ir[i].x += dx; b->ir[i].y += dy; }
     for (Box *c = b->first; c; c = c->next) {
-        if (c->abs && (c->fixed || (c->cb && !within(c->cb, root)))) { c->sx += dx; c->sy += dy; continue; }   /* placed later from its static position */
+        /* A fixed descendant follows a transformed CB inside this subtree.
+           Viewport or external-CB descendants keep their independent placement. */
+        if (c->abs && abs_outside_translation(c, root)) { c->sx += dx; c->sy += dy; continue; }
         tr(root, c, dx, dy);
     }
 }
@@ -314,6 +320,36 @@ static void flex_static_position(const Box *a, bool auto_x, bool auto_y, float *
     if (auto_y) *sy = p->y + p->b[0] + p->p[0] + (horizontal ? cross_off : main_off);
 }
 
+/* CSS2.2 10.3.3 and Position3 3.5.3 use the containing formatting
+ * context's axes, independently of the child's own writing mode. Sideways
+ * text flow is retained as generic style data and is not horizontal. */
+static bool horizontal_flow_mode(const ComputedStyle *style) {
+    if (!style || style->writing_mode) return false;
+    const char *mode = custom_get(style->gen_i, "writing-mode");
+    return !mode || (!str_ieq(mode, "sideways-lr") && !str_ieq(mode, "sideways-rl"));
+}
+static void block_static_position(const Box *a, bool auto_x, float *sx) {
+    if (!auto_x || a->kind != BX_BLOCK) return;
+    int display = a->st->display;
+    /* Positioning blockifies pseudo boxes during tree construction. Their
+     * hypothetical static display still determines inline cursor placement.
+     * Retain unmodeled compound display values on their existing path too. */
+    if (a->st->static_inline || a->st->display_text || display == D_INLINE || display == D_INLINE_BLOCK ||
+        display == D_INLINE_FLEX || display == D_INLINE_GRID || display == D_INLINE_TABLE) return;
+    const Box *parent = a->parent;
+    while (parent && layout_percentage_wrapper(parent)) parent = parent->parent;
+    if (!parent || (parent->fmt != FMT_FLOW && parent->fmt != FMT_INLINE) ||
+        !horizontal_flow_mode(parent->st) || !parent->st->direction) return;
+    int alignment = a->st->justify_self;
+    if (alignment != AL_AUTO && alignment != AL_NORMAL && alignment != AL_STRETCH) return;
+    /* Empty block containers use the inline formatter, but this block-level
+     * hypothetical box still aligns its margin end to the content end. Its
+     * absolute containing block may be another ancestor. Keep the recorded
+     * block-axis position, including preceding normal-flow content. */
+    *sx = parent->x + parent->w - parent->b[1] - parent->p[1] -
+          a->w - a->m[1] - a->m[3];
+}
+
 /* places one absolutely positioned box, with a position-area and flips (1 block, 2 inline) from its style or a
    position-try fallback; true when its margin box fits the containing block */
 static float clampw_basis(Layout *L, Box *b, float w, float cbw, float bp, float available, bool definite);
@@ -323,6 +359,17 @@ static float clamph(Box *b, float h, float cbh, float bp);
    width; fw is the available inset-constrained width, before margins. Existing
    memo keys include mode, cbw and fw, so the two inputs remain independent. */
 enum { SZ_ABS_SHRINK = SZ_FORCED + 1 };
+
+/* abs_place resolves these auto/stretch bases as border-box sizes before
+ * passing them through SZ_FORCED/fh. Evaluate the sizing calculation here,
+ * once, in the property's box; general forced sizes are already resolved. */
+static float abs_calc_size_border(Length value, float border_basis, float bp,
+                                  bool border_box, float percentage_basis) {
+    double extra = border_box ? 0 : bp;
+    double basis = fmax((double)bp, border_basis) - extra;
+    double result = (double)len_calc_size_apply(value, basis, percentage_basis) + extra;
+    return (float)fmax((double)bp, fmin((double)FLT_MAX, result));
+}
 
 static float g_imcb[2];   /* the last abs_place's inset-modified containing block size */
 static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int src[4], const int kwm[4]) {
@@ -395,7 +442,15 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
 #undef FI
     int mode = SZ_SHRINK; float fw = 0, fh = -1;
     bool wdef = len_def(s->width, pw) || s->width.kind == LK_STRETCH;
-    if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) { mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */ fw = pw - l - r - a->m[1] - a->m[3]; }
+    if (!wdef && !lA && !rA && s->width.kind == LK_AUTO && a->fmt != FMT_REPLACED) {
+        mode = SZ_FORCED;   /* replaced: CSS2 10.3.8, insets don't size it */
+        fw = pw - l - r - a->m[1] - a->m[3];
+        if (len_calc_size(s->width) && a->fmt != FMT_TABLE) {
+            float bp = hbp(a);
+            fw = abs_calc_size_border(s->width, fw, bp, s->box_sizing == BOX_BORDER, pw);
+            fw = LMAX(bp, clampw_basis(L, a, fw, pw, bp, g_imcb[0], true));
+        }
+    }
     float avail = sizing_x ? g_imcb[0] : pw - (lA ? 0 : l) - (rA ? 0 : r);
     if (!len_def(s->height, ph) && !tA && !bA) {
         fh = ph - t - bt - a->m[0] - a->m[2];
@@ -404,8 +459,15 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
         bool stretch_height = (!cb->st || !cb->st->writing_mode) &&
             (s->align_self == AL_AUTO || s->align_self == AL_NORMAL ||
              s->align_self == AL_STRETCH);
-        if (stretch_height && s->height.kind == LK_AUTO && s->aspect_ratio <= 0 &&
+        if (len_calc_size(s->height) && s->height.kind == LK_AUTO &&
             a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE) {
+            /* The inset-resolved basis may be negative before its border-box
+               floor. Calculate before the element's final size constraints. */
+            float bp = vbp(a);
+            fh = abs_calc_size_border(s->height, fh, bp, s->box_sizing == BOX_BORDER, ph);
+            fh = LMAX(bp, clamph_basis(a, fh, ph, bp, g_imcb[1], true));
+        } else if (stretch_height && s->height.kind == LK_AUTO && s->aspect_ratio <= 0 &&
+                   a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE) {
             /* An inset-resolved auto height stays definite at its border-box
                floor. Apply min/max before positioning and preserve the
                existing intrinsic, ratio and table sizing paths. */
@@ -418,10 +480,14 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
     if (s->width.kind == LK_STRETCH) {
         mode = SZ_FORCED;
         fw = layout_stretch_border_size(a, cb, true, avail, true);
+        if (len_calc_size(s->width) && a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE)
+            fw = abs_calc_size_border(s->width, fw, hbp(a), s->box_sizing == BOX_BORDER, pw);
         fw = clampw_basis(L, a, fw, pw, hbp(a), avail, true);
     }
     if (s->height.kind == LK_STRETCH) {
         fh = layout_stretch_border_size(a, cb, false, stretch_avail_h, true);
+        if (len_calc_size(s->height) && a->fmt != FMT_REPLACED && a->fmt != FMT_TABLE)
+            fh = abs_calc_size_border(s->height, fh, vbp(a), s->box_sizing == BOX_BORDER, ph);
         fh = clamph_basis(a, fh, ph, vbp(a), stretch_avail_h, true);
     }
     if (s->anchor_sz[0] || s->anchor_sz[1]) {   /* anchor-size() widths and heights are border-box sizes here */
@@ -497,7 +563,10 @@ static bool abs_place(Layout *L, Box *cb, Box *a, const char *area_v, const int 
     }
     float x, y;
     float sx = a->sx, sy = a->sy;
-    if (!area) flex_static_position(a, lA && rA, tA && bA, &sx, &sy);
+    if (!area) {
+        block_static_position(a, lA && rA, &sx);
+        flex_static_position(a, lA && rA, tA && bA, &sx, &sy);
+    }
     if (!lA) x = px + l + a->m[3]; else if (!rA) x = px + pw - r - a->m[1] - ow; else x = sx + a->m[3];
     if (!tA) y = py + t + a->m[0]; else if (!bA) y = py + ph - bt - a->m[2] - oh; else y = sy + a->m[0];
     /* Normal/stretch alignment keeps the stronger logical-start edge even
@@ -593,8 +662,10 @@ static Box *next_inflow_block(Box *b) { for (b = b->next; b; b = b->next) { if (
 static bool empty_margin_through(const Box *b, float cbh) {
     if (b->bfc || b->fmt == FMT_REPLACED || b->first || b->st->clear || vbp(b) != 0) return false;
     Length h = b->st->height, mn = b->st->min_height;
-    bool zero_h = h.kind == LK_AUTO || (h.kind == LK_LEN && len_def(h, cbh) && res(h, cbh) == 0);
-    bool zero_min = mn.kind == LK_AUTO || (mn.kind == LK_LEN && len_def(mn, cbh) && res(mn, cbh) <= 0);
+    /* An unresolved percentage block height behaves as auto; its minimum
+       behaves as zero, just as in layout_box's used-height resolution. */
+    bool zero_h = h.kind == LK_AUTO || (h.kind == LK_LEN && (!len_def(h, cbh) || res(h, cbh) == 0));
+    bool zero_min = mn.kind == LK_AUTO || (mn.kind == LK_LEN && (!len_def(mn, cbh) || res(mn, cbh) <= 0));
     return zero_h && zero_min;
 }
 /* Resolve the preferred width again when float exclusion changes the
@@ -689,7 +760,7 @@ static float top_chain(Layout *L, Box *c, float cbw, float cbh, FloatCtx *fc, fl
 }
 
 float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, FloatCtx *fc) {
-    float cursor = cy, pending = 0; bool first = true;
+    float cursor = cy, pending = 0; bool first = true, only_through_empty = true;
     b->has_baseline = false;
     for (Box *c = b->first; c; c = c->next) {
         if (c->abs) { c->sx = cx; c->sy = cursor + (first && b->collapse_top ? 0 : pending); add_abs(L, c); continue; }
@@ -753,7 +824,13 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
         }
         if (c->collapse_top) { /* child's margins absorbed: nothing */ }
         bool empty = c->h == 0 && c->nlines == 0 && !c->first && !c->bfc && c->fmt != FMT_REPLACED;
-        if (empty) { pending = collapse2(collapse2(first && b->collapse_top ? 0 : pending, mt), c->m[2]); cursor = y - (first && b->collapse_top ? 0 : collapse2(0, 0)); if (!(first && b->collapse_top)) cursor = y - collapse2(pending, 0) + collapse2(pending, 0) - 0; cursor = LMIN(cursor, y); continue; }
+        if (empty) {
+            pending = collapse2(collapse2(first && b->collapse_top ? 0 : pending, mt), c->m[2]);
+            /* A through-collapsing margin stays pending. Advancing the flow
+             * cursor as well would charge it again to the next block. */
+            if (!empty_margin_through(c, cbh)) { cursor = y; only_through_empty = false; }
+            continue;
+        }
         cursor = c->y + c->h; pending = c->eff_mb;
         if (c->has_baseline) { b->has_baseline = true; b->baseline = c->baseline; }
         first = false;
@@ -761,45 +838,183 @@ float layout_flow(Layout *L, Box *b, float cx, float cy, float cw, float cbh, Fl
     bool cb_bottom = !b->bfc && b->b[2] == 0 && b->p[2] == 0 && b->st->height.kind == LK_AUTO && b->fmt == FMT_FLOW && b->st->display != D_TABLE_CELL;
     float end;
     if (cb_bottom && !first) { b->eff_mb = collapse2(b->m[2], pending); end = cursor; }
-    else { b->eff_mb = b->m[2]; end = cursor + (first ? 0 : pending); }
+    else {
+        b->eff_mb = b->m[2];
+        /* A BFC root retains a margin left only by through-collapsing empty
+         * children. A positioned empty box (for example after clearance)
+         * has already charged its margin to the cursor and must not add it
+         * again. Ordinary parent/child collapse keeps the existing path. */
+        end = cursor + (!first || (b->bfc && only_through_empty) ? pending : 0);
+    }
     return end - cy;
 }
 
 /* ---------------- generic box layout ---------------- */
+/* Constraint calculations use the constraint's own unmodified basis. The
+ * preferred width/height and the opposite limit never enter that measurement;
+ * max is applied first and min remains authoritative when limits conflict. */
+static float calculated_constraint_border(Length value, double basis, float bp,
+                                         bool border_box, float percentage_basis) {
+    double result = (double)len_calc_size_apply(value, basis, percentage_basis) +
+                    (border_box ? 0 : bp);
+    return (float)fmax((double)bp, fmin((double)FLT_MAX, result));
+}
+bool layout_width_constraint(Box *b, Length value, bool minimum,
+        float cbw, float bp, float stretch_available, bool definite,
+        float intrinsic_min, float intrinsic_max, float *out) {
+    bool calculated = len_calc_size(value), bs = b->st->box_sizing == BOX_BORDER;
+    Length basis = calculated ? len_calc_size_basis(value) : value;
+    double property_basis;
+    if (basis.kind == LK_LEN && len_def(value, cbw))
+        property_basis = len_affine_operand(basis.px, basis.pct, basis.pctu, cbw);
+    else if (calculated && minimum && (basis.kind == LK_AUTO || basis.kind == LK_LEN))
+        property_basis = basis.kind == LK_AUTO ? 0 : len_affine_operand(basis.px, basis.pct, basis.pctu, -1);
+    else {
+        float border_basis;
+        if (basis.kind == LK_STRETCH) {
+            border_basis = layout_stretch_border_size(b, layout_percentage_cb(b), true, stretch_available, definite);
+            if (border_basis < 0) return false;
+        } else if (!b->st->writing_mode && intrinsic_width_keyword(basis)) {
+            float available = cbw - b->m[1] - b->m[3];
+            border_basis = intrinsic_width_size(basis, intrinsic_min, intrinsic_max, available);
+        } else return false;
+        if (!calculated) { *out = border_basis; return true; }
+        property_basis = LMAX(bp, border_basis) - (bs ? 0 : bp);
+    }
+    *out = calculated ? calculated_constraint_border(value, property_basis, bp, bs, cbw) :
+        (float)property_basis + (bs ? 0 : bp);
+    return true;
+}
 static float clampw_basis(Layout *L, Box *b, float w, float cbw, float bp, float stretch_available, bool definite) {
     const ComputedStyle *s = b->st;
-    bool bs = s->box_sizing == BOX_BORDER;
-    bool ilo = !s->writing_mode && intrinsic_width_keyword(s->min_width);
-    bool ihi = !s->writing_mode && intrinsic_width_keyword(s->max_width);
-    float mn = 0, mx = 0, available = cbw - b->m[1] - b->m[3];
-    if (ilo || ihi) intrinsic_content_width(L, b, cbw, &mn, &mx);
-    float stretch = (s->min_width.kind == LK_STRETCH || s->max_width.kind == LK_STRETCH) ?
-        layout_stretch_border_size(b, layout_percentage_cb(b), true, stretch_available, definite) : -1;
-    if (s->max_width.kind == LK_LEN && len_def(s->max_width, cbw)) { float v = res(s->max_width, cbw) + (bs ? 0 : bp); if (w > v) w = v; }
-    else if (s->max_width.kind == LK_STRETCH && stretch >= 0) w = LMIN(w, stretch);
-    else if (ihi) w = LMIN(w, intrinsic_width_size(s->max_width, mn, mx, available));
-    if (s->min_width.kind == LK_LEN && len_def(s->min_width, cbw)) { float v = res(s->min_width, cbw) + (bs ? 0 : bp); if (w < v) w = v; }
-    else if (s->min_width.kind == LK_STRETCH && stretch >= 0) w = LMAX(w, stretch);
-    else if (ilo) w = LMAX(w, intrinsic_width_size(s->min_width, mn, mx, available));
-    return s->width.kind == LK_STRETCH || s->min_width.kind == LK_STRETCH || s->max_width.kind == LK_STRETCH ? LMAX(bp, w) : w;
+    bool intrinsic_limits = !s->writing_mode &&
+        (intrinsic_width_keyword(s->min_width) || intrinsic_width_keyword(s->max_width));
+    float mn = 0, mx = 0, value;
+    if (intrinsic_limits) intrinsic_content_width(L, b, cbw, &mn, &mx);
+    if (layout_width_constraint(b, s->max_width, false, cbw, bp, stretch_available, definite, mn, mx, &value))
+        w = LMIN(w, value);
+    if (layout_width_constraint(b, s->min_width, true, cbw, bp, stretch_available, definite, mn, mx, &value))
+        w = LMAX(w, value);
+    return len_calc_size(s->min_width) || len_calc_size(s->max_width) ||
+        s->width.kind == LK_STRETCH || s->min_width.kind == LK_STRETCH || s->max_width.kind == LK_STRETCH ? LMAX(bp, w) : w;
 }
 static float clampw(Layout *L, Box *b, float w, float cbw, float bp) {
     /* abs_place owns the distinct inset-modified stretch basis. */
     return clampw_basis(L, b, w, cbw, bp, cbw, !b->abs && cbw >= 0);
 }
-static float clamph_basis(Box *b, float h, float cbh, float bp, float available, bool definite) {
+typedef struct { float minimum, maximum; bool has_minimum, has_maximum, border_floor; } HeightConstraints;
+static bool height_constraint(Box *b, Length value, bool minimum, float cbh, float bp,
+        float available, bool definite, float intrinsic_height, float *out) {
+    bool calculated = len_calc_size(value), bs = b->st->box_sizing == BOX_BORDER;
+    Length basis = calculated ? len_calc_size_basis(value) : value;
+    double property_basis;
+    if (basis.kind == LK_LEN && len_def(value, cbh))
+        property_basis = len_affine_operand(basis.px, basis.pct, basis.pctu, cbh);
+    else if (calculated && minimum && (basis.kind == LK_AUTO || basis.kind == LK_LEN))
+        property_basis = basis.kind == LK_AUTO ? 0 : len_affine_operand(basis.px, basis.pct, basis.pctu, -1);
+    else {
+        float border_basis;
+        if (basis.kind == LK_STRETCH) {
+            border_basis = layout_stretch_border_size(b, layout_percentage_cb(b), false, available, definite);
+            if (border_basis < 0) return false;
+        } else if (!b->st->writing_mode && intrinsic_width_keyword(basis) && intrinsic_height >= 0) {
+            /* In the ordinary horizontal block axis min/max-content agree;
+             * fit-content is clamped between those same intrinsic bounds. */
+            border_basis = intrinsic_height;
+        } else return false;
+        if (!calculated) { *out = border_basis; return true; }
+        property_basis = LMAX(bp, border_basis) - (bs ? 0 : bp);
+    }
+    *out = calculated ? calculated_constraint_border(value, property_basis, bp, bs, cbh) :
+        (float)property_basis + (bs ? 0 : bp);
+    return true;
+}
+static HeightConstraints height_constraints(Box *b, float cbh, float bp, float available,
+                                             bool definite, float intrinsic_height) {
     const ComputedStyle *s = b->st;
-    bool bs = s->box_sizing == BOX_BORDER;
-    float stretch = (s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH) ?
-        layout_stretch_border_size(b, layout_percentage_cb(b), false, available, definite) : -1;
-    if (s->max_height.kind == LK_LEN && len_def(s->max_height, cbh)) { float v = res(s->max_height, cbh) + (bs ? 0 : bp); if (h > v) h = v; }
-    else if (s->max_height.kind == LK_STRETCH && stretch >= 0) h = LMIN(h, stretch);
-    if (s->min_height.kind == LK_LEN && len_def(s->min_height, cbh)) { float v = res(s->min_height, cbh) + (bs ? 0 : bp); if (h < v) h = v; }
-    else if (s->min_height.kind == LK_STRETCH && stretch >= 0) h = LMAX(h, stretch);
-    return s->height.kind == LK_STRETCH || s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH ? LMAX(bp, h) : h;
+    HeightConstraints limits = {0};
+    limits.has_maximum = height_constraint(b, s->max_height, false, cbh, bp, available, definite, intrinsic_height, &limits.maximum);
+    limits.has_minimum = height_constraint(b, s->min_height, true, cbh, bp, available, definite, intrinsic_height, &limits.minimum);
+    limits.border_floor = len_calc_size(s->min_height) || len_calc_size(s->max_height) ||
+        s->height.kind == LK_STRETCH || s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH;
+    return limits;
+}
+static float height_constrained(HeightConstraints limits, float height, float bp) {
+    if (limits.has_maximum) height = LMIN(height, limits.maximum);
+    if (limits.has_minimum) height = LMAX(height, limits.minimum);
+    return limits.border_floor ? LMAX(bp, height) : height;
+}
+static float clamph_basis(Box *b, float h, float cbh, float bp, float available, bool definite) {
+    /* Early absolute placement has no used inline width yet. Numeric/stretch
+     * limits resolve here; intrinsic block limits resolve in layout_box_in
+     * once its width is known, before the real descendant layout. */
+    return height_constrained(height_constraints(b, cbh, bp, available, definite, -1), h, bp);
 }
 static float clamph(Box *b, float h, float cbh, float bp) {
     return clamph_basis(b, h, cbh, bp, cbh, !b->abs && cbh >= 0);
+}
+
+/* One immutable content-height result for one actual width context. The
+ * box tree and its arena are rebuilt by every layout_run, so no result can
+ * survive a style/DOM/viewport change. Keep all contexts encountered in this
+ * pass: an A/B/A width sequence must not restart nested probes at A. */
+typedef struct ContentHeightMemo {
+    struct ContentHeightMemo *next;
+    const Box *owner;
+    float width, cbw, height;
+    bool bfc;
+} ContentHeightMemo;
+
+/* An intrinsic block constraint requires actual content layout at the used
+ * inline width, with its own preferred/min/max block sizes excluded. Probe
+ * before the real pass; descendants are then laid out again with the final
+ * constrained percentage basis. No used-size result is stored in style. */
+static float content_height_for_constraints(Layout *L, Box *b, float cbw) {
+    /* Float/flex/position-try paths may temporarily replace st with a stack
+     * copy. Only the original box-tree style has a stable measurement key.
+     * The owner check also rejects a shallow measurement copy of this Box. */
+    bool cacheable = b->st == b->content_height_style;
+    if (cacheable) for (ContentHeightMemo *m = b->content_height_memo; m; m = m->next)
+        if (m->owner == b && m->width == b->w && m->cbw == cbw && m->bfc == b->bfc)
+            return m->height;
+    ComputedStyle *original = b->st, measured = *original;
+    measured.height = L_auto(); measured.min_height = L_auto();
+    measured.max_height = (Length){ .kind = LK_NONE };
+    /* The used inline width was already constrained by the real style. Keep
+     * it exact during the probe, including the absolute forced-size path. */
+    measured.width = L_auto(); measured.min_width = L_auto();
+    measured.max_width = (Length){ .kind = LK_NONE };
+    measured.aspect_ratio = 0;
+    float x = b->x, y = b->y, width = b->w, height = b->h;
+    float margin[4]; memcpy(margin, b->m, sizeof margin);
+    float baseline = b->baseline, bottom_margin = b->eff_mb;
+    float scroll_width = b->scroll_w, scroll_height = b->scroll_h;
+    bool had_baseline = b->has_baseline, prior_measure = L->measure_only;
+    float prior_inline_basis = L->inl_cbh;
+    b->st = &measured; L->measure_only = true;
+    layout_box(L, b, x, y, cbw, -1, NULL, SZ_FORCED, width, -1);
+    float result = b->h;
+    b->st = original; L->measure_only = prior_measure; L->inl_cbh = prior_inline_basis;
+    b->x = x; b->y = y; b->w = width; b->h = height;
+    memcpy(b->m, margin, sizeof margin); b->baseline = baseline; b->has_baseline = had_baseline;
+    b->eff_mb = bottom_margin; b->scroll_w = scroll_width; b->scroll_h = scroll_height;
+    /* Probe-dependent memo/intrinsic results cannot bypass the actual pass.
+     * Keep allocated fragment/grid storage alive; the normal layout rewrites
+     * it, so restoring a shallow Box copy would leave freed pointers. */
+    for (Box *node = b; node;) {
+        node->memo = node->intr_ok = false;
+        if (node->first) { node = node->first; continue; }
+        while (node != b && !node->next) node = node->parent;
+        if (node == b) break;
+        node = node->next;
+    }
+    if (cacheable) {
+        ContentHeightMemo *m = arena_alloc(&L->arena, sizeof *m);
+        *m = (ContentHeightMemo){ .next = b->content_height_memo, .owner = b,
+            .width = width, .cbw = cbw, .height = result, .bfc = b->bfc };
+        b->content_height_memo = m;
+    }
+    return result;
 }
 
 /* For none, the element still retains its own grid tracks while being
@@ -835,7 +1050,7 @@ static float contained_auto_height(Layout *L, Box *b, float content_width) {
 static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float cbh, FloatCtx *fc, int mode, float fw, float fh);
 /* flex/grid measure a child and then lay it out again, often with identical inputs; nested containers made that exponential */
 int g_lb_calls, g_lb_hits;
-static bool pct_h(const ComputedStyle *s) { return s->height.kind == LK_STRETCH || s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH || s->height.pctu || s->height.pct || s->min_height.pctu || s->min_height.pct || s->max_height.pctu || s->max_height.pct; }
+static bool pct_h(const ComputedStyle *s) { return len_calc_size_has_percent(s->height) || len_calc_size_has_percent(s->min_height) || len_calc_size_has_percent(s->max_height) || s->height.kind == LK_STRETCH || s->min_height.kind == LK_STRETCH || s->max_height.kind == LK_STRETCH || s->height.pctu || s->height.pct || s->min_height.pctu || s->min_height.pct || s->max_height.pctu || s->max_height.pct; }
 static bool hdep(const Box *b) {
     if (b->has_abs) return true;
     for (const Box *c = b->first; c; c = c->next) {
@@ -856,7 +1071,7 @@ void layout_box(Layout *L, Box *b, float x, float y, float cbw, float cbh, Float
             Box *c = L->alog[i];
             if (c->astamp == stamp) continue;
             c->astamp = stamp;
-            if (c->fixed || (c->cb && !within(c->cb, b))) { c->sx += dx; c->sy += dy; }   /* positioned by an outer box: tr left it alone */
+            if (abs_outside_translation(c, b)) { c->sx += dx; c->sy += dy; }   /* positioned by an outer box: tr left it alone */
             add_abs(L, c);
         }
         return;
@@ -876,8 +1091,37 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     float hb = hbp(b), vb = vbp(b);
     bool bs = s->box_sizing == BOX_BORDER;
     bool is_cell = s->display == D_TABLE_CELL;
-    if (mode == SZ_FORCED) b->w = fw;
+    if (mode == SZ_FORCED) {
+        b->w = fw;
+        if (b->abs && (len_calc_size(s->min_width) || len_calc_size(s->max_width)))
+            b->w = clampw_basis(L, b, b->w, cbw, hb, g_imcb[0], true);
+    }
     else if (b->fmt == FMT_REPLACED) { float w, h; replaced_size(L, b, cbw, cbh, -1, fh, &w, &h); b->w = w + hb; }
+    else if (len_calc_size(s->width) && b->fmt != FMT_TABLE && !is_cell) {
+        Length value = s->width, basis = len_calc_size_basis(value);
+        double property_basis;
+        if (len_def(value, cbw)) property_basis = len_affine_operand(basis.px, basis.pct, basis.pctu, cbw);
+        else {
+            float border_basis;
+            if (basis.kind == LK_STRETCH && cbw >= 0)
+                border_basis = layout_stretch_border_size(b, layout_percentage_cb(b), true, cbw, true);
+            else if (basis.kind == LK_AUTO && s->height.kind == LK_STRETCH &&
+                     s->aspect_ratio > 0 && (fh >= 0 || cbh >= 0)) {
+                float height = fh >= 0 ? fh : layout_stretch_border_size(b, layout_percentage_cb(b), false, cbh, true);
+                border_basis = (bs ? height : LMAX(0, height - vb)) * s->aspect_ratio + (bs ? 0 : hb);
+            } else if (mode == SZ_FILL && cbw >= 0 && !intrinsic_width_keyword(basis))
+                border_basis = cbw - b->m[1] - b->m[3];
+            else {
+                float minimum, maximum;
+                intrinsic_content_width(L, b, cbw, &minimum, &maximum);
+                float available = (mode == SZ_ABS_SHRINK ? fw : cbw) - b->m[1] - b->m[3];
+                border_basis = intrinsic_width_size(basis, minimum, maximum, available);
+            }
+            property_basis = LMAX(hb, border_basis) - (bs ? 0 : hb);
+        }
+        float width = len_calc_size_apply(value, property_basis, cbw) + (bs ? 0 : hb);
+        b->w = LMAX(hb, clampw(L, b, width, cbw, hb));
+    }
     else if (s->width.kind == LK_AUTO && s->height.kind == LK_STRETCH &&
              s->aspect_ratio > 0 && (fh >= 0 || cbh >= 0) && !is_cell) {
         /* A definite stretch height supplies the automatic width through the
@@ -914,29 +1158,74 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     if (mode == SZ_FILL && !b->abs && !b->floated && !(b->parent && b->parent->fmt == FMT_FLEX)) {   /* flex items: auto margins are resolved by flex alignment */
         bool mlA = s->margin[3].kind == LK_AUTO, mrA = s->margin[1].kind == LK_AUTO;
         float free = cbw - b->w - (mlA ? 0 : b->m[3]) - (mrA ? 0 : b->m[1]);
-        if (free > 0 && (mlA || mrA)) {
+        const Box *parent = b->parent;
+        bool ordinary_flow = parent && parent->parent && parent->fmt == FMT_FLOW &&
+            b->kind == BX_BLOCK && !b->anon && !b->bfc &&
+            horizontal_flow_mode(parent->st) && (!fc || !fc->n);
+        if (ordinary_flow) {
+            float old = b->m[3];
+            if (free >= 0 && (mlA || mrA)) {
+                if (mlA && mrA) b->m[3] = b->m[1] = free / 2;
+                else if (mlA) b->m[3] = free;
+                else b->m[1] = free;
+            } else {
+                /* In an overconstrained normal block, auto margins first
+                 * become zero and the containing block's end margin absorbs
+                 * the remainder, even when it is negative. The child starts
+                 * layout at that used position, so descendants and memo keys
+                 * see the same geometry. Float-avoidance/BFC sizing keeps its
+                 * existing path until its available rectangle is resolved. */
+                if (mlA) b->m[3] = 0;
+                if (mrA) b->m[1] = 0;
+                if (parent->st->direction) b->m[3] = cbw - b->w - b->m[1];
+                else b->m[1] = cbw - b->w - b->m[3];
+            }
+            b->x += b->m[3] - old;
+        } else if (free > 0 && (mlA || mrA)) {
             float old = b->m[3];
             if (mlA && mrA) b->m[3] = b->m[1] = free / 2; else if (mlA) b->m[3] = free; else b->m[1] = free;
             b->x += b->m[3] - old;
         }
     }
     float cx = b->x + b->b[3] + b->p[3], cy = b->y + b->b[0] + b->p[0], cw = LMAX(0, b->w - hb);
+    bool intrinsic_height_limits = !s->writing_mode &&
+        (intrinsic_width_keyword(s->min_height) || intrinsic_width_keyword(s->max_height));
+    bool apply_height_limits = fh < 0 || (b->abs && (intrinsic_height_limits ||
+        len_calc_size(s->min_height) || len_calc_size(s->max_height)));
+    float intrinsic_height = -1;
+    if (apply_height_limits && intrinsic_height_limits &&
+        b->fmt != FMT_REPLACED && b->fmt != FMT_TABLE)
+        intrinsic_height = content_height_for_constraints(L, b, cbw);
+    HeightConstraints height_limits = height_constraints(b, cbh, vb,
+        b->abs ? g_imcb[1] : cbh, b->abs || cbh >= 0, intrinsic_height);
+    bool calculate_height = len_calc_size(s->height) && fh < 0 && b->fmt != FMT_REPLACED;
+    Length height_basis = calculate_height ? len_calc_size_basis(s->height) : s->height;
     float hdef = -1;
     if (fh >= 0) hdef = LMAX(0, fh - vb);
-    else if (s->height.kind == LK_STRETCH && cbh >= 0)
+    else if (height_basis.kind == LK_STRETCH && cbh >= 0)
         hdef = LMAX(0, layout_stretch_border_size(b, layout_percentage_cb(b), false, cbh, true) - vb);
-    else if (len_def(s->height, cbh) && s->height.kind == LK_LEN) hdef = LMAX(0, res(s->height, cbh) - (bs ? vb : 0));
-    else if (s->aspect_ratio > 0 && b->fmt != FMT_REPLACED && s->height.kind != LK_LEN) hdef = LMAX(0, (bs ? b->w : cw) / s->aspect_ratio - (bs ? vb : 0));
+    else if (len_def(s->height, cbh) && height_basis.kind == LK_LEN)
+        hdef = LMAX(0, res(height_basis, cbh) - (bs ? vb : 0));
+    else if (s->aspect_ratio > 0 && b->fmt != FMT_REPLACED && height_basis.kind != LK_LEN)
+        hdef = LMAX(0, (bs ? b->w : cw) / s->aspect_ratio - (bs ? vb : 0));
     else if (b->fmt != FMT_REPLACED && layout_size_contained(b, false))
         hdef = contained_auto_height(L, b, cw);
+    if (calculate_height && len_def(s->height, cbh) && height_basis.kind == LK_LEN) {
+        /* A numeric border-box basis may be smaller than padding before the
+         * calculation; floor only its final used result. */
+        double numeric = len_affine_operand(height_basis.px, height_basis.pct, height_basis.pctu, cbh);
+        hdef = LMAX(0, len_calc_size_apply(s->height, numeric, cbh) - (bs ? vb : 0));
+    } else if (calculate_height && hdef >= 0)
+        hdef = LMAX(0, len_calc_size_apply(s->height, hdef + (bs ? vb : 0), cbh) - (bs ? vb : 0));
+    else if (hdef >= 0) hdef = LMAX(0, hdef);
     /* children size against the used height: YouTube's theater player stretches in a flex row whose
        height:56.25vw is capped by max-height and then raised by min-height:480px */
-    if (hdef >= 0 && fh < 0) hdef = LMAX(0, clamph(b, hdef + vb, cbh, vb) - vb);
+    if (hdef >= 0 && apply_height_limits) hdef = LMAX(0, height_constrained(height_limits, hdef + vb, vb) - vb);
     /* Quirks3.6/3.7 make the automatic html/body block size fill its
        available viewport/parent space. It remains a minimum, not a content
        clip, and supplies the definite stretch basis to its direct children. */
     float quirks_height = -1;
-    bool quirks_candidate = L->doc->quirks && s->height.kind == LK_AUTO && fh < 0 &&
+    bool quirks_candidate = L->doc->quirks && s->height.kind == LK_AUTO && !len_calc_size(s->height) && fh < 0 &&
         b->node && b->node->ns == NS_HTML && (b->node == L->doc->html || b->node == L->doc->body);
     const char *quirks_wm = quirks_candidate && !s->writing_mode ? custom_get(s->gen_i, "writing-mode") : NULL;
     bool horizontal_quirk = !s->writing_mode && !(quirks_wm &&
@@ -969,7 +1258,10 @@ static void layout_box_in(Layout *L, Box *b, float x, float y, float cbw, float 
     free(own.v);
     float content_h = ch;
     float h = (hdef >= 0 && b->fmt != FMT_REPLACED ? hdef : ch) + vb;
-    if (fh < 0) h = clamph(b, h, cbh, vb);
+    if (calculate_height && hdef < 0)
+        h = len_calc_size_apply(s->height, h - (bs ? 0 : vb), cbh) + (bs ? 0 : vb);
+    if (apply_height_limits) h = height_constrained(height_limits, h, vb);
+    if (calculate_height) h = LMAX(vb, h);
     if (quirks_height >= 0) h = LMAX(h, quirks_height);
     b->h = LMAX(0, h);
     if (b->fmt == FMT_REPLACED || (b->ctl && b->nlines)) b->has_baseline = b->ctl && b->nlines, b->baseline = b->nlines ? b->lines[0].base : b->y + b->h;
@@ -1189,24 +1481,47 @@ static float sticky_axis(float pos, float size, float margin0, float margin1,
     if (shift < 0) shift = LMAX(shift, LMIN(0, cb0 - pos + LMIN(margin0, pos - cb0)));
     return shift;
 }
+/* The retained Chromium interoperability model contracts the scrollport by
+   its padding for both sticky geometry and CSSOM percentage insets. Keep that
+   content constraint in one native helper; the current Position/Overflow
+   draft describes a padding-box scrollport, which remains a known divergence.
+   Viewport fallback and the existing fixed-ancestor boundary are unchanged. */
+bool box_sticky_constraint_rect(const Box *b, const Box **port,
+                                float *x, float *y, float *w, float *h) {
+    *port = NULL;
+    *x = *y = *w = *h = 0;
+    if (!b || !b->node || !b->node->doc) return false;
+    for (const Box *a = b->parent; a; a = a->parent) {
+        if (a->scroller && a->node && a->st &&
+            ((a->st->overflow_x != OV_VISIBLE && a->st->overflow_x != OV_CLIP) ||
+             (a->st->overflow_y != OV_VISIBLE && a->st->overflow_y != OV_CLIP))) {
+            *port = a;
+            *x = a->x + a->b[3] + a->p[3];
+            *y = a->y + a->b[0] + a->p[0];
+            *w = LMAX(0, a->w - a->b[3] - a->b[1] - a->p[3] - a->p[1]);
+            *h = LMAX(0, a->h - a->b[0] - a->b[2] - a->p[0] - a->p[2]);
+            return true;
+        }
+        if (a->fixed) break;
+    }
+    *w = b->node->doc->layout_vw;
+    *h = b->node->doc->layout_vh;
+    return true;
+}
 void box_sticky_offset(const Box *b, float scroll_x, float scroll_y, float *dx, float *dy) {
     *dx = *dy = 0;
     if (!b->st || b->st->position != P_STICKY || !b->node || !b->parent) return;
     const Box *port = NULL;
+    float px, py, pw, ph;
+    if (!box_sticky_constraint_rect(b, &port, &px, &py, &pw, &ph)) return;
     float parent_dx = 0, parent_dy = 0;
-    for (const Box *a = b->parent; a; a = a->parent) {
-        if (a->scroller && a->node && a->st &&
-            ((a->st->overflow_x != OV_VISIBLE && a->st->overflow_x != OV_CLIP) ||
-             (a->st->overflow_y != OV_VISIBLE && a->st->overflow_y != OV_CLIP))) { port = a; break; }
+    for (const Box *a = b->parent; a && a != port; a = a->parent) {
         float ax, ay; box_sticky_offset(a, scroll_x, scroll_y, &ax, &ay);
         parent_dx += ax; parent_dy += ay;
         if (a->fixed) { scroll_x = scroll_y = 0; break; }
     }
-    Document *d = b->node->doc;
-    float px = port ? port->x + port->b[3] + box_scroll_left(port) : scroll_x;
-    float py = port ? port->y + port->b[0] + box_scroll_y(port) : scroll_y;
-    float pw = port ? port->w - port->b[3] - port->b[1] : d->layout_vw;
-    float ph = port ? port->h - port->b[0] - port->b[2] : d->layout_vh;
+    px += port ? box_scroll_left(port) : scroll_x;
+    py += port ? box_scroll_y(port) : scroll_y;
     const Box *cb = b->parent;
     while (cb->kind == BX_INLINE && cb->parent) cb = cb->parent;
     float cx = cb->x + cb->b[3] + cb->p[3], cy = cb->y + cb->b[0] + cb->p[0];
@@ -1215,8 +1530,22 @@ void box_sticky_offset(const Box *b, float scroll_x, float scroll_y, float *dx, 
         cr += LMAX(0, cb->scroll_w - cb->w);
         cbottom += LMAX(0, cb->scroll_h - cb->h);
     }
-    *dx = sticky_axis(b->x, b->w, b->m[3], b->m[1], cx, cr, px - parent_dx, pw, b->st->inset[3], b->st->inset[1], b->st->direction != 0);
-    *dy = sticky_axis(b->y, b->h, b->m[0], b->m[2], cy, cbottom, py - parent_dy, ph, b->st->inset[0], b->st->inset[2], false);
+    /* Match Chromium's computed-margin constraint model. Normal block
+       layout can distribute free space into used margins, which must not
+       consume sticky travel. Percentages use the actual CB content inline size,
+       independent of the scrollport size or its extended overflow bounds. */
+    const Box *margin_cb = layout_percentage_cb(b);
+    if (!margin_cb) margin_cb = cb;
+    bool vertical_cb = margin_cb->st && margin_cb->st->writing_mode;
+    /* As in stretch sizing, sideways metadata selects the numeric axis even
+       though general sideways text layout remains outside this change. */
+    if (!vertical_cb && margin_cb->st) {
+        const char *mode = custom_get(margin_cb->st->gen_i, "writing-mode");
+        vertical_cb = mode && (str_ieq(mode, "sideways-rl") || str_ieq(mode, "sideways-lr"));
+    }
+    const float margin_width = LMAX(0, vertical_cb ? margin_cb->h - vbp(margin_cb) : margin_cb->w - hbp(margin_cb));
+    *dx = sticky_axis(b->x, b->w, res(b->st->margin[3], margin_width), res(b->st->margin[1], margin_width), cx, cr, px - parent_dx, pw, b->st->inset[3], b->st->inset[1], b->st->direction != 0);
+    *dy = sticky_axis(b->y, b->h, res(b->st->margin[0], margin_width), res(b->st->margin[2], margin_width), cy, cbottom, py - parent_dy, ph, b->st->inset[0], b->st->inset[2], false);
 }
 
 /* ---------------- hit testing ---------------- */
@@ -1243,7 +1572,8 @@ static void hit_layers(Box *b, float x, float y, float ox, float oy, float vx, f
        Each layer is tested at most once, and a lower layer cannot replace a hit. */
     for (Box *c = b->last; c; c = c->prev) {
         bool outside = c->abs && b->scroller && !box_within(c->cb, b);
-        float cx = c->fixed ? vx : outside ? ox : cox, cy = c->fixed ? vy : outside ? oy : coy;
+        bool viewport_fixed = box_fixed_to_viewport(c);
+        float cx = viewport_fixed ? vx : outside ? ox : cox, cy = viewport_fixed ? vy : outside ? oy : coy;
         if (hit_layer(c) == 2) { hit_layers(c, x, y, cx, cy, vx, vy, sx, sy, best); continue; }
         int z = c->st->z_auto ? 0 : c->st->z_index;
         if ((z < 0) != best->negative || (best->box && z <= best->z)) continue;
@@ -1255,10 +1585,14 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     bool hidden = b->st && b->st->visibility != VIS_VISIBLE;   /* not a target itself, but visible descendants are */
     float sticky_x, sticky_y; box_sticky_offset(b, sx, sy, &sticky_x, &sticky_y);
     ox -= sticky_x; oy -= sticky_y;
-    if (b->st && b->st->has_transform) {   /* painted shifted by its translation (paint_stacking) */
-        float tx = b->st->transform[4] + b->st->translate_pending[0].pct * b->w / 100;
-        float ty = b->st->transform[5] + b->st->translate_pending[1].pct * b->h / 100;
-        ox -= tx; oy -= ty; vx -= tx; vy -= ty;
+    if (b->st && b->st->has_transform) {
+        Affine2D inverse;
+        if (!affine_inverse(box_transform_matrix(b), &inverse)) return NULL;
+        AffinePoint local = affine_point(inverse, (double)x + ox, (double)y + oy);
+        AffinePoint viewport = affine_point(inverse, (double)x + vx, (double)y + vy);
+        if (!isfinite(local.x) || !isfinite(local.y) || !isfinite(viewport.x) || !isfinite(viewport.y)) return NULL;
+        ox = affine_float(local.x - x); oy = affine_float(local.y - y);
+        vx = affine_float(viewport.x - x); vy = affine_float(viewport.y - y);
     }
     float lx = x + ox, ly = y + oy;
     bool inside = lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h;

@@ -1,0 +1,126 @@
+<!doctype html><meta charset="utf-8"><title>Box-shadow grammar and native storage</title>
+<body><script>
+(() => {
+    const rows = [];
+    function test(name, run) {
+        try { run(); rows.push({name, status: 'PASS'}); }
+        catch (error) { rows.push({name, status: 'FAIL', message: String(error)}); }
+    }
+    function equal(actual, expected, label) {
+        if (actual !== expected) throw new Error(label + ': expected ' + JSON.stringify(expected) + ', got ' + JSON.stringify(actual));
+    }
+    const valid = [
+        ['none', 'none'], ['INSET +1PX -2px RED', 'red 1px -2px inset'],
+        ['r\\65 d 1px 2p\\78', 'red 1px 2px'], ['1px/**/2px#F00', 'rgb(255, 0, 0) 1px 2px'],
+        ['0 -0', '0px 0px'], ['1px 2px 3px -4px currentColor', 'currentcolor 1px 2px 3px -4px'],
+        ['rgba(1,2,3,.5) 0 0', 'rgba(1, 2, 3, 0.5) 0px 0px'],
+        ['0 0 rgb(1 2 3 / 50%)', 'rgba(1, 2, 3, 0.5) 0px 0px'],
+        ['0 0 color-mix(in srgb, red, blue)', 'color-mix(in srgb, red, blue) 0px 0px'],
+        ['0 0 rgb(from currentcolor r g b)', 'rgb(from currentcolor r g b) 0px 0px'],
+        ['0 0 light-dark(red, blue)', 'light-dark(red, blue) 0px 0px'],
+        ['1px 2px calc(-3px) -4px', '1px 2px calc(-3px) -4px'],
+        ['min(1px, 2px) max(3px, 4px)', 'calc(1px) calc(4px)'],
+        ['round(5px, 2px) calc(6px / 2)', 'calc(6px) calc(3px)'],
+        ['calc(1px + -2px) 3px', 'calc(-1px) 3px'],
+        ['INSET 1px 2px, 3px 4px BLUE', '1px 2px inset, blue 3px 4px'],
+        ['var(--Shadow)', 'var(--Shadow)']
+    ];
+    const invalid = ['1px 2px -3px', '1px red 2px', '1px 2px inset 3px',
+        '1px calc(2px + 0%)', 'none, 1px 2px', 'red 1px 2px blue',
+        '1px 2px,', 'var()', '1px calc(2px/**/+/**/3px)'];
+    const element = document.createElement('div'); document.body.appendChild(element);
+    const sheet = document.createElement('style'); sheet.textContent = '.box-shadow-grammar-rule {}'; document.head.appendChild(sheet);
+    for (const [kind, declaration] of [['inline', element.style], ['rule', sheet.sheet.cssRules[0].style]]) {
+        valid.forEach(([input, expected], index) => {
+            test(kind + ' setProperty valid ' + index, () => {
+                declaration.cssText = ''; declaration.setProperty('box-shadow', input);
+                equal(declaration.getPropertyValue('box-shadow'), expected, input);
+            });
+            test(kind + ' cssText valid ' + index, () => {
+                declaration.cssText = 'box-shadow:' + input;
+                equal(declaration.getPropertyValue('box-shadow'), expected, input);
+            });
+        });
+        invalid.forEach((input, index) => test(kind + ' invalid mutation retains declaration ' + index, () => {
+            declaration.cssText = 'box-shadow:red 4px 5px !important;color:blue';
+            const before = declaration.cssText;
+            declaration.setProperty('box-shadow', input);
+            equal(declaration.cssText, before, 'invalid value must preserve both value and priority');
+        }));
+        test(kind + ' invalid later declaration retains earlier important', () => {
+            declaration.cssText = 'box-shadow:red 4px 5px !important;box-shadow:1px 2px -3px';
+            equal(declaration.getPropertyValue('box-shadow'), 'red 4px 5px', 'previous value');
+            equal(declaration.getPropertyPriority('box-shadow'), 'important', 'previous priority');
+        });
+        test(kind + ' priority and removal', () => {
+            declaration.cssText = ''; declaration.setProperty('box-shadow', 'INSET 1px 2px RED', 'IMPORTANT');
+            equal(declaration.getPropertyPriority('box-shadow'), 'important', 'normalized priority');
+            const before = declaration.cssText; declaration.setProperty('box-shadow', '3px 4px', 'invalid');
+            equal(declaration.cssText, before, 'invalid priority preserves declaration');
+            equal(declaration.removeProperty('box-shadow'), 'red 1px 2px inset', 'remove returns canonical previous value');
+            equal(declaration.getPropertyValue('box-shadow'), '', 'removed declaration');
+        });
+    }
+    for (const [input, expected] of [
+        ['inset 1px 2px red', true], ['1px 2px calc(-3px)', true], ['1px 2px -3px', false],
+        ['1px calc(2px + 0%)', false], ['1px calc(2px/**/+/**/3px)', false], ['var(--Shadow)', true]
+    ]) {
+        test('two-argument supports ' + input, () => equal(CSS.supports('box-shadow', input), expected, 'support query'));
+        test('one-condition supports ' + input, () => equal(CSS.supports('(box-shadow:' + input + ')'), expected, 'support query'));
+    }
+    test('computed typed lengths and negative math blur', () => {
+        element.style.cssText = 'color:rgb(10,20,30);font-size:20px;box-shadow:currentcolor 1em 2em calc(-3px) -4px';
+        equal(getComputedStyle(element).boxShadow, 'rgb(10, 20, 30) 20px 40px 0px -4px', 'native selected shadow');
+    });
+    test('computed comparison and stepped lengths', () => {
+        element.style.cssText = 'box-shadow:red round(5px, 2px) max(3px, 4px) 0 -4px';
+        equal(getComputedStyle(element).boxShadow, 'rgb(255, 0, 0) 6px 4px 0px -4px', 'typed length consumer');
+    });
+    test('pending substitution validates final grammar', () => {
+        element.style.cssText = '--Shadow:green 1px 2px;box-shadow:var(--Shadow)';
+        equal(element.style.boxShadow, 'var(--Shadow)', 'pending specified text');
+        equal(getComputedStyle(element).boxShadow, 'rgb(0, 128, 0) 1px 2px 0px 0px', 'valid substitution');
+        element.style.setProperty('--Shadow', '1px 2px -3px');
+        equal(getComputedStyle(element).boxShadow, 'none', 'invalid substituted value uses initial value');
+    });
+    test('inherit currentcolor keeps computed lengths and child color', () => {
+        const parent = document.createElement('div'); parent.style.cssText = 'color:blue;font-size:20px;box-shadow:currentcolor 1em 2em';
+        const child = document.createElement('div'); child.style.cssText = 'color:red;font-size:10px;box-shadow:inherit';
+        parent.appendChild(child); document.body.appendChild(parent);
+        try {
+            equal(getComputedStyle(child).boxShadow, 'rgb(255, 0, 0) 20px 40px 0px 0px', 'inherited currentcolor and computed lengths');
+            child.style.color = 'green';
+            equal(getComputedStyle(child).boxShadow, 'rgb(0, 128, 0) 20px 40px 0px 0px', 'child color-only mutation');
+        }
+        finally { parent.remove(); }
+    });
+    test('inherit explicit color stays fixed', () => {
+        const parent = document.createElement('div'); parent.style.cssText = 'color:green;font-size:20px;box-shadow:blue 1em 2em';
+        const child = document.createElement('div'); child.style.cssText = 'color:red;font-size:10px;box-shadow:inherit';
+        parent.appendChild(child); document.body.appendChild(parent);
+        try { equal(getComputedStyle(child).boxShadow, 'rgb(0, 0, 255) 20px 40px 0px 0px', 'absolute color inheritance'); }
+        finally { parent.remove(); }
+    });
+    test('inherit omitted currentcolor from transparent parent', () => {
+        const parent = document.createElement('div'); parent.style.cssText = 'color:transparent;font-size:20px;box-shadow:1em 2em';
+        const child = document.createElement('div'); child.style.cssText = 'color:red;font-size:10px;box-shadow:inherit';
+        parent.appendChild(child); document.body.appendChild(parent);
+        try { equal(getComputedStyle(child).boxShadow, 'rgb(255, 0, 0) 20px 40px 0px 0px', 'transparent parent retains computed shadow'); }
+        finally { parent.remove(); }
+    });
+    test('inherit relative currentcolor preserves child context', () => {
+        const parent = document.createElement('div'); parent.style.cssText = 'color:blue;font-size:20px;box-shadow:rgb(from currentcolor r g b) 1em 2em';
+        const child = document.createElement('div'); child.style.cssText = 'color:red;font-size:10px;box-shadow:inherit';
+        const reference = document.createElement('div'); reference.style.cssText = 'color:red;box-shadow:rgb(from currentcolor r g b) 20px 40px';
+        parent.appendChild(child); document.body.appendChild(parent); document.body.appendChild(reference);
+        try { equal(getComputedStyle(child).boxShadow, getComputedStyle(reference).boxShadow, 'relative color resolves against inheriting child'); }
+        finally { parent.remove(); reference.remove(); }
+    });
+    element.remove(); sheet.remove();
+    const passed = rows.filter(row => row.status === 'PASS').length, total = rows.length;
+    for (const row of rows) console.log('BOX_SHADOW_ROW ' + JSON.stringify(row));
+    const status = passed === total && total === 109 ? 'PASS' : 'FAIL';
+    console.log('RESULTS css-box-shadow-grammar:' + status + ' ' + JSON.stringify({passed, total}));
+    document.documentElement.setAttribute('data-css-box-shadow-grammar', status);
+})();
+</script>

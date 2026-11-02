@@ -1,0 +1,83 @@
+<!doctype html><meta charset="utf-8"><title>Transition property grammar and CSSOM mutation</title><body><script>
+(() => {
+  'use strict';
+  const rows = [];
+  function check(ok, message) { if (!ok) throw new Error(message); }
+  function test(name, fn) {
+    try { fn(); rows.push({name, pass:true}); }
+    catch (e) { rows.push({name, pass:false, error:String(e)}); }
+  }
+  const property = 'transition-property';
+  function declaration(mode) {
+    if (mode.startsWith('inline')) return document.createElement('div').style;
+    const sheet = new CSSStyleSheet(); sheet.insertRule('div {}');
+    return sheet.cssRules[0].style;
+  }
+  const valid = [
+    ['none','none'], ['all','all'], ['-webkit-transform, opacity','-webkit-transform, opacity'], ['ALL, INVALID, SYNTAX, SRC','all, INVALID, SYNTAX, SRC'],
+    ['WIDTH, opacity, WIDTH','width, opacity, width'], ['one, two, three','one, two, three'],
+    ['all, top, all','all, top, all'], ['--MiXeD, --mixed','--MiXeD, --mixed'],
+    ['width/**/,/**/opacity','width, opacity'], ['w\\69 dth, opacity','width, opacity'],
+    ['\\31 foo, width','\\31 foo, width'], ['a\\,b, width','a\\,b, width'], ['a\\2c b, width','a\\,b, width'], ['色, width','色, width']
+  ];
+  const invalid = ['one two','1, 2','none, opacity','opacity, none','initial, top','top, inherit',
+    'unset, top','top, revert','revert-layer, top','default','Default, top','top,','top,,left',
+    'wi/**/dth','"width"','n\\6f ne, top'];
+  for (const [input, expected] of valid) {
+    test('supports valid '+input, () => check(CSS.supports(property,input), 'valid value unsupported'));
+    for (const mode of ['inline-set','inline-text','rule-set','rule-text']) {
+      test(mode+' canonical '+input, () => {
+        const d = declaration(mode);
+        if (mode.endsWith('set')) d.setProperty(property,input);
+        else d.cssText = property+':'+input;
+        check(d.getPropertyValue(property) === expected, JSON.stringify(d.getPropertyValue(property))+' != '+JSON.stringify(expected));
+      });
+    }
+  }
+  for (const input of invalid) {
+    test('supports invalid '+input, () => check(!CSS.supports(property,input), 'invalid value supported'));
+    for (const mode of ['inline-set','inline-text','rule-set','rule-text']) {
+      test(mode+' rejects '+input, () => {
+        const d = declaration(mode); d.setProperty(property,'opacity, width','important');
+        if (mode.endsWith('set')) { const before=d.cssText; d.setProperty(property,input); check(d.cssText===before,'invalid assignment mutated declaration'); }
+        else d.cssText=property+':opacity, width !important;'+property+':'+input;
+        check(d.getPropertyValue(property)==='opacity, width','prior valid list lost');
+        check(d.getPropertyPriority(property)==='important','prior importance lost');
+      });
+    }
+  }
+  for (const mode of ['inline-set','rule-set']) {
+    test(mode+' priority and removal', () => {
+      const d=declaration(mode); d.setProperty(property,'opacity','important'); const before=d.cssText;
+      d.setProperty(property,'width','urgent'); check(d.cssText===before,'invalid priority changed declaration');
+      d.setProperty(property,'','urgent'); check(d.getPropertyValue(property)==='' && d.getPropertyPriority(property)==='','empty setter did not remove');
+    });
+    test(mode+' deferred case preserved', () => {
+      const d=declaration(mode); d.setProperty(property,'var(--MiXeD)');
+      check(d.getPropertyValue(property)==='var(--MiXeD)','pending custom property case changed');
+    });
+  }
+  for (const [input, expected] of valid) {
+    test('native computed list '+input, () => {
+      const el=document.createElement('div'); document.body.appendChild(el);
+      el.style.setProperty(property,input);
+      const actual=getComputedStyle(el).transitionProperty;
+      check(actual===expected,JSON.stringify(actual)+' != '+JSON.stringify(expected));
+      el.remove();
+    });
+  }
+  test('native computed value and invalid substitution', () => {
+    const el=document.createElement('div'); document.body.appendChild(el);
+    el.style.cssText='--Choice:opacity;transition-property:var(--Choice)';
+    check(getComputedStyle(el).transitionProperty==='opacity','valid substitution failed');
+    el.style.setProperty('--Choice','none, opacity');
+    check(getComputedStyle(el).transitionProperty==='all','invalid substitution did not take initial value');
+    el.remove();
+  });
+  const result={passed:rows.filter(r=>r.pass).length,total:rows.length,rows};
+  for (const row of rows) console.log('TRANSITION_PROPERTY_ROW '+JSON.stringify(row));
+  const outcome=result.total===169 && result.passed===result.total?'PASS':'FAIL';
+  console.log('RESULTS css-transition-property:'+outcome+' '+JSON.stringify({passed:result.passed,total:result.total}));
+  document.documentElement.setAttribute('data-css-transition-property',outcome);
+})();
+</script>

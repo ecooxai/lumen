@@ -1,0 +1,34 @@
+<!doctype html><meta charset="utf-8"><title>Initial CSS animation clock observation</title>
+<style>@keyframes initial_clock_left{from{left:100px}to{left:400px}}.initial-clock-item{position:relative;width:20px;height:20px;animation:1s linear infinite alternate initial_clock_left;animation-delay:100ms}</style>
+<body><script>
+(async()=>{
+    const rows=[], observations=[], frame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+    const driver=document.createElement('div');document.body.appendChild(driver);
+    const driven=driver.animate([{opacity:1},{opacity:.5}],{duration:1000,iterations:Infinity});
+    let item,animation;
+    try{
+        await frame();
+        await new Promise((resolve,reject)=>requestAnimationFrame(timestamp=>{
+            try{
+                item=document.createElement('div');item.className='initial-clock-item';document.body.appendChild(item);
+                const timelineBefore=document.timeline.currentTime,performanceBefore=performance.now();
+                const left=getComputedStyle(item).left,performanceAfter=performance.now();
+                const animations=item.getAnimations();if(animations.length!==1)throw Error('one initial CSS animation');
+                animation=animations[0];
+                const time=animation.currentTime,timelineAfter=document.timeline.currentTime;
+                observations.push({timestamp,timelineBefore,performanceBefore,performanceAfter,timelineAfter,left,currentTime:time,startTime:animation.startTime,pending:animation.pending,playState:animation.playState,rawOriginWouldGiveAtMost:timelineAfter-performanceBefore});
+                const allowance=16*Number.EPSILON*Math.max(1,Math.abs(timestamp),Math.abs(performanceAfter));
+                if(!Number.isFinite(time)||time < -allowance)throw Error('initial CSS currentTime must not lie before its zero hold time: '+time);
+                if(left!=='0px')throw Error('100ms delayed initial effect remains inactive: '+left);
+                rows.push({name:'synchronous CSS animation starts with nonnegative local time inside RAF',pass:true});resolve();
+            }catch(error){reject(error);}
+        }));
+    }catch(error){rows.push({name:'synchronous CSS animation starts with nonnegative local time inside RAF',pass:false,error:String(error)});}
+    finally{if(animation)animation.cancel();driven.cancel();if(item)item.remove();driver.remove();}
+    for(const observation of observations)console.log('CSS_INITIAL_CLOCK_OBSERVATION '+JSON.stringify(observation));
+    for(const row of rows)console.log('CSS_INITIAL_CLOCK_ROW '+JSON.stringify(row));
+    const passed=rows.filter(row=>row.pass).length,ok=passed===1&&rows.length===1;
+    document.documentElement.setAttribute('data-css-initial-clock',ok?'PASS':'FAIL');
+    console.log('RESULTS css-initial-clock:'+(ok?'PASS':'FAIL')+' '+JSON.stringify({passed,total:rows.length}));
+})().catch(error=>{document.documentElement.setAttribute('data-css-initial-clock','FAIL');console.log('RESULTS css-initial-clock:FAIL '+JSON.stringify({error:String(error)}));});
+</script>

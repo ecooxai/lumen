@@ -20,6 +20,8 @@ src = open('src/css/style.c').read()
 body = src[src.index('char *css_get_computed_value('):]; body = body[:body.index('\n}\n')]
 native = set(re.findall(r'strcmp\(prop, "([a-z-]+)"\)', body))
 props.setdefault('accent-color', {'inh': True, 'init': None})['inh'] = True
+# Sizing4 policy is inherited, even when the input baseline lacks metadata tests.
+props['interpolate-size'] = {'inh': True, 'init': 'numeric-only'}
 # Explicit native logical property group; its serializer uses shared slots and
 # cannot be inferred from direct strcmp branches in the public getter wrapper.
 for axis in ('width', 'height', 'inline-size', 'block-size', 'size'):

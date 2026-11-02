@@ -1,48 +1,88 @@
 {
-  "candidate": 234,
-  "qualification_utc": "2026-10-31T11:08:14.013075+00:00",
-  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
-  "tested_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
-  "reviewed_public_parent": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
-  "proposed_public_branch": "gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
-  "recorded_inputs": 650,
-  "all_recorded_inputs_and_modes_exact": true,
-  "public_source_manifest_file_sha256": "e53fb55ac4f9a089b8299cac7a192d720d35e858606bffc9b47ce1f896dca2db",
-  "root_decision_sha256": "46c7331def623f465d306203087e9b128f512bcf919c459ce536479cf79d3d08",
-  "independent_final_review_sha256": "63bbbe783fb2dbf70c0fddb052631ae2ffea788e8f2bd30c83447320742d5c65",
-  "public_report_sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
-  "accepted_gate_audit_hashes": {
-    "native147": "16b937c1ea3658f7140cd3ba088bfc440c004ca77ddfa52e6b2aaa48c07eab5e",
-    "visibility49_accessors2": "ae0c2f45f210bf5179c5f64b8a3b8f8cd3718362391b9e3520e4146de4c0caa1",
-    "lifecycle12_upstream4": "d37d6acc3236241a03dda1c3221206b2170b365204ec0a6dd0816d847f9ad752",
-    "containment39": "7c746b99b5f4a8b6c117432cb2cd0ac30c511f75f554d959c6ef3cc98e541a23",
-    "hidden_api3": "43337d33366dcb38ff03f815c97040e9efd4b04a9a9c0db4f9dce50ce5fc276e",
-    "hidden_scroll_contract": "29c841e08d56b411680a9d6ed7dce547caa56ba7bc61d4cba9a8e67762ace823",
-    "hidden_scroll_upstream": "27bcec00b96eee3622a9b58e78043d0345e299e6f774e021de89e462ea1af985",
-    "cadence_v1": "75acefa9a2ad50939068604ce573820fc58afa0289ba3e61088a35161c06a21e",
-    "actual_cpp_sanitizer": "6ea12099856bedcf188974836c38b64d7be439d9ef11f63891f6227485e642ee",
-    "native_math_sanitizer": "2f59ceb0cc3d9f87a9dba740dce85d899a8dfa8484532c274c97b3605993f99e",
-    "native_grid_containment_sanitizer": "0c198b3500e5166df825f161c1351dba4109d2aba5ca0f6dea995b92203cb49e",
-    "raster_sanitizer": "1f401c842d2f90f734f8844e82e3242903b6d3c6ab1e31a68f42569975ce6f63",
-    "frozen640": "1997f1a091f12213705c7af083b678453d3538e03f045745a58edf9ca7a7a5f9",
-    "prior_through231": "55779cf7ee11d6891bf3dba4f8ce788c3d8bdb3669c67d74b1b3b0d0748a535b",
-    "render40": "760e0702caa6ab82515661f77d95cc12ef2e5f401a228d675daeb6d7f96190a6",
-    "resources": "da7374bf14ca1aabc5f6f1f67b5a811ebdee4a71800bd7ad85e0e6ea2d73d147"
+  "candidate": 1701,
+  "status": "SOURCE MAPPING ACCEPTED after independent public inventory review",
+  "tested_source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
+  "tested_binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
+  "source_manifest_digest": "2c75e05834c127e4dc4f19b5b559e43fd6080118df146e427eb9cbb9779d9458",
+  "public_parent": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1701-20261102",
+  "all_recorded_inputs_exact": true,
+  "full_wpt_conformance_claimed": false,
+  "chromium_parity_claimed": false,
+  "private_history_included": false,
+  "validation_summary": {
+    "build_startup": {
+      "passed": true,
+      "elapsed_seconds": 51.14
+    },
+    "native_suite": {
+      "passed": 218,
+      "total": 218,
+      "elapsed_seconds": 137.13
+    },
+    "retained_authored": {
+      "fixtures": 45,
+      "passed_assertions": 1318,
+      "total_assertions": 1318,
+      "independent_audit_checks_passed": 542,
+      "independent_audit_checks_total": 542,
+      "elapsed_seconds": 98.7633
+    },
+    "css_property_rule_authored": {
+      "passed": 21,
+      "total": 21,
+      "baseline1603_passed": 2,
+      "baseline1603_total": 21
+    },
+    "descriptor_exact_object_comparison": {
+      "native_passed": 13,
+      "chromium_passed": 13,
+      "total_each": 13
+    },
+    "css_properties_values_api_wpt41": {
+      "passed_files": 18,
+      "total_files": 41,
+      "passed_assertions": 589,
+      "total_assertions": 813,
+      "baseline1603_passed_files": 16,
+      "baseline1603_passed_assertions": 521,
+      "baseline1603_total_assertions": 813,
+      "shared_fail_to_pass": 68,
+      "shared_pass_to_fail": 0,
+      "missing_or_new_assertion_identities": 0
+    },
+    "last_fixed1248_measurement": {
+      "candidate": 1603,
+      "candidate1701_rerun": false,
+      "lumen_passed_files": 703,
+      "total_files": 1248,
+      "lumen_passed_assertions": 22604,
+      "lumen_total_assertions": 26245,
+      "chromium_version": "150.0.7871.114",
+      "chromium_passed_files": 1062,
+      "chromium_passed_assertions": 24541,
+      "chromium_total_assertions": 26064,
+      "scope": "Fixed HTTP default-timeout testharness sample, not the full official WPT suite"
+    }
   },
-  "partial_scopes_remain_partial": true,
-  "whole_browser_or_full_WPT_parity_claimed": false,
-  "private_history_or_raw_evidence_exported": false,
-  "independent_rebuild_performed": false,
-  "portable_binary_distribution": false,
-  "publication_performed_by_this_qualifier": false,
-  "documentation_only_correction": {
-    "prior_public_commit": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
-    "prior_public_tree": "40016234061f6494d7519e15e9546c35169f4f0a",
-    "original_engine_export_parent": "2287d7fc602954c85a51c36f45ab5faa2473decc",
-    "original_qualification_sha256": "27e156638d45671a9015c9a06841ef178ad83c70adf2ae1326f621fc684bcd40",
-    "guide_old_sha256": "8af57a3d4f51f75fd843c515d2af1a2e1720e04cc3d3fb052f49df8c75a02e57",
-    "guide_new_sha256": "72b42ab31800634f508e14f14d15153ce7ac06582479e2dc52ec562aa9407c5c",
-    "all_650_measured_inputs_unchanged": true,
-    "technical_report_and_all_16_gate_hashes_unchanged": true
+  "limitations": [
+    "Candidate 1701 incremental scopes passed; the last full fixed 1248 sample remains candidate 1603 and was not rerun for 1701.",
+    "Full official WPT conformance and Chromium parity remain unmeasured and are not claimed.",
+    "Only approved public source ancestry and exact tested source inputs are exported; private working history and validation machinery are excluded.",
+    "External build dependencies and browser profiles are not bundled.",
+    "Public packaging and offline Git recovery checks are not an independent rebuild.",
+    "Android and display :0 runtime qualification for the final integrated session candidate will be recorded separately."
+  ],
+  "publication_evidence": "Public commit, offline bundle recovery and external publication receipts are recorded separately after this source tree is committed.",
+  "independent_source_review": {
+    "reviewer": "engine_improvements GPT-6 Astra Pro builtin agent",
+    "review_sha256": "88ca3101d6d7b67f6038bf2d5dd17801b88b170b804fb036b00443597d56d91a",
+    "preparation_sha256": "a128dc9688a290a092f7008299f190a45c8de01f4c3f403dfb73619c72e94862",
+    "recorded_inputs": 734,
+    "public_files": 834,
+    "approved_public_history_commits": 217,
+    "all_recorded_inputs_exact": true,
+    "private_history_excluded": true,
+    "scope": "Independent review of full public-source inventory, generated metadata and source pins; not a rebuild or publication receipt"
   }
 }

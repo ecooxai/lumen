@@ -350,7 +350,7 @@ function waGridMix(a, b, p, op = false, depth = 0) {
     return out.join(' ');
 }
 const WA_MIN_SIZE = /^min-(?:width|height|block-size|inline-size)$/;
-const waBaseValue = (el, prop) => N.computed(el, prop, WA_GRID.test(prop) || WA_MIN_SIZE.test(prop) ? 3 : 0) || '';
+const waBaseValue = (el, prop) => N.computed(el, prop, WA_GRID.test(prop) || WA_MIN_SIZE.test(prop) || WA_PREFERRED_SIZE.test(prop) ? 3 : 0) || '';
 function waGridSpecified(el, prop, value) {
     if (value === 'inherit') return el && el.parentElement ? (waBaseValue(el.parentElement, prop) || 'none') : (prop.startsWith('grid-auto-') ? 'auto' : 'none');
     if (value === 'initial' || value === 'unset') return prop.startsWith('grid-auto-') ? 'auto' : 'none';
@@ -429,6 +429,143 @@ function waPositionSpecified(el, prop, value) {
     }
     return value;
 }
+/* Preserve the intrinsic basis through the entire interpolation, including
+ * its endpoints and extrapolation. Layout resolves size and percentages after
+ * combining coefficients; a negative coefficient is not a negative used size. */
+const WA_PREFERRED_SIZE = /^(?:(?:min|max)-)?(?:width|height|inline-size|block-size)$/;
+const WA_SIZE_KEYWORD = /^(auto|min-content|max-content|fit-content|stretch)$/;
+function waPreferredSpecified(el, prop, value) {
+    const tokens = cssGridTokens(value);
+    const wide = tokens && tokens.length === 1 ? cssGridDecode(tokens[0]).toLowerCase() : '';
+    const initial = prop.startsWith('max-') ? 'none' : 'auto';
+    if (wide === 'inherit') return el && el.parentElement ? waBaseValue(el.parentElement, prop) || initial : initial;
+    if (/^(initial|unset)$/.test(wide)) return initial;
+    return WA_SIZE_KEYWORD.test(wide) ? wide : value;
+}
+/* A preferred-size value retains its calculation and intrinsic basis through
+ * endpoint composition. In particular, resolving the underlying keyword to
+ * pixels would make different intrinsic bases incorrectly interpolate. */
+const WA_SIZE_TEXT_LIMIT = 65536;
+function waPreferredNumericText(number) {
+    let text = '';
+    for (const [unit, value] of number) {
+        if (value === 0 && unit !== 'percent') continue;
+        const term = waFmt(Math.abs(value)) + (unit === 'percent' ? '%' : unit);
+        text += text ? (value < 0 ? ' - ' : ' + ') + term : (value < 0 ? '-' : '') + term;
+    }
+    return text || '0px';
+}
+/* Rewrite operands, never substrings of identifiers or dimension units. The
+ * native original-token validator runs before comment/escape normalization;
+ * this small scanner only substitutes the already balanced calculation. */
+function waPreferredCalculation(text, size, percentages = false) {
+    let out = '', usedSize = false;
+    const append = (...parts) => {
+        if (parts.reduce((length, part) => length + part.length, out.length) > WA_SIZE_TEXT_LIMIT) return false;
+        out += parts.join(''); return true;
+    };
+    const ident = c => !!c && /[-_a-zA-Z\u0080-\uffff\\]/.test(c);
+    const endIdent = start => {
+        let i = start;
+        while (i < text.length) {
+            if (text[i] === '\\') { const end = cssGridEscapeEnd(text, i); if (end < 0) return -1; i = end; }
+            else if (/[-_a-zA-Z0-9\u0080-\uffff]/.test(text[i])) i++;
+            else break;
+        }
+        return i;
+    };
+    for (let i = 0; i < text.length;) {
+        const rest = text.slice(i), number = /^[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?/i.exec(rest);
+        if (number) {
+            let end = i + number[0].length;
+            if (text[end] === '%') {
+                const value = Number(number[0]); if (!Number.isFinite(value)) return null;
+                if (!(percentages ? append('(size * ', waFmt(value / 100), ')') : append(text.slice(i, end + 1)))) return null;
+                end++;
+            } else {
+                if (ident(text[end])) { end = endIdent(end); if (end < 0) return null; }
+                if (!append(text.slice(i, end))) return null;
+            }
+            i = end;
+        } else if (ident(text[i])) {
+            const end = endIdent(i); if (end < 0) return null;
+            const token = text.slice(i, end);
+            if (text[end] !== '(' && cssGridDecode(token).toLowerCase() === 'size') {
+                usedSize = true;
+                if (size === null) return null; /* an explicit any basis forbids size */
+                if (!append('(', size, ')')) return null;
+            } else if (!append(token)) return null;
+            i = end;
+        } else {
+            if (!/[\s()+*/.,-]/.test(text[i])) return null;
+            if (!append(text[i++])) return null;
+        }
+    }
+    return {text:out, usedSize};
+}
+function waPreferredPrepared(value, depth = 0) {
+    if (typeof value !== 'string' || depth > 32 || value.length > WA_SIZE_TEXT_LIMIT) return null;
+    /* cssMathText checks raw signed tokens and binary-operator whitespace
+       before cssGridTokens replaces comment gaps. Do not reverse this order. */
+    const checked = N.cssMathText(value);
+    if (checked === null) return null;
+    const tokens = cssGridTokens(checked);
+    if (!tokens || tokens.length !== 1) return null;
+    const token = tokens[0], keyword = cssGridDecode(token).toLowerCase();
+    if (WA_SIZE_KEYWORD.test(keyword)) return {basis:keyword, calculation:'size', kind:'keyword'};
+    const number = waGridNumeric(token);
+    if (number && !number.has('fr')) return {basis:'any', calculation:waPreferredNumericText(number), number, kind:'numeric'};
+    const open = token.indexOf('(');
+    if (open < 1 || token[token.length - 1] !== ')' || cssGridDecode(token.slice(0, open)).toLowerCase() !== 'calc-size') return null;
+    const parts = tomSplitTop(token.slice(open + 1, -1), ',').map(part => part.trim());
+    if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+    const basisTokens = cssGridTokens(parts[0]);
+    if (!basisTokens || basisTokens.length !== 1) return null;
+    const basisKeyword = cssGridDecode(basisTokens[0]).toLowerCase();
+    if (basisKeyword === 'any') {
+        const calculation = waPreferredCalculation(parts[1], null);
+        return calculation && {basis:'any', calculation:calculation.text, kind:'function'};
+    }
+    const basis = waPreferredPrepared(parts[0], depth + 1);
+    if (!basis) return null;
+    let name = basis.basis, replacement = basis.calculation;
+    if (basis.kind === 'numeric' && basis.number.has('percent')) {
+        /* Normalize a percentage basis to 100%, retaining its definiteness.
+           Only that original basis is de-percentified; percentages in the
+           outer calculation retain their own indefinite-container behavior. */
+        name = '100%';
+        const numeric = waPreferredCalculation(replacement, null, true);
+        if (!numeric) return null;
+        replacement = numeric.text;
+    }
+    const calculation = waPreferredCalculation(parts[1], replacement);
+    return calculation && {basis:name, calculation:calculation.text, kind:'function'};
+}
+function waPreferredSizeMix(a, b, progress, allowKeywords, add = false) {
+    const A = waPreferredPrepared(a), B = waPreferredPrepared(b);
+    /* Leave ordinary numeric properties on the established numeric mixer. */
+    if (A && B && A.kind === 'numeric' && B.kind === 'numeric') return undefined;
+    const special = value => WA_SIZE_KEYWORD.test(value) || /calc-size\s*\(/i.test(value);
+    if (!A || !B) return special(a) || special(b) ? null : undefined;
+    if (A.kind === 'keyword' && B.kind === 'keyword') return add ? b : A.basis === B.basis ? a : null;
+    if ((A.kind === 'keyword' && B.kind === 'numeric' || B.kind === 'keyword' && A.kind === 'numeric') && !allowKeywords) return null;
+    if (A.basis !== B.basis && A.basis !== 'any' && B.basis !== 'any') return null;
+    const basis = A.basis === 'any' ? B.basis : A.basis;
+    const left = add ? 1 : 1 - progress, right = add ? 1 : progress;
+    if (!Number.isFinite(left) || !Number.isFinite(right)) return null;
+    const parts = ['calc-size(', basis, ', (', A.calculation, ') * ', waFmt(left), ' + (', B.calculation, ') * ', waFmt(right), ')'];
+    return parts.reduce((length, part) => length + part.length, 0) <= WA_SIZE_TEXT_LIMIT ? parts.join('') : null;
+}
+function waCapturePreferredPolicy(animation) {
+    const effect = animation._effect;
+    /* The policy belongs to this prepared keyframe effect. Cancellation and
+       reassociation change animation timing, not the effect's keyframes.
+       Explicit setKeyframes/new effects start a fresh conversion lifetime. */
+    if (!(effect instanceof KeyframeEffect) || effect._sizeKeywords !== null || !effect._target ||
+        !effect._kfs.some(frame => [...frame.props.keys()].some(property => WA_PREFERRED_SIZE.test(property)))) return;
+    effect._sizeKeywords = N.computed(effect._target, 'interpolate-size') === 'allow-keywords';
+}
+
 function waMix(prop, a, b, p, op) {   /* op: interpolate (p) or add (p ignored, b added to a) */
     if (WA_POSITION.test(prop)) return waPositionMix(prop, a, b, p, op);
     if (WA_GRID.test(prop)) return waGridMix(a, b, p, !!op);
@@ -512,7 +649,11 @@ function waTransform(a, b, p, op) {
     const L = (x, y) => x + (y - x) * p, th = L(t1, t2), sx = L(da.sx, db.sx), k = L(da.k, db.k), sy = L(da.sy, db.sy), cs = Math.cos(th), sn = Math.sin(th);
     return `matrix(${[cs * sx, sn * sx, cs * k - sn * sy, sn * k + cs * sy, L(da.tx, db.tx), L(da.ty, db.ty)].map(waFmt).join(', ')})`;
 }
-function waInterp(prop, a, b, p) {
+function waInterp(prop, a, b, p, sizeKeywords = false) {
+    if (WA_PREFERRED_SIZE.test(prop)) {
+        const value = waPreferredSizeMix(a, b, p, sizeKeywords);
+        if (value !== undefined) return value !== null ? value : p < .5 ? a : b;
+    }
     if (WA_POSITION.test(prop)) { const r = waPositionMix(prop, a, b, p, false); return r !== null ? r : p < 0.5 ? a : b; }
     if (p === 0) return a; if (p === 1) return b;
     if (prop === 'transform') return waTransform(a, b, p);
@@ -520,8 +661,12 @@ function waInterp(prop, a, b, p) {
     if (!prop.startsWith('--')) { const r = waMix(prop, a, b, p); if (r !== null) return r; }
     return p < 0.5 ? a : b;
 }
-function waCompose(prop, under, v, op) {
+function waCompose(prop, under, v, op, sizeKeywords = false) {
     if (op === 'replace' || under == null) return v;
+    if (WA_PREFERRED_SIZE.test(prop)) {
+        const value = waPreferredSizeMix(under, v, 0, sizeKeywords, true);
+        if (value !== undefined) return value !== null ? value : v;
+    }
     if (prop === 'transform') return waTransform(under, v, 0, true);
     const r = prop.startsWith('--') ? null : waMix(prop, under, v, 0, true);
     return r === null ? v : r;
@@ -546,6 +691,7 @@ class AnimationEffect {
 class KeyframeEffect extends AnimationEffect {
     constructor(target, keyframes, options) {
         waInternal = true; try { super(); } finally { waInternal = false; }
+        def(this, '_sizeKeywords', null);
         if (arguments.length === 1 && target instanceof KeyframeEffect) {
             const s = target;
             def(this, '_t', Object.assign({}, s._t)); def(this, '_target', s._target); def(this, '_pseudo', s._pseudo);
@@ -566,7 +712,7 @@ class KeyframeEffect extends AnimationEffect {
         def(this, '_t', waTiming(WA_T0, options)); def(this, '_kfs', kfs); def(this, '_comp', comp); def(this, '_icomp', icomp); def(this, '_pseudo', pseudo);
     }
     get target() { return this._target; }
-    set target(v) { if (v !== null && !(N.isNode(v) && N.type(v) === 1)) throw waTypeErr("Failed to set the 'target' property on 'KeyframeEffect': The provided value is not of type 'Element'."); this._target = v; waInvalidate(); }
+    set target(v) { if (v !== null && !(N.isNode(v) && N.type(v) === 1)) throw waTypeErr("Failed to set the 'target' property on 'KeyframeEffect': The provided value is not of type 'Element'."); if (this._target !== v) this._sizeKeywords = null; this._target = v; waInvalidate(); }
     get pseudoElement() { return this._pseudo; }
     set pseudoElement(v) { this._pseudo = v === null ? null : waPseudo(v, "set the 'pseudoElement' property on 'KeyframeEffect'"); waInvalidate(); }
     get composite() { return this._comp; } set composite(v) { this._comp = waEnum(v, WA_COMP, 'CompositeOperation'); waInvalidate(); }
@@ -578,7 +724,7 @@ class KeyframeEffect extends AnimationEffect {
             return o;
         });
     }
-    setKeyframes(kf) { this._kfs = waKeyframes(kf); this._defaultEase = WA_LINEAR; waInvalidate(); }
+    setKeyframes(kf) { this._kfs = waKeyframes(kf); this._sizeKeywords = null; this._defaultEase = WA_LINEAR; waInvalidate(); }
 }
 function waPseudo(v, what) {
     v = String(v);
@@ -595,7 +741,8 @@ function waEffectValue(eff, prop, under, c) {
         let v = k ? k.props.get(prop) : under;
         if (v != null && WA_GRID.test(prop)) v = waGridSpecified(eff._target, prop, v);
         if (v != null && WA_POSITION.test(prop)) v = waPositionSpecified(eff._target, prop, v);
-        return k ? waCompose(prop, under, v, k.composite === 'auto' ? eff._comp : k.composite) : v;
+        if (v != null && WA_PREFERRED_SIZE.test(prop)) v = waPreferredSpecified(eff._target, prop, v);
+        return k ? waCompose(prop, under, v, k.composite === 'auto' ? eff._comp : k.composite, !!eff._sizeKeywords) : v;
     };
     let pts = kfs.map(k => ({ co: k.co, k }));
     if (pts[0].co !== 0) pts.unshift({ co: 0, k: null });
@@ -613,16 +760,17 @@ function waEffectValue(eff, prop, under, c) {
            easing; author-supplied Web Animations keyframes default to linear. */
         const d = e.co === s.co ? 0 : (p - s.co) / (e.co - s.co);
         const de = (s.k ? s.k.ease : eff._defaultEase || WA_LINEAR)(d, false);
-        res = waInterp(prop, val(s.k), val(e.k), de);
+        res = waInterp(prop, val(s.k), val(e.k), de, !!eff._sizeKeywords);
     }
     if (eff._icomp === 'accumulate' && c.currentIteration > 0 && isFinite(c.currentIteration)) {
         const last = pts[pts.length - 1].k, endV = last ? val(last) : under;
-        for (let i = 0; i < Math.min(c.currentIteration, 1000); i++) res = waCompose(prop, res, endV, 'accumulate');
+        for (let i = 0; i < Math.min(c.currentIteration, 1000); i++) res = waCompose(prop, res, endV, 'accumulate', !!eff._sizeKeywords);
     }
     return res;
 }
 /* ---- timeline and frame loop ---- */
 let waFrameTime = null, waInFrame = false, waSeqN = 0, waLoop = false, waDirty = false;
+let waFlushing = false, waReading = false;
 const waAll = new SSet(), waApplied = new SMap(), waEvents = [];
 const waNow = () => { if (waInFrame && waFrameTime !== null) return waFrameTime; if (!waLoop) waKick(); return waFrameTime === null ? performance.now() : Math.max(waFrameTime, performance.now() - 1000 / 60); };
 function waInvalidate() { waDirty = true; waKick(); }
@@ -646,12 +794,15 @@ function trSuppressCss(el, a, b) {
     for (const css of [a || '', b || '']) for (const m of css.matchAll(/(?:^|; )([-a-z]+):/g)) { if (!s) trSuppress.set(el, s = new SSet()); s.add(m[1]); }
 }
 function waFlush() {
-    if (!waDirty) return; waDirty = false;
+    if (!waDirty || waFlushing) return;
+    waFlushing = true; waDirty = false;
+    try {
     const byEl = new SMap();
     for (const a of [...waAll].sort((x, y) => x._seq - y._seq)) {
         const e = a._effect;
         if (!e || !(e instanceof KeyframeEffect) || !e._target || e._pseudo || a._replace === 'removed') continue;
         const c = waCompute(e); if (c.progress === null) continue;
+        waCapturePreferredPolicy(a);
         let l = byEl.get(e._target); if (!l) byEl.set(e._target, l = []); l.push([e, c]);
     }
     for (const el of waApplied.keys()) if (!byEl.has(el)) { trSuppressCss(el, waApplied.get(el), ''); N.setAnimStyle(el, ''); waApplied.delete(el); }
@@ -667,6 +818,21 @@ function waFlush() {
         }
         if (waApplied.get(el) !== css) { trSuppressCss(el, waApplied.get(el), css); N.setAnimStyle(el, css); waApplied.set(el, css); }
     }
+    } finally { waFlushing = false; }
+}
+/* Native read synchronization enters this realm before and after its actual
+   style/layout flush. Sampling writes the normal animation declaration layer;
+   geometry, hit testing and the subsequent paint use those same native boxes.
+   Internal computed reads made while sampling must not poll partially applied
+   layers or recurse into another animation sample. */
+function waSyncRead(afterStyle) {
+    if (waFlushing || waReading || trConstructing) return false;
+    waReading = true;
+    try {
+        const pending = waDirty;
+        if (pending) waFlush();
+        return (afterStyle && trPoll()) || pending;
+    } finally { waReading = false; }
 }
 function waRemoveReplaced() {
     const list = [...waAll].filter(a => a._replaceable()).sort((x, y) => x._seq - y._seq);
@@ -721,7 +887,7 @@ class Animation extends EventTarget {
             throw waTypeErr("Failed to construct 'Animation': parameter 2 is not of type 'AnimationTimeline'.");
         }
         Object.defineProperties(this, Object.fromEntries(Object.entries({ _seq: ++waSeqN, _timeline: timeline, _effect: null, _start: null, _hold: null, _rate: 1, _pendRate: null,
-            _task: null, _ready: Object.assign(waDefer(), { done: true }), _finished: waDefer(), _prevCT: null, _id: '', _replace: 'active', _finTask: null,
+            _task: null, _cssStartOrigin: null, _ready: Object.assign(waDefer(), { done: true }), _finished: waDefer(), _prevCT: null, _id: '', _replace: 'active', _finTask: null,
             onfinish: null, oncancel: null, onremove: null }).map(([k, v]) => [k, { value: v, writable: true, configurable: true, enumerable: k[0] !== '_' }])));
         this._ready.res(this);
         if (effect) this.effect = effect;
@@ -741,6 +907,7 @@ class Animation extends EventTarget {
     set timeline(tl) {
         if (tl === this._timeline) return;
         if (tl !== null && !waIsTimeline(tl)) throw waTypeErr("Failed to set the 'timeline' property on 'Animation': The provided value is not of type 'AnimationTimeline'.");
+        this._cssStartOrigin = null;
         const prevState = this.playState, prevCT = this.currentTime;
         this._timeline = tl;
         if (this._start !== null) this._hold = null;
@@ -756,6 +923,7 @@ class Animation extends EventTarget {
     get playbackRate() { return this._rate; }
     set playbackRate(r) {
         r = +r; if (!isFinite(r)) throw waTypeErr("Failed to set the 'playbackRate' property on 'Animation': The provided double value is non-finite.");
+        this._cssStartOrigin = null;
         this._pendRate = null;
         const prev = this.currentTime; this._rate = r;
         if (prev !== null) this.currentTime = prev;
@@ -770,6 +938,8 @@ class Animation extends EventTarget {
         const tt = this._tlTime();
         if (tt === null && v !== null) this._hold = null;
         const prevCT = this.currentTime;
+        if (v !== null) waCapturePreferredPolicy(this);
+        this._cssStartOrigin = null;
         this._applyPendRate();
         this._start = v;
         if (v !== null) { if (this._rate !== 0) this._hold = null; } else this._hold = prevCT;
@@ -785,11 +955,13 @@ class Animation extends EventTarget {
     set currentTime(v) {
         if (v === null) { if (this._hold !== null || this._start !== null) throw waTypeErr("Failed to set the 'currentTime' property on 'Animation': currentTime may not be changed from resolved to unresolved."); return; }
         v = +v; if (!isFinite(v)) throw waTypeErr("Failed to set the 'currentTime' property on 'Animation': The provided double value is non-finite.");
+        this._cssStartOrigin = null;
         this._silentSetCT(v);
         if (this._task === 'pause') { this._hold = v; this._applyPendRate(); this._start = null; this._task = null; this._resolveReady(); }
         this._updateFinished(true, false); waInvalidate();
     }
     _silentSetCT(v) {
+        waCapturePreferredPolicy(this);
         const tt = this._tlTime();
         if (this._hold !== null || this._start === null || tt === null || this._rate === 0) this._hold = v;
         else this._start = tt - v / this._rate;
@@ -823,6 +995,8 @@ class Animation extends EventTarget {
             if (end === Infinity) throw new DOMException("Failed to execute 'play' on 'Animation': Cannot play reversed Animation with infinite target effect end.", 'InvalidStateError');
             seek = end;
         } else if (rate === 0 && ct === null) seek = 0;
+        waCapturePreferredPolicy(this);
+        this._cssStartOrigin = null;
         if (seek !== null) { this._start = null; this._hold = seek; }
         if (this._hold !== null) this._start = null;
         if (this._task) { this._task = null; hasPendReady = true; }
@@ -839,16 +1013,26 @@ class Animation extends EventTarget {
             if (this._rate >= 0) seek = 0;
             else { if (this._end() === Infinity) throw new DOMException("Failed to execute 'pause' on 'Animation': Cannot pause, Animation has infinite target effect end.", 'InvalidStateError'); seek = this._end(); }
         }
+        waCapturePreferredPolicy(this);
         if (seek !== null) { this._hold = seek; this._start = null; }
+        this._cssStartOrigin = null;
         if (this._task === 'play') this._task = null; else this._newReady();
         this._task = 'pause';
         this._updateFinished(false, false); waInvalidate();
     }
     _tick() {
         const tt = this._tlTime();
+        if (!this._task) this._cssStartOrigin = null;
         if (this._task && tt !== null) {
+            const origin = this._cssStartOrigin;
+            const cssInitialPlay = origin !== null && this._task === 'play' && this._hold === 0 && this._effRate() === 1;
+            /* A style flush can happen after the current frame's timestamp.
+               Keep its zero hold/pending promise until the sampled timeline
+               reaches that origin; never expose a negative initial time. */
+            if (cssInitialPlay && tt < origin) return;
+            this._cssStartOrigin = null;
             if (this._task === 'play') {
-                if (this._hold !== null) { this._applyPendRate(); this._start = this._rate === 0 ? tt : tt - this._hold / this._rate; if (this._rate !== 0) this._hold = null; }
+                if (this._hold !== null) { this._applyPendRate(); this._start = this._rate === 0 ? tt : cssInitialPlay ? origin : tt - this._hold / this._rate; if (this._rate !== 0) this._hold = null; }
                 else if (this._start !== null && this._pendRate !== null) { const ct = (tt - this._start) * this._rate; this._applyPendRate(); this._start = this._rate === 0 ? tt : tt - ct / this._rate; }
             } else {
                 if (this._start !== null && this._hold === null) this._hold = (tt - this._start) * this._rate;
@@ -882,6 +1066,7 @@ class Animation extends EventTarget {
     finish() {
         const rate = this._effRate(), end = this._end();
         if (rate === 0 || (rate > 0 && end === Infinity)) throw new DOMException("Failed to execute 'finish' on 'Animation': Cannot finish Animation with a playbackRate of 0 or an infinite target effect end.", 'InvalidStateError');
+        this._cssStartOrigin = null;
         this._applyPendRate();
         const lim = this._rate > 0 ? end : 0;
         this._silentSetCT(lim);
@@ -892,6 +1077,7 @@ class Animation extends EventTarget {
         this._updateFinished(true, true); waInvalidate();
     }
     cancel() {
+        this._cssStartOrigin = null;
         if (this.playState !== 'idle') {
             if (this._task) { this._task = null; this._ready.done = true; this._ready.rej(new DOMException('The user aborted a request.', 'AbortError')); this._ready = Object.assign(waDefer(), { done: true }); this._ready.res(this); }
             if (!this._finished.done) { this._finished.done = true; this._finished.rej(new DOMException('The user aborted a request.', 'AbortError')); }
@@ -911,6 +1097,7 @@ class Animation extends EventTarget {
     }
     updatePlaybackRate(r) {
         r = +r; if (!isFinite(r)) throw waTypeErr("Failed to execute 'updatePlaybackRate' on 'Animation': The provided double value is non-finite.");
+        this._cssStartOrigin = null;
         const prev = this.playState; this._pendRate = r;
         if (this._task) return;
         if (prev === 'idle' || prev === 'paused' || this._tlTime() === null) this._applyPendRate();
@@ -947,23 +1134,39 @@ const waGetAnims = (pred) => [...waAll].filter(a => {
    becomes a CSSTransition animating from the old to the new value. Values the animation layer itself writes are
    suppressed once so animations don't start transitions. */
 const trRunning = new SMap(), trSuppress = new SMap();
+let trConstructing = false;
+/* Timing/keyframe metadata reads are part of one internal style job. Do not
+ * sample a cancelled layer or recursively poll while its replacement has not
+ * yet acquired the element/property slot. The native queue retains later jobs. */
+function trDispatchJob(el, packed, type, origin) {
+    const previous = trConstructing; trConstructing = true;
+    try { type === 'lumen-animation' ? caStart(el, packed, origin) : trStart(el, packed); }
+    finally { trConstructing = previous; }
+}
 class CSSTransition extends Animation {
     get transitionProperty() { return this._trProp; }
 }
 const trTime = s => { const m = /^(-?[\d.]+(?:e[+-]?\d+)?)(m?s)$/i.exec(String(s).trim()); return m ? +m[1] * (m[2].toLowerCase() === 'ms' ? 1 : 1000) : 0; };
-const trList = (el, p) => tomSplitTop(N.computed(el, p) || '', ',').map(s => s.trim());
+const trList = (el, p) => {
+    const value = N.computed(el, p) || '';
+    /* Keep escaped commas inside identifiers, so unknown names retain their
+       duration/delay index without creating another transition property. */
+    return p === 'transition-property' ? (cssGridTokens(value) || []).filter(s => s !== ',').map(cssGridDecode) : tomSplitTop(value, ',').map(s => s.trim());
+};
 function trStart(el, packed) {
     const [prop, from, to] = packed.split('\x01');
     const sup = trSuppress.get(el);
     if (sup && sup.has(prop)) { sup.delete(prop); if (!sup.size) trSuppress.delete(el); return; }
     const names = trList(el, 'transition-property');
-    let i = names.lastIndexOf(prop); if (i < 0) i = names.lastIndexOf('all'); if (i < 0) return;
+    const i = Math.max(names.lastIndexOf(prop), names.lastIndexOf('all')); if (i < 0) return;
     const at = (p, d) => { const l = trList(el, p); return l.length && l[0] ? l[i % l.length] : d; };
     const duration = Math.max(0, trTime(at('transition-duration', '0s'))), delay = trTime(at('transition-delay', '0s'));
     const running = trRunning.get(el), old = running && running.get(prop);
     if (old) { running.delete(prop); old.cancel(); }
     if (duration + delay <= 0 || !el.isConnected) return;
-    const discrete = prop !== 'transform' && prop !== 'visibility' && waMix(prop, from, to, 0.5) === null;
+    const sizeKeywords = WA_PREFERRED_SIZE.test(prop) && N.computed(el, 'interpolate-size') === 'allow-keywords';
+    const sizeMix = WA_PREFERRED_SIZE.test(prop) ? waPreferredSizeMix(from, to, .5, sizeKeywords) : undefined;
+    const discrete = prop !== 'transform' && prop !== 'visibility' && (sizeMix === undefined ? waMix(prop, from, to, .5) : sizeMix) === null;
     if (discrete && at('transition-behavior', 'normal') !== 'allow-discrete') return;
     const key = prop === 'float' ? 'cssFloat' : prop.replace(/^-webkit-/, 'webkit-').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
     let eff;
@@ -971,6 +1174,7 @@ function trStart(el, packed) {
     catch (e) { eff = new KeyframeEffect(el, [{ [key]: from }, { [key]: to }], { duration, delay, fill: 'backwards' }); }
     const a = new CSSTransition(eff, document.timeline);
     a._trProp = prop;
+    if (WA_PREFERRED_SIZE.test(prop)) eff._sizeKeywords = sizeKeywords;
     const done = () => { const m = trRunning.get(el); if (m && m.get(prop) === a) { m.delete(prop); if (!m.size) trRunning.delete(el); } };
     const fire = (type, t) => dispatch(el, new TransitionEvent(type, { bubbles: true, propertyName: prop, elapsedTime: t / 1000 }), true);
     let started = false;
@@ -990,8 +1194,9 @@ function trCancelUnrendered() {
     for (const [el, l] of [...caRunning]) if (gone(el)) { caRunning.delete(el); for (const a of l) a.cancel(); }
 }
 function trPoll() {
+    if (trConstructing) return false;
     const l = N.trTake();
-    for (const [el, packed, type] of l) type === 'lumen-animation' ? caStart(el, packed) : trStart(el, packed);
+    for (const [el, packed, type, origin] of l) trDispatchJob(el, packed, type, origin);
     if (l.length) { waDirty = true; waFlush(); }
     return l.length > 0;
 }
@@ -1009,7 +1214,7 @@ function caFindKeyframes(el, name) {
     return found;
 }
 const caKey = p => p === 'float' ? 'cssFloat' : p.replace(/^-webkit-/, 'webkit-').replace(/-([a-z])/g, (m, c) => c.toUpperCase());
-function caStart(el, names) {
+function caStart(el, names, origin) {
     const old = caRunning.get(el) || [];
     caRunning.delete(el);
     for (const a of old) a.cancel();
@@ -1040,6 +1245,9 @@ function caStart(el, names) {
         a._caName = name;
         a.play();
         if (at('animation-play-state', i, 'running') === 'paused') a.pause();
+        /* Keep the initial pending play/zero hold until a rendering frame
+           can resolve the native style-generation clock. */
+        else if (Number.isFinite(origin)) a._cssStartOrigin = origin;
         made.push(a);
     });
     if (made.length) caRunning.set(el, made);

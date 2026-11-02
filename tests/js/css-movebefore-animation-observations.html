@@ -1,0 +1,75 @@
+<!doctype html><meta charset="utf-8"><title>State-preserving CSS animation moves</title>
+<style>
+@keyframes preserved_left { from { left: 100px; } to { left: 400px; } }
+.move-parent { position: absolute; margin: 0; padding: 0; border: 0; }
+.move-item { position: relative; width: 100px; height: 100px; background: green; animation: 1s linear infinite alternate preserved_left; animation-delay: 100ms; }
+</style><body><script>
+(async () => {
+    const rows = [], observations = [];
+    const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+    function require(value, message) { if (!value) throw new Error(message); }
+    function near(actual, expected, message) { require(Number.isFinite(actual) && Math.abs(actual - expected) < .2, message + ': ' + actual + ' != ' + expected); }
+    function snapshot(item, phase) {
+        const computed = getComputedStyle(item), left = computed.left;
+        const animations = item.getAnimations();
+        const box = item.getBoundingClientRect(), parent = item.parentElement.getBoundingClientRect();
+        const data = {phase, left, position:computed.position, animationName:computed.animationName,
+            geometryLeft:box.left-parent.left, animations:animations.map(animation => ({
+                name:animation.animationName, currentTime:animation.currentTime, startTime:animation.startTime,
+                playState:animation.playState, pending:animation.pending, timing:animation.effect.getComputedTiming(),
+                frames:animation.effect.getKeyframes()
+            }))};
+        observations.push(data);
+        return {data, animations};
+    }
+    for (const mode of ['original schedule', 'pre-move observation', 'paused midpoint']) {
+        const oldParent = document.createElement('section'), newParent = document.createElement('section'), item = document.createElement('div');
+        oldParent.className = newParent.className = 'move-parent'; item.className = 'move-item'; oldParent.appendChild(item);
+        let events = 0, onStart, timeout;
+        const started = new Promise((resolve, reject) => {
+            onStart = event => { if (event.target === item) { events++; resolve(); } };
+            addEventListener('animationstart', onStart);
+            timeout = setTimeout(() => reject(new Error('animationstart was not dispatched')), 4000);
+        });
+        document.body.appendChild(oldParent); document.body.appendChild(newParent);
+        try {
+            await started; clearTimeout(timeout);
+            let before = null;
+            if (mode === 'pre-move observation') before = snapshot(item, mode + ' before');
+            if (mode === 'paused midpoint') {
+                const animations = item.getAnimations(); require(animations.length === 1, 'one CSS animation before pause');
+                animations[0].pause(); animations[0].currentTime = 600;
+                before = snapshot(item, mode + ' before'); near(parseFloat(before.data.left), 250, 'paused before left');
+                near(before.data.geometryLeft, 250, 'paused before geometry');
+            }
+            newParent.moveBefore(item, null);
+            await frame();
+            const after = snapshot(item, mode + ' after');
+            require(events === 1, 'exactly one animationstart after move, got ' + events);
+            require(after.animations.length === 1, 'one CSS animation after move');
+            const left = parseFloat(after.data.left);
+            require(left >= 100 && left <= 400, 'animated left stays in the keyframe interval: ' + after.data.left);
+            near(after.data.geometryLeft, left, 'used geometry follows the active left animation');
+            if (before) {
+                require(after.animations[0] === before.animations[0], 'CSSAnimation identity survives moveBefore');
+                require(after.data.animations[0].currentTime >= before.data.animations[0].currentTime, 'animation timeline does not rewind');
+            }
+            if (mode === 'paused midpoint') {
+                near(left, 250, 'paused midpoint survives move');
+                require(after.data.animations[0].currentTime === 600, 'paused currentTime survives move');
+                require(after.data.animations[0].playState === 'paused', 'paused state survives move');
+            }
+            rows.push({name:mode, pass:true});
+        } catch (error) { rows.push({name:mode, pass:false, error:String(error)}); }
+        finally { clearTimeout(timeout); removeEventListener('animationstart', onStart); oldParent.remove(); newParent.remove(); }
+    }
+    for (const observation of observations) console.log('MOVEBEFORE_ANIMATION_OBSERVATION ' + JSON.stringify(observation));
+    for (const row of rows) console.log('MOVEBEFORE_ANIMATION_ROW ' + JSON.stringify(row));
+    const passed = rows.filter(row => row.pass).length, ok = passed === 3 && rows.length === 3;
+    document.documentElement.setAttribute('data-css-movebefore-animation', ok ? 'PASS' : 'FAIL');
+    console.log('RESULTS css-movebefore-animation:' + (ok ? 'PASS' : 'FAIL') + ' ' + JSON.stringify({passed,total:rows.length}));
+})().catch(error => {
+    document.documentElement.setAttribute('data-css-movebefore-animation','FAIL');
+    console.log('RESULTS css-movebefore-animation:FAIL ' + JSON.stringify({error:String(error)}));
+});
+</script>

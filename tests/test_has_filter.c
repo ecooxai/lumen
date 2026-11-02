@@ -60,6 +60,7 @@ int main(void) {
     uint64_t full = css_has_stats[1] - n0; n0 = css_has_stats[1]; css_has_unfiltered = false; assert(!css_match_selector_list(&l, d->body));
     assert(css_has_stats[1] - n0 < full / 10 && css_match_selector_list(&l, main_el));
     css_sellist_free(&l);
+    node_free_tree(loose->parent);   /* detached fixture is not owned by the document tree */
     doc_free(d);
     puts(":has() name filter matches full subtree walks");
 }

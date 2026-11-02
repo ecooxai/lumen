@@ -1,0 +1,27 @@
+<!doctype html><meta charset="utf-8"><title>XHR streamed-body regression</title><script>
+(async()=>{'use strict';let total=0,passed=0;
+const check=(v,m)=>{if(!v)throw Error(m);};
+async function test(name,f){total++;try{await f();passed++;console.log('XHR_STREAM_ROW '+JSON.stringify({name,pass:true}));}catch(e){console.log('XHR_STREAM_ROW '+JSON.stringify({name,pass:false,error:String(e.stack||e)}));}}
+function request(path,type='',method='GET',xhr=new XMLHttpRequest()){
+ return new Promise((resolve,reject)=>{xhr.open(method,path);xhr.responseType=type;xhr.timeout=3000;xhr.onload=()=>resolve(xhr);xhr.onerror=()=>reject(Error('network error: '+path));xhr.ontimeout=()=>reject(Error('timeout: '+path));xhr.onabort=()=>reject(Error('unexpected abort'));xhr.send();});
+}
+for(const mode of ['chunked','length','close'])await test(mode+' text',async()=>{const x=await request('/body/'+mode);check(x.status===200,'status');check(x.responseText==='streamed text','body');check(x.getResponseHeader('x-mode')===mode,'headers');});
+await test('HTTP error status retains body',async()=>{const x=await request('/body/status');check(x.status===401&&x.responseText==='unauthorized body','HTTP status is not a network error');});
+await test('empty chunked body',async()=>{const x=await request('/body/empty');check(x.status===200&&x.responseText==='','empty body');});
+await test('HEAD has no body',async()=>{const x=await request('/body/chunked','','HEAD');check(x.status===200&&x.responseText==='','HEAD body');});
+await test('204 has no body',async()=>{const x=await request('/body/no-content');check(x.status===204&&x.responseText==='','204 body');});
+await test('UTF8 BOM split across chunks',async()=>{const x=await request('/body/bom');check(x.responseText==='text after BOM','BOM decoding');});
+await test('UTF16LE BOM split across chunks',async()=>{const x=await request('/body/utf16');check(x.responseText==='hello','UTF16 decoding');});
+await test('binary arraybuffer',async()=>{const x=await request('/body/binary','arraybuffer');check(x.response instanceof ArrayBuffer,'ArrayBuffer brand');check(Array.from(new Uint8Array(x.response)).join(',')==='0,255,1,128','bytes');});
+await test('JSON body',async()=>{const x=await request('/body/json','json');check(x.response.value===42&&x.response.message==='ok','JSON body');check(x.response===x.response,'response cache');});
+await test('XML document identity',async()=>{const x=await request('/body/xml','document');check(x.response===x.responseXML&&x.response===x.response,'response identity');check(x.response.documentElement.localName==='root'&&x.response.documentElement.textContent==='ok','XML document');});
+await test('Blob bytes',async()=>{const x=await request('/body/binary','blob');check(x.response instanceof Blob,'Blob brand');check(Array.from(new Uint8Array(await x.response.arrayBuffer())).join(',')==='0,255,1,128','blob body');});
+await test('object reuse clears old headers',async()=>{const x=await request('/body/chunked');await request('/body/length','','GET',x);check(x.getResponseHeader('x-mode')==='length'&&x.responseText==='streamed text','reuse');});
+await test('progress/load/loadend ordering',async()=>{const events=[],x=new XMLHttpRequest();x.addEventListener('progress',e=>{check(e.loaded>0,'progress bytes');events.push('progress');});x.addEventListener('load',()=>events.push('load'));x.addEventListener('loadend',()=>events.push('loadend'));await request('/body/chunked','','GET',x);check(events.length>=3&&events.slice(-2).join(',')==='load,loadend'&&events.slice(0,-2).every(e=>e==='progress'),'event order: '+events);});
+await test('private bytes never become a thenable',async()=>{const proto=Uint8Array.prototype,d=Object.getOwnPropertyDescriptor(proto,'then');let observed=0;Object.defineProperty(proto,'then',{configurable:true,get(){observed++;throw Error('private bytes exposed to promise resolution');}});try{const x=await request('/body/close');check(x.responseText==='streamed text','body');check(observed===0,'then getter observed');}finally{if(d)Object.defineProperty(proto,'then',d);else delete proto.then;}});
+await test('private stream reader ignores public override',async()=>{const proto=ReadableStream.prototype,d=Object.getOwnPropertyDescriptor(proto,'getReader');Object.defineProperty(proto,'getReader',{...d,value(){throw Error('public reader called');}});try{const x=await request('/body/chunked');check(x.responseText==='streamed text','body');}finally{Object.defineProperty(proto,'getReader',d);}});
+await test('abort before body completion',async()=>{const x=new XMLHttpRequest(),events=[];await new Promise((resolve,reject)=>{x.open('GET','/body/slow');x.onload=()=>reject(Error('load after abort'));x.onerror=()=>reject(Error('error instead of abort'));x.onabort=()=>events.push('abort');x.onloadend=()=>{events.push('loadend');resolve();};x.send();setTimeout(()=>x.abort(),10);});check(x.readyState===0&&x.status===0&&events.join(',')==='abort,loadend','abort state and events');});
+await test('request after previous abort',async()=>{const x=await request('/body/length');check(x.responseText==='streamed text','later request');});
+const result=passed===total?'PASS':'FAIL';console.log('RESULTS xhr-streamed-body:'+result+' '+JSON.stringify({passed,total}));document.documentElement.setAttribute('data-xhr-streamed-body',result);
+})().catch(e=>{console.log('RESULTS xhr-streamed-body:FAIL '+String(e.stack||e));document.documentElement.setAttribute('data-xhr-streamed-body','FAIL');});
+</script>

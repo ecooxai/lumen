@@ -15,6 +15,7 @@ typedef struct {
     bool fixed, sticky;         /* sticky: fixed only as a repaint region, inside a sticky box that moves with the page */
     Box *sb; const void *outer;   /* innermost scroller and the state outside it */
     const Box *mv, *mv_out;       /* scroller painted items move with, and the one outside it (for sticky boxes) */
+    bool affine_source;          /* retain source ink that an ancestor transform can bring into view */
     bool cull; uint64_t gen;      /* skip normal-flow subtrees outside the viewport (box_ink extents of visual generation gen) */
 } PB;
 
@@ -23,6 +24,7 @@ typedef VEC(Deferred) DefVec;
 
 static DItem *emit(PB *p, uint8_t op) { DItem it; memset(&it, 0, sizeof it); it.op = op; it.alpha = 1; it.fixed = p->fixed; it.sticky = p->sticky; it.mv = p->mv; vec_push(p->dl->items, it); return &p->dl->items.v[p->dl->items.n - 1]; }
 static bool visible(PB *p, float x, float y, float w, float h) {
+    if (p->affine_source) return true;
     if (x > p->dl->vw || y > p->dl->vh || x + w < 0 || y + h < 0) return false;
     if (p->clip && (x > p->cx + p->cw || y > p->cy + p->ch || x + w < p->cx || y + h < p->cy)) return false;
     return true;
@@ -296,10 +298,14 @@ static void paint_replaced(PB *p, Box *b) {
     if (needclip) emit(p, DO_POP_CLIP);
 }
 
-static bool positioned(const Box *b) { return b->st && b->node && (b->st->position != P_STATIC || (!b->st->z_auto && b->parent && b->parent->st && (b->parent->fmt == FMT_FLEX || b->parent->fmt == FMT_GRID))); }
-static bool makes_layer(const Box *b) { return b->st && b->node && (b->st->opacity < 1 || b->st->has_transform || b->st->isolation || b->st->position != P_STATIC || layout_contents_hidden(b)); }
+/* Text boxes share their parent's complete style for shaping, but they do
+ * not own its positioning/layer phase. Pseudo boxes retain their originating
+ * element node and remain real owners; node-null wrappers stay in flow. */
+static bool paint_element_owner(const Box *b) { return b && b->st && b->node && b->node->type == NODE_ELEMENT; }
+static bool positioned(const Box *b) { return paint_element_owner(b) && (b->st->position != P_STATIC || (!b->st->z_auto && b->parent && b->parent->st && (b->parent->fmt == FMT_FLEX || b->parent->fmt == FMT_GRID))); }
+static bool makes_layer(const Box *b) { return paint_element_owner(b) && (b->st->opacity < 1 || b->st->has_transform || b->st->isolation || b->st->position != P_STATIC || layout_contents_hidden(b)); }
 static bool makes_context(const Box *b) {
-    if (!b->st || !b->node) return false;
+    if (!paint_element_owner(b)) return false;
     const ComputedStyle *s = b->st;
     return layout_contents_hidden(b) || s->opacity < 1 || s->has_transform || s->isolation ||
            s->position == P_FIXED || s->position == P_STICKY ||
@@ -354,7 +360,7 @@ static void box_ink(Box *b, uint64_t gen) {
     b->ink0 = y0; b->ink1 = y1; b->defer_in = defer; b->ink_gen = gen;
 }
 static bool culled(PB *p, Box *c) {
-    if (!p->cull) return false;
+    if (!p->cull || p->affine_source) return false;
     box_ink(c, p->gen);
     if (c->defer_in) return false;
     float y0 = c->ink0 + p->dy - 64, y1 = c->ink1 + p->dy + 64;
@@ -548,7 +554,7 @@ static int def_cmp(const void *a, const void *b) {
 static void paint_deferred(PB *p, Deferred *d) {
     PB saved = *p;
     *p = d->state; p->order = saved.order;
-    if (d->b->fixed) {
+    if (box_fixed_to_viewport(d->b)) {
         p->dx = -0.0f; p->dy = 0; p->clip = false; p->fixed = true; p->sticky = false;
         p->mv = p->mv_out = NULL; p->sb = NULL; p->outer = NULL;
     } else if (d->b->abs && d->b->cb == p->L->root) p->clip = false;
@@ -559,11 +565,116 @@ static void paint_deferred(PB *p, Deferred *d) {
     int order = p->order; *p = saved; p->order = order;
 }
 
+/* Keep ordinary scale text as actual primitives: uniform text uses a resized
+ * face, while nonuniform glyphs carry one real affine source item. This path
+ * is deliberately limited to a complete, simple text/rectangle group. Clip,
+ * opacity, nesting, moving/fixed content and every other paint operation keep
+ * the general group compositor. Preflight and stage before changing items. */
+static bool paint_flat_scale(PB *p, int start, Affine2D matrix) {
+    if (matrix.b || matrix.c || !(matrix.a > 0) || !(matrix.d > 0)) return false;
+    int count = p->dl->items.n - start;
+    bool uniform = matrix.a == matrix.d, text = false;
+    for (int i = start; i < p->dl->items.n; i++) {
+        const DItem *it = &p->dl->items.v[i];
+        if ((it->op != DO_RECT && it->op != DO_TEXT) || it->transform ||
+            it->fixed || it->sticky || it->mv || it->sc) return false;
+        if (it->op == DO_RECT) {
+            if (it->r[0] || it->r[1] || it->r[2] || it->r[3] || it->tile.w || it->tile.h) return false;
+        } else {
+            if (!it->g || it->ng <= 0) return false;
+            text = true;
+            for (int k = 0; k < it->ng; k++) {
+                const DGlyph *g = &it->g[k];
+                AffinePoint point = affine_point(matrix, g->x, g->y);
+                if (!isfinite(point.x) || !isfinite(point.y) || fabs(point.x) > FLT_MAX || fabs(point.y) > FLT_MAX) return false;
+                if (uniform && g->font) {
+                    double size = (double)g->font->size * matrix.a;
+                    /* Larger/tiny faces remain bounded by the inverse-window
+                       compositor instead of creating a huge cached font. */
+                    if (!(size >= .25 && size <= 512)) return false;
+                }
+            }
+        }
+        double source[4] = {it->x, it->y, (double)it->x + it->w, (double)it->y + it->h}, bounds[4];
+        if (!affine_bounds(matrix, source, bounds)) return false;
+        for (int k = 0; k < 4; k++) if (fabs(bounds[k]) > FLT_MAX) return false;
+        if (bounds[2] - bounds[0] > FLT_MAX || bounds[3] - bounds[1] > FLT_MAX) return false;
+    }
+    if (!text) return false; /* Preserve rectangle-only adaptive group paths. */
+    DItem *staged = arena_alloc(&p->dl->arena, (size_t)count * sizeof *staged);
+    memcpy(staged, p->dl->items.v + start, (size_t)count * sizeof *staged);
+    for (int i = 0; i < count; i++) {
+        DItem *it = &staged[i];
+        if (it->op == DO_TEXT && !uniform) {
+            DTransform *source = arena_alloc(&p->dl->arena, sizeof *source);
+            memset(source, 0, sizeof *source); source->matrix = matrix; source->count = 1;
+            source->items = arena_alloc(&p->dl->arena, sizeof *source->items);
+            source->items[0] = *it;
+            it->transform = source;
+            /* Glyphs are the immutable source of this actual draw command.
+               Ink/damage/raster use the same payload before the opcode. */
+            continue;
+        }
+        if (it->op == DO_TEXT) {
+            DGlyph *glyphs = arena_alloc(&p->dl->arena, (size_t)it->ng * sizeof *glyphs);
+            memcpy(glyphs, it->g, (size_t)it->ng * sizeof *glyphs); it->g = glyphs;
+            Font *from = NULL, *to = NULL;
+            for (int k = 0; k < it->ng; k++) {
+                DGlyph *g = &glyphs[k]; AffinePoint point = affine_point(matrix, g->x, g->y);
+                g->x = (float)point.x; g->y = (float)point.y;
+                if (g->font && g->font != from) {
+                    from = g->font; to = font_resized(from, (float)(round((double)from->size * matrix.a * 4) / 4));
+                    if (!to) return false;
+                }
+                if (g->font) g->font = to;
+            }
+            it->precise_text_ink = true;
+        }
+        AffinePoint point = affine_point(matrix, it->x, it->y);
+        it->x = (float)point.x; it->y = (float)point.y;
+        it->w = (float)((double)it->w * matrix.a); it->h = (float)((double)it->h * matrix.d);
+    }
+    memcpy(p->dl->items.v + start, staged, (size_t)count * sizeof *staged);
+    return true;
+}
+
+/* Collapse a complete subtree into one paint group. No bitmap is allocated
+ * here; the rasterizer later inverse-maps only actual destination damage. */
+static void paint_affine_group(PB *p, int start, Affine2D matrix) {
+    int count = p->dl->items.n - start;
+    if (!count) return;
+    Affine2D inverse;
+    if (!affine_inverse(matrix, &inverse)) { p->dl->items.n = start; return; }
+    if (paint_flat_scale(p, start, matrix)) return;
+    bool fixed_child = false; int depth = 0, maximum = 0;
+    for (int i = start; i < p->dl->items.n; i++) {
+        const DItem *it = &p->dl->items.v[i];
+        fixed_child |= it->fixed;
+        if (it->op == DO_PUSH_LAYER) { depth++; maximum = LMAX(maximum, depth); }
+        else if (it->op == DO_POP_LAYER && depth) depth--;
+    }
+    DTransform *group = arena_alloc(&p->dl->arena, sizeof *group);
+    memset(group, 0, sizeof *group); group->matrix = matrix;
+    group->count = count; group->opacity_depth = LMIN(maximum, 16);
+    group->items = arena_alloc(&p->dl->arena, (size_t)count * sizeof *group->items);
+    memcpy(group->items, p->dl->items.v + start, (size_t)count * sizeof *group->items);
+    p->dl->items.n = start;
+    DItem *item = emit(p, DO_TRANSFORM); item->transform = group;
+    /* Keep even currently empty glyph groups: a different actual canvas
+       scale can have ink. dl_prepare_ink fills the cache after construction. */
+    /* A sticky/fixed child can move within the atomic group. Conservatively
+       damage its whole transformed ink instead of pretending it scrolls as a
+       single ordinary rectangle. A real fixed outer group remains fixed. */
+    if (fixed_child && !item->fixed) { item->fixed = true; item->sticky = true; }
+}
+
 static void paint_stacking(PB *p, Box *b, bool context) {
     const ComputedStyle *s = b->st;
     if (s->opacity <= 0.001f) return;
-    float tx = 0, ty = 0;
-    if (s->has_transform) { tx = s->transform[4]; ty = s->transform[5]; if (s->translate_pending[0].pct) tx += s->translate_pending[0].pct * b->w / 100; if (s->translate_pending[1].pct) ty += s->translate_pending[1].pct * b->h / 100; }
+    Affine2D matrix = box_transform_matrix(b);
+    if (!affine_finite(matrix)) return;
+    bool affine = s->has_transform && (matrix.a != 1 || matrix.b != 0 || matrix.c != 0 || matrix.d != 1);
+    float tx = affine ? 0 : affine_float(matrix.e), ty = affine ? 0 : affine_float(matrix.f);
     float sticky_x, sticky_y; box_sticky_offset(b, p->sx, p->sy, &sticky_x, &sticky_y);
     tx += sticky_x; ty += sticky_y;
     bool was_fixed = p->fixed, was_sticky = p->sticky; const Box *was_mv = p->mv;
@@ -572,10 +683,14 @@ static void paint_stacking(PB *p, Box *b, bool context) {
         p->fixed = true; p->sticky = !still; p->mv = p->mv_out;
     }
     p->dx += tx; p->dy += ty;
-    /* axis-aligned scale (e.g. progress bars using scaleX): scale the subtree's items about transform-origin;
-       text only under a uniform scale, as the same face at the scaled size (x.com's scale(1.15) Google
-       button drew its scaled icon over unscaled text) */
-    float ksx = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[0] : 1, ksy = s->has_transform && !s->transform[1] && !s->transform[2] ? s->transform[3] : 1;
+    bool old_affine_source = p->affine_source, old_clip = p->clip;
+    if (affine) {
+        /* Child commands use the already translated document frame. CSS's
+           matrix must be conjugated into that same frame exactly once. */
+        matrix = affine_conjugate_translation(matrix, p->dx, p->dy);
+        p->affine_source = true;
+        p->clip = false; /* inherited clip was emitted by paint_deferred */
+    }
     int i0 = p->dl->items.n;
     bool layer = s->opacity < 0.999f;
     if (layer) { DItem *l = emit(p, DO_PUSH_LAYER); l->alpha = s->opacity; }
@@ -603,31 +718,46 @@ static void paint_stacking(PB *p, Box *b, bool context) {
     for (int i = first_nonnegative; i < defs.n; i++) paint_deferred(p, &defs.v[i]);
     vec_free(defs);
     if (layer) emit(p, DO_POP_LAYER);
-    if (fabsf(ksx - 1) > 1e-4f || fabsf(ksy - 1) > 1e-4f) {
-        float ox = b->x + p->dx + s->transform_origin[0].px + s->transform_origin[0].pct * b->w / 100;
-        float oy = b->y + p->dy + s->transform_origin[1].px + s->transform_origin[1].pct * b->h / 100;
-        for (int i = i0; i < p->dl->items.n; i++) {
-            DItem *it = &p->dl->items.v[i];
-            if (it->g) {
-                if (fabsf(ksx - ksy) > 1e-4f || ksx <= 0) continue;
-                Font *from = NULL, *to = NULL;   /* sizes in quarter pixels: a scale animation reuses a few fonts */
-                for (int k = 0; k < it->ng; k++) {
-                    DGlyph *g = &it->g[k];
-                    g->x = ox + (g->x - ox) * ksx; g->y = oy + (g->y - oy) * ksy;
-                    if (g->font && g->font != from) { from = g->font; to = font_resized(from, LMAX(0.25f, roundf(from->size * ksx * 4) / 4)); }
-                    if (g->font) g->font = to;
-                }
-            }
-            it->x = ox + (it->x - ox) * ksx; it->y = oy + (it->y - oy) * ksy; it->w *= ksx; it->h *= ksy;
-            if (it->w < 0) { it->x += it->w; it->w = -it->w; }
-            if (it->h < 0) { it->y += it->h; it->h = -it->h; }
-        }
-    }
+    if (affine) paint_affine_group(p, i0, matrix);
+    p->affine_source = old_affine_source; p->clip = old_clip;
     p->dx -= tx; p->dy -= ty;
     p->fixed = was_fixed; p->sticky = was_sticky; p->mv = was_mv;
 }
 
-void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->fixed.count = 0; arena_reset(&dl->arena); }
+static void prepare_affine_ink(DItem *item, float scale) {
+    DTransform *group = item->transform;
+    if (!group) {
+        if (item->op == DO_TEXT && item->precise_text_ink) {
+            double ink[4];
+            if (paint_item_bounds(item, scale, ink)) {
+                item->x = affine_float(ink[0]); item->y = affine_float(ink[1]);
+                item->w = affine_float(ink[2] - ink[0]); item->h = affine_float(ink[3] - ink[1]);
+            } else item->x = item->y = item->w = item->h = 0;
+        }
+        return;
+    }
+    for (int i = 0; i < group->count; i++) prepare_affine_ink(&group->items[i], scale);
+    double source[4], bounds[4];
+    group->ink_valid = paint_transform_ink(group, scale, source, bounds);
+    group->ink_scale = scale;
+    memcpy(group->source, source, sizeof source); memcpy(group->bounds, bounds, sizeof bounds);
+    item->x = affine_float(bounds[0]); item->y = affine_float(bounds[1]);
+    item->w = affine_float(bounds[2] - bounds[0]); item->h = affine_float(bounds[3] - bounds[1]);
+}
+
+void dl_prepare_ink(DisplayList *dl, float scale) {
+    if (!(scale > 0) || !isfinite(scale)) scale = 1;
+    for (int i = 0; i < dl->items.n; i++) prepare_affine_ink(&dl->items.v[i], scale);
+    dl->fixed.count = 0;
+    for (int i = dl->fixed_first; i < dl->items.n; i++) {
+        const DItem *it = &dl->items.v[i]; double ink[4];
+        if (!it->fixed || !paint_item_bounds(it, scale, ink)) continue;
+        float bounds[4]; for (int k = 0; k < 4; k++) bounds[k] = affine_float(ink[k]);
+        paint_fixed_add(&dl->fixed, bounds);
+    }
+}
+
+void dl_clear(DisplayList *dl) { dl->items.n = 0; dl->fixed.count = 0; dl->fixed_first = 0; arena_reset(&dl->arena); }
 
 void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float vw, float vh) {
     dl_clear(dl); dl->vw = vw; dl->vh = vh;
@@ -644,12 +774,6 @@ void dl_build(DisplayList *dl, Layout *L, float scroll_x, float scroll_y, float 
     /* the canvas fills the viewport wherever the page is scrolled: fixed for scroll signatures, not a fixed region */
     if (bg) { DItem *it = emit(&p, DO_RECT); it->x = 0; it->y = 0; it->w = vw; it->h = vh; it->color = bg; it->fixed = true; }
     for (Box *c = L->root->first; c; c = c->next) paint_stacking(&p, c, true);
-    /* Collect final coordinates after ancestor transforms have been applied. */
-    for (int i = bg ? 1 : 0; i < dl->items.n; i++) {
-        const DItem *it = &dl->items.v[i];
-        if (!it->fixed || it->w <= 0 || it->h <= 0 || it->op == DO_PUSH_CLIP) continue;
-        float pad = it->op == DO_SHADOW ? LMAX(0, it->spread) + LMAX(0.5f, it->blur) : 0;
-        float bounds[4] = {it->x - pad, it->y - pad, it->x + it->w + pad, it->y + it->h + pad};
-        paint_fixed_add(&dl->fixed, bounds);
-    }
+    dl->fixed_first = bg ? 1 : 0;
+    dl_prepare_ink(dl, L->dpr);
 }

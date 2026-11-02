@@ -25,6 +25,7 @@ void css_set_anim_style(Node *n, const char *css) {
     if (n->doc) doc_mark_style_dirty(n->doc, n);
 }
 static const char *display_canon(const char *val);
+static const char *const display_keywords[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root", NULL };
 ComputedStyle *style_new_default(void) {
     ComputedStyle *s = xcalloc(1, sizeof *s); g_styles_live++;
     s->refs = 1; s->anim_iter = 1;
@@ -182,6 +183,11 @@ typedef struct {
     const ComputedStyle *root_font_basis;
     bool resolve_font_metrics;
     bool *used_root_font_units;
+    /* font-size uses parent font metrics, but viewport logical axes belong
+       to the element whose computed value is being resolved. */
+    const ComputedStyle *flow_basis;
+    const ComputedStyle *line_height_basis;
+    bool line_height_parent, root_line_height_initial;
 } LCtx;
 static float ch_advance(LCtx *c) {
     if (c->used_font_units) *c->used_font_units = true;
@@ -199,11 +205,43 @@ static float g_cq[2];
 /* set when a length used the viewport height, so a height-only viewport change (the on-screen
    keyboard) restyles just those elements */
 static bool g_vh_used;
+/* The current host supplies one viewport rectangle. Its existing small/large/
+   dynamic dimensions coincide; preserve that basis for every unit variant. */
+static int viewport_unit_axis(const char *unit) {
+    if ((lc(unit[0]) == 's' || lc(unit[0]) == 'l' || lc(unit[0]) == 'd') && lc(unit[1]) == 'v') unit++;
+    if (str_ieq(unit, "vw")) return 1;
+    if (str_ieq(unit, "vh")) return 2;
+    if (str_ieq(unit, "vi")) return 3;
+    if (str_ieq(unit, "vb")) return 4;
+    if (str_ieq(unit, "vmin")) return 5;
+    if (str_ieq(unit, "vmax")) return 6;
+    return 0;
+}
+static float viewport_unit_basis(const LCtx *c, int axis) {
+    float width = c->mc ? c->mc->vw : 1024, height = c->mc ? c->mc->vh : 768;
+    if (axis == 3 || axis == 4) {
+        const ComputedStyle *flow = c->flow_basis ? c->flow_basis : c->font_basis;
+        bool vertical = flow && flow->writing_mode;
+        if (flow && !vertical) {
+            const char *mode = custom_get(flow->gen_i, "writing-mode");
+            vertical = mode && (str_ieq(mode, "sideways-rl") || str_ieq(mode, "sideways-lr"));
+        }
+        /* Context-free uses (including media queries) use horizontal-tb. */
+        axis = (axis == 3) != vertical ? 1 : 2;
+    }
+    if (axis != 1) g_vh_used = true;
+    return axis == 1 ? width : axis == 2 ? height : axis == 5 ? LMIN(width, height) : LMAX(width, height);
+}
 static float cq_dim(const LCtx *c, int h) { if (g_cq[h] > 0) return g_cq[h]; if (h) { g_vh_used = true; return c->mc ? c->mc->vh : 768; } return c->mc ? c->mc->vw : 1024; }
 static bool calc_expr(const char **pp, Length *out, LCtx *c);
 static float calculation_font_metric(LCtx *c, bool root, bool line_height) {
     const ComputedStyle *s = root ? c->root_font_basis : c->font_basis;
     float size = root ? c->rem : c->em;
+    if (line_height && !root && c->line_height_parent) {
+        s = c->line_height_basis; size = s ? s->font_size : 16;
+    } else if (line_height && root && c->root_line_height_initial) {
+        s = NULL; size = 16;
+    }
     if (c->used_font_units) *c->used_font_units = true;
     if (root && c->used_root_font_units) *c->used_root_font_units = true;
     Font *font = c->actual_font ? font_get(s ? s->font_family : "sans-serif",
@@ -434,7 +472,7 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     p = e;
     Length l = { 0, 0, LK_LEN };
     char u[8] = {0}; int k = 0; while (isalpha((unsigned char)*p) && k < 7) u[k++] = (char)lc(*p++);
-    int unit = MATH_LENGTH;
+    int unit = MATH_LENGTH, viewport_axis;
     if (*p == '%') { l.pct = v; l.pctu = true; if (c->scalar_percentage_type) unit = MATH_PERCENT; p++; }
     else if (!k || !strcmp(u, "px")) { l.px = v; if (!k) unit = MATH_NUMBER; }
     else if (!strcmp(u, "em")) l.px = v * c->em;
@@ -446,6 +484,7 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     }
     else if (!strcmp(u, "ch")) l.px = v * ch_advance(c);
     else if (!strcmp(u, "lh")) l.px = v * (c->resolve_font_metrics ? calculation_font_metric(c, false, true) : c->em * 1.2f);
+    else if (!strcmp(u, "rlh")) l.px = v * (c->resolve_font_metrics ? calculation_font_metric(c, true, true) : c->rem * 1.2f);
     else if (!strcmp(u, "cap") || !strcmp(u, "ic")) l.px = v * c->em * .7f;
     else if (!strcmp(u, "pt")) l.px = v * 4.f / 3.f;
     else if (!strcmp(u, "pc")) l.px = v * 16;
@@ -453,14 +492,11 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     else if (!strcmp(u, "cm")) l.px = v * 96 / 2.54f;
     else if (!strcmp(u, "mm")) l.px = v * 96 / 25.4f;
     else if (!strcmp(u, "q")) l.px = v * 96 / 101.6f;
-    else if (!strcmp(u, "vw") || !strcmp(u, "svw") || !strcmp(u, "lvw") || !strcmp(u, "dvw")) l.px = v * (c->mc ? c->mc->vw : 1024) / 100;
-    else if (!strcmp(u, "vh") || !strcmp(u, "svh") || !strcmp(u, "lvh") || !strcmp(u, "dvh")) { l.px = v * (c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
+    else if ((viewport_axis = viewport_unit_axis(u))) l.px = v * viewport_unit_basis(c, viewport_axis) / 100;
     else if (!strcmp(u, "cqw") || !strcmp(u, "cqi")) l.px = v * cq_dim(c, 0) / 100;
     else if (!strcmp(u, "cqh") || !strcmp(u, "cqb")) l.px = v * cq_dim(c, 1) / 100;
     else if (!strcmp(u, "cqmin")) l.px = v * LMIN(cq_dim(c, 0), cq_dim(c, 1)) / 100;
     else if (!strcmp(u, "cqmax")) l.px = v * LMAX(cq_dim(c, 0), cq_dim(c, 1)) / 100;
-    else if (!strcmp(u, "vmin")) { l.px = v * LMIN(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
-    else if (!strcmp(u, "vmax")) { l.px = v * LMAX(c->mc ? c->mc->vw : 1024, c->mc ? c->mc->vh : 768) / 100; g_vh_used = true; }
     else if (!strcmp(u, "fr")) { l.px = v; unit = MATH_FLEX; }
     else if (!strcmp(u, "deg")) { l.px = v; unit = MATH_ANGLE; }
     else if (!strcmp(u, "s")) { l.px = v; unit = MATH_TIME; }
@@ -473,6 +509,7 @@ static bool parse_dim(const char **pp, Length *out, LCtx *c) {
     *out = l; *pp = p; return true;
 }
 static bool calc_scale(Length *value, float scale) {
+    if (len_calc_size(*value)) return false; /* sizing values are not ordinary lengths */
     /* Homogeneity is exact for a finite nonzero multiplier. Zero and
        nonfinite multipliers require a full expression tree; never turn
        a finite rounded result times zero into round(0,0). */
@@ -492,6 +529,7 @@ static bool calc_scale(Length *value, float scale) {
     return true;
 }
 static bool calc_add_linear(Length *value, float px, float pct, bool pctu) {
+    if (len_calc_size(*value)) return false;
     if ((value->math_pct_mask & LEN_MATH_EXACT_PROGRESS) && (!isfinite(px) || !isfinite(pct))) return false;
     if (len_math_stepped(value->mm)) {
         value->px3 += px; value->pct3 += pct;
@@ -564,7 +602,8 @@ static bool calc_expr(const char **pp, Length *out, LCtx *c) {
     return true;
 }
 static bool css_parse_length_context(const char *s, Length *out, float em, float rem, const MediaCtx *mc,
-                                     const ComputedStyle *basis, bool actual, bool *used, MathType *type_out) {
+                                     const ComputedStyle *basis, const ComputedStyle *flow_basis,
+                                     bool actual, bool *used, MathType *type_out) {
     if (type_out) *type_out = math_type_unit(MATH_LENGTH);
     while (is_ws((unsigned char)*s)) s++;
     if (str_istarts(s, "auto")) { *out = L_auto(); return true; }
@@ -572,7 +611,7 @@ static bool css_parse_length_context(const char *s, Length *out, float em, float
     if (str_istarts(s, "min-content")) { *out = (Length){0, 0, LK_MIN_CONTENT}; return true; }
     if (str_istarts(s, "max-content")) { *out = (Length){0, 0, LK_MAX_CONTENT}; return true; }
     if (str_istarts(s, "fit-content") || str_istarts(s, "-webkit-fit-content") || str_istarts(s, "-moz-fit-content")) { *out = (Length){0, 0, LK_FIT_CONTENT}; return true; }
-    LCtx c = { em, rem, mc, basis, actual, used };
+    LCtx c = { em, rem, mc, basis, actual, used }; c.flow_basis = flow_basis;
     const char *p = s; Length parsed;
     if (!parse_dim(&p, &parsed, &c)) return false;
     /* Length consumers must not accept another dimension merely because its
@@ -587,7 +626,7 @@ static bool css_parse_length_context(const char *s, Length *out, float em, float
 }
 
 bool css_parse_length(const char *s, Length *out, float em, float rem, const MediaCtx *mc) {
-    return css_parse_length_context(s, out, em, rem, mc, NULL, false, NULL, NULL);
+    return css_parse_length_context(s, out, em, rem, mc, NULL, NULL, false, NULL, NULL);
 }
 
 /* Typed scalar consumers share the same evaluator as native length math. */
@@ -606,7 +645,12 @@ static bool css_scalar_math(const char *text, int unit, float em, float rem, flo
 }
 
 /* ---------------- var() substitution ---------------- */
-typedef struct RegProp { char *name, *init; struct RegProp *next; } RegProp;
+#include "numeric-count.h"
+typedef struct RegProp {
+    char *name, *init, *syntax;
+    bool inherits;
+    struct RegProp *next;
+} RegProp;
 static RegProp *g_regprops[256];
 static uint64_t g_regprop_version; /* a sheet's @property can change any unset var() */
 static unsigned regprop_hash(const char *s) { unsigned h = 5381; while (*s) h = h * 33 + (unsigned char)*s++; return h & 255; }
@@ -647,20 +691,54 @@ void css_position_try_free(ComputedStyle *t) {
     for (int i = 0; i < 4; i++) free(t->anchor_ins[i]);
     free(t->anchor_sz[0]); free(t->anchor_sz[1]); free(t->pos_area); free(t->pos_anchor); free(t);
 }
-void css_register_property(const char *name, const char *initial) {
-    if (!name || strncmp(name, "--", 2) || !initial) return;
-    RegProp **b = &g_regprops[regprop_hash(name)];
-    for (RegProp *r = *b; r; r = r->next) if (!strcmp(r->name, name)) {
-        if (strcmp(r->init, initial)) { free(r->init); r->init = xstrdup(initial); g_regprop_version++; }
-        return;
-    }
-    g_regprop_version++;
-    RegProp *r = xcalloc(1, sizeof *r); r->name = xstrdup(name); r->init = xstrdup(initial); r->next = *b; *b = r;
-}
-const char *css_property_initial(const char *name) {
-    for (RegProp *r = g_regprops[regprop_hash(name)]; r; r = r->next) if (!strcmp(r->name, name)) return r->init;
+static const RegProp *regprop_find(const char *name) {
+    if (!name) return NULL;
+    for (RegProp *r = g_regprops[regprop_hash(name)]; r; r = r->next)
+        if (!strcmp(r->name, name)) return r;
     return NULL;
 }
+static bool regprop_typed(const RegProp *registration) {
+    static const char *const types[] = {
+        "<number>", "<integer>", "<length>", "<percentage>", "<angle>",
+        "<time>", "<resolution>", "<color>", "<string>"
+    };
+    for (size_t i = 0; i < ARRLEN(types); i++)
+        if (!strcmp(registration->syntax, types[i])) return true;
+    return false;
+}
+void css_register_property_full(const char *name, const char *initial,
+                                const char *syntax, bool inherits) {
+    if (!name || strncmp(name, "--", 2) || !name[2] || !syntax) return;
+    /* A missing universal initial is guaranteed-invalid; an explicitly
+     * empty universal initial is the same valid-empty sentinel as --x: ;. */
+    const char *value = initial ? (*initial ? initial : " ") : "";
+    RegProp **bucket = &g_regprops[regprop_hash(name)];
+    for (RegProp *r = *bucket; r; r = r->next) if (!strcmp(r->name, name)) {
+        if (strcmp(r->init, value) || strcmp(r->syntax, syntax) || r->inherits != inherits) {
+            free(r->init); free(r->syntax); r->init = xstrdup(value);
+            r->syntax = xstrdup(syntax); r->inherits = inherits; g_regprop_version++;
+        }
+        return;
+    }
+    RegProp *r = xcalloc(1, sizeof *r);
+    r->name = xstrdup(name); r->init = xstrdup(value); r->syntax = xstrdup(syntax);
+    r->inherits = inherits; r->next = *bucket; *bucket = r; g_regprop_version++;
+}
+/* Keep the established native two-argument entry point for legacy callers.
+ * Full metadata is supplied by the actual @property and JS registrations. */
+void css_register_property(const char *name, const char *initial) {
+    if (initial) css_register_property_full(name, initial, "*", true);
+}
+const char *css_property_initial(const char *name) {
+    const RegProp *r = regprop_find(name); return r && *r->init ? r->init : NULL;
+}
+static void registered_defaults(ComputedStyle *style) {
+    for (size_t i = 0; i < ARRLEN(g_regprops); i++)
+        for (RegProp *r = g_regprops[i]; r; r = r->next)
+            if (!r->inherits || !custom_get(style->custom, r->name))
+                gen_put(&style->custom, r->name, xstrdup(r->init));
+}
+
 static uint64_t custom_bit(const char *name) { uint32_t h = hash_str(name, strlen(name)); return UINT64_C(1) << ((h ^ (h >> 16)) & 63); }
 /* 256 bits keep false var() dependency hits rare for Tailwind elements reading ~20 names. */
 static void cm_add(CustomMask *m, uint32_t hash) { unsigned b = (hash ^ (hash >> 16)) & 255; m->w[b >> 6] |= UINT64_C(1) << (b & 63); }
@@ -673,18 +751,44 @@ static void cm_or(CustomMask *a, const CustomMask *b) { for (int i = 0; i < 4; i
 /* Immutable custom-property resolution. Only selected fallbacks add edges. */
 #define VAR_EXPANSION_LIMIT (1u << 16)
 #define VAR_RECURSION_LIMIT 256
+enum {
+    QB_SIZE, QB_FAMILY, QB_WEIGHT, QB_STYLE, QB_LINE, QB_FLOW, QB_DIRECTION,
+    QB_ORIENTATION, QB_COLOR, QB_STRETCH, QB_VARIANT_CAPS, QB_COUNT
+};
+enum {
+    QD_SIZE = 1u << QB_SIZE, QD_FAMILY = 1u << QB_FAMILY,
+    QD_WEIGHT = 1u << QB_WEIGHT, QD_STYLE = 1u << QB_STYLE,
+    QD_LINE = 1u << QB_LINE, QD_FLOW = 1u << QB_FLOW,
+    QD_DIRECTION = 1u << QB_DIRECTION, QD_ORIENTATION = 1u << QB_ORIENTATION,
+    QD_COLOR = 1u << QB_COLOR, QD_ROOT_SIZE = 1u << 16,
+    QD_VIEWPORT = 1u << 17, QD_ROOT_METRICS = 1u << 18, QD_ROOT_LINE = 1u << 19,
+    QD_VIEWPORT_QUERY = 1u << 20
+};
+#define QD_ROOT_FONT (QD_ROOT_SIZE | QD_ROOT_METRICS | QD_ROOT_LINE)
+#define QD_FONT_METRICS (QD_SIZE | QD_FAMILY | QD_WEIGHT | QD_STYLE | QD_ORIENTATION | QD_FLOW)
+static const char *const query_basis_names[QB_COUNT] = {
+    "font-size", "font-family", "font-weight", "font-style", "line-height",
+    "writing-mode", "direction", "text-orientation", "color", "font-stretch", "font-variant-caps"
+};
+
 typedef struct VarEntry {
     const char *name, *raw;
     char *value;
-    unsigned state;
-    bool cycle;
+    unsigned state, unit_dependencies;
+    bool cycle, property;
 } VarEntry;
 typedef struct VarResolver {
     ComputedStyle *style;
     const ComputedStyle *parent;
     const CustomProps *origin_base;
+    StyleEngine *engine; /* borrowed for this synchronous substitution */
+    Node *element;
     HMap entries;
-    VEC(VarEntry *) stack;
+    VEC(VarEntry *) stack, values;
+    const ComputedStyle *projection_style;
+    bool (*ensure_basis)(struct VarResolver *, unsigned);
+    void *basis_context;
+    bool is_pseudo;
 } VarResolver;
 typedef struct VarOutput {
     SB text;
@@ -731,60 +835,817 @@ static bool var_append(VarOutput *out, const char *source, size_t length) {
     return true;
 }
 static char *var_substitute(VarResolver *, VarEntry *, const char *, unsigned);
+/* Persistent, per-style resolution. Raw entries stay immutable until every
+ * property consumer has completed, so cached typed values retain the unit
+ * dependencies which participated in their computation. */
+static _Thread_local VarResolver *active_var_resolver;
+static char *registered_computed_value(VarResolver *, VarEntry *, const RegProp *, const char *);
+static char *var_parser_text(const char *);
+static const char *var_wide_keyword(const char *);
+static bool query_dependencies(VarResolver *, VarEntry *, unsigned);
+static unsigned query_unit_dependencies(const char *);
+static void var_mark_cycle(VarResolver *, VarEntry *);
+
+static VarEntry *var_entry_add(VarResolver *r, const char *name, const char *raw) {
+    VarEntry *entry = hm_get(&r->entries, name);
+    if (entry) return entry;
+    entry = xcalloc(1, sizeof *entry);
+    entry->name = xstrdup(name); entry->raw = xstrdup(raw ? raw : "");
+    hm_put(&r->entries, name, entry); vec_push(r->values, entry);
+    return entry;
+}
+static const char *registered_fallback(VarResolver *r, const RegProp *registration,
+                                      bool inherit) {
+    if (inherit && r->parent) {
+        cm_add_name(&r->style->custom_dependencies, registration->name);
+        const char *value = custom_get(r->parent->custom, registration->name);
+        if (value) return *value ? value : NULL;
+    }
+    return registration->init && *registration->init ? registration->init : NULL;
+}
 static const char *var_resolve_entry(VarResolver *r, VarEntry *entry, unsigned depth) {
     if (entry->state == 2) return entry->value;
-    if (entry->state == 1) {
-        bool cycle = false;
-        for (int i = 0; i < r->stack.n; i++) {
-            if (r->stack.v[i] == entry) cycle = true;
-            if (cycle) r->stack.v[i]->cycle = true;
-        }
-        return NULL;
-    }
+    if (entry->state == 1) { var_mark_cycle(r, entry); return NULL; }
     if (depth > VAR_RECURSION_LIMIT) { entry->state = 2; return NULL; }
     entry->state = 1; vec_push(r->stack, entry);
-    char *value = var_substitute(r, entry, entry->raw, depth + 1);
-    r->stack.n--;
-    if (entry->cycle) { free(value); value = NULL; }
-    if (value) {
-        CLexer l; clex_init(&l, value, strlen(value)); CTok keyword, after;
-        do { keyword = clex_next(&l); if (keyword.type == CT_WS) free(keyword.str); } while (keyword.type == CT_WS);
-        do { after = clex_next(&l); if (after.type == CT_WS) free(after.str); } while (after.type == CT_WS);
-        if (keyword.type == CT_IDENT && keyword.str && after.type == CT_EOF) {
-            if (str_ieq(keyword.str, "initial")) { free(value); value = NULL; }
-            else if (str_ieq(keyword.str, "inherit") || str_ieq(keyword.str, "unset") || str_ieq(keyword.str, "revert")) {
+    char *value = *entry->raw ? var_substitute(r, entry, entry->raw, depth + 1) : NULL;
+    const RegProp *registration = regprop_find(entry->name);
+    const char *keyword = value ? var_wide_keyword(value) : NULL;
+    if (keyword) {
+        const char *replacement = NULL;
+        if (!strcmp(keyword, "initial")) replacement = registration ? registration->init : NULL;
+        else if (!strcmp(keyword, "inherit") || !strcmp(keyword, "unset")) {
+            bool inherit = !strcmp(keyword, "inherit") || !registration || registration->inherits;
+            if (registration) replacement = registered_fallback(r, registration, inherit);
+            else {
                 cm_add_name(&r->style->custom_dependencies, entry->name);
-                const char *parent = str_ieq(keyword.str, "revert") ? custom_get(r->origin_base, entry->name) :
-                    r->parent ? custom_get(r->parent->custom, entry->name) : NULL;
-                free(value); value = parent && *parent ? xstrdup(parent) : NULL;
+                replacement = r->parent ? custom_get(r->parent->custom, entry->name) : NULL;
             }
+        } else if (!strcmp(keyword, "revert")) {
+            cm_add_name(&r->style->custom_dependencies, entry->name);
+            replacement = custom_get(r->origin_base, entry->name);
+            if (!replacement && registration) replacement = registered_fallback(r, registration, registration->inherits);
         }
-        free(keyword.str); free(after.str);
+        free(value); value = replacement && *replacement ? xstrdup(replacement) : NULL;
     }
+    if (value && registration && regprop_typed(registration)) {
+        char *typed = registered_computed_value(r, entry, registration, value);
+        free(value); value = typed;
+    }
+    if (entry->cycle) { free(value); value = NULL; }
+    if (!value && registration) {
+        const char *fallback = registered_fallback(r, registration, registration->inherits);
+        /* A registered property's invalid computed value uses its own unset
+         * behavior. This fallback is independent registration/parent data;
+         * it must not retry the offending specified expression. */
+        if (fallback) {
+            bool inherited = registration->inherits && r->parent && custom_get(r->parent->custom, registration->name);
+            value = inherited || !regprop_typed(registration) ? xstrdup(fallback) :
+                registered_computed_value(r, NULL, registration, fallback);
+        }
+    }
+    r->stack.n--;
     if (value && !*value) { free(value); value = xstrdup(" "); }
-    entry->value = value; entry->state = 2; return value;
+    entry->value = value; entry->state = 2;
+    return value;
 }
 static const char *var_lookup(VarResolver *r, const char *name, unsigned depth) {
     cm_add_name(&r->style->custom_dependencies, name);
+    VarEntry *consumer = r->stack.n ? r->stack.v[r->stack.n - 1] : NULL;
     VarEntry *entry = hm_get(&r->entries, name);
-    if (entry) return var_resolve_entry(r, entry, depth);
-    const char *value = custom_get(r->style->custom, name);
-    if (!value) value = css_property_initial(name);
+    const RegProp *registration = regprop_find(name);
+    const char *value = entry ? NULL : custom_get(r->style->custom, name);
+    if (!entry && !value && registration)
+        entry = var_entry_add(r, name, registered_fallback(r, registration, registration->inherits));
+    if (entry) {
+        value = var_resolve_entry(r, entry, depth);
+        if (entry->unit_dependencies && !query_dependencies(r, consumer, entry->unit_dependencies)) return NULL;
+    }
     return value && *value ? value : NULL;
 }
+static void var_resolver_begin(VarResolver *r, ComputedStyle *style,
+        const ComputedStyle *parent, const CustomProps *origin_base, StyleEngine *engine, Node *element) {
+    *r = (VarResolver){ .style = style, .parent = parent, .origin_base = origin_base,
+                       .engine = engine, .element = element };
+    if (!style->custom || (parent && style->custom == parent->custom)) return;
+    hm_foreach(&style->custom->map, item) {
+        const char *raw = item->val;
+        const RegProp *registration = regprop_find(item->key);
+        if (css_value_has_var(raw) || css_value_has_if(raw) ||
+            (registration && regprop_typed(registration))) var_entry_add(r, item->key, raw);
+    }
+}
+static void var_resolver_finish(VarResolver *r) {
+    /* Resolving one entry can discover a registration default; the vector
+     * intentionally grows until all actual entries have reached a result. */
+    for (int i = 0; i < r->values.n; i++) var_resolve_entry(r, r->values.v[i], 0);
+    for (int i = 0; i < r->values.n; i++) {
+        VarEntry *entry = r->values.v[i];
+        gen_put(&r->style->custom, entry->name, entry->value ? xstrdup(entry->value) : xstrdup(""));
+    }
+}
+static void var_resolver_free(VarResolver *r) {
+    for (int i = 0; i < r->values.n; i++) {
+        VarEntry *entry = r->values.v[i];
+        free((char *)entry->name); free((char *)entry->raw); free(entry->value); free(entry);
+    }
+    hm_free(&r->entries, NULL); vec_free(r->values); vec_free(r->stack);
+}
+static char *subst_vars(const char *value, ComputedStyle *style, const ComputedStyle *parent,
+                        StyleEngine *engine, Node *element, int depth) {
+    VarResolver *shared = active_var_resolver;
+    if (shared && (shared->style == style || shared->projection_style == style)) {
+        VarEntry *owner = shared->stack.n ? shared->stack.v[shared->stack.n - 1] : NULL;
+        char *result = var_substitute(shared, owner, value, (unsigned)depth);
+        if (owner && owner->cycle) { free(result); return NULL; }
+        return result;
+    }
+    VarResolver local;
+    var_resolver_begin(&local, style, parent, NULL, engine, element);
+    char *result = var_substitute(&local, NULL, value, (unsigned)depth);
+    var_resolver_free(&local);
+    return result;
+}
+
+/* Native conditional queries share guarded custom-property resolution.
+ * Token parsing is temporary; typed values retain actual font/viewport edges. */
+typedef enum { IF_FALSE, IF_TRUE, IF_UNKNOWN, IF_INVALID } IfTruth;
+typedef struct { CTok token; int close; } IfToken;
+typedef VEC(IfToken) IfTokens;
+typedef struct {
+    const char *source;
+    size_t length;
+    IfTokens tokens;
+} IfInput;
+typedef struct { int condition_begin, condition_end, value_begin, value_end; size_t value_stop; } IfBranch;
+typedef VEC(IfBranch) IfBranches;
+
+static int if_closing(int type) {
+    if (type == CT_FUNC || type == CT_LPAREN) return CT_RPAREN;
+    if (type == CT_LBRACK) return CT_RBRACK;
+    if (type == CT_LBRACE) return CT_RBRACE;
+    return 0;
+}
+static void if_input_free(IfInput *in) {
+    for (int i = 0; i < in->tokens.n; i++) free(in->tokens.v[i].token.str);
+    vec_free(in->tokens);
+}
+static bool if_input_init(IfInput *in, const char *source, size_t length) {
+    *in = (IfInput){ .source = source, .length = length };
+    CLexer lexer; clex_init(&lexer, source, length);
+    int opens[VAR_RECURSION_LIMIT], depth = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_EOF) { free(token.str); break; }
+        IfToken item = { .token = token, .close = -1 };
+        int index = in->tokens.n; vec_push(in->tokens, item);
+        if (if_closing(type)) {
+            if (depth == VAR_RECURSION_LIMIT) return false;
+            opens[depth++] = index;
+        } else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
+            if (!depth) return false;
+            int open = opens[--depth];
+            if (if_closing(in->tokens.v[open].token.type) != type) return false;
+            in->tokens.v[open].close = index;
+        } else if (type == CT_BAD) return false;
+    }
+    /* CSS Syntax implicitly closes otherwise valid blocks at EOF. */
+    while (depth) in->tokens.v[opens[--depth]].close = in->tokens.n;
+    return true;
+}
+static int if_skip_ws(const IfInput *in, int at, int end) {
+    while (at < end && in->tokens.v[at].token.type == CT_WS) at++;
+    return at;
+}
+static int if_trim_end(const IfInput *in, int begin, int end) {
+    while (end > begin && in->tokens.v[end - 1].token.type == CT_WS) end--;
+    return end;
+}
+static size_t if_offset(const IfInput *in, int at) {
+    return at < in->tokens.n ? (size_t)(in->tokens.v[at].token.start - in->source) : in->length;
+}
+static int if_after_component(const IfInput *in, int at) {
+    int close = in->tokens.v[at].close;
+    return close >= 0 ? LMIN(close + 1, in->tokens.n) : at + 1;
+}
+static bool if_keyword(const IfInput *in, int at, const char *word) {
+    const CTok *token = &in->tokens.v[at].token;
+    return token->type == CT_IDENT && token->str && str_ieq(token->str, word);
+}
+static char *if_declaration_value(const IfInput *in, int begin, int end) {
+    /* Trim declaration-boundary whitespace tokens before substitution.
+     * Do not trim the substituted result or whitespace within escaped tokens. */
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return xstrdup("");
+    const CTok *last = &in->tokens.v[end - 1].token;
+    return xstrndup(in->source + if_offset(in, begin),
+        (size_t)(last->start - in->source) + last->len - if_offset(in, begin));
+}
+static bool if_unregistered_equal(const char *left, const char *right) {
+    if (!left || !right) return left == right;
+    /* A single space is the existing map's valid-empty sentinel. */
+    if (!strcmp(left, " ")) left = "";
+    if (!strcmp(right, " ")) right = "";
+    return !strcmp(left, right);
+}
+static unsigned query_unit_dependencies_mode(const char *text, bool parent_font, bool parent_line, bool root) {
+    unsigned dependencies = 0;
+    CLexer lexer; clex_init(&lexer, text, strlen(text));
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_DIM) {
+            const char *u = token.unit;
+            /* Declaration consumers can use parent/initial metrics. Skip
+             * only those tokens, preserving own metrics from mixed units. */
+            bool parent_unit = (parent_font && (str_ieq(u, "em") || str_ieq(u, "ex") ||
+                str_ieq(u, "ch") || str_ieq(u, "cap") || str_ieq(u, "ic"))) ||
+                ((parent_font || parent_line) && str_ieq(u, "lh")) ||
+                (root && parent_font && (str_ieq(u, "rem") || str_ieq(u, "rex") ||
+                 str_ieq(u, "rch") || str_ieq(u, "rcap") || str_ieq(u, "ric"))) ||
+                (root && (parent_font || parent_line) && str_ieq(u, "rlh"));
+            if (parent_unit) { free(token.str); continue; }
+            if (str_ieq(u, "em")) dependencies |= QD_SIZE;
+            else if (str_ieq(u, "lh")) dependencies |= QD_LINE;
+            else if (str_ieq(u, "ex") || str_ieq(u, "ch") ||
+                     str_ieq(u, "cap") || str_ieq(u, "ic")) dependencies |= QD_FONT_METRICS;
+            else if (str_ieq(u, "rem")) dependencies |= QD_ROOT_SIZE;
+            else if (str_ieq(u, "rlh")) dependencies |= QD_ROOT_LINE;
+            else if (str_ieq(u, "rex") || str_ieq(u, "rch") ||
+                     str_ieq(u, "rcap") || str_ieq(u, "ric")) dependencies |= QD_ROOT_METRICS;
+            int axis = viewport_unit_axis(u);
+            if (axis) dependencies |= QD_VIEWPORT | ((axis == 3 || axis == 4) ? QD_FLOW : 0);
+        } else if (type == CT_IDENT && token.str && str_ieq(token.str, "currentcolor")) {
+            dependencies |= QD_COLOR;
+        }
+        free(token.str); if (type == CT_EOF) break;
+    }
+    return dependencies;
+}
+static unsigned query_unit_dependencies(const char *text) {
+    /* Style-query and registered-value reads keep the established conservative
+     * viewport invalidation, including when a typed result is replayed from
+     * the per-style cache. Ordinary declaration scans use the mode helper
+     * directly and let actual length evaluation record the physical axis. */
+    unsigned dependencies = query_unit_dependencies_mode(text, false, false, false);
+    if (dependencies & QD_VIEWPORT) dependencies |= QD_VIEWPORT_QUERY;
+    return dependencies;
+}
+static bool query_root_element(const VarResolver *r) {
+    return !r->is_pseudo && r->element && r->element->doc && r->element == r->element->doc->html;
+}
+static void var_mark_cycle(VarResolver *r, VarEntry *entry) {
+    bool inside = false;
+    for (int i = 0; i < r->stack.n; i++) {
+        if (r->stack.v[i] == entry) inside = true;
+        if (inside) r->stack.v[i]->cycle = true;
+    }
+}
+static bool query_dependencies(VarResolver *r, VarEntry *owner, unsigned dependencies) {
+    if (owner) owner->unit_dependencies |= dependencies;
+    unsigned own = dependencies & ((1u << QB_COUNT) - 1);
+    if (query_root_element(r)) {
+        if (dependencies & QD_ROOT_SIZE) own |= QD_SIZE;
+        if (dependencies & QD_ROOT_METRICS) own |= QD_FONT_METRICS;
+        if (dependencies & QD_ROOT_LINE) own |= QD_LINE;
+    }
+    for (int i = 0; i < r->stack.n; i++) {
+        VarEntry *frame = r->stack.v[i];
+        if (!frame->property) continue;
+        bool cycle = false;
+        for (int j = 0; j < QB_COUNT; j++)
+            if ((own & (1u << j)) && !strcmp(frame->name, query_basis_names[j])) cycle = true;
+        /* These are dependencies on the root element, not on the element
+         * containing an arbitrary descendant viewport-unit declaration. */
+        if ((dependencies & QD_VIEWPORT) && query_root_element(r) &&
+            (!strcmp(frame->name, "overflow") || !strcmp(frame->name, "overflow-x") ||
+             !strcmp(frame->name, "overflow-y") || !strcmp(frame->name, "scrollbar-gutter") ||
+             !strcmp(frame->name, "scrollbar-width"))) cycle = true;
+        if (cycle) { var_mark_cycle(r, frame); return false; }
+    }
+    if (r->ensure_basis && !r->ensure_basis(r, own)) return false;
+    if (dependencies & QD_ROOT_FONT) r->style->inherited_dynamic = true;
+    if (dependencies & QD_VIEWPORT) r->style->inherited_dynamic = true;
+    if (dependencies & QD_VIEWPORT_QUERY) g_vh_used = true;
+    return !(owner && owner->cycle);
+}
+static LCtx query_number_context(VarResolver *r, bool *root_used) {
+    const ComputedStyle *root = r->engine && r->engine->doc && r->engine->doc->html ?
+        r->engine->doc->html->style : NULL;
+    if (query_root_element(r)) root = r->style;
+    LCtx context = { .em = r->style->font_size,
+        .rem = root ? root->font_size : 16, .mc = r->engine ? &r->engine->media : NULL,
+        .font_basis = r->style, .flow_basis = r->style, .actual_font = true,
+        .used_font_units = r->engine ? &r->engine->uses_font_units : NULL,
+        .root_font_basis = root, .resolve_font_metrics = true,
+        .used_root_font_units = root_used };
+    return context;
+}
+static bool query_number(VarResolver *r, VarEntry *owner, const char *text, CssNumber *number) {
+    if (!text || !query_dependencies(r, owner, query_unit_dependencies(text))) return false;
+    char *parsed = var_parser_text(text);
+    if (!parsed) return false;
+    bool root_used = false; LCtx context = query_number_context(r, &root_used);
+    bool ok = css_math_spacing_valid(text) && css_number_parse_context(parsed,
+        context.em, context.rem, context.mc, false, &context, false, number);
+    if (root_used) r->style->inherited_dynamic = true;
+    /* Values4's top-level calculation boundary censors a completed NaN to
+     * zero. Keep all intermediate arithmetic inside the evaluator unchanged. */
+    if (ok && isnan(number->value)) number->value = 0;
+    free(parsed); return ok;
+}
+static bool registered_number_type(const RegProp *registration, CssNumber *number) {
+    static const struct { const char *syntax; int dimension; } types[] = {
+        {"<number>", -1}, {"<integer>", -1}, {"<length>", CN_LENGTH},
+        {"<percentage>", CN_PERCENT}, {"<angle>", CN_ANGLE},
+        {"<time>", CN_TIME}, {"<resolution>", CN_RESOLUTION}
+    };
+    for (size_t i = 0; i < ARRLEN(types); i++) {
+        if (strcmp(registration->syntax, types[i].syntax)) continue;
+        /* Bare zero is a length token only at an actual length destination.
+         * It never acquires a percentage hint in style-query comparisons. */
+        if (types[i].dimension == CN_LENGTH && css_number_scalar(number) && number->value == 0)
+            number->power[CN_LENGTH] = 1;
+        for (int j = 0; j < CN_DIMS; j++)
+            if (number->power[j] != (j == types[i].dimension)) return false;
+        if (!strcmp(registration->syntax, "<integer>")) number->value = floor(number->value + .5);
+        return true;
+    }
+    return false;
+}
+static char *registered_computed_value(VarResolver *r, VarEntry *owner,
+                                      const RegProp *registration, const char *text) {
+    if (!text) return NULL;
+    if (!strcmp(registration->syntax, "*")) return xstrdup(text);
+    if (!strcmp(registration->syntax, "<color>")) {
+        /* Color4 defines currentcolor's computed value as the keyword.
+         * Its used-value dependency must not become a computation cycle. */
+        char *parsed = var_parser_text(text);
+        if (!parsed) return NULL;
+        bool current_keyword = str_ieq(str_trim(parsed), "currentcolor");
+        free(parsed);
+        if (current_keyword) return xstrdup("currentcolor");
+    }
+    if (!query_dependencies(r, owner, query_unit_dependencies(text))) return NULL;
+    if (!strcmp(registration->syntax, "<string>")) {
+        CLexer lexer; clex_init(&lexer, text, strlen(text)); CTok value, end;
+        do { value = clex_next(&lexer); if (value.type == CT_WS) free(value.str); } while (value.type == CT_WS);
+        do { end = clex_next(&lexer); if (end.type == CT_WS) free(end.str); } while (end.type == CT_WS);
+        char *result = NULL;
+        if (value.type == CT_STRING && end.type == CT_EOF) {
+            SB out = {0}; sb_putc(&out, '"');
+            for (const unsigned char *p = (unsigned char *)(value.str ? value.str : ""); *p; p++) {
+                if (*p == '\\' || *p == '"') sb_putc(&out, '\\');
+                if (*p < 32 || *p == 127) sb_printf(&out, "\\%x ", *p);
+                else sb_putc(&out, *p);
+            }
+            sb_putc(&out, '"'); result = sb_take(&out);
+        }
+        free(value.str); free(end.str); return result;
+    }
+    if (!strcmp(registration->syntax, "<color>")) {
+        CssColor current = cur_color(r->style), color;
+        if (!css_color_parse(text, &color, &current)) return NULL;
+        char buffer[256]; css_color_serialize(&color, buffer, sizeof buffer);
+        return xstrdup(buffer);
+    }
+    if (!strcmp(registration->syntax, "<integer>")) {
+        CLexer lexer; clex_init(&lexer, text, strlen(text)); CTok token;
+        do { token = clex_next(&lexer); if (token.type == CT_WS) free(token.str); } while (token.type == CT_WS);
+        bool bad_literal = token.type == CT_NUMBER && !token.is_int;
+        free(token.str); if (bad_literal) return NULL;
+    }
+    CssNumber number;
+    if (!query_number(r, owner, text, &number) || !registered_number_type(registration, &number)) return NULL;
+    static const char *const units[CN_DIMS] = {"px", "deg", "s", "hz", "dppx", "fr", "%"};
+    const char *unit = "";
+    for (int i = 0; i < CN_DIMS; i++) if (number.power[i]) unit = units[i];
+    /* Computed registered values are actual typed values; range evaluation
+     * compares the double before serialization. Finite computed scalars use
+     * enough digits to round-trip, preserving cancellation and unit scales. */
+    SB out = {0};
+    if (isfinite(number.value)) sb_printf(&out, "%.17g%s", number.value == 0 ? 0 : number.value, unit);
+    else sb_printf(&out, "calc(%s%s)", isnan(number.value) ? "NaN" : signbit(number.value) ? "-infinity" : "infinity",
+        *unit ? !strcmp(unit, "px") ? " * 1px" : !strcmp(unit, "deg") ? " * 1deg" :
+        !strcmp(unit, "s") ? " * 1s" : !strcmp(unit, "dppx") ? " * 1dppx" : " * 1%" : "");
+    return sb_take(&out);
+}
+static bool query_range_type(const CssNumber *number) {
+    int dimensions = 0;
+    for (int i = 0; i < CN_DIMS; i++) {
+        if (number->power[i] && (i == CN_FLEX || number->power[i] != 1)) return false;
+        dimensions += number->power[i] != 0;
+    }
+    return dimensions <= 1;
+}
+static bool query_range_operand(VarResolver *r, VarEntry *owner, const IfInput *in,
+                                int begin, int end, unsigned depth, CssNumber *number) {
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return false;
+    const CTok *first = &in->tokens.v[begin].token;
+    if (end == begin + 1 && first->type == CT_IDENT && first->str &&
+        first->str[0] == '-' && first->str[1] == '-' && first->str[2]) {
+        const char *value = var_lookup(r, first->str, depth + 1);
+        return value && query_number(r, owner, value, number) && query_range_type(number);
+    }
+    char *text = if_declaration_value(in, begin, end);
+    bool valid = query_number(r, owner, text, number) && query_range_type(number); free(text); return valid;
+}
+static bool query_range_compare(CssNumber a, CssNumber b, int op) {
+    /* Style ranges deliberately allow unitless zero and lengths to compare.
+     * A percentage remains a distinct type, including zero percent. */
+    if (!css_number_same(&a, &b)) {
+        CssNumber *zero = css_number_scalar(&a) && a.value == 0 ? &a :
+            css_number_scalar(&b) && b.value == 0 ? &b : NULL;
+        CssNumber *other = zero == &a ? &b : &a;
+        if (!zero || other->power[CN_LENGTH] != 1) return false;
+        for (int i = 1; i < CN_DIMS; i++) if (other->power[i]) return false;
+        zero->power[CN_LENGTH] = 1;
+    }
+    if (isnan(a.value) || isnan(b.value)) return false;
+    return op == '=' ? a.value == b.value : op == '<' ? a.value < b.value :
+        op == '>' ? a.value > b.value : op == 256 + '<' ? a.value <= b.value : a.value >= b.value;
+}
+static IfTruth if_style_range(VarResolver *r, VarEntry *owner, const IfInput *in,
+                             int begin, int end, unsigned depth, bool *matched) {
+    int separators[2], following[2], operators[2], count = 0;
+    *matched = false;
+    for (int at = begin; at < end; at = if_after_component(in, at)) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (token->type != CT_DELIM || !strchr("<>=", *token->start)) continue;
+        *matched = true;
+        if (count == 2) return IF_FALSE;
+        separators[count] = at; operators[count] = (unsigned char)*token->start;
+        int next = at + 1;
+        if (operators[count] != '=' && next < end && in->tokens.v[next].token.type == CT_DELIM &&
+            *in->tokens.v[next].token.start == '=') { operators[count] += 256; next++; }
+        following[count++] = next; at = next - 1;
+    }
+    if (!count) return IF_INVALID;
+    if (count == 2 && (operators[0] == '=' || operators[1] == '=' ||
+        (operators[0] & 255) != (operators[1] & 255))) return IF_FALSE;
+    CssNumber values[3]; int from = begin;
+    for (int i = 0; i <= count; i++) {
+        int to = i == count ? end : separators[i];
+        if (!query_range_operand(r, owner, in, from, to, depth + 1, &values[i])) return IF_FALSE;
+        if (i < count) from = following[i];
+    }
+    for (int i = 0; i < count; i++) if (!query_range_compare(values[i], values[i + 1], operators[i])) return IF_FALSE;
+    return IF_TRUE;
+}
+
+/* The outer if(), style(), supports(), and media() grammars share tokenized
+ * grouping. Leaf evaluation stays with the native selector/declaration/media
+ * implementations; a nested query's unknown result becomes false only at
+ * its function boundary (CSS Values 5 Appendix B). */
+typedef enum { IF_QUERY, IF_STYLE, IF_SUPPORTS, IF_MEDIA } IfQuery;
+
+static IfTruth if_supports_feature(VarResolver *r, const IfInput *in,
+                                   int begin, int end, bool *matched) {
+    *matched = false;
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return IF_INVALID;
+    const CTok *name = &in->tokens.v[begin].token;
+    if (name->type != CT_IDENT || !name->str) return IF_INVALID;
+    int colon = if_skip_ws(in, begin + 1, end);
+    if (colon == end || in->tokens.v[colon].token.type != CT_COLON) return IF_INVALID;
+    *matched = true;
+    for (int at = colon + 1; at < end; at = if_after_component(in, at)) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (token->type == CT_SEMI || (token->type == CT_DELIM && *token->start == '!')) return IF_FALSE;
+    }
+    bool custom = name->str[0] == '-' && name->str[1] == '-';
+    const char *property = custom ? atom(name->str) : atom_lower(name->str, strlen(name->str));
+    char *value = if_declaration_value(in, colon + 1, end);
+    Document *document = r->element ? r->element->doc : r->engine ? r->engine->doc : NULL;
+    bool supported = css_supports_declaration(property, value, document && document->quirks);
+    free(value); return supported ? IF_TRUE : IF_FALSE;
+}
+
+static IfTruth if_media_feature(VarResolver *r, const IfInput *in,
+                               int begin, int end, bool *matched) {
+    *matched = false;
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return IF_INVALID;
+    bool feature = end == begin + 1 && in->tokens.v[begin].token.type == CT_IDENT;
+    for (int at = begin; at < end; at = if_after_component(in, at)) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (token->type == CT_COLON || (token->type == CT_DELIM && strchr("<>=", *token->start))) feature = true;
+        if (token->type == CT_LPAREN || token->type == CT_COMMA || token->type == CT_SEMI ||
+            if_keyword(in, at, "and") || if_keyword(in, at, "or") || if_keyword(in, at, "not")) return IF_INVALID;
+    }
+    if (!feature) return IF_INVALID;
+    *matched = true;
+    StyleEngine *engine = r->engine ? r->engine : r->element && r->element->doc ? r->element->doc->stylesheets : NULL;
+    if (!engine) return IF_UNKNOWN; /* no invented viewport for detached direct evaluation */
+    /* Native media features use normalized identifiers. Preserve numeric
+     * spelling and token boundaries, and never truncate a query to a prefix. */
+    SB text = {0}; bool valid = true;
+    for (int at = begin; at < end; at++) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (at > begin) {
+            const CTok *previous = &in->tokens.v[at - 1].token;
+            if (previous->start + previous->len < token->start) sb_putc(&text, ' ');
+        }
+        if (token->type == CT_IDENT || token->type == CT_FUNC) {
+            for (const unsigned char *p = (const unsigned char *)token->str; p && *p; p++)
+                if (!(isalnum(*p) || *p == '-' || *p == '_')) valid = false;
+            if (!valid) break;
+            for (const char *p = token->str; *p; p++) sb_putc(&text, (char)lc(*p));
+            if (token->type == CT_FUNC) sb_putc(&text, '(');
+        } else if (token->type == CT_DIM) {
+            char *stop; strtod(token->start, &stop);
+            if (stop == token->start || (size_t)(stop - token->start) > token->len) { valid = false; break; }
+            for (const char *p = token->unit; *p; p++) if (!isalpha((unsigned char)*p)) valid = false;
+            if (!valid) break;
+            sb_put(&text, token->start, (size_t)(stop - token->start)); sb_puts(&text, token->unit);
+        } else if (token->type == CT_NUMBER || token->type == CT_PERCENT || token->type == CT_WS ||
+                   token->type == CT_COLON || token->type == CT_LPAREN || token->type == CT_RPAREN ||
+                   token->type == CT_COMMA || (token->type == CT_DELIM && strchr("<>=+-*/", *token->start))) {
+            sb_put(&text, token->start, token->len);
+        } else { valid = false; break; }
+    }
+    bool known = false;
+    bool matches = valid && css_media_feature_matches(text.s ? text.s : "", &engine->media, &known);
+    sb_free(&text);
+    return !known ? IF_UNKNOWN : matches ? IF_TRUE : IF_FALSE;
+}
+
+static IfTruth if_boolean(VarResolver *, VarEntry *, const IfInput *, int, int, IfQuery, unsigned);
+
+static IfTruth if_style_feature(VarResolver *r, VarEntry *owner, const IfInput *in,
+                               int begin, int end, unsigned depth, bool *matched) {
+    *matched = false;
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return IF_INVALID;
+    /* Range operands may begin with a dimension, a function, or a custom
+     * property name. Only top-level comparison tokens select this grammar. */
+    IfTruth range = if_style_range(r, owner, in, begin, end, depth, matched);
+    if (*matched) return range;
+    const CTok *name = &in->tokens.v[begin].token;
+    if (name->type != CT_IDENT || !name->str) return IF_INVALID;
+    int next = if_skip_ws(in, begin + 1, end);
+    if (next != end && in->tokens.v[next].token.type != CT_COLON) return IF_INVALID;
+    *matched = true;
+    if (name->str[0] != '-' || name->str[1] != '-' || !name->str[2]) return IF_UNKNOWN;
+    const RegProp *registration = regprop_find(name->str);
+    if (registration && strcmp(registration->syntax, "*") && !regprop_typed(registration)) return IF_UNKNOWN;
+    for (int at = next < end ? next + 1 : end; at < end; at = if_after_component(in, at)) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (token->type == CT_SEMI || (token->type == CT_DELIM && strchr("!<>=", *token->start))) return IF_FALSE;
+    }
+    const char *actual = var_lookup(r, name->str, depth + 1);
+    if (next == end) {
+        char *initial = registration && *registration->init ?
+            registered_computed_value(r, owner, registration, registration->init) : NULL;
+        bool equal = if_unregistered_equal(actual, initial);
+        free(initial); return equal ? IF_FALSE : IF_TRUE;
+    }
+    char *raw = if_declaration_value(in, next + 1, end);
+    char *value = var_substitute(r, owner, raw, depth + 1); free(raw);
+    if (!value) return IF_FALSE;
+    const char *expected = value;
+    const char *keyword = var_wide_keyword(value);
+    bool forbidden = false, computed_parent = false;
+    if (keyword) {
+        if (!strcmp(keyword, "initial")) expected = registration && *registration->init ? registration->init : NULL;
+        else if (!strcmp(keyword, "inherit") || !strcmp(keyword, "unset")) {
+            bool inherit = !strcmp(keyword, "inherit") || !registration || registration->inherits;
+            if (inherit) {
+                cm_add_name(&r->style->custom_dependencies, name->str);
+                expected = r->parent ? custom_get(r->parent->custom, name->str) : NULL;
+                computed_parent = expected != NULL;
+            } else expected = NULL;
+            if (expected && !*expected) expected = NULL;
+            if (!expected && registration) expected = *registration->init ? registration->init : NULL;
+        } else forbidden = true;
+    }
+    char *typed = NULL;
+    if (!forbidden && registration && expected && !computed_parent) {
+        typed = registered_computed_value(r, owner, registration, expected); expected = typed;
+        /* Invalid query values never acquire the registration's fallback;
+         * fallback applies to actual property computation only. */
+        if (!typed) forbidden = true;
+    }
+    bool equal = !forbidden && if_unregistered_equal(actual, expected);
+    free(typed); free(value); return equal ? IF_TRUE : IF_FALSE;
+}
+static IfTruth if_group(VarResolver *r, VarEntry *owner, const IfInput *in,
+                        int *position, int end, IfQuery query, unsigned depth) {
+    int at = if_skip_ws(in, *position, end);
+    if (at == end || depth > VAR_RECURSION_LIMIT) return IF_INVALID;
+    const IfToken *item = &in->tokens.v[at]; const CTok *token = &item->token;
+    if (item->close < 0 || item->close > end) return IF_INVALID;
+    int close = item->close;
+    *position = LMIN(close + 1, end);
+    if (token->type == CT_LPAREN) {
+        IfTruth result = if_boolean(r, owner, in, at + 1, close, query, depth + 1);
+        return result == IF_INVALID ? query == IF_SUPPORTS ? IF_FALSE : IF_UNKNOWN : result;
+    }
+    if (token->type == CT_FUNC) {
+        if (query == IF_QUERY && token->str) {
+            IfQuery nested = str_ieq(token->str, "style") ? IF_STYLE :
+                str_ieq(token->str, "supports") ? IF_SUPPORTS :
+                str_ieq(token->str, "media") ? IF_MEDIA : IF_QUERY;
+            if (nested != IF_QUERY) {
+                /* Height-only viewport changes use the existing per-style
+                 * dependency bit. Record false and unknown queries too. */
+                if (nested == IF_MEDIA) g_vh_used = true;
+                IfTruth result = if_boolean(r, owner, in, at + 1, close, nested, depth + 1);
+                return result == IF_TRUE ? IF_TRUE : IF_FALSE;
+            }
+        }
+        if (query == IF_SUPPORTS && token->str && str_ieq(token->str, "selector")) {
+            char *selector = if_declaration_value(in, at + 1, close);
+            bool supported = css_supports_selector(selector);
+            free(selector);
+            return supported ? IF_TRUE : IF_FALSE;
+        }
+        return query == IF_SUPPORTS ? IF_FALSE : IF_UNKNOWN;
+    }
+    return IF_INVALID;
+}
+static IfTruth if_boolean(VarResolver *r, VarEntry *owner, const IfInput *in,
+                          int begin, int end, IfQuery query, unsigned depth) {
+    if (depth > VAR_RECURSION_LIMIT) return IF_INVALID;
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return IF_INVALID;
+    if (query != IF_QUERY) {
+        bool matched;
+        IfTruth feature = query == IF_STYLE ? if_style_feature(r, owner, in, begin, end, depth, &matched) :
+            query == IF_SUPPORTS ? if_supports_feature(r, in, begin, end, &matched) :
+            if_media_feature(r, in, begin, end, &matched);
+        if (matched) return feature;
+    }
+    bool negate = if_keyword(in, begin, "not");
+    int position = negate ? begin + 1 : begin;
+    IfTruth result = if_group(r, owner, in, &position, end, query, depth + 1);
+    if (result == IF_INVALID) return result;
+    position = if_skip_ws(in, position, end);
+    if (negate) return position != end ? IF_INVALID : result == IF_UNKNOWN ? IF_UNKNOWN : result == IF_TRUE ? IF_FALSE : IF_TRUE;
+    int operator_kind = 0;
+    while (position < end) {
+        int kind = if_keyword(in, position, "and") ? 1 : if_keyword(in, position, "or") ? 2 : 0;
+        if (!kind || (operator_kind && operator_kind != kind)) return IF_INVALID;
+        operator_kind = kind; position++;
+        /* Evaluate every operand in the selected condition. A discovered
+         * cycle remains marked even if another boolean operand decides it. */
+        IfTruth right = if_group(r, owner, in, &position, end, query, depth + 1);
+        if (right == IF_INVALID) return right;
+        if (kind == 1) result = result == IF_FALSE || right == IF_FALSE ? IF_FALSE : result == IF_UNKNOWN || right == IF_UNKNOWN ? IF_UNKNOWN : IF_TRUE;
+        else result = result == IF_TRUE || right == IF_TRUE ? IF_TRUE : result == IF_UNKNOWN || right == IF_UNKNOWN ? IF_UNKNOWN : IF_FALSE;
+        position = if_skip_ws(in, position, end);
+    }
+    return result;
+}
+static char *if_argument(const IfInput *in, int begin, int end, size_t stop, bool condition) {
+    begin = if_skip_ws(in, begin, end);
+    int trimmed_end = if_trim_end(in, begin, end);
+    if (begin == trimmed_end) return condition ? NULL : xstrdup("");
+    size_t start = if_offset(in, begin);
+    const IfToken *first = &in->tokens.v[begin];
+    bool wrapped = first->token.type == CT_LBRACE;
+    if (wrapped) {
+        if (first->close < 0 || if_skip_ws(in, LMIN(first->close + 1, end), end) != end)
+            return NULL;
+        start += first->token.len;
+        stop = if_offset(in, first->close);
+        begin++; end = first->close;
+    }
+    /* Declaration-value restrictions still apply inside a free-form wrapper.
+     * Commas and braces are only excluded from unwrapped arguments; a
+     * condition's separating colon has the same unwrapped restriction. */
+    for (int at = begin; at < end; at = if_after_component(in, at)) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (token->type == CT_SEMI || (token->type == CT_DELIM && *token->start == '!') ||
+            (!wrapped && (token->type == CT_COMMA || token->type == CT_LBRACE ||
+                          (condition && token->type == CT_COLON)))) return NULL;
+    }
+    if (condition && if_skip_ws(in, begin, end) == end) return NULL;
+    /* Preserve the selected stream's trailing whitespace and comments. */
+    return xstrndup(in->source + start, stop - start);
+}
+static char *if_branch_value(const IfInput *in, const IfBranch *branch) {
+    return if_argument(in, branch->value_begin, branch->value_end, branch->value_stop, false);
+}
+/* Shared argument grammar: syntax is checked before a declaration becomes
+ * pending. Conditions and result values are still substituted only when the
+ * lazy resolver visits them. CSS Values 5 section 8.3 and Appendix A. */
+static bool if_collect_branches(const IfInput *in, int begin, int end, IfBranches *branches) {
+    int colon = -1;
+    for (int at = begin; at <= end;) {
+        bool last = at == end;
+        int type = last ? CT_EOF : in->tokens.v[at].token.type;
+        if (last || type == CT_SEMI) {
+            int first = if_skip_ws(in, begin, at);
+            if (first != at) {
+                if (colon < first) return false;
+                IfBranch branch = {first, colon, colon + 1, at, if_offset(in, at)};
+                char *condition = if_argument(in, first, colon, if_offset(in, colon), true);
+                char *value = if_branch_value(in, &branch);
+                bool valid = condition && value;
+                free(condition); free(value);
+                if (!valid) return false;
+                vec_push(*branches, branch);
+            } else if (!last) return false;
+            begin = at + 1; colon = -1;
+            if (last) break;
+            at++; continue;
+        }
+        if (colon < 0 && type == CT_COLON) colon = at;
+        at = if_after_component(in, at);
+    }
+    return branches->n != 0;
+}
+bool css_if_syntax_valid(const char *value) {
+    if (!css_value_has_if(value)) return true;
+    IfInput in; bool valid = if_input_init(&in, value, strlen(value));
+    /* Walk tokens, not resolved values: a malformed nested if() is a parse
+     * error even inside an unselected result or another pending function. */
+    for (int at = 0; valid && at < in.tokens.n; at++) {
+        const IfToken *item = &in.tokens.v[at];
+        if (item->token.type != CT_FUNC || !item->token.str || !str_ieq(item->token.str, "if")) continue;
+        IfBranches branches = {0};
+        valid = item->close >= at + 1 && if_collect_branches(&in, at + 1, item->close, &branches);
+        vec_free(branches);
+    }
+    if_input_free(&in); return valid;
+}
+
+static IfTruth if_condition(VarResolver *r, VarEntry *owner, const IfInput *in,
+                            const IfBranch *branch, unsigned depth) {
+    char *raw = if_argument(in, branch->condition_begin, branch->condition_end,
+                           if_offset(in, branch->condition_end), true);
+    char *value = raw ? var_substitute(r, owner, raw, depth + 1) : NULL;
+    free(raw);
+    if (!value) return IF_INVALID;
+    IfInput condition;
+    bool valid = if_input_init(&condition, value, strlen(value));
+    int begin = if_skip_ws(&condition, 0, condition.tokens.n);
+    int end = if_trim_end(&condition, begin, condition.tokens.n);
+    IfTruth truth = IF_INVALID;
+    if (valid && begin != end) {
+        bool otherwise = end == begin + 1 && if_keyword(&condition, begin, "else");
+        truth = otherwise ? IF_TRUE : if_boolean(r, owner, &condition, begin, end, IF_QUERY, depth + 1);
+    }
+    if_input_free(&condition); free(value); return truth;
+}
+static char *var_substitute_if(VarResolver *r, VarEntry *owner, CLexer *lexer, unsigned depth) {
+    size_t start = lexer->i, stop = start; int closes[VAR_RECURSION_LIMIT], nesting = 0;
+    bool complete = false;
+    for (;;) {
+        CTok token = clex_next(lexer); int type = token.type;
+        stop = (size_t)(token.start - lexer->s); free(token.str);
+        if (type == CT_EOF) { complete = true; break; }
+        int close = if_closing(type);
+        if (close) { if (nesting == VAR_RECURSION_LIMIT) break; closes[nesting++] = close; }
+        else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
+            if (!nesting) { complete = type == CT_RPAREN; break; }
+            if (closes[--nesting] != type) break;
+        }
+    }
+    if (!complete || depth > VAR_RECURSION_LIMIT) return NULL;
+    IfInput in; bool valid = if_input_init(&in, lexer->s + start, stop - start);
+    IfBranches branches = {0};
+    if (valid) valid = if_collect_branches(&in, 0, in.tokens.n, &branches);
+    char *result = NULL;
+    if (valid && branches.n) {
+        result = xstrdup("");
+        for (int i = 0; i < branches.n; i++) {
+            IfBranch *branch = &branches.v[i];
+            IfTruth truth = if_condition(r, owner, &in, branch, depth + 1);
+            if (owner && owner->cycle) { free(result); result = NULL; break; }
+            /* The broad argument grammar was checked above. A visited test
+             * that fails its post-substitution grammar simply does not match. */
+            if (truth == IF_TRUE) {
+                char *raw = if_branch_value(&in, branch); free(result);
+                result = raw ? var_substitute(r, owner, raw, depth + 1) : NULL; free(raw); break;
+            }
+        }
+    }
+    vec_free(branches); if_input_free(&in); return result;
+}
+
 static char *var_substitute(VarResolver *r, VarEntry *owner, const char *source, unsigned depth) {
     if (depth > VAR_RECURSION_LIMIT) return NULL;
-    if (!css_value_has_var(source)) return xstrdup(source);
+    if (!css_value_has_var(source) && !css_value_has_if(source)) return xstrdup(source);
     CLexer l; clex_init(&l, source, strlen(source));
     VarOutput out = {0}; size_t copied = 0; bool invalid = false;
     for (;;) {
         CTok t = clex_next(&l); int type = t.type;
         bool is_var = type == CT_FUNC && t.str && str_ieq(t.str, "var");
+        bool is_if = type == CT_FUNC && t.str && str_ieq(t.str, "if");
         free(t.str);
         if (type == CT_EOF) break;
-        if (!is_var) continue;
+        if (!is_var && !is_if) continue;
         size_t start = (size_t)(t.start - source), argument_start = l.i;
         if (!var_append(&out, source + copied, start - copied)) invalid = true;
+        if (is_if) {
+            char *value = var_substitute_if(r, owner, &l, depth + 1);
+            copied = l.i;
+            if (!value || (owner && owner->cycle)) invalid = true;
+            else if (!var_append(&out, value, strlen(value))) invalid = true;
+            free(value); continue;
+        }
         size_t argument_end, fallback, content_end;
         if (!css_var_arguments(&l, &argument_end, &fallback, &content_end)) { invalid = true; break; }
         copied = l.i;
@@ -817,29 +1678,6 @@ static char *var_substitute(VarResolver *r, VarEntry *owner, const char *source,
     if (!var_append(&out, source + copied, strlen(source) - copied)) invalid = true;
     if (invalid) { sb_free(&out.text); return NULL; }
     return sb_take(&out.text);
-}
-static char *subst_vars(const char *value, ComputedStyle *style, int depth) {
-    VarResolver r = { .style = style };
-    return var_substitute(&r, NULL, value, (unsigned)depth);
-}
-static void custom_resolve_values(ComputedStyle *style, const ComputedStyle *parent, const CustomProps *origin_base) {
-    if (!style->custom || (parent && style->custom == parent->custom)) return;
-    VarResolver r = { .style = style, .parent = parent, .origin_base = origin_base };
-    VEC(VarEntry *) values = {0};
-    hm_foreach(&style->custom->map, item) {
-        const char *raw = item->val;
-        if (!css_value_has_var(raw)) continue;
-        VarEntry *entry = xcalloc(1, sizeof *entry); entry->name = item->key; entry->raw = raw;
-        hm_put(&r.entries, item->key, entry); vec_push(values, entry);
-    }
-    for (int i = 0; i < values.n; i++) var_resolve_entry(&r, values.v[i], 0);
-    for (int i = 0; i < values.n; i++) {
-        VarEntry *entry = values.v[i];
-        char *old = hm_get(&style->custom->map, entry->name);
-        hm_put(&style->custom->map, entry->name, entry->value ? entry->value : xstrdup(""));
-        free(old); free(entry);
-    }
-    hm_free(&r.entries, NULL); vec_free(values); vec_free(r.stack);
 }
 /* CSS-wide values are dispatched by the existing keyword paths, not by the
  * invalid-at-computed-value fallback. Full rule/layer rollback still requires
@@ -885,7 +1723,7 @@ static char *next_token(const char **pp) {
 static int split_ws(const char *v, char **out, int max) { int n = 0; const char *p = v; char *t; while (n < max && (t = next_token(&p))) out[n++] = t; return n; }
 static void free_toks(char **t, int n) { for (int i = 0; i < n; i++) free(t[i]); }
 
-typedef struct { ComputedStyle *st; const ComputedStyle *par; StyleEngine *e; Node *el; float em, rem; const MediaCtx *mc; bool validation_only; } ACtx;
+typedef struct { ComputedStyle *st; const ComputedStyle *par; StyleEngine *e; Node *el; float em, rem; const MediaCtx *mc; bool validation_only, line_height_property; } ACtx;
 static LCtx application_scalar_context(ACtx *c, bool *root_used) {
     const ComputedStyle *root = c->e && c->e->doc && c->e->doc->html ? c->e->doc->html->style : NULL;
     if (c->e && c->e->doc && c->el == c->e->doc->html) root = c->st;
@@ -895,6 +1733,52 @@ static LCtx application_scalar_context(ACtx *c, bool *root_used) {
         .root_font_basis = root, .resolve_font_metrics = true, .used_root_font_units = root_used };
     return result;
 }
+/* lh in line-height and font-size uses the parent's line metrics. The root's
+ * rlh in those properties uses initial metrics. Ordinary em/ex and query
+ * operands keep their existing, independently selected contexts. */
+static bool application_has_line_units(const char *text) {
+    return (query_unit_dependencies(text) & (QD_LINE | QD_ROOT_LINE)) != 0;
+}
+static LCtx application_line_context(ACtx *c, bool font_size, bool *root_used) {
+    LCtx context = application_scalar_context(c, root_used);
+    const VarResolver *resolver = active_var_resolver;
+    if (font_size || c->line_height_property) {
+        context.line_height_parent = true; context.line_height_basis = c->par;
+        context.root_line_height_initial = c->e && c->e->doc && c->el == c->e->doc->html &&
+            !(resolver && resolver->is_pseudo);
+    }
+    if (font_size) {
+        context.em = c->par ? c->par->font_size : 16;
+        context.font_basis = c->par; context.flow_basis = c->st;
+        if (context.root_line_height_initial) { context.rem = 16; context.root_font_basis = NULL; }
+    }
+    return context;
+}
+static bool application_line_length(ACtx *c, const char *text, bool font_size,
+                                    Length *out, MathType *type_out) {
+    bool root_used = false; LCtx context = application_line_context(c, font_size, &root_used);
+    const char *end = text; Length value;
+    bool valid = parse_dim(&end, &value, &context);
+    while (is_ws((unsigned char)*end)) end++;
+    valid = valid && !*end && (math_type_equal(context.math_type, math_type_unit(MATH_LENGTH)) ||
+        math_type_equal(context.math_type, math_type_unit(MATH_NUMBER)));
+    if (valid) { *out = value; if (type_out) *type_out = context.math_type; }
+    if (root_used && c->st) c->st->inherited_dynamic = true;
+    return valid;
+}
+static bool application_font_size_length(ACtx *c, const char *text, Length *out, MathType *type_out) {
+    if (application_has_line_units(text)) return application_line_length(c, text, true, out, type_out);
+    return css_parse_length_context(text, out, c->par ? c->par->font_size : 16,
+        c->rem, c->mc, c->par, c->st, true, c->e ? &c->e->uses_font_units : NULL, type_out);
+}
+static bool application_line_height_number(ACtx *c, const char *text, float *out) {
+    if (!application_has_line_units(text)) return css_scalar_math(text, MATH_NUMBER, c->em, c->rem, out);
+    bool root_used = false; LCtx context = application_line_context(c, false, &root_used);
+    bool valid = css_scalar_math_context(text, MATH_NUMBER, context, out);
+    if (root_used && c->st) c->st->inherited_dynamic = true;
+    return valid;
+}
+
 static bool application_scalar_math(ACtx *c, const char *text, int unit, float *out) {
     bool root_used = false; LCtx context = application_scalar_context(c, &root_used);
     bool ok = css_scalar_math_context(text, unit, context, out);
@@ -913,7 +1797,9 @@ static bool css_transform_number(ACtx *c, const char *text, float *out, bool per
 }
 static bool alen(ACtx *c, const char *v, Length *out) {
     Length value; MathType type;
-    if (!css_parse_length_context(v, &value, c->em, c->rem, c->mc, c->st, true,
+    if (application_has_line_units(v)) {
+        if (!application_line_length(c, v, false, &value, &type)) return false;
+    } else if (!css_parse_length_context(v, &value, c->em, c->rem, c->mc, c->st, c->st, true,
                                   c->e ? &c->e->uses_font_units : NULL, &type)) return false;
     /* Numeric internal callers use css_scalar_math. A length property cannot
        consume a number-valued function, even when its storage contains %. */
@@ -981,7 +1867,7 @@ static bool contain_intrinsic_parse(ACtx *c, const char *text, bool shorthand, C
         const char *token = tokens[i++];
         if (!str_ieq(token, "none")) {
             Length length; MathType type;
-            ok = css_parse_length_context(token, &length, c->em, c->rem, c->mc, c->st,
+            ok = css_parse_length_context(token, &length, c->em, c->rem, c->mc, c->st, c->st,
                 !c->validation_only, c->e ? &c->e->uses_font_units : NULL, &type) &&
                 length.kind == LK_LEN && !len_has_pct(length);
             if (ok && math_type_equal(type, math_type_unit(MATH_NUMBER))) {
@@ -1263,9 +2149,7 @@ static bool bg_length(ACtx *c, const char *text, Length *out) {
             && !str_ieq(end, "ex") && !str_ieq(end, "ch") && !str_ieq(end, "cap") && !str_ieq(end, "ic")
             && !str_ieq(end, "lh") && !str_ieq(end, "pt") && !str_ieq(end, "pc") && !str_ieq(end, "in")
             && !str_ieq(end, "cm") && !str_ieq(end, "mm") && !str_ieq(end, "q")
-            && !str_ieq(end, "vw") && !str_ieq(end, "vh") && !str_ieq(end, "vmin") && !str_ieq(end, "vmax")
-            && !str_ieq(end, "svw") && !str_ieq(end, "svh") && !str_ieq(end, "lvw") && !str_ieq(end, "lvh")
-            && !str_ieq(end, "dvw") && !str_ieq(end, "dvh") && !str_ieq(end, "cqw") && !str_ieq(end, "cqh")
+            && !viewport_unit_axis(end) && !str_ieq(end, "cqw") && !str_ieq(end, "cqh")
             && !str_ieq(end, "cqi") && !str_ieq(end, "cqb") && !str_ieq(end, "cqmin") && !str_ieq(end, "cqmax")) return false;
     } else if (!str_istarts(text, "calc(") && !str_istarts(text, "min(") && !str_istarts(text, "max(")
                && !str_istarts(text, "clamp(") && !str_istarts(text, "round(") && !str_istarts(text, "mod(")
@@ -1328,7 +2212,9 @@ static bool bg_position_item(ACtx *c, const char *text, int axis, Length out[2])
     }
     free_toks(t, n); return ok;
 }
+static void calc_size_flat_text(SB *out, Length value);
 static void bg_length_str(SB *b, Length value) {
+    if (len_calc_size(value)) { calc_size_flat_text(b, value); return; }
     if (len_math_stepped(value.mm)) {
         Length a = L_px(value.px), z = L_px(value.px2), offset = L_px(value.px3);
         a.pct = value.pct; a.pctu = !!(value.math_pct_mask & 1);
@@ -1373,6 +2259,33 @@ static void bg_length_str(SB *b, Length value) {
     if ((value.pctu || value.pct) && value.px) sb_printf(b, "calc(%g%% %c %gpx)", value.pct, value.px < 0 ? '-' : '+', fabsf(value.px));
     else if (value.pctu || value.pct) sb_printf(b, "%g%%", value.pct);
     else sb_printf(b, "%gpx", value.px == 0 ? 0.0 : (double)value.px);
+}
+/* Cache computed lengths where the declaration's font context is known, so
+ * inherited text lengths do not get re-evaluated in a descendant's font.
+ * Separate indent qualifiers and unresolved percentage/math values keep
+ * their existing representation. */
+static char *text_length_computed_value(ACtx *context, const char *value) {
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    int depth = 0; bool component = false, valid = true;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_EOF) { free(token.str); break; }
+        if (type == CT_WS) { free(token.str); continue; }
+        if (!depth) {
+            if (component || (type != CT_DIM && type != CT_PERCENT && type != CT_FUNC &&
+                              !(type == CT_NUMBER && token.num == 0))) valid = false;
+            component = true;
+        }
+        if (type == CT_FUNC || type == CT_LPAREN || type == CT_LBRACK || type == CT_LBRACE) depth++;
+        else if (depth && (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE)) depth--;
+        free(token.str);
+        if (!valid) break;
+    }
+    Length computed;
+    if (!valid || !component || !alen(context, value, &computed) || computed.kind != LK_LEN ||
+        computed.mm || computed.pct || computed.pctu || !isfinite(computed.px)) return NULL;
+    SB out; sb_init(&out); bg_length_str(&out, computed);
+    return sb_take(&out);
 }
 /* Logical origins remain part of an axis longhand's computed value, including
    in lists. Keep its computed offset separate from the physical used position. */
@@ -1653,7 +2566,10 @@ static bool transform_angle(ACtx *c, const char *text, float *out) {
         if (end == text || *end || zero != 0) return false;
         *out = 0;
     }
-    if (isnan(*out)) *out = 0;
+    /* Only completed angles reach this matrix boundary. Out-of-range angles
+       clamp to a supported full turn; nested IEEE math is left untouched.
+       Reduce finite turns before converting to radians to avoid overflow. */
+    *out = isfinite(*out) ? (float)fmod((double)*out, 360.0) : 0;
     return true;
 }
 static void parse_transform(ACtx *c, const char *v) {
@@ -1745,36 +2661,47 @@ static void parse_transform(ACtx *c, const char *v) {
 }
 static bool parse_one_shadow(ACtx *c, char *v, Shadow *sh) {
     char *t[7]; int n = split_ws(v, t, 7); float nums[4] = {0}; int nn = 0;
-    memset(sh, 0, sizeof *sh); sh->color = c->st->color;
+    memset(sh, 0, sizeof *sh); sh->color = c->st->color; sh->color_tokens = atom("currentcolor");
     for (int i = 0; i < n; i++) {
-        Color col;
+        Color col; Length length;
         if (str_ieq(t[i], "inset")) sh->inset = true;
-        else if (nn < 4 && (isdigit((unsigned char)t[i][0]) || t[i][0] == '-' || t[i][0] == '.' || str_istarts(t[i], "calc"))) nums[nn++] = alen_px(c, t[i], 0);
-        else if (css_parse_color(t[i], &col, c->st->color)) sh->color = col;
+        else if (css_parse_color(t[i], &col, c->st->color)) { sh->color = col; sh->color_tokens = atom(t[i]); }
+        else if (nn < 4 && alen(c, t[i], &length) && length.kind == LK_LEN && !len_has_pct(length)) {
+            float value = len_resolve(length, 0);
+            /* A concrete math result is clamped at computed-value time, before
+               it reaches geometry. Preserve negative offsets and spread. */
+            nums[nn++] = isnan(value) ? 0 : isinf(value) ? copysignf(3.4028234663852886e38f, value) : value;
+        }
     }
-    sh->x = nums[0]; sh->y = nums[1]; sh->blur = nums[2]; sh->spread = nums[3];
+    sh->x = nums[0]; sh->y = nums[1]; sh->blur = LMAX(nums[2], 0); sh->spread = nums[3];
     free_toks(t, n);
-    return nn >= 2 && COLOR_A(sh->color) > 0;
+    return nn >= 2;
 }
 /* one shadow is painted: the first visible outer one, else the first visible inset one
    (Tailwind stacks several, most of them `0 0 #0000`) */
 static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
-    *has = false;
+    *has = false; memset(sh, 0, sizeof *sh);
     if (str_ieq(v, "none")) return;
-    char *all = xstrdup(v), *seg = all; int d = 0; Shadow cur, inset = {0}; bool have_inset = false;
+    char *all = xstrdup(v), *seg = all; int d = 0; Shadow cur, inset = {0}, fallback = {0};
+    bool have_inset = false, have_fallback = false;
     for (char *q = all; ; q++) {
         if (*q == '(') d++; else if (*q == ')') d--;
         else if ((*q == ',' && !d) || !*q) {
             bool end = !*q; *q = 0;
             if (parse_one_shadow(c, seg, &cur)) {
-                if (!cur.inset) { *sh = cur; *has = true; break; }
-                if (!have_inset) { inset = cur; have_inset = true; }
+                bool visible = COLOR_A(cur.color) > 0;
+                if (visible && !cur.inset) { *sh = cur; *has = true; break; }
+                if (visible && !have_inset) { inset = cur; have_inset = true; }
+                /* Keep a transparent representative's computed geometry and
+                   color identity: inherited currentcolor can become visible. */
+                if (!have_fallback || (fallback.inset && !cur.inset)) { fallback = cur; have_fallback = true; }
             }
             if (end) break;
             seg = q + 1;
         }
     }
     if (!*has && have_inset) { *sh = inset; *has = true; }
+    else if (!*has && have_fallback) *sh = fallback;
     free(all);
 }
 /* Grid1/2 automatic repetition requires fixed-size tracks throughout the
@@ -1783,7 +2710,6 @@ static void parse_shadow(ACtx *c, const char *v, Shadow *sh, bool *has) {
  * https://drafts.csswg.org/css-grid-2/#repeat-syntax */
 static int split_top(char *s, char sep, char **out, int max);
 static bool angle_or_time(const char *v);
-#include "numeric-count.h"
 static bool application_number(ACtx *c, const char *text, bool length_hint, CssNumber *out) {
     bool root_used = false; LCtx context = application_scalar_context(c, &root_used);
     bool ok = css_number_parse_context(text, c->em, context.rem, c->mc, length_hint,
@@ -1880,6 +2806,792 @@ static bool grid_repeat_count(ACtx *c, const char *text, long *count) {
     *count = rounded <= 1 ? 1 : rounded >= 1000 ? 1000 : (long)rounded;
     return true;
 }
+/* Minimum sizing has a narrower grammar than the shared Length storage:
+ * in particular, none and nonzero unitless numbers cannot replace a prior
+ * declaration. Keep this gate local; width/max-size/flex retain their parsers. */
+static bool min_size_property(const char *prop) {
+    return !strcmp(prop, "min-width") || !strcmp(prop, "min-height") ||
+           !strcmp(prop, "min-inline-size") || !strcmp(prop, "min-block-size");
+}
+/* Conditional substitution retains its existing pending-value path. This
+ * structural check excludes branchless if(), but does not evaluate queries
+ * or implement the full conditional/custom-function grammar. */
+static bool min_size_pending_if(CLexer lexer) {
+    unsigned depth = 1; bool condition = false;
+    for (;;) {
+        CTok t = clex_next(&lexer); int type = t.type;
+        bool branch = depth == 1 && type == CT_COLON && condition;
+        if (depth == 1 && type != CT_WS && type != CT_COLON) condition = true;
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) depth--;
+        free(t.str);
+        if (branch || !depth || type == CT_EOF) return branch;
+    }
+}
+static bool min_size_deferred(const char *value) {
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    for (;;) {
+        CTok t = clex_next(&lexer); int type = t.type;
+        bool pending = type == CT_FUNC && t.str &&
+            (str_ieq(t.str, "var") || str_ieq(t.str, "env") || str_ieq(t.str, "attr") ||
+             (t.str[0] == '-' && t.str[1] == '-') ||
+             (str_ieq(t.str, "if") && min_size_pending_if(lexer)));
+        free(t.str);
+        if (pending || type == CT_EOF) return pending;
+    }
+}
+/* Shared support-query boundary: deferred substitutions retain their tokens
+ * until the property grammar can be checked after substitution. */
+bool css_math_substitution_pending(const char *value) {
+    return strchr(value, '(') && min_size_deferred(value);
+}
+/* A dashed identifier already starts with two safe hyphens; preserve its
+ * case and escape punctuation/control bytes without changing token identity. */
+static void min_size_dashed_text(SB *out, const char *name) {
+    for (const unsigned char *q = (const unsigned char *)name; *q; q++) {
+        unsigned char ch = *q;
+        if (ch >= 0x80 || isalnum(ch) || ch == '-' || ch == '_') sb_putc(out, (char)ch);
+        else if (ch < 0x20 || ch == 0x7f) {
+            char escaped[12]; snprintf(escaped, sizeof escaped, "\\%x ", ch); sb_puts(out, escaped);
+        } else { sb_putc(out, '\\'); sb_putc(out, (char)ch); }
+    }
+}
+/* Decode identifier/unit escapes without joining tokens separated by a
+ * comment. Only numeric grammar is serialized here; pending substitution
+ * retains its original, case-sensitive custom-property/attribute tokens. */
+static char *min_size_parser_text(const char *value) {
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    SB out = {0}; size_t copied = 0; unsigned depth = 0;
+    for (;;) {
+        CTok t = clex_next(&lexer); int type = t.type;
+        size_t offset = (size_t)(t.start - value);
+        if (offset > copied) sb_putc(&out, ' ');
+        if (type == CT_EOF) { free(t.str); break; }
+        bool valid = true;
+        if (type == CT_IDENT && t.str && t.str[0] == '-' && t.str[1] == '-') {
+            min_size_dashed_text(&out, t.str);
+        } else if (type == CT_IDENT || type == CT_FUNC) {
+            for (const unsigned char *q = (const unsigned char *)t.str; q && *q; q++)
+                if (!isalnum(*q) && *q != '-' && *q != '_') valid = false;
+            if (valid) {
+                for (const char *q = t.str; *q; q++) sb_putc(&out, (char)lc(*q));
+                if (type == CT_FUNC) { sb_putc(&out, '('); depth++; }
+            }
+        } else if (type == CT_DIM) {
+            char *end; strtod(t.start, &end);
+            /* Escaped punctuation is part of an unknown unit, not syntax
+               that may be injected into the normalized expression. */
+            for (const unsigned char *q = (const unsigned char *)t.unit; *q; q++)
+                if (!isalpha(*q)) valid = false;
+            if (end == t.start || (size_t)(end - t.start) > t.len) valid = false;
+            if (valid) { sb_put(&out, t.start, (size_t)(end - t.start)); sb_puts(&out, t.unit); }
+        } else if (type == CT_LPAREN) { depth++; sb_putc(&out, '('); }
+        else if (type == CT_RPAREN) { if (!depth) valid = false; else { depth--; sb_putc(&out, ')'); } }
+        else if (type == CT_NUMBER || type == CT_PERCENT || type == CT_WS || type == CT_COMMA ||
+                 (type == CT_DELIM && strchr("+-*/", *t.start))) sb_put(&out, t.start, t.len);
+        else valid = false;
+        copied = lexer.i; free(t.str);
+        if (!valid || depth > 256) { sb_free(&out); return NULL; }
+    }
+    while (depth) { sb_putc(&out, ')'); depth--; } /* CSS Syntax closes EOF-open functions. */
+    return sb_take(&out);
+}
+static bool min_size_numeric(const char *text) {
+    const char *open = strchr(text, '(');
+    bool math = open != NULL;
+    if (math) {
+        /* A math function is one component value, not a license for bare
+           arithmetic after its closing parenthesis. */
+        unsigned depth = 1; const char *cursor = open + 1;
+        for (; *cursor && depth; cursor++) {
+            if (*cursor == '(') depth++;
+            else if (*cursor == ')') depth--;
+        }
+        if (depth || *cursor) return false;
+    }
+    if (!math) {
+        CLexer lexer; clex_init(&lexer, text, strlen(text));
+        CTok first = clex_next(&lexer), end;
+        do { end = clex_next(&lexer); if (end.type == CT_WS) free(end.str); } while (end.type == CT_WS);
+        bool literal = (first.type == CT_NUMBER || first.type == CT_DIM || first.type == CT_PERCENT) && end.type == CT_EOF;
+        free(first.str); free(end.str);
+        if (!literal) return false; /* arithmetic requires a math function */
+    }
+    if (math ? !(isalpha((unsigned char)*text) || *text == '-') :
+               !(isdigit((unsigned char)*text) || *text == '+' || *text == '-' || *text == '.')) return false;
+    CssNumber n;
+    if (!css_number_parse_context(text, 16, 16, NULL, true, NULL, true, &n)) return false;
+    bool length = n.power[CN_LENGTH] == 1;
+    for (int i = 1; i < CN_DIMS; i++) if (n.power[i]) length = false;
+    if (!length && !(css_number_scalar(&n) && !math && n.value == 0)) return false;
+    return math || n.value >= 0;
+}
+static bool min_size_function(const char *text, const char *name) {
+    CLexer lexer; clex_init(&lexer, text, strlen(text));
+    CTok first = clex_next(&lexer);
+    bool function = first.type == CT_FUNC && first.str && str_ieq(first.str, name);
+    free(first.str); if (!function) return false;
+    unsigned depth = 1; bool content = false;
+    while (depth) {
+        CTok t = clex_next(&lexer); int type = t.type;
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) depth--;
+        if (depth && type != CT_WS) content = true;
+        free(t.str);
+        if (type == CT_EOF || depth > 256) return false;
+    }
+    CTok end;
+    do { end = clex_next(&lexer); free(end.str); } while (end.type == CT_WS);
+    return content && end.type == CT_EOF;
+}
+char *css_min_size_parse(const char *value) {
+    if (!css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    if (!css_math_spacing_valid(value)) return NULL;
+    char *buffer = min_size_parser_text(value);
+    if (!buffer) return NULL;
+    char *text = str_trim(buffer); bool valid = var_wide_keyword(text) != NULL;
+    static const char *const keywords[] = { "auto", "min-content", "max-content",
+        "fit-content", "stretch", "-webkit-fill-available", "-webkit-min-content",
+        "-webkit-max-content", "-webkit-fit-content", NULL };
+    for (int i = 0; !valid && keywords[i]; i++) valid = str_ieq(text, keywords[i]);
+    if (!valid && min_size_function(text, "fit-content")) {
+        char *argument = xstrndup(text + 12, strlen(text) - 13);
+        valid = min_size_numeric(str_trim(argument)); free(argument);
+    }
+    /* These existing deferred sizing forms keep their separate evaluator.
+       This patch neither expands their grammar nor changes their layout. */
+    if (!valid) valid = min_size_function(text, "calc-size") ||
+        min_size_function(text, "anchor-size"); /* anchor() belongs to inset destinations */
+    if (!valid) valid = min_size_numeric(text);
+    if (!valid) { free(buffer); return NULL; }
+    if (text != buffer) memmove(buffer, text, strlen(text) + 1);
+    return buffer;
+}
+bool css_min_size_valid(const char *prop, const char *value) {
+    if (!min_size_property(prop)) return true;
+    char *parsed = css_min_size_parse(value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
+/* Prototype fragment: finite affine calc-size(), evaluated in the declaration's
+ * font/viewport context. The size symbol survives until native layout. This
+ * parser is intentionally separate from ordinary Length arithmetic: calc-size
+ * is a sizing value, never a <length> accepted by unrelated properties. */
+typedef struct {
+    double size, px, pct;
+    MathType type;
+    bool percentage, mentions_size;
+} SizeCalculation;
+typedef struct {
+    LCtx lengths;
+    unsigned depth;
+    bool allow_size;
+} SizeCalculationParser;
+static bool size_calculation_sum(const char **cursor, SizeCalculationParser *parser,
+                                 SizeCalculation *out);
+static void size_calculation_space(const char **cursor) {
+    while (is_ws((unsigned char)**cursor)) (*cursor)++;
+}
+static bool size_calculation_finite(const SizeCalculation *value) {
+    return isfinite(value->size) && isfinite(value->px) && isfinite(value->pct) &&
+        fabs(value->size) <= 3.4028234663852886e38 &&
+        fabs(value->px) <= 3.4028234663852886e38 &&
+        fabs(value->pct) <= 3.4028234663852886e38;
+}
+static bool size_calculation_factor(const char **cursor, SizeCalculationParser *parser,
+                                    SizeCalculation *out) {
+    if (++parser->depth > 256) { parser->depth--; return false; }
+    const char *p = *cursor;
+    size_calculation_space(&p);
+    bool ok = false;
+    memset(out, 0, sizeof *out);
+    if (*p == '(' || str_istarts(p, "calc(") || str_istarts(p, "-webkit-calc(")) {
+        p = strchr(p, '(') + 1;
+        ok = size_calculation_sum(&p, parser, out);
+        size_calculation_space(&p);
+        ok = ok && *p == ')';
+        if (ok) p++;
+    } else if (str_istarts(p, "size") && !isalnum((unsigned char)p[4]) && p[4] != '-' && p[4] != '_') {
+        ok = parser->allow_size;
+        out->size = 1;
+        out->mentions_size = true;
+        out->type = math_type_unit(MATH_LENGTH);
+        p += 4;
+    } else {
+        Length length;
+        ok = parse_dim(&p, &length, &parser->lengths) && length.kind == LK_LEN && !length.mm;
+        if (ok) {
+            out->px = length.px;
+            out->pct = length.pct;
+            out->percentage = length.pctu;
+            out->type = parser->lengths.math_type;
+        }
+    }
+    parser->depth--;
+    if (!ok || !size_calculation_finite(out)) return false;
+    *cursor = p;
+    return true;
+}
+static bool size_calculation_product(const char **cursor, SizeCalculationParser *parser,
+                                     SizeCalculation *out) {
+    if (!size_calculation_factor(cursor, parser, out)) return false;
+    for (;;) {
+        const char *p = *cursor;
+        size_calculation_space(&p);
+        if (*p != '*' && *p != '/') break;
+        char operation = *p++;
+        SizeCalculation right;
+        MathType result;
+        if (!size_calculation_factor(&p, parser, &right) ||
+            !math_type_product(out->type, right.type, operation == '*' ? 1 : -1, &result)) return false;
+        /* There may be only one symbolic/percentage operand in a product.
+         * Never estimate coefficients by evaluating a nonlinear function at
+         * sample points. Unit cancellation of constant operands remains typed. */
+        bool left_variable = out->size != 0 || out->pct != 0 || out->percentage;
+        bool right_variable = right.size != 0 || right.pct != 0 || right.percentage;
+        bool mentioned = out->mentions_size || right.mentions_size;
+        if (operation == '/') {
+            if (right_variable || right.px == 0) return false;
+            out->size /= right.px;
+            out->px /= right.px;
+            out->pct /= right.px;
+        } else {
+            if (left_variable && right_variable) return false;
+            if (right_variable) {
+                double scale = out->px;
+                *out = right;
+                out->size *= scale; out->px *= scale; out->pct *= scale;
+            } else {
+                out->size *= right.px; out->px *= right.px; out->pct *= right.px;
+            }
+        }
+        out->type = result;
+        out->mentions_size = mentioned;
+        if (!size_calculation_finite(out)) return false;
+        *cursor = p;
+    }
+    return true;
+}
+static bool size_calculation_sum(const char **cursor, SizeCalculationParser *parser,
+                                 SizeCalculation *out) {
+    if (!size_calculation_product(cursor, parser, out)) return false;
+    for (;;) {
+        const char *end = *cursor, *p = end;
+        size_calculation_space(&p);
+        if (*p != '+' && *p != '-') break;
+        /* A numeric token with an attached sign is not a binary operator.
+         * The caller also validates original math spacing before normalization. */
+        if (p == end || !is_ws((unsigned char)p[1])) return false;
+        double sign = *p++ == '-' ? -1 : 1;
+        SizeCalculation right;
+        if (!size_calculation_product(&p, parser, &right) ||
+            !math_type_equal(out->type, right.type)) return false;
+        out->size += sign * right.size;
+        out->px += sign * right.px;
+        out->pct += sign * right.pct;
+        out->percentage |= right.percentage;
+        out->mentions_size |= right.mentions_size;
+        if (!size_calculation_finite(out)) return false;
+        *cursor = p;
+    }
+    return true;
+}
+static void size_calculation_text(SB *out, SizeCalculation value) {
+    unsigned terms = (value.percentage || value.pct != 0) + (value.px != 0) + (value.size != 0);
+    bool wrote = false;
+    if (value.percentage || value.pct != 0) {
+        sb_printf(out, "%g%%", value.pct == 0 ? 0.0 : value.pct);
+        wrote = true;
+    }
+    if (value.px != 0 || !terms) {
+        if (wrote) sb_puts(out, value.px < 0 ? " - " : " + ");
+        sb_printf(out, "%gpx", wrote ? fabs(value.px) : value.px == 0 ? 0.0 : value.px);
+        wrote = true;
+    }
+    if (value.size != 0) {
+        if (wrote) sb_puts(out, value.size < 0 ? " - " : " + ");
+        double coefficient = wrote ? fabs(value.size) : value.size;
+        bool product = coefficient != 1;
+        if (wrote && product) sb_putc(out, '(');
+        if (product) sb_printf(out, "%g * ", coefficient);
+        sb_puts(out, "size");
+        if (wrote && product) sb_putc(out, ')');
+    }
+}
+static bool calc_size_affine_value(const char **cursor, SizeCalculationParser *parser,
+                                   Length *out, SB *computed, unsigned nesting) {
+    if (nesting > 256) return false;
+    const char *p = *cursor;
+    size_calculation_space(&p);
+    if (!str_istarts(p, "calc-size(")) return false;
+    p += 10;
+    size_calculation_space(&p);
+    Length basis = L_px(0);
+    bool nested = false, any = false;
+    SB basis_text = {0};
+    static const struct { const char *name; uint8_t kind; } keywords[] = {
+        { "auto", LK_AUTO }, { "min-content", LK_MIN_CONTENT },
+        { "max-content", LK_MAX_CONTENT }, { "fit-content", LK_FIT_CONTENT },
+        { "stretch", LK_STRETCH }, { "any", LK_LEN }
+    };
+    bool keyword = false, ok = true;
+    if (str_istarts(p, "calc-size(")) {
+        nested = true;
+        ok = calc_size_affine_value(&p, parser, &basis, &basis_text, nesting + 1);
+    } else {
+        for (unsigned i = 0; i < sizeof keywords / sizeof *keywords; i++) {
+            size_t length = strlen(keywords[i].name);
+            if (!str_ieqn(p, keywords[i].name, length) ||
+                !(p[length] == ',' || is_ws((unsigned char)p[length]))) continue;
+            basis.kind = keywords[i].kind;
+            any = !strcmp(keywords[i].name, "any");
+            sb_puts(&basis_text, keywords[i].name);
+            p += length; keyword = true; break;
+        }
+        if (!keyword) {
+            SizeCalculation value;
+            parser->allow_size = false;
+            ok = size_calculation_sum(&p, parser, &value) &&
+                math_type_equal(value.type, math_type_unit(MATH_LENGTH));
+            if (ok) {
+                basis.px = (float)value.px; basis.pct = (float)value.pct;
+                basis.pctu = value.percentage;
+                size_calculation_text(&basis_text, value);
+            }
+        }
+    }
+    size_calculation_space(&p);
+    if (!ok || *p != ',') { sb_free(&basis_text); return false; }
+    p++;
+    parser->allow_size = !any;
+    SizeCalculation calculation;
+    ok = size_calculation_sum(&p, parser, &calculation) &&
+        math_type_equal(calculation.type, math_type_unit(MATH_LENGTH));
+    size_calculation_space(&p);
+    if (!ok || *p != ')') { sb_free(&basis_text); return false; }
+    p++;
+    sb_puts(computed, "calc-size("); sb_puts(computed, basis_text.s);
+    sb_puts(computed, ", "); size_calculation_text(computed, calculation); sb_putc(computed, ')');
+    sb_free(&basis_text);
+    if (nested) {
+        /* Flatten only the private used-value representation. The separately
+         * stored computed text above retains the nested calc-size structure. */
+        double factor = calculation.size;
+        calculation.size = factor * basis.px2;
+        calculation.px += factor * basis.pct2;
+        calculation.pct += factor * basis.px3;
+        calculation.percentage |= calculation.mentions_size && !!(basis.math_pct_mask & LEN_CALC_SIZE_PERCENT);
+        any = !!(basis.math_pct_mask & LEN_CALC_SIZE_ANY);
+    }
+    if (!size_calculation_finite(&calculation)) return false;
+    basis.mm = LEN_CALC_SIZE;
+    basis.px2 = (float)calculation.size;
+    basis.pct2 = (float)calculation.px;
+    basis.px3 = (float)calculation.pct;
+    basis.pct3 = 0;
+    basis.math_pct_mask = (any ? LEN_CALC_SIZE_ANY : 0) |
+        (calculation.percentage ? LEN_CALC_SIZE_PERCENT : 0);
+    *out = basis; *cursor = p;
+    return true;
+}
+static bool calc_size_function(const char *value) {
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    CTok first;
+    do { first = clex_next(&lexer); if (first.type == CT_WS) free(first.str); } while (first.type == CT_WS);
+    bool function = first.type == CT_FUNC && first.str && str_ieq(first.str, "calc-size");
+    free(first.str);
+    return function;
+}
+static bool calc_size_preferred_value(ACtx *context, const char *value, Length *out,
+                                      char **computed_value) {
+    if (!css_math_spacing_valid(value)) return false;
+    char *normalized = min_size_parser_text(value);
+    if (!normalized) return false;
+    bool root_used = false;
+    SizeCalculationParser parser = { .lengths = application_scalar_context(context, &root_used) };
+    parser.lengths.flow_basis = context->st;
+    SB computed = {0}; Length result;
+    const char *cursor = normalized;
+    bool ok = calc_size_affine_value(&cursor, &parser, &result, &computed, 0);
+    size_calculation_space(&cursor);
+    ok = ok && !*cursor;
+    if (root_used && context->st) context->st->inherited_dynamic = true;
+    if (ok) {
+        *out = result; *computed_value = sb_take(&computed);
+        memset(&computed, 0, sizeof computed);
+    }
+    sb_free(&computed); free(normalized);
+    return ok;
+}
+
+/* The compact layout form is already prepared for evaluation. Prefer the
+ * separately stored computed text for authored values so nested bases remain
+ * nested before used-value time. This fallback serves synthesized snapshots. */
+static void calc_size_flat_text(SB *out, Length value) {
+    sb_puts(out, "calc-size(");
+    if (value.math_pct_mask & LEN_CALC_SIZE_ANY) sb_puts(out, "any");
+    else if (value.kind == LK_LEN) {
+        SizeCalculation basis = { .px = value.px, .pct = value.pct, .percentage = value.pctu };
+        size_calculation_text(out, basis);
+    } else {
+        static const char *const names[] = { "", "auto", "none", "min-content", "max-content", "fit-content", "content", "stretch" };
+        sb_puts(out, names[value.kind]);
+    }
+    sb_puts(out, ", ");
+    SizeCalculation calculation = { .size = value.px2, .px = value.pct2, .pct = value.px3,
+        .percentage = !!(value.math_pct_mask & LEN_CALC_SIZE_PERCENT) };
+    size_calculation_text(out, calculation); sb_putc(out, ')');
+}
+
+/* Pure lengths and times do not acquire the length-percentage hint used by
+ * sizing. Share this bounded grammar between native declarations and CSSOM;
+ * invalid literal syntax must not overwrite an earlier valid declaration. */
+static int numeric_dimension_kind(const char *prop) {
+    if (!prop) return 0;
+    if (prop[0] == 'b' && !strncmp(prop, "border-", 7)) {
+        static const char *const sides[] = { "top-width", "right-width", "bottom-width", "left-width",
+            "inline-start-width", "inline-end-width", "block-start-width", "block-end-width", NULL };
+        for (int i = 0; sides[i]; i++) if (!strcmp(prop + 7, sides[i])) return 1;
+    } else if (prop[0] == 'o' && !strcmp(prop, "outline-width")) return 1;
+    else if (prop[0] == 'a' && !strncmp(prop, "animation-", 10))
+        return !strcmp(prop + 10, "duration") || !strcmp(prop + 10, "delay") ? 2 : 0;
+    else if (prop[0] == 't' && !strncmp(prop, "transition-", 11))
+        return !strcmp(prop + 11, "duration") || !strcmp(prop + 11, "delay") ? 2 : 0;
+    return 0;
+}
+bool css_numeric_dimension_property(const char *prop) { return numeric_dimension_kind(prop) != 0; }
+static bool numeric_dimension_component(const char *text, int kind, bool duration, bool auto_duration) {
+    if (kind == 1 && (str_ieq(text, "thin") || str_ieq(text, "medium") || str_ieq(text, "thick"))) return true;
+    if (auto_duration && str_ieq(text, "auto")) return true;
+    const char *open = strchr(text, '('); bool math = open != NULL;
+    if (math) {
+        if (!(isalpha((unsigned char)*text) || *text == '-')) return false;
+        unsigned depth = 1; const char *cursor = open + 1;
+        for (; *cursor && depth; cursor++) {
+            if (*cursor == '(') depth++; else if (*cursor == ')') depth--;
+        }
+        if (depth || *cursor) return false; /* exactly one component, no bare trailing arithmetic */
+    } else {
+        CLexer lexer; clex_init(&lexer, text, strlen(text));
+        CTok first = clex_next(&lexer), end;
+        do { end = clex_next(&lexer); if (end.type == CT_WS) free(end.str); } while (end.type == CT_WS);
+        bool literal = (first.type == CT_NUMBER || first.type == CT_DIM) && end.type == CT_EOF;
+        free(first.str); free(end.str); if (!literal) return false;
+    }
+    CssNumber number;
+    if (!css_number_parse_context(text, 16, 16, NULL, false, NULL, true, &number)) return false;
+    bool dimension = true; int expected = kind == 1 ? CN_LENGTH : CN_TIME;
+    for (int i = 0; i < CN_DIMS; i++) if (number.power[i] != (i == expected)) dimension = false;
+    if (!dimension && !(kind == 1 && !math && css_number_scalar(&number) && number.value == 0)) return false;
+    return math || !(kind == 1 || duration) || number.value >= 0;
+}
+char *css_numeric_dimension_parse(const char *prop, const char *value) {
+    int kind = numeric_dimension_kind(prop); if (!kind || !value) return NULL;
+    bool duration = kind == 2 && strstr(prop, "duration") != NULL;
+    bool auto_duration = !strcmp(prop, "animation-duration");
+    /* Common literal values need no token allocations. Other units, comments,
+       escapes and calculations still pass through the complete grammar. */
+    if (isdigit((unsigned char)*value) || *value == '+' || *value == '-' || *value == '.') {
+        const char *cursor = value; if (*cursor == '+' || *cursor == '-') cursor++;
+        bool digits = false;
+        while (isdigit((unsigned char)*cursor)) { digits = true; cursor++; }
+        if (*cursor == '.' && isdigit((unsigned char)cursor[1])) {
+            cursor++; while (isdigit((unsigned char)*cursor)) { digits = true; cursor++; }
+        }
+        if ((*cursor == 'e' || *cursor == 'E') && (isdigit((unsigned char)cursor[1]) ||
+            ((cursor[1] == '+' || cursor[1] == '-') && isdigit((unsigned char)cursor[2])))) {
+            cursor++; if (*cursor == '+' || *cursor == '-') cursor++;
+            while (isdigit((unsigned char)*cursor)) cursor++;
+        }
+        char *end; double number = strtod(value, &end);
+        if (digits && end == cursor && (!(kind == 1 || duration) || number >= 0) &&
+            (kind == 1 ? !strcmp(end, "px") || (!*end && number == 0) : !strcmp(end, "s") || !strcmp(end, "ms")))
+            return xstrdup(value);
+    }
+    if (!css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value); /* retain case-sensitive pending tokens */
+    if (!css_math_spacing_valid(value)) return NULL;
+    char *buffer = min_size_parser_text(value); if (!buffer) return NULL;
+    char *text = str_trim(buffer); bool valid = var_wide_keyword(text) != NULL;
+    if (!valid && kind == 1) valid = numeric_dimension_component(text, kind, false, false);
+    else if (!valid) {
+        unsigned depth = 0; char *start = text; valid = true;
+        for (char *cursor = text;; cursor++) {
+            if (*cursor == '(') depth++; else if (*cursor == ')') depth--;
+            if (!*cursor || (*cursor == ',' && !depth)) {
+                char *component_text = xstrndup(start, (size_t)(cursor - start));
+                bool component = numeric_dimension_component(str_trim(component_text), kind, duration, auto_duration);
+                free(component_text);
+                if (!component) { valid = false; break; }
+                if (!*cursor) break;
+                start = cursor + 1;
+            }
+        }
+    }
+    if (!valid) { free(buffer); return NULL; }
+    if (text != buffer) memmove(buffer, text, strlen(text) + 1);
+    return buffer;
+}
+bool css_numeric_dimension_valid(const char *prop, const char *value) {
+    if (!numeric_dimension_kind(prop)) return true;
+    char *parsed = css_numeric_dimension_parse(prop, value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
+/* A shadow is one contiguous group of two to four lengths, with optional
+ * color and inset on either side. Lengths have no percentage hint; only a
+ * literal blur radius is range-checked before computed-value time.
+ * https://drafts.csswg.org/css-backgrounds/#box-shadow */
+static bool shadow_token_text(SB *out, const CTok *token) {
+    int type = token->type;
+    if (type == CT_WS) {
+        if (out->n && out->s[out->n - 1] != ' ' && out->s[out->n - 1] != '(') sb_putc(out, ' ');
+    } else if (type == CT_IDENT || type == CT_FUNC) {
+        for (const unsigned char *p = (const unsigned char *)token->str; p && *p; p++)
+            if (*p < 0x80 && !isalnum(*p) && *p != '-' && *p != '_') return false;
+        for (const char *p = token->str; p && *p; p++) sb_putc(out, (char)lc(*p));
+        if (type == CT_FUNC) sb_putc(out, '(');
+    } else if (type == CT_HASH) {
+        sb_putc(out, '#');
+        for (const unsigned char *p = (const unsigned char *)token->str; p && *p; p++) {
+            if (!isxdigit(*p)) return false;
+            sb_putc(out, (char)lc(*p));
+        }
+    } else if (type == CT_NUMBER || type == CT_DIM || type == CT_PERCENT) {
+        /* Preserve an out-of-range numeric token for the existing evaluator;
+         * never manufacture an invalid infpx literal while serializing it. */
+        if (isfinite(token->num)) sb_printf(out, "%.15g", token->num);
+        else {
+            char *end; strtod(token->start, &end);
+            if (end == token->start || (size_t)(end - token->start) > token->len) return false;
+            sb_put(out, token->start, (size_t)(end - token->start));
+        }
+        if (type == CT_PERCENT) sb_putc(out, '%');
+        if (type == CT_DIM) for (const unsigned char *p = (const unsigned char *)token->unit; *p; p++) {
+            if (!isalpha(*p)) return false;
+            sb_putc(out, (char)lc(*p));
+        }
+    } else if (type == CT_COMMA) {
+        while (out->n && out->s[out->n - 1] == ' ') out->s[--out->n] = 0;
+        sb_puts(out, ", ");
+    } else if (type == CT_LPAREN) sb_putc(out, '(');
+    else if (type == CT_RPAREN) {
+        while (out->n && out->s[out->n - 1] == ' ') out->s[--out->n] = 0;
+        sb_putc(out, ')');
+    } else if (type == CT_DELIM && strchr("+-*/", *token->start)) sb_put(out, token->start, token->len);
+    else return false;
+    return true;
+}
+static char *shadow_component_text(CLexer *lexer, const CTok *first) {
+    if (first->type != CT_IDENT && first->type != CT_HASH && first->type != CT_NUMBER &&
+        first->type != CT_DIM && first->type != CT_FUNC) return NULL;
+    SB out = {0};
+    if (!shadow_token_text(&out, first)) { sb_free(&out); return NULL; }
+    unsigned depth = first->type == CT_FUNC; size_t copied = lexer->i;
+    while (depth) {
+        CTok token = clex_next(lexer); int type = token.type;
+        size_t offset = (size_t)(token.start - lexer->s);
+        if (offset > copied && out.n && out.s[out.n - 1] != ' ' && out.s[out.n - 1] != '(') sb_putc(&out, ' ');
+        bool ok = type != CT_EOF && shadow_token_text(&out, &token);
+        if (type == CT_FUNC || type == CT_LPAREN) depth++;
+        else if (type == CT_RPAREN) depth--;
+        copied = lexer->i; free(token.str);
+        if (!ok || depth > 256) { sb_free(&out); return NULL; }
+    }
+    return sb_take(&out);
+}
+static bool shadow_length_component(const char *text, bool blur, bool math, bool *zero) {
+    CssNumber number;
+    if (!css_number_parse_context(text, 16, 16, NULL, false, NULL, true, &number)) return false;
+    bool length = true;
+    for (int i = 0; i < CN_DIMS; i++) if (number.power[i] != (i == CN_LENGTH)) length = false;
+    *zero = !math && css_number_scalar(&number) && number.value == 0;
+    return (length || *zero) && (math || !blur || number.value >= 0);
+}
+char *css_box_shadow_parse(const char *value) {
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    char *buffer = css_math_value_text(value); if (!buffer) return NULL;
+    CLexer lexer; clex_init(&lexer, buffer, strlen(buffer));
+    SB out = {0}; char *lengths[4] = {0}, *color = NULL;
+    unsigned count = 0; bool inset = false, ended = false;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_COMMA || type == CT_EOF) {
+            free(token.str);
+            if (count < 2) goto invalid;
+            if (out.n) sb_puts(&out, ", ");
+            if (color) { sb_puts(&out, color); sb_putc(&out, ' '); free(color); color = NULL; }
+            for (unsigned i = 0; i < count; i++) {
+                if (i) sb_putc(&out, ' ');
+                sb_puts(&out, lengths[i]); free(lengths[i]); lengths[i] = NULL;
+            }
+            if (inset) sb_puts(&out, " inset");
+            count = 0; inset = ended = false;
+            if (type == CT_EOF) { free(buffer); return sb_take(&out); }
+            continue;
+        }
+        char *component = shadow_component_text(&lexer, &token); free(token.str);
+        if (!component) goto invalid;
+        if (!out.n && !count && !color && !inset && type == CT_IDENT &&
+            (str_ieq(component, "none") || var_wide_keyword(component))) {
+            CTok end; do { end = clex_next(&lexer); free(end.str); } while (end.type == CT_WS);
+            if (end.type == CT_EOF) { free(buffer); sb_free(&out); return component; }
+            free(component); goto invalid;
+        }
+        bool zero = false;
+        if (shadow_length_component(component, count == 2, type == CT_FUNC, &zero)) {
+            if (ended || count == 4) { free(component); goto invalid; }
+            if (zero) { free(component); component = xstrdup("0px"); }
+            lengths[count++] = component;
+        } else if (str_ieq(component, "inset") && !inset) {
+            inset = true; ended |= count != 0; free(component);
+        } else {
+            CssColor parsed;
+            if (color || !css_color_parse(component, &parsed, NULL)) { free(component); goto invalid; }
+            /* Keep specified color tokens, especially currentcolor, relative
+             * colors and light-dark(). CSSOM uses its shared color serializer. */
+            color = component; ended |= count != 0;
+        }
+    }
+invalid:
+    for (unsigned i = 0; i < count; i++) free(lengths[i]);
+    free(color); free(buffer); sb_free(&out); return NULL;
+}
+bool css_box_shadow_valid(const char *property, const char *value) {
+    if (strcmp(property, "box-shadow")) return true;
+    char *parsed = css_box_shadow_parse(value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
+/* An inherited animation policy, kept in the existing generic computed store.
+ * This parser is shared by raw declarations, supports(), and direct application;
+ * pending substitution is checked again after the resolved tokens replace it. */
+static char *interpolate_size_parse(const char *value) {
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    CTok token;
+    do { token = clex_next(&lexer); if (token.type != CT_WS) break; free(token.str); } while (true);
+    const char *keyword = NULL;
+    if (token.type == CT_IDENT && token.str) {
+        static const char *const words[] = { "numeric-only", "allow-keywords",
+            "inherit", "initial", "unset", "revert", "revert-layer", NULL };
+        for (unsigned i = 0; words[i]; i++) if (str_ieq(token.str, words[i])) { keyword = words[i]; break; }
+    }
+    free(token.str);
+    do { token = clex_next(&lexer); if (token.type != CT_WS) break; free(token.str); } while (true);
+    bool end = token.type == CT_EOF; free(token.str);
+    return keyword && end ? xstrdup(keyword) : NULL;
+}
+bool css_interpolate_size_valid(const char *property, const char *value) {
+    if (!property || strcmp(property, "interpolate-size")) return true;
+    char *parsed = interpolate_size_parse(value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
+/* Physical border shorthands share their concrete grammar with the declaration
+ * engine and CSSOM. A pending substitution remains an opaque token stream. */
+static int border_decl_kind(const char *property) {
+    if (!strcmp(property, "border")) return 0;
+    if (!strcmp(property, "border-width")) return 1;
+    if (!strcmp(property, "border-style")) return 2;
+    if (!strcmp(property, "border-color")) return 3;
+    static const char *const sides[] = { "top", "right", "bottom", "left" };
+    if (strncmp(property, "border-", 7)) return -1;
+    for (unsigned i = 0; i < 4; i++) {
+        const char *tail = property + 7; size_t n = strlen(sides[i]);
+        if (strncmp(tail, sides[i], n)) continue;
+        tail += n;
+        if (!*tail) return 4;
+        if (!strcmp(tail, "-width")) return 5;
+        if (!strcmp(tail, "-style")) return 6;
+        if (!strcmp(tail, "-color")) return 7;
+    }
+    return -1;
+}
+static bool border_style_keyword(const char *text) {
+    static const char *const styles[] = { "none", "hidden", "dotted", "dashed",
+        "solid", "double", "groove", "ridge", "inset", "outset", NULL };
+    for (unsigned i = 0; styles[i]; i++) if (str_ieq(text, styles[i])) return true;
+    return false;
+}
+char *css_border_parse(const char *property, const char *value) {
+    int kind = border_decl_kind(property);
+    if (kind < 0 || !value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    char *buffer = css_math_value_text(value); if (!buffer) return NULL;
+    CLexer lexer; clex_init(&lexer, buffer, strlen(buffer));
+    char *parts[4] = {0}; unsigned count = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        if (type == CT_WS) { free(token.str); continue; }
+        if (type == CT_EOF) { free(token.str); break; }
+        char *component = shadow_component_text(&lexer, &token); free(token.str);
+        if (!component || count == 4) { free(component); goto invalid; }
+        parts[count++] = component;
+    }
+    if (!count) goto invalid;
+    if (var_wide_keyword(parts[0])) {
+        if (count != 1) goto invalid;
+        char *result = parts[0]; free(buffer); return result;
+    }
+    for (unsigned i = 0; i < count; i++) if (var_wide_keyword(parts[i])) goto invalid;
+    if (kind >= 5 && count != 1) goto invalid;
+    if (kind == 0 || kind == 4) {
+        if (count > 3) goto invalid;
+        char *width = NULL; const char *style = NULL, *color = NULL;
+        for (unsigned i = 0; i < count; i++) {
+            if (border_style_keyword(parts[i])) {
+                if (style) { free(width); goto invalid; }
+                style = parts[i]; continue;
+            }
+            char *length = css_numeric_dimension_parse("border-top-width", parts[i]);
+            if (length) {
+                if (width) { free(length); free(width); goto invalid; }
+                width = length; continue;
+            }
+            CssColor parsed;
+            if (color || !css_color_parse(parts[i], &parsed, NULL)) { free(width); goto invalid; }
+            color = parts[i];
+        }
+        SB result = {0};
+        sb_puts(&result, width ? width : "medium"); sb_putc(&result, ' ');
+        sb_puts(&result, style ? style : "none"); sb_putc(&result, ' ');
+        sb_puts(&result, color ? color : "currentcolor");
+        free(width); for (unsigned i = 0; i < count; i++) free(parts[i]);
+        free(buffer); return sb_take(&result);
+    }
+    for (unsigned i = 0; i < count; i++) {
+        int component_kind = kind >= 5 ? kind - 4 : kind;
+        if (component_kind == 1) {
+            char *length = css_numeric_dimension_parse("border-top-width", parts[i]);
+            if (!length) goto invalid;
+            free(parts[i]); parts[i] = length;
+        } else if (component_kind == 2) {
+            if (!border_style_keyword(parts[i])) goto invalid;
+        } else {
+            CssColor parsed; if (!css_color_parse(parts[i], &parsed, NULL)) goto invalid;
+        }
+    }
+    SB result = {0};
+    for (unsigned i = 0; i < count; i++) {
+        if (i) sb_putc(&result, ' ');
+        sb_puts(&result, parts[i]); free(parts[i]);
+    }
+    free(buffer); return sb_take(&result);
+invalid:
+    for (unsigned i = 0; i < count; i++) free(parts[i]);
+    free(buffer); return NULL;
+}
+bool css_border_valid(const char *property, const char *value) {
+    if (border_decl_kind(property) < 0) return true;
+    char *parsed = css_border_parse(property, value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
 static bool column_property(const char *prop) {
     return !strcmp(prop, "columns") || !strcmp(prop, "column-width") || !strcmp(prop, "column-count");
 }
@@ -2129,6 +3841,56 @@ static bool inherit_copies_uncompared(const char *P) {
 static const char *const known_props[] = { "animation","animation-name","animation-duration","animation-delay","animation-iteration-count","animation-timing-function","animation-fill-mode","animation-direction","animation-play-state","transition","transition-property","transition-duration","transition-delay","transition-timing-function","display","position","float","clear","width","height","min-width","min-height","max-width","max-height","margin","margin-top","margin-right","margin-bottom","margin-left","padding","padding-top","padding-right","padding-bottom","padding-left","border","border-width","border-style","border-color","border-top","border-right","border-bottom","border-left","border-radius","color","background","background-color","background-image","font","font-size","font-weight","font-family","font-style","line-height","text-align","text-decoration","white-space","overflow","overflow-x","overflow-y","visibility","opacity","z-index","top","right","bottom","left","inset","flex","flex-direction","flex-wrap","flex-grow","flex-shrink","flex-basis","justify-content","align-items","align-self","align-content","gap","row-gap","column-gap","order","grid","grid-template-columns","grid-template-rows","grid-column","grid-row","grid-area","transform","transition","animation","box-shadow","text-shadow","box-sizing","cursor","pointer-events","content","list-style","list-style-type","vertical-align","text-transform","letter-spacing","word-spacing","text-indent","text-overflow","word-break","overflow-wrap","word-wrap","object-fit","aspect-ratio","filter","outline","user-select","appearance","will-change","contain","isolation","mix-blend-mode","place-items","place-content","place-self","justify-items","justify-self","table-layout","border-collapse","border-spacing","clip-path","mask","mask-image","mask-size","-webkit-mask","-webkit-mask-image","-webkit-mask-size","resize","scroll-behavior","overscroll-behavior","touch-action","font-variant","text-rendering","-webkit-font-smoothing","fill","stroke","caret-color","accent-color","color-scheme","translate","scale","rotate","container-type","backdrop-filter","line-clamp","-webkit-line-clamp","text-wrap","hyphens","tab-size","direction","unicode-bidi","writing-mode","inset-inline","inset-block","margin-inline","margin-block","padding-inline","padding-block","inline-size","block-size","min-inline-size","max-inline-size","min-block-size","max-block-size", NULL };
 bool css_property_known(const char *p) { return kw(p, known_props) >= 0 || gen_prop(p); }
 
+/* A transition-property list preserves unknown identifiers and duplicates so
+ * its positions continue to line up with duration, delay and easing lists. */
+char *css_transition_property_parse(const char *value) {
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    SB result; sb_init(&result);
+    bool need_identifier = true, singleton = false;
+    unsigned count = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer);
+        if (token.type == CT_WS) { free(token.str); continue; }
+        if (token.type == CT_EOF) {
+            free(token.str);
+            if (!need_identifier) return sb_take(&result);
+            break;
+        }
+        if (!need_identifier) {
+            bool comma = token.type == CT_COMMA && !singleton;
+            free(token.str);
+            if (!comma) break;
+            need_identifier = true;
+            continue;
+        }
+        if (token.type != CT_IDENT || !token.str) { free(token.str); break; }
+        const char *wide = var_wide_keyword(token.str);
+        bool one = wide || str_ieq(token.str, "none");
+        if (str_ieq(token.str, "default") || (count && one)) { free(token.str); break; }
+        if (count) sb_puts(&result, ", ");
+        char *lower = xstrdup(token.str);
+        for (char *p = lower; *p; p++) *p = (char)lc((unsigned char)*p);
+        const char *identifier = wide ? wide :
+            ((!strcmp(lower, "none") || !strcmp(lower, "all") || css_property_known(lower)) ? lower : token.str);
+        css_serialize_ident(&result, identifier);
+        free(lower); free(token.str);
+        singleton = one;
+        need_identifier = false;
+        count++;
+    }
+    free(sb_take(&result));
+    return NULL;
+}
+bool css_transition_property_valid(const char *property, const char *value) {
+    if (!str_ieq(property, "transition-property")) return true;
+    char *parsed = css_transition_property_parse(value);
+    bool valid = parsed != NULL;
+    free(parsed);
+    return valid;
+}
+
 static char *parse_grid_areas(const char *v) {
     if (str_ieq(v, "none")) return NULL;
     SB b; sb_init(&b); bool any = false;
@@ -2245,7 +4007,7 @@ static void anim_decl(ComputedStyle *st, const char *Q, const char *val) {
             layer[l] = prop;
         }
         st->tr_prop = layer_list(layer, nl);
-    } else if (!strcmp(Q, "transition-property")) st->tr_prop = layer_list(layer, nl);
+    } else if (!strcmp(Q, "transition-property")) st->tr_prop = *val ? atom(val) : NULL;
     else if (!strcmp(Q, "transition-duration") || !strcmp(Q, "transition-delay")) {
         float m = 0;
         for (int l = 0; l < nl; l++) if (css_time(layer[l], &f) && f > m) m = f;
@@ -2372,26 +4134,76 @@ static bool custom_defer;
 static _Thread_local const CustomProps *custom_origin_base;
 static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop);
 static char *grid_computed_tokens(const char *raw, float em, float rem, const MediaCtx *mc, const ComputedStyle *basis, bool *used);
-void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
+/* The late containment cascade projects all only onto its intrinsic-size
+ * slots. Scope the projection to the same style so recursive substitution
+ * retains normal all validation and nested other-style work is unaffected. */
+static _Thread_local const ComputedStyle *contain_intrinsic_projection_style;
+static _Thread_local const ComputedStyle *interpolate_size_projection_style;
+static void query_basis_copy(ComputedStyle *, const ComputedStyle *, int);
+static void css_apply_decl_inner(ComputedStyle *, const ComputedStyle *, const char *, const char *, StyleEngine *, Node *);
+/* Actual normal properties and lazy basis projections share the same guarded
+ * stack as custom-property substitution. The wrapper owns only this frame;
+ * nested different-style computations continue with their own resolver. */
+void css_apply_decl(ComputedStyle *style, const ComputedStyle *parent, const char *property,
+                    const char *value, StyleEngine *engine, Node *element) {
+    VarResolver *resolver = active_var_resolver;
+    bool shared = resolver && (resolver->style == style || resolver->projection_style == style) &&
+        !(property[0] == '-' && property[1] == '-');
+    VarEntry *previous = shared && resolver->stack.n ? resolver->stack.v[resolver->stack.n - 1] : NULL;
+    bool same = previous && previous->property && !strcmp(previous->name, property);
+    if (!shared || same) { css_apply_decl_inner(style, parent, property, value, engine, element); return; }
+    VarEntry frame = { .name = property, .property = true, .state = 1 };
+    vec_push(resolver->stack, &frame);
+    css_apply_decl_inner(style, parent, property, value, engine, element);
+    resolver->stack.n--;
+}
+static bool query_apply_dependencies(ComputedStyle *style, const char *property, const char *value) {
+    VarResolver *resolver = active_var_resolver;
+    if (!resolver || (resolver->style != style && resolver->projection_style != style) || !resolver->stack.n) return true;
+    if (var_wide_keyword(value)) return true;
+    bool parent_font = !strcmp(property, "font-size") || !strcmp(property, "font");
+    bool parent_line = !strcmp(property, "line-height");
+    unsigned dependencies = query_unit_dependencies_mode(value, parent_font, parent_line,
+        query_root_element(resolver));
+    if (!dependencies) return true;
+    /* currentColor in color itself has the property's existing inherit
+     * meaning. In a style-query operand it remains an actual own-color edge. */
+    if (!strcmp(property, "color")) dependencies &= ~QD_COLOR;
+    VarEntry *owner = resolver->stack.v[resolver->stack.n - 1];
+    if (!query_dependencies(resolver, owner, dependencies)) return false;
+    if (resolver->projection_style == style)
+        for (int i = 0; i < QB_COUNT; i++) if (dependencies & (1u << i)) query_basis_copy(style, resolver->style, i);
+    return true;
+}
+
+static void css_apply_decl_inner(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
+    /* Invalid argument grammar is discarded before pending substitution can
+       unset a normal property or replace a custom property's prior tokens. */
+    if (css_value_has_if(value_in) && !css_var_syntax_valid(value_in)) return;
     if (prop[0] == '-' && prop[1] == '-') {
         char *kb = xstrdup(value_in), *k = str_trim(kb), *v;
-        /* CSS-wide keywords: "" is the guaranteed-invalid value */
+        /* Registration metadata controls actual initial/inherit/unset values.
+         * An empty C string remains the guaranteed-invalid map sentinel. */
+        const RegProp *registration = regprop_find(prop);
+        const char *initial = registration ? registration->init : "";
         if (str_ieq(k, "inherit") || str_ieq(k, "unset") || str_ieq(k, "revert-layer")) {
+            bool inherit = str_ieq(k, "inherit") || !registration || registration->inherits;
             cm_add_name(&st->custom_dependencies, prop);
-            const char *pv = par ? custom_get(par->custom, prop) : NULL; v = xstrdup(pv ? pv : "");
+            const char *pv = inherit && par ? custom_get(par->custom, prop) : NULL;
+            v = xstrdup(pv ? pv : initial);
         } else if (str_ieq(k, "revert")) {
             cm_add_name(&st->custom_dependencies, prop);
             const char *pv = custom_origin_base ? custom_get(custom_origin_base, prop) : par ? custom_get(par->custom, prop) : NULL;
-            v = xstrdup(pv ? pv : "");
-        } else if (str_ieq(k, "initial")) v = xstrdup("");
+            v = xstrdup(pv ? pv : initial);
+        } else if (str_ieq(k, "initial")) v = xstrdup(initial);
         else if (!*k) v = xstrdup(" ");   /* valid empty value, unlike "" */
-        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, 0);
+        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, par, e, el, 0);
         free(kb);
         if (!v) v = xstrdup("");
         /* Re-declaring the value already in effect (Tailwind's universal --tw-* resets on every
            element) changes nothing: keep sharing the inherited map instead of copying it. */
         const char *cur = custom_get(st->custom, prop);
-        if (cur && !strcmp(cur, v) && !css_value_has_var(v)) { free(v); return; }
+        if (cur && !strcmp(cur, v) && !css_value_has_var(v) && !css_value_has_if(v)) { free(v); return; }
         /* custom property: copy-on-write map */
         if (!st->custom || st->custom->refs > 1 || (par && st->custom == par->custom)) {
             CustomProps *n = xcalloc(1, sizeof *n); n->refs = 1;
@@ -2413,11 +4225,17 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         free(old);
         return;
     }
+    /* Authored parse errors are ignored before substitution can apply unset.
+       Valid pending values are checked again after their tokens resolve. */
+    if (!strcmp(prop, "transition-property") && !css_transition_property_valid(prop, value_in)) return;
+    if (!css_interpolate_size_valid(prop, value_in)) return;
+    if (!css_box_shadow_valid(prop, value_in)) return;
+    if (!css_border_valid(prop, value_in)) return;
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
-    if (css_value_has_var(v)) {
-        subst = subst_vars(v, st, 0);
+    if (css_value_has_var(v) || css_value_has_if(v)) {
+        subst = subst_vars(v, st, par, e, el, 0);
         if (subst && !css_math_spacing_valid(subst)) { free(subst); subst = NULL; }
         /* A failed substitution or property grammar takes unset; recognized
          * CSS-wide keywords keep their existing dedicated dispatch. */
@@ -2427,8 +4245,30 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         char *parsed = wide ? xstrdup(wide) : var_parser_text(subst); free(subst); subst = parsed;
         v = subst;
     }
-    char *vbuf = xstrdup(v); char *val = str_trim(vbuf);
+    if (!query_apply_dependencies(st, prop, v)) {
+        free(subst); css_apply_decl_inner(st, par, prop, "unset", e, el); return;
+    }
+    char *vbuf = min_size_property(prop) ? css_min_size_parse(v) :
+        css_numeric_dimension_property(prop) ? css_numeric_dimension_parse(prop, v) :
+        !strcmp(prop, "interpolate-size") ? interpolate_size_parse(v) :
+        !strcmp(prop, "transition-property") ? css_transition_property_parse(v) :
+        !strcmp(prop, "box-shadow") ? css_box_shadow_parse(v) :
+        border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) : xstrdup(v);
+    if (!vbuf) { free(subst); return; } /* substitution already applied unset */
+    char *val = str_trim(vbuf);
+    if (min_size_property(prop) && (str_ieq(val, "-webkit-min-content") ||
+        str_ieq(val, "-webkit-max-content") || str_ieq(val, "-webkit-fit-content"))) val += 8;
+    if (!strcmp(prop, "border")) {
+        /* Reset-only subproperties also receive CSS-wide keywords. Perform
+           their updates before setting the outer length/container context. */
+        static const char *const image[] = { "border-image-source", "border-image-slice",
+            "border-image-width", "border-image-outset", "border-image-repeat" };
+        const char *wide = var_wide_keyword(val);
+        for (unsigned i = 0; i < sizeof image / sizeof image[0]; i++)
+            css_apply_decl(st, par, image[i], wide ? wide : "initial", e, el);
+    }
     ACtx c = { st, par, e, el, st->font_size, 16, e ? &e->media : NULL };
+    c.line_height_property = !strcmp(prop, "line-height");
     g_cq[0] = g_cq[1] = 0;
     if (el && strstr(v, "cq")) for (const Node *a = el->parent; a; a = a->parent)
         if (a->type == NODE_ELEMENT && a->style && a->style->container_type) { g_cq[0] = a->cq_w; g_cq[1] = a->style->container_type == 2 ? a->cq_h : 0; break; }
@@ -2467,6 +4307,31 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     }
     bool grid_tracks = !strcmp(P, "grid-template-columns") || !strcmp(P, "grid-template-rows");
     GridTrack *prepared_tracks = NULL; int prepared_count = 0;
+    bool preferred_size = !strcmp(P, "width") || !strcmp(P, "height");
+    bool minimum_size = !strcmp(P, "min-width") || !strcmp(P, "min-height");
+    bool maximum_size = !strcmp(P, "max-width") || !strcmp(P, "max-height");
+    if ((preferred_size || minimum_size || maximum_size) && !inherit && !initial && !unset &&
+        calc_size_function(val)) {
+        /* Commit native and generic computed state together. Unsupported or
+         * malformed calculation syntax cannot replace only half a declaration.
+         * A pending declaration already took unset before this final parse. */
+        Length value; char *computed = NULL;
+        if (calc_size_preferred_value(&c, val, &value, &computed)) {
+            /* A calc-size basis must be a sizing value allowed by this
+             * property. Maximum sizes have none, never the auto keyword. */
+            if (maximum_size && value.kind == LK_AUTO) { free(computed); goto out; }
+            Length *slot = !strcmp(P, "width") ? &st->width : !strcmp(P, "height") ? &st->height :
+                !strcmp(P, "min-width") ? &st->min_width : !strcmp(P, "min-height") ? &st->min_height :
+                !strcmp(P, "max-width") ? &st->max_width : &st->max_height;
+            *slot = value;
+            if (preferred_size) {
+                int axis = !strcmp(P, "height");
+                free(st->anchor_sz[axis]); st->anchor_sz[axis] = NULL;
+            }
+            gen_put(&st->gen_n, P, computed);
+        }
+        goto out;
+    }
     if (!inherit && !initial && !unset) {
         if (grid_tracks && !str_ieq(val, "none")) {
             prepared_count = parse_grid_tracks(&c, val, &prepared_tracks);
@@ -2597,6 +4462,16 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "font-weight")) st->font_weight = src->font_weight;
         else if (!strcmp(P, "font-family")) st->font_family = src->font_family;
         else if (!strcmp(P, "line-height")) { st->line_height = src->line_height; st->line_height_normal = src->line_height_normal; st->line_height_factor = src->line_height_factor; }
+        else if (!strcmp(P, "letter-spacing")) st->letter_spacing = (unset && par ? par : src)->letter_spacing;
+        else if (!strcmp(P, "word-spacing")) st->word_spacing = (unset && par ? par : src)->word_spacing;
+        else if (!strcmp(P, "box-shadow")) {
+            st->box_shadow = src->box_shadow; st->has_shadow = src->has_shadow;
+            if (inherit) {
+                st->parent_sensitive = true;
+                if (st->box_shadow.color_tokens && css_parse_color(st->box_shadow.color_tokens, &st->box_shadow.color, st->color))
+                    st->has_shadow = COLOR_A(st->box_shadow.color) > 0;
+            }
+        }
         else if (!strcmp(P, "background-repeat")) st->bg_repeat = src->bg_repeat;
         else if (!strcmp(P, "background-origin")) st->bg_origin = src->bg_origin;
         else if (!strcmp(P, "background-clip")) st->bg_clip = src->bg_clip;
@@ -2620,6 +4495,10 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
                 !strcmp(P, "min-width") ? &st->min_width : !strcmp(P, "min-height") ? &st->min_height :
                 !strcmp(P, "max-width") ? &st->max_width : &st->max_height;
             *dst = *v; if (inherit) st->parent_sensitive = true;
+            if (len_calc_size(*dst) || custom_get(st->gen_n, P)) {
+                const char *computed = len_calc_size(*dst) ? gen_value(src, gen_prop(from)) : NULL;
+                gen_put(&st->gen_n, P, xstrdup(computed ? computed : ""));
+            }
         }
         else if (!strcmp(P, "grid-column-start")) { st->grid_column.start = src->grid_column.start; if (inherit) st->parent_sensitive = true; }
         else if (!strcmp(P, "grid-column-end")) { st->grid_column.end = src->grid_column.end; if (inherit) st->parent_sensitive = true; }
@@ -2702,10 +4581,15 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             else st->border_radius[k] = src->border_radius[k];
         }
         else if (!strcmp(P, "all")) {
-            /* Extend all only to this newly implemented non-inherited family.
-               Its resolved CSS-wide grammar is checked above; arbitrary all
-               values must never become intrinsic lengths. */
-            css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
+            /* Preserve authored all ordering for these native families. The
+               CSS-wide branch has already validated the reset keyword. */
+            if (interpolate_size_projection_style == st)
+                css_apply_decl(st, par, "interpolate-size", val, e, el);
+            else {
+                css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
+                if (contain_intrinsic_projection_style != st)
+                    css_apply_decl(st, par, "border", val, e, el);
+            }
         }
         else if (!inherit && !(unset && gp && gp->inherited) && gp && gp->native && gp->initial && *gp->initial) {
             /* other natively modelled properties: apply the textual initial value */
@@ -2817,13 +4701,12 @@ apply:
         break;
     case 'd':
         if (!strcmp(P, "display")) {
-            static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root", NULL };
-            k = kw(val, ds); const char *dt = NULL;
+            k = kw(val, display_keywords); const char *dt = NULL;
             st->display_text = NULL;
             if (k >= 0) st->display = (uint8_t)k;
             else if ((dt = display_canon(val))) {
                 st->display_text = dt;
-                k = kw(dt, ds);
+                k = kw(dt, display_keywords);
                 st->display = k >= 0 ? (uint8_t)k : strstr(dt, "list-item") ? D_LIST_ITEM : str_starts(dt, "block") || str_starts(dt, "run-in") ? D_BLOCK : D_INLINE;
                 if (k >= 0) st->display_text = NULL;
             }
@@ -2846,8 +4729,7 @@ apply:
             if (k >= 0) st->font_size = szv[k];
             else if (str_ieq(val, "smaller")) st->font_size = pf / 1.2f;
             else if (str_ieq(val, "larger")) st->font_size = pf * 1.2f;
-            else if (css_parse_length_context(val, &l, pf, c.rem, c.mc, par, true,
-                     e ? &e->uses_font_units : NULL, &font_type) && l.kind == LK_LEN &&
+            else if (application_font_size_length(&c, val, &l, &font_type) && l.kind == LK_LEN &&
                      (!strchr(val, '(') || !math_type_equal(font_type, math_type_unit(MATH_NUMBER))))
                 st->font_size = LMAX(0, len_resolve(l, pf));
             c.em = st->font_size;
@@ -2925,13 +4807,18 @@ apply:
             char *end; float x = strtof(val, &end);
             if (str_ieq(val, "normal")) { st->line_height_normal = true; st->line_height_factor = 0; }
             else if (end != val && !*end) { st->line_height_normal = false; st->line_height_factor = x; st->line_height = x * st->font_size; }
-            else if (css_scalar_math(val, MATH_NUMBER, c.em, c.rem, &x)) {
+            else if (application_line_height_number(&c, val, &x)) {
                 if (isnan(x) || x < 0) x = 0;
                 st->line_height_normal = false; st->line_height_factor = x; st->line_height = x * st->font_size;
             }
             else if (alen(&c, val, &l) && l.kind == LK_LEN) { st->line_height_normal = false; st->line_height_factor = 0; st->line_height = len_resolve(l, st->font_size); }
         }
-        else if (!strcmp(P, "letter-spacing")) st->letter_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
+        else if (!strcmp(P, "letter-spacing")) {
+            st->letter_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
+            char *computed = str_ieq(val, "normal") ? xstrdup("normal") : text_length_computed_value(&c, val);
+            if (computed && st->letter_spacing == 0) { free(computed); computed = xstrdup("normal"); }
+            if (computed) gen_put(&st->gen_i, P, computed);
+        }
         else if (!strcmp(P, "list-style-type") || !strcmp(P, "list-style")) {
             static const char *const ls[] = { "none", "disc", "circle", "square", "decimal", "lower-alpha", "upper-alpha", "lower-roman", "upper-roman", NULL };
             char *t[3]; int n = split_ws(val, t, 3); for (int i = 0; i < n; i++) { k = kw(t[i], ls); if (k >= 0) st->list_style = (uint8_t)k; else if (str_ieq(t[i], "lower-latin")) st->list_style = LST_LOWER_ALPHA; else if (str_ieq(t[i], "upper-latin")) st->list_style = LST_UPPER_ALPHA; } free_toks(t, n);
@@ -3010,7 +4897,11 @@ apply:
         else if (!strcmp(P, "text-align")) { static const char *const ta[] = { "start", "left", "right", "center", "justify", "end", NULL }; k = kw(val, ta); if (k >= 0) st->text_align = (uint8_t)k; else if (strstr(val, "center")) st->text_align = TA_CENTER; else if (strstr(val, "right")) st->text_align = TA_RIGHT; else if (strstr(val, "left")) st->text_align = TA_LEFT; }
         else if (!strcmp(P, "text-decoration") || !strcmp(P, "text-decoration-line")) { st->text_decoration = 0; if (strstr(val, "underline")) st->text_decoration |= TD_UNDERLINE; if (strstr(val, "overline")) st->text_decoration |= TD_OVERLINE; if (strstr(val, "line-through")) st->text_decoration |= TD_LINE_THROUGH; }
         else if (!strcmp(P, "text-transform")) st->text_transform = str_ieq(val, "uppercase") ? TT_UPPER : str_ieq(val, "lowercase") ? TT_LOWER : str_ieq(val, "capitalize") ? TT_CAPITALIZE : TT_NONE;
-        else if (!strcmp(P, "text-indent")) st->text_indent = alen_px(&c, val, 0);
+        else if (!strcmp(P, "text-indent")) {
+            st->text_indent = alen_px(&c, val, 0);
+            char *computed = text_length_computed_value(&c, val);
+            if (computed) gen_put(&st->gen_i, P, computed);
+        }
         else if (!strcmp(P, "text-overflow")) st->text_overflow = str_ieq(val, "ellipsis") ? TO_ELLIPSIS : TO_CLIP;
         else if (!strcmp(P, "touch-action")) {   /* pinch-zoom alone allows no panning; manipulation pans both ways */
             bool x = str_ieq(val, "auto") || strstr(val, "manipulation") || strstr(val, "pan-x") || strstr(val, "pan-left") || strstr(val, "pan-right");
@@ -3035,7 +4926,12 @@ apply:
         if (!strcmp(P, "width")) alen_size(&c, val, &st->width);
         else if (!strcmp(P, "white-space") || !strcmp(P, "white-space-collapse")) { static const char *const ws[] = { "normal", "nowrap", "pre", "pre-wrap", "pre-line", "break-spaces", NULL }; k = kw(val, ws); if (k >= 0) st->white_space = (uint8_t)k; else if (str_ieq(val, "preserve")) st->white_space = WS_PRE_WRAP; }
         else if (!strcmp(P, "word-break")) st->word_break = str_ieq(val, "break-all") ? 1 : str_ieq(val, "break-word") ? 2 : 0;
-        else if (!strcmp(P, "word-spacing")) st->word_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
+        else if (!strcmp(P, "word-spacing")) {
+            st->word_spacing = str_ieq(val, "normal") ? 0 : alen_px(&c, val, 0);
+            char *computed = str_ieq(val, "normal") ? xstrdup("0px") : text_length_computed_value(&c, val);
+            if (computed && st->word_spacing == 0) { free(computed); computed = xstrdup("0px"); }
+            if (computed) gen_put(&st->gen_i, P, computed);
+        }
         else if (!strcmp(P, "writing-mode")) st->writing_mode = str_ieq(val, "vertical-rl") ? 2 : str_ieq(val, "vertical-lr") ? 1 : 0;   /* 2: vertical-rl; sideways layout remains unsupported */
         break;
     case 'z':
@@ -4755,6 +6651,7 @@ static void presentational_hints(ComputedStyle *st, const ComputedStyle *par, No
 
 static void apply_font_declarations(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n,
                                     StyleEngine *e, Node *el, bool author);
+static void apply_decl_ordered(ComputedStyle *, const ComputedStyle *, MDecl *, int, StyleEngine *, Node *, bool, bool);
 static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *base, int which) {
     int n; bool owned;
     MDecl *md = matched_decls(e, el, which, &n, &owned);
@@ -4763,12 +6660,8 @@ static ComputedStyle *compute_pseudo(StyleEngine *e, Node *el, ComputedStyle *ba
     for (int i = 0; i < n && !content; i++) content = !strcmp(md[i].d->prop, "content");
     if (!content) { if (owned) free(md); return NULL; }
     ComputedStyle *st = style_inherit(base);
-    for (int i = 0; i < n; i++) if (md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-') css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
-    /* Logical dimensions and edges use the pseudo's final mapping basis, regardless of
-       where its declaration appears relative to the dimension declarations. */
-    for (int i = 0; i < n; i++) if (flow_basis_prop(md[i].d->prop)) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
-    apply_font_declarations(st, base, md, n, e, el, false);
-    for (int i = 0; i < n; i++) if (!(md[i].d->prop[0] == '-' && md[i].d->prop[1] == '-') && !flow_basis_prop(md[i].d->prop) && !font_basis_prop(md[i].d->prop)) css_apply_decl(st, base, md[i].d->prop, md[i].d->value, e, el);
+    registered_defaults(st);
+    apply_decl_ordered(st, base, md, n, e, el, false, true);
     if (owned) free(md);
     /* An absent pseudo can become visible when a consulted variable changes. */
     cm_or(&base->custom_dependencies, &st->custom_dependencies);
@@ -4820,6 +6713,34 @@ static char *quirk_px(const char *v) {
     if (!b.s) sb_puts(&b, "");
     return b.s;
 }
+/* A supports() declaration asks the same native value grammars that consume
+ * these properties. The broader validator chain remains in parse.c. */
+bool css_supports_native_value(const char *property, const char *value, bool quirks) {
+    bool display = !strcmp(property, "display");
+    bool preferred = !strcmp(property, "width") || !strcmp(property, "height") ||
+        !strcmp(property, "inline-size") || !strcmp(property, "block-size");
+    if (!display && !preferred) return true;
+    if (!css_var_syntax_valid(value)) return false;
+    if (css_math_substitution_pending(value) || var_wide_keyword(value)) return true;
+    char *text = min_size_parser_text(value);
+    if (!text) return false;
+    char *trimmed = str_trim(text);
+    bool valid;
+    if (display) {
+        valid = kw(trimmed, display_keywords) >= 0 || display_canon(trimmed) != NULL ||
+            str_ieq(trimmed, "-webkit-box") || str_ieq(trimmed, "-webkit-flex") ||
+            str_ieq(trimmed, "-ms-flexbox") || str_ieq(trimmed, "-webkit-inline-box") ||
+            str_ieq(trimmed, "-webkit-inline-flex");
+    } else {
+        /* Only physical width/height have the unitless length quirk. Keep
+         * its existing token restriction; calc() numbers do not gain units. */
+        char *quirky = quirks && quirky_length_prop(property) && !strchr(value, '\\') ? quirk_px(trimmed) : NULL;
+        char *parsed = css_min_size_parse(quirky ? quirky : trimmed);
+        valid = parsed != NULL; free(parsed); free(quirky);
+    }
+    free(text); return valid;
+}
+
 /* author declarations: a unitless length is invalid outside quirks mode, and an escaped one always is */
 static bool unitless_invalid(const char *p, const char *v, Node *el) {
     if (!quirky_length_prop(p)) return false;
@@ -4848,17 +6769,247 @@ static bool contain_intrinsic_family(const char *prop) {
 }
 static void apply_contain_intrinsic_declarations(ComputedStyle *st, const ComputedStyle *par,
         MDecl *v, int n, StyleEngine *e, Node *el) {
+    const ComputedStyle *previous_projection = contain_intrinsic_projection_style;
+    contain_intrinsic_projection_style = st;
     for (int phase = 0; phase < 3; phase++) for (int i = 0; i < n; i++) {
         const Decl *d = v[i].d;
         if (!contain_intrinsic_family(d->prop)) continue;
         int priority = (v[i].key >> 62) == 3 ? 2 : !v[i].key && d->important ? 1 : 0;
         if (priority != phase) continue;
-        /* all follows its ordinary substitution/CSS-wide validation path;
-           that path projects only the new intrinsic-size slots. */
+        /* Keep all's ordinary substitution/CSS-wide validation, but project
+           only intrinsic-size slots during this priority-ordered replay. */
         css_apply_decl(st, par, d->prop, d->value, e, el);
     }
+    contain_intrinsic_projection_style = previous_projection;
 }
-static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el, bool author) {
+/* Resolve only the final declaration of a basis property. This keeps a
+ * query's own-font context independent of declaration order, without
+ * evaluating overridden conditions or changing the ordinary cascade pass. */
+typedef struct QueryBasis {
+    MDecl *declarations;
+    int count;
+    bool author;
+    ComputedStyle *seed, *computed;
+    unsigned char state[QB_COUNT];
+    unsigned used;
+} QueryBasis;
+static void query_basis_copy(ComputedStyle *to, const ComputedStyle *from, int index) {
+    switch (index) {
+    case QB_SIZE: to->font_size = from->font_size; break;
+    case QB_FAMILY: to->font_family = from->font_family; break;
+    case QB_WEIGHT: to->font_weight = from->font_weight; break;
+    case QB_STYLE: to->font_style = from->font_style; break;
+    case QB_LINE:
+        to->line_height = from->line_height; to->line_height_factor = from->line_height_factor;
+        to->line_height_normal = from->line_height_normal; break;
+    case QB_FLOW: to->writing_mode = from->writing_mode; break;
+    case QB_DIRECTION: to->direction = from->direction; break;
+    case QB_COLOR: to->color = from->color; to->color_ser = from->color_ser; break;
+    default: break;
+    }
+    const GenProp *property = gen_prop(query_basis_names[index]);
+    if (property && property->inherited) {
+        const char *value = gen_value(from, property);
+        gen_put(&to->gen_i, property->name, xstrdup(value ? value : ""));
+    }
+}
+static bool query_basis_value_valid(int index, const char *text) {
+    if (!text || !css_var_syntax_valid(text)) return false;
+    if (css_value_has_var(text) || css_value_has_if(text) || var_wide_keyword(text)) return true;
+    if (!css_math_spacing_valid(text)) return false;
+    char *parsed = var_parser_text(text); if (!parsed) return false;
+    const char *value = str_trim(parsed); bool valid = true;
+    if (index == QB_SIZE) {
+        static const char *const keywords[] = { "xx-small", "x-small", "small", "medium",
+            "large", "x-large", "xx-large", "xxx-large", "smaller", "larger", NULL };
+        Length length; MathType type;
+        valid = kw(value, keywords) >= 0 ||
+            (css_parse_length_context(value, &length, 16, 16, NULL, NULL, NULL,
+                false, NULL, &type) && length.kind == LK_LEN &&
+             (!strchr(value, '(') || !math_type_equal(type, math_type_unit(MATH_NUMBER))));
+    } else if (index == QB_LINE) valid = line_height_valid(value);
+    else if (index == QB_FLOW) valid = str_ieq(value, "horizontal-tb") || str_ieq(value, "vertical-rl") ||
+        str_ieq(value, "vertical-lr") || str_ieq(value, "sideways-rl") || str_ieq(value, "sideways-lr");
+    else if (index == QB_DIRECTION) valid = str_ieq(value, "ltr") || str_ieq(value, "rtl");
+    else if (index == QB_ORIENTATION) valid = str_ieq(value, "mixed") || str_ieq(value, "upright") || str_ieq(value, "sideways");
+    else if (index == QB_COLOR) { CssColor color; valid = str_ieq(value, "currentcolor") || css_color_parse(value, &color, NULL); }
+    else if (index == QB_WEIGHT) {
+        char *end; float number = strtof(value, &end);
+        valid = str_ieq(value, "normal") || str_ieq(value, "bold") || str_ieq(value, "bolder") ||
+            str_ieq(value, "lighter") || (end != value && !*end && number >= 1 && number <= 1000);
+    } else if (index == QB_STYLE) valid = str_ieq(value, "normal") || str_ieq(value, "italic") || str_istarts(value, "oblique");
+    else if (index == QB_FAMILY) valid = *value != 0;
+    else if (index == QB_STRETCH || index == QB_VARIANT_CAPS)
+        valid = css_supports_declaration(query_basis_names[index], value, false);
+    free(parsed); return valid;
+}
+/* The existing native font shorthand consumes these same component tokens.
+ * Project a requested component rather than temporarily applying unrelated
+ * font fields, whose query dependencies may belong to a different winner. */
+static char *query_font_component(const char *text, int index) {
+    if (index > QB_LINE && index != QB_STRETCH && index != QB_VARIANT_CAPS) return NULL;
+    const char *wide = var_wide_keyword(text); if (wide) return xstrdup(wide);
+    IfInput in; if (!if_input_init(&in, text, strlen(text))) { if_input_free(&in); return NULL; }
+    /* Native font shorthand also resets and applies these two inherited
+     * generic fields. Conditional basis projection must preserve them. */
+    char *values[QB_COUNT] = { [QB_WEIGHT] = xstrdup("normal"),
+        [QB_STYLE] = xstrdup("normal"), [QB_LINE] = xstrdup("normal"),
+        [QB_STRETCH] = xstrdup("normal"), [QB_VARIANT_CAPS] = xstrdup("normal") };
+    int at = if_skip_ws(&in, 0, in.tokens.n); bool found = false, valid = true;
+    if (at < in.tokens.n && if_after_component(&in, at) == if_trim_end(&in, at, in.tokens.n)) {
+        const CTok *token = &in.tokens.v[at].token;
+        if (token->type == CT_IDENT && token->str &&
+            (str_ieq(token->str, "caption") || str_ieq(token->str, "menu") || str_ieq(token->str, "message-box") ||
+             str_ieq(token->str, "status-bar") || str_ieq(token->str, "icon") || str_ieq(token->str, "small-caption"))) {
+            values[QB_FAMILY] = xstrdup("system-ui"); found = true;
+            /* Preserve the established native system-font implementation,
+             * which supplies the family and leaves other fields unchanged. */
+            if (index != QB_FAMILY) valid = false;
+        }
+    }
+    while (!found && valid && at < in.tokens.n) {
+        int after = if_after_component(&in, at);
+        char *part = if_declaration_value(&in, at, after);
+        if (str_ieq(part, "normal")) {}
+        else if (str_ieq(part, "small-caps")) {
+            free(values[QB_VARIANT_CAPS]); values[QB_VARIANT_CAPS] = xstrdup(part);
+        } else if (str_ieq(part, "ultra-condensed") || str_ieq(part, "extra-condensed") ||
+            str_ieq(part, "condensed") || str_ieq(part, "semi-condensed") ||
+            str_ieq(part, "semi-expanded") || str_ieq(part, "expanded") ||
+            str_ieq(part, "extra-expanded") || str_ieq(part, "ultra-expanded")) {
+            free(values[QB_STRETCH]); values[QB_STRETCH] = xstrdup(part);
+        } else if (str_ieq(part, "italic") || str_ieq(part, "oblique")) {
+            free(values[QB_STYLE]); values[QB_STYLE] = xstrdup(part);
+        } else if (str_ieq(part, "bold") || str_ieq(part, "bolder") || str_ieq(part, "lighter") ||
+                   (in.tokens.v[at].token.type == CT_NUMBER && query_basis_value_valid(QB_WEIGHT, part))) {
+            free(values[QB_WEIGHT]); values[QB_WEIGHT] = xstrdup(part);
+        } else if (query_basis_value_valid(QB_SIZE, part)) {
+            values[QB_SIZE] = xstrdup(part); found = true;
+            at = if_skip_ws(&in, after, in.tokens.n);
+            if (at < in.tokens.n && in.tokens.v[at].token.type == CT_DELIM && *in.tokens.v[at].token.start == '/') {
+                at = if_skip_ws(&in, at + 1, in.tokens.n);
+                if (at == in.tokens.n) valid = false;
+                else {
+                    after = if_after_component(&in, at);
+                    free(values[QB_LINE]); values[QB_LINE] = if_declaration_value(&in, at, after);
+                    valid = query_basis_value_valid(QB_LINE, values[QB_LINE]);
+                    at = if_skip_ws(&in, after, in.tokens.n);
+                }
+            }
+            if (at == in.tokens.n) valid = false;
+            else values[QB_FAMILY] = if_declaration_value(&in, at, in.tokens.n);
+        } else valid = false;
+        free(part); if (!found) at = if_skip_ws(&in, after, in.tokens.n);
+    }
+    char *result = valid && found && values[index] ? xstrdup(values[index]) : NULL;
+    for (int i = 0; i < QB_COUNT; i++) free(values[i]); if_input_free(&in); return result;
+}
+static bool query_basis_applies(const Decl *declaration, int index) {
+    if (!strcmp(declaration->prop, query_basis_names[index])) return query_basis_value_valid(index, declaration->value);
+    if (!strcmp(declaration->prop, "all")) return index != QB_DIRECTION &&
+        (var_wide_keyword(declaration->value) || css_value_has_var(declaration->value) || css_value_has_if(declaration->value));
+    if ((index <= QB_LINE || index == QB_STRETCH || index == QB_VARIANT_CAPS) &&
+        !strcmp(declaration->prop, "font")) {
+        if (css_value_has_var(declaration->value) || css_value_has_if(declaration->value)) return true;
+        char *component = query_font_component(declaration->value, index); bool valid = component != NULL;
+        free(component); return valid;
+    }
+    return false;
+}
+/* Percentage and unitless line heights consume the final own font size.
+ * Classify only the type here; nominal syntax values are never applied. Own
+ * font units acquire their separate edges during declaration application. */
+static unsigned query_line_preparation(const char *value) {
+    CssNumber number;
+    if (css_number_parse_context(value, 16, 16, NULL, false, NULL, true, &number) &&
+        css_number_scalar(&number)) return QD_SIZE;
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type; free(token.str);
+        if (type == CT_PERCENT) return QD_SIZE;
+        if (type == CT_EOF) return 0;
+    }
+}
+static bool query_basis_ensure(VarResolver *resolver, unsigned requested) {
+    QueryBasis *basis = resolver->basis_context;
+    bool result = true;
+    for (int index = 0; index < QB_COUNT; index++) {
+        if (!(requested & (1u << index))) continue;
+        basis->used |= 1u << index;
+        if (basis->state[index] == 2) { query_basis_copy(resolver->style, basis->computed, index); continue; }
+        if (basis->state[index] == 1) {
+            for (int i = 0; i < resolver->stack.n; i++)
+                if (resolver->stack.v[i]->property && !strcmp(resolver->stack.v[i]->name, query_basis_names[index]))
+                    var_mark_cycle(resolver, resolver->stack.v[i]);
+            result = false; continue;
+        }
+        basis->state[index] = 1;
+        const Decl *winner = NULL;
+        for (int phase = 2; phase >= 0 && !winner; phase--)
+            for (int i = basis->count - 1; i >= 0 && !winner; i--) {
+                MDecl *matched = &basis->declarations[i]; const Decl *declaration = matched->d;
+                int priority = (matched->key >> 62) == 3 ? 2 : !matched->key && declaration->important ? 1 : 0;
+                if (priority == phase && query_basis_applies(declaration, index) &&
+                    !(basis->author && unitless_invalid(declaration->prop, declaration->value, resolver->element))) winner = declaration;
+            }
+        ComputedStyle *scratch = style_inherit(basis->seed);
+        for (int i = 0; i < QB_COUNT; i++) if (basis->state[i] == 2) query_basis_copy(scratch, basis->computed, i);
+        query_basis_copy(scratch, basis->seed, index);
+        const ComputedStyle *previous_projection = resolver->projection_style;
+        resolver->projection_style = scratch;
+        VarEntry frame = { .name = query_basis_names[index], .property = true, .state = 1 };
+        vec_push(resolver->stack, &frame);
+        if (winner) {
+            bool pending = css_value_has_var(winner->value) || css_value_has_if(winner->value);
+            char *resolved = pending ? var_substitute(resolver, &frame, winner->value, 0) : xstrdup(winner->value);
+            if (frame.cycle) { free(resolved); resolved = NULL; }
+            char *component = NULL;
+            if (resolved && !strcmp(winner->prop, "all")) {
+                const char *wide = var_wide_keyword(resolved); if (wide) component = xstrdup(wide);
+            } else if (resolved && !strcmp(winner->prop, "font")) component = query_font_component(resolved, index);
+            else if (resolved) component = xstrdup(resolved);
+            free(resolved);
+            if (!component || !query_basis_value_valid(index, component)) {
+                free(component); component = xstrdup("unset");
+            }
+            if (index == QB_LINE && !var_wide_keyword(component)) {
+                unsigned preparation = query_line_preparation(component);
+                if (preparation && !query_dependencies(resolver, &frame, preparation)) frame.cycle = true;
+                if (preparation & QD_SIZE) query_basis_copy(scratch, resolver->style, QB_SIZE);
+            }
+            if (frame.cycle) { free(component); component = xstrdup("unset"); }
+            css_apply_decl(scratch, resolver->parent, query_basis_names[index], component, resolver->engine, resolver->element);
+            free(component);
+        }
+        /* Normal line metrics use the final own font. Fixed and parent-lh
+         * lengths do not manufacture an extra own-size dependency. */
+        if (index == QB_LINE && scratch->line_height_normal)
+            (void)query_dependencies(resolver, &frame, QD_FONT_METRICS);
+        if (index == QB_LINE && scratch->line_height_factor > 0) {
+            (void)query_dependencies(resolver, &frame, QD_SIZE);
+            scratch->line_height = scratch->line_height_factor * resolver->style->font_size;
+        }
+        resolver->stack.n--; resolver->projection_style = previous_projection;
+        query_basis_copy(basis->computed, scratch, index); query_basis_copy(resolver->style, scratch, index);
+        cm_or(&resolver->style->custom_dependencies, &scratch->custom_dependencies);
+        resolver->style->parent_sensitive |= scratch->parent_sensitive;
+        resolver->style->inherited_dynamic |= scratch->inherited_dynamic;
+        style_free(scratch); basis->state[index] = 2;
+        if (frame.cycle) result = false;
+    }
+    return result;
+}
+static bool query_basis_needed(VarResolver *resolver, MDecl *declarations, int count) {
+    for (int i = 0; i < count; i++) if (css_value_has_if(declarations[i].d->value)) return true;
+    for (int i = 0; i < resolver->values.n; i++) {
+        VarEntry *entry = resolver->values.v[i]; const RegProp *registration = regprop_find(entry->name);
+        if (css_value_has_if(entry->raw) || (registration && regprop_typed(registration) &&
+            (css_value_has_var(entry->raw) || query_unit_dependencies(entry->raw)))) return true;
+    }
+    return false;
+}
+
+static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDecl *v, int n, StyleEngine *e, Node *el, bool author, bool pseudo) {
     /* Dependencies precede their consumers: custom values, writing-mode/direction/text-orientation,
        font-size (em basis), color, then the remaining cascade in its order. */
     CustomProps *origin_base = custom_ref(st->custom);
@@ -4867,22 +7018,34 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
     custom_defer = true;
     for (int i = 0; i < n; i++) if (v[i].d->prop[0] == '-' && v[i].d->prop[1] == '-') css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
     custom_defer = false;
-    /* Resolve every winning local against one immutable map, then commit.
-     * Inherited values are already computed; revert uses the earlier origin. */
-    custom_resolve_values(st, par, origin_base);
-    custom_origin_base = previous_origin;
-    custom_unref(origin_base);
+    /* Entries and their dependency edges stay alive through all consumers.
+     * Inherited values are already computed; local queries resolve lazily. */
+    VarResolver resolver;
+    var_resolver_begin(&resolver, st, par, origin_base, e, el);
+    resolver.is_pseudo = pseudo;
+    VarResolver *previous_resolver = active_var_resolver; active_var_resolver = &resolver;
+    QueryBasis basis = { .declarations = v, .count = n, .author = author };
+    bool typed_context = query_basis_needed(&resolver, v, n);
+    if (typed_context) {
+        basis.seed = style_inherit(st); basis.computed = style_inherit(st);
+        resolver.basis_context = &basis; resolver.ensure_basis = query_basis_ensure;
+        (void)query_basis_ensure(&resolver, (1u << QB_COUNT) - 1);
+    }
     /* CSS Logical Properties requires the element's computed writing mode
        before corresponding logical/physical dimensions cascade together. */
-    for (int i = 0; i < n; i++) if (flow_basis_prop(v[i].d->prop)) css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
-    apply_font_declarations(st, par, v, n, e, el, author);
-    for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
-    bool intrinsic_family = false;
+    if (!typed_context) {
+        for (int i = 0; i < n; i++) if (flow_basis_prop(v[i].d->prop)) css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
+        apply_font_declarations(st, par, v, n, e, el, author);
+        for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
+    }
+    bool intrinsic_family = false, interpolation_policy = false;
     for (int i = 0; i < n; i++) {
         const char *p = v[i].d->prop;
         if ((p[0] == '-' && p[1] == '-') || flow_basis_prop(p) || font_basis_prop(p) || !strcmp(p, "color")) continue;
+        if (!strcmp(p, "interpolate-size")) { interpolation_policy = true; continue; }
         if (contain_intrinsic_family(p)) {
             intrinsic_family = true;
+            if (!strcmp(p, "all")) interpolation_policy = true;
             if (strcmp(p, "all")) continue;
         }
         if (author && unitless_invalid(p, v[i].d->value, el)) continue;
@@ -4892,6 +7055,28 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
         css_apply_decl(st, par, p, v[i].d->value, e, el);
     }
     if (intrinsic_family) apply_contain_intrinsic_declarations(st, par, v, n, e, el);
+    /* Preserve source order and importance, including validated all resets.
+       The scoped all projection changes only this policy during the replay;
+       unrelated fields keep the results of the ordinary declaration pass. */
+    if (interpolation_policy) {
+        const ComputedStyle *previous_projection = interpolate_size_projection_style;
+        interpolate_size_projection_style = st;
+        for (int phase = 0; phase < 3; phase++) for (int i = 0; i < n; i++) {
+            const Decl *d = v[i].d;
+            if (strcmp(d->prop, "interpolate-size") && strcmp(d->prop, "all")) continue;
+            int priority = (v[i].key >> 62) == 3 ? 2 : !v[i].key && d->important ? 1 : 0;
+            if (priority == phase) css_apply_decl(st, par, d->prop, d->value, e, el);
+        }
+        interpolate_size_projection_style = previous_projection;
+    }
+    var_resolver_finish(&resolver);
+    if (typed_context) {
+        for (int i = 0; i < QB_COUNT; i++) query_basis_copy(st, basis.computed, i);
+        style_free(basis.seed); style_free(basis.computed);
+    }
+    active_var_resolver = previous_resolver;
+    var_resolver_free(&resolver);
+    custom_origin_base = previous_origin; custom_unref(origin_base);
     bg_position_resolve_logical(st);
 }
 
@@ -4920,11 +7105,12 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     g_decls_ms = dbg_now() - dbg_d0;
 #endif
     ComputedStyle *st = style_inherit(par);
+    registered_defaults(st);
     /* split normal / important so presentational hints & inline style go between */
     int split = 0; while (split < mn && (md[split].key >> 62) < 2) split++;
     /* hints sit above the UA sheet's normal declarations and below the author's (css-cascade "presentational hints") */
     int ua = 0; while (ua < split && (md[ua].key >> 62) == 0) ua++;
-    if (ua) apply_decl_ordered(st, par, md, ua, e, el, false);
+    if (ua) apply_decl_ordered(st, par, md, ua, e, el, false, false);
     presentational_hints(st, par, el, e);
     /* one pass so var() in sheet custom properties sees inline custom properties */
     VEC(MDecl) all = {0};
@@ -4937,11 +7123,17 @@ static ComputedStyle *compute(StyleEngine *e, Node *el, const ComputedStyle *par
     }
     if (el->anim_decls) { DeclList *dl = el->anim_decls; for (int i = 0; i < dl->n; i++) { MDecl m = { &dl->v[i], 0, 0 }; vec_push(all, m); } }
     for (int i = split; i < mn; i++) vec_push(all, md[i]);
-    apply_decl_ordered(st, par, all.v, all.n, e, el, true);
+    apply_decl_ordered(st, par, all.v, all.n, e, el, true, false);
     vec_free(all);
     if (owned) free(md);
     /* fixups */
     if (st->line_height_factor > 0) st->line_height = st->line_height_factor * st->font_size;
+    /* Static placement needs the hypothetical outer display even though the
+       public computed display and native Box kind are blockified. This is
+       per-element layout provenance, not an inherited display value. */
+    st->static_inline = (st->position == P_ABSOLUTE || st->position == P_FIXED) &&
+        (st->display == D_INLINE || st->display == D_INLINE_BLOCK ||
+         st->display == D_INLINE_FLEX || st->display == D_INLINE_GRID || st->display == D_INLINE_TABLE);
     if (st->position == P_ABSOLUTE || st->position == P_FIXED || st->float_ != F_NONE) {
         if (st->display == D_INLINE || st->display == D_INLINE_BLOCK || st->display == D_TABLE_CELL || st->display == D_TABLE_ROW) st->display = D_BLOCK;
         else if (st->display == D_INLINE_FLEX) st->display = D_FLEX;
@@ -5142,6 +7334,10 @@ static unsigned inherited_diff(const ComputedStyle *a, const ComputedStyle *b) {
         const GenProp *orientation = gen_prop("text-orientation");
         if (!str_same(gen_value(a, orientation), gen_value(b, orientation))) {
             g_inh_field = "text-orientation"; return INH_OTHER;
+        }
+        const GenProp *policy = gen_prop("interpolate-size");
+        if (!str_same(gen_value(a, policy), gen_value(b, policy))) {
+            g_inh_field = "interpolate-size"; return INH_OTHER;
         }
     }
 #undef INHERITED_EQ
@@ -5908,6 +8104,7 @@ ComputedStyle *style_for_text(Node *t) { Node *p = t->parent; while (p && p->typ
 static double alpha_round(unsigned a8) { double r = round(a8 / 2.55) / 100; return (unsigned)lround(r * 255) == a8 ? r : round(a8 / 0.255) / 1000; }
 static void color_str(SB *b, Color c) { if (COLOR_A(c) == 255) sb_printf(b, "rgb(%u, %u, %u)", COLOR_R(c), COLOR_G(c), COLOR_B(c)); else sb_printf(b, "rgba(%u, %u, %u, %g)", COLOR_R(c), COLOR_G(c), COLOR_B(c), alpha_round(COLOR_A(c))); }
 static void len_str(SB *b, Length l, const char *au) {
+    if (len_calc_size(l)) { calc_size_flat_text(b, l); return; }
     if (l.kind == LK_AUTO) sb_puts(b, au);
     else if (l.kind == LK_NONE) sb_puts(b, "none");
     else if (l.kind == LK_MIN_CONTENT) sb_puts(b, "min-content");
@@ -6114,7 +8311,7 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
                 if (u > end && length < 128 && !str_ieqn(end, "fr", (size_t)(u - end))) {
                     char token[128]; memcpy(token, p, length); token[length] = 0;
                     Length l;
-                    if (css_parse_length_context(token, &l, em, rem, mc, basis, true, used, NULL) && l.kind == LK_LEN) {
+                    if (css_parse_length_context(token, &l, em, rem, mc, basis, basis, true, used, NULL) && l.kind == LK_LEN) {
                         len_str(&out, l, "auto"); p = u; continue;
                     }
                 }
@@ -6125,14 +8322,65 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
     return sb_take(&out);
 }
 static char *animation_value_of(Node *n, const ComputedStyle *s, const char *prop) {
-    /* Animation combines computed values, before CSSOM resolves an automatic
-       minimum to zero. Keep the keyword for discrete interpolation and for
-       underlying/neutral keyframes, independent of box or aspect-ratio state. */
-    if (s && !strncmp(prop, "min-", 4)) {
-        const char *physical = logical_size_prop(prop, s->writing_mode != 0);
-        if (!strcmp(physical, "min-width") || !strcmp(physical, "min-height")) {
+    /* The legacy public zero spelling is normal; animation interpolates the
+       numeric computed value from the supplied snapshot on either endpoint. */
+    if (s && !strcmp(prop, "letter-spacing")) {
+        const char *value = gen_value(s, gen_prop(prop));
+        if (!value || str_ieq(value, "normal")) return xstrdup("0px");
+    }
+    /* Every sizing endpoint belongs to the supplied computed snapshot,
+       before CSSOM resolves preferred sizes or an automatic minimum. Logical
+       names use that snapshot's writing mode, including inheritance. */
+    if (s) {
+        const char *size = logical_size_prop(prop, s->writing_mode != 0);
+        int axis = !strcmp(size, "width") ? 0 : !strcmp(size, "height") ? 1 : -1;
+        const Length *slot = axis == 0 ? &s->width : axis == 1 ? &s->height :
+            !strcmp(size, "min-width") ? &s->min_width : !strcmp(size, "min-height") ? &s->min_height :
+            !strcmp(size, "max-width") ? &s->max_width : !strcmp(size, "max-height") ? &s->max_height : NULL;
+        if (slot && (axis < 0 || !s->anchor_sz[axis])) {
+            Length value = *slot;
+            if (len_calc_size(value)) {
+                const char *computed = gen_value(s, gen_prop(size));
+                if (computed) return xstrdup(computed);
+            }
+            bool finite = isfinite(value.px) && isfinite(value.pct) &&
+                (!value.mm || (isfinite(value.px2) && isfinite(value.pct2) &&
+                               isfinite(value.px3) && isfinite(value.pct3)));
+            if (value.kind != LK_LEN || finite) {
+                SB out; sb_init(&out);
+                if (value.kind == LK_LEN) bg_length_str(&out, value);
+                else len_str(&out, value, !strncmp(size, "max-", 4) ? "none" : "auto");
+                return sb_take(&out);
+            }
+        }
+    }
+    /* Animation consumes computed inset values. CSSOM's geometry-dependent
+       resolution must not enter neutral keyframes or old/new style snapshots. */
+    if (s) {
+        int group, side; bool block;
+        if (logical_edge_pair(prop, &group, &block) && group == 2) {
+            char *a = animation_value_of(n, s, physical_edge_props[2][logical_edge_side(s, block, false)]);
+            char *z = animation_value_of(n, s, physical_edge_props[2][logical_edge_side(s, block, true)]);
+            SB out; sb_init(&out); sb_puts(&out, a);
+            if (strcmp(a, z)) { sb_putc(&out, ' '); sb_puts(&out, z); }
+            free(a); free(z); return sb_take(&out);
+        }
+        if (!strcmp(prop, "inset")) {
+            char *v[4];
+            for (int i = 0; i < 4; i++) v[i] = animation_value_of(n, s, physical_edge_props[2][i]);
+            int count = 4;
+            if (!strcmp(v[3], v[1])) {
+                count = 3;
+                if (!strcmp(v[2], v[0])) { count = 2; if (!strcmp(v[1], v[0])) count = 1; }
+            }
             SB out; sb_init(&out);
-            len_str(&out, !strcmp(physical, "min-width") ? s->min_width : s->min_height, "auto");
+            for (int i = 0; i < count; i++) { if (i) sb_putc(&out, ' '); sb_puts(&out, v[i]); }
+            for (int i = 0; i < 4; i++) free(v[i]);
+            return sb_take(&out);
+        }
+        const char *physical = logical_box_prop(prop, s);
+        if (physical_edge_prop(physical, &group, &side) && group == 2 && !s->anchor_ins[side]) {
+            SB out; sb_init(&out); len_str(&out, s->inset[side], "auto");
             return sb_take(&out);
         }
     }
@@ -6145,8 +8393,8 @@ static char *animation_value_of(Node *n, const ComputedStyle *s, const char *pro
     tracks_str(&out, rows ? s->grid_rows : s->grid_cols, rows ? s->grid_nrows : s->grid_ncols);
     return sb_take(&out);
 }
-/* Animation keeps computed track structure and minimum-size keywords. CSSOM
-   intentionally resolves those values differently and keeps its public behavior. */
+/* Animation keeps computed track structure, inset values and minimum-size
+   keywords. CSSOM intentionally resolves those values differently. */
 char *css_get_animation_value(Node *el, const char *prop) {
     computed_prepare(el);
     const ComputedStyle *s = el && el->type == NODE_ELEMENT ? el->style : NULL;
@@ -6154,38 +8402,46 @@ char *css_get_animation_value(Node *el, const char *prop) {
 }
 /* Properties whose computed value differs between o and s, for CSS transitions: the names in the
  * transition-property list, or for "all" every natively computed property plus the generic ones. */
-static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, void (*cb)(Node *, const char *, const char *, const char *)) {
-    if (!strncmp(prop, "transition", 10) || !strncmp(prop, "animation", 9)) return;
+static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, HMap *seen, void (*cb)(Node *, const char *, const char *, const char *)) {
+    if (!strncmp(prop, "transition", 10) || !strncmp(prop, "animation", 9) || !strcmp(prop, "interpolate-size")) return;
+    if (hm_get(seen, prop)) return;
+    hm_put(seen, prop, (void *)1);
     char *a = animation_value_of(n, o, prop), *b = animation_value_of(n, s, prop);
     if (strcmp(a, b)) cb(n, prop, a, b);
     free(a); free(b);
 }
 static void tr_scan_gen(Node *n, const ComputedStyle *o, const ComputedStyle *s, const CustomProps *c, HMap *seen, void (*cb)(Node *, const char *, const char *, const char *)) {
     for (; c; c = c->parent) hm_foreach((HMap *)&c->map, ent) {
-        if (hm_get(seen, ent->key)) continue;
-        hm_put(seen, ent->key, (void *)1);
         const GenProp *g = gen_prop(ent->key);
-        if (g && !g->native) tr_scan_one(n, o, s, g->name, cb);
+        if (g && !g->native) tr_scan_one(n, o, s, g->name, seen, cb);
     }
 }
 void css_transition_scan(Node *n, const ComputedStyle *o, const ComputedStyle *s, void (*cb)(Node *, const char *, const char *, const char *)) {
+    /* One computed change produces one job per property. Keep the authored
+     * list untouched: its last matching position still selects JS timing. */
+    HMap seen; memset(&seen, 0, sizeof seen);
     const char *list = s->tr_prop;
     bool all = !list;
-    if (list) for (const char *p = list;;) {
-        const char *e = strchr(p, ','); size_t len = e ? (size_t)(e - p) : strlen(p);
-        char name[64];
-        while (len && *p == ' ') { p++; len--; }
-        while (len && p[len - 1] == ' ') len--;
-        if (len == 3 && !strncmp(p, "all", 3)) all = true;
-        else if (len && len < sizeof name) { memcpy(name, p, len); name[len] = 0; if (gen_prop(name)) tr_scan_one(n, o, s, name, cb); }
-        if (!e) break;
-        p = e + 1;
+    if (list) {
+        CLexer lexer; clex_init(&lexer, list, strlen(list));
+        int depth = 0;
+        for (;;) {
+            CTok token = clex_next(&lexer); int type = token.type;
+            if (!depth && type == CT_IDENT && token.str) {
+                if (str_ieq(token.str, "all")) all = true;
+                else if (gen_prop(token.str)) tr_scan_one(n, o, s, token.str, &seen, cb);
+            }
+            if (type == CT_FUNC || type == CT_LPAREN || type == CT_LBRACK || type == CT_LBRACE) depth++;
+            else if (depth && (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE)) depth--;
+            free(token.str);
+            if (type == CT_EOF) break;
+        }
     }
-    if (!all) return;
-    for (size_t i = 0; i < sizeof gen_props / sizeof *gen_props; i++) if (gen_props[i].native && strcmp(gen_props[i].name, "display")) tr_scan_one(n, o, s, gen_props[i].name, cb);
-    HMap seen; memset(&seen, 0, sizeof seen);
-    tr_scan_gen(n, o, s, o->gen_n, &seen, cb); tr_scan_gen(n, o, s, s->gen_n, &seen, cb);
-    tr_scan_gen(n, o, s, o->gen_i, &seen, cb); tr_scan_gen(n, o, s, s->gen_i, &seen, cb);
+    if (all) {
+        for (size_t i = 0; i < sizeof gen_props / sizeof *gen_props; i++) if (gen_props[i].native && strcmp(gen_props[i].name, "display")) tr_scan_one(n, o, s, gen_props[i].name, &seen, cb);
+        tr_scan_gen(n, o, s, o->gen_n, &seen, cb); tr_scan_gen(n, o, s, s->gen_n, &seen, cb);
+        tr_scan_gen(n, o, s, o->gen_i, &seen, cb); tr_scan_gen(n, o, s, s->gen_i, &seen, cb);
+    }
     hm_free(&seen, NULL);
 }
 /* Canonical form of a multi-keyword (or rare single-keyword) display value; NULL if invalid or not handled. */
@@ -6232,6 +8488,62 @@ static void contain_intrinsic_str(SB *out, ContainIntrinsicSize value) {
     if (value.flags & CIS_LENGTH) sb_printf(out, "%gpx", (double)value.length);
     else sb_puts(out, "none");
 }
+/* CSSOM resolved insets use the same laid-out box and containing block as
+ * native positioning. Explicit lengths retain their existing serialization;
+ * only auto and percentage-dependent values need this resolution. */
+static bool computed_inset_native(Node *el, const ComputedStyle *s, int side, float *value) {
+    const Box *box = grid_style_box(el, s);
+    if (!box || s->position == P_STATIC ||
+        s->display == D_NONE || s->display == D_CONTENTS ||
+        s->display == D_TABLE_COLUMN || s->display == D_TABLE_COLUMN_GROUP) return false;
+    /* Existing anchor/position-area handling has its own adjusted rectangle.
+       Do not infer that rectangle from the unadjusted layout CB. */
+    if (s->anchor_ins[side] || s->pos_area) return false;
+    Length inset = s->inset[side];
+    bool absolute = s->position == P_ABSOLUTE || s->position == P_FIXED;
+    bool vertical = side == 0 || side == 2;
+    const Box *cb = layout_percentage_cb(box);
+    float x = 0, y = 0, width = 0, height = 0;
+    if (s->position == P_STICKY) {
+        const Box *port;
+        if (!box_sticky_constraint_rect(box, &port, &x, &y, &width, &height)) return false;
+    } else if (absolute) {
+        cb = box->cb;
+        if (!cb) return false;
+        if (!cb->parent) {
+            if (!el || !el->doc) return false;
+            width = el->doc->layout_vw; height = el->doc->layout_vh;
+        } else {
+            x = cb->x + cb->b[3]; y = cb->y + cb->b[0];
+            width = cb->w - cb->b[1] - cb->b[3];
+            height = cb->h - cb->b[0] - cb->b[2];
+        }
+        grid_absolute_containing_block(cb, box, &x, &y, &width, &height);
+    } else {
+        if (!cb) return false;
+        width = cb->w - cb->b[1] - cb->b[3] - cb->p[1] - cb->p[3];
+        height = cb->h - cb->b[0] - cb->b[2] - cb->p[0] - cb->p[2];
+    }
+    float basis = LMAX(0, vertical ? height : width);
+    if (inset.kind == LK_AUTO) {
+        if (s->position == P_RELATIVE) {
+            Length opposite = s->inset[(side + 2) & 3];
+            *value = opposite.kind == LK_LEN ? -len_resolve(opposite, basis) : 0;
+            return true;
+        }
+        if (!absolute) return false;
+        *value = side == 0 ? box->y - box->m[0] - y :
+                 side == 3 ? box->x - box->m[3] - x :
+                 side == 1 ? x + width - box->x - box->w - box->m[1] :
+                             y + height - box->y - box->h - box->m[2];
+        return true;
+    }
+    if (inset.kind == LK_LEN && len_has_pct(inset)) {
+        *value = len_resolve(inset, basis);
+        return true;
+    }
+    return false;
+}
 static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
     SB b; sb_init(&b);
     if (s && (!strncmp(prop, "transition-", 11) || !strncmp(prop, "animation-", 10))) {
@@ -6265,6 +8577,28 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
         free(a); free(z); return sb_take(&b);
     }
     prop = logical_box_prop(prop, s);
+    if (!strcmp(prop, "border-width") || !strcmp(prop, "border-style") ||
+        !strcmp(prop, "border-color")) {
+        /* Project this supplied computed snapshot through the same physical
+           getters, including hidden/none widths and resolved colors. */
+        static const char *const sides[] = { "top", "right", "bottom", "left" };
+        char *v[4], component[40];
+        for (int i = 0; i < 4; i++) {
+            snprintf(component, sizeof component, "border-%s-%s", sides[i], prop + 7);
+            v[i] = computed_of(el, s, component);
+        }
+        int count = 4;
+        if (!strcmp(v[3], v[1])) {
+            count = 3;
+            if (!strcmp(v[2], v[0])) {
+                count = 2;
+                if (!strcmp(v[1], v[0])) count = 1;
+            }
+        }
+        for (int i = 0; i < count; i++) { if (i) sb_putc(&b, ' '); sb_puts(&b, v[i]); }
+        for (int i = 0; i < 4; i++) free(v[i]);
+        return sb_take(&b);
+    }
     if (column_property(prop)) {
         bool shorthand = !strcmp(prop, "columns"), width = s->column_width.kind != LK_AUTO;
         if (!strcmp(prop, "column-width") || (shorthand && width)) {
@@ -6352,7 +8686,11 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
             float v = W ? bx->w : bx->h;
             if (!s->box_sizing) v -= W ? bx->p[1] + bx->p[3] + bx->b[1] + bx->b[3] : bx->p[0] + bx->p[2] + bx->b[0] + bx->b[2];
             sb_printf(&b, "%gpx", v > 0 ? v : 0);
-        } else len_str(&b, W ? s->width : s->height, "auto");
+        } else {
+            Length value = W ? s->width : s->height;
+            const char *computed = len_calc_size(value) ? gen_value(s, gen_prop(prop)) : NULL;
+            if (computed) sb_puts(&b, computed); else len_str(&b, value, "auto");
+        }
     }
     else if (!strcmp(prop, "min-width") || !strcmp(prop, "min-height")) {
         /* The resolved automatic minimum is zero for ordinary boxes; flex and
@@ -6360,7 +8698,7 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
            mapping above, so their range and automatic-value rules agree. */
         Length minimum = !strcmp(prop, "min-width") ? s->min_width : s->min_height;
         const char *automatic = "auto";
-        if (minimum.kind == LK_AUTO) {
+        if (!len_calc_size(minimum) && minimum.kind == LK_AUTO) {
             const Node *parent = el ? (s == el->style ? el->parent : el) : NULL;
             while (parent && parent->style && parent->style->display == D_CONTENTS) parent = parent->parent;
             const ComputedStyle *ps = parent ? parent->style : NULL;
@@ -6379,32 +8717,40 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
             bool noninitial_ratio = ratio && !str_ieq(ratio, "auto");
             automatic = box && (item || noninitial_ratio) ? "auto" : "0px";
         }
-        len_str(&b, minimum, automatic);
+        const char *computed = len_calc_size(minimum) ? gen_value(s, gen_prop(prop)) : NULL;
+        if (computed) sb_puts(&b, computed); else len_str(&b, minimum, automatic);
     }
-    else if (!strcmp(prop, "max-width")) len_str(&b, s->max_width, "none");
-    else if (!strcmp(prop, "max-height")) len_str(&b, s->max_height, "none");
+    else if (!strcmp(prop, "max-width") || !strcmp(prop, "max-height")) {
+        Length maximum = !strcmp(prop, "max-width") ? s->max_width : s->max_height;
+        const char *computed = len_calc_size(maximum) ? gen_value(s, gen_prop(prop)) : NULL;
+        if (computed) sb_puts(&b, computed); else len_str(&b, maximum, "none");
+    }
     else if (!strcmp(prop, "top") || !strcmp(prop, "right") || !strcmp(prop, "bottom") || !strcmp(prop, "left")) {
         int i = prop[0] == 't' ? 0 : prop[0] == 'r' ? 1 : prop[0] == 'b' ? 2 : 3;
-        Length l = s->inset[i];
-        const Box *cb = NULL;
-        /* positioned boxes resolve percentages against the containing block */
-        if (el && el->box && s->position != P_STATIC && l.kind == LK_LEN && l.pct) {
-            bool abs = s->position == P_ABSOLUTE || s->position == P_FIXED;
-            for (const Node *a = el->parent; a && !cb; a = a->parent)
-                if (a->type == NODE_ELEMENT && a->box && (!abs || (a->style && a->style->position != P_STATIC) || !a->parent || a->parent->type != NODE_ELEMENT)) cb = a->box;
+        float resolved;
+        if (computed_inset_native(el, s, i, &resolved)) sb_printf(&b, "%gpx", resolved == 0 ? 0.0 : (double)resolved);
+        else {
+            Length l = s->inset[i];
+            const Box *cb = NULL;
+            /* positioned boxes resolve percentages against the containing block */
+            if (el && el->box && s->position != P_STATIC && l.kind == LK_LEN && l.pct) {
+                bool abs = s->position == P_ABSOLUTE || s->position == P_FIXED;
+                for (const Node *a = el->parent; a && !cb; a = a->parent)
+                    if (a->type == NODE_ELEMENT && a->box && (!abs || (a->style && a->style->position != P_STATIC) || !a->parent || a->parent->type != NODE_ELEMENT)) cb = a->box;
+            }
+            const Box *ab = el && el->box && s->anchor_ins[i] ? el->box : NULL;
+            if (ab && ab->cb && (ab->anchor_ok >> i & 1)) {   /* a resolved anchor() inset: the used value */
+                const Box *c = ab->cb;
+                float v = i == 3 ? ab->x - ab->m[3] - (c->x + c->b[3]) : i == 0 ? ab->y - ab->m[0] - (c->y + c->b[0])
+                        : i == 1 ? c->x + c->w - c->b[1] - (ab->x + ab->w + ab->m[1]) : c->y + c->h - c->b[2] - (ab->y + ab->h + ab->m[2]);
+                sb_printf(&b, "%gpx", v);
+            } else if (cb) {
+                bool vert = i == 0 || i == 2;
+                float size = vert ? cb->h - cb->b[0] - cb->b[2] : cb->w - cb->b[1] - cb->b[3];
+                if (!(s->position == P_ABSOLUTE || s->position == P_FIXED)) size -= vert ? cb->p[0] + cb->p[2] : cb->p[1] + cb->p[3];
+                sb_printf(&b, "%gpx", l.px + l.pct * size / 100);
+            } else len_str(&b, l, "auto");
         }
-        const Box *ab = el && el->box && s->anchor_ins[i] ? el->box : NULL;
-        if (ab && ab->cb && (ab->anchor_ok >> i & 1)) {   /* a resolved anchor() inset: the used value */
-            const Box *c = ab->cb;
-            float v = i == 3 ? ab->x - ab->m[3] - (c->x + c->b[3]) : i == 0 ? ab->y - ab->m[0] - (c->y + c->b[0])
-                    : i == 1 ? c->x + c->w - c->b[1] - (ab->x + ab->w + ab->m[1]) : c->y + c->h - c->b[2] - (ab->y + ab->h + ab->m[2]);
-            sb_printf(&b, "%gpx", v);
-        } else if (cb) {
-            bool vert = i == 0 || i == 2;
-            float size = vert ? cb->h - cb->b[0] - cb->b[2] : cb->w - cb->b[1] - cb->b[3];
-            if (!(s->position == P_ABSOLUTE || s->position == P_FIXED)) size -= vert ? cb->p[0] + cb->p[2] : cb->p[1] + cb->p[3];
-            sb_printf(&b, "%gpx", l.px + l.pct * size / 100);
-        } else len_str(&b, l, "auto");
     }
     else if (!strcmp(prop, "flex-grow")) sb_printf(&b, "%g", s->flex_grow);
     else if (!strcmp(prop, "flex-shrink")) sb_printf(&b, "%g", s->flex_shrink);
@@ -6425,7 +8771,10 @@ static char *computed_of(Node *el, const ComputedStyle *s, const char *prop) {
                                    : (prop[6] == 'i' ? s->align_items : prop[6] == 's' ? s->align_self : s->align_content);
         sb_puts(&b, al[v % 12]);
     }
-    else if (!strncmp(prop, "border-", 7) && (strstr(prop, "-width") || strstr(prop, "-style") || strstr(prop, "-color") || strstr(prop, "-radius"))) {
+    /* Border-image components keep their actual generic computed values;
+       they are not physical border sides or corners. */
+    else if (!strncmp(prop, "border-", 7) && strncmp(prop, "border-image-", 13) &&
+             (strstr(prop, "-width") || strstr(prop, "-style") || strstr(prop, "-color") || strstr(prop, "-radius"))) {
         static const char *const sides[] = { "top-", "right-", "bottom-", "left-" }, *const corners[] = { "top-left-", "top-right-", "bottom-right-", "bottom-left-" };
         const char *q = prop + 7; int i = -1;
         if (strstr(q, "-radius")) { for (int k = 0; k < 4; k++) if (!strncmp(q, corners[k], strlen(corners[k]))) i = k; if (i >= 0) len_str(&b, s->border_radius[i], "0px"); }

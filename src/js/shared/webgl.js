@@ -627,15 +627,24 @@ const GL2M = {
     },
 };
 
-class WebGLRenderingContext { constructor() { glIllegal(); } }
-class WebGL2RenderingContext { constructor() { glIllegal(); } }
+const WebGLRenderingContext = function WebGLRenderingContext() { 'use strict'; glIllegal(); };
+const WebGL2RenderingContext = function WebGL2RenderingContext() { 'use strict'; glIllegal(); };
 {
     const c1 = glTable(GL1_NAMES), c2 = Object.assign({}, c1, glTable(GL2_NAMES)), ds = c => { const o = {}; for (const k in c) o[k] = { value: c[k], enumerable: true }; return o; };
     const d1 = ds(c1), d2 = ds(c2), m1 = Object.getOwnPropertyDescriptors(GL1M), m2 = Object.getOwnPropertyDescriptors(GL2M);
     for (const k of Object.keys(m1)) if (k[0] === '_') m1[k].enumerable = false;
-    Object.defineProperties(WebGLRenderingContext, d1); Object.defineProperties(WebGLRenderingContext.prototype, d1); Object.defineProperties(WebGLRenderingContext.prototype, m1);
-    Object.defineProperties(WebGL2RenderingContext, d2); Object.defineProperties(WebGL2RenderingContext.prototype, d2);
-    Object.defineProperties(WebGL2RenderingContext.prototype, m1); Object.defineProperties(WebGL2RenderingContext.prototype, m2);
+    // These large interfaces otherwise spend most iframe startup time growing
+    // prototype hidden classes one property at a time. Allocate the final
+    // prototype in one operation, preserving constructor-first key order and
+    // every original descriptor (including private helper enumerability).
+    const install = (C, constants, ...methods) => {
+        const descriptors = Object.assign({ constructor: { value: C, writable: true, configurable: true } }, constants, ...methods);
+        const prototype = Object.create(Object.prototype, descriptors);
+        Object.defineProperty(C, 'prototype', { value: prototype, writable: false });
+        for (const key of Object.keys(constants)) Object.defineProperty(C, key, constants[key]);
+    };
+    install(WebGLRenderingContext, d1, m1);
+    install(WebGL2RenderingContext, d2, m1, m2);
 }
 /* (re)builds a context's state over native context id */
 function glInit(g, id) {

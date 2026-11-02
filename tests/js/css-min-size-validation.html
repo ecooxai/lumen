@@ -1,0 +1,19 @@
+<!doctype html><meta charset="utf-8"><title>Minimum-size declaration validation</title><body><div id="stage"></div><script>
+(()=>{'use strict';let total=0,passed=0;const stage=document.getElementById('stage');
+function check(ok,why){if(!ok)throw Error(why);}
+function test(name,fn){total++;try{fn();passed++;console.log('MIN_SIZE_ROW '+JSON.stringify({name,pass:true}));}catch(e){console.log('MIN_SIZE_ROW '+JSON.stringify({name,pass:false,error:String(e)}));}}
+const props=['min-width','min-height','min-inline-size','min-block-size'];
+const invalid=['none','complex','60','10px 20%','max-content 10px','min-content max-content','available','10px border-box','content-box 20%','auto-suffix','min-content-suffix','fit-content(10px) 20px','fit-content()','fit-content(10px, 20px)','fit-content(-1px)','-10%','-0.5em','1py','min(1py)','min(1s)','calc(0)','fit-content(2)','fit-content(1s)','calc(1px + 1s)'];
+const valid=['auto','min-content','max-content','fit-content','stretch','-webkit-fill-available','0','-0','10%','0.5em','1e2px','calc(10% - 0.5em)','calc(-1px)','min(10px, 20%)','fit-content(10%)','fit-content(0.5em)','fit-content(calc(10% - 0.5em))','inherit','initial','unset','revert','revert-layer','var(--minimum)','var(--missing, 17px)','MIN-CONTENT',' /* lead */ 10px /* tail */ '];
+for(const p of props){
+ for(const v of invalid){
+  test(p+' rejects '+v,()=>{const e=document.createElement('div');e.style.setProperty(p,'17px','important');e.style.setProperty(p,v);check(e.style.getPropertyValue(p)==='17px','setter replaced prior valid value: '+e.style.getPropertyValue(p));check(e.style.getPropertyPriority(p)==='important','priority changed');check(!CSS.supports(p,v),'two-argument supports accepted');check(!CSS.supports('('+p+': '+v+')'),'condition supports accepted');});
+  test(p+' declaration list ignores '+v,()=>{const e=document.createElement('div');e.style.cssText=p+':17px;'+p+':'+v;check(e.style.getPropertyValue(p)==='17px','cssText accepted invalid trailing declaration: '+e.style.getPropertyValue(p));});
+ }
+ for(const v of valid)test(p+' accepts '+v,()=>{const e=document.createElement('div');e.style.setProperty(p,v);check(e.style.getPropertyValue(p)!=='','setter rejected valid value');check(CSS.supports(p,v),'two-argument supports rejected');check(CSS.supports('('+p+': '+v+')'),'condition supports rejected');});
+ for(const v of ['none','auto-suffix','min-content 10px','fit-content(2)','min(1s)'])test(p+' native cascade ignores '+v,()=>{const e=document.createElement('div');e.setAttribute('style',p+':17px;'+p+':'+v);stage.appendChild(e);try{check(getComputedStyle(e).getPropertyValue(p)==='17px','invalid native declaration won: '+getComputedStyle(e).getPropertyValue(p));}finally{e.remove();}});
+ test(p+' invalid substitution takes unset',()=>{const e=document.createElement('div');e.style.cssText='--bad:none;'+p+':17px;'+p+':var(--bad)';stage.appendChild(e);try{const actual=getComputedStyle(e).getPropertyValue(p);check(actual==='0px'||actual==='auto','invalid substitution resurrected prior declaration: '+actual);}finally{e.remove();}});
+}
+for(const p of ['max-width','max-height','max-inline-size','max-block-size'])test(p+' keeps none',()=>{const e=document.createElement('div');e.style.setProperty(p,'none');check(e.style.getPropertyValue(p)==='none'&&CSS.supports(p,'none'),'maximum-size grammar changed');});
+const result=passed===total?'PASS':'FAIL';console.log('RESULTS css-min-size-validation:'+result+' '+JSON.stringify({passed,total}));document.documentElement.setAttribute('data-css-min-size-validation',result);
+})();</script>

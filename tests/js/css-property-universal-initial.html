@@ -1,0 +1,107 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Universal registered-property initial token validation</title>
+<!-- Authored regression controls; separate from official WPT.
+https://drafts.css-houdini.org/css-properties-values-api-1/#registering-custom-properties
+https://drafts.csswg.org/css-syntax-3/#typedef-declaration-value -->
+<style>html,body{margin:0;padding:0}</style>
+<body>
+<script>
+(() => {
+'use strict';
+const rows = [];
+let serial = 0;
+const invalidCases = [["bad string token", "\"\n"], ["mismatched block closers", "([)]"], ["unmatched closing delimiter", ")"], ["inherit keyword", "inherit"], ["initial keyword", "initial"], ["revert keyword", "revert"], ["revert-layer keyword", "revert-layer"], ["top-level semicolon", "semi;colon"], ["unset keyword", "unset"], ["bad unquoted URL", "url(moo '')"], ["top-level exclamation", "whee!"], ["mixed-case wide keyword", "ReVeRt-LaYeR"], ["escaped wide keyword", "\\69 nherit"], ["actual var function", "var(--missing, 1px)"], ["escaped var function", "v\\61 r(--missing, 1px)"], ["escaped bad URL function", "u\\72 l(moo '')"]];
+const validCases = [["length initial value", "17px", 17, true], ["math initial value", "calc(8px + 9px)", 17, true], ["quoted wide keyword", "\"inherit\"", null, true], ["quoted var text", "\"var(--missing)\"", null, true], ["quoted punctuation", "\"a;b!c\"", null, true], ["commented var text", "/* var(--missing) inherit */ 17px", 17, true], ["wide keyword within multiple tokens", "inherit extra", null, true], ["escaped ordinary identifier", "\\69 nherit-more", null, true], ["nested punctuation", "[a;b!]", null, true], ["quoted URL punctuation", "url(\"data:,a;b!\")", null, true], ["escaped URL closing parenthesis", "url(data:,a\\)b)", null, true], ["EOF block closure", "[token", null, true], ["EOF function closure", "func(token", null, true], ["EOF URL closure", "url(data:,tail", null, true], ["escaped URL quote", "url(data:,a\\\"b)", null, true], ["explicit empty initial value", "", null, false], ["comment-only initial value", " /* empty */ ", null, false], ["hex escape with LF terminator", "\"\\31\nx\"", null, true], ["hex escape with CRLF terminator", "\"\\31\r\nx\"", null, true]];
+function equal(actual, expected, label) {
+ if (actual !== expected) throw new Error(label + ': ' + JSON.stringify(actual) + ' expected ' + JSON.stringify(expected));
+}
+function check(name, fn) {
+ try { fn(); rows.push({name, pass: true}); }
+ catch (error) { rows.push({name, pass: false, error: String(error)}); }
+}
+function newName() { return '--lumen-universal-initial-' + (++serial); }
+function definition(name, initialValue) { return {name, syntax: '*', inherits: false, initialValue}; }
+function expectError(name, fn, label) {
+ let caught;
+ try { fn(); } catch (error) { caught = error; }
+ if (!caught) throw new Error(label + ': no exception');
+ equal(caught.name, name, label + ' exception name');
+}
+function probe(name, expectedInitialWidth, requireInitial) {
+ const node = document.createElement('div');
+ node.style.cssText = 'position:absolute;left:0;top:0;height:1px;padding:0;margin:0;border:0;box-sizing:content-box';
+ node.style.width = 'var(' + name + ', 31px)';
+ document.body.appendChild(node);
+ try {
+  if (requireInitial && !getComputedStyle(node).getPropertyValue(name).trim()) throw new Error('registered initial value was lost');
+  if (expectedInitialWidth !== null) equal(node.offsetWidth, expectedInitialWidth, 'actual initial width');
+  node.style.setProperty(name, '23px');
+  equal(node.offsetWidth, 23, 'actual width after assigning registered property');
+ } finally { node.remove(); }
+}
+for (const [label, value] of invalidCases) {
+ check('reject ' + label + ' without reserving the name', () => {
+  const name = newName();
+  expectError('SyntaxError', () => CSS.registerProperty(definition(name, value)), 'invalid universal initial');
+  CSS.registerProperty(definition(name, '17px'));
+  probe(name, 17, true);
+ });
+}
+for (const [label, value, expectedWidth, requireInitial] of validCases) {
+ check('accept ' + label + ' and retain registration', () => {
+  const name = newName();
+  CSS.registerProperty(definition(name, value));
+  expectError('InvalidModificationError', () => CSS.registerProperty(definition(name, '1px')), 'duplicate registration');
+  probe(name, expectedWidth, requireInitial);
+ });
+}
+check('ordinary custom properties retain CSS-wide inheritance', () => {
+ const parent = document.createElement('div'), child = document.createElement('div');
+ parent.style.setProperty('--lumen-universal-ordinary', '17px');
+ child.style.cssText = 'position:absolute;left:0;top:0;height:1px;padding:0;margin:0;border:0;width:var(--lumen-universal-ordinary,31px)';
+ child.style.setProperty('--lumen-universal-ordinary', 'inherit');
+ parent.appendChild(child); document.body.appendChild(parent);
+ try {
+  equal(CSS.supports('--lumen-universal-ordinary', 'inherit'), true, 'ordinary CSS-wide support');
+  equal(child.offsetWidth, 17, 'ordinary inherited used width');
+ } finally { parent.remove(); }
+});
+check('ordinary custom properties retain var fallback', () => {
+ const node = document.createElement('div');
+ node.style.cssText = 'position:absolute;left:0;top:0;height:1px;padding:0;margin:0;border:0;width:var(--lumen-universal-ordinary,31px)';
+ node.style.setProperty('--lumen-universal-ordinary', 'var(--lumen-universal-missing,19px)');
+ document.body.appendChild(node);
+ try {
+  equal(CSS.supports('--lumen-universal-ordinary', 'var(--lumen-universal-missing,19px)'), true, 'ordinary var support');
+  equal(node.offsetWidth, 19, 'ordinary fallback used width');
+ } finally { node.remove(); }
+});
+check('universal registration may omit initialValue', () => {
+ const name = newName();
+ CSS.registerProperty({name, syntax: '*', inherits: false});
+ expectError('InvalidModificationError', () => CSS.registerProperty(definition(name, '1px')), 'duplicate omitted-initial registration');
+ probe(name, 31, false);
+});
+check('NUL replacement must not falsely become a CSS-wide keyword', () => {
+ const name = newName();
+ CSS.registerProperty(definition(name, 'initial\u0000'));
+ expectError('InvalidModificationError', () => CSS.registerProperty(definition(name, '1px')), 'duplicate NUL-containing registration');
+ // This control tests registration and later mutation; initial serialization
+ // of embedded NUL is a separate behavior from this lexical validation repair.
+ probe(name, null, false);
+});
+check('a stray closing token after NUL is rejected without reserving the name', () => {
+ const name = newName();
+ expectError('SyntaxError', () => CSS.registerProperty(definition(name, 'safe\u0000)')), 'invalid token after embedded NUL');
+ CSS.registerProperty(definition(name, '17px'));
+ probe(name, 17, true);
+});
+for (const row of rows) console.log('UNIVERSAL_INITIAL_ROW ' + JSON.stringify(row));
+const passed = rows.filter(row => row.pass === true).length;
+const ok = rows.length === 40 && passed === 40;
+document.documentElement.setAttribute('data-css-property-universal-initial', ok ? 'PASS' : 'FAIL');
+console.log('RESULTS css-property-universal-initial:' + (ok ? 'PASS' : 'FAIL') + ' ' + JSON.stringify({passed,total:rows.length}));
+})();
+</script>
+</body>

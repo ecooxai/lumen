@@ -145,19 +145,38 @@ bool css_value_has_var(const char *value) {
         if (type == CT_EOF) return false;
     }
 }
+bool css_value_has_if(const char *value) {
+    if (!strchr(value, '(')) return false;
+    CLexer l; clex_init(&l, value, strlen(value));
+    for (;;) {
+        CTok t = clex_next(&l); int type = t.type;
+        bool found = type == CT_FUNC && t.str && str_ieq(t.str, "if");
+        free(t.str);
+        if (found) return true;
+        if (type == CT_EOF) return false;
+    }
+}
 static bool css_math_function(const char *name) {
     static const char *const names[] = { "calc", "-webkit-calc", "min", "max", "clamp",
         "round", "mod", "rem", "abs", "sign", "sin", "cos", "tan", "asin", "acos",
-        "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp", "progress", NULL };
+        "atan", "atan2", "pow", "sqrt", "hypot", "log", "exp", "progress", "calc-size", NULL };
     for (int i = 0; names[i]; i++) if (str_ieq(name, names[i])) return true;
     return false;
 }
 bool css_math_spacing_valid(const char *value) {
     CLexer l; clex_init(&l, value, strlen(value));
-    bool math[256]; int closes[256], depth = 0, previous = CT_EOF;
+    bool math[256], after_operand = false, progress_prefix = false; int closes[256], depth = 0, previous = CT_EOF;
     for (;;) {
         CTok t = clex_next(&l); int type = t.type;
         if (type == CT_EOF) { free(t.str); return true; }
+        /* A sign touching a number belongs to that numeric token, rather
+         * than becoming a binary operator. After an operand this is an
+         * invalid adjacent value, even when whitespace precedes the sign.
+         * Unary signed values remain valid after an opening token, comma,
+         * or operator; opaque non-math function arguments are unaffected. */
+        if (depth && math[depth - 1] && after_operand &&
+            (type == CT_NUMBER || type == CT_DIM || type == CT_PERCENT) &&
+            (*t.start == '+' || *t.start == '-')) { free(t.str); return false; }
         if (depth && math[depth - 1] && type == CT_DELIM && (*t.start == '+' || *t.start == '-')) {
             CLexer look = l; CTok next = clex_next(&look);
             bool valid = previous == CT_WS && next.type == CT_WS;
@@ -172,6 +191,14 @@ bool css_math_spacing_valid(const char *value) {
             closes[depth++] = close;
         } else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
             if (!depth || closes[--depth] != type) { free(t.str); return false; }
+        }
+        if (type != CT_WS) {
+            /* progress() accepts an optional no-clamp keyword before its
+             * first calculation, with no comma between the two. */
+            bool prefix = progress_prefix && type == CT_IDENT && t.str && str_ieq(t.str, "no-clamp");
+            after_operand = !close && type != CT_COMMA && !prefix &&
+                !(type == CT_DELIM && (*t.start == '+' || *t.start == '-' || *t.start == '*' || *t.start == '/'));
+            progress_prefix = type == CT_FUNC && t.str && str_ieq(t.str, "progress");
         }
         previous = type; free(t.str);
     }
@@ -243,7 +270,136 @@ static bool css_string_closed(const CTok *token) {
     while (i && token->start[i - 1] == '\\') { slashes++; i--; }
     return !(slashes & 1);
 }
+/* Validate a declaration-value token stream without interpreting its functions
+ * as values of an ordinary property. EOF closes open blocks and strings, as
+ * required by CSS Syntax; a stray closing token is still invalid. */
+typedef struct {
+    bool sole_css_wide;
+    bool has_variable_reference;
+} DeclarationValueInfo;
+
+/* p points just after a backslash. The caller decides whether a literal
+ * newline is allowed (string continuation) or invalid (an unquoted URL). */
+static const char *css_declaration_escape_end(const char *p, const char *end) {
+    if (p == end) return p;
+    if (isxdigit((unsigned char)*p)) {
+        int digits = 0;
+        while (p < end && digits < 6 && isxdigit((unsigned char)*p)) { p++; digits++; }
+        if (p < end && is_ws((unsigned char)*p)) {
+            if (*p++ == '\r' && p < end && *p == '\n') p++;
+        }
+        return p;
+    }
+    if (*p++ == '\r' && p < end && *p == '\n') p++;
+    return p;
+}
+
+/* The compact tokenizer retains unquoted URL contents in CT_URL, including
+ * malformed contents. Check the original token so escaped quotes, parentheses
+ * and whitespace remain distinct from their invalid unescaped forms. */
+static bool css_declaration_url_token_valid(const CTok *token) {
+    const char *end = token->start + token->len;
+    const char *p = memchr(token->start, '(', token->len);
+    if (!p) return false;
+    p++;
+    while (p < end && is_ws((unsigned char)*p)) p++;
+    while (p < end) {
+        unsigned char c = (unsigned char)*p++;
+        if (c == ')') return p == end;
+        if (is_ws(c)) {
+            while (p < end && is_ws((unsigned char)*p)) p++;
+            return p == end || (*p == ')' && p + 1 == end);
+        }
+        if (c == '"' || c == '\'' || c == '(' || c <= 8 || c == 11 ||
+            (c >= 14 && c <= 31) || c == 127) return false;
+        if (c == '\\') {
+            if (p == end) return true;
+            if (*p == '\n' || *p == '\r' || *p == '\f') return false;
+            p = css_declaration_escape_end(p, end);
+        }
+    }
+    return true;
+}
+
+static bool css_declaration_value_valid(const char *value, DeclarationValueInfo *info) {
+    if (!value || !info) return false;
+    memset(info, 0, sizeof *info);
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    int closes[256], depth = 0, significant = 0;
+    for (;;) {
+        CTok token = clex_next(&lexer); int type = token.type;
+        bool valid = true;
+        if (type == CT_STRING) {
+            if (!css_string_closed(&token) && lexer.i < lexer.n) valid = false;
+            const char *p = token.start + 1, *end = token.start + token.len;
+            while (valid && p < end) {
+                char c = *p++;
+                if (c == '\\') p = css_declaration_escape_end(p, end);
+                else if (c == '\n' || c == '\r' || c == '\f') valid = false;
+            }
+        } else if (type == CT_URL) valid = css_declaration_url_token_valid(&token);
+        if (type != CT_WS && type != CT_EOF) {
+            if (significant < 2) significant++;
+            info->sole_css_wide = significant == 1 && type == CT_IDENT && token.str &&
+                (str_ieq(token.str, "initial") || str_ieq(token.str, "inherit") ||
+                 str_ieq(token.str, "unset") || str_ieq(token.str, "revert") ||
+                 str_ieq(token.str, "revert-layer"));
+        }
+        if (type == CT_FUNC && token.str && str_ieq(token.str, "var"))
+            info->has_variable_reference = true;
+        free(token.str);
+        if (!valid) return false;
+        if (type == CT_EOF) return true;
+        int close = css_var_closing(type);
+        if (close) {
+            if (depth == 256) return false;
+            closes[depth++] = close;
+        } else if (type == CT_RPAREN || type == CT_RBRACK || type == CT_RBRACE) {
+            if (!depth || closes[--depth] != type) return false;
+        } else if (!depth && (type == CT_SEMI ||
+                   (type == CT_DELIM && *token.start == '!'))) return false;
+    }
+}
+
+/* Universal registration keeps its token stream, but CSS-wide defaulting and
+ * var() need an element/cascade context and cannot supply an initial value.
+ * Inspect decoded tokens: strings and comments containing these spellings are
+ * ordinary values, while escaped spellings retain their actual meaning. */
+bool css_universal_initial_valid(const char *value, size_t length) {
+    if (!value || length == SIZE_MAX) return false;
+    /* CSS input preprocessing is local to this registration check. Use the
+     * full supplied byte length: NUL is a replacement character, not EOF. */
+    size_t capacity = length;
+    for (size_t input = 0; input < length; input++) {
+        if (!value[input]) {
+            if (capacity > SIZE_MAX - 3) return false;
+            capacity += 2;
+        }
+    }
+    char *normalized = xmalloc(capacity + 1);
+    size_t output = 0;
+    for (size_t input = 0; input < length; input++) {
+        char c = value[input];
+        if (!c) {
+            normalized[output++] = (char)0xef;
+            normalized[output++] = (char)0xbf;
+            normalized[output++] = (char)0xbd;
+            continue;
+        }
+        if (c == '\r') { if (input + 1 < length && value[input + 1] == '\n') input++; c = '\n'; }
+        else if (c == '\f') c = '\n';
+        normalized[output++] = c;
+    }
+    normalized[output] = 0;
+    DeclarationValueInfo info;
+    bool valid = css_declaration_value_valid(normalized, &info) &&
+        !info.sole_css_wide && !info.has_variable_reference;
+    free(normalized);
+    return valid;
+}
+
 bool css_var_syntax_valid(const char *value) {
+    if (!css_if_syntax_valid(value)) return false;
     CLexer l; clex_init(&l, value, strlen(value));
     int closes[256], depth = 0;
     for (;;) {
@@ -328,6 +484,13 @@ static char *css_declaration_text(const char *source, size_t length, bool custom
     }
     return sb_take(&out);
 }
+/* CSSOM receives standalone component values, not declaration text. Finish
+ * valid EOF-open tokens before a declaration serializer appends its semicolon.
+ * Original pending-substitution text is handled separately by the caller. */
+char *css_math_value_text(const char *value) {
+    if (!value || !css_var_syntax_valid(value) || !css_math_spacing_valid(value)) return NULL;
+    return css_declaration_text(value, strlen(value), true);
+}
 static char *css_important_start(char *value) {
     CLexer l; clex_init(&l, value, strlen(value));
     int depth = 0; char *bang = NULL; bool keyword = false, other = false;
@@ -349,7 +512,11 @@ static char *css_important_start(char *value) {
 
 
 /* ---------------- selectors ---------------- */
-typedef struct { const char *s; size_t i, n; bool query; } SP;   /* query: querySelector's grammar (no @namespace prefixes, only known pseudos) */
+typedef enum { SELECTOR_SHEET, SELECTOR_QUERY, SELECTOR_SUPPORTS } SelectorParseMode;
+typedef struct { const char *s; size_t i, n; SelectorParseMode query; } SP;
+/* Query and supports modes reject unknown pseudos and namespace prefixes.
+ * Supports additionally rejects unsupported branches recursively, including
+ * forgiving :is()/:where() lists; querySelector keeps its existing behavior. */
 /* the pseudo-classes and pseudo-elements Chrome parses; querySelector rejects others */
 static bool known_pseudo(const char *n, bool el) {
     static const char *const classes[] = { "active", "any-link", "autofill", "buffering", "checked", "closed", "default", "defined", "dir", "disabled",
@@ -546,8 +713,10 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                     SP q = { arg, 0, strlen(arg), p->query };
                     if (!parse_sellist(&q, s.sub, nmx == atom("has"), 0)) {
                         /* forgiving selector list for :is/:where */
-                        if (nmx == atom("not") || nmx == atom("has")) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
-                    } else if (nmx == atom("not") || nmx == atom("has")) {   /* no pseudo-elements inside :not()/:has() */
+                        if (p->query == SELECTOR_SUPPORTS || nmx == atom("not") || nmx == atom("has")) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
+                    } else if (p->query == SELECTOR_SUPPORTS || nmx == atom("not") || nmx == atom("has")) {
+                        /* Supports must reject pseudo-elements in nested real-selector
+                           lists; ordinary querySelector behavior is unchanged. */
                         bool bad = false;
                         for (int k = 0; k < s.sub->n && !bad; k++) for (int j = 0; j < s.sub->v[k].n; j++) if (has_pe(&s.sub->v[k].c[j])) bad = true;
                         if (bad) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
@@ -556,7 +725,17 @@ static bool parse_compound(SP *p, Compound *c, Selector *sel) {
                     const char *rest = NULL;
                     if (!parse_nth(arg, &s.a, &s.b, &rest)) { free(arg); goto fail; }
                     if (rest && *rest && !str_istarts(rest, "of ")) { free(arg); goto fail; }
-                    if (rest && str_istarts(rest, "of ")) { s.sub = xcalloc(1, sizeof(SelList)); SP q = { rest + 3, 0, strlen(rest + 3), p->query }; parse_sellist(&q, s.sub, false, 0); }
+                    if (rest && str_istarts(rest, "of ")) {
+                        s.sub = xcalloc(1, sizeof(SelList));
+                        SP q = { rest + 3, 0, strlen(rest + 3), p->query };
+                        bool valid = parse_sellist(&q, s.sub, false, 0);
+                        if (p->query == SELECTOR_SUPPORTS) {
+                            for (int k = 0; k < s.sub->n && valid; k++)
+                                for (int j = 0; j < s.sub->v[k].n; j++)
+                                    if (has_pe(&s.sub->v[k].c[j])) valid = false;
+                            if (!valid) { free(arg); css_sellist_free(s.sub); free(s.sub); goto fail; }
+                        }
+                    }
                 } else s.value = xstrdup(str_trim(arg));
                 free(arg);
             }
@@ -586,16 +765,29 @@ static uint32_t compute_spec(const Selector *s) {
     uint32_t a = 0, b = 0, c = 0;
     for (int i = 0; i < s->n; i++) for (int k = 0; k < s->c[i].n; k++) {
         SimpleSel *x = &s->c[i].s[k];
+        uint32_t sp = 0;
         switch (x->kind) {
         case SK_ID: a++; break;
         case SK_CLASS: case SK_ATTR: b++; break;
-        case SK_TYPE: case SK_PSEUDO_EL: c++; break;
+        case SK_TYPE: c++; break;
+        case SK_PSEUDO_EL:
+            c++;
+            if (x->sub && x->name == atom("slotted")) sp = spec_of_list(x->sub);
+            break;
         case SK_PSEUDO:
             if (x->name == atom("where")) break;
-            if (x->sub && (x->name == atom("not") || x->name == atom("is") || x->name == atom("has") || x->name == atom("matches"))) { uint32_t sp = spec_of_list(x->sub); a += sp >> 20; b += (sp >> 10) & 1023; c += sp & 1023; }
-            else b++;
+            /* The relative anchor is syntax machinery, not an authored :scope. */
+            if (x->name == atom("scope") && x->op == 2) break;
+            if (x->sub && (x->name == atom("not") || x->name == atom("is") || x->name == atom("has") || x->name == atom("matches"))) sp = spec_of_list(x->sub);
+            else {
+                b++;
+                if (x->sub && (x->name == atom("nth-child") || x->name == atom("nth-last-child") ||
+                               x->name == atom("host") || x->name == atom("host-context")))
+                    sp = spec_of_list(x->sub);
+            }
             break;
         }
+        a += sp >> 20; b += (sp >> 10) & 1023; c += sp & 1023;
     }
     return (LMIN(a, 1023u) << 20) | (LMIN(b, 1023u) << 10) | LMIN(c, 1023u);
 }
@@ -676,6 +868,14 @@ static bool parse_sellist(SP *p, SelList *out, bool relative, char endc) {
     return ok && p->i >= p->n;
 }
 
+bool css_supports_selector(const char *src) {
+    SelList list = {0};
+    SP p = { src, 0, strlen(src), SELECTOR_SUPPORTS };
+    bool supported = parse_sellist(&p, &list, false, 0) && list.n == 1;
+    css_sellist_free(&list);
+    return supported;
+}
+
 bool css_parse_query_selector_list(const char *src, SelList *out) {
     SP p = { src, 0, strlen(src), true };
     bool ok = parse_sellist(&p, out, false, 0);
@@ -690,7 +890,7 @@ bool css_parse_selector_list(const char *src, SelList *out) {
 }
 
 /* ---------------- declarations ---------------- */
-DeclList *css_parse_decls(const char *s, size_t n) {
+static DeclList *css_parse_declarations(const char *s, size_t n, bool property_descriptors) {
     DeclList *d = xcalloc(1, sizeof *d);
     size_t i = 0;
     while (i < n) {
@@ -729,15 +929,16 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         while (name_end.type == CT_WS) { free(name_end.str); name_end = clex_next(&names); }
         bool name_valid = name.type == CT_IDENT && name.str && name_end.type == CT_EOF;
         bool custom = name_valid && name.str[0] == '-' && name.str[1] == '-' && name.str[2];
+        bool arbitrary = custom || (property_descriptors && name_valid && str_ieq(name.str, "initial-value"));
         char *val = css_declaration_text(s + vs, i - vs, true);
         char *v = str_trim(val), *bang = css_important_start(v);
         bool imp = bang != NULL;
         if (bang) { *bang = 0; v = str_trim(v); }
-        bool pending = css_value_has_var(v);
+        bool pending = css_value_has_var(v) || css_value_has_if(v);
         /* Comments do not supply whitespace tokens in calc grammar. Defer
          * this typed check until substitution when the value is pending. */
-        bool math_valid = custom || pending || css_math_spacing_valid(v);
-        if (!custom && !pending) {
+        bool math_valid = arbitrary || pending || css_math_spacing_valid(v);
+        if (!arbitrary && !pending) {
             char *text = css_declaration_text(v, strlen(v), false);
             free(val); val = text; v = str_trim(val);
         }
@@ -746,12 +947,86 @@ DeclList *css_parse_decls(const char *s, size_t n) {
         Decl dc; dc.prop = property; dc.value = xstrdup(v); dc.important = imp;
         /* A stray closing token invalidates the declaration, not just its
            suffix. Continue to the next semicolon so later declarations survive. */
-        if (name_valid && !bad_close && math_valid && (custom || v[0]) && css_var_syntax_valid(v)) vec_push(*d, dc); else free(dc.value);
+        if (name_valid && !bad_close && math_valid && (arbitrary || v[0]) && css_var_syntax_valid(v) &&
+            (arbitrary || (css_numeric_dimension_valid(property, v) && css_transition_property_valid(property, v) && css_box_shadow_valid(property, v) && css_border_valid(property, v) && css_interpolate_size_valid(property, v)))) vec_push(*d, dc); else free(dc.value);
         free(val);
     }
     return d;
 }
+DeclList *css_parse_decls(const char *s, size_t n) { return css_parse_declarations(s, n, false); }
 void css_decls_free(DeclList *d) { if (!d) return; for (int i = 0; i < d->n; i++) free(d->v[i].value); vec_free(*d); free(d); }
+
+/* CSSOM reads descriptor tokens without changing the active registration set.
+ * Use the same declaration scanner as styles; only initial-value accepts the
+ * arbitrary (including explicitly empty) declaration-value grammar. */
+static char *css_property_input(const char *source, size_t length) {
+    SB text = {0};
+    for (size_t i = 0; i < length; i++) {
+        unsigned char ch = (unsigned char)source[i];
+        if (!ch) { sb_puts(&text, "\xef\xbf\xbd"); continue; }
+        if (ch == '\r') { if (i + 1 < length && source[i + 1] == '\n') i++; ch = '\n'; }
+        else if (ch == '\f') ch = '\n';
+        sb_putc(&text, (char)ch);
+    }
+    return text.s ? sb_take(&text) : xstrdup("");
+}
+static char *css_property_token(const char *source, int type) {
+    CLexer lexer; clex_init(&lexer, source, strlen(source));
+    CTok value;
+    do { value = clex_next(&lexer); if (value.type != CT_WS) break; free(value.str); } while (1);
+    bool valid = value.type == type && value.str;
+    CTok end;
+    do { end = clex_next(&lexer); if (end.type != CT_WS) break; free(end.str); } while (1);
+    valid = valid && end.type == CT_EOF;
+    free(end.str);
+    if (!valid) { free(value.str); return NULL; }
+    return value.str;
+}
+char *css_property_identifier(const char *source, size_t length) {
+    char *input = css_property_input(source, length);
+    char *identifier = css_property_token(input, CT_IDENT);
+    free(input);
+    return identifier;
+}
+bool css_property_rule_data(const char *name_source, size_t name_length,
+                            const char *body_source, size_t body_length,
+                            char **name, char ***syntaxes, int *syntax_count, char **initial, bool *inherits) {
+    *name = *initial = NULL; *syntaxes = NULL; *syntax_count = 0; *inherits = false;
+    *name = css_property_identifier(name_source, name_length);
+    if (!*name || strncmp(*name, "--", 2) || !(*name)[2]) { free(*name); *name = NULL; return false; }
+    char *body = css_property_input(body_source, body_length);
+    DeclList *descriptors = css_parse_declarations(body, strlen(body), true);
+    bool have_inherits = false;
+    /* Syntax strings are validated by the shared JS registration grammar.
+     * Preserve every string candidate so an invalid later descriptor cannot
+     * hide the last valid earlier descriptor. */
+    *syntaxes = xcalloc((size_t)descriptors->n + 1, sizeof **syntaxes);
+    for (int i = 0; i < descriptors->n; i++) {
+        const Decl *descriptor = &descriptors->v[i];
+        if (descriptor->important) continue;
+        if (!strcmp(descriptor->prop, "syntax")) {
+            char *value = css_property_token(descriptor->value, CT_STRING);
+            if (value) (*syntaxes)[(*syntax_count)++] = value;
+        } else if (!strcmp(descriptor->prop, "inherits")) {
+            char *value = css_property_token(descriptor->value, CT_IDENT);
+            if (value && (str_ieq(value, "true") || str_ieq(value, "false"))) {
+                *inherits = str_ieq(value, "true"); have_inherits = true;
+            }
+            free(value);
+        } else if (!strcmp(descriptor->prop, "initial-value")) {
+            char *value = css_declaration_text(descriptor->value, strlen(descriptor->value), false);
+            const char *trimmed = str_trim(value);
+            free(*initial); *initial = xstrdup(trimmed);
+            free(value);
+        }
+    }
+    css_decls_free(descriptors); free(body);
+    if (*syntax_count && have_inherits) return true;
+    for (int i = 0; i < *syntax_count; i++) free((*syntaxes)[i]);
+    free(*syntaxes); free(*name); free(*initial);
+    *name = *initial = NULL; *syntaxes = NULL; *syntax_count = 0;
+    return false;
+}
 
 /* ---------------- media queries ---------------- */
 /* set when a query uses an unknown feature: the whole query is then false, even under not */
@@ -877,6 +1152,18 @@ static bool media_feature(const char *f, const MediaCtx *mc) {
     if (!pre) for (size_t i = 0; i < sizeof discrete / sizeof *discrete; i++) if (!strcmp(name, discrete[i])) k = true;
     if (!k) g_mq_unknown = true;   /* unknown: false even under "not" */
     return false;
+}
+
+/* A feature leaf for an if(media()) condition. Preserve the caller's
+ * thread-local parser state and report unknown independently of false. */
+bool css_media_feature_matches(const char *feature, const MediaCtx *mc, bool *known) {
+    bool saved = g_mq_unknown; g_mq_unknown = false;
+    /* The existing feature parser has a bounded input buffer. Reject an
+     * oversized leaf instead of allowing its truncated prefix to decide. */
+    bool result = strlen(feature) < 256 && media_feature(feature, mc);
+    *known = strlen(feature) < 256 && !g_mq_unknown;
+    g_mq_unknown = saved;
+    return result;
 }
 
 /* Media conditions are three-valued: an unknown feature or <general-enclosed> is unknown, which "or" with a true
@@ -1027,6 +1314,33 @@ bool css_container_eval(const char *q, const CQEnv *env) {
 }
 
 extern bool css_property_known(const char *prop);
+bool css_supports_declaration(const char *p, const char *v, bool quirks) {
+    if (!p || !v || !*p) return false;
+    bool custom = p[0] == '-' && p[1] == '-' && p[2];
+    if (!custom && !*v) return false;
+    bool r;
+    bool minimum = !strcmp(p, "min-width") || !strcmp(p, "min-height") ||
+           !strcmp(p, "min-inline-size") || !strcmp(p, "min-block-size");
+    r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) &&
+        (minimum || !strcmp(p, "transition-property") || !strstr(v, "-webkit-")) && !strstr(p, "-webkit-"));
+    if (r) r = css_var_syntax_valid(v);
+    if (r && minimum) r = css_min_size_valid(p, v);
+    if (r) r = css_numeric_dimension_valid(p, v);
+    if (r) r = css_transition_property_valid(p, v);
+    if (r) r = css_box_shadow_valid(p, v);
+    if (r) r = css_border_valid(p, v);
+    if (r) r = css_interpolate_size_valid(p, v);
+    if (r) r = css_supports_native_value(p, v, quirks);
+    if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
+    if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);
+    if (r && p[0] == 'f') r = css_flex_valid(p, v);
+    if (r && p[0] == 'c') r = css_containment_valid(p, v) && css_columns_valid(p, v);
+    /* Use the same original-token spacing rule as declarations. A
+     * custom property or pending substitution keeps its token stream. */
+    if (r && !(p[0] == '-' && p[1] == '-') && !css_math_substitution_pending(v))
+        r = css_math_spacing_valid(v);
+    return r;
+}
 bool css_supports(const char *cond) {
     char *s = xstrdup(cond); char *t = str_trim(s);
     bool r = true;
@@ -1047,12 +1361,7 @@ bool css_supports(const char *cond) {
         char *colon = strchr(in, ':');
         if (colon && in[0] != '(' && !str_istarts(in, "not ")) {
             *colon = 0; char *p = str_trim(in); char *v = str_trim(colon + 1);
-            r = (p[0] == '-' && p[1] == '-') || (css_property_known(p) && !strstr(v, "-webkit-") && !strstr(p, "-webkit-"));
-            if (!strcmp(p, "display") && (strstr(v, "contents") || strstr(v, "subgrid"))) r = !strstr(v, "subgrid");
-            if (strstr(p, "backdrop-filter") || strstr(p, "anchor")) r = false;
-            if (r && p[0] == 'g') r = css_grid_repeat_valid(p, v);
-            if (r && p[0] == 'f') r = css_flex_valid(p, v);
-            if (r && p[0] == 'c') r = css_containment_valid(p, v) && css_columns_valid(p, v);
+            r = css_supports_declaration(p, v, false);
         } else r = css_supports(in);
     }
     free(s);
@@ -1255,11 +1564,26 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
                 SB nm; sb_init(&nm); sb_puts(&nm, pt + 9); char *name = str_trim(nm.s);
                 char *bd = xstrndup(body, bn), *iv = strstr(bd, "initial-value");
                 /* the rule is invalid without syntax and inherits, or without a matching initial value for a non-universal syntax */
-                char *sy = strstr(bd, "syntax"), *inh = strstr(bd, "inherits"), syn[64] = "";
+                char *sy = strstr(bd, "syntax"), syn[64] = "";
                 if (sy && (sy = strchr(sy, ':'))) { sy++; while (*sy == ' ' || *sy == '"' || *sy == '\'') sy++; size_t k = 0; while (sy[k] && sy[k] != '"' && sy[k] != '\'' && sy[k] != ';' && k < sizeof syn - 1) { syn[k] = sy[k]; k++; } syn[k] = 0; }
                 bool universal = !strcmp(str_trim(syn), "*");
+                bool inherit_value = false, inherit_valid = false;
+                /* Descriptor names belong to declaration boundaries. A quoted
+                 * initial value or comment containing "inherits:" is not the
+                 * descriptor. Reuse the declaration parser's token boundaries
+                 * and retain the last valid, non-important boolean value. */
+                DeclList *descriptors = css_parse_decls(body, bn);
+                for (int i = 0; i < descriptors->n; i++) {
+                    const Decl *descriptor = &descriptors->v[i];
+                    if (strcmp(descriptor->prop, "inherits") || descriptor->important) continue;
+                    if (str_ieq(descriptor->value, "true") || str_ieq(descriptor->value, "false")) {
+                        inherit_value = str_ieq(descriptor->value, "true");
+                        inherit_valid = true;
+                    }
+                }
+                css_decls_free(descriptors);
                 if (iv && (iv = strchr(iv, ':'))) { char *e = strchr(++iv, ';'); if (e) *e = 0; iv = str_trim(iv); }
-                bool ok = sy && inh && (universal || iv);
+                bool ok = sy && inherit_valid && (universal || iv);
                 if (ok && iv && !universal) {
                     char *end; double num = strtod(iv, &end); (void)num;
                     if (!strcmp(syn, "<string>")) ok = *iv == '"' || *iv == '\'';
@@ -1267,7 +1591,7 @@ static void parse_rules(PCtx *c, const char *s, size_t n, const char *parent_sel
                     else if (!strcmp(syn, "<length>")) ok = (end != iv && (!strcmp(end, "px") || !strcmp(end, "cm") || !strcmp(end, "mm") || !strcmp(end, "in") || !strcmp(end, "pt") || !strcmp(end, "pc") || (!*end && num == 0))) || str_istarts(iv, "calc(");
                     else if (!strcmp(syn, "<percentage>")) ok = end != iv && !strcmp(end, "%");
                 }
-                if (ok && iv) css_register_property(name, iv);
+                if (ok) css_register_property_full(name, iv, syn, inherit_value);
                 free(bd); sb_free(&nm);
             }
             /* @starting-style describes transition entry values, not the final
@@ -1320,6 +1644,7 @@ static void ser_ident(SB *b, const char *s) {
         else { sb_putc(b, '\\'); sb_putc(b, (char)c); }
     }
 }
+void css_serialize_ident(SB *b, const char *s) { ser_ident(b, s); }
 static void ser_string(SB *b, const char *s) {
     sb_putc(b, '"');
     for (const unsigned char *u = (const unsigned char *)s; *u; u++) {

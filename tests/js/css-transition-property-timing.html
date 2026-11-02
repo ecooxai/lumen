@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><title>Transition property list indices</title><body><script>
+(async () => {
+  'use strict';
+  const rows=[];
+  const frame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+  function check(ok,message) { if (!ok) throw new Error(message); }
+  const cases=[
+    {name:'escaped comma retains unknown entry and no phantom width',list:'a\\,width, opacity',duration:'8s, 12s',delay:'1s, 2s',changeWidth:true,expected:{opacity:[12000,2000]}},
+    {name:'hex escaped comma retains unknown entry and no phantom width',list:'a\\2c width, opacity',duration:'8s, 12s',delay:'1s, 2s',changeWidth:true,expected:{opacity:[12000,2000]}},
+    {name:'unknown escaped entry preserves both following indices',list:'a\\,b, width, opacity',duration:'8s, 12s, 20s',delay:'1s, 2s, 3s',changeWidth:true,expected:{width:[12000,2000],opacity:[20000,3000]}},
+    {name:'duplicate property uses last list position',list:'opacity, a\\,b, opacity',duration:'8s, 12s, 20s',delay:'1s, 2s, 3s',expected:{opacity:[20000,3000]}},
+    {name:'all after explicit property uses later list position',list:'opacity, all',duration:'8s, 12s',delay:'1s, 2s',expected:{opacity:[12000,2000]}},
+    {name:'explicit property after all uses later list position',list:'all, opacity',duration:'8s, 12s',delay:'1s, 2s',expected:{opacity:[12000,2000]}}
+  ];
+  for (const c of cases) {
+    const el=document.createElement('div'); let animations=[];
+    try {
+      el.style.cssText='width:10px;height:10px;opacity:0.2;transition-timing-function:linear;transition-property:'+c.list+';transition-duration:'+c.duration+';transition-delay:'+c.delay;
+      document.body.appendChild(el);
+      check(getComputedStyle(el).opacity==='0.2','before-change opacity missing');
+      await frame();
+      if (c.changeWidth) el.style.width='20px';
+      el.style.opacity='0.8';
+      getComputedStyle(el).opacity;
+      await frame();
+      animations=el.getAnimations();
+      const expectedNames=Object.keys(c.expected).sort();
+      const actualNames=animations.map(a=>a.transitionProperty).sort();
+      check(JSON.stringify(actualNames)===JSON.stringify(expectedNames),'transition properties '+JSON.stringify(actualNames)+' != '+JSON.stringify(expectedNames));
+      for (const a of animations) {
+        const timing=a.effect.getTiming(), expected=c.expected[a.transitionProperty];
+        check(timing.duration===expected[0],a.transitionProperty+' duration '+timing.duration+' != '+expected[0]);
+        check(timing.delay===expected[1],a.transitionProperty+' delay '+timing.delay+' != '+expected[1]);
+      }
+      rows.push({name:c.name,pass:true});
+    } catch (e) { rows.push({name:c.name,pass:false,error:String(e)}); }
+    finally { for (const a of animations) a.cancel(); el.remove(); }
+  }
+  for (const row of rows) console.log('TRANSITION_TIMING_ROW '+JSON.stringify(row));
+  const passed=rows.filter(r=>r.pass).length,total=rows.length,outcome=total===6&&passed===total?'PASS':'FAIL';
+  console.log('RESULTS css-transition-property-timing:'+outcome+' '+JSON.stringify({passed,total}));
+  document.documentElement.setAttribute('data-css-transition-property-timing',outcome);
+})();
+</script>

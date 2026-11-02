@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><title>Numeric CSSOM mutation invariants</title><body><script>
+(()=>{'use strict';let total=0,passed=0;
+function check(ok,message){if(!ok)throw Error(message);}
+function test(name,fn){total++;try{fn();passed++;console.log('NUMERIC_MUTATION_ROW '+JSON.stringify({name,pass:true}));}catch(e){console.log('NUMERIC_MUTATION_ROW '+JSON.stringify({name,pass:false,error:String(e)}));}}
+const props=['border-top-width','border-right-width','border-bottom-width','border-left-width','border-inline-start-width','border-inline-end-width','border-block-start-width','border-block-end-width','outline-width','transition-delay','transition-duration','animation-delay','animation-duration'];
+for(const p of props){const time=/^(animation|transition)-/.test(p),seed=time?'17s':'17px',valid=time?'2s':'2px';
+ function style(){const s=new CSSStyleSheet();s.insertRule('div{'+p+':'+seed+' !important}');return s.cssRules[0].style;}
+ for(const invalid of [time?'min(0px)':'min(0s)',time?'min(1mt)':'min(1py)',time?'0x1p2s':'0x1p2px',time?'1.s':'1.px'])test(p+' rule rejects '+invalid,()=>{const d=style(),before=d.cssText;d.setProperty(p,invalid);check(d.cssText===before,'invalid mutation changed declaration');check(d.getPropertyValue(p)===seed&&d.getPropertyPriority(p)==='important','prior value/priority lost');});
+ test(p+' rule validates priority before mutation',()=>{const d=style(),before=d.cssText;d.setProperty(p,valid,'urgent');check(d.cssText===before,'invalid priority changed declaration');d.setProperty(p,valid,'IMPORTANT');check(d.getPropertyValue(p)===valid&&d.getPropertyPriority(p)==='important','valid priority rejected');});
+ test(p+' rule removal with empty value',()=>{const d=style();d.setProperty(p,'','urgent');check(d.getPropertyValue(p)===''&&d.getPropertyPriority(p)==='','empty value failed to remove');});
+ test(p+' detached rule remains mutable',()=>{const s=new CSSStyleSheet();s.insertRule('div{'+p+':'+seed+'}');const r=s.cssRules[0],d=r.style;s.deleteRule(0);d.setProperty(p,valid);check(d.getPropertyValue(p)===valid&&r.parentStyleSheet===null,'detached mutation failed');});
+ test(p+' pending custom identifiers retain case',()=>{const e=document.createElement('div');for(const value of ['var(--MiXeD)','--MiXeD(10px)','if(style(--MiXeD: YES): 10px; else: 20px)']){e.style.setProperty(p,value);check(e.style.getPropertyValue(p).includes('--MiXeD'),'inline custom identifier case changed');const d=style();d.setProperty(p,value);check(d.getPropertyValue(p).includes('--MiXeD'),'rule custom identifier case changed');}});
+ if(time)test(p+' complete comma list survives surrounding whitespace',()=>{const e=document.createElement('div');e.style.setProperty(p,'1s , 2s');check(e.style.getPropertyValue(p)==='1s, 2s','setter lost comma component: '+e.style.getPropertyValue(p));e.style.cssText=p+':1s , 2s';check(e.style.getPropertyValue(p)==='1s, 2s','declaration list lost comma component');const d=style();d.setProperty(p,'1s , 2s');check(d.getPropertyValue(p)==='1s, 2s','rule setter lost comma component');});
+}
+const result=passed===total?'PASS':'FAIL';console.log('RESULTS css-numeric-mutation:'+result+' '+JSON.stringify({passed,total}));document.documentElement.setAttribute('data-css-numeric-mutation',result);
+})();</script>

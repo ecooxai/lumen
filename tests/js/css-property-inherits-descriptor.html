@@ -1,0 +1,38 @@
+<!doctype html><meta charset="utf-8"><title>Property inheritance descriptor boundaries</title>
+<style>html,body{margin:0;padding:0}</style><body>
+<script>
+(async()=>{
+ const rows=[],frame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+ const eq=(actual,expected,label)=>{if(actual!==expected)throw Error(label+': '+JSON.stringify(actual)+' expected '+JSON.stringify(expected));};
+ const cases=[
+  {name:'ordinary false inheritance remains valid',body:'syntax:"<string>";inherits:false;initial-value:"plain";',initial:'"plain"',parent:'"parent"',child:'"plain"'},
+  {name:'quoted inherits colon does not replace the descriptor',body:'initial-value:"inherits:broken";syntax:"<string>";inherits:false;',initial:'"inherits:broken"',parent:'"parent"',child:'"inherits:broken"'},
+  {name:'quoted boolean looking text remains a string initial value',body:'initial-value:"inherits:true";syntax:"<string>";inherits:false;',initial:'"inherits:true"',parent:'"parent"',child:'"inherits:true"'},
+  {name:'commented descriptor text cannot hide actual true inheritance',body:'/* inherits:false */ syntax:"<string>";inherits:true;initial-value:"seed";',initial:'"seed"',parent:'"parent"',child:'"parent"'},
+  {name:'last valid inheritance descriptor controls the registration',body:'syntax:"<string>";inherits:true;inherits:false;initial-value:"last";',initial:'"last"',parent:'"parent"',child:'"last"'},
+  {name:'a quoted boolean does not validate an invalid actual descriptor',body:'initial-value:"inherits:true";syntax:"<string>";inherits:nope;',initial:'',parent:'"parent"',child:'"parent"'}
+ ];
+ for(let index=0;index<cases.length;index++){
+  const test=cases[index],property='--lumen-inherits-descriptor-'+index;
+  const sheet=document.createElement('style'),parent=document.createElement('div'),child=document.createElement('div');
+  const authored='@property '+property+'{'+test.body+'}';
+  try{
+   sheet.textContent=authored;document.head.appendChild(sheet);
+   parent.style.cssText='display:block;position:absolute;left:20px;top:20px;width:200px;height:100px;margin:0;padding:0;border:0';
+   child.style.cssText='display:block;height:20px;margin:0;padding:0;border:0;width:if(style('+property+': '+test.child+'):80px;else:40px)';
+   parent.appendChild(child);document.body.appendChild(parent);
+   eq(getComputedStyle(parent).getPropertyValue(property).trim(),test.initial,'initial registered value');
+   parent.style.setProperty(property,test.parent);
+   eq(getComputedStyle(child).getPropertyValue(property).trim(),test.child,'actual child inheritance');
+   eq(child.getBoundingClientRect().width,80,'conditional used width');
+   eq(sheet.textContent,authored,'authored descriptor text preserved');
+   rows.push({name:test.name,pass:true});
+  }catch(error){rows.push({name:test.name,pass:false,error:String(error)});}
+  finally{parent.remove();sheet.remove();await frame();}
+ }
+ for(const row of rows)console.log('INHERITS_DESCRIPTOR_ROW '+JSON.stringify(row));
+ const passed=rows.filter(row=>row.pass).length,ok=rows.length===6&&passed===6;
+ document.documentElement.setAttribute('data-css-property-inherits-descriptor',ok?'PASS':'FAIL');
+ console.log('RESULTS css-property-inherits-descriptor:'+(ok?'PASS':'FAIL')+' '+JSON.stringify({passed,total:rows.length}));
+})().catch(error=>{document.documentElement.setAttribute('data-css-property-inherits-descriptor','FAIL');console.log('RESULTS css-property-inherits-descriptor:FAIL '+JSON.stringify({error:String(error)}));});
+</script>

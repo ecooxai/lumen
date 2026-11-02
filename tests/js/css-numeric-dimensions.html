@@ -1,0 +1,32 @@
+<!doctype html><meta charset="utf-8"><title>Typed numeric declaration validation</title><body><script>
+(()=>{'use strict';let total=0,passed=0;
+function check(ok,message){if(!ok)throw Error(message);}
+function test(name,fn){total++;try{fn();passed++;console.log('NUMERIC_DIMENSION_ROW '+JSON.stringify({name,pass:true}));}catch(e){console.log('NUMERIC_DIMENSION_ROW '+JSON.stringify({name,pass:false,error:String(e)}));}}
+const lengths=['border-top-width','border-right-width','border-bottom-width','border-left-width','border-inline-start-width','border-inline-end-width','border-block-start-width','border-block-end-width','outline-width'];
+const times=['transition-delay','transition-duration','animation-delay','animation-duration'];
+const badLength=['min(1py)','max(1py)','min(0)','min(0%)','min(0s)','min(0Hz)','min(0dpi)','min(0fr)','min(1px, 0%)','max(0)','max(0%)','max(0s)','max(0Hz)','max(0dpi)','max(0fr)','max(1px, 0%)','calc(1px + 1%)','calc(1px + 1s)','1py','2','-1px','-1em','10%','none','auto','min(1px) 2px','min(1px) * 2','1px + 2px','calc(1px))','calc(1px/**/+/**/2px)','1/**/px','calc(1p\\78 + 2px)','min(1p\\78\\2c 2px)','if()','if(foo)'];
+const badTime=['min(1mt)','max(1dag)','min(0)','min(0%)','min(0px)','min(0deg)','min(0Hz)','min(0dpi)','min(0fr)','max(0)','max(0%)','max(0px)','max(0deg)','max(0Hz)','max(0dpi)','max(0fr)','0','1px','1','none','1s 2s',',1s','1s,','1s,,2s','min(1s) 2s','min(1s) * 2','calc(1s + 1px)','1/**/s','calc(1s/**/+/**/2s)','min(1s), min(2px)','if()','if(foo)'];
+const goodLength=['0','-0','1px','1em','1rex','thin','MEDIUM','thick','min(1px, 2px)','max(1em, 2px)','calc(-1px)','calc(1px * 2)','clamp(none, 10px, 20px)','clamp(0px, 10px, none)','calc(sibling-index() * 1px)','calc(1px * sign(1em - 18px))',' /* lead */ 10px /* tail */ ','10p\\78','m\\69 n(1px, 2px)','calc(10p\\78  + 2px)','calc(10px + 2px'];
+const goodTime=['0s','1s','1ms','min(1s, 200ms)','max(1s, 2s)','calc(-1s)','calc(1s * 2)','clamp(none, 1s, 2s)','min(1s), max(2s)','1s, 100ms','10m\\73','calc(10m\\73  + 2s)','calc(10s + 2s','calc(sibling-index() * 1s)'];
+const pending=['var(--Value)','env(safe-area-inset-left, 10px)','attr(data-value type(<length>), 10px)','if(style(--x: yes): 10px; else: 20px)','--MiXeD(10px)','calc(--foo() * 1px)'];
+for(const p of lengths.concat(times)){
+ const length=lengths.includes(p),seed=length?'17px':'17s';
+ for(const value of (length?badLength:badTime).concat(!length&&p.endsWith('duration')?['-1s']:[]).concat(p==='transition-duration'||p.endsWith('delay')?['auto']:[]))test(p+' rejects '+JSON.stringify(value),()=>{
+  const e=document.createElement('div');e.style.setProperty(p,seed,'important');const before=e.style.getPropertyValue(p);e.style.setProperty(p,value);check(e.style.getPropertyValue(p)===before&&e.style.getPropertyPriority(p)==='important','invalid setter replaced valid value');
+  check(!CSS.supports(p,value)&&!CSS.supports('('+p+':'+value+')'),'supports accepted invalid grammar');
+  e.style.cssText=p+':'+seed+' !important;'+p+':'+value+' !important';check(e.style.getPropertyValue(p)===before&&e.style.getPropertyPriority(p)==='important','invalid declaration list replaced prior value');
+  const sh=new CSSStyleSheet();sh.insertRule('div {'+p+':'+seed+';'+p+':'+value+';}');check(sh.cssRules[0].style.getPropertyValue(p)===before,'rule declaration accepted invalid value');
+ });
+ for(const value of (length?goodLength:goodTime).concat(p.endsWith('delay')?['-1s','min(-1s, 1s), 2s']:[]).concat(p==='animation-duration'?['auto','auto, 1s']:[]).concat(['initial','inherit','unset','revert','revert-layer'],pending))test(p+' accepts '+JSON.stringify(value),()=>{
+  const e=document.createElement('div');e.style.setProperty(p,value);check(e.style.getPropertyValue(p)!=='','valid setter rejected');check(CSS.supports(p,value)&&CSS.supports('('+p+':'+value+')'),'supports rejected valid grammar');e.style.cssText=p+':'+value;check(e.style.getPropertyValue(p)!=='','valid declaration list rejected');
+ });
+ test(p+' preserves important declaration precedence',()=>{const e=document.createElement('div');e.style.cssText=p+':'+seed+' !important;'+p+':'+(length?'2px':'2s');check(e.style.getPropertyValue(p)===seed&&e.style.getPropertyPriority(p)==='important','lower-priority declaration replaced important');});
+}
+for(const [p,seed,invalid,expected] of [['border-left-width','17px','min(0%)','17px'],['outline-width','17px','min(0s)','17px'],['transition-delay','17s','min(1mt)','17s'],['animation-delay','17s','min(0px)','17s']]){
+ test(p+' raw style cascade rejects invalid value',()=>{const e=document.createElement('div');e.setAttribute('style','border-style:solid;outline-style:solid;'+p+':'+seed+';'+p+':'+invalid);document.body.appendChild(e);check(getComputedStyle(e).getPropertyValue(p)===expected,'native raw declaration lost valid value: '+getComputedStyle(e).getPropertyValue(p));e.remove();});
+ test(p+' stylesheet cascade rejects invalid value',()=>{const e=document.createElement('div'),sheet=document.createElement('style');e.id='numeric-'+total;sheet.textContent='#'+e.id+'{border-style:solid;outline-style:solid;'+p+':'+seed+';'+p+':'+invalid+'}';document.head.appendChild(sheet);document.body.appendChild(e);check(getComputedStyle(e).getPropertyValue(p)===expected,'native stylesheet lost valid value: '+getComputedStyle(e).getPropertyValue(p));sheet.remove();e.remove();});
+}
+test('invalid substituted border width takes initial, not earlier declaration',()=>{const e=document.createElement('div');e.setAttribute('style','border-left-style:solid;--bad:min(0%);border-left-width:17px;border-left-width:var(--bad)');document.body.appendChild(e);check(getComputedStyle(e).borderLeftWidth==='3px','invalid substituted width did not take initial');e.remove();});
+test('invalid substituted delay takes initial, not earlier declaration',()=>{const e=document.createElement('div');e.setAttribute('style','--bad:min(1mt);transition-delay:17s;transition-delay:var(--bad)');document.body.appendChild(e);check(getComputedStyle(e).transitionDelay==='0s','invalid substituted delay did not take initial');e.remove();});
+const result=passed===total?'PASS':'FAIL';console.log('RESULTS css-numeric-dimensions:'+result+' '+JSON.stringify({passed,total}));document.documentElement.setAttribute('data-css-numeric-dimensions',result);
+})();</script>

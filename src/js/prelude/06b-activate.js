@@ -173,7 +173,7 @@ function submitForm(form, submitter) {
     }
 }
 function cssSplit(s) {
-    const out = []; const n = s.length; let i = 0, pre = '';
+    const out = []; const n = s.length; let i = 0, pre = '', start = 0;
     const skipStr = (j, q) => { j++; while (j < n && s[j] !== q) { if (s[j] === '\\') j++; j++; } return j; };
     while (i < n) {
         const c = s[i];
@@ -183,14 +183,48 @@ function cssSplit(s) {
         if (c === '{') {
             let d = 1, j = i + 1;
             while (j < n && d) { const k = s[j]; if (k === '\\') j++; else if (k === '"' || k === "'") j = skipStr(j, k); else if (k === '/' && s[j + 1] === '*') { const e = s.indexOf('*/', j + 2); j = e < 0 ? n : e + 1; } else if (k === '{') d++; else if (k === '}') d--; j++; }
-            out.push({ pre: pre.trim(), body: s.slice(i + 1, d ? j : j - 1) }); pre = ''; i = j; continue;
+            /* Page selectors forbid whitespace between components. Retain their
+               original prelude: comment removal and whitespace folding would
+               otherwise change escaped identifiers or invent separators. */
+            const text = pre.trim(), pagePre = /^@page(?:\s|:|$)/i.test(text) ? s.slice(start, i) : null;
+            out.push({ pre: text, pagePre, body: s.slice(i + 1, d ? j : j - 1) }); pre = ''; i = j; start = j; continue;
         }
-        if (c === ';' && pre.trim()[0] === '@') { out.push({ pre: pre.trim(), body: null }); pre = ''; i++; continue; }
-        if (c === '}') { pre = ''; i++; continue; }
+        if (c === ';' && pre.trim()[0] === '@') { out.push({ pre: pre.trim(), body: null }); pre = ''; i++; start = i; continue; }
+        if (c === '}') { pre = ''; i++; start = i; continue; }
         pre += c; i++;
     }
     if (pre.trim()[0] === '@') out.push({ pre: pre.trim(), body: null });
     return out;
+}
+/* Only ownership lives here; rule contents and list objects are retained. */
+const cssOwners = new WeakMap();
+const cssOwnerGet = Function.prototype.call.bind(WeakMap.prototype.get, cssOwners);
+const cssOwnerSet = Function.prototype.call.bind(WeakMap.prototype.set, cssOwners);
+const cssListDefine = Object.defineProperty;
+const cssListOwn = Object.getOwnPropertyDescriptor;
+function cssRuleSheet(rule) {
+    let d = cssOwnerGet(rule);
+    while (d.parent) d = cssOwnerGet(d.parent);
+    return d.owner ? d.owner.sheet : null;
+}
+function cssDetachRule(rule) {
+    const d = cssOwnerGet(rule);
+    d.parent = null; d.owner = null;
+}
+function cssReplaceRules(sheet, next) {
+    const d = cssOwnerGet(sheet), owner = { sheet }, list = d.list;
+    for (let i = 0; i < next.length; i++) cssOwnerGet(next[i]).owner = owner;
+    /* Keep the sheet's live list; never walk old public rules or lists. */
+    cssListDefine(list, 'length', { value: 0 });
+    for (let i = 0; i < next.length; i++)
+        cssListDefine(list, i, { value: next[i], writable: true, enumerable: true, configurable: true });
+    d.owner.sheet = null;
+    d.owner = owner;
+}
+function cssReplaceSheet(sheet, text) {
+    const next = cssParseList(String(text), sheet, null);
+    cssReplaceRules(sheet, next);
+    sheet._sync();
 }
 class CSSRuleList extends Array { static get [Symbol.species]() { return Array; } item(i) { return this[i] ?? null; } }
 class MediaList {
@@ -202,28 +236,87 @@ class MediaList {
     deleteMedium(m) { const i = this._m.indexOf(String(m).trim()); if (i < 0) throw new DOMException('Failed to delete the medium.', 'NotFoundError'); this._m.splice(i, 1); this._o && this._o._changed(); }
 }
 class CSSRuleStyle extends CSSStyleDeclaration {
-    constructor(rule, text) { super(null); def(this, '_rule', rule); def(this, '_map', parseDecls(text || '')); }
+    constructor(rule, text) { super(null); def(this, '_rule', rule); def(this, '_map', parseDecls(text || '', rule instanceof CSSFontFaceRule)); }
     _m() { return new SMap(this._map); }
     _w(m) { this._map = m; this._rule._changed(); }
-    get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v))); }
-    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p); const m = this._m();
-        if (cssGridRelevant(p)) {
+    get cssText() { return serDecls(this._map); } set cssText(v) { this._w(parseDecls(String(v), this._rule instanceof CSSFontFaceRule)); }
+    setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
+        v = v == null ? '' : String(v);
+        if (v !== '' && !cssVarSyntax(v)) return;
+        const m = this._m();
+        if (p === 'interpolate-size') {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (!cssInterpolateSizeSet(m, value, priority)) return;
+            this._w(m); return;
+        }
+        if (p === 'overflow') {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (!cssOverflowSet(m, value, priority)) return;
+            this._w(m); return;
+        }
+        if (this._rule instanceof CSSFontFaceRule && p === 'unicode-range') {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (value === '') m.delete(p);
+            else {
+                if (priority && !/^important$/i.test(priority)) return;
+                const range = cssUnicodeRangeText(value); if (range === null) return;
+                m.delete(p); m.set(p, [range, priority ? 'important' : '']);
+            }
+            this._w(m); return;
+        }
+        if (cssBorderRelevant(p)) {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (value === '') cssBorderRemove(m, p);
+            else if (priority && !/^important$/i.test(priority) || !cssBorderSet(m, p, value, priority ? 'important' : '')) return;
+        } else if (p === 'box-shadow') {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (value === '') m.delete(p);
+            else {
+                if (priority && !/^important$/i.test(priority)) return;
+                const parsed = cssBoxShadowParse(value); if (parsed === null) return;
+                m.delete(p); m.set(p, [parsed, priority ? 'important' : '']);
+            }
+        } else if (p === 'transition-property') {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (value === '') m.delete(p);
+            else {
+                if (priority && !/^important$/i.test(priority)) return;
+                const parsed = N.cssTransitionProperty(value); if (parsed === null) return;
+                m.delete(p); m.set(p, [parsed, priority ? 'important' : '']);
+            }
+        } else if (CSS_NUMERIC_DIMENSION.test(p)) {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (value === '') m.delete(p);
+            else {
+                if (priority && !/^important$/i.test(priority)) return;
+                const parsed = cssNumericDimensionParse(p, value); if (parsed === null) return;
+                m.delete(p); m.set(p, [parsed, priority ? 'important' : '']);
+            }
+        } else if (cssGridRelevant(p)) {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (value === '') cssGridRemove(m, p);
             else if (priority && !/^important$/i.test(priority) || !cssGridSet(m, p, value, priority ? 'important' : '')) return;
-        } else if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._w(m);
+        } else if (v == null || v === '') m.delete(p);
+        else if (!p.startsWith('--') && CSS_MATH_VALUE.test(String(v))) {
+            const priority = pri == null ? '' : String(pri);
+            if (priority && !/^important$/i.test(priority)) return;
+            const value = cssMathValueText(String(v));
+            if (value === null || !mathValid(p, value)) return;
+            m.set(p, [specNormalize(p, value), priority ? 'important' : '']);
+        } else m.set(p, [String(v), pri ? 'important' : '']); this._w(m);
     }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._w(m); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._w(m); return value; } const e = m.get(p); if (e) { m.delete(p); this._w(m); } return e ? e[0] : ''; }
 }
 class CSSRule {
     constructor() { illegal(); }
-    get parentRule() { return this._parent || null; } get parentStyleSheet() { return this._sheet || null; }
+    get parentRule() { return cssOwnerGet(this).parent; } get parentStyleSheet() { return cssRuleSheet(this); }
+    get type() { const data = cssOwnerGet(this); if (!data || data.type === undefined) throw new TypeError('Illegal invocation'); return data.type; }
     get cssText() { return ''; } set cssText(v) {}
-    _changed() { for (let r = this; r; r = r._parent) r._text = null; if (this._sheet) this._sheet._sync(); }
+    _changed() { for (let r = this; r; r = cssOwnerGet(r).parent) r._text = null; const s = cssRuleSheet(this); if (s) s._sync(); }
 }
 for (const [k, v] of Object.entries({ STYLE_RULE: 1, CHARSET_RULE: 2, IMPORT_RULE: 3, MEDIA_RULE: 4, FONT_FACE_RULE: 5, PAGE_RULE: 6, KEYFRAMES_RULE: 7, KEYFRAME_RULE: 8, MARGIN_RULE: 9, NAMESPACE_RULE: 10, COUNTER_STYLE_RULE: 11, SUPPORTS_RULE: 12, FONT_FEATURE_VALUES_RULE: 14 })) { Object.defineProperty(CSSRule, k, { value: v, enumerable: true }); Object.defineProperty(CSSRule.prototype, k, { value: v, enumerable: true }); }
 const ruleStyle = (r) => r._style || (r._style = new Proxy(new CSSRuleStyle(r, r._body), styleHandler));
-const blockText = (r) => { const d = r._style ? r._style.cssText : serDecls(parseDecls(r._body || '')); return d ? `{ ${d} }` : '{ }'; };
+const blockText = (r) => { const d = r._style ? r._style.cssText : serDecls(parseDecls(r._body || '', r instanceof CSSFontFaceRule)); return d ? `{ ${d} }` : '{ }'; };
 class CSSStyleRule extends CSSRule {
     get type() { return 1; }
     get selectorText() { return this._sel; }
@@ -233,7 +326,7 @@ class CSSStyleRule extends CSSRule {
 }
 class CSSGroupingRule extends CSSRule {
     get cssRules() { return this._list; }
-    insertRule(rule, i = 0) { const r = cssInsert(this._list, rule, i, this._sheet, this); this._changed(); return r; }
+    insertRule(rule, i = 0) { const r = cssInsert(this._list, rule, i, cssRuleSheet(this), this); this._changed(); return r; }
     deleteRule(i) { cssDelete(this._list, i); this._changed(); }
     _inner() { return this._list.length ? `{\n${this._list.map(r => '  ' + r.cssText).join('\n')}\n}` : '{\n}'; }
 }
@@ -252,6 +345,53 @@ class CSSImportRule extends CSSRule {
     get cssText() { const m = this._media.mediaText; return `@import url("${this._href}")${m ? ' ' + m : ''};`; }
 }
 class CSSNamespaceRule extends CSSRule { get type() { return 10; } get namespaceURI() { return this._ns; } get prefix() { return this._prefix; } get cssText() { return `@namespace ${this._prefix ? this._prefix + ' ' : ''}url("${this._ns}");`; } }
+/* The rule is a read-only snapshot; parsing it must not reserve registration
+ * names or modify the document's active styles. Keep its metadata private. */
+const cssPropertyRules = new WeakMap();
+const cssPropertyGet = Function.prototype.call.bind(WeakMap.prototype.get, cssPropertyRules);
+const cssPropertySet = Function.prototype.call.bind(WeakMap.prototype.set, cssPropertyRules);
+const cssPropertyEscape = value => {
+    let output = '';
+    for (const ch of value) {
+        const cp = ch.codePointAt(0);
+        if (cp < 32 || cp === 127) output += '\\' + cp.toString(16) + ' ';
+        else output += cp >= 128 || /[-_a-z0-9]/i.test(ch) ? ch : '\\' + ch;
+    }
+    return output;
+};
+const cssPropertyQuote = value => '"' + value.replace(/["\\\x00-\x1f\x7f]/g, ch => {
+    const cp = ch.charCodeAt(0);
+    return cp < 32 || cp === 127 ? '\\' + cp.toString(16) + ' ' : '\\' + ch;
+}) + '"';
+class CSSPropertyRule extends CSSRule {
+    get name() { return cssPropertyGet(this)[0]; }
+    get syntax() { return cssPropertyGet(this)[1]; }
+    get inherits() { return cssPropertyGet(this)[2]; }
+    get initialValue() { return cssPropertyGet(this)[3]; }
+    get cssText() {
+        const [name, syntax, inherits, initial] = cssPropertyGet(this);
+        return '@property ' + cssPropertyEscape(name) + ' { syntax: ' + cssPropertyQuote(syntax) +
+            '; inherits: ' + (inherits ? 'true' : 'false') + ';' +
+            (initial === null ? '' : ' initial-value: ' + initial + ';') + ' }';
+    }
+}
+for (const key of ['name', 'syntax', 'inherits', 'initialValue'])
+    Object.defineProperty(CSSPropertyRule.prototype, key, {enumerable: true});
+function cssMkPropertyRule(name, body, base) {
+    const data = N.cssPropertyRule(name, body);
+    if (!data) return null;
+    let syntax = null;
+    for (let i = data[1].length - 1; i >= 0; i--) {
+        const candidate = data[1][i]; syntax = rpParseSyntax(candidate);
+        if (syntax) { data[1] = candidate; break; }
+    }
+    const initial = data[3];
+    if (!syntax || (syntax !== '*' && (initial === null || !rpMatches(syntax, initial))) ||
+        (initial !== null && syntax === '*' && !N.cssVarValid(initial, true))) return null;
+    const rule = cssMk(CSSPropertyRule, base);
+    cssPropertySet(rule, data);
+    return rule;
+}
 class CSSFontFaceRule extends CSSRule { get type() { return 5; } get style() { return ruleStyle(this); } get cssText() { return `@font-face ${blockText(this)}`; } }
 /* @position-try: only insets, margins, sizes, self-alignment, position-anchor and position-area */
 const PT_ALLOWED = /^(top|right|bottom|left|inset(-block|-inline)?(-start|-end)?|margin(-top|-right|-bottom|-left|-block|-inline)?(-start|-end)?|(min-|max-)?(width|height|block-size|inline-size)|align-self|justify-self|place-self|position-anchor|position-area)$/;
@@ -266,17 +406,104 @@ class CSSPositionTryRule extends CSSRule {
     get style() { return this._style || (this._style = new Proxy(new CSSPositionTryDescriptors(this, this._body), styleHandler)); }
     get cssText() { const d = this.style.cssText; return `@position-try ${this._name} ${d ? `{ ${d} }` : '{ }'}`; }
 }
-class CSSPageRule extends CSSRule { get type() { return 6; } get selectorText() { return this._sel; } set selectorText(v) { this._sel = String(v); this._changed(); } get style() { return ruleStyle(this); } get cssText() { return `@page ${this._sel ? this._sel + ' ' : ''}${blockText(this)}`; } }
+/* CSS Paged Media3 page-selector-list. This is deliberately separate from
+ * element selectors: page names are identifiers (including auto), pseudo names
+ * are ASCII-insensitive, and whitespace is forbidden within each selector.
+ * Comments separate tokens but are not whitespace; they must not join names.
+ * https://drafts.csswg.org/css-page-3/#syntax-page-selector */
+function cssPageSelectorText(input, atRule = false) {
+    const s = input.replace(/\r\n?|\f/g, '\n').replace(/\0|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, '\ufffd');
+    let i = 0;
+    const whitespace = c => c !== undefined && /[ \t\n]/.test(c);
+    const nameStart = c => c !== undefined && (/[_a-z]/i.test(c) || c.charCodeAt(0) >= 128);
+    const escapeAt = j => s[j] === '\\' && s[j + 1] !== '\n';
+    const comments = () => {
+        while (s[i] === '/' && s[i + 1] === '*') {
+            const end = s.indexOf('*/', i + 2); i = end < 0 ? s.length : end + 2;
+        }
+    };
+    const trivia = () => { for (;;) { const before = i; while (whitespace(s[i])) i++; comments(); if (i === before) return; } };
+    const ident = () => {
+        if (!(nameStart(s[i]) || escapeAt(i) || s[i] === '-' && (s[i + 1] === '-' || nameStart(s[i + 1]) || escapeAt(i + 1)))) return null;
+        let value = '';
+        while (i < s.length) {
+            const c = s[i];
+            if (nameStart(c) || /[-0-9]/.test(c)) { value += c; i++; continue; }
+            if (!escapeAt(i)) break;
+            i++;
+            const start = i;
+            while (i < s.length && i - start < 6 && /[0-9a-f]/i.test(s[i])) i++;
+            if (i !== start) {
+                const n = parseInt(s.slice(start, i), 16);
+                value += n && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : '\ufffd';
+                if (whitespace(s[i])) i++;
+            } else value += i < s.length ? s[i++] : '\ufffd';
+        }
+        return value;
+    };
+    const serialize = text => {
+        let out = '';
+        for (let j = 0; j < text.length; j++) {
+            const c = text[j], n = text.charCodeAt(j);
+            if (n < 32 || n === 127 || /[0-9]/.test(c) && (j === 0 || j === 1 && text[0] === '-')) out += '\\' + n.toString(16) + ' ';
+            else if (c === '-' && text.length === 1) out += '\\-';
+            else out += n >= 128 || /[-_a-z0-9]/i.test(c) ? c : '\\' + c;
+        }
+        return out;
+    };
+    trivia();
+    if (atRule) { if (s.slice(i, i + 5).toLowerCase() !== '@page') return null; i += 5; trivia(); }
+    if (i === s.length) return '';
+    const selectors = [];
+    for (;;) {
+        let selector = '';
+        if (s[i] !== ':') { const name = ident(); if (name === null) return null; selector = serialize(name); }
+        comments();
+        while (s[i] === ':') {
+            i++; comments(); const name = ident();
+            if (name === null || !/^(left|right|first|blank)$/i.test(name)) return null;
+            selector += ':' + name.toLowerCase(); comments();
+        }
+        if (!selector) return null;
+        selectors.push(selector); trivia();
+        if (i === s.length) return selectors.join(', ');
+        if (s[i++] !== ',') return null;
+        trivia(); if (i === s.length) return null;
+    }
+}
+class CSSPageRule extends CSSRule {
+    get type() { return 6; }
+    get selectorText() { return this._sel; }
+    set selectorText(v) {
+        if (typeof v === 'symbol') throw new TypeError('Cannot convert a Symbol value to a string');
+        const text = cssPageSelectorText(String(v));
+        if (text !== null) { this._sel = text; this._changed(); }
+    }
+    get style() { return ruleStyle(this); }
+    get cssText() { return `@page ${this._sel ? this._sel + ' ' : ''}${blockText(this)}`; }
+}
 class CSSKeyframeRule extends CSSRule { get type() { return 8; } get keyText() { return this._key; } set keyText(v) { this._key = String(v); this._changed(); } get style() { return ruleStyle(this); } get cssText() { return `${this._key} ${blockText(this)}`; } }
 class CSSKeyframesRule extends CSSRule {
     get type() { return 7; } get name() { return this._name; } set name(v) { this._name = String(v); this._changed(); }
     get cssRules() { return this._list; } get length() { return this._list.length; }
-    appendRule(t) { const it = cssSplit(String(t)); const r = it.length === 1 && cssMkKeyframe(it[0], this._sheet, this); if (r) { this._list.push(r); this._changed(); } }
-    deleteRule(k) { const i = this._list.findIndex(r => r._key === String(k).trim()); if (i >= 0) { this._list.splice(i, 1); this._changed(); } }
+    appendRule(t) { const it = cssSplit(String(t)); const r = it.length === 1 && cssMkKeyframe(it[0], cssRuleSheet(this), this); if (r) { this._list.push(r); this._changed(); } }
+    deleteRule(k) {
+        const key = String(k).trim();
+        const i = this._list.findIndex(r => r._key === key);
+        if (i >= 0) { cssDelete(this._list, i); this._changed(); }
+    }
     findRule(k) { return this._list.find(r => r._key === String(k).trim()) || null; }
     get cssText() { return `@keyframes ${this._name} ${CSSGroupingRule.prototype._inner.call(this)}`; }
 }
-function cssMk(C, props) { const r = Object.create(C.prototype); for (const k in props) def(r, k, props[k]); def(r, '_text', null); return r; }
+function cssMk(C, props) {
+    const r = Object.create(C.prototype), parent = props._parent;
+    const type = C === CSSStyleRule ? 1 : C === CSSImportRule ? 3 : C === CSSMediaRule ? 4 :
+        C === CSSFontFaceRule ? 5 : C === CSSPageRule ? 6 : C === CSSKeyframesRule ? 7 :
+        C === CSSKeyframeRule ? 8 : C === CSSNamespaceRule ? 10 : C === CSSSupportsRule ? 12 : 0;
+    cssOwnerSet(r, { parent, type, owner: !parent && props._sheet ? cssOwnerGet(props._sheet).owner : null });
+    for (const k in props) if (k !== '_sheet' && k !== '_parent') def(r, k, props[k]);
+    def(r, '_text', null); return r;
+}
 function cssMkKeyframe(it, sheet, parent) {
     if (it.body == null || !it.pre) return null;
     const key = it.pre.split(',').map(k => { k = k.trim().toLowerCase(); return k === 'from' ? '0%' : k === 'to' ? '100%' : k; });
@@ -303,8 +530,13 @@ function cssMkRule(it, sheet, parent) {
     }
     else if (kw === 'namespace' && !blk) { const q = /^(?:([-\w]+)\s+)?(?:url\(\s*["']?([^"')]*)["']?\s*\)|"([^"]*)"|'([^']*)')$/.exec(rest); if (!q) return null; return cssMk(CSSNamespaceRule, { ...base, _prefix: q[1] || '', _ns: q[2] ?? q[3] ?? q[4] }); }
     else if (kw === 'font-face' && blk) return cssMk(CSSFontFaceRule, { ...base, _body: it.body, _style: null });
+    else if (kw === 'property' && blk) return cssMkPropertyRule(m[2], it.body, base);
     else if (kw === 'position-try' && blk && /^--\S+$/.test(rest)) return cssMk(CSSPositionTryRule, { ...base, _name: rest, _body: it.body, _style: null });
-    else if (kw === 'page' && blk) return cssMk(CSSPageRule, { ...base, _sel: rest, _body: it.body, _style: null });
+    else if (kw === 'page' && blk) {
+        const raw = typeof it.pagePre === 'string', selector = cssPageSelectorText(raw ? it.pagePre : m[2], raw);
+        if (selector === null) return null;
+        return cssMk(CSSPageRule, { ...base, _sel: selector, _body: it.body, _style: null });
+    }
     else if ((kw === 'keyframes' || kw === '-webkit-keyframes') && blk && rest) { r = cssMk(CSSKeyframesRule, { ...base, _name: rest, _list: null }); const l = new CSSRuleList(); for (const k of cssSplit(it.body)) { const kr = cssMkKeyframe(k, sheet, r); if (kr) l.push(kr); } r._list = l; return r; }
     else return null;
     def(r, '_list', cssParseList(it.body, sheet, r));
@@ -321,16 +553,20 @@ function cssInsert(list, rule, index, sheet, parent) {
 function cssDelete(list, i) {
     i = toU32(i);
     if (i >= list.length) throw new DOMException(`Failed to execute 'deleteRule' on 'CSSStyleSheet': The index provided (${i}) is larger than the maximum index (${list.length - 1}).`, 'IndexSizeError');
-    list.splice(i, 1);
+    const removed = cssListOwn(list, i).value;
+    for (let j = i + 1; j < list.length; j++)
+        cssListDefine(list, j - 1, { value: cssListOwn(list, j).value, writable: true, enumerable: true, configurable: true });
+    cssListDefine(list, 'length', { value: list.length - 1 });
+    cssDetachRule(removed);
 }
 class StyleSheet {}
 class CSSStyleSheet extends StyleSheet {
-    constructor(opts) { super(); def(this, '_owner', null); def(this, '_src', null); def(this, '_list', new CSSRuleList()); def(this, '_media', new MediaList(opts && opts.media != null ? String(opts.media) : '', null)); this.disabled = false; }
+    constructor(opts) { super(); const list = new CSSRuleList(); cssOwnerSet(this, { owner: { sheet: this }, list }); def(this, '_owner', null); def(this, '_src', null); def(this, '_list', list); def(this, '_media', new MediaList(opts && opts.media != null ? String(opts.media) : '', null)); this.disabled = false; }
     get ownerNode() { return this._owner; } get type() { return 'text/css'; } get parentStyleSheet() { return null; } get ownerRule() { return null; }
     get href() { const o = this._owner; return o && N.name(o) === 'link' ? o.href : null; }
     get title() { const o = this._owner; return (o && N.attr(o, 'title')) || null; }
     get media() { return this._media; }
-    _load() { const o = this._owner; if (o && N.name(o) === 'style') { const t = N.text(o); if (t !== this._src) { this._src = t; this._list = cssParseList(t, this, null); } } }
+    _load() { const o = this._owner; if (o && N.name(o) === 'style') { const t = N.text(o); if (t !== this._src) { cssReplaceRules(this, cssParseList(t, this, null)); this._src = t; } } }
     get cssRules() { this._load(); return this._list; } get rules() { return this.cssRules; }
     insertRule(rule, i = 0) {
         this._load(); const r = cssInsert(this._list, rule, i, this, null), o = this._owner;
@@ -342,8 +578,8 @@ class CSSStyleSheet extends StyleSheet {
     deleteRule(i) { this._load(); cssDelete(this._list, i); this._sync(); }
     addRule(sel = 'undefined', style = 'undefined', i) { this._load(); this.insertRule(`${sel} { ${style} }`, i === undefined ? this._list.length : i); return -1; }
     removeRule(i = 0) { this.deleteRule(i); }
-    replace(t) { this.replaceSync(t); return Promise.resolve(this); }
-    replaceSync(t) { this._list = cssParseList(String(t), this, null); this._sync(); }
+    replace(t) { cssReplaceSheet(this, t); return Promise.resolve(this); }
+    replaceSync(t) { cssReplaceSheet(this, t); }
     _text() { return this._list.map(r => r.cssText).join('\n'); }
     _sync() {   /* constructed sheets apply only through adoptedStyleSheets: mirror their text into each adopting scope */
         const o = this._owner;
@@ -389,7 +625,17 @@ function rpParseSyntax(syn) {
     const out = [];
     for (const part of s.split('|')) {
         const m = /^\s*(?:<([a-z-]+)>|([-_a-zA-Z][\w-]*))([+#]?)\s*$/.exec(part);
-        if (!m) return null;
+        if (!m) {
+            /* Escaped and non-ASCII literal syntax components are identifiers,
+             * not words. The native lexer preserves their actual codepoints. */
+            const text = part.trim(); let ident = N.cssPropertyIdentifier(text), mult = '';
+            if (text.includes('/*')) return null;
+            if (ident === null && /[+#]$/.test(text)) {
+                mult = text.slice(-1); ident = N.cssPropertyIdentifier(text.slice(0, -1));
+            }
+            if (ident === null || /^(inherit|initial|unset|revert|revert-layer|default)$/i.test(ident)) return null;
+            out.push({ident, mult}); continue;
+        }
         if (m[1] && !RP_TYPES.has(m[1])) return null;
         if (m[2] && /^(inherit|initial|unset|revert|revert-layer|default)$/i.test(m[2])) return null;
         if (m[1] === 'transform-list' && m[3]) return null;
@@ -401,7 +647,7 @@ function rpMatches(comps, v) {
     v = v.replace(/\/\*[\s\S]*?\*\//g, ' ').trim();
     if (/var\(|env\(|attr\(/i.test(v)) return false;
     return comps.some(c => {
-        const one = x => c.ident ? x === c.ident : RP_CHECK[c.type](x);
+        const one = x => c.ident ? (x === c.ident || N.cssPropertyIdentifier(x) === c.ident) : RP_CHECK[c.type](x);
         if (!c.mult) return one(v);
         const items = (c.mult === '#' ? tomSplitTop(v, ',') : tomSplitTop(v, ' ')).map(x => x.trim()).filter(x => x || c.mult === '#');
         return items.length > 0 && items.every(x => x && one(x));
@@ -416,10 +662,10 @@ function registerProperty(d) {
     const comps = rpParseSyntax(syntax);
     if (!comps) throw new DOMException(`The given syntax '${syntax}' is invalid.`, 'SyntaxError');
     if (comps !== '*' && iv === undefined) throw new DOMException('An initial value must be provided if the syntax is not "*"', 'SyntaxError');
-    if (iv !== undefined && (comps === '*' ? /var\(/i.test(iv) : !rpMatches(comps, iv))) throw new DOMException('The initial value provided does not parse for the given syntax.', 'SyntaxError');
+    if (iv !== undefined && (comps === '*' ? !N.cssVarValid(iv, true) : !rpMatches(comps, iv))) throw new DOMException('The initial value provided does not parse for the given syntax.', 'SyntaxError');
     if (registeredProps.has(name)) throw new DOMException('The name provided has already been registered.', 'InvalidModificationError');
     registeredProps.set(name, { syntax, inherits: !!d.inherits, initialValue: iv });
-    if (iv !== undefined) N.registerProp(name, iv.trim());
+    N.registerProp(name, iv === undefined ? "" : iv.trim(), syntax.trim(), registeredProps.get(name).inherits ? "true" : "false", iv === undefined ? "false" : "true");
 }
 const CSS = {
     escape(s) { s = String(s); let r = ''; for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); if (c === 0) r += '\uFFFD'; else if ((c >= 1 && c <= 31) || c === 127 || (i === 0 && c >= 48 && c <= 57) || (i === 1 && c >= 48 && c <= 57 && s.charCodeAt(0) === 45)) r += '\\' + c.toString(16) + ' '; else if (i === 0 && c === 45 && s.length === 1) r += '\\-'; else if (c >= 128 || c === 45 || c === 95 || (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122)) r += s[i]; else r += '\\' + s[i]; } return r; },

@@ -1,0 +1,384 @@
+<!doctype html><meta charset="utf-8"><title>Completed transform angle boundary</title>
+<style>
+html,body{margin:0;padding:0;border:0;font-size:16px}
+#angle-parent{position:absolute;left:100px;top:80px;width:200px;height:200px;margin:0;padding:0;border:0}
+#angle-target{position:absolute;left:20px;top:20px;width:20px;height:10px;margin:0;padding:0;border:0;font-size:16px;transform-origin:0 0;background:#123456}
+#angle-fixed{display:none;position:fixed;left:3px;top:4px;width:4px;height:3px;margin:0;padding:0;border:0;background:#abcdef}
+</style><body><div id="angle-parent"><div id="angle-target"><div id="angle-fixed"></div></div></div><script>
+(()=>{
+    const rows=[],target=document.getElementById('angle-target'),fixed=document.getElementById('angle-fixed');
+    function near(actual,expected,tolerance=.02){if(!Number.isFinite(actual)||Math.abs(actual-expected)>tolerance)throw new Error(actual+' expected '+expected);}
+    function check(value,message){if(!value)throw new Error(message);}
+    function test(name,fn){try{fn();rows.push({name,pass:true});}catch(error){rows.push({name,pass:false,error:String(error)});}}
+    function matrix(expected){
+        const text=getComputedStyle(target).transform,match=/^matrix\(([^)]+)\)$/.exec(text);
+        check(match,'finite two-dimensional matrix expected, got '+text);
+        const actual=match[1].split(',').map(Number);check(actual.length===6,'six matrix entries expected');
+        actual.forEach((value,i)=>near(value,expected[i],.0001));
+    }
+    function rectAndHit(node,expected){
+        const r=node.getBoundingClientRect();[r.x,r.y,r.width,r.height].forEach((value,i)=>near(value,expected[i]));
+        check(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===node,'hit testing must follow transformed geometry');
+    }
+    const cases=[
+    [
+        "+infinity deg keeps finite identity geometry",
+        "rotate(calc(infinity * 1deg))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "-infinity deg keeps finite identity geometry",
+        "rotate(calc(-infinity * 1deg))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "+infinity grad keeps finite identity geometry",
+        "rotate(calc(infinity * 1grad))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "-infinity grad keeps finite identity geometry",
+        "rotate(calc(-infinity * 1grad))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "+infinity rad keeps finite identity geometry",
+        "rotate(calc(infinity * 1rad))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "-infinity rad keeps finite identity geometry",
+        "rotate(calc(-infinity * 1rad))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "+infinity turn keeps finite identity geometry",
+        "rotate(calc(infinity * 1turn))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "-infinity turn keeps finite identity geometry",
+        "rotate(calc(-infinity * 1turn))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "positive zero denominator angle keeps finite identity geometry",
+        "rotate(calc(1deg / sign(1em - 16px)))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "negative zero denominator angle keeps finite identity geometry",
+        "rotate(calc(1deg / (-1 * sign(1em - 16px))))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "NaN completed angle keeps finite identity geometry",
+        "rotate(calc(NaN * 1deg))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "ordinary finite ninety degree rotation is retained",
+        "rotate(90deg)",
+        [
+            0,
+            1,
+            -1,
+            0,
+            0,
+            0
+        ],
+        [
+            110,
+            100,
+            10,
+            20
+        ]
+    ],
+    [
+        "negative finite turns preserve equivalent orientation",
+        "rotate(-450deg)",
+        [
+            0,
+            -1,
+            1,
+            0,
+            0,
+            0
+        ],
+        [
+            120,
+            80,
+            10,
+            20
+        ]
+    ],
+    [
+        "nested atan sees positive infinity before final angle normalization",
+        "rotate(atan(infinity))",
+        [
+            0,
+            1,
+            -1,
+            0,
+            0,
+            0
+        ],
+        [
+            110,
+            100,
+            10,
+            20
+        ]
+    ],
+    [
+        "nested atan preserves negative zero division sign",
+        "rotate(atan(1 / (-1 * 0)))",
+        [
+            0,
+            -1,
+            1,
+            0,
+            0,
+            0
+        ],
+        [
+            120,
+            80,
+            10,
+            20
+        ]
+    ],
+    [
+        "finite translation survives later infinite rotation",
+        "translate(13px, 7px) rotate(calc(infinity * 1deg))",
+        [
+            1,
+            0,
+            0,
+            1,
+            13,
+            7
+        ],
+        [
+            133,
+            107,
+            20,
+            10
+        ]
+    ],
+    [
+        "rotateZ shares the completed angle boundary",
+        "rotateZ(calc(-infinity * 1turn))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "skewX shares the completed angle boundary",
+        "skewX(calc(infinity * 1rad))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ],
+    [
+        "skewY shares the completed angle boundary",
+        "skewY(calc(-infinity * 1grad))",
+        [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0
+        ],
+        [
+            120,
+            100,
+            20,
+            10
+        ]
+    ]
+];
+    for(const [name,value,expectedMatrix,expectedRect] of cases)test(name,()=>{
+        target.style.transform=value;matrix(expectedMatrix);rectAndHit(target,expectedRect);
+    });
+    test('zero-turn transform retains actual fixed containing block',()=>{
+        target.style.transform='rotate(calc(infinity * 1deg))';fixed.style.display='block';
+        matrix([1,0,0,1,0,0]);rectAndHit(fixed,[123,104,4,3]);
+    });
+    test('explicit none releases the fixed child to the viewport',()=>{
+        target.style.transform='none';check(getComputedStyle(target).transform==='none','explicit transform none');
+        rectAndHit(fixed,[3,4,4,3]);
+    });
+    document.getElementById('angle-parent').remove();
+    for(const row of rows)console.log('TRANSFORM_ANGLE_BOUNDARY_ROW '+JSON.stringify(row));
+    const total=rows.length,passed=rows.filter(row=>row.pass).length,status=total===21&&passed===total?'PASS':'FAIL';
+    document.documentElement.setAttribute('data-css-transform-angle-boundary',status);
+    console.log('RESULTS css-transform-angle-boundary:'+status+' '+JSON.stringify({passed,total}));
+})();
+</script>

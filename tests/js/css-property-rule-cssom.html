@@ -1,0 +1,148 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CSSPropertyRule metadata, ownership and side effect boundaries</title>
+<body>
+<script>
+(() => {
+    'use strict';
+    const marker = 'css-property-rule-cssom';
+    const rows = [];
+    const sheet = text => { const s = new CSSStyleSheet(); s.replaceSync(text); return s; };
+    const property = (name, body) => '@property ' + name + ' { ' + body + ' }';
+    const defaults = 'syntax: "<length>"; inherits: false; initial-value: 12px;';
+    const equal = (actual, expected) => {
+        if (actual !== expected) throw new Error(JSON.stringify({actual, expected}));
+    };
+    const throws = (fn, constructor) => {
+        let error;
+        try { fn(); } catch (e) { error = e; }
+        if (!(error instanceof constructor)) throw new Error('Expected ' + constructor.name);
+    };
+    function test(name, fn) {
+        try { fn(); rows.push({name, pass: true}); }
+        catch (error) { rows.push({name, pass: false, observations: {error: String(error && error.stack || error)}}); }
+        console.log('CSS_PROPERTY_RULE_ROW ' + JSON.stringify(rows[rows.length - 1]));
+    }
+    test('interface inherits CSSRule and has the native rule tag', () => {
+        equal(Object.getPrototypeOf(CSSPropertyRule.prototype), CSSRule.prototype);
+        const r = sheet(property('--meta-a', defaults)).cssRules[0];
+        equal(r instanceof CSSPropertyRule, true);
+        equal(Object.prototype.toString.call(r), '[object CSSPropertyRule]');
+        equal(r.type, 0);
+    });
+    test('CSSPropertyRule cannot be constructed or invoked', () => {
+        throws(() => new CSSPropertyRule(), TypeError);
+        throws(() => CSSPropertyRule(), TypeError);
+    });
+    test('descriptor getters expose specified metadata', () => {
+        const r = sheet(property('--meta-b', defaults)).cssRules[0];
+        equal(r.name, '--meta-b'); equal(r.syntax, '<length>');
+        equal(r.inherits, false); equal(r.initialValue, '12px');
+    });
+    test('descriptor getters reject forged receivers', () => {
+        for (const key of ['name', 'syntax', 'inherits', 'initialValue']) {
+            const get = Object.getOwnPropertyDescriptor(CSSPropertyRule.prototype, key).get;
+            throws(() => get.call({}), TypeError);
+            throws(() => get.call(Object.create(CSSPropertyRule.prototype)), TypeError);
+        }
+    });
+    test('CSSRule type getter uses the represented rule kind', () => {
+        const type = Object.getOwnPropertyDescriptor(CSSRule.prototype, 'type').get;
+        const s = sheet('.kept { color: red; } ' + property('--meta-type', defaults));
+        equal(type.call(s.cssRules[0]), 1); equal(type.call(s.cssRules[1]), 0);
+        throws(() => type.call(s), TypeError); throws(() => type.call({}), TypeError);
+    });
+    test('readonly descriptors cannot change the represented rule', () => {
+        const r = sheet(property('--meta-c', defaults)).cssRules[0];
+        for (const key of ['name', 'syntax', 'inherits', 'initialValue'])
+            throws(() => { r[key] = 'changed'; }, TypeError);
+        equal(r.name, '--meta-c'); equal(r.initialValue, '12px');
+    });
+    test('serialization uses descriptor order independent of input order', () => {
+        const r = sheet(property('--meta-order', 'initial-value: red; inherits: true; syntax: "<color>";')).cssRules[0];
+        equal(r.cssText, '@property --meta-order { syntax: "<color>"; inherits: true; initial-value: red; }');
+    });
+    test('escaped names retain codepoints and roundtrip through cssText', () => {
+        const r = sheet(property('--meta\\9 tab', 'syntax: "*"; inherits: false;')).cssRules[0];
+        equal(r.name, '--meta\ttab');
+        equal(r.cssText, '@property --meta\\9 tab { syntax: "*"; inherits: false; }');
+        equal(sheet(r.cssText).cssRules[0].name, r.name);
+    });
+    test('syntax whitespace is preserved as a string value', () => {
+        const r = sheet(property('--meta-space', 'syntax: " <color># "; inherits: false; initial-value: red, blue;')).cssRules[0];
+        equal(r.syntax, ' <color># ');
+        equal(r.cssText, '@property --meta-space { syntax: " <color># "; inherits: false; initial-value: red, blue; }');
+    });
+    test('quoted strings and comments do not manufacture descriptors', () => {
+        const s = sheet(property('--meta-quoted', 'syntax: "*"; initial-value: "inherits: true"; /* inherits: true */'));
+        equal(s.cssRules.length, 0);
+    });
+    test('missing required descriptors omit only their own rule', () => {
+        const s = sheet('@property --meta-missing { syntax: "*"; } .kept { color: red; }');
+        equal(s.cssRules.length, 1); equal(s.cssRules[0].selectorText, '.kept');
+    });
+    test('unknown descriptors do not affect valid property metadata', () => {
+        const r = sheet(property('--meta-unknown', defaults + ' unknown: ignored; color: red;')).cssRules[0];
+        equal(r.initialValue, '12px'); equal(r.inherits, false);
+        equal(r.cssText.includes('ignored'), false);
+    });
+    test('last valid inherits descriptor wins without quoted fallback', () => {
+        const r = sheet(property('--meta-inherit', 'syntax: "*"; inherits: true; inherits: false; inherits: "true";')).cssRules[0];
+        equal(r.inherits, false);
+    });
+    test('absent universal initial value is null', () => {
+        const r = sheet(property('--meta-absent', 'syntax: "*"; inherits: false;')).cssRules[0];
+        equal(r.initialValue, null); equal(r.cssText.includes('initial-value'), false);
+    });
+    test('quoted semicolon remains inside the initial value', () => {
+        const r = sheet(property('--meta-semicolon', 'syntax: "*"; inherits: false; initial-value: "left; right";')).cssRules[0];
+        equal(r.initialValue, '"left; right"');
+        equal(sheet(r.cssText).cssRules[0].initialValue, r.initialValue);
+    });
+    test('nested property rules have their real parent and sheet', () => {
+        const s = sheet('@media all { ' + property('--meta-nested', defaults) + ' }');
+        const parent = s.cssRules[0], r = parent.cssRules[0];
+        equal(r.parentRule, parent); equal(r.parentStyleSheet, s);
+    });
+    test('deleting a rule detaches ownership but preserves its metadata', () => {
+        const s = sheet(property('--meta-deleted', defaults));
+        const r = s.cssRules[0]; s.deleteRule(0);
+        equal(s.cssRules.length, 0); equal(r.parentRule, null);
+        equal(r.parentStyleSheet, null); equal(r.name, '--meta-deleted');
+        equal(r.initialValue, '12px');
+    });
+    test('sheet replacement preserves the live list and detaches old rules', () => {
+        const s = sheet(property('--meta-old', defaults)), list = s.cssRules, r = list[0];
+        s.replaceSync(property('--meta-new', defaults));
+        equal(s.cssRules, list); equal(list.length, 1); equal(list[0].name, '--meta-new');
+        equal(r.parentStyleSheet, null); equal(r.name, '--meta-old');
+    });
+    test('reading constructed rules does not reserve JS registration names', () => {
+        const name = '--meta-no-registration-side-effect';
+        const s = sheet(property(name, defaults));
+        equal(s.cssRules[0].name, name); void s.cssRules[0].cssText;
+        CSS.registerProperty({name, syntax: '<length>', inherits: false, initialValue: '24px'});
+        const node = document.createElement('div'); document.body.appendChild(node);
+        try { equal(getComputedStyle(node).getPropertyValue(name), '24px'); }
+        finally { node.remove(); }
+    });
+    test('unadopted constructed rules do not affect the document cascade', () => {
+        const name = '--meta-unadopted', s = sheet(property(name, defaults));
+        equal(s.cssRules[0].initialValue, '12px');
+        const node = document.createElement('div'); document.body.appendChild(node);
+        try { equal(getComputedStyle(node).getPropertyValue(name), ''); }
+        finally { node.remove(); }
+    });
+    test('property serialization does not call a page-overridden CSS.escape', () => {
+        const r = sheet(property('--meta-private-serialization', defaults)).cssRules[0];
+        const escape = CSS.escape;
+        try { CSS.escape = () => { throw new Error('author escape invoked'); };
+            equal(r.cssText, '@property --meta-private-serialization { syntax: "<length>"; inherits: false; initial-value: 12px; }');
+        } finally { CSS.escape = escape; }
+    });
+    const passed = rows.filter(row => row.pass).length, status = passed === rows.length ? 'PASS' : 'FAIL';
+    console.log('RESULTS ' + marker + ':' + status + ' ' + JSON.stringify({passed, total: rows.length}));
+    document.documentElement.setAttribute('data-' + marker, status);
+})();
+</script>
+</body>

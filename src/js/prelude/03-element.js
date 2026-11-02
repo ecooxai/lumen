@@ -8,8 +8,60 @@ const camelToKebab = (p) => {
 };
 /* Pending substitution has one grammar in the native declaration parser and
  * CSSOM. Ordinary values avoid crossing into the tokenizer. */
-function cssVarSyntax(value) { return !/var|\\/i.test(value) || N.cssVarValid(value); }
-function parseDecls(s) {
+function cssVarSyntax(value) { return !/var|if|\\/i.test(value) || N.cssVarValid(value); }
+/* CSS Syntax's unicode-range token is contextual: consume original source
+   only for this font-face descriptor. Comments may separate range tokens,
+   but cannot splice the U+, hexadecimal digits, wildcard or range suffix.
+   This validates CSSOM descriptor text; this does not change font selection. */
+function cssUnicodeRangeText(value) {
+    const s = String(value), ranges = [];
+    let i = 0;
+    const hex = c => c !== undefined && /[0-9a-f]/i.test(c);
+    const trivia = () => {
+        while (i < s.length) {
+            if (/[\t\n\f\r ]/.test(s[i])) { i++; continue; }
+            if (s[i] === '/' && s[i + 1] === '*') {
+                const end = s.indexOf('*/', i + 2);
+                i = end < 0 ? s.length : end + 2;
+                continue;
+            }
+            break;
+        }
+    };
+    trivia();
+    while (i < s.length) {
+        if ((s[i] !== 'U' && s[i] !== 'u') || s[i + 1] !== '+') return null;
+        i += 2;
+        const first = i;
+        while (i - first < 6 && hex(s[i])) i++;
+        const digits = i;
+        while (i - first < 6 && s[i] === '?') i++;
+        if (i === first) return null;
+        let start, end;
+        if (i > digits) {
+            const token = s.slice(first, i);
+            start = parseInt(token.replace(/\?/g, '0'), 16);
+            end = parseInt(token.replace(/\?/g, 'F'), 16);
+        } else {
+            start = end = parseInt(s.slice(first, i), 16);
+            if (s[i] === '-' && hex(s[i + 1])) {
+                const last = ++i;
+                while (i - last < 6 && hex(s[i])) i++;
+                end = parseInt(s.slice(last, i), 16);
+            }
+        }
+        if (end > 0x10ffff || start > end) return null;
+        const a = start.toString(16).toUpperCase(), b = end.toString(16).toUpperCase();
+        ranges.push('U+' + a + (start === end ? '' : '-' + b));
+        trivia();
+        if (i === s.length) return ranges.join(', ');
+        if (s[i++] !== ',') return null;
+        trivia();
+        if (i === s.length) return null;
+    }
+    return null;
+}
+function parseDecls(s, fontFace = false) {
     const m = new SMap(); if (!s) return m;
     let depth = 0, q = '', colon = -1, name = ''; const parts = [];
     const finish = end => {
@@ -47,9 +99,144 @@ function parseDecls(s) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (!cssVarSyntax(v)) continue; if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
     return m;
 }
+/* The native enum parser owns acceptance; authored pending tokens remain opaque. */
+function cssInterpolateSizeParse(value) {
+    if (!N.cssSupports('(interpolate-size:' + value + ')')) return null;
+    const tokens = cssGridTokens(value);
+    if (!tokens || !tokens.length) return null;
+    if (tokens.some(token => token.includes('('))) return value.trim();
+    return tokens.length === 1 ? cssGridDecode(tokens[0]).toLowerCase() : null;
+}
+function cssInterpolateSizeSet(map, value, priority, cascade = false) {
+    const property = 'interpolate-size';
+    if (value === '') { map.delete(property); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
+    const parsed = cssInterpolateSizeParse(value);
+    if (parsed === null) return false;
+    const old = map.get(property);
+    if (cascade && old && old[1] && !priority) return true;
+    map.delete(property); map.set(property, [parsed, priority ? 'important' : '']);
+    return true;
+}
+
+/* Physical border declarations are stored as real longhands. The native
+ * grammar validates the complete value before any declaration is changed. */
+const CSS_BORDER_SIDES = ['top', 'right', 'bottom', 'left'];
+const CSS_BORDER_KINDS = ['width', 'style', 'color'];
+const CSS_BORDER_IMAGE = [
+    ['border-image-source', 'none'], ['border-image-slice', '100%'],
+    ['border-image-width', '1'], ['border-image-outset', '0'], ['border-image-repeat', 'stretch']
+];
+const CSS_BORDER_SHORTHANDS = ['border', ...CSS_BORDER_SIDES.map(s => 'border-' + s), ...CSS_BORDER_KINDS.map(k => 'border-' + k)];
+const cssBorderRelevant = p => /^border(?:-(?:(?:top|right|bottom|left)(?:-(?:width|style|color))?|width|style|color))?$/.test(p);
+const cssBorderWide = value => /^(inherit|initial|unset|revert|revert-layer)$/i.test(value);
+const cssBorderPending = value => /(?:^|[^a-z0-9_-])(?:var|env|attr|if)\(|--/i.test(value);
+function cssBorderChildren(p) {
+    if (p === 'border') return CSS_BORDER_KINDS.flatMap(k => CSS_BORDER_SIDES.map(s => 'border-' + s + '-' + k)).concat(CSS_BORDER_IMAGE.map(x => x[0]));
+    const tail = p.slice(7);
+    if (CSS_BORDER_KINDS.includes(tail)) return CSS_BORDER_SIDES.map(s => 'border-' + s + '-' + tail);
+    if (CSS_BORDER_SIDES.includes(tail)) return CSS_BORDER_KINDS.map(k => p + '-' + k);
+    return [p];
+}
+function cssBorderParse(p, value) {
+    const parsed = N.cssBorder(p, String(value));
+    if (parsed === null) return null;
+    if (cssBorderPending(parsed)) return { names: [p], values: [parsed], pending: true };
+    const names = cssBorderChildren(p);
+    if (cssBorderWide(parsed)) return { names, values: names.map(() => parsed.toLowerCase()) };
+    const tokens = cssGridTokens(parsed); if (!tokens || !tokens.length) return null;
+    const normalize = (kind, text) => kind === 'color' ? specColor(text, 'border-top-color') : kind === 'width' ? cssNumericDimensionParse('border-top-width', text) : text.toLowerCase();
+    let values;
+    if (p === 'border' || CSS_BORDER_SIDES.includes(p.slice(7))) {
+        const side = tokens.map((text, i) => normalize(CSS_BORDER_KINDS[i], text));
+        if (side.length !== 3 || side.some(x => x === null)) return null;
+        values = p === 'border' ? side.flatMap(v => CSS_BORDER_SIDES.map(() => v)).concat(CSS_BORDER_IMAGE.map(x => x[1])) : side;
+    } else {
+        const kind = p.slice(p.lastIndexOf('-') + 1), parts = tokens.map(text => normalize(kind, text));
+        if (parts.some(x => x === null)) return null;
+        values = names.length === 1 ? parts : [parts[0], parts[1] ?? parts[0], parts[2] ?? parts[0], parts[3] ?? parts[1] ?? parts[0]];
+    }
+    return values.length === names.length ? { names, values } : null;
+}
+function cssBorderValue(m, p, priority = false) {
+    const names = cssBorderChildren(p), direct = m.get(p);
+    if (direct) {
+        if (names.length === 1) return direct[priority ? 1 : 0];
+        let after = false;
+        for (const [name] of m) {
+            if (name === p) { after = true; continue; }
+            if (after && (names.includes(name) || CSS_BORDER_SHORTHANDS.includes(name) && cssBorderChildren(name).some(n => names.includes(n)))) return '';
+        }
+        return direct[priority ? 1 : 0];
+    }
+    const entries = names.map(name => m.get(name));
+    if (entries.some(e => !e) || entries.some(e => e[1] !== entries[0][1])) return '';
+    if (priority) return entries[0][1];
+    const values = entries.map(e => e[0]);
+    if (values.some(cssBorderWide)) return values.every(v => v === values[0]) ? values[0] : '';
+    if (values.some(cssBorderPending)) return '';
+    if (p === 'border') {
+        if (CSS_BORDER_IMAGE.some((entry, i) => values[12 + i] !== entry[1])) return '';
+        for (let k = 0; k < 3; k++) if (values.slice(k * 4, k * 4 + 4).some(v => v !== values[k * 4])) return '';
+        const parts = [values[0] === 'medium' ? '' : values[0], values[4] === 'none' ? '' : values[4], values[8] === 'currentcolor' ? '' : values[8]].filter(Boolean);
+        return parts.length ? parts.join(' ') : values[0] + ' ' + values[4];
+    }
+    if (CSS_BORDER_SIDES.includes(p.slice(7))) {
+        const parts = [values[0] === 'medium' ? '' : values[0], values[1] === 'none' ? '' : values[1], values[2] === 'currentcolor' ? '' : values[2]].filter(Boolean);
+        return parts.length ? parts.join(' ') : values[0] + ' ' + values[1];
+    }
+    if (names.length === 4) {
+        const [a, b, c, d] = values;
+        return b === d ? a === c ? a === b ? a : a + ' ' + b : a + ' ' + b + ' ' + c : values.join(' ');
+    }
+    return values[0];
+}
+function cssBorderSet(m, p, value, priority, cascading = false) {
+    const parsed = cssBorderParse(p, value); if (!parsed) return false;
+    const children = cssBorderChildren(p);
+    if (cascading && m.get(p)?.[1] && !priority) return true;
+    m.delete(p);
+    if (parsed.pending && children.length > 1) {
+        for (const name of children) if (!cascading || !m.get(name)?.[1] || priority) m.delete(name);
+    }
+    for (const shorthand of CSS_BORDER_SHORTHANDS) {
+        const entry = m.get(shorthand);
+        if (entry && cssBorderChildren(shorthand).every(name => children.includes(name)) && (!cascading || !entry[1] || priority)) m.delete(shorthand);
+    }
+    for (let i = 0; i < parsed.names.length; i++) {
+        const name = parsed.names[i];
+        if (cascading && !priority && (m.get(name)?.[1] || CSS_BORDER_SHORTHANDS.some(s => m.get(s)?.[1] && cssBorderChildren(s).includes(name)))) continue;
+        /* CSSOM permits moving a changed declaration to the end, and requires
+           it after later declarations in the same logical property group. */
+        m.delete(name);
+        m.set(name, [parsed.values[i], priority]);
+    }
+    return true;
+}
+function cssBorderRemove(m, p) {
+    const value = cssBorderValue(m, p), names = cssBorderChildren(p);
+    m.delete(p); for (const name of names) m.delete(name);
+    for (const shorthand of CSS_BORDER_SHORTHANDS) if (cssBorderChildren(shorthand).every(name => names.includes(name))) m.delete(shorthand);
+    return value;
+}
+function cssBorderPacks(m) {
+    const keys = [...m.keys()], selected = new SMap(), used = new SSet();
+    for (const shorthand of CSS_BORDER_SHORTHANDS) {
+        if (m.has(shorthand)) continue;
+        const names = cssBorderChildren(shorthand);
+        if (names.some(n => used.has(n) || !m.has(n))) continue;
+        const value = cssBorderValue(m, shorthand); if (!value) continue;
+        const positions = names.map(n => keys.indexOf(n)), start = Math.min(...positions), end = Math.max(...positions);
+        if (keys.slice(start, end + 1).some(n => !names.includes(n) && (n === 'all' || n.startsWith('border')))) continue;
+        const pack = { name: shorthand, value, first: keys[start], priority: m.get(names[0])[1] };
+        for (const name of names) { selected.set(name, pack); used.add(name); }
+    }
+    return selected;
+}
+
 /* CSS Sizing4 intrinsic-size grammar. Keep specified physical longhands in
  * declaration order so interleaved logical longhands cascade natively. */
 const CSS_CIS_PARTS = ['contain-intrinsic-width', 'contain-intrinsic-height'];
@@ -202,8 +389,12 @@ function serDecls(m) {
     }
     const out = [], flex = mergeFlex ? cssFlexValue(m, 'flex') : '';
     let flexWritten = false;
+    const borderPacks = cssBorderPacks(m);
     for (const [k, [v, i]] of m) {
-        if (CSS_FLEX_PARTS.includes(k) && flex && !m.has('flex')) {
+        const packed = borderPacks.get(k);
+        if (packed) {
+            if (k === packed.first) out.push(packed.name + ': ' + packed.value + (packed.priority ? ' !important' : '') + ';');
+        } else if (CSS_FLEX_PARTS.includes(k) && flex && !m.has('flex')) {
             if (!flexWritten) out.push('flex: ' + flex + (i ? ' !important' : '') + ';');
             flexWritten = true;
         } else out.push(k + ': ' + v + (i ? ' !important' : '') + ';');
@@ -255,7 +446,7 @@ function shorthandPart(m, p) {
 const SPEC_PAIR = new SSet(['gap', 'grid-gap', 'place-items', 'place-self', 'place-content', 'overflow', 'overscroll-behavior', 'border-spacing', 'scroll-snap-align', 'contain-intrinsic-size', 'margin-block', 'margin-inline', 'padding-block', 'padding-inline', 'inset-block', 'inset-inline', 'scroll-margin-block', 'scroll-margin-inline', 'scroll-padding-block', 'scroll-padding-inline', 'border-block-width', 'border-inline-width', 'border-block-style', 'border-inline-style', 'border-block-color', 'border-inline-color']);
 const SPEC_BOX = new SSet(['margin', 'padding', 'inset', 'border-width', 'border-style', 'border-color', 'scroll-margin', 'scroll-padding', 'border-image-outset', 'border-image-width']);
 /* constant folding of math functions whose arguments are all numbers or same-type dimensions (Chrome folds these when parsing) */
-const MATH_UNIT = { deg: ['deg', 1], rad: ['deg', 180 / Math.PI], grad: ['deg', 0.9], turn: ['deg', 360], s: ['s', 1], ms: ['s', 0.001], px: ['px', 1], '': ['', 1] };
+const MATH_UNIT = { in: ['px', 96], cm: ['px', 96 / 2.54], mm: ['px', 96 / 25.4], q: ['px', 96 / 101.6], pt: ['px', 4 / 3], pc: ['px', 16], deg: ['deg', 1], rad: ['deg', 180 / Math.PI], grad: ['deg', 0.9], turn: ['deg', 360], s: ['s', 1], ms: ['s', 0.001], px: ['px', 1], '': ['', 1] };
 function mathEval(src) {
     let i = 0, progressDepth = 0;
     const ws = () => { while (/\s/.test(src[i])) i++; };
@@ -286,6 +477,9 @@ function mathEval(src) {
         if (name === 'progress') progressDepth--;
         const n = a => { if (a.u) fail(); return a.v; }, ang = a => a.u === 'deg' ? a.v * Math.PI / 180 : n(a), D = r => ({ v: r * 180 / Math.PI, u: 'deg' });
         const F = {
+            min: () => { for (const a of args) same(args[0], a); return { v: Math.min(...args.map(a => a.v)), u: args[0].u }; },
+            max: () => { for (const a of args) same(args[0], a); return { v: Math.max(...args.map(a => a.v)), u: args[0].u }; },
+            clamp: () => { if (args.length !== 3) fail(); same(args[0], args[1]); same(args[1], args[2]); return { v: Math.max(args[0].v, Math.min(args[1].v, args[2].v)), u: args[0].u }; },
             calc: () => args[0], sin: () => ({ v: Math.sin(ang(args[0])), u: '' }), cos: () => ({ v: Math.cos(ang(args[0])), u: '' }), tan: () => ({ v: Math.tan(ang(args[0])), u: '' }),
             asin: () => D(Math.asin(n(args[0]))), acos: () => D(Math.acos(n(args[0]))), atan: () => D(Math.atan(n(args[0]))),
             atan2: () => { same(args[0], args[1]); return D(Math.atan2(args[0].v, args[1].v)); },
@@ -328,7 +522,7 @@ function mathEval(src) {
                 return { v, u: '' };
             },
         };
-        if (!F[name] || !['atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
+        if (!F[name] || !['min', 'max', 'clamp', 'atan2', 'pow', 'log', 'round', 'mod', 'rem', 'progress'].includes(name) && args.length !== 1) fail();
         const r = F[name](); if (args.some(a => Number.isNaN(a.v))) r.v = NaN; r.v *= neg; return r;
     }
     function prod() {
@@ -351,7 +545,7 @@ const mathSer = r => {
 function specFoldMath(t) {
     /* Evaluate an outer calculation before its children so a nested signed
        zero or NaN is not clamped before division/multiplication consumes it. */
-    const re = /\b(?:calc|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/gi;
+    const re = /\b(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/gi;
     let out = '', previous = 0, match;
     while ((match = re.exec(t))) {
         let end = re.lastIndex, depth = 1;
@@ -551,10 +745,47 @@ function transformComponentsValid(rawValue) {
     }
     return true;
 }
+const CSS_MIN_SIZE = /^min-(width|height|block-size|inline-size)$/;
 const MATH_LEN_PROPS = /^((min-|max-)?(width|height|block-size|inline-size))$/;
 /* Canonical nonnegative px sizes below 1e9 with at most six fractional digits
    already have Lumen's existing specified serialization. Other values keep the full path. */
 const CSS_CANONICAL_PX_SIZE = /^(?:0|[1-9]\d{0,8})(?:\.\d{0,5}[1-9])?px$/;
+function cssMinSizeParse(property, value) {
+    if (CSS_CANONICAL_PX_SIZE.test(value)) return value;
+    const parsed = N.cssMinSize(value);
+    if (parsed === null) return null;
+    /* Only the existing constant evaluator may collapse a calc. Relative
+       units and percentages remain dependent on the eventual style context. */
+    const folded = /^calc\(/i.test(parsed) && mathEval(parsed);
+    return specNormalize(property, folded ? mathSer(folded) : parsed);
+}
+const CSS_NUMERIC_DIMENSION = /^(?:border-(?:top|right|bottom|left|(?:inline|block)-(?:start|end))-width|outline-width|(?:animation|transition)-(?:delay|duration))$/;
+function cssNumericDimensionParse(property, value) {
+    const parsed = N.cssNumericDimension(property, value);
+    if (parsed === null) return null;
+    const text = specNormalize(property, parsed);
+    /* Pending substitution is still an unparsed token stream; only concrete
+       time lists serialize their top-level commas as comma + space. */
+    return /^(animation|transition)-/.test(property) && !/\\|(?:var|env|attr|if)\(|--/i.test(parsed) ?
+        tomSplitTop(text, ',').map(component => component.trim()).join(', ') : text;
+}
+/* The native grammar keeps color functions and pending substitutions intact.
+ * Reuse the same specified-color and math serializers as other properties. */
+function cssBoxShadowParse(value) {
+    const parsed = N.cssBoxShadow(value);
+    if (parsed === null || /(?:^|[^a-z0-9_-])(?:var|env|attr|if)\(|--/i.test(parsed)) return parsed;
+    return specSplit(parsed, true).map(layer => {
+        const parts = specSplit(layer);
+        const color = N.cssColor(parts[0]) === null ? null : specColor(parts[0], 'color');
+        return parts.map((part, index) => index === 0 && color !== null ? color : specNormalize('box-shadow', CSS_MATH_VALUE.test(part) ? specFoldMath(part) : part)).join(' ');
+    }).join(', ');
+}
+/* Recognized concrete math uses native component-token completion before
+ * declaration serialization. Pending substitution retains its original text. */
+const CSS_MATH_VALUE = /(?:^|[^a-z0-9_-])(?:calc|min|max|clamp|sin|cos|tan|asin|acos|atan2?|sqrt|exp|pow|log|hypot|abs|sign|round|mod|rem|progress)\(/i;
+function cssMathValueText(value) {
+    return /(?:^|[^a-z0-9_-])(?:var|env|attr|if)\(|--/i.test(value) ? value : N.cssMathText(value);
+}
 const MATH_NUM_PROPS = /^((fill-|stroke-|stop-|flood-)?opacity|flex-grow|flex-shrink)$/;
 /* the <color-interpolation-method> of gradients: only "in <space> [<hue> hue]" at the start or end of the first argument */
 const GRAD_SPACES = /^(srgb|srgb-linear|display-p3|a98-rgb|prophoto-rgb|rec2020|lab|oklab|xyz|xyz-d50|xyz-d65|hsl|hwb|lch|oklch)$/i;
@@ -644,6 +875,12 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 }
 function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
+    if (p === 'interpolate-size') return cssInterpolateSizeParse(v) !== null;
+    if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
+    if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
+    if (cssBorderRelevant(p)) return cssBorderParse(p, v) !== null;
+    if (CSS_MIN_SIZE.test(p)) return N.cssSupports('(' + p + ':' + v + ')');
+    if (CSS_NUMERIC_DIMENSION.test(p)) return N.cssNumericDimension(p, v) !== null;
     if (cssCisRelevant(p)) return cssCisParse(p, v) !== null;
     if (/^(columns|column-width|column-count)$/.test(p)) return N.cssSupports('(' + p + ':' + v + ')');
     if (cssFlexRelevant(p)) return cssFlexParse(p, v) !== null;
@@ -678,6 +915,7 @@ function mathValid(p, v) {
             /^margin(?:-(?:top|right|bottom|left|block(?:-start|-end)?|inline(?:-start|-end)?))?$/.test(p);
         const st = m.index + m[1].length, [t, n] = mathType(v.slice(st), false, lengthDestination ? 'length' : '');
         if (t === null) return false;
+        if (st === 0 && /^(?:width|height|(?:min|max)-(?:width|height|inline-size|block-size)|inline-size|block-size|(?:margin|padding)-(?:top|right|bottom|left)|top|right|bottom|left|font-size|line-height|letter-spacing|word-spacing|outline-offset)$/.test(p) && v.slice(n).trim()) return false;
         re.lastIndex = st + Math.max(n, 1);
         if (t === undefined || st !== 0 && v.slice(0, st).trim()) continue;   /* only a whole-value function is checked against the property */
         if (MATH_NUM_PROPS.test(p) && !(t === '' || (t === '%^1' && /opacity$/.test(p)))) return false;
@@ -899,6 +1137,27 @@ function shapeLenPx(el) {
         return +(n * f).toPrecision(6) + 'px';
     };
 }
+/* Raw declaration reads share the setters' scalar serialization. Normalize
+ * only complete length/percentage literals (or line-height numbers), after
+ * the property's existing parser has seen its original token spelling. */
+function cssScalarSpecified(property, value) {
+    if (!CSS_PROP_NAMES.has(property) || !(TOM_LENGTH_PROPS.test(property) ||
+        property === 'baseline-shift' || property === 'border-spacing')) return value;
+    const scalar = /^([+-]?(?:\d*\.\d+|\d+)(?:e[+-]?\d+)?)([a-z]+|%)?$/i.exec(value);
+    if (!scalar || !Number.isFinite(Number(scalar[1]))) return value;
+    const unit = (scalar[2] || '').toLowerCase();
+    if (!TOM_LEN_UNITS.has(unit)) return value;
+    /* Keep unitless tokens on their existing property grammar path. In
+       particular, underflow must not manufacture a valid zero length, and
+       number-valued border-image widths must not become px values. */
+    if (!unit && property !== 'line-height') return value;
+    const canonical = specNormalize(property, scalar[1] + unit);
+    if (canonical === value || !mathValid(property, value)) return value;
+    if (N.cssSupports('(' + property + ':initial)') &&
+        !N.cssSupports('(' + property + ':' + value + ')')) return value;
+    return canonical;
+}
+
 function specNormalize(p, v) {
     if ((p === 'shape-outside' || p === 'clip-path') && /(circle|ellipse)\(/i.test(v)) v = shapePos(v, null);
     if ((p === 'shape-outside' || p === 'clip-path') && /inset\(/i.test(v)) v = insetNorm(v, null);
@@ -915,7 +1174,7 @@ function specNormalize(p, v) {
         });
     if (p === 'position-area') { const n = posArea(v); if (n !== null) return n; }
     if (/["'\\]|url\(|var\(|env\(|attr\(|#/i.test(v) || /timing-function$|^transition$|^animation$/.test(p)) return v;
-    const preserveMathZero = /\b(?:calc|round|mod|rem|progress)\(/i.test(v);
+    const preserveMathZero = /\b(?:min|max|clamp|calc|round|mod|rem|progress)\(/i.test(v);
     let t = v.trim().replace(/(^|[\s(,/*+-])([+-]?)(\d*\.\d+|\d+\.?)(e[+-]?\d+)?(?=[a-z%]*(?:$|[\s),/*]))/gi, (m, pre, sign, num, exp) => {
         const n = Number(num + (exp || ''));
         if (!isFinite(n)) return m;
@@ -924,7 +1183,7 @@ function specNormalize(p, v) {
     }).replace(/\s+/g, ' ');
     if (/^(inherit|initial|unset|revert|revert-layer)$/i.test(t)) return CSS_POSITION.test(p) ? t.toLowerCase() : t;
     if (CSS_POSITION.test(p)) return cssPositionSpecified(t, cssPositionAxis(p)) || t;
-    if (/\b(sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
+    if (/\b(min|max|clamp|sin|cos|tan|asin|acos|atan|atan2|sqrt|exp|pow|log|round|mod|rem|progress)\(/i.test(t)) t = specFoldMath(t);
     if (p !== 'line-height' && typeof TOM_LENGTH_PROPS !== 'undefined' && TOM_LENGTH_PROPS.test(p)) t = t.split(' ').map(w => w === '0' || w === '-0' ? '0px' : w).join(' ');
     if (/^(align|justify|place)-(content|items|self)$/.test(p)) t = t.replace(/\bfirst baseline\b/g, 'baseline');
     if (p === 'display') { const w = t.toLowerCase().split(' '); if (w.length === 2 && w.includes('list-item') && w.includes('flow')) t = 'list-item'; else if (w.length === 2 && w[1] === 'flow' && /^(block|inline|run-in)$/.test(w[0])) t = w[0]; else if (w.length === 2 && w[0] === 'block' && /^(flex|grid|table|flow-root|math)$/.test(w[1])) t = w[1]; else if (w.length === 2 && w[0] === 'inline' && w[1] === 'flow-root') t = 'inline-block'; else if (w.length === 2 && w[0] === 'inline' && /^(flex|grid|table)$/.test(w[1])) t = 'inline-' + w[1]; }
@@ -1017,6 +1276,32 @@ function specColor(v, p) {
     const [r, g, b] = (c.legacy ? c.c : colorTo(c, 'srgb')).map(x => Math.round(Math.min(1, Math.max(0, x)) * 255));
     return c.alpha >= 1 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${specAlpha(c.alpha)})`;
 }
+/* Imperative shorthand assignment replaces its physical declarations before
+ * serialization. Raw declaration parsing keeps its existing cascade order. */
+function cssOverflowSet(m, value, priority) {
+    if (value !== '') {
+        if (priority && !/^important$/i.test(priority) || !cssVarSyntax(value)) return false;
+        /* Keep the existing pending-substitution path and its original text. */
+        if (cssBorderPending(value) && value.includes('(')) {
+            if (!N.cssSupports('(overflow:' + value + ')')) return false;
+        } else {
+            const tokens = cssGridTokens(value);
+            if (!tokens || !tokens.length) return false;
+            const words = tokens.map(text => cssGridDecode(text).toLowerCase());
+            const wide = words.length === 1 && /^(inherit|initial|unset|revert|revert-layer)$/.test(words[0]);
+            const concrete = words.length <= 2 && words.every(word => /^(visible|hidden|scroll|auto|clip|overlay)$/.test(word));
+            if (wide) value = words[0];
+            else if (concrete) {
+                const values = words.map(word => word === 'overlay' ? 'auto' : word);
+                value = values.length === 2 && values[0] === values[1] ? values[0] : values.join(' ');
+            } else return false;
+        }
+    }
+    m.delete('overflow'); m.delete('overflow-x'); m.delete('overflow-y');
+    if (value !== '') m.set('overflow', [value, priority ? 'important' : '']);
+    return true;
+}
+
 class CSSStyleDeclaration {
     constructor(el, ro) { def(this, '_el', el); def(this, '_ro', ro); def(this, '_src', null); def(this, '_map', null); }
     /* parsed declarations of the current style attribute; callers that modify take a copy */
@@ -1028,12 +1313,56 @@ class CSSStyleDeclaration {
     get cssText() { return serDecls(this._m()); } set cssText(v) { this._el.setAttribute('style', String(v)); }
     get length() { return this._m().size; }
     item(i) { return [...this._m().keys()][i] || ''; }
-    getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); return e ? e[0] : shorthandPart(m, p); }
-    getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p); return e ? e[1] : ''; }
+    getPropertyValue(p) { p = camelToKebab(String(p)); const m = this._m(), e = m.get(p); if (cssBorderRelevant(p)) return cssBorderValue(m, p); if (cssCisRelevant(p)) return cssCisValue(m, p); if (cssGridRelevant(p)) return cssGridValue(m, p); if (cssFlexRelevant(p)) return cssFlexValue(m, p); return e ? e[0] : shorthandPart(m, p); }
+    getPropertyPriority(p) { p = camelToKebab(String(p)); const m = this._m(); if (cssBorderRelevant(p)) return cssBorderValue(m, p, true); if (cssCisRelevant(p)) return cssCisValue(m, p, true); if (cssGridRelevant(p)) return cssGridValue(m, p, true); if (cssFlexRelevant(p)) return cssFlexValue(m, p, true); const e = m.get(p) || (/^overflow-[xy]$/.test(p) && !(this instanceof ComputedStyleDeclaration) ? m.get('overflow') : null); return e ? e[1] : ''; }
     setProperty(p, v, pri) { p = String(p); if (!p.startsWith('--')) p = camelToKebab(p);
         v = v == null ? '' : String(v);
         pri = pri == null ? '' : String(pri);
         if (v !== '' && ((pri && !/^important$/i.test(pri)) || !cssVarSyntax(v))) return;
+        if (p === 'interpolate-size') {
+            const m = new SMap(this._m());
+            if (!cssInterpolateSizeSet(m, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (p === 'overflow') {
+            const m = new SMap(this._m());
+            if (!cssOverflowSet(m, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (CSS_MIN_SIZE.test(p)) {
+            const value = v === '' ? '' : cssMinSizeParse(p, v);
+            if (value === null) return;
+            const m = new SMap(this._m()); m.delete(p);
+            if (value !== '') m.set(p, [value, pri ? 'important' : '']);
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (cssBorderRelevant(p)) {
+            const m = new SMap(this._m());
+            if (v === '') cssBorderRemove(m, p);
+            else if (!cssBorderSet(m, p, v, pri ? 'important' : '')) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (p === 'box-shadow') {
+            const value = v === '' ? '' : cssBoxShadowParse(v);
+            if (value === null) return;
+            const m = new SMap(this._m()); m.delete(p);
+            if (value !== '') m.set(p, [value, pri ? 'important' : '']);
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (p === 'transition-property') {
+            const value = v === '' ? '' : N.cssTransitionProperty(v);
+            if (value === null) return;
+            const m = new SMap(this._m()); m.delete(p);
+            if (value !== '') m.set(p, [value, pri ? 'important' : '']);
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
+        if (CSS_NUMERIC_DIMENSION.test(p)) {
+            const value = v === '' ? '' : cssNumericDimensionParse(p, v);
+            if (value === null) return;
+            const m = new SMap(this._m()); m.delete(p);
+            if (value !== '') m.set(p, [value, pri ? 'important' : '']);
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
         if (cssCisRelevant(p)) {
             const m = new SMap(this._m());
             if (v === '') cssCisRemove(m, p);
@@ -1052,8 +1381,9 @@ class CSSStyleDeclaration {
             else if (priority && !/^important$/i.test(priority) || !cssGridSet(m, p, value, priority ? 'important' : '')) return;
             this._el.setAttribute('style', serDecls(m)); return;
         }
+        if (v !== '' && !p.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null) return; }
         if (v != null && v !== '' && SPEC_COLOR_PROPS.has(p)) { v = specColor(String(v), p); if (v === null) return; } if (v != null && v !== '' && !p.startsWith('--')) { if (!(typeof v === 'string' && MATH_LEN_PROPS.test(p) && CSS_CANONICAL_PX_SIZE.test(v))) { if (!mathValid(p, String(v))) return; v = specNormalize(p, String(v)); } } const m = new SMap(this._m()); if (p === 'background-position') { m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); } else if (CSS_POSITION.test(p)) m.delete(p); if (v == null || v === '') m.delete(p); else m.set(p, [String(v), pri ? 'important' : '']); this._el.setAttribute('style', serDecls(m)); }
-    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
+    removeProperty(p) { p = camelToKebab(String(p)); const m = new SMap(this._m()); if (cssBorderRelevant(p)) { const size = m.size, value = cssBorderRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssCisRelevant(p)) { const size = m.size, value = cssCisRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssFlexRelevant(p)) { const size = m.size, value = cssFlexRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (cssGridRelevant(p)) { const size = m.size, value = cssGridRemove(m, p); if (size !== m.size) this._el.setAttribute('style', serDecls(m)); return value; } if (p === 'background-position') { const v = cssPositionDeclaration(m, p), size = m.size; m.delete(p); m.delete('background-position-x'); m.delete('background-position-y'); if (m.size !== size) this._el.setAttribute('style', serDecls(m)); return v; } const e = m.get(p); if (e) { m.delete(p); this._el.setAttribute('style', serDecls(m)); } return e ? e[0] : ''; }
 }
 const styleHandler = {
     get(t, p) { if (typeof p !== 'string' || p in t) return Reflect.get(t, p, t); if (/^\d+$/.test(p)) return t.item(+p); return t.getPropertyValue(p); },
@@ -1509,7 +1839,10 @@ methods(HTMLElement.prototype, {
         });
         def(this, '__ds', ds); return ds;
     },
-    get innerText() { return innerTextOf(this); }, set innerText(v) { this.textContent = v; }, get outerText() { return N.text(this); },
+    get innerText() { renderedTextCheck(this); return innerTextOf(this); },
+    set innerText(v) { renderedTextSet(this, v, false); },
+    get outerText() { renderedTextCheck(this); return innerTextOf(this); },
+    set outerText(v) { renderedTextSet(this, v, true); },
     get tabIndex() { const m = /^[\t\n\f\r ]*([-+]?\d+)/.exec(N.attr(this, 'tabindex') || ''), v = m && +m[1] >= -(2 ** 31) && +m[1] < 2 ** 31 ? +m[1] || 0 : NaN; return isNaN(v) ? (/^(a|button|input|select|textarea)$/.test(N.name(this)) ? 0 : -1) : v; },
     set tabIndex(v) { this.setAttribute('tabindex', String(v | 0)); },
     get offsetParent() {
@@ -1641,6 +1974,70 @@ for (const [p, a] of [['ariaControlsElements', 'aria-controls'], ['ariaDescribed
 
 /* innerText (HTML "rendered text collection steps"), from computed display, white-space, visibility and
    text-transform; elements that aren't rendered give their text content */
+/* HTML's rendered text fragment and mutation algorithms. These use private
+ * capabilities, not author-overridable textContent/replaceWith/creation methods.
+ * Keep the established DOM primitives so observers and live ranges see the
+ * same replacement and character-data operations as other native mutations. */
+const renderedTextString = String, renderedTextSlice = String.prototype.slice,
+      renderedTextApply = Reflect.apply, renderedTextTypeError = TypeError,
+      renderedTextDOMException = DOMException,
+      renderedTextReplaceAll = ParentNode.replaceChildren,
+      renderedTextReplaceChild = Node.prototype.replaceChild;
+function renderedTextCheck(element) {
+    if (!N.isNode(element) || N.type(element) !== 1 || N.ns(element) !== 0)
+        throw new renderedTextTypeError('Illegal invocation');
+}
+function renderedTextConvert(value) {
+    if (value === null) return '';
+    if (typeof value === 'symbol') throw new renderedTextTypeError('Cannot convert a Symbol value to a string');
+    return renderedTextString(value);
+}
+function renderedTextFragment(value, doc) {
+    const fragment = N.frag(doc);
+    let start = 0;
+    for (let i = 0; i < value.length; ++i) {
+        const c = value[i];
+        if (c !== '\r' && c !== '\n') continue;
+        if (i > start) N.insert(fragment, N.textNode(renderedTextApply(renderedTextSlice, value, [start, i]), doc), null);
+        N.insert(fragment, N.create('br', 0, doc), null);
+        if (c === '\r' && value[i + 1] === '\n') ++i;
+        start = i + 1;
+    }
+    if (start < value.length) N.insert(fragment, N.textNode(renderedTextApply(renderedTextSlice, value, [start]), doc), null);
+    return fragment;
+}
+function renderedTextMergeNext(node) {
+    const next = N.next(node);
+    if (!next || !isTextNode(next)) return;
+    replaceData(node, N.text(node).length, 0, N.text(next));
+    removeNode(next);
+}
+function renderedTextSet(element, input, outer) {
+    renderedTextCheck(element);
+    const value = renderedTextConvert(input);
+    const parent = outer ? N.parent(element) : null;
+    if (outer && !parent)
+        throw new renderedTextDOMException('The element has no parent.', 'NoModificationAllowedError');
+    const previousQueue = ceReactionQueue, queue = [];
+    ceReactionQueue = queue;
+    try {
+        const next = outer ? N.next(element) : null, previous = outer ? N.prev(element) : null;
+        const fragment = renderedTextFragment(value, N.ownerDoc(element));
+        if (!outer) {
+            renderedTextApply(renderedTextReplaceAll, element, [fragment]);
+            return;
+        }
+        if (!N.first(fragment)) N.insert(fragment, N.textNode('', N.ownerDoc(element)), null);
+        renderedTextApply(renderedTextReplaceChild, parent, [fragment, element]);
+        // Merge only the immediate boundaries, right before left. normalize()
+        // would merge unrelated neighbors and give different node identities.
+        if (next) { const beforeNext = N.prev(next); if (beforeNext && isTextNode(beforeNext)) renderedTextMergeNext(beforeNext); }
+        if (previous && isTextNode(previous)) renderedTextMergeNext(previous);
+    } finally {
+        ceReactionQueue = previousQueue;
+        ceInvoke(queue);
+    }
+}
 function innerTextOf(el) {
     const cs = (e, p) => N.computed(e, p) || '';
     for (let a = el; a; a = a.parentElement) if (cs(a, 'display') === 'none') return el.textContent;

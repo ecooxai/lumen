@@ -1,0 +1,97 @@
+<!doctype html><meta charset="utf-8"><title>Preferred-size additive composition keeps its intrinsic basis</title>
+<style>html,body{margin:0;padding:0;border:0}</style><body><script>
+(()=>{
+ const cases=[],rows=[];let sequence=0;
+ const test=(name,fn)=>cases.push({name,fn});
+ const check=(condition,label)=>{if(!condition)throw Error(label);};
+ const near=(actual,expected,label)=>{if(!Number.isFinite(actual)||Math.abs(actual-expected)>.04)throw Error(label+': '+actual+' expected '+expected);};
+ function size(f,property,expected){
+  const r=f.target.getBoundingClientRect();near(r[property],expected,'real '+property);
+  const text=getComputedStyle(f.target)[property];check(text.endsWith('px'),'resolved pixel size');near(parseFloat(text),expected,'resolved '+property);
+  if(r.width>3&&r.height>3)check(document.elementFromPoint(r.x+2,r.y+2)===f.target,'same sampled box receives the real hit');
+ }
+ function effect(f,route,property,under,from,to,op='add',policy='allow-keywords'){
+  f.target.style[property]=under;f.target.style.setProperty('interpolate-size',policy);let a;
+  if(route==='web')a=f.target.animate([{offset:0,[property]:from,composite:op},{offset:1,[property]:to,composite:op}],{duration:1000,fill:'both',easing:'linear'});
+  else{
+   const sheet=document.createElement('style'),name='composition-'+(++sequence);
+   sheet.textContent='@keyframes '+name+'{from{'+property+':'+from+';animation-composition:'+op+'}to{'+property+':'+to+';animation-composition:'+op+'}}';
+   document.head.appendChild(sheet);f.extra.push(sheet);
+   f.target.style.animationName=name;f.target.style.animationDuration='1000ms';f.target.style.animationTimingFunction='linear';f.target.style.animationFillMode='both';f.target.style.animationPlayState='paused';
+   getComputedStyle(f.target)[property];a=f.target.getAnimations().find(x=>x.animationName===name);check(!!a,'actual CSS animation exists');
+  }
+  f.animations.push(a);a.pause();return a;
+ }
+ const at=(f,a,property,progress,expected)=>{a.currentTime=progress*1000;size(f,property,expected);};
+ for(const route of ['web','css'])for(const op of ['add','accumulate']){
+  test(route+' '+op+' composes fit-content height before numeric interpolation',f=>{
+   const a=effect(f,route,'height','fit-content','100px','200px',op);
+   for(const [p,n]of[[0,150],[.5,200],[1,250]])at(f,a,'height',p,n);
+  });
+  test(route+' '+op+' incompatible height endpoint keeps the discrete intrinsic bases',f=>{
+   const a=effect(f,route,'height','fit-content','min-content','200px',op);at(f,a,'height',.25,50);at(f,a,'height',.75,250);
+  });
+  test(route+' '+op+' adds a numeric underlying width to the automatic endpoint',f=>{
+   const a=effect(f,route,'width','100px','100px','auto',op);at(f,a,'width',.25,225);at(f,a,'width',.75,275);
+  });
+  test(route+' '+op+' distinct composed width bases interpolate discretely',f=>{
+   const a=effect(f,route,'width','100px','fit-content','auto',op);at(f,a,'width',.25,200);at(f,a,'width',.75,300);
+  });
+  test(route+' '+op+' replaces an incompatible keyword but retains the compatible addition',f=>{
+   const a=effect(f,route,'width','max-content','200px','auto',op);at(f,a,'width',.25,300);at(f,a,'width',.75,200);
+  });
+ }
+ for(const op of ['add','accumulate']){
+  test(op+' does not add two bare identical intrinsic keywords',f=>{
+   const a=effect(f,'web','width','auto','auto','auto',op);at(f,a,'width',.5,200);
+  });
+  test(op+' numeric-only policy retains keyword-to-number replacement',f=>{
+   const a=effect(f,'web','height','fit-content','100px','200px',op,'numeric-only');at(f,a,'height',.5,150);
+  });
+  test(op+' explicit compatible calc-size keeps the live automatic basis',f=>{
+   const a=effect(f,'web','width','calc-size(auto, size * .5)','calc-size(auto, size * .25 + 10px)','calc-size(auto, size * .5 + 20px)',op,'numeric-only');
+   at(f,a,'width',.5,190);f.parent.style.width='300px';size(f,'width',277.5);
+  });
+ }
+ test('an explicit any basis combines with a keyword under numeric-only',f=>{
+  const a=effect(f,'web','width','calc-size(any, 100px)','auto','auto','add','numeric-only');at(f,a,'width',.5,300);
+ });
+ test('nested explicit intrinsic bases flatten before additive combination',f=>{
+  const a=effect(f,'web','width','calc-size(calc-size(max-content, size * 2), size + 10px)','calc-size(max-content, size * .5)','calc-size(max-content, size)','add','numeric-only');
+  at(f,a,'width',.5,285);f.content.style.width='140px';size(f,'width',395);
+ });
+ test('percentage bases normalize before combination and keep the live container',f=>{
+  const a=effect(f,'web','width','calc-size(50%, size + 10px)','calc-size(25%, size + 10px)','calc-size(25%, size + 10px)','add','numeric-only');
+  at(f,a,'width',.5,170);f.parent.style.width='300px';size(f,'width',245);
+ });
+ test('signed calculation terms combine before the final nonnegative used-size limit',f=>{
+  const a=effect(f,'web','width','calc-size(auto, 300px - size)','calc-size(auto, size * 2 - 250px)','calc-size(auto, size * 2 - 250px)','add','numeric-only');
+  at(f,a,'width',.5,250);f.parent.style.width='400px';size(f,'width',450);
+ });
+ test('ordinary numeric additive interpolation remains unchanged',f=>{
+  const a=effect(f,'web','width','40px','20px','100px','add','numeric-only');at(f,a,'width',.25,80);at(f,a,'width',.75,120);
+ });
+ test('composed intrinsic height extrapolates without dropping its underlying size',f=>{
+  const a=effect(f,'web','height','fit-content','100px','200px');
+  for(const [p,n]of[[-.3,120],[1.5,300]]){const y=(p-.125)/.75;a.effect.updateTiming({easing:'cubic-bezier(.5,'+y+',.5,'+y+')'});at(f,a,'height',.5,n);}
+ });
+ test('the effect stack carries the prepared intrinsic value between additive effects',f=>{
+  const a=effect(f,'web','height','fit-content','100px','100px');a.currentTime=500;
+  const b=f.target.animate([{height:'50px',composite:'add'},{height:'50px',composite:'add'}],{duration:1000,fill:'both'});f.animations.push(b);b.pause();b.currentTime=500;size(f,'height',200);
+  f.content.style.height='80px';size(f,'height',230);
+ });
+ test('incompatible explicit calc-size bases replace then interpolate discretely',f=>{
+  const a=effect(f,'web','width','calc-size(max-content, size + 10px)','calc-size(min-content, size + 20px)','calc-size(max-content, size + 30px)','add','numeric-only');at(f,a,'width',.25,120);at(f,a,'width',.75,240);
+ });
+ for(const item of cases){
+  const parent=document.createElement('div'),target=document.createElement('div'),content=document.createElement('div');
+  parent.style.cssText='position:absolute;left:40px;top:30px;width:200px;height:400px';target.style.cssText='display:block;box-sizing:content-box;width:100px;height:150px;margin:0;padding:0;border:0;background:green';content.style.cssText='display:block;width:100px;height:50px;pointer-events:none';
+  target.appendChild(content);parent.appendChild(target);document.body.appendChild(parent);const f={parent,target,content,animations:[],extra:[]};
+  try{item.fn(f);rows.push({name:item.name,pass:true});}catch(error){rows.push({name:item.name,pass:false,error:String(error)});}
+  finally{for(const a of f.animations)a.cancel();for(const n of f.extra)n.remove();parent.remove();}
+ }
+ for(const row of rows)console.log('CALC_SIZE_COMPOSITION_ROW '+JSON.stringify(row));
+ const passed=rows.filter(row=>row.pass).length,ok=rows.length===34&&passed===34;document.documentElement.setAttribute('data-css-calc-size-composition',ok?'PASS':'FAIL');
+ console.log('RESULTS css-calc-size-composition:'+(ok?'PASS':'FAIL')+' '+JSON.stringify({passed,total:rows.length}));
+})();
+</script>

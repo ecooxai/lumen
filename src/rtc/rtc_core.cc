@@ -19,9 +19,14 @@
 #include <strings.h>
 #include <vector>
 
+#ifndef LUMEN_RTC_SHARED
 extern "C" void (*net_wakeup)(void);
+#endif
 
 namespace {
+#ifdef LUMEN_RTC_SHARED
+std::atomic<void (*)(void)> g_wakeup{nullptr};
+#endif
 
 struct Event {
     void *c;
@@ -159,7 +164,12 @@ void post(Event e) {
         if (!g_pcs.count(e.pc)) return;
         g_events.push_back(std::move(e));
     }
+#ifdef LUMEN_RTC_SHARED
+    auto wakeup = g_wakeup.load(std::memory_order_acquire);
+    if (wakeup) wakeup();
+#else
     if (net_wakeup) net_wakeup();
+#endif
 }
 
 const char *state_name(rtc::PeerConnection::State s) {
@@ -283,6 +293,12 @@ void finish_close(std::vector<std::shared_ptr<rtc::PeerConnection>> &pcs) {
 }  // namespace
 
 extern "C" {
+
+#ifdef LUMEN_RTC_SHARED
+void rtcc_set_wakeup(void (*wakeup)(void)) {
+    g_wakeup.store(wakeup, std::memory_order_release);
+}
+#endif
 
 int rtcc_new(void *c, const char *const *urls, const char *const *users, const char *const *creds, int n, bool relay_only, const char *cert_pem, const char *key_pem) {
     rtc::Configuration cfg;

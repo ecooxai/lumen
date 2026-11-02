@@ -56,6 +56,8 @@ typedef struct Stream {
     bool rd_have_seg; double rd_t0, rd_pos; bool reopen; double reopen_pos;
     bool opened, eof, has_video, has_audio;
     SDL_Thread *th;
+    NetRequest *request;                  /* main-thread owned; detached before Stream destruction */
+    bool fetch_failed;                   /* protected by m->mu, wakes an awaiting decoder */
 } Stream;
 
 struct MediaPlayer {
@@ -501,19 +503,22 @@ done:
 }
 static int dec_thread(void *arg) {
     Stream *s = arg; MediaPlayer *m = s->m;
-    if (s->progressive && !s->init && !strncmp(s->mime, "file:///", 8)) {   /* a local file, however large: no copy in memory */
+    if (s->progressive && !strncmp(s->mime, "file:///", 8)) {   /* a local file, however large: no copy in memory */
         const char *p = s->mime + 7;
         char *path = url_decode(p, strcspn(p, "?#"));
         int fd = open(path, O_RDONLY | O_CLOEXEC); struct stat st;
         free(path);
         if (fd < 0 || fstat(fd, &st) || !S_ISREG(st.st_mode)) { if (fd >= 0) close(fd); set_error(m, "file not found"); return 0; }
         SDL_LockMutex(m->mu); s->fd = fd; s->fsize = (int64_t)st.st_size; SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu);
-    } else if (s->progressive && !s->init) {
-        NetResponse *r = net_fetch_sync(net_request_new("GET", s->mime));
-        if (!r || r->status < 200 || r->status >= 300 || !r->body) { set_error(m, "network error"); if (r) net_response_free(r); return 0; }
-        Blob *b = xcalloc(1, sizeof *b); b->refs = 1; b->n = r->body_len; b->p = xmalloc(r->body_len); memcpy(b->p, r->body, r->body_len);
-        net_response_free(r);
-        SDL_LockMutex(m->mu); s->init = b; SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu);
+    } else if (s->progressive) {
+        /* Network completions are delivered by net_poll on the UI thread.
+           Waiting here remains cancelable even when a server never finishes
+           its response. Blob input uses the same condition without a fetch. */
+        SDL_LockMutex(m->mu);
+        while (!m->quit && !s->init && !s->fetch_failed) SDL_WaitCondition(m->cv, m->mu);
+        bool stop = m->quit || s->fetch_failed;
+        SDL_UnlockMutex(m->mu);
+        if (stop) return 0;
     }
     DecCtx d = { 0 }; double start = 0, skip = 0; int fails = 0;
     for (;;) {
@@ -711,6 +716,30 @@ MediaPlayer *mp_new(Node *el) {
     wake();
     return m;
 }
+/* This callback, mp_open_url and mp_free share the main-thread boundary.
+ * The network worker never dereferences Stream/MediaPlayer userdata. A result
+ * already queued before cancellation therefore sees NULL, not freed storage. */
+static void progressive_done(NetRequest *request, NetResponse *response, void *userdata) {
+    (void)request;
+    Stream *s = userdata;
+    if (!s) return;
+    MediaPlayer *m = s->m;
+    s->request = NULL;
+    SDL_LockMutex(m->mu);
+    if (!response || response->status < 200 || response->status >= 300 || !response->body) {
+        s->fetch_failed = true;
+        m->error = true;
+        snprintf(m->err, sizeof m->err, "network error");
+    } else {
+        Blob *b = xcalloc(1, sizeof *b);
+        b->refs = 1; b->n = response->body_len; b->p = (uint8_t *)response->body;
+        response->body = NULL; response->body_len = 0;
+        s->init = b;
+    }
+    SDL_BroadcastCondition(m->cv);
+    SDL_UnlockMutex(m->mu);
+    wake();
+}
 static Stream *new_stream(MediaPlayer *m, const char *mime, bool progressive) {
     if (m->nst == 4) return NULL;
     Stream *s = xcalloc(1, sizeof *s); s->m = m; s->mime = xstrdup(mime); s->progressive = progressive; s->fd = -1;
@@ -721,7 +750,15 @@ static Stream *new_stream(MediaPlayer *m, const char *mime, bool progressive) {
     return s;
 }
 void mp_open_url(MediaPlayer *m, const char *url) {
-    SDL_LockMutex(m->mu); new_stream(m, url, true); SDL_UnlockMutex(m->mu);
+    SDL_LockMutex(m->mu);
+    Stream *s = new_stream(m, url, true);
+    if (s && strncmp(url, "file:///", 8)) {
+        s->request = net_request_new("GET", url);
+        s->request->done = progressive_done;
+        s->request->ud = s;
+        net_fetch(s->request);
+    }
+    SDL_UnlockMutex(m->mu);
 }
 void mp_open_bytes(MediaPlayer *m, const uint8_t *p, size_t n) {
     Blob *b = xcalloc(1, sizeof *b); b->refs = 1; b->n = n; b->p = xmalloc(n ? n : 1); memcpy(b->p, p, n);
@@ -899,6 +936,12 @@ void mp_free(MediaPlayer *m) {
     SDL_LockMutex(g_mu);
     for (int i = 0; i < g_np; i++) if (g_pl[i] == m) { g_pl[i] = g_pl[--g_np]; break; }
     SDL_UnlockMutex(g_mu);
+    for (int i = 0; i < m->nst; i++) if (m->st[i]->request) {
+        NetRequest *request = m->st[i]->request;
+        request->ud = NULL;
+        net_cancel(request->id);
+        m->st[i]->request = NULL;
+    }
     if (m->audio_device) SDL_CloseAudioDevice(m->audio_device);
     if (m->dev) SDL_DestroyAudioStream(m->dev);
     SDL_LockMutex(m->mu); m->quit = true; SDL_BroadcastCondition(m->cv); SDL_UnlockMutex(m->mu);

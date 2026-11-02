@@ -1,0 +1,103 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Animation frame sampling follows the current timeline</title>
+<body>
+<div id="target" style="width:100px;height:10px"></div>
+<script>
+(() => {
+    'use strict';
+    const marker = 'css-animation-frame-sampling';
+    const names = [
+        'late first frame read matches current animation progress',
+        'same-frame callbacks share timestamp and sampled geometry',
+        'paused animation at 500ms keeps exact geometry across frames',
+        'finished animation retains its filled geometry across frames'
+    ];
+    const rows = [], times = [], target = document.getElementById('target');
+    let animation, completed = false;
+    const near = (a, b) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 0.05;
+    function row(name, pass, observations) {
+        if (completed || rows.some(x => x.name === name)) return;
+        const result = {name, pass: pass === true, observations};
+        rows.push(result);
+        console.log('ANIMATION_FRAME_SAMPLE_ROW ' + JSON.stringify(result));
+    }
+    function finish(error) {
+        if (completed) return;
+        for (const name of names) if (!rows.some(x => x.name === name))
+            row(name, false, {error: String(error || 'missing observation')});
+        completed = true;
+        clearTimeout(deadline);
+        if (animation) animation.cancel();
+        target.remove();
+        const passed = rows.filter(x => x.pass).length, status = passed === names.length ? 'PASS' : 'FAIL';
+        console.log('RESULTS ' + marker + ':' + status + ' ' + JSON.stringify({passed, total: names.length}));
+        document.documentElement.setAttribute('data-' + marker, status);
+    }
+    const safe = fn => time => { if (completed) return; try { fn(time); } catch (error) { finish(error && error.stack || error); } };
+    function sample(time) {
+        // Read the native computed width first. Timing inspection must not make
+        // a stale first style read appear current by sampling on its behalf.
+        const widthText = getComputedStyle(target).width;
+        return {time, widthText, width: parseFloat(widthText), rectWidth: target.getBoundingClientRect().width,
+            progress: animation.effect.getComputedTiming().progress,
+            currentTime: animation.currentTime, playState: animation.playState};
+    }
+    const coherent = s => Number.isFinite(s.progress) && s.progress >= 0 && s.progress <= 1 &&
+        near(s.width, 100 + 100 * s.progress) && near(s.rectWidth, s.width);
+    const deadline = setTimeout(() => finish('frame sequence did not complete'), 10000);
+    // Queue the author callback before creating the animation. Three callbacks
+    // then advance without style, geometry or animation reads after the anchor.
+    requestAnimationFrame(safe(t1 => {
+        times.push(t1);
+        animation.startTime = t1 - 200;
+        requestAnimationFrame(safe(t2 => {
+            times.push(t2);
+            requestAnimationFrame(safe(t3 => {
+                times.push(t3);
+                const first = sample(t3);
+                row(names[0], t3 > t1 && first.currentTime >= 200 && coherent(first), {times, first});
+                let sameFrameFirst;
+                requestAnimationFrame(safe(t4 => { sameFrameFirst = sample(t4); }));
+                requestAnimationFrame(safe(t4 => {
+                    const second = sample(t4);
+                    row(names[1], !!sameFrameFirst && sameFrameFirst.time === second.time &&
+                        coherent(sameFrameFirst) && coherent(second) &&
+                        near(sameFrameFirst.width, second.width) &&
+                        sameFrameFirst.currentTime === second.currentTime,
+                        {first: sameFrameFirst, second});
+                    animation.pause();
+                    animation.currentTime = 500;
+                    requestAnimationFrame(safe(() => {
+                        requestAnimationFrame(safe(t5 => {
+                            const pausedFirst = sample(t5);
+                            requestAnimationFrame(safe(t6 => {
+                                const pausedSecond = sample(t6);
+                                const paused = s => s.playState === 'paused' && s.currentTime === 500 &&
+                                    near(s.width, 150) && near(s.rectWidth, 150);
+                                row(names[2], paused(pausedFirst) && paused(pausedSecond),
+                                    {first: pausedFirst, second: pausedSecond});
+                                animation.finish();
+                                requestAnimationFrame(safe(t7 => {
+                                    const filledFirst = sample(t7);
+                                    requestAnimationFrame(safe(t8 => {
+                                        const filledSecond = sample(t8);
+                                        const filled = s => s.playState === 'finished' && s.currentTime === 1000 &&
+                                            near(s.width, 200) && near(s.rectWidth, 200);
+                                        row(names[3], filled(filledFirst) && filled(filledSecond),
+                                            {first: filledFirst, second: filledSecond});
+                                        finish();
+                                    }));
+                                }));
+                            }));
+                        }));
+                    }));
+                }));
+            }));
+        }));
+    }));
+    animation = target.animate([{width: '100px'}, {width: '200px'}],
+        {duration: 1000, easing: 'linear', fill: 'both'});
+})();
+</script>
+</body>

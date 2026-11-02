@@ -117,6 +117,7 @@ struct JsCtx {
     double bg_timers = 0;   /* a background tab's timers run at most once a second: the last run */
     v8::ArrayBuffer::Allocator *alloc = nullptr;
     v8::Global<v8::Context> ctx;
+    v8::Global<v8::UnboundScript> prelude_script; // Root-only compiled code; never a context/global object.
     v8::Global<v8::ObjectTemplate> node_tmpl;
     v8::Global<v8::Object> api;
     v8::Global<v8::Function> protoFor, fire, report, viewportChanged, pick_cb;

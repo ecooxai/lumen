@@ -2,6 +2,7 @@
 #define LUMEN_LAYOUT_H
 #include "../css/css.h"
 #include "../text/font.h"
+#include "affine.h"
 
 typedef struct ArenaChunk ArenaChunk;
 typedef struct Arena { ArenaChunk *head; size_t total; } Arena;
@@ -48,7 +49,34 @@ typedef struct Box {
     uint8_t anchor_ok;   /* bit i: inset i (top right bottom left) resolved from anchor() */
     float mk[8]; int8_t mmode; bool memo; int alo, ahi; unsigned astamp; int dcalls;   /* inputs of the last layout_box, reused when called again with the same ones */
     uint64_t ink_gen; float ink0, ink1; bool defer_in;   /* paint culling: vertical extent of the normal-flow paint, and whether it holds boxes painted later (stacking); valid while doc_box_generation() + 1 == ink_gen */
+    /* Private intrinsic block probes; arena-owned, one layout_run only. */
+    const ComputedStyle *content_height_style;
+    struct ContentHeightMemo *content_height_memo;
 } Box;
+
+/* The parentless synthetic document box is the viewport fallback. A fixed
+ * descendant of an actual element containing block keeps that element's
+ * transforms, scrolling and clips; only the fallback uses viewport state. */
+static inline bool box_fixed_to_viewport(const Box *b) {
+    return b && b->fixed && (!b->cb || !b->cb->parent);
+}
+
+/* Shared by viewport geometry, inverse hit testing, and the paint group.
+ * Coordinates remain in the box tree's document frame. Sticky translation and
+ * scrolling are separate operations outside this CSS transform. */
+static inline Affine2D box_transform_matrix(const Box *b) {
+    const ComputedStyle *s = b ? b->st : NULL;
+    /* Anonymous layout wrappers may share their owner's complete style.
+       Their element applies this transform once. Real pseudo boxes retain
+       an element node and remain transform owners despite anon=true. */
+    if (!s || !s->has_transform || !b->node || b->node->type != NODE_ELEMENT) return affine_identity();
+    double ox = (double)b->x + s->transform_origin[0].px + (double)s->transform_origin[0].pct * b->w / 100;
+    double oy = (double)b->y + s->transform_origin[1].px + (double)s->transform_origin[1].pct * b->h / 100;
+    Affine2D m = {s->transform[0], s->transform[1], s->transform[2], s->transform[3],
+        s->transform[4] + (double)s->translate_pending[0].pct * b->w / 100,
+        s->transform[5] + (double)s->translate_pending[1].pct * b->h / 100};
+    return affine_conjugate_translation(m, ox, oy);
+}
 
 typedef struct FRect { float x, y, w, h; uint8_t side; } FRect;
 typedef struct FloatCtx { FRect *v; int n, cap; } FloatCtx;
@@ -73,12 +101,23 @@ void layout_run(Layout *L, Document *d, float vw, float vh);
 uint64_t layout_generation(void); /* changes after any completed document layout */
 Box *layout_hit(Layout *layout, float x, float y, float scroll_x, float scroll_y);   /* document coordinates */
 void box_sticky_offset(const Box *b, float scroll_x, float scroll_y, float *dx, float *dy);
+/* Unscrolled native sticky constraint; NULL owner denotes the viewport. */
+bool box_sticky_constraint_rect(const Box *b, const Box **port,
+                                float *x, float *y, float *w, float *h);
 Font *style_font(const ComputedStyle *s);
 float style_line_height(const ComputedStyle *s, Font *f);
 bool layout_contents_hidden(const Box *box);
 /* Stored element offsets survive skipped contents and a temporarily absent
  * scroll container. Only the owner's effective offsets enter geometry. */
-static inline bool box_scroll_active(const Box *b) { return b && b->scroller && b->node && !layout_contents_hidden(b); }
+static inline bool box_scroll_active(const Box *b) {
+    if (!b || !b->scroller || !b->node || layout_contents_hidden(b)) return false;
+    /* scroller also marks clipping boxes. A visible/clip pair has no scroll
+       container, so retained offsets and setters must remain inactive.
+       Preserve the already-computed overflow pair and viewport propagation. */
+    const ComputedStyle *s = b->st;
+    return !s || (s->overflow_x != OV_VISIBLE && s->overflow_x != OV_CLIP) ||
+                 (s->overflow_y != OV_VISIBLE && s->overflow_y != OV_CLIP);
+}
 static inline float box_scroll_left(const Box *b) { return box_scroll_active(b) ? b->node->scroll_x : 0; }
 static inline float box_scroll_top(const Box *b) { return box_scroll_active(b) ? b->node->scroll_y : 0; }
 /* column-reverse scrollers start at the end: scrollTop 0 is the bottom, negative scrolls up */
@@ -117,6 +156,9 @@ void intrinsic(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic_with_basis(Layout *L, Box *b, float cbw, float *mn, float *mx);
 void intrinsic_outer(Layout *L, Box *b, float *mn, float *mx);
 void intrinsic_content_width(Layout *L, Box *b, float cbw, float *mn, float *mx);
+bool layout_width_constraint(Box *b, Length value, bool minimum, float cbw,
+        float bp, float available, bool definite, float intrinsic_min,
+        float intrinsic_max, float *out);
 /* These measurements and the available size are already border-box values. */
 static inline bool intrinsic_width_keyword(Length l) { return l.kind == LK_MIN_CONTENT || l.kind == LK_MAX_CONTENT || l.kind == LK_FIT_CONTENT; }
 static inline float intrinsic_width_size(Length l, float mn, float mx, float available) {

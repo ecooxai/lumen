@@ -1,0 +1,103 @@
+<!doctype html><meta charset="utf-8"><title>CSS animation origin and delayed phases</title>
+<style>
+@keyframes origin_left { from { left: 100px; } to { left: 400px; } }
+.origin-parent { position: relative; margin: 0; padding: 0; border: 0; }
+.origin-item { position: relative; width: 20px; height: 20px; animation: 1s linear infinite alternate origin_left; }
+</style><body><script>
+(async () => {
+    const rows = [], observations = [];
+    const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+    function require(condition, message) { if (!condition) throw new Error(message); }
+    function near(value, expected, message) { require(Number.isFinite(value) && Math.abs(value - expected) < .2, message + ': ' + value + ' != ' + expected); }
+    function atOrAfter(actual, boundary, origin) {
+        if (!Number.isFinite(actual) || !Number.isFinite(boundary) || !Number.isFinite(origin)) return false;
+        const ulpAllowance = 16 * Number.EPSILON * Math.max(1, Math.abs(actual), Math.abs(boundary), Math.abs(origin));
+        return actual >= boundary - ulpAllowance;
+    }
+    for (const paused of [false, true]) for (const delay of [100, 0, -400]) {
+        const name = (paused ? 'initially paused ' : 'running ') + delay + 'ms delay';
+        const parent = document.createElement('section'), item = document.createElement('div');
+        parent.className = 'origin-parent'; item.className = 'origin-item';
+        item.style.animationDelay = delay + 'ms';
+        if (paused) item.style.animationPlayState = 'paused';
+        let timeout, onStart, events = [];
+        const started = paused ? null : new Promise((resolve, reject) => {
+            onStart = event => { if (event.target === item) { events.push(event.elapsedTime); resolve(event); } };
+            addEventListener('animationstart', onStart);
+            timeout = setTimeout(() => reject(new Error('animationstart was not dispatched')), 4000);
+        });
+        parent.appendChild(item); document.body.appendChild(parent);
+        try {
+            if (paused) {
+                getComputedStyle(item).left;
+                await frame();
+            } else {
+                await started; clearTimeout(timeout);
+                await frame();
+            }
+            const left = getComputedStyle(item).left;
+            const animations = item.getAnimations(); require(animations.length === 1, 'one CSS animation');
+            const animation = animations[0], time = animation.currentTime, state = animation.playState;
+            observations.push({name, left, time, startTime:animation.startTime, state, events, timing:animation.effect.getComputedTiming()});
+            if (paused) {
+                require(state === 'paused', 'initial paused state');
+                require(time === 0 && animation.startTime === null, 'paused animation retains zero hold time');
+                const expected = delay > 0 ? 0 : delay === 0 ? 100 : 220;
+                near(parseFloat(left), expected, 'paused phase follows delay');
+                await frame(); require(animation.currentTime === 0, 'paused timeline stays fixed across frames');
+                near(parseFloat(getComputedStyle(item).left), expected, 'paused geometry does not advance');
+            } else {
+                require(state === 'running', 'running CSS animation state');
+                require(typeof time === 'number' && atOrAfter(time, Math.max(delay, 0), animation.startTime), 'native animationstart and rendered timeline share the same origin');
+                require(parseFloat(left) >= 100 && parseFloat(left) <= 400, 'first rendered frame after animationstart has an active value: ' + left);
+                require(events.length === 1, 'single start event');
+                near(events[0], Math.max(0, -delay) / 1000, 'start event elapsedTime retains seconds');
+                animation.pause();
+                if (delay < 0) {
+                    animation.currentTime = -150;
+                    near(parseFloat(getComputedStyle(item).left), 0, 'negative local time is before the zero-clamped active boundary');
+                }
+                const seekTime = Math.max(delay, 0) + 250, expected = 100 + 300 * (seekTime - delay) / 1000;
+                animation.currentTime = seekTime;
+                near(parseFloat(getComputedStyle(item).left), expected, 'active seeking is independent of the original style clock');
+                require(animation.playState === 'paused', 'explicit pause still takes effect');
+                const geometry = item.getBoundingClientRect().left - parent.getBoundingClientRect().left;
+                near(geometry, expected, 'paused effect reaches native geometry');
+            }
+            rows.push({name, pass:true});
+        } catch (error) { rows.push({name, pass:false, error:String(error)}); }
+        finally { clearTimeout(timeout); if (onStart) removeEventListener('animationstart', onStart); parent.remove(); }
+    }
+    {
+        const name = 'synchronous style flush 100ms delay';
+        const parent = document.createElement('section'), item = document.createElement('div');
+        parent.className = 'origin-parent'; item.className = 'origin-item'; item.style.animationDelay = '100ms';
+        let timeout, onStart;
+        const started = new Promise((resolve, reject) => {
+            onStart = event => { if (event.target === item) resolve(event); };
+            addEventListener('animationstart', onStart);
+            timeout = setTimeout(() => reject(new Error('animationstart was not dispatched')), 4000);
+        });
+        parent.appendChild(item); document.body.appendChild(parent);
+        try {
+            const initialLeft = getComputedStyle(item).left;
+            const before = item.getAnimations(); require(before.length === 1, 'style flush creates one CSS animation');
+            await started; clearTimeout(timeout); await frame();
+            const left = getComputedStyle(item).left, after = item.getAnimations();
+            require(after.length === 1 && after[0] === before[0], 'synchronous style resolution keeps animation identity');
+            const animation = after[0];
+            observations.push({name, initialLeft, left, time:animation.currentTime, startTime:animation.startTime, state:animation.playState, timing:animation.effect.getComputedTiming()});
+            require(atOrAfter(animation.currentTime, 100, animation.startTime), 'synchronously consumed style job retains its original timeline origin');
+            require(parseFloat(left) >= 100 && parseFloat(left) <= 400, 'synchronous style reads do not defer the active phase: ' + left);
+            near(item.getBoundingClientRect().left-parent.getBoundingClientRect().left, parseFloat(left), 'synchronous path applies real geometry');
+            rows.push({name, pass:true});
+        } catch(error) { rows.push({name, pass:false, error:String(error)}); }
+        finally { clearTimeout(timeout); removeEventListener('animationstart', onStart); parent.remove(); }
+    }
+    for (const observation of observations) console.log('CSS_ANIMATION_ORIGIN_OBSERVATION ' + JSON.stringify(observation));
+    for (const row of rows) console.log('CSS_ANIMATION_ORIGIN_ROW ' + JSON.stringify(row));
+    const passed = rows.filter(row => row.pass).length, ok = passed === 7 && rows.length === 7;
+    document.documentElement.setAttribute('data-css-animation-origin', ok ? 'PASS' : 'FAIL');
+    console.log('RESULTS css-animation-origin:' + (ok ? 'PASS' : 'FAIL') + ' ' + JSON.stringify({passed,total:rows.length}));
+})().catch(error => { document.documentElement.setAttribute('data-css-animation-origin','FAIL'); console.log('RESULTS css-animation-origin:FAIL ' + JSON.stringify({error:String(error)})); });
+</script>

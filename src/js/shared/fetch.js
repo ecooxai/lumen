@@ -13,6 +13,7 @@
      FETCH_RPOLICY()       the realm's referrer policy (its document's Referrer-Policy / <meta name=referrer>), or ''
      FETCH_BRAND(response) marks a Response for WebAssembly's streaming compile
      FORM_ENTRIES(form, submitter)  the entry list [[name, value], ...] of new FormData(form, submitter) */
+const bodyConsumePromise = Promise, bodyConsumeBytes = Uint8Array;
 const FETCH_TOKEN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 const FETCH_WS_TRIM = /^[\t\n\r ]+|[\t\n\r ]+$/g;
 const ferr = (where, msg) => new TypeError(`Failed to ${where}: ${msg}`);
@@ -413,14 +414,13 @@ function bodyTake(b) {
     const ts = new TransformStream(); s.pipeTo(ts.writable, { __proto__: null }).catch(() => {});
     return { stream: ts.readable, bytes: null, taken: false };
 }
-async function bodyReadAll(stream) {
-    const reader = stream.getReader(), parts = [];
-    for (;;) {
-        const { value, done } = await reader.read();
-        if (done) return fconcat(parts);
-        if (!(value instanceof Uint8Array)) throw new TypeError('The body stream must contain Uint8Array chunks.');
-        parts.push(value.slice());
+function bodyReadAll(stream, consume) {
+    if (stream === null) {
+        return new bodyConsumePromise(resolve => {
+            resolve(consume(new bodyConsumeBytes(0)));
+        });
     }
+    return streamReadAllBytes(stream, consume);
 }
 /* "extract a body": { body, type } */
 function extractBody(o, keepalive, where) {
@@ -446,7 +446,7 @@ function bodyConsume(o, kind) {
     const iface = reqState.has(o) ? 'Request' : 'Response', b = st.body;
     if (bodyUnusable(b)) return Promise.reject(ferr(`execute '${kind}' on '${iface}'`, 'body stream already read'));
     const list = hdrOf(st.headers).list;
-    return (b === null ? Promise.resolve(new Uint8Array(0)) : bodyReadAll(bodyStreamOf(b))).then(bytes => {
+    return bodyReadAll(b === null ? null : bodyStreamOf(b), bytes => {
         switch (kind) {
         case 'arrayBuffer': return bytes.buffer;
         case 'bytes': return bytes;
@@ -968,13 +968,19 @@ function fetch(input, init = undefined) {
         (async () => {
             if (rs.body) {
                 if (rs.body.bytes !== null) R.body = rs.body.bytes;
-                else { R.streamBody = true; R.body = await bodyReadAll(bodyStreamOf(rs.body)); }
+                else {
+                    R.streamBody = true;
+                    await bodyReadAll(bodyStreamOf(rs.body), bytes => { R.body = bytes; });
+                }
             }
             if (rs.keepalive && R.body && R.body.byteLength > 65536) throw fnet();
             const res = await fetchMain(R, ctl);
             if (rs.integrity) {
                 if (R.tainting === 'opaque') throw fnet();
-                const bytes = !res.body ? new Uint8Array(0) : res.body.bytes !== null ? res.body.bytes : await bodyReadAll(res.body.stream);
+                let bytes;
+                if (!res.body) bytes = new Uint8Array(0);
+                else if (res.body.bytes !== null) bytes = res.body.bytes;
+                else await bodyReadAll(res.body.stream, value => { bytes = value; });
                 if (!integrityOk(rs.integrity, bytes)) throw fnet();
                 if (res.body) res.body = { stream: null, bytes, taken: false };
             }

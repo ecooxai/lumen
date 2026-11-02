@@ -20,6 +20,8 @@ typedef struct MpState {
     int frame_w, frame_h;
 } MpState;
 
+/* Player creation, URL setup and destruction share the main thread with
+ * net_poll. Decoder work and explicitly marked push APIs may run off-thread. */
 MediaPlayer *mp_new(Node *element);
 void mp_free(MediaPlayer *m);
 void mp_open_url(MediaPlayer *m, const char *url);

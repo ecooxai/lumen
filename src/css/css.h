@@ -1,6 +1,7 @@
 #ifndef LUMEN_CSS_H
 #define LUMEN_CSS_H
 #include "../dom/dom.h"
+#include <float.h>
 #include <math.h>
 
 /* ---------------- values ---------------- */
@@ -46,6 +47,40 @@ static inline double len_stepped_value(double a, double b, uint8_t mm) {
 }
 static inline Length L_px(float v) { Length l = { v, 0, LK_LEN }; return l; }
 static inline Length L_auto(void) { Length l = { 0, 0, LK_AUTO }; return l; }
+/* Proposed additions to css.h. This is an integration fragment, not a second
+ * standalone Length type. LEN_CALC_SIZE uses the existing operation byte;
+ * kind/px/pct/pctu retain the basis classification and numeric basis. */
+enum { LEN_CALC_SIZE = 128 };
+enum { LEN_CALC_SIZE_ANY = 1, LEN_CALC_SIZE_PERCENT = 2 };
+static inline bool len_calc_size(Length value) { return value.mm == LEN_CALC_SIZE; }
+static inline Length len_calc_size_basis(Length value) {
+    if (len_calc_size(value)) {
+        value.mm = value.math_pct_mask = 0;
+        value.px2 = value.pct2 = value.px3 = value.pct3 = 0;
+    }
+    return value;
+}
+static inline bool len_calc_size_has_percent(Length value) {
+    return len_calc_size(value) &&
+        (value.pctu || value.pct != 0 || (value.math_pct_mask & LEN_CALC_SIZE_PERCENT));
+}
+static inline float len_calc_size_apply(Length value, double basis, float percent_reference) {
+    /* Calculation percentages are zero for an indefinite containing block.
+     * The basis itself is resolved by its original sizing algorithm. */
+    double result = value.pct2;
+    if (value.px2 != 0) result += (double)value.px2 * basis;
+    if (value.px3 != 0 || (value.math_pct_mask & LEN_CALC_SIZE_PERCENT))
+        result += (double)value.px3 * (percent_reference > 0 ? percent_reference : 0) / 100;
+    /* This is the completed used sizing value. Keep the numeric basis and
+     * all multiply/add intermediates in double; only the final transfer to
+     * the layout float range is saturated. Symbolic coefficients and other
+     * Length/math evaluation paths remain unchanged. */
+    if (isnan(result)) return 0;
+    if (result > FLT_MAX) return FLT_MAX;
+    if (result < -FLT_MAX) return -FLT_MAX;
+    return (float)result;
+}
+
 static inline double len_affine_operand(float px, float pct, bool pctu, float ref) {
     if (!pctu && !pct) return px;
     double p = (double)pct * ref / 100;
@@ -53,6 +88,12 @@ static inline double len_affine_operand(float px, float pct, bool pctu, float re
     return px == 0 ? p : px + p;
 }
 static inline float len_resolve(Length l, float ref) {
+    if (len_calc_size(l)) {
+        /* Intrinsic keyword bases require their actual layout measurement.
+         * Ordinary res() only reaches this path for numeric/any bases. */
+        double basis = len_affine_operand(l.px, l.pct, l.pctu, ref);
+        return len_calc_size_apply(l, basis, ref);
+    }
     if (len_math_stepped(l.mm)) {
         double a = len_affine_operand(l.px, l.pct, l.math_pct_mask & 1, ref);
         double b = len_affine_operand(l.px2, l.pct2, l.math_pct_mask & 2, ref);
@@ -91,7 +132,10 @@ static inline uint8_t len_math_flip(uint8_t mm) {
     return mm ? (uint8_t)((mm <= 2 ? 3 : 7) - mm) : 0;
 }
 static inline bool len_is_auto(Length l) { return l.kind == LK_AUTO; }
-static inline bool len_has_pct(Length l) { return l.kind == LK_LEN && (l.pct != 0 || (l.mm && l.pct2 != 0) || (l.mm >= 3 && l.pct3 != 0)); }
+static inline bool len_has_pct(Length l) {
+    if (len_calc_size(l)) return l.kind == LK_LEN && (l.pctu || l.pct != 0);
+    return l.kind == LK_LEN && (l.pct != 0 || (l.mm && l.pct2 != 0) || (l.mm >= 3 && l.pct3 != 0));
+}
 
 typedef uint32_t Color; /* 0xAARRGGBB */
 #define COLOR_A(c) (((c) >> 24) & 0xff)
@@ -130,13 +174,19 @@ enum { TO_CLIP, TO_ELLIPSIS };
 typedef struct { float pos; Color color; } GradStop;
 typedef struct Gradient { uint8_t type; /* 0 linear 1 radial */ float angle; int nstops; GradStop stops[8]; bool repeating; const char *ser; /* computed value text, in the same allocation (or NULL) */ } Gradient;
 
-typedef struct { float x, y, blur, spread; Color color; bool inset; } Shadow;
+typedef struct { float x, y, blur, spread; Color color; bool inset; const char *color_tokens; /* interned: inherit currentcolor without recomputing lengths */ } Shadow;
 
 typedef struct { uint64_t w[4]; } CustomMask; /* 256-bit bloom of custom property names */
 typedef struct CustomProps { int refs, depth; HMap map; struct CustomProps *parent; } CustomProps; /* own name -> char* value, then parent's */
 const char *custom_get(const CustomProps *c, const char *name);
 /* @property registrations: initial-value used when a custom property is unset */
 void css_register_property(const char *name, const char *initial);
+void css_register_property_full(const char *name, const char *initial, const char *syntax, bool inherits);
+/* Pure CSSOM token readers; caller owns strings and the syntax pointer array. */
+char *css_property_identifier(const char *source, size_t length);
+bool css_property_rule_data(const char *name_source, size_t name_length,
+                            const char *body_source, size_t body_length,
+                            char **name, char ***syntaxes, int *syntax_count, char **initial, bool *inherits);
 /* @position-try rules: a fallback's style is the box's style with the rule's (allowed) declarations applied */
 void css_register_position_try(const char *name, const char *body);
 struct ComputedStyle *css_position_try_style(const struct ComputedStyle *s, const char *name, Node *el);
@@ -168,6 +218,7 @@ typedef struct ComputedStyle {
     uint8_t flex_direction, flex_wrap, justify_content, align_items, align_self, align_content, justify_items, justify_self;
     uint8_t vertical_align, bg_repeat, bg_size_kind, object_fit, text_overflow, word_break, overflow_wrap, direction;
     uint8_t bg_origin, bg_clip, bg_color_clip;
+    uint8_t static_inline;         /* non-inherited inline outer display before positioned blockification; occupies existing alignment padding */
     uint32_t bg_layers;             /* includes none layers; color uses the last layer clip */
     uint8_t border_style[4];
     uint8_t outline_style, user_select, appearance, isolation, table_layout, border_collapse, container_type, resize, writing_mode, pos_try_order;   /* pos_try_order: 0 normal, 1 most-width, 2 most-height */
@@ -413,6 +464,7 @@ DeclList *css_parse_decls(const char *src, size_t n);
 void css_decls_free(DeclList *d);
 bool css_parse_selector_list(const char *src, SelList *out);
 bool css_parse_query_selector_list(const char *src, SelList *out);   /* querySelector's stricter grammar */
+bool css_supports_selector(const char *src);   /* one complex selector, recursively supported */
 void css_sellist_free(SelList *l);
 char *css_selector_text(const char *src); /* canonical CSSOM serialization; NULL if invalid */
 /* Syntax only: matching always observes live DOM/state. Caller frees scratch. */
@@ -427,10 +479,32 @@ typedef VEC(Node *) NodeVec;
 Node *css_query(Node *root, const char *sel, bool all, NodeVec *out);
 bool css_media_matches(const char *q, const MediaCtx *mc);
 bool css_media_valid(const char *q);
+bool css_media_feature_matches(const char *feature, const MediaCtx *mc, bool *known);
 bool css_supports(const char *cond);
+bool css_supports_declaration(const char *property, const char *value, bool quirks);
+bool css_supports_native_value(const char *property, const char *value, bool quirks);
 bool css_flex_valid(const char *prop, const char *value);
 bool css_containment_valid(const char *prop, const char *value);
 bool css_columns_valid(const char *prop, const char *value);
+bool css_min_size_valid(const char *prop, const char *value);
+char *css_min_size_parse(const char *value); /* caller owns normalized syntax text; NULL if invalid */
+/* Border/outline width and animation/transition time longhands only. */
+bool css_numeric_dimension_property(const char *prop);
+bool css_numeric_dimension_valid(const char *prop, const char *value);
+char *css_numeric_dimension_parse(const char *prop, const char *value); /* caller owns result; NULL if invalid */
+/* Pending var/env/attr/if/custom-function tokens use deferred math validation. */
+bool css_math_substitution_pending(const char *value);
+/* Physical border grammar shared by CSS source, CSSOM and supports. */
+bool css_border_valid(const char *property, const char *value);
+char *css_border_parse(const char *property, const char *value); /* caller owns result */
+/* Shared box-shadow list grammar; specified color tokens remain contextual. */
+bool css_box_shadow_valid(const char *property, const char *value);
+char *css_box_shadow_parse(const char *value); /* caller owns result; NULL if invalid */
+/* Shared standalone transition-property list grammar and identifier serialization. */
+bool css_transition_property_valid(const char *property, const char *value);
+bool css_interpolate_size_valid(const char *property, const char *value);
+char *css_transition_property_parse(const char *value); /* caller owns result; NULL if invalid */
+void css_serialize_ident(SB *output, const char *identifier);
 /* Grid1/2 automatic-repeat constraint; not a complete property grammar validator. */
 bool css_grid_repeat_valid(const char *property, const char *value);
 /* Caller owns *out. Used for implicit grid track-size patterns. */
@@ -479,5 +553,8 @@ bool css_var_arguments(CLexer *l, size_t *argument_end, size_t *fallback, size_t
 char *css_var_argument(const char *source, size_t length, bool fallback); /* caller owns result */
 bool css_var_syntax_valid(const char *value);
 bool css_value_has_var(const char *value);
+bool css_value_has_if(const char *value);
+bool css_if_syntax_valid(const char *value);
 bool css_math_spacing_valid(const char *value);
+char *css_math_value_text(const char *value); /* caller owns balanced component text; NULL if invalid */
 #endif

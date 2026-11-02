@@ -1,15 +1,15 @@
 {
-  "candidate": 234,
-  "tested_source_commit": "206bb89d161d91278c56899a3f664a99480374f8",
-  "tested_binary_sha256": "253f563c6529af4d8bab38b12373b51aec9941eb475fa16cae50093ff4e2b282",
-  "recorded_input_digest": "61bf484b7bcfaf091adf135747423b8ce163c2b48884d5076bd06a469826094f",
-  "recorded_input_count": 650,
-  "source_manifest_file_sha256": "58a936e5da8f063bf666dbe9c988696139a3f8e4a89b2dcae0fcbc8508909c5f",
-  "public_parent": "d72c9d8225a733dd959e1b81389bb3dd699ebc86",
-  "public_branch": "gpt-6-astra-pro-builtin-rubywebterm-linux-containment-lifecycle-source234-20261031",
+  "candidate": 1701,
+  "tested_source_commit": "bcdefe495f5c0f975204731ebd609cd4494cf2d0",
+  "tested_binary_sha256": "1c5435aed191ca42ae3fbf649d03233289c731d9f156ad0d6886ab6bc5b5f4d6",
+  "recorded_input_digest": "2c75e05834c127e4dc4f19b5b559e43fd6080118df146e427eb9cbb9779d9458",
+  "recorded_input_count": 734,
+  "source_manifest_file_sha256": "173a7179ba3807a64a1bceaf78814ac4a4228df372dbbafcb6ff6f699ac9896d",
+  "public_parent": "b3702f8a5f2a1b41f5baf346cbc17e3c516001da",
+  "public_branch": "gpt-6-astra-pro-builtin-agents-rubywebterm-linux-source1701-20261102",
   "recorded_inputs": {
     "CMakeLists.txt": {
-      "sha256": "78461e2340218bd3fc57ee764d7851d46fbde69a898aa1c6e3a863abb7a2c1ca",
+      "sha256": "39135ade2090484ca003089b98004a8e28ed3aad5bc244c0921df7cc8798190b",
       "mode": "100644"
     },
     "assets/data/README.md": {
@@ -109,7 +109,7 @@
       "mode": "100644"
     },
     "src/app/main.c": {
-      "sha256": "56b8a5f406d19fbf4293119e880143b6a861bee3a8257085c8b8a6252973fc8f",
+      "sha256": "2f636da92a608b0835fe198557ad3674b3d606c3f5be749f6d03a1d2c9bd388f",
       "mode": "100644"
     },
     "src/app/media_icon.c": {
@@ -201,27 +201,27 @@
       "mode": "100644"
     },
     "src/css/css.h": {
-      "sha256": "af92df71fed041bb9d7aada3aba0042c7eff45436677f69ca1a315731f7f5d21",
+      "sha256": "92d6cf7b0a2dd6d739e38dcdae495bdd3c1c19dbaf83b61d18fdec974f8c1777",
       "mode": "100644"
     },
     "src/css/numeric-count.h": {
-      "sha256": "b411c068b8e834147cabe61e573bb254a337baaf6fc98fa5462541751d3e67dc",
+      "sha256": "8db18c31e5be4015f089b599aea0902c5e324c032ac23445a1f9706ba16f1d93",
       "mode": "100644"
     },
     "src/css/parse.c": {
-      "sha256": "304607d8251953db18ad743831ec0541e4d39f87c4287f8adace6f7dfcca9511",
+      "sha256": "0d0fb00efd9468324271c23ebbd912925d0150d793a989805e5c472cc8108a0b",
       "mode": "100644"
     },
     "src/css/props_generated.inc": {
-      "sha256": "47e148caf02b9a0db9330a974617914cf434c6f0a3cb5c1614f9017cafca7913",
+      "sha256": "e6c31a96ff12e15d43f666e4458fa25faf3ba4d2777a8a5eae56fc438ec9cdf7",
       "mode": "100644"
     },
     "src/css/select.c": {
-      "sha256": "b3113f4c05fcfffea6a48d98e349ee3db013abbb709f50abac3bd3a9e2869e85",
+      "sha256": "3d95f5fef0635139a34474fba556d7901f1708ed557fbdb0c27bc1c2ae5d6038",
       "mode": "100644"
     },
     "src/css/style.c": {
-      "sha256": "c30e149874ed53524f40515590dcb7c2f575d8eafea979ddb48179b852d4a4ed",
+      "sha256": "385f5c4e953ab1c430b124842d851b47111fe856e6b50660a8174daf1f848496",
       "mode": "100644"
     },
     "src/css/ua.c": {
@@ -313,7 +313,7 @@
       "mode": "100644"
     },
     "src/js/js.cc": {
-      "sha256": "e23cb28e15cfa2c690aac1a7c6ded12bb4b7321e18fcd26cf487ee0eb95072ff",
+      "sha256": "e4de5c23067e0dafa1c7855a8a666e6a2c7eaa695f2d8d8f964d4425fc35dfb2",
       "mode": "100644"
     },
     "src/js/js.h": {
@@ -321,11 +321,11 @@
       "mode": "100644"
     },
     "src/js/js_int.h": {
-      "sha256": "e4be820f677e7991c055d77c90888067a9b8abd5fdaed1ffabf572f57df7a0e6",
+      "sha256": "792449fc18b19c4f9cc343a6eacfc06630134bb4b40a5a65994c3ddf08f518d1",
       "mode": "100644"
     },
     "src/js/jsglue.c": {
-      "sha256": "694381c82349e17097b53e22481283fe67454989ad807fa49a446545fac03d43",
+      "sha256": "5bfb7c3ebe95b4d6846f8989aa2a7f5ec698ebdfeffe8fcbc64e54039822a6e6",
       "mode": "100644"
     },
     "src/js/jsglue.h": {
@@ -333,7 +333,7 @@
       "mode": "100644"
     },
     "src/js/jsnative.cc": {
-      "sha256": "38ffe15e72f8f6bc43539fa90ceb2406714d5d9997538553dff9d3f289156a42",
+      "sha256": "1b2dca0a263b81b0a5c5f6c2c22da92051f420930f6a0a9aae2b4fcc2a3e09b9",
       "mode": "100644"
     },
     "src/js/lazy/editing.js": {
@@ -353,7 +353,7 @@
       "mode": "100644"
     },
     "src/js/prelude/03-element.js": {
-      "sha256": "a0ca5534a0c74671264a5e84c9c72ebcf3a1e535b93e5dd6f5de1d8f868c9c33",
+      "sha256": "550e7af476c58a06ae998d531c4dd46da604d6f3912a319cce1f8610c2d325fb",
       "mode": "100644"
     },
     "src/js/prelude/03c-svg.js": {
@@ -397,7 +397,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06b-activate.js": {
-      "sha256": "97052394d21ecf3a0cd6b26b6d094a48f2f58dbb778a22eec846a2b4fc764465",
+      "sha256": "1b6655ff43ad462dd7d3c1254079a927395e32175688640436a06e12bb0ea915",
       "mode": "100644"
     },
     "src/js/prelude/06c-traversal.js": {
@@ -405,7 +405,7 @@
       "mode": "100644"
     },
     "src/js/prelude/06d-anim.js": {
-      "sha256": "864c1dce902c57e3aa741a257272381199044d9f17c59ce44f8be04c898378de",
+      "sha256": "6c02453962b0e33c5f046dd737fe8d0924513a3b2504d625f0842a5d84755d77",
       "mode": "100644"
     },
     "src/js/prelude/07-web.js": {
@@ -469,11 +469,11 @@
       "mode": "100644"
     },
     "src/js/prelude/08-window.js": {
-      "sha256": "27d00e008660b3fd8f4029a99d0c05eb4b90a068a3d4f9b2e2f878534cb6b6ef",
+      "sha256": "ce3c69f8d49ceed0f60a893ce3eb00948d323b97f47fcf174c995024601253b3",
       "mode": "100644"
     },
     "src/js/rtc.cc": {
-      "sha256": "85ee9ad1be901a4d5cb7f1fe40564edbfd0280ef721533f6669366344f333585",
+      "sha256": "0d98ac0072ffe6e40802446997092078d2ea1af274f96fa2614e746d17c9f583",
       "mode": "100644"
     },
     "src/js/shared/abort.js": {
@@ -517,7 +517,7 @@
       "mode": "100644"
     },
     "src/js/shared/fetch.js": {
-      "sha256": "fb8be66ad5c67d92052302f05a3c8bdbdc954c3d8266c707d1d1b00f94459c71",
+      "sha256": "dfd66dce985953b568fe5136c6f3eedc4715874db0fe1130c470b52051d85055",
       "mode": "100644"
     },
     "src/js/shared/file.js": {
@@ -553,7 +553,7 @@
       "mode": "100644"
     },
     "src/js/shared/streams.js": {
-      "sha256": "4dba2b20bc53341bc17d4321e36f07ca9c6c04036589105c8b48f18a0ff85f0c",
+      "sha256": "97c587521b3d2ce4d2ebb1b668ee818eb4274669eee2396aeaeffba8f8cf10f2",
       "mode": "100644"
     },
     "src/js/shared/typedom.js": {
@@ -569,11 +569,11 @@
       "mode": "100644"
     },
     "src/js/shared/webgl.js": {
-      "sha256": "ef98cdce587d19f3419241ed9d942ee514a6ba7ebf2c6feecb9741f9ce287337",
+      "sha256": "ebe00271036e500631ed6593f7a492f0e7b771e108a40c60e7c7f2da73f28057",
       "mode": "100644"
     },
     "src/js/shared/xhr.js": {
-      "sha256": "8defe64a226a4b8b6207622e62a33997d6a63b7742bd11fe9a776a4b7f1eaf31",
+      "sha256": "bca086d00f52ab546526c7a78f83b397fecb8ea61a35c2beca45f29147c29464",
       "mode": "100644"
     },
     "src/js/urljs.cc": {
@@ -612,12 +612,16 @@
       "sha256": "456c716e1fc223fb9ea21e55ce1cbe66833ddc26218255ef0f03df7a6150189c",
       "mode": "100644"
     },
+    "src/layout/affine.h": {
+      "sha256": "3851127f21a2a14c6861b7b1ea151601d4bdd790fbe778d3d5653eed233596de",
+      "mode": "100644"
+    },
     "src/layout/block.c": {
-      "sha256": "4582657a2f79fe2fe3f2a82d02759d30508076d927e868923d6b87d41077bc97",
+      "sha256": "828157e197fb718d1cb732fd10f435aa7377558cf9915fc187ae74ec50769c4e",
       "mode": "100644"
     },
     "src/layout/box.c": {
-      "sha256": "3d241c78b4943e5bede8b9b55bbffe69e1d380c0d09f69f238dfecccd08206df",
+      "sha256": "da1ae54793328f877d39606a1a8870e309074052e4564601abe08548d1cb9bc4",
       "mode": "100644"
     },
     "src/layout/flex.c": {
@@ -629,11 +633,11 @@
       "mode": "100644"
     },
     "src/layout/inline.c": {
-      "sha256": "3e9910807d89d8c35fc6ac6be26bb6aface31eafb8a686213a406ddd6c90c61b",
+      "sha256": "8d60ccd89fff01db6fde769b4a7bb96036b0b9e17fded3af06e29fa81675a417",
       "mode": "100644"
     },
     "src/layout/layout.h": {
-      "sha256": "8f9ffc06763cb9e91999583ea667c3967cc3e9cddd8de04f30fe6a2f7c83b769",
+      "sha256": "d8d42f491ba8cfbad59c523f2461ee8077e295eba0f70199ef05f6ac540f40ef",
       "mode": "100644"
     },
     "src/media/camera.c": {
@@ -645,11 +649,11 @@
       "mode": "100644"
     },
     "src/media/media.c": {
-      "sha256": "6fb581230420a5d4cbc6d12fdb6aad6b83d40d59dc3dfeb54ff43de5e41bd8af",
+      "sha256": "4ab9fa7516dc34f7f4abcc7cf0bd6e6ead5b917ed25a0ff2e7b215e516b36126",
       "mode": "100644"
     },
     "src/media/media.h": {
-      "sha256": "bf2aab7e7f2b72e337c4ee7b5d4524e6db921638479cbdbb1fa6e7616c73f6a5",
+      "sha256": "fc42f2e488d20ce79ea3abe326135ca0a67897021e511e388d0d2700c52abf43",
       "mode": "100644"
     },
     "src/media/screen.c": {
@@ -708,6 +712,14 @@
       "sha256": "d30cf862ed990dada7b65eb7b34e0acc1cba1ca875f4f9782b0eddc31251fe1c",
       "mode": "100644"
     },
+    "src/paint/affine-ink.h": {
+      "sha256": "e334cdeffc3b9232beaff07ad0a9568ed796cda03ab6a33be1cfd08dd341ad67",
+      "mode": "100644"
+    },
+    "src/paint/affine-raster.h": {
+      "sha256": "faa59a4f5d964c679467c84b70adbcb64f0446538806a9af22af268bd3d9dc38",
+      "mode": "100644"
+    },
     "src/paint/canvas2d.c": {
       "sha256": "66ef6f76ba7e058945b4074cad3aac7cbc2b78615ff7f85bf971290bb0f83f40",
       "mode": "100644"
@@ -717,7 +729,7 @@
       "mode": "100644"
     },
     "src/paint/display.c": {
-      "sha256": "35d01357f1dfb6a215372928158653630eb5f766c03226a0eaa78951b4965593",
+      "sha256": "b9a9a5f797766ea061ec31db6f2e7b769d29d5c346fe303e7b94868a7cb3e1f9",
       "mode": "100644"
     },
     "src/paint/image.c": {
@@ -725,11 +737,11 @@
       "mode": "100644"
     },
     "src/paint/paint.h": {
-      "sha256": "6ab24e0b6c8043632fd092bfcc68326a1d33fabd086609abd538ff4755fe4d7b",
+      "sha256": "fe71ee41258ec9ae6f4edeeaf0ec0f0a2c7dd181c70cea24be6fcb18a3728d32",
       "mode": "100644"
     },
     "src/paint/raster.c": {
-      "sha256": "d8118fd89bf5f30ac6a5a75d5595c9125e080cf33d563e6511470f3058688ac0",
+      "sha256": "61fd1a569e5985f403f230a1c0be68860a5ca8b3fb904df9cba8592f3c2402f2",
       "mode": "100644"
     },
     "src/paint/regions.h": {
@@ -745,11 +757,11 @@
       "mode": "100644"
     },
     "src/rtc/rtc_core.cc": {
-      "sha256": "be39857a0103489963bf24594a5685c7d87caffd8b4f88e02e331ef3aaf6e370",
+      "sha256": "1499377238939922ccafbc37f931b94b44208c57acde0b3682a47417a030d309",
       "mode": "100644"
     },
     "src/rtc/rtc_core.h": {
-      "sha256": "d0ef16d20a5b23a139821644b12151f35f55f50f3d689afdfe0e4062e411f215",
+      "sha256": "c0a2c1b71242a751b0c877cc3dc46cc54a60ec8a3f228af86184a6e025cf341a",
       "mode": "100644"
     },
     "src/text/android_font_raster.c": {
@@ -774,6 +786,10 @@
     },
     "src/text/font.h": {
       "sha256": "d0bd3b1e061df7c648758798a4d556a7722776cf3e6cb6d176c17832fec65b66",
+      "mode": "100644"
+    },
+    "tests/affine_ink_font.h": {
+      "sha256": "9e0636fae61f1602e96b9c85bc76c05aa467edbc6351121246d6947b6682224c",
       "mode": "100644"
     },
     "tests/android/BrowserInsetsTest.java": {
@@ -1288,6 +1304,10 @@
       "sha256": "bc9ae7e5dc19b56609a95a4da2a93becc7b2968782762d09d14f663b0cf530b3",
       "mode": "100644"
     },
+    "tests/data/webgl-interface-shape.json": {
+      "sha256": "e39730b13158126beb205d07278d55c889e84608d023aa32fed72cfafb537e39",
+      "mode": "100644"
+    },
     "tests/device/cam.html": {
       "sha256": "13044946ddf21ed34f287bc7be09df34d35d8dc6c28e072f93f3b71d484187f4",
       "mode": "100644"
@@ -1424,8 +1444,144 @@
       "sha256": "05b040bf1875eb0c83ce3d105d9d6e52b4e408519fcfde75e7aa6457efd80d2c",
       "mode": "100644"
     },
+    "tests/js/css-affine-rendering.html": {
+      "sha256": "172fb1dfad3b7fa1332f5446e04809f1f803d906278066af8a1bc78586ea8d2c",
+      "mode": "100644"
+    },
+    "tests/js/css-animation-frame-sampling.html": {
+      "sha256": "84e7f49fdf3315b62aa580c389364a264833a1326dfee7d84b7c1175b0c1167c",
+      "mode": "100644"
+    },
+    "tests/js/css-animation-initial-clock.html": {
+      "sha256": "3b49c8eab89ffc261fe1699adf374938c2f4940339abf18e45277a86207eb51e",
+      "mode": "100644"
+    },
+    "tests/js/css-animation-origin.html": {
+      "sha256": "bf9357b256f8ceaca5af5e1510385a5408f46892865565bda66e7f866d2db27e",
+      "mode": "100644"
+    },
+    "tests/js/css-animation-pending-control.html": {
+      "sha256": "ccdd9db5a6b180eabd528c3a623b2eb13ffcd18201c09d375557d5ef50bb3e60",
+      "mode": "100644"
+    },
+    "tests/js/css-animation-read-sync.html": {
+      "sha256": "ef8596d8f477ffad2d2ded871a73e7262d4a2d1c1d991c0a86b5a80318793bff",
+      "mode": "100644"
+    },
+    "tests/js/css-border-declarations.html": {
+      "sha256": "611b966be9065937fb3bcd57e374cabecbb4e4bdb4d5b36f6eb67d7c236a5f1f",
+      "mode": "100644"
+    },
+    "tests/js/css-box-shadow-grammar.html": {
+      "sha256": "7743ddea2fb4abdfc1e35e9a22ac0e14e62be525d76820cab811fba0abd44d81",
+      "mode": "100644"
+    },
+    "tests/js/css-calc-size-composition.html": {
+      "sha256": "a478ecfe46ebb386be69038d4394e03d6ea800c9ac9eff6648c4b9024f8fc6c0",
+      "mode": "100644"
+    },
+    "tests/js/css-calc-size-constraints.html": {
+      "sha256": "f91d8717cf193091c40b27dbc238a009ab1704d06b27ed8396a07b6d6fad0668",
+      "mode": "100644"
+    },
     "tests/js/css-escape.html": {
       "sha256": "d98fbc3088eef697476c6a25d776e4b8c00a2cda4a5c364652e2d2d6c9186ff7",
+      "mode": "100644"
+    },
+    "tests/js/css-if-argument-syntax.html": {
+      "sha256": "64d0a86242ced47be3d23729525a94a318ac6b54c5468bd16f6ae7ce44e06bd2",
+      "mode": "100644"
+    },
+    "tests/js/css-if-font-shorthand.html": {
+      "sha256": "1253dd73ba307eab83eb12472bce654176d7f54ebefbffb5f8414d80ea27f044",
+      "mode": "100644"
+    },
+    "tests/js/css-if-queries.html": {
+      "sha256": "ca51658f37ca871cae5785a15c6da9ad6e5c7729ba91afb408c8831949f7533c",
+      "mode": "100644"
+    },
+    "tests/js/css-if-unregistered-core.html": {
+      "sha256": "357ab7b9b07750850a465839c0d2c92037862134ede9d518602337a4dfdc76c2",
+      "mode": "100644"
+    },
+    "tests/js/css-interpolate-size-keywords-v2.html": {
+      "sha256": "f2eb3a2083e9b427ab0cdf7162f698e9013be21112bd0edb717a1af67187c3d1",
+      "mode": "100644"
+    },
+    "tests/js/css-math-serialization-core.html": {
+      "sha256": "076527a48ccc444a8677148315b337cdcf1cdbcadd1894142bfddafa4ccba2ef",
+      "mode": "100644"
+    },
+    "tests/js/css-min-size-compatibility.html": {
+      "sha256": "5bb97aea58075ebf8db4daf93c1e9b7b84c82e32fd8e3218de98dfc59196a0f5",
+      "mode": "100644"
+    },
+    "tests/js/css-min-size-deferred.html": {
+      "sha256": "bb23efd15957a6102c7f5c1920f2245975ffadd2290d4f7d8df180a74879693d",
+      "mode": "100644"
+    },
+    "tests/js/css-min-size-tokens.html": {
+      "sha256": "ecf43fc16c3b5a9fa3fc554b5f689ecfabbb2427a9eb5a62147f935281dfc958",
+      "mode": "100644"
+    },
+    "tests/js/css-min-size-validation.html": {
+      "sha256": "9ecc70c09630350423859c9a26f4d35d0ad81b62ca52ca581e584ebff14b2d98",
+      "mode": "100644"
+    },
+    "tests/js/css-movebefore-animation-observations.html": {
+      "sha256": "d86c4d45a06fbd6ffc668180260e77bd77e833dc161ae408af80ff9fc33e5d15",
+      "mode": "100644"
+    },
+    "tests/js/css-numeric-dimensions.html": {
+      "sha256": "0b38d868cda8aaa6ac8fc3b00be4b2c1454e5056b78052e3d27decd1d4c4eae0",
+      "mode": "100644"
+    },
+    "tests/js/css-numeric-mutation.html": {
+      "sha256": "a998201e830005c1488254bd192a187c654b188b29d7209a1872907fda6cd7e1",
+      "mode": "100644"
+    },
+    "tests/js/css-overflow-shorthand.html": {
+      "sha256": "edfae8c478f925a0e02f0e26fb0602b7742d3f69db0b908dc98992e5e62127e1",
+      "mode": "100644"
+    },
+    "tests/js/css-page-selectors.html": {
+      "sha256": "dda24a5539e481b03f64259f3f32cd48013c61a51db6a2d4bcc9df69380a3317",
+      "mode": "100644"
+    },
+    "tests/js/css-property-inherits-descriptor.html": {
+      "sha256": "51989bd705148d6bdfd95f33442d2ae2a8e6fdce2cdf162a1e48d2e33fc6dd6a",
+      "mode": "100644"
+    },
+    "tests/js/css-property-rule-cssom.html": {
+      "sha256": "d3fc671767bb21d3b45f76bfaf867dcf164b937047e5a93529393c2f3d44336f",
+      "mode": "100644"
+    },
+    "tests/js/css-property-universal-initial.html": {
+      "sha256": "e8b0deff345ca9ad98cc4c6333d58feef5a1a96bee46a9dc715419314b13e409",
+      "mode": "100644"
+    },
+    "tests/js/css-scalar-core-values.html": {
+      "sha256": "2cbc8c4b66aa0fe31785eca75b78b03ee2a9a8f07ad7841319b9bf66e7b4d764",
+      "mode": "100644"
+    },
+    "tests/js/css-transform-angle-boundary.html": {
+      "sha256": "7ebc3481d63fb558c3dd6ce068014eee69d907272bfaadb5f917cf874a3a6c02",
+      "mode": "100644"
+    },
+    "tests/js/css-transition-property-timing.html": {
+      "sha256": "2badd05b34e1dbdb03a578a8b8cf0b2d4f7fd36b3a69c3f6b335456b1c54b41b",
+      "mode": "100644"
+    },
+    "tests/js/css-transition-property.html": {
+      "sha256": "1d07e85ed9b9d7387b7130b22d2109da5f844311132216080f1f081ec78fc143",
+      "mode": "100644"
+    },
+    "tests/js/css-transition-queue-ownership.html": {
+      "sha256": "ea9f8d15d587d39300b91e278a75ceeb860728327c9f8ad8374c5cc818ef6a02",
+      "mode": "100644"
+    },
+    "tests/js/css-unicode-range-descriptor.html": {
+      "sha256": "c0a44ef547f312f6ba33035b4867c3ea11c7e261cc022acf8b74eb974e373c37",
       "mode": "100644"
     },
     "tests/js/custom-late-var.html": {
@@ -1636,6 +1792,10 @@
       "sha256": "77c1df843226fb43a267739933c61bdae647bf7dfcf90293f4ea7ee1a36a212b",
       "mode": "100644"
     },
+    "tests/js/rendered-text-mutation.html": {
+      "sha256": "fb6c8c531fe3ef7291f0dd708d123d6d8b5c4941dcbe297da1018a2847e37dde",
+      "mode": "100644"
+    },
     "tests/js/request-state.html": {
       "sha256": "5d26167dff273d5a9cd75ee33a661b47780460f7c531b5fbfc7441edee46982c",
       "mode": "100644"
@@ -1736,6 +1896,10 @@
       "sha256": "e1e0ea67b188bd128c0f9a132dfaf2a9ecf85338f4c84fdc203c627fc8e26838",
       "mode": "100644"
     },
+    "tests/js/webgl-interface-shape.html": {
+      "sha256": "2d32e26add917aec24a2d3bbea05ea314bf8d2081bfb32c19a342bcdefdaaba2",
+      "mode": "100644"
+    },
     "tests/js/webrtc-native.html": {
       "sha256": "7298c492d97db6fe2e589a144ac468867067f44c45004cdc2258bb76e55c6e7f",
       "mode": "100644"
@@ -1792,12 +1956,16 @@
       "sha256": "3d844e8aba49a9bb1d4095c845d2a582aa46c507664a975e353e24e1e4d2b01c",
       "mode": "100644"
     },
+    "tests/js/xhr-streamed-body.html": {
+      "sha256": "357a630a0ec2136fa082c5d002958d88d5b25b1290fa96956b919255914c1a31",
+      "mode": "100644"
+    },
     "tests/js/xpath.html": {
       "sha256": "5862dbef99a1385d695529828064e641da098d2a69a96c931fe091137675dc13",
       "mode": "100644"
     },
     "tests/jsrun.c": {
-      "sha256": "9c4c1368c65a0fa33342c10466a76cfbd9ad03aad274574077ecd686aee4ac81",
+      "sha256": "7514824bb0d80b5ae136c883a0d47d8df3ff71c6e72a88225875571329306ec9",
       "mode": "100644"
     },
     "tests/layout.c": {
@@ -1901,11 +2069,15 @@
       "mode": "100644"
     },
     "tests/media_audio_lock.c": {
-      "sha256": "06d47bf061eff30a769835c489b7aedf875e21a8ee1b9b62893eadfd3558c961",
+      "sha256": "511b6dc44b2d37ea6314752a67a8af33dfb5e1729dd7fdfa6a03beb932986d4d",
       "mode": "100644"
     },
     "tests/media_frame_state.c": {
-      "sha256": "922cd9f02ce0a810716cd0499ebe85a92f1abf70ee6804e28901f748be6c7d74",
+      "sha256": "2e214a45562f1c2ded66092688de1320201ad36f08d458c50e43611def077630",
+      "mode": "100644"
+    },
+    "tests/media_idle_pumps.h": {
+      "sha256": "389c96d28c9423d82106650344d90e87cff11423e0b76f0de5aa2cb2913c0164",
       "mode": "100644"
     },
     "tests/media_yuv.c": {
@@ -2144,6 +2316,10 @@
       "sha256": "56dd91950505d2b3be6cc21810ae7de54d8a47e0f301d773280fef0dbc00eac5",
       "mode": "100644"
     },
+    "tests/test_atomic_nowrap.c": {
+      "sha256": "01d771199df0ad62af4b7ebadc93ec4a08fddaf9d3a252eefac55aa538dec54d",
+      "mode": "100644"
+    },
     "tests/test_auth_user_agent.c": {
       "sha256": "250a0c481d5a7fdce16771f4b2cba734413ccdecab9344bf8610fea617a4a3bb",
       "mode": "100644"
@@ -2184,12 +2360,80 @@
       "sha256": "d2aec5ac40dcaeb98860a6e4e6c6616d19d53a1e3f074b40566d1b71640ef597",
       "mode": "100644"
     },
+    "tests/test_context_isolation.c": {
+      "sha256": "07e79cd7850558aa9e5a73d2e0c7fe5f208cb65f64ef97e187d2b57987086939",
+      "mode": "100644"
+    },
     "tests/test_cookie_site.c": {
       "sha256": "7a404b2d684127d658c9dbb047eab9b0f999bca9c4629437ebdb4e11972f3ebe",
       "mode": "100644"
     },
+    "tests/test_css_affine_rendering.c": {
+      "sha256": "c4928eb7b6147763ccca00bf026240a5fd1082a06e598cca549feafd29d7c3dc",
+      "mode": "100644"
+    },
+    "tests/test_css_border_declarations.c": {
+      "sha256": "4056a066ecf0ebf22f88e716eaa55ba4d43e195b383232797724453cfc5613de",
+      "mode": "100644"
+    },
+    "tests/test_css_box_shadow.c": {
+      "sha256": "800c7941596283a48acd84938c26f70f94108cf98be3811843a24d91ffdd4499",
+      "mode": "100644"
+    },
+    "tests/test_css_calc_size_absolute.c": {
+      "sha256": "dc4cf4284187db373c3c0b3f8bd0141d7a900c235ffd9a97dba27fd8dd216782",
+      "mode": "100644"
+    },
+    "tests/test_css_calc_size_constraints.c": {
+      "sha256": "db4220166201be31bbd1843c617b1e6134c2f63cf69265a1c5edbb0f93a0b74e",
+      "mode": "100644"
+    },
+    "tests/test_css_calc_size_preferred.c": {
+      "sha256": "6299bbe238f8ba7a0eb8d4055dd6b83a3f2367a4159b1c152c3549f87265e8d7",
+      "mode": "100644"
+    },
     "tests/test_css_containment.c": {
       "sha256": "41085aa429d6221503b43af8f2f2cd61c074618e9216e113a56567183c0c72d1",
+      "mode": "100644"
+    },
+    "tests/test_css_fixed_affine_containing_block.c": {
+      "sha256": "ae84d85e215b4d2d4f73d8003125cd0f527dd7e380068301d3499725060fe8f5",
+      "mode": "100644"
+    },
+    "tests/test_css_if_queries.c": {
+      "sha256": "1db83ed9e39c05ab7796f54de9e402a43975660ec32f44d03ad28eed72f47ef5",
+      "mode": "100644"
+    },
+    "tests/test_css_if_typed_dependencies.c": {
+      "sha256": "347c4f48a370ff33d10ec544e317a5bdee2e3eea1334fa26ce0d4ef5e2d49091",
+      "mode": "100644"
+    },
+    "tests/test_css_if_unregistered.c": {
+      "sha256": "43f0eefe22078b3247c0a6a4a298169982676a7a870f6858d32448b2bf5ff0da",
+      "mode": "100644"
+    },
+    "tests/test_css_inset_animation.c": {
+      "sha256": "fca7bd53f2790dd3b26c29f8ccdee38fc6444c22f625ee53ca730eb733f5105c",
+      "mode": "100644"
+    },
+    "tests/test_css_interpolate_size.c": {
+      "sha256": "9fd63b1a503200e34d7ce7dd69b50f3674277c29e044254b1ade5a5a8934fac0",
+      "mode": "100644"
+    },
+    "tests/test_css_interpolate_size_cascade.c": {
+      "sha256": "f21c4b9b58be46edde0cbe759c85e240be5978e84eade708cf4ce09867dd7e3e",
+      "mode": "100644"
+    },
+    "tests/test_css_min_size.c": {
+      "sha256": "d30ae9172efbb7054092996e51922dd0b8160590ff175774e19b0bdf9113de86",
+      "mode": "100644"
+    },
+    "tests/test_css_numeric_dimensions.c": {
+      "sha256": "d3074f48e9443cded831eb0295e3515cb7212db1c916b3f138c0de2973e5253c",
+      "mode": "100644"
+    },
+    "tests/test_css_scale_primitives.c": {
+      "sha256": "cf9f0cd8e72e4e4a895a474d670f0107c8e3a245ca01bc6293573f45fbc1fa19",
       "mode": "100644"
     },
     "tests/test_css_stepped_math.c": {
@@ -2198,6 +2442,42 @@
     },
     "tests/test_css_stretch.c": {
       "sha256": "b0af0f7ad1ca488ebc292ede2ba1cb8f889fd525185556edacae73b77af9106c",
+      "mode": "100644"
+    },
+    "tests/test_css_supports_math_spacing.c": {
+      "sha256": "d1d96df5d2d97b261d3a5d9e6f912b61375c0f79fc15cc20b02eed1b05bf7542",
+      "mode": "100644"
+    },
+    "tests/test_css_text_indent_computed.c": {
+      "sha256": "9a82ba5b549fad8d9508c946994e9fc19a15eb20d6502ced33e1a6bd5e62193d",
+      "mode": "100644"
+    },
+    "tests/test_css_text_paint_owner.c": {
+      "sha256": "be1ca2d40f1c35972a5daa9d989ae29b07548ca4442bc65ebd124929d4b4affa",
+      "mode": "100644"
+    },
+    "tests/test_css_text_spacing_computed.c": {
+      "sha256": "af386515d08b9a8b1c04d5b793f099e479848abb031cfddbe9317d85fe4df247",
+      "mode": "100644"
+    },
+    "tests/test_css_transform_angle_boundary.c": {
+      "sha256": "a63343c123f8afc7082acb3d0fa75c749bfacb71a6d426141b27ff3c731f2ee2",
+      "mode": "100644"
+    },
+    "tests/test_css_transition_property.c": {
+      "sha256": "cd9f1c6450a432d261aed636f25f83f8767c38a6ef87baade980969c4fcc64b6",
+      "mode": "100644"
+    },
+    "tests/test_css_transition_scan_once.c": {
+      "sha256": "65870ca87c0a04ed594778955d57e18914149c6c5e75b70f65cef7bce8194238",
+      "mode": "100644"
+    },
+    "tests/test_css_transition_size_snapshot.c": {
+      "sha256": "0a2320bf4f8a16f80a2f7f63b2c7179c46deb241bdc9349971886934f7862a95",
+      "mode": "100644"
+    },
+    "tests/test_css_viewport_units.c": {
+      "sha256": "a4c48a7db3aa62505fc4aa8a9e5074b475dc0bb24576c0be17213e205e356cf2",
       "mode": "100644"
     },
     "tests/test_data_url.c": {
@@ -2217,7 +2497,7 @@
       "mode": "100644"
     },
     "tests/test_dom_style_tracking.c": {
-      "sha256": "c2011072d8457ab3b5d92c0ad221236f9ae323790cef80c19f7c53653e93b3de",
+      "sha256": "3757da102aeb185775fa4bda4b46544555477d6e1ebea1d7adce51a0362deb09",
       "mode": "100644"
     },
     "tests/test_download.c": {
@@ -2226,6 +2506,14 @@
     },
     "tests/test_embed.py": {
       "sha256": "5e39bfca192e94db0f03dec173512843714be80dd65c0bf3ca4bd79aea994cd2",
+      "mode": "100644"
+    },
+    "tests/test_empty_block_margin.c": {
+      "sha256": "42794aed05ba1827c683c6b8e1e809fe4713d06b5a50ca923008fd3223142d7d",
+      "mode": "100644"
+    },
+    "tests/test_empty_container_margin.c": {
+      "sha256": "cfa600d1ee14586f93c7b7dbc18918283654756491ad1fda79475c4e14c0cee6",
       "mode": "100644"
     },
     "tests/test_encoding_labels.c": {
@@ -2246,6 +2534,10 @@
     },
     "tests/test_file.c": {
       "sha256": "cb6a850c66fbc561df58a9ee14764e5071a92329c15916a954f70aa08d2394c7",
+      "mode": "100644"
+    },
+    "tests/test_fixed_containing_block.c": {
+      "sha256": "2101b8a1945362d18332dd42a5c64526f2dd6ecd40e54766e785f79e0a6d2efb",
       "mode": "100644"
     },
     "tests/test_flex_alignment.c": {
@@ -2309,7 +2601,11 @@
       "mode": "100644"
     },
     "tests/test_has_filter.c": {
-      "sha256": "eaf0d12d1a96af64289b85d17d7809fe9a0e9ff90031ec6bfb19fe0502aabcce",
+      "sha256": "fc30b8b81738e2622495a8bd7c65da6942cb59bd87be0153f3e58a23288e1027",
+      "mode": "100644"
+    },
+    "tests/test_has_relative.c": {
+      "sha256": "71e26ad3d9c4487be6611ccdab18103cba64ad6525af3b8e09a048b8adafb7ff",
       "mode": "100644"
     },
     "tests/test_hit_stacking.c": {
@@ -2318,6 +2614,10 @@
     },
     "tests/test_hit_stacking.py": {
       "sha256": "3d71fce29e59ec4b70d5123a5421bd4d77532bcc9baf6593730da5a38986e091",
+      "mode": "100644"
+    },
+    "tests/test_horizontal_rtl_flow.c": {
+      "sha256": "7b935395de71e6a876fdfb7e908ea5b624f5c1b718340c18dc2e1ae88dfc151c",
       "mode": "100644"
     },
     "tests/test_html5lib.c": {
@@ -2390,6 +2690,10 @@
     },
     "tests/test_media_audio_lock.py": {
       "sha256": "3e1067b422abc53e1cc4a7dfe52cc0bdb07d49fd5e04ee9f249ae6c9f8bddb00",
+      "mode": "100644"
+    },
+    "tests/test_media_download_lifecycle.c": {
+      "sha256": "80a62d624e7cc884331605aa2257dbe53baf0daeeff988e69b1bb8d71da3045b",
       "mode": "100644"
     },
     "tests/test_media_events.js": {
@@ -2496,6 +2800,10 @@
       "sha256": "64c17b75011924f2bb4fa49adf2d6c543d26f3e2cdfce39468891c0288c57b44",
       "mode": "100644"
     },
+    "tests/test_scroll_clip_inactive.c": {
+      "sha256": "c9b70c172e9c9d23da4cd1b3f7833d6d033c15c720de230194b33d9705acd5eb",
+      "mode": "100644"
+    },
     "tests/test_scroll_fixed_bounds.py": {
       "sha256": "73cde92d587935aa8f1c2a1d300bf867bfb36bedbd351a4224127f9d66a69a75",
       "mode": "100644"
@@ -2504,12 +2812,24 @@
       "sha256": "e826d73aecd0924fe9dc07883468ca95aacea6c18e408dda6eb0f2451ace8879",
       "mode": "100644"
     },
+    "tests/test_selector_specificity.c": {
+      "sha256": "09a1af921d4b098ec0679168e14a92b89b81125f8390db1f6b43a9077b029f5f",
+      "mode": "100644"
+    },
     "tests/test_shape_cache.c": {
       "sha256": "17347ab14c61f9b77918e79fe895ddbff44e928449b445234a28fac53e9cbb42",
       "mode": "100644"
     },
     "tests/test_starting_style.c": {
       "sha256": "4494022cd11d67424ec7f1543621fdac3720435b033de5dfc6024b1a1dd17df1",
+      "mode": "100644"
+    },
+    "tests/test_sticky_computed_margin.c": {
+      "sha256": "3755dc1a55d4a5a0abc93d85c6c975927b899ad70d36d953dd8da348c0fc9bb6",
+      "mode": "100644"
+    },
+    "tests/test_sticky_constraint_geometry.c": {
+      "sha256": "1fec722876f36556c970bdbf108c71dfc4f87b7da6714e6fde02fc0d7b591ce2",
       "mode": "100644"
     },
     "tests/test_sticky_geometry.c": {
@@ -2576,6 +2896,18 @@
       "sha256": "aa6d9503a397a889387f69d97494922696c9851d3839e687a74dca777eb185b1",
       "mode": "100644"
     },
+    "tests/webgl_interface_shape.py": {
+      "sha256": "8f646ee9f5f6577259b54a76e08ff40ba986f757a271977b932f4c2773d29fbc",
+      "mode": "100644"
+    },
+    "tests/wpt/cssom-rule-ownership-urls.json": {
+      "sha256": "76c977aa2e89d5fb78b267182f4744343285657e4f8f11e89c7bd851786e6251",
+      "mode": "100644"
+    },
+    "tests/wpt/fetch-body-consumption-urls.json": {
+      "sha256": "f0f4d939e1a168bbbe396fd3216d1137105e68d44f74eb8b29464c160cbf0993",
+      "mode": "100644"
+    },
     "tests/wpt/lumen_wpt.py": {
       "sha256": "005dffe9f72b5c5a04f83a51154670d1aac5db816d6c77fb26a2ba1f08b17dca",
       "mode": "100644"
@@ -2596,6 +2928,10 @@
       "sha256": "7a0f731289c52717a7b08625c4f340db95beec0b12b209b8ca83408cd93ca3e6",
       "mode": "100644"
     },
+    "tests/xhr_streamed_body_server.py": {
+      "sha256": "2603b1504deb027a2fa1924229df20f8d1ac7943fb66d29bcae5c785f42775d0",
+      "mode": "100644"
+    },
     "tests/youtube_controls.c": {
       "sha256": "8b57d93a118bd239440baca660cc9968e0f5af00ec7b584243ea837b094345d5",
       "mode": "100644"
@@ -2609,58 +2945,306 @@
       "mode": "100644"
     }
   },
-  "reviewed_additional_files": {
+  "previously_public_paths_updated_from_tested_commit": {
+    ".gitignore": {
+      "sha256": "1f51a80dd1482d34c0b6a106bf20826dc8c85cc5a464e321c91c8d8ee914af0c",
+      "mode": "100644"
+    },
+    "LICENSE": {
+      "sha256": "c5bce7a91c67108128a04872d88d3bf640706ba5e4a924a610f2e49e13ce0b7b",
+      "mode": "100644"
+    },
+    "Makefile": {
+      "sha256": "e8dbf1acf62bfe8a253da0e56965b781ea7f4fa8e485e47cebbd9d970f7170b1",
+      "mode": "100644"
+    },
+    "android/app/build.gradle": {
+      "sha256": "6b75524c922d8f5bb36167b78313777f3401c0597852804b017917b993d31fb0",
+      "mode": "100644"
+    },
+    "android/app/src/main/AndroidManifest.xml": {
+      "sha256": "68bd7e8a299a9e50606237499df417df2fab2e5be43a2bee6c61e2bdb5487d74",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserIcons.java": {
+      "sha256": "29dd3ba2d9a38116f67642c5349ddc8356523ab023f454e81f610a3bb3d5159d",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserInsets.java": {
+      "sha256": "8947128b4fdb5f5acf4096c9d42d174174969f0c0ea1d69e9fd65bf7875f5102",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserMenus.java": {
+      "sha256": "b62c96a4befc0865e7d23e8d992dbcc12df8285ac6a49b65e04c449e356d1f1c",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserStats.java": {
+      "sha256": "4ff21dff1c0c571cfa8f3999289d866160292abc81f6c6541fe0fa2ed2fe02da",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserSurface.java": {
+      "sha256": "859e654460a7a5a102d14ace40c7269ab6b96b3be2e02ff1edebc8a9a550b35d",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/BrowserToolbar.java": {
+      "sha256": "287ab312e0f28554775529c6903c6a82ed7285ec51e1c2d8550d5df244ebdb33",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/ClipProvider.java": {
+      "sha256": "b376b716f380322b21b674958052f4eccabea4c0bd93259ab4870672005cd695",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/LaunchUrl.java": {
+      "sha256": "f04152aa87ccfbabd6f9b1ace728a06b7cf60971bae57effc3168cdb3960b1ae",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/LumenActivity.java": {
+      "sha256": "169866312f6f268b053930844350ca9a315904c65a48d17c71c68ffaf3053fbb",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/MediaPlayback.java": {
+      "sha256": "97a2421aa2aedbfbcbbd2f9c27990e6ca49631f3e939fe5d702cf7832d0785a9",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/ScreenCapture.java": {
+      "sha256": "df93984447d36145f9046acc09b7806c81e97b226da7920afa6ba3f2f2734468",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/SharedFiles.java": {
+      "sha256": "6a08d88104616b3e378e15c77b44226f131bbfa10372028d67d8e699f7d669ef",
+      "mode": "100644"
+    },
+    "android/app/src/main/java/org/lumen/browser/TouchFeedback.java": {
+      "sha256": "354023d6719d1919931b87187b6ae1861c2aea22292536cf22761aa83cb31755",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml": {
+      "sha256": "a5a6da95b2aba00be9db5dd38dd65cdb14480f206761102e0aa82cb067a0c7ea",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-hdpi/ic_launcher.png": {
+      "sha256": "ae16f124e4d85284ede9377d90b10b559b0daacaaa731655115a0c2f6ca2c533",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-hdpi/ic_launcher_background.png": {
+      "sha256": "4bcdf5737437c893db987183b91e076e31394fc03bf0db7d4ee4aff8bfb07de5",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png": {
+      "sha256": "644e3283fcb6860a8cede35dc547cc084e3f9bbdf12bb93b091537a43ad469c6",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-mdpi/ic_launcher.png": {
+      "sha256": "9b0976641d389b83edfa6edb2e32f8bc8076295a55a6bee6529fc56a094d4d7b",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-mdpi/ic_launcher_background.png": {
+      "sha256": "a7d559362bff85663f4d8322507bf3cbde3abe0c36316e07221198303b0f6061",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png": {
+      "sha256": "dbb680a10633814c21d9f42a1ca419373a3c241dc434bd587ea96f84fac391a6",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png": {
+      "sha256": "d384e2b70681ce692977cebf111915663011a18e19f18ce38064c6522743c3cf",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.png": {
+      "sha256": "0178676f9f1a5069a7e2070a0898936f983581a34a82e4b967f27f8cf5aaa407",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png": {
+      "sha256": "5082a996409a7fee9871e0a12f02eb2becc319b8969db2951587f451e8b51f77",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png": {
+      "sha256": "3813c6a905835d570492250e6755de69af88c7cc91d7ddbb111196e029e61c11",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png": {
+      "sha256": "3d5da28f12bc106c03341935f49a65611dbb9c89c02b1a558d818e953c472cd4",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png": {
+      "sha256": "b52e5b8d3d4a0b408be738db2cec96fd456c4870ce9dcac23633d3e016d99c89",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png": {
+      "sha256": "12cf3cde0c517e933fc0423f8afb4f21337e69dffa0e14a631cd877e15c1ec1b",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png": {
+      "sha256": "9a47fe0859d9b1f5d48d742e3cf8d07e2cbb7a3b56d09ef591867ea0d429dc7a",
+      "mode": "100644"
+    },
+    "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png": {
+      "sha256": "ea392a4c759fd37a187faee0aa28519d69972655280f27504782d1f9fdfa5dbb",
+      "mode": "100644"
+    },
+    "android/build.gradle": {
+      "sha256": "d1bd47ceb68955ed5d99760e0b50e0b0fc48077a8c3370651fc4c2ac12a5de66",
+      "mode": "100644"
+    },
+    "android/gradle.properties": {
+      "sha256": "2a65693bf6bc9de8c5b91cdcedb2cf60cbf7675398bc65a2909f511d351e1803",
+      "mode": "100644"
+    },
+    "android/native-deps/patches/v8-15.6.75.8-gc-info-guard.patch": {
+      "sha256": "2181687f36be09767180a5d0e4be3a5fae6143d6b9c3918fa313c8b51fe7f597",
+      "mode": "100644"
+    },
+    "android/native-deps/triplets/arm64-android.cmake": {
+      "sha256": "7dfecc89a14e625f7f4966fbd368b1dc02de45ff466f39d7479c62da477e1c60",
+      "mode": "100644"
+    },
+    "android/native-deps/triplets/x64-android.cmake": {
+      "sha256": "c67847d24f4c405615b1a11d6af6957d9d053ef89957aefb3e286cbfa5aedbb0",
+      "mode": "100644"
+    },
+    "android/native-deps/v8-prebuilt.json": {
+      "sha256": "9a731d0d0ee3e4f7b671af84740a8344758833d553b4924e51f936edcc059d66",
+      "mode": "100644"
+    },
+    "android/native-deps/vcpkg.json": {
+      "sha256": "2d88a441c56e14dec96e60e25736c20a7a594c7690a35266bf152a5319f28f5a",
+      "mode": "100644"
+    },
+    "android/platform/src/main/java/org/lumen/browser/AndroidFontRaster.java": {
+      "sha256": "925f726223964dfd75237eff65d0a18f0788c29f426bd54ab9981a59d4c061b4",
+      "mode": "100644"
+    },
+    "android/settings.gradle": {
+      "sha256": "01508336961e720bc5be80b9eeb6c24b657578713a24a807d7092aa65394cf8e",
+      "mode": "100644"
+    },
+    "assets/icon/Lumen.icns": {
+      "sha256": "b5709c22b6a812139cb90c9f691729e55645a6dc9c8ee679f9fe73fb4bc6be03",
+      "mode": "100644"
+    },
+    "assets/icon/lumen-1024.png": {
+      "sha256": "74d31e75aa55fab61e0678a49cffd82d95b14dd055f481f710bc6c59ec749346",
+      "mode": "100644"
+    },
+    "assets/icon/lumen-256.png": {
+      "sha256": "713fd1e2e1fff559f3ed1f7129e267fc6766f976ca082de5fa0880471d26cd57",
+      "mode": "100644"
+    },
+    "assets/icon/lumen.svg": {
+      "sha256": "81a65e8ab4d1cc951828b1e15da0aeb87cfbb2506fb8ed3913921e5ce475c2a6",
+      "mode": "100644"
+    },
+    "cmake/AndroidOptimization.cmake": {
+      "sha256": "c15f7e87c14fd93a5ea103aeea583bc57ae5d1c4fe0fd156cadb8efe1ab02d14",
+      "mode": "100644"
+    },
+    "cmake/AndroidSdlWait.cmake": {
+      "sha256": "4a986204b7a072d39fd2b5cae516324fa8a8b42e22922a4fdb12bca6fa01e4b6",
+      "mode": "100644"
+    },
+    "cmake/AndroidV8.cmake": {
+      "sha256": "7ffc2c4edcbe88e463781704e7ca2a8aeb826817f318b5269ac7e917aab789a3",
+      "mode": "100644"
+    },
+    "cmake/AndroidV8Prebuilt.cmake": {
+      "sha256": "9e57ef3aa81ea250c6510c05bfed8fa0c6a6d01f802e57558a0f5e9350b62b00",
+      "mode": "100644"
+    },
+    "cmake/android-v8.toolchain.cmake": {
+      "sha256": "c540cf7b669970bff843edc42711543fb615510afa282804e1243298a529dce7",
+      "mode": "100644"
+    },
+    "tools/android/build_deps.py": {
+      "sha256": "8e1ef7af3717eacdb81568a0f92bbc7089ae1bc29a2ead6a277778498a5e33f0",
+      "mode": "100644"
+    },
+    "tools/android/build_guard.py": {
+      "sha256": "0bd73c6cca86426e79c8bd317fd320f3cfa0cb55c59452b5adaa14ebb01397bd",
+      "mode": "100644"
+    },
+    "tools/android/codex_proc_sample.sh": {
+      "sha256": "4b740464fe0357ff00d0d62872fdb7d2ba13cc25784a3a20ac7657c1b3bbbee5",
+      "mode": "100644"
+    },
+    "tools/android/v8_prebuilt.py": {
+      "sha256": "a2387cc7ac03350de59e5541e7bfd43e8fd8e3c17b511c35ade0c7b3288b2295",
+      "mode": "100644"
+    },
+    "tools/android/verify_apk.py": {
+      "sha256": "290360757cb42e0bed89ede2040925846c9a7222ea3c91ffec48481f7cb1640d",
+      "mode": "100644"
+    },
+    "tools/codex_compile.py": {
+      "sha256": "969cbe8df729bd340e46d1a25fc2069573249b4395aba3e7ecce8f6e583ae298",
+      "mode": "100644"
+    },
+    "tools/dev_proxy.py": {
+      "sha256": "0d490f7c67072e1a7844b4ed2ae35758366f9577ea387d1ca55d6fcf7a8372a2",
+      "mode": "100644"
+    },
+    "tools/device_tests.py": {
+      "sha256": "63cc14319d1ee1af85afa08a485e1f6b9cf5748be054a56195df53b663992244",
+      "mode": "100644"
+    },
+    "tools/edit_bar_test.py": {
+      "sha256": "1b172ca401089467cad8074da7053a5c41bc8e2c450cdb4497a2aa6187b739c4",
+      "mode": "100644"
+    },
     "tools/gen_css_props.py": {
-      "sha256": "aa4f4af12360ab2b3381914b6285009d4e32da8cd4b308a716a0028a2749d1ea",
+      "sha256": "6bd54763512cf2d310bc4ce6cd65311c9e910b386da1a97a50bd382c30f6b243",
+      "mode": "100644"
+    },
+    "tools/gen_encoding_tables.py": {
+      "sha256": "c8155a70b412872b99b4e1a11dd42f8997523b857dd7590d6a50dc93e36a84fc",
+      "mode": "100644"
+    },
+    "tools/gen_webgpu_enums.py": {
+      "sha256": "761f4065dd5192bc6e0b6a536f19e41c8d6e9d66acfc35febf7729bc88b0a35f",
+      "mode": "100644"
+    },
+    "tools/linux_ui_test.sh": {
+      "sha256": "5f9a7e4efbcbdb294c6ac5c649dcc5a16d94b0c38d06efd350c4fd3edd1c2101",
+      "mode": "100755"
+    },
+    "tools/mkdmg.py": {
+      "sha256": "0e1e9ac0f019650530ed0e76c5be4405967b826a93cf0b8c51bc6264905b1785",
+      "mode": "100755"
+    },
+    "tools/patches/gpu-allocator-0.28.0-cached-readback.patch": {
+      "sha256": "4860598279ee07bfb29605dcbd9928d4b45ccc31ac7c99c0798636eb5573801a",
       "mode": "100644"
     }
   },
-  "reviewed_public_documentation_controls": {
-    "README.md": {
-      "sha256": "fc32b74efe27ab766469f702235daa0af04e5d1aed818006cca0fef2a34f9d70",
-      "mode": "100644"
-    },
-    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md": {
-      "sha256": "72b42ab31800634f508e14f14d15153ce7ac06582479e2dc52ec562aa9407c5c",
-      "mode": "100644"
-    },
-    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json": {
-      "sha256": "31f2fab0833dc81a07d806f9a50a802362fad94e44a8c534c7465c2d30c635eb",
-      "mode": "100644"
-    },
-    "docs/gpt-6-astra-pro-builtin-rubywebterm-native147-replay-inputs.json": {
-      "sha256": "88f5cd476c019d96438cc3b14313917f159526fe37d1dbc109599cde9637370a",
-      "mode": "100644"
-    },
-    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.json": {
-      "sha256": "7b1d017329c350b6de0ff18f573da66f02c305d328215aba486aebe60aa548ff",
-      "mode": "100644"
-    },
-    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.md": {
-      "sha256": "627cc0cab39286c4b5a2ea84263af4bdfd2205af313dd2b43bd2eb87b16e0d81",
-      "mode": "100644"
-    },
-    "docs/gpt-6-astra-pro-builtin-rubywebterm-live-demo-evidence.json": {
-      "sha256": "4a09b33af7a34125b40e1544908a24c47319a40474f8c045d49de3c69a1f2112",
-      "mode": "100644"
-    },
-    "tests/jsrun-completion/missing-completion.html": {
-      "sha256": "6f40fe0f2d5c18670e5cfcb9021eebed4107a7d776b0dea67fdb96323f47d649",
-      "mode": "100644"
-    },
-    "tests/jsrun-completion/failed-completion.html": {
-      "sha256": "f5cddf34bead9d6b98deffa6753ffc72bfc2778b152a3ed9bf82cc8c0ba119f2",
-      "mode": "100644"
-    },
-    "tests/js/checkvisibility-slot-accessors.html": {
-      "sha256": "e23c504b9684614b74ddf4cb57aed465dd7f4b96e646b49b0718514f760ca8db",
-      "mode": "100644"
-    },
-    "examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html": {
-      "sha256": "9b330a84b469beb564e615c7aeb18ce3bc93e1b55804f6e49aa5badd1fe11236",
-      "mode": "100644"
-    }
-  },
+  "historical_public_files_preserved": [
+    "docs/Linux-candidate200.md",
+    "docs/build-dependencies200.json",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-build.md",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.json",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-report.md",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-linux-runtime.json",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-live-demo-evidence.json",
+    "docs/gpt-6-astra-pro-builtin-rubywebterm-native147-replay-inputs.json",
+    "docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint205.json",
+    "docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint214.json",
+    "docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.json",
+    "docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_checkpoint226.md",
+    "docs/lumen_gpt-6-astra-pro_builtin-rubywebterm_report214.md",
+    "docs/performance195-summary.json",
+    "docs/performance200-summary.json",
+    "docs/style-phases-diagnostic-v2.html",
+    "docs/validation/SHA256SUMS",
+    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029.json",
+    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029.md",
+    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_changes.json",
+    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_performance.json",
+    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_wpt640_manifest.json",
+    "docs/validation/gpt-6-astra_builtin-agents_rubywebterm_lumen-linux_nonurl_comparison_20261029_wpt640_results.json",
+    "docs/wpt640-manifest.json",
+    "examples/gpt-6-astra-pro-builtin-rubywebterm-lumen-live-demo.html",
+    "tests/js/checkvisibility-slot-accessors.html",
+    "tests/jsrun-completion/failed-completion.html",
+    "tests/jsrun-completion/missing-completion.html"
+  ],
   "independent_rebuild_performed": false,
   "external_dependencies_included": false,
   "private_history_included": false

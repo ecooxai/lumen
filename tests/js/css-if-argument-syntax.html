@@ -1,0 +1,43 @@
+<!doctype html><meta charset="utf-8"><title>if argument syntax before pending substitution</title>
+<style>html,body{margin:0;padding:0;border:0}</style><body><script>
+(()=>{
+ const rows=[],owned=[];
+ const eq=(actual,expected,label)=>{if(actual!==expected)throw Error(label+': '+JSON.stringify(actual)+' expected '+JSON.stringify(expected));};
+ const near=(actual,expected,label)=>{if(!Number.isFinite(actual)||Math.abs(actual-expected)>.01)throw Error(label+': '+actual+' expected '+expected);};
+ const check=(name,fn)=>{try{fn();rows.push({name,pass:true});}catch(error){rows.push({name,pass:false,error:String(error)});}finally{while(owned.length)owned.pop().remove();}};
+ let serial=0;
+ const make=(mode,css='')=>{
+  const parent=document.createElement('div'),target=document.createElement('div');
+  parent.style.cssText='width:240px;height:60px;margin:0;padding:0;border:0';
+  target.id='if-argument-target-'+(++serial);parent.appendChild(target);document.body.appendChild(parent);owned.push(parent);
+  const base='display:block;height:10px;margin:0;padding:0;border:0;';
+  if(mode==='inline'){target.style.cssText=base+css;return {target,style:target.style,setRaw:value=>target.setAttribute('style',base+value)};}
+  const sheet=document.createElement('style');sheet.textContent='#'+target.id+'{'+base+css+'}';document.head.appendChild(sheet);owned.push(sheet);
+  return {target,style:sheet.sheet.cssRules[0].style,setRaw:value=>{sheet.textContent='#'+target.id+'{'+base+value+'}';}};
+ };
+ const width=(target,value)=>{eq(getComputedStyle(target).width,value+'px','computed width');near(target.getBoundingClientRect().width,value,'actual width');};
+ const invalid=[
+  ['empty function','if()'],['branch without colon','if(foo)'],
+  ['malformed function beside valid var','var(--ok,17px) if()'],
+  ['malformed function in unselected branch','if(else:30px;else:if())'],
+  ['empty condition','if(:30px)'],['forbidden argument token','if(else:30px;else:value!)']
+ ];
+ for(const mode of ['inline','rule'])for(const [label,value] of invalid)check(mode+' '+label+' retains prior declarations',()=>{
+  const {target,style,setRaw}=make(mode,'width:17px;--marker:prior;');
+  eq(CSS.supports('width',value),false,'width syntax support');eq(CSS.supports('--marker',value),false,'custom syntax support');
+  const original=style.cssText;style.setProperty('width',value);style.setProperty('--marker',value);
+  eq(style.cssText,original,'invalid assignments do not mutate the declaration');
+  eq(style.getPropertyValue('width'),'17px','retained specified width');eq(style.getPropertyValue('--marker'),'prior','retained custom tokens');width(target,17);
+  setRaw('width:17px;--marker:prior;width:'+value+';--marker:'+value+';');
+  width(target,17);eq(getComputedStyle(target).getPropertyValue('--marker'),'prior','raw parser retains the prior custom declaration');
+ });
+ check('unknown condition leaves its missing result unvisited',()=>{const {target}=make('inline','width:if(future(example):var(--missing);else:31px)');width(target,31);});
+ check('unselected result remains lazy after argument validation',()=>{const {target}=make('rule','width:if(else:32px;else:var(--missing))');width(target,32);});
+ check('valid selected missing variable remains invalid at computed time',()=>{const {target,style}=make('inline','width:17px');style.setProperty('width','if(else:var(--missing))');eq(style.getPropertyValue('width').startsWith('if('),true,'syntactically accepted pending value');width(target,240);});
+ check('escaped if name is recognized while a quoted name stays a string',()=>{const {target}=make('rule','width:i\\66(else:33px);--marker:"if()"');width(target,33);eq(getComputedStyle(target).getPropertyValue('--marker'),'"if()"','quoted function text');});
+ for(const row of rows)console.log('IF_ARGUMENT_ROW '+JSON.stringify(row));
+ const passed=rows.filter(row=>row.pass).length,ok=rows.length===16&&passed===16;
+ document.documentElement.setAttribute('data-css-if-argument-syntax',ok?'PASS':'FAIL');
+ console.log('RESULTS css-if-argument-syntax:'+(ok?'PASS':'FAIL')+' '+JSON.stringify({passed,total:rows.length}));
+})()
+</script>

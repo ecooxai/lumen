@@ -1,0 +1,237 @@
+<!doctype html><meta charset="utf-8"><title>Intrinsic preferred-size interpolation, lifecycle v2</title>
+<style>html,body{margin:0;padding:0;font-size:16px}</style><body><script>
+(() => {
+    const cases = [], rows = [];
+    const test = (name, callback) => cases.push({name, callback});
+    const check = (condition, message) => { if (!condition) throw new Error(message); };
+    const equal = (actual, expected, message) => {
+        if (actual !== expected) throw new Error(message + ': ' + JSON.stringify(actual) + ' expected ' + JSON.stringify(expected));
+    };
+    const near = (actual, expected, message) => {
+        if (!Number.isFinite(actual) || Math.abs(actual - expected) > .035)
+            throw new Error(message + ': ' + actual + ' expected ' + expected);
+    };
+    function dimension(node, property, expected, computed = expected) {
+        const box = node.getBoundingClientRect(), text = getComputedStyle(node)[property];
+        near(box[property], expected, 'actual ' + property);
+        check(text.endsWith('px'), 'resolved ' + property + ' must be pixels');
+        near(parseFloat(text), computed, 'resolved ' + property);
+    }
+    function hit(node) {
+        const r = node.getBoundingClientRect();
+        check(r.width > 3 && r.height > 3, 'positive real hit-test area');
+        equal(document.elementFromPoint(r.x + 2, r.y + 2), node, 'actual animated border box hit');
+    }
+    function animation(f, property, from, to, options = {}) {
+        const frames = [];
+        if (from !== null) frames.push({offset:0, [property]:from});
+        if (to !== null) frames.push({offset:1, [property]:to});
+        const a = f.probe.animate(frames, {duration:1000, fill:'both', ...options});
+        f.animations.push(a); a.pause(); return a;
+    }
+    function sample(f, property, from, to, time, expected, options) {
+        const a = animation(f, property, from, to, options); a.currentTime = time;
+        dimension(f.probe, property, expected); if (expected > 3) hit(f.probe); return a;
+    }
+    function styleFor(f, route) {
+        if (route === 'inline') return f.probe.style;
+        const sheet = document.createElement('style'); sheet.textContent = '#' + f.probe.id + '{}';
+        document.head.appendChild(sheet); f.extra.push(sheet); return sheet.sheet.cssRules[0].style;
+    }
+    const valid = [
+        ['numeric-only','numeric-only'], ['allow-keywords','allow-keywords'],
+        ['ALLOW-KEYWORDS','allow-keywords'], ['NuMeRiC-OnLy','numeric-only'],
+        ['allow-\\6b eywords','allow-keywords'], ['/**/allow-keywords/**/','allow-keywords']
+    ];
+    const invalid = ['auto','none','allow','allow-keywords numeric-only','allow-keywords, numeric-only',
+        'allow/**/-keywords','0','"allow-keywords"','calc(1)','var()','numeric-only)'];
+    for (const route of ['inline','rule']) {
+        test(route + ' validates and canonicalizes policy keywords', f => {
+            const style = styleFor(f, route);
+            for (const [input, expected] of valid) {
+                check(CSS.supports('interpolate-size', input), 'two-argument supports: ' + input);
+                check(CSS.supports('(interpolate-size:' + input + ')'), 'condition supports: ' + input);
+                style.setProperty('interpolate-size', input);
+                equal(style.getPropertyValue('interpolate-size'), expected, 'specified policy');
+                equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'), expected, 'computed policy');
+            }
+        });
+        test(route + ' invalid policy assignments retain value and priority', f => {
+            const style = styleFor(f, route); style.setProperty('interpolate-size','allow-keywords','important');
+            const before = style.cssText;
+            for (const input of invalid) {
+                check(!CSS.supports('interpolate-size',input), 'invalid two-argument supports: ' + input);
+                check(!CSS.supports('(interpolate-size:' + input + ')'), 'invalid condition supports: ' + input);
+                style.setProperty('interpolate-size',input);
+                equal(style.cssText,before,'invalid assignment is atomic');
+                equal(style.getPropertyPriority('interpolate-size'),'important','retained priority');
+            }
+        });
+        test(route + ' invalid priority is atomic and empty assignment removes policy', f => {
+            const style = styleFor(f, route); style.setProperty('interpolate-size','numeric-only','important');
+            const before = style.cssText; style.setProperty('interpolate-size','allow-keywords','invalid');
+            equal(style.cssText,before,'invalid priority retains declaration');
+            style.setProperty('interpolate-size','','invalid');
+            equal(style.getPropertyValue('interpolate-size'),'','empty setter removes declaration');
+            equal(style.getPropertyPriority('interpolate-size'),'','removed declaration has no priority');
+            equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'),'allow-keywords','removal restores inherited policy');
+        });
+        test(route + ' pending policy resolves and invalid computed value inherits', f => {
+            const style = styleFor(f, route); f.parent.style.setProperty('--Policy','numeric-only');
+            style.setProperty('interpolate-size','var(--Policy)');
+            equal(style.getPropertyValue('interpolate-size'),'var(--Policy)','pending tokens stay specified');
+            equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'),'numeric-only','first resolved policy');
+            f.parent.style.setProperty('--Policy','allow-keywords');
+            equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'),'allow-keywords','live custom-property policy');
+            f.parent.style.setProperty('--Policy','invalid-policy');
+            equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'),'allow-keywords','invalid computed policy takes inherited unset');
+        });
+    }
+    for (const route of ['attribute','stylesheet']) test(route + ' invalid later policy keeps prior cascade and important state', f => {
+        const text = 'interpolate-size:numeric-only!important;interpolate-size:allow-keywords;interpolate-size:invalid-policy';
+        let style;
+        if (route === 'attribute') { f.probe.setAttribute('style',text); style=f.probe.style; }
+        else { const sheet=document.createElement('style');sheet.textContent='#'+f.probe.id+'{'+text+'}';document.head.appendChild(sheet);f.extra.push(sheet);style=sheet.sheet.cssRules[0].style; }
+        equal(style.getPropertyValue('interpolate-size'),'numeric-only','raw retained policy');
+        equal(style.getPropertyPriority('interpolate-size'),'important','raw retained priority');
+        equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'),'numeric-only','raw computed policy');
+    });
+    for (const property of ['width','height']) test(property + ' automatic basis interpolates at endpoints and intermediate times', f => {
+        const basis=property==='width'?200:80,to=property==='width'?40:20;
+        for(const keyword of ['auto','AUTO','\\61 uto']) {
+            const a=animation(f,property,keyword,to+'px');
+            for(const progress of [0,.25,.5,1]){a.currentTime=progress*1000;dimension(f.probe,property,basis*(1-progress)+to*progress);hit(f.probe);}
+            a.cancel();
+        }
+    });
+    for (const property of ['width','height']) for (const keyword of ['min-content','max-content','fit-content','stretch'])
+        test(property + ' ' + keyword + ' uses its real intrinsic or available basis', f => {
+            const basis=keyword==='stretch'?(property==='width'?200:160):80;
+            sample(f,property,keyword,'40px',500,(basis+40)/2);
+        });
+    for (const property of ['width','height']) for (const keyword of ['initial','unset'])
+        test(property + ' ' + keyword + ' endpoint resolves to automatic sizing', f => {
+            sample(f,property,keyword,'40px',500,property==='width'?120:60);
+        });
+    for (const property of ['width','height']) test(property + ' inherited endpoint uses parent computed sizing', f => {
+        sample(f,property,'min-content','inherit',500,property==='width'?140:120);
+    });
+    for (const property of ['width','height']) test(property + ' neutral endpoints retain the underlying preferred size', f => {
+        const expected=property==='width'?70:60;
+        const first=sample(f,property,'max-content',null,500,expected);first.cancel();
+        sample(f,property,null,'min-content',500,expected);
+    });
+    for (const property of ['width','height']) for (const progress of [-.3,1.5])
+        test(property + ' extrapolation preserves signed coefficients at ' + progress, f => {
+            const basis=property==='width'?200:80,endpoint=20,y=(progress-.125)/.75;
+            const easing='cubic-bezier(.5,'+y+',.5,'+y+')';
+            sample(f,property,'auto',endpoint+'px',500,Math.max(0,basis*(1-progress)+endpoint*progress),{easing});
+        });
+    test('paused automatic width responds to containing-block resize', f => {
+        sample(f,'width','auto','40px',500,120);f.parent.style.width='300px';dimension(f.probe,'width',170);hit(f.probe);
+    });
+    test('paused automatic height responds to actual content mutation', f => {
+        sample(f,'height','auto','20px',500,50);f.content.style.height='120px';dimension(f.probe,'height',70);hit(f.probe);
+    });
+    test('font-relative numeric endpoint retains current computed font context', f => {
+        sample(f,'width','auto','2em',500,120);f.probe.style.fontSize='30px';dimension(f.probe,'width',130);
+    });
+    test('mixed numeric endpoint preserves percentage against the live container', f => {
+        sample(f,'width','auto','calc(10px + 10%)',500,115);f.parent.style.width='300px';dimension(f.probe,'width',170);
+    });
+    test('indefinite height percentage calculation resolves to zero throughout the intrinsic interval', f => {
+        f.parent.style.height='auto';const a=sample(f,'height','auto','50%',500,40);
+        a.currentTime=1000;dimension(f.probe,'height',0);
+    });
+    test('zero intrinsic coefficient retains indefinite child percentage sizing', f => {
+        f.content.style.height='50%';const leaf=document.createElement('div');leaf.style.height='20px';f.content.appendChild(leaf);
+        const a=sample(f,'height','auto','100px',1000,100);dimension(f.content,'height',20);
+        a.cancel();f.probe.style.height='100px';dimension(f.content,'height',50);
+    });
+    for (const sizing of ['content-box','border-box']) test(sizing + ' interpolation uses the property sizing box before padding', f => {
+        f.probe.style.cssText+=';display:inline-block;box-sizing:'+sizing+';padding:4px;border:2px solid';
+        const a=animation(f,'width','auto','40px');a.currentTime=500;
+        const border=sizing==='border-box';dimension(f.probe,'width',border?66:72,border?66:60);hit(f.probe);
+    });
+    test('ordinary numeric width interpolation remains independent of keyword policy', f => {
+        f.parent.style.setProperty('interpolate-size','numeric-only');sample(f,'width','20px','100px',250,40);
+    });
+    test('default numeric-only policy keeps keyword interpolation discrete', f => {
+        f.parent.style.removeProperty('interpolate-size');equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'),'numeric-only','initial inherited policy');
+        const a=sample(f,'width','auto','40px',250,200);a.currentTime=750;dimension(f.probe,'width',40);
+    });
+    test('initial unset and inherit policy use the native inherited enum', f => {
+        f.probe.style.setProperty('interpolate-size','initial');equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'),'numeric-only','initial');
+        f.probe.style.setProperty('interpolate-size','unset');equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'),'allow-keywords','unset');
+        f.probe.style.setProperty('interpolate-size','inherit');sample(f,'width','auto','40px',250,160);
+    });
+    test('changing policy after activation does not stop keyword interpolation', f => {
+        const a=sample(f,'width','auto','40px',250,160);f.probe.style.setProperty('interpolate-size','numeric-only');a.currentTime=500;
+        dimension(f.probe,'width',120);
+    });
+    test('changing policy after activation does not start keyword interpolation', f => {
+        f.probe.style.setProperty('interpolate-size','numeric-only');const a=sample(f,'width','auto','40px',250,200);
+        f.probe.style.setProperty('interpolate-size','allow-keywords');a.currentTime=400;dimension(f.probe,'width',200);
+    });
+    test('idle constructed animation captures policy when it is activated', f => {
+        f.probe.style.setProperty('interpolate-size','numeric-only');
+        const a=new Animation(new KeyframeEffect(f.probe,[{width:'auto'},{width:'40px'}],{duration:1000,fill:'both'}),document.timeline);
+        f.animations.push(a);equal(a.currentTime,null,'new animation remains idle');
+        f.probe.style.setProperty('interpolate-size','allow-keywords');a.pause();a.currentTime=500;dimension(f.probe,'width',120);
+    });
+    test('explicit replacement of keyframes captures the new activation policy', f => {
+        f.probe.style.setProperty('interpolate-size','numeric-only');const a=sample(f,'width','auto','40px',250,200),effect=a.effect;a.cancel();
+        f.probe.style.setProperty('interpolate-size','allow-keywords');effect.setKeyframes([{width:'auto'},{width:'40px'}]);
+        equal(a.effect,effect,'the same effect receives explicit new keyframes');a.play();a.pause();a.currentTime=500;dimension(f.probe,'width',120);hit(f.probe);
+        f.probe.style.setProperty('interpolate-size','numeric-only');a.currentTime=750;dimension(f.probe,'width',80);
+    });
+    test('explicit replacement of the keyframe effect captures the new activation policy', f => {
+        f.probe.style.setProperty('interpolate-size','numeric-only');const a=sample(f,'width','auto','40px',250,200),oldEffect=a.effect;a.cancel();
+        f.probe.style.setProperty('interpolate-size','allow-keywords');a.effect=new KeyframeEffect(f.probe,[{width:'auto'},{width:'40px'}],{duration:1000,fill:'both'});
+        check(a.effect!==oldEffect,'the animation receives a fresh keyframe effect');a.play();a.pause();a.currentTime=500;dimension(f.probe,'width',120);hit(f.probe);
+        f.probe.style.setProperty('interpolate-size','numeric-only');a.currentTime=750;dimension(f.probe,'width',80);
+    });
+    test('interpolate-size itself contributes no Web Animation value', f => {
+        f.probe.style.setProperty('interpolate-size','numeric-only');
+        const a=f.probe.animate([{interpolateSize:'allow-keywords'},{interpolateSize:'allow-keywords'}],{duration:1000,fill:'both'});
+        f.animations.push(a);a.pause();a.currentTime=500;
+        equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'),'numeric-only','nonanimatable underlying policy');
+    });
+    for (const allowed of [true,false]) test('CSS animation uses underlying policy ' + (allowed?'allow-keywords':'numeric-only'), f => {
+        f.probe.style.setProperty('interpolate-size',allowed?'allow-keywords':'numeric-only');
+        const sheet=document.createElement('style'),name='intrinsic-'+f.probe.id;
+        const other=allowed?'numeric-only':'allow-keywords';
+        sheet.textContent='@keyframes '+name+'{from{width:auto;interpolate-size:'+other+'}to{width:40px;interpolate-size:'+other+'}}';
+        document.head.appendChild(sheet);f.extra.push(sheet);
+        f.probe.style.animation=name+' 100s linear -25s both paused';
+        dimension(f.probe,'width',allowed?160:200);
+        equal(getComputedStyle(f.probe).getPropertyValue('interpolate-size'),allowed?'allow-keywords':'numeric-only','keyframes do not animate policy');
+    });
+    for (const allowed of [true,false]) test('CSS transition uses after-change policy ' + (allowed?'allow-keywords':'numeric-only'), f => {
+        f.probe.style.setProperty('interpolate-size',allowed?'numeric-only':'allow-keywords');f.probe.style.width='auto';dimension(f.probe,'width',200);
+        f.probe.style.transition='width 1s linear';f.probe.style.width='40px';f.probe.style.setProperty('interpolate-size',allowed?'allow-keywords':'numeric-only');
+        getComputedStyle(f.probe).width;const active=f.probe.getAnimations().filter(a=>a.transitionProperty==='width');
+        equal(active.length,allowed?1:0,'real width transition eligibility');
+        if(allowed){const a=active[0];f.animations.push(a);a.pause();a.currentTime=500;dimension(f.probe,'width',120);hit(f.probe);}
+        else dimension(f.probe,'width',40);
+    });
+    for (const property of ['width','height']) test(property + ' distinct sizing keywords remain discrete', f => {
+        const a=sample(f,property,'auto','min-content',250,property==='width'?200:80);a.currentTime=750;dimension(f.probe,property,80);
+    });
+    let index=0;
+    for (const item of cases) {
+        const parent=document.createElement('div'),probe=document.createElement('div'),content=document.createElement('div');
+        parent.style.cssText='position:absolute;left:40px;top:30px;width:200px;height:160px;interpolate-size:allow-keywords';
+        probe.id='intrinsic-keyword-'+(++index);probe.style.cssText='margin:0;padding:0;border:0 solid;width:60px;height:40px;font-size:20px';
+        content.style.cssText='width:80px;height:80px;pointer-events:none';probe.appendChild(content);parent.appendChild(probe);document.body.appendChild(parent);
+        const fixture={parent,probe,content,animations:[],extra:[]};
+        try{item.callback(fixture);rows.push({name:item.name,pass:true});}
+        catch(error){rows.push({name:item.name,pass:false,error:String(error)});}
+        finally{for(const a of fixture.animations)a.cancel();for(const node of fixture.extra)node.remove();parent.remove();}
+    }
+    for(const row of rows)console.log('INTERPOLATE_SIZE_V2_ROW '+JSON.stringify(row));
+    const total=rows.length,passed=rows.filter(row=>row.pass).length,status=total===55&&passed===total?'PASS':'FAIL';
+    document.documentElement.setAttribute('data-css-interpolate-size-keywords-v2',status);
+    console.log('RESULTS css-interpolate-size-keywords-v2:'+status+' '+JSON.stringify({passed,total}));
+})();
+</script>

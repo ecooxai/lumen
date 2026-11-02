@@ -26,6 +26,7 @@ static void jsrun_navigate_post(void *ud, const char *url, const char *body, siz
 static void jsrun_frame_open(void *ud, Node *f, Document *d, JsHost *child) {
     (void)ud; (void)f; fprintf(stderr, "jsrun: frame %s\n", d->url ? d->url : "-");
     child->navigate = jsrun_navigate; child->navigate_post = jsrun_navigate_post; child->frame_open = jsrun_frame_open;
+    child->hit = NULL;   /* this harness lays out only its primary document */
 }
 static void jsrun_fullscreen(void *ud, bool on) { (void)ud; fprintf(stderr, "jsrun: fullscreen %d\n", on); }
 static int run_scripts(JsCtx *js, Document *d) {
@@ -101,6 +102,14 @@ static void jsrun_sync(void *ud, Document *d, bool layout) {
     style_recalc(g_se, &d->node, true);
     if (layout && g_layout) { g_laid = g_seen; layout_run(g_layout, d, 1280, 800); }
 }
+/* Layout-enabled tests use the same native box hit testing as the browser.
+ * The host viewport has no document scroll, and hit() does not itself sync. */
+static Node *jsrun_hit(void *ud, float x, float y) {
+    if (!g_layout || !g_se || !(x >= 0 && y >= 0 && x < 1280 && y < 800)) return NULL;
+    jsrun_sync(ud, g_se->doc, true);
+    Box *box = layout_hit(g_layout, x, y, 0, 0);
+    return box ? box->node : NULL;
+}
 int main(int argc, char **argv) {
     if (argc < 2) { fprintf(stderr, "usage: jsrun URL|FILE [ms]\n"); return 2; }
     double ms = argc > 2 ? atof(argv[2]) : 1000;
@@ -134,7 +143,7 @@ int main(int argc, char **argv) {
     JsHost h = {0};
     h.viewport = vp;
     g_se = se; g_seen = d->dom_version; h.sync = jsrun_sync;
-    if (getenv("JSRUN_LAYOUT")) { g_layout = layout_new(); g_laid = 0; }
+    if (getenv("JSRUN_LAYOUT")) { g_layout = layout_new(); g_laid = 0; h.hit = jsrun_hit; }
     double t0 = now_ms();
     h.navigate = jsrun_navigate; h.navigate_post = jsrun_navigate_post; h.frame_open = jsrun_frame_open; h.fullscreen = jsrun_fullscreen;
     h.open_window = jsrun_open_window; h.window_op = jsrun_window_op;

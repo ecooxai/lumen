@@ -691,17 +691,37 @@ FN(templateContent) {
     RET(jwrap(c, n->template_content));
 }
 FN(tplHost) { CTX; ARGN(n, 0); RET(n->type == NODE_FRAGMENT && !n->host && (n->flags & NF_INERT) != 0); }
+/* Synchronize the target document's animation layer at the same boundary as
+ * native style/layout reads. Cross-realm targets use their owning context;
+ * bootstrap and documents without a JS context retain ordinary host sync. */
+static bool flush_animations_for_read(JsCtx *owner, bool after_style) {
+    if (!owner || owner->dead || owner->ctx.IsEmpty() || owner->api.IsEmpty()) return false;
+    JS_ENTER(owner);
+    v8::Local<v8::Value> fn, result;
+    if (!owner->api.Get(iso)->Get(ctx, jstr(iso, "waSyncRead")).ToLocal(&fn) || !fn->IsFunction()) return false;
+    v8::Local<v8::Value> args[] = { v8::Boolean::New(iso, after_style) };
+    return jcall(owner, fn.As<v8::Function>(), v8::Undefined(iso), 1, args).ToLocal(&result) && result->BooleanValue(iso);
+}
+static void sync_style_for_read(JsCtx *owner, Document *doc, bool layout) {
+    if (!owner || !owner->host.sync) return;
+    (void)flush_animations_for_read(owner, false);
+    owner->host.sync(owner->host.ud, doc, layout);
+    /* Restyling can discover a CSS animation/transition. Its sampled layer
+       must reach real layout before the caller reads geometry or hit tests. */
+    if (flush_animations_for_read(owner, true)) owner->host.sync(owner->host.ud, doc, layout);
+}
+
 FN(skippedAncestor) {
     CTX; ARGN(n, 0);
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     RET(jsg_has_skipped_ancestor(n));
 }
 FN(rect) {
     CTX; ARGN(n, 0); float r[4];
     // An observer may belong to the parent realm while its target is in a frame.
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     if (!jsg_rect(n, r)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Array> o = v8::Array::New(iso, 4);
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
@@ -711,7 +731,7 @@ FN(rect) {
 FN(textRects) {
     CTX; ARGN(n, 0);
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     int s = (int)NUM(1), e = (int)NUM(2);
     float r[256 * 4];
     int k = n->type == NODE_TEXT ? jsg_text_rects(n, s, e, r, 256) : n->type == NODE_ELEMENT ? jsg_ctl_rects(n, s, e, r, 256) : 0;
@@ -722,7 +742,7 @@ FN(textRects) {
 FN(vrect) {
     CTX; ARGN(n, 0); float r[4];
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
     if (owner && owner->host.viewport) owner->host.viewport(owner->host.ud, &w, &h, &sx, &sy, &dpr);
     if (!jsg_vrect(n, r, sx, sy)) { RET(v8::Null(iso)); return; }
@@ -733,7 +753,7 @@ FN(vrect) {
 FN(vclip) {
     CTX; ARGN(n, 0); float r[4];
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
     if (owner && owner->host.viewport) owner->host.viewport(owner->host.ud, &w, &h, &sx, &sy, &dpr);
     if (!jsg_vclip(n, a.Length() > 1 ? junwrap(a[1]) : nullptr, r, sx, sy)) { RET(v8::Null(iso)); return; }
@@ -746,7 +766,7 @@ FN(vclip) {
 FN(borders) {
     CTX; ARGN(n, 0); float r[4]; bool inl = false;
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     if (!jsg_borders(n, r, &inl)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Array> o = v8::Array::New(iso, 5);
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
@@ -756,20 +776,22 @@ FN(borders) {
 /* overflowSize(node) -> [w, h] padding box grown by overflowing descendants, or null (no box, inline) */
 FN(overflowSize) {
     CTX; ARGN(n, 0); float r[2];
-    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
+    sync_style_for_read(owner, n->doc, true);
     if (!jsg_overflow_size(n, r)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Value> v[2] = { v8::Number::New(iso, r[0]), v8::Number::New(iso, r[1]) };
     RET(v8::Array::New(iso, v, 2));
 }
 FN(scrollPos) {
     CTX; ARGN(n, 0); float r[4];
-    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
+    sync_style_for_read(owner, n->doc, true);
     if (!jsg_scroll(n, r)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Array> o = v8::Array::New(iso, 4);
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
     RET(o);
 }
-FN(setScroll) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(jsg_set_scroll(n, (float)NUM(1), (float)NUM(2))); }
+FN(setScroll) { CTX; ARGN(n, 0); JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c; sync_style_for_read(owner, n->doc, true); RET(jsg_set_scroll(n, (float)NUM(1), (float)NUM(2))); }
 /* resolved values that read the box (used sizes, absolutized insets) need a current layout */
 static bool computed_needs_layout(const std::string &p) {
     static const char *const l[] = { "width", "height", "top", "right", "bottom", "left", "inset", "margin", "padding", "block-size", "inline-size", "grid-template", "transform-origin", "perspective-origin" };
@@ -782,15 +804,16 @@ FN(computed) {
        avoid a layout flush solely to obtain CSSOM's used grid track sizes. */
     int mode = a.Length() > 2 ? a[2]->Int32Value(ctx).FromMaybe(0) : 0;
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, mode != 3 && computed_needs_layout(p));
+    if (mode == 3) { if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, false); }
+    else sync_style_for_read(owner, n->doc, computed_needs_layout(p));
     char *v = jsg_computed(n, p.c_str(), mode); RET(nstr(iso, v)); free(v);
 }
 FN(trTake) {
     CTX; v8::Local<v8::Array> out = v8::Array::New(iso); uint32_t k = 0;
     for (size_t i = 0; i < c->anims.size();)
         if (c->anims[i].type == "lumen-transition" || c->anims[i].type == "lumen-animation") {
-            v8::Local<v8::Value> job[3] = { c->anims[i].target.Get(iso), jstr(iso, c->anims[i].name.c_str()), jstr(iso, c->anims[i].type.c_str()) };
-            (void)out->Set(ctx, k++, v8::Array::New(iso, job, 3));
+            v8::Local<v8::Value> job[4] = { c->anims[i].target.Get(iso), jstr(iso, c->anims[i].name.c_str()), jstr(iso, c->anims[i].type.c_str()), v8::Number::New(iso, c->anims[i].due - c->t0) };
+            (void)out->Set(ctx, k++, v8::Array::New(iso, job, 4));
             c->anims.erase(c->anims.begin() + (long)i);
         } else i++;
     RET(out);
@@ -1401,13 +1424,14 @@ FN(viewport) {
 }
 FN(scrollTo) { CTX; if (c->host.scroll_to) c->host.scroll_to(c->host.ud, (float)NUM(0), (float)NUM(1)); }
 FN(hit) {
-    CTX; Node *n = c->host.hit ? c->host.hit(c->host.ud, (float)NUM(0), (float)NUM(1)) : nullptr;
+    CTX; sync_style_for_read(c, c->doc, true);
+    Node *n = c->host.hit ? c->host.hit(c->host.ud, (float)NUM(0), (float)NUM(1)) : nullptr;
     while (n && n->type != NODE_ELEMENT) n = n->parent;
     RET(jwrap(c, n));
 }
 FN(caret) {
     CTX; Node *n = nullptr; int off = 0;
-    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    sync_style_for_read(c, c->doc, true);
     if (!c->host.caret || !c->host.caret(c->host.ud, (float)NUM(0), (float)NUM(1), &n, &off) || !n) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Value> v[2] = { jwrap(c, n), v8::Integer::New(iso, off) };
     RET(v8::Array::New(iso, v, 2));
@@ -1445,11 +1469,61 @@ FN(mediaValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_media_
 FN(cssSelText) { CTX; std::string q = S(0); char *r = css_selector_text(q.c_str()); RET(nstr(iso, r)); free(r); }
 FN(cssSupports) { CTX; std::string q = S(0); RET(jsg_supports(q.c_str())); }
 extern "C" bool css_var_syntax_valid(const char *value);
-FN(cssVarValid) { CTX; std::string q = S(0); RET(v8::Boolean::New(iso, css_var_syntax_valid(q.c_str()))); }
+extern "C" bool css_universal_initial_valid(const char *value, size_t length);
+FN(cssVarValid) {
+    CTX;
+    /* Registration requests declaration tokens without ordinary-value grammar.
+     * Preserve embedded NUL for CSS input preprocessing rather than truncating. */
+    if (a.Length() > 1 && a[1]->IsTrue()) {
+        v8::String::Utf8Value value(iso, a[0]);
+        RET(v8::Boolean::New(iso, css_universal_initial_valid(*value ? *value : "", *value ? (size_t)value.length() : 0)));
+        return;
+    }
+    std::string q = S(0); RET(v8::Boolean::New(iso, css_var_syntax_valid(q.c_str())));
+}
+extern "C" char *css_property_identifier(const char *source, size_t length);
+extern "C" bool css_property_rule_data(const char *name_source, size_t name_length,
+                                      const char *body_source, size_t body_length,
+                                      char **name, char ***syntaxes, int *syntax_count, char **initial, bool *inherits);
+FN(cssPropertyIdentifier) {
+    CTX; v8::String::Utf8Value input(iso, a[0]);
+    char *value = css_property_identifier(*input ? *input : "", *input ? (size_t)input.length() : 0);
+    RET(nstr(iso, value)); free(value);
+}
+FN(cssPropertyRule) {
+    CTX; v8::String::Utf8Value name_input(iso, a[0]), body_input(iso, a[1]);
+    char *name = nullptr, **syntaxes = nullptr, *initial = nullptr; int syntax_count = 0; bool inherits = false;
+    if (!css_property_rule_data(*name_input ? *name_input : "", *name_input ? (size_t)name_input.length() : 0,
+                               *body_input ? *body_input : "", *body_input ? (size_t)body_input.length() : 0,
+                               &name, &syntaxes, &syntax_count, &initial, &inherits)) { RET(v8::Null(iso)); return; }
+    v8::Local<v8::Array> syntax_values = v8::Array::New(iso, syntax_count);
+    for (int i = 0; i < syntax_count; i++) {
+        (void)syntax_values->Set(ctx, i, nstr(iso, syntaxes[i])); free(syntaxes[i]);
+    }
+    free(syntaxes);
+    v8::Local<v8::Array> value = v8::Array::New(iso, 4);
+    (void)value->Set(ctx, 0, nstr(iso, name));
+    (void)value->Set(ctx, 1, syntax_values);
+    (void)value->Set(ctx, 2, v8::Boolean::New(iso, inherits));
+    (void)value->Set(ctx, 3, nstr(iso, initial));
+    free(name); free(initial); RET(value);
+}
+extern "C" char *css_min_size_parse(const char *value);
+FN(cssMinSize) { CTX; std::string q = S(0); char *value = css_min_size_parse(q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
+extern "C" char *css_math_value_text(const char *value);
+FN(cssMathText) { CTX; std::string q = S(0); char *value = css_math_value_text(q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
+extern "C" char *css_numeric_dimension_parse(const char *prop, const char *value);
+FN(cssNumericDimension) { CTX; std::string p = S(0), q = S(1); char *value = css_numeric_dimension_parse(p.c_str(), q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
+extern "C" char *css_transition_property_parse(const char *value);
+FN(cssTransitionProperty) { CTX; std::string q = S(0); char *value = css_transition_property_parse(q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
+extern "C" char *css_box_shadow_parse(const char *value);
+FN(cssBoxShadow) { CTX; std::string q = S(0); char *value = css_box_shadow_parse(q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
+extern "C" char *css_border_parse(const char *property, const char *value);
+FN(cssBorder) { CTX; std::string p = S(0), q = S(1); char *value = css_border_parse(p.c_str(), q.c_str()); if (!value) { RET(v8::Null(iso)); return; } RET(nstr(iso, value)); free(value); }
 /* the computed serialization of a CSS colour (currentcolor as black), or null when it doesn't parse */
 FN(cssColor) { CTX; (void)c; std::string q = S(0); CssColor col; if (!css_color_parse(q.c_str(), &col, NULL)) { RET(v8::Null(iso)); return; } char b[200]; css_color_serialize(&col, b, sizeof b); RET(nstr(iso, b)); }
-extern "C" void css_register_property(const char *name, const char *initial);
-FN(registerProp) { CTX; std::string n = S(0), v = S(1); css_register_property(n.c_str(), v.c_str()); if (c->doc) doc_mark_dirty(c->doc, &c->doc->node); }
+extern "C" void css_register_property_full(const char *name,const char *initial,const char *syntax,bool inherits);
+FN(registerProp){CTX;std::string n=S(0),v=S(1),syntax=S(2),inherits=S(3),has_initial=S(4);css_register_property_full(n.c_str(),has_initial=="true"?v.c_str():nullptr,syntax.c_str(),inherits=="true");if(c->doc)doc_mark_dirty(c->doc,&c->doc->node);}
 FN(encode) { CTX; v8::String::Utf8Value u(iso, a[0]); RET(mkab(iso, *u ? *u : "", *u ? (size_t)u.length() : 0)); }
 FN(decode) {
     CTX; const char *p = ""; size_t n = 0;
@@ -1658,7 +1732,7 @@ extern "C" {
 #include "../text/font.h"
 }
 /* fontsPending() -> @font-face fetches the laid-out text still waits for (layout first, so text asks for its faces) */
-FN(fontsPending) { CTX; if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(font_pending()); }
+FN(fontsPending) { CTX; sync_style_for_read(c, c->doc, true); RET(font_pending()); }
 template <class T> static T *c2d_arr(v8::Local<v8::Value> v, size_t *n) {
     const char *p; size_t b;
     if (!v->IsArrayBufferView() || !bytes_of(v, &p, &b)) { *n = 0; return nullptr; }
@@ -1878,7 +1952,7 @@ void js_install_native(JsCtx *c, v8::Local<v8::Object> N) {
     REG(mediaBuffered); REG(mediaEos); REG(mediaSetDuration); REG(mediaPlay); REG(mediaPause); REG(mediaSeek);
     REG(mediaPump); REG(resizePump); REG(intersectionPump); REG(vclip); REG(videoFramePump); REG(videoFrameInfo); REG(videoQuality);
     REG(mediaVolume); REG(mediaState); REG(mediaCanPlay); REG(log); REG(errPos); REG(logLevel); REG(wsOpen); REG(wsSend); REG(wsClose); REG(viewport); REG(scrollTo); REG(hit); REG(caret); REG(ceScan); REG(selSet); REG(waOpen); REG(waPush); REG(waQueued); REG(waPause); REG(waClose); REG(audioDecode); REG(camCount); REG(camOpen); REG(camState); REG(camSource); REG(camPermission); REG(camInfo); REG(camClose); REG(mediaLive); REG(screenOpen); REG(screenState); REG(screenSource); REG(screenInfo); REG(screenClose); REG(screenAudio); REG(micOpen); REG(micPermission); REG(micState); REG(micRead); REG(micClose); REG(recKind); REG(recOpen); REG(recPause); REG(recPush); REG(recFinish); REG(recTake); REG(recClose); REG(recMime); REG(readyState); REG(quirks);
-    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
+    REG(currentScript); REG(ignoreWrites); REG(parserWritePoint); REG(parserScript); REG(docOpen); REG(runWritten); REG(hidden); REG(media); REG(mediaValid); REG(cssSupports); REG(cssVarValid); REG(cssPropertyIdentifier); REG(cssPropertyRule); REG(cssMinSize); REG(cssMathText); REG(cssNumericDimension); REG(cssTransitionProperty); REG(cssBoxShadow); REG(cssBorder); REG(cssColor); REG(registerProp); REG(cssSelText); REG(encode); REG(decode); REG(random);
     REG(heap); REG(imgWatch); REG(imgSize); REG(imgDone); REG(imgRequest); REG(imgSrc); REG(imgDecode); REG(imgTake); REG(userAgent); REG(platform); REG(download); REG(downloadBytes); REG(touchPoints); REG(cpus); REG(makeAll);
 #undef REG
     js_install_frames(c, N); js_install_workers(c, N); js_install_rtc(c, N); js_install_webgl(c, N); js_install_webgpu(c, N);

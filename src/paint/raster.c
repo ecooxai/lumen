@@ -11,6 +11,8 @@
 typedef struct { int x0, y0, x1, y1; float fx, fy, fw, fh, r[4]; bool round; } Clip;
 typedef struct { int x0, y0, x1, y1; } LayerRect;
 typedef struct { uint32_t *px; float alpha; int origin_x, origin_y, stride, height; } LayerSave;
+typedef struct { size_t used, limit; } AffineScratch;
+enum { AFFINE_SCRATCH_LIMIT = 4 * 1024 * 1024 };
 typedef struct {
     Canvas *c; float s;
     Clip clips[64]; int nclip;
@@ -19,6 +21,9 @@ typedef struct {
     int origin_x, origin_y, stride, height; /* tightly bounded storage for opacity groups */
     bool quiet;                             /* a band after the first: leaves the canvas' punch results alone */
     uint8_t lut[256]; Color lut_color; bool lut_ok;
+    double offset_x, offset_y; /* source-window origin, in device pixels */
+    uint32_t *private_layers; /* pre-reserved full-window opacity planes */
+    AffineScratch *scratch;   /* one bounded heap budget shared by nested groups */
 } R;
 
 static inline uint32_t *raster_row(R *r, int y) {
@@ -38,20 +43,29 @@ static inline uint32_t scale_px(uint32_t p, uint32_t k) { /* k 0..256 */
     uint32_t rb = ((p & 0x00ff00ff) * k >> 8) & 0x00ff00ff, ag = (((p >> 8) & 0x00ff00ff) * k) & 0xff00ff00;
     return rb | ag;
 }
-static inline void over(uint32_t *d, uint32_t s) {
-    uint32_t sa = s >> 24;
-    if (sa == 255) { *d = s; return; }
-    if (!sa && !s) return;
-    *d = s + scale_px(*d, 256 - sa - (sa >> 7));
-}
-/* Straight-color coverage must be combined with the destination before
-   quantization. Separately truncating premultiplied source and destination
-   darkens text even when both colors are identical. Each packed 16-bit lane
-   is at most 255*255, so this is exact nearest division by 255 without carry. */
+/* Exact nearest division by255 for two independent16-bit lanes. Every
+   numerator is at most255*255; adding128 and its high byte cannot carry. */
 static inline uint32_t round_255_pair(uint32_t v) {
     v += 0x00800080u;
     return ((v + ((v >> 8) & 0x00ff00ffu)) >> 8) & 0x00ff00ffu;
 }
+/* Premultiplied source-over is shared by ordinary and affine paint. The
+   source is already quantized, so round only the destination contribution.
+   RGB<=alpha bounds each sum by255, including opaque destination alpha. */
+static inline uint32_t source_over_px(uint32_t destination, uint32_t source) {
+    uint32_t inverse_alpha = 255 - (source >> 24);
+    uint32_t rb = round_255_pair((destination & 0x00ff00ffu) * inverse_alpha);
+    uint32_t ag = round_255_pair(((destination >> 8) & 0x00ff00ffu) * inverse_alpha);
+    return source + rb + (ag << 8);
+}
+static inline void over(uint32_t *d, uint32_t s) {
+    if ((s >> 24) == 255) { *d = s; return; }
+    if (!s) return;
+    *d = source_over_px(*d, s);
+}
+/* Straight-color coverage still combines the two products before rounding:
+   separately truncating them darkens equal-color text. Its input has not yet
+   been premultiplied, unlike source_over_px's decoded or rastered pixels. */
 static inline void over_color_coverage(uint32_t *d, Color color, uint32_t a) {
     if (!a) return;
     color |= 0xff000000u;
@@ -71,10 +85,20 @@ static void over_span(uint32_t *dst, int count, uint32_t color) {
     uint32_t alpha = color >> 24;
     if (alpha == 255) { store_span(dst, count, color); return; }
     if (!color) return;
-    uint32_t k = 256 - alpha - (alpha >> 7);
-    for (int i = 0; i < count; i++) dst[i] = color + scale_px(dst[i], k);
+    for (int i = 0; i < count; i++) dst[i] = source_over_px(dst[i], color);
 }
 static inline const Clip *clip(R *r) { return &r->clips[r->nclip - 1]; }
+/* Clip finite raster coordinates before integer conversion. A valid affine
+ * matrix can map enormous source coordinates into a tiny destination window. */
+static inline int pixel_floor(double value, int low, int high) {
+    return !(value > low) ? low : value >= high ? high : (int)floor(value);
+}
+static inline int pixel_ceil(double value, int low, int high) {
+    return !(value > low) ? low : value >= high ? high : (int)ceil(value);
+}
+static inline float raster_x(R *r, double x) { return affine_float(x * r->s - r->offset_x); }
+static inline float raster_y(R *r, double y) { return affine_float(y * r->s - r->offset_y); }
+static void affine_draw(R *r, const DItem *item);
 
 static float sd_rrect(float px, float py, float x0, float y0, float x1, float y1, const float rad[4]) {
     float cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, hw = (x1 - x0) / 2, hh = (y1 - y0) / 2;
@@ -106,13 +130,13 @@ static inline int span_bound(float v, int lo, int hi) { return v <= (float)lo ? 
 static void fill(R *r, float x0, float y0, float x1, float y1, const float rad[4], Color col) {
     if (!COLOR_A(col) || x1 <= x0 || y1 <= y0) return;
     const Clip *c = clip(r);
-    int ix0 = LMAX(c->x0, (int)floorf(x0)), iy0 = LMAX(c->y0, (int)floorf(y0)), ix1 = LMIN(c->x1, (int)ceilf(x1)), iy1 = LMIN(c->y1, (int)ceilf(y1));
+    int ix0 = pixel_floor(x0, c->x0, c->x1), iy0 = pixel_floor(y0, c->y0, c->y1), ix1 = pixel_ceil(x1, c->x0, c->x1), iy1 = pixel_ceil(y1, c->y0, c->y1);
     if (ix0 >= ix1 || iy0 >= iy1) return;
     bool round = rad && (rad[0] > 0 || rad[1] > 0 || rad[2] > 0 || rad[3] > 0);
     uint32_t solid = premul(col, 1);
     float rmax = round ? LMAX(LMAX(rad[0], rad[1]), LMAX(rad[2], rad[3])) : 0;
     if (!c->round) {   /* rows clear of the corners are plain spans */
-        int ax = LMAX(ix0, (int)ceilf(x0)), bx = LMIN(ix1, (int)floorf(x1)); if (bx < ax) bx = ax;
+        int ax = pixel_ceil(x0, ix0, ix1), bx = pixel_floor(x1, ix0, ix1); if (bx < ax) bx = ax;
         for (int y = iy0; y < iy1; y++) {
             if (round && (y < y0 + rmax + 1 || y + 1 > y1 - rmax - 1)) {
                 /* Pixels a pixel clear of both corner radii see only the top or bottom edge, so each half
@@ -167,7 +191,7 @@ static void fill(R *r, float x0, float y0, float x1, float y1, const float rad[4
 }
 
 static void border(R *r, const DItem *it) {
-    float s = r->s, x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
+    float s = r->s, x0 = raster_x(r, it->x), y0 = raster_y(r, it->y), x1 = raster_x(r, (double)it->x + it->w), y1 = raster_y(r, (double)it->y + it->h);
     float rad[4]; for (int i = 0; i < 4; i++) rad[i] = it->r[i] * s;
     float bw[4]; for (int i = 0; i < 4; i++) bw[i] = it->bw[i] > 0 ? LMAX(1, roundf(it->bw[i] * s)) : 0;
     bool round = rad[0] > 0 || rad[1] > 0 || rad[2] > 0 || rad[3] > 0;
@@ -177,7 +201,7 @@ static void border(R *r, const DItem *it) {
         float ir[4] = { LMAX(0, rad[0] - LMAX(bw[0], bw[3])), LMAX(0, rad[1] - LMAX(bw[0], bw[1])), LMAX(0, rad[2] - LMAX(bw[2], bw[1])), LMAX(0, rad[3] - LMAX(bw[2], bw[3])) };
         float ix0 = x0 + bw[3], iy0 = y0 + bw[0], ix1 = x1 - bw[1], iy1 = y1 - bw[2];
         const Clip *c = clip(r);
-        int px0 = LMAX(c->x0, (int)floorf(x0)), py0 = LMAX(c->y0, (int)floorf(y0)), px1 = LMIN(c->x1, (int)ceilf(x1)), py1 = LMIN(c->y1, (int)ceilf(y1));
+        int px0 = pixel_floor(x0, c->x0, c->x1), py0 = pixel_floor(y0, c->y0, c->y1), px1 = pixel_ceil(x1, c->x0, c->x1), py1 = pixel_ceil(y1, c->y0, c->y1);
         if (px0 >= px1) return;
         bool inner = ix1 > ix0 && iy1 > iy0, flat = !c->round && !raster_pixel_rows;
         float rmax = LMAX(LMAX(rad[0], rad[1]), LMAX(rad[2], rad[3])), irl = LMAX(ir[0], ir[3]), irr = LMAX(ir[1], ir[2]), irmax = LMAX(irl, irr);
@@ -260,14 +284,14 @@ static inline uint32_t shadow_px(R *r, const ShadowGeom *g, int x, float fy, boo
 }
 static void shadow(R *r, const DItem *it) {
     float s = r->s, sp = it->spread * s, bl = LMAX(0.5f, it->blur * s);
-    float x0 = it->x * s - sp, y0 = it->y * s - sp, x1 = (it->x + it->w) * s + sp, y1 = (it->y + it->h) * s + sp;
+    float x0 = raster_x(r, it->x) - sp, y0 = raster_y(r, it->y) - sp, x1 = raster_x(r, (double)it->x + it->w) + sp, y1 = raster_y(r, (double)it->y + it->h) + sp;
     float rad[4]; for (int i = 0; i < 4; i++) rad[i] = LMAX(0, it->r[i] * s + sp);
     /* An outer shadow is clipped out inside the border box. Skipping its
      * straight interior avoids a distance evaluation for most pixels. */
-    float bx0 = (it->x - it->ox) * s, by0 = (it->y - it->oy) * s, bx1 = bx0 + it->w * s, by1 = by0 + it->h * s;
+    float bx0 = raster_x(r, (double)it->x - it->ox), by0 = raster_y(r, (double)it->y - it->oy), bx1 = bx0 + it->w * s, by1 = by0 + it->h * s;
     float brad[4], bmax = 0; for (int i = 0; i < 4; i++) { brad[i] = it->r[i] * s; bmax = LMAX(bmax, brad[i]); }
     const Clip *c = clip(r);
-    int px0 = LMAX(c->x0, (int)floorf(x0 - bl)), py0 = LMAX(c->y0, (int)floorf(y0 - bl)), px1 = LMIN(c->x1, (int)ceilf(x1 + bl)), py1 = LMIN(c->y1, (int)ceilf(y1 + bl));
+    int px0 = pixel_floor((double)x0 - bl, c->x0, c->x1), py0 = pixel_floor((double)y0 - bl, c->y0, c->y1), px1 = pixel_ceil((double)x1 + bl, c->x0, c->x1), py1 = pixel_ceil((double)y1 + bl, c->y0, c->y1);
     if (px0 >= px1) return;
     ShadowGeom g = { x0, y0, x1, y1, bl, bx0, by0, bx1, by1, {rad[0], rad[1], rad[2], rad[3]}, {brad[0], brad[1], brad[2], brad[3]}, it->color };
     /* Pixels a pixel clear of the corner radii and of the blur see one horizontal edge (or are fully
@@ -281,7 +305,7 @@ static void shadow(R *r, const DItem *it) {
     for (int y = py0; y < py1; y++) {
         float fy = y + 0.5f;
         int skip0 = px1, skip1 = px1;
-        if (y >= by0 + bmax && y + 1 <= by1 - bmax) { skip0 = LMAX(px0, (int)ceilf(bx0 + bmax)); skip1 = LMIN(px1, (int)floorf(bx1 - bmax)); }
+        if (y >= by0 + bmax && y + 1 <= by1 - bmax) { skip0 = pixel_ceil((double)bx0 + bmax, px0, px1); skip1 = pixel_floor((double)bx1 - bmax, px0, px1); }
         if (skip1 <= skip0) skip0 = skip1 = px1;
         bool box_row = fy > by0 - 0.5f && fy < by1 + 0.5f;
         uint32_t *row = raster_row(r, y); int ox = r->origin_x;
@@ -338,7 +362,7 @@ static TileCoord tile_coord(int pixel, float origin, float size, float step) {
 }
 static void gradient(R *r, const DItem *it) {
     const Gradient *g = it->grad; float s = r->s;
-    float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
+    float x0 = raster_x(r, it->x), y0 = raster_y(r, it->y), x1 = raster_x(r, (double)it->x + it->w), y1 = raster_y(r, (double)it->y + it->h);
     bool tiled = it->tile.w > 0 && it->tile.h > 0;
     float w = tiled ? it->tile.w * s : x1 - x0, h = tiled ? it->tile.h * s : y1 - y0;
     float tx = x0 + it->tile.x * s, ty = y0 + it->tile.y * s;
@@ -406,15 +430,15 @@ static const uint8_t *text_lut(R *r, Color color) {
     for (uint32_t a = 0; a < 256; a++) r->lut[a] = (uint8_t)(a * ca / 255);
     r->lut_color = color; r->lut_ok = true; return r->lut;
 }
-/* a text item whose fragment box, padded by twice its font size for ink overflow, misses [x0,x1)x[y0,y1) device px */
-static bool text_outside(const DItem *it, float s, float x0, float y0, float x1, float y1) {
-    if (!(it->w > 0) || !(it->h > 0) || !it->ng) return false;   /* list markers carry no box */
-    float em = 2 * (it->g[0].font ? it->g[0].font->size : 16);
-    return (it->x - em) * s >= x1 || (it->x + it->w + em) * s <= x0 || (it->y - em) * s >= y1 || (it->y + it->h + em) * s <= y0;
+/* Exact scaled glyph ink, in the unshifted source frame. */
+static bool text_outside(const DItem *it, float scale, double x0, double y0, double x1, double y1) {
+    double ink[4];
+    return !paint_text_bounds(it, scale, ink) || ink[0] >= x1 || ink[2] <= x0 || ink[1] >= y1 || ink[3] <= y0;
 }
 static void text(R *r, const DItem *it) {
     float s = r->s; const Clip *c = clip(r);
-    if (text_outside(it, s, c->x0, c->y0, c->x1, c->y1)) return;
+    if (text_outside(it, s, c->x0 + r->offset_x, c->y0 + r->offset_y,
+                      c->x1 + r->offset_x, c->y1 + r->offset_y)) return;
     uint32_t ca = COLOR_A(it->color);
     const uint8_t *lut = NULL;
     for (int i = 0; i < it->ng; i++) {
@@ -422,8 +446,12 @@ static void text(R *r, const DItem *it) {
         if (!dg->font) continue;
         const Glyph *gl = font_glyph(dg->font, dg->gid, s);
         if (!gl || !gl->w) continue;
-        int ox = (int)lroundf(dg->x * s) + gl->left, oy = (int)lroundf(dg->y * s) - gl->top;
-        if (ox >= c->x1 || oy >= c->y1 || ox + gl->w <= c->x0 || oy + gl->h <= c->y0) continue;
+        double gx = round((double)dg->x * s) + gl->left - r->offset_x;
+        double gy = round((double)dg->y * s) - gl->top - r->offset_y;
+        if (!(gx < c->x1 && gy < c->y1 && gx + gl->w > c->x0 && gy + gl->h > c->y0)) continue;
+        /* A glyph intersecting this bounded window is within its bitmap size
+           of it; conversion is now independent of distant document origins. */
+        int ox = (int)gx, oy = (int)gy;
         int xs = LMAX(0, c->x0 - ox), xe = LMIN(gl->w, c->x1 - ox);
         if (!c->round && !(gl->color && gl->rgba) && gl->alpha) {   /* the common case: integer coverage through a lookup */
             if (!lut) lut = text_lut(r, it->color);
@@ -471,8 +499,8 @@ static void image_vertical(uint32_t *restrict dst, const uint32_t *restrict top,
 #ifdef IMAGE_NEON
     /* Deinterleave eight premultiplied pixels: each lane is one channel,
        avoiding repeated packed-channel masks. Add both interpolation products
-       before one rounded shift, exactly as image_lerp_px does. A 16-bit blend
-       factor represents 256, preserving the destination for transparent pixels. */
+       before one rounded shift, exactly as image_lerp_px does. Composition
+       then uses exact nearest /255, identical to source_over_px. */
     uint8x8_t wa = vdup_n_u8((uint8_t)(256 - weight)), wb = vdup_n_u8((uint8_t)weight);
     for (; x + 8 <= count; x += 8) {
         uint8x8x4_t p;
@@ -483,30 +511,32 @@ static void image_vertical(uint32_t *restrict dst, const uint32_t *restrict top,
             for (int c = 0; c < 4; c++)
                 p.val[c] = vrshrn_n_u16(vmlal_u8(vmull_u8(a.val[c], wa), b.val[c], wb), 8);
         }
-        uint16x8_t alpha = vmovl_u8(p.val[3]);
-        uint16x8_t k = vsubq_u16(vsubq_u16(vdupq_n_u16(256), alpha), vshrq_n_u16(alpha, 7));
+        uint8x8_t inverse_alpha = vsub_u8(vdup_n_u8(255), p.val[3]);
         uint8x8x4_t d = vld4_u8((const uint8_t *)(dst + x));
-        for (int c = 0; c < 4; c++)
-            d.val[c] = vadd_u8(p.val[c], vshrn_n_u16(vmulq_u16(vmovl_u8(d.val[c]), k), 8));
+        for (int c = 0; c < 4; c++) {
+            uint16x8_t product = vmull_u8(d.val[c], inverse_alpha);
+            uint16x8_t rounded = vaddq_u16(product, vdupq_n_u16(128));
+            rounded = vaddq_u16(rounded, vshrq_n_u16(rounded, 8));
+            d.val[c] = vadd_u8(p.val[c], vshrn_n_u16(rounded, 8));
+        }
         vst4_u8((uint8_t *)(dst + x), d);
     }
 #endif
     for (; x < count; x++) {
         uint32_t p = image_lerp_px(top[x], bottom[x], weight);
-        uint32_t alpha = p >> 24;
-        dst[x] = p + scale_px(dst[x], 256 - alpha - (alpha >> 7));
+        dst[x] = source_over_px(dst[x], p);
     }
 }
 static void image(R *r, const DItem *it) {
     const Image *im = it->img; float s = r->s;
     bool tiled = it->tile.w > 0 && it->tile.h > 0;
-    float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
+    float x0 = raster_x(r, it->x), y0 = raster_y(r, it->y), x1 = raster_x(r, (double)it->x + it->w), y1 = raster_y(r, (double)it->y + it->h);
     if (tiled ? (!(x1 > x0) || !(y1 > y0)) : (x1 - x0 < .5f || y1 - y0 < .5f)) return;
     const Clip *c = clip(r);
     int more = -1;
     for (int i = 0; i < 3 && r->c->punch_more[i]; i++) if ((const void *)im == r->c->punch_more[i]) more = i;
     if (!tiled && ((r->c->punch && (const void *)im == r->c->punch) || more >= 0)) {
-        int qx0 = LMAX(c->x0, (int)floorf(x0 + 0.5f)), qy0 = LMAX(c->y0, (int)floorf(y0 + 0.5f)), qx1 = LMIN(c->x1, (int)floorf(x1 + 0.5f)), qy1 = LMIN(c->y1, (int)floorf(y1 + 0.5f));
+        int qx0 = pixel_floor((double)x0 + .5, c->x0, c->x1), qy0 = pixel_floor((double)y0 + .5, c->y0, c->y1), qx1 = pixel_floor((double)x1 + .5, c->x0, c->x1), qy1 = pixel_floor((double)y1 + .5, c->y0, c->y1);
         for (int y = qy0; qx1 > qx0 && y < qy1; y++) memset(raster_row(r, y) + qx0 - r->origin_x, 0, (size_t)(qx1 - qx0) * 4);
         bool ok = !r->nlayer && !c->round;
         if (r->quiet) return;
@@ -605,12 +635,10 @@ static void image(R *r, const DItem *it) {
    Ignoring interior clips is conservative and avoids duplicating clip-stack
    semantics. Damage bounds are applied before converting coordinates to int. */
 static void layer_include(LayerRect *bounds, int *stack, int depth,
-                          LayerRect damage, float x0, float y0, float x1, float y1) {
+                          LayerRect damage, double x0, double y0, double x1, double y1) {
     LayerRect b = {
-        (int)fminf(damage.x1, fmaxf(damage.x0, floorf(x0))),
-        (int)fminf(damage.y1, fmaxf(damage.y0, floorf(y0))),
-        (int)fminf(damage.x1, fmaxf(damage.x0, ceilf(x1))),
-        (int)fminf(damage.y1, fmaxf(damage.y0, ceilf(y1)))
+        pixel_floor(x0, damage.x0, damage.x1), pixel_floor(y0, damage.y0, damage.y1),
+        pixel_ceil(x1, damage.x0, damage.x1), pixel_ceil(y1, damage.y0, damage.y1)
     };
     if (b.x1 <= b.x0 || b.y1 <= b.y0) return;
     for (int k = 0; k < LMIN(depth, 16); k++) {
@@ -631,10 +659,11 @@ static inline bool cull_miss(const CullBox *cb, int i, LayerRect d) {
 static bool punch_image(const Canvas *cv, const Image *im) {
     return im && (im == cv->punch || im == cv->punch_more[0] || im == cv->punch_more[1] || im == cv->punch_more[2]);
 }
-static CullBox cull_rect(float x0, float y0, float x1, float y1) {
-    const float big = 1e9f;
-    if (!(x0 <= x1) || !(y0 <= y1)) return (CullBox){ -1000000000, -1000000000, 1000000000, 1000000000, -1 };
-    return (CullBox){ (int)fmaxf(-big, floorf(x0) - 2), (int)fmaxf(-big, floorf(y0) - 2), (int)fminf(big, ceilf(x1) + 2), (int)fminf(big, ceilf(y1) + 2), -1 };
+static CullBox cull_rect(double x0, double y0, double x1, double y1) {
+    const int low = -1000000000, high = 1000000000;
+    if (!(x0 <= x1) || !(y0 <= y1)) return (CullBox){ low, low, high, high, -1 };
+    return (CullBox){ pixel_floor(x0 - 2, low, high), pixel_floor(y0 - 2, low, high),
+                      pixel_ceil(x1 + 2, low, high), pixel_ceil(y1 + 2, low, high), -1 };
 }
 static CullBox *cull_build(const Canvas *cv, const DisplayList *dl, float s) {
     if (raster_pixel_rows || dl->items.n < 64) return NULL;
@@ -645,18 +674,29 @@ static CullBox *cull_build(const Canvas *cv, const DisplayList *dl, float s) {
         const DItem *it = &dl->items.v[i];
         float x0 = it->x * s, y0 = it->y * s, x1 = (it->x + it->w) * s, y1 = (it->y + it->h) * s;
         cb[i] = cull_rect(1, 1, 0, 0);
+        if (it->transform) {
+            double ink[4];
+            if (paint_item_bounds(it, s, ink)) cb[i] = cull_rect(ink[0] * s, ink[1] * s, ink[2] * s, ink[3] * s);
+            else cb[i] = (CullBox){0, 0, 0, 0, -1};
+            continue;
+        }
         switch (it->op) {
         case DO_RECT: case DO_LINE: case DO_BORDER: case DO_GRADIENT: cb[i] = cull_rect(x0, y0, x1, y1); break;
+        case DO_TRANSFORM: {
+            double ink[4];
+            if (paint_item_bounds(it, s, ink)) cb[i] = cull_rect(ink[0] * s, ink[1] * s, ink[2] * s, ink[3] * s);
+            break;
+        }
         case DO_IMAGE:
             if (!(it->tile.w > 0) && punch_image(cv, it->img)) { for (int k = 0; k < nopen; k++) bad[k] = true; break; }
             cb[i] = cull_rect(x0, y0, x1, y1); break;
         case DO_SHADOW: { float pad = fabsf(it->spread * s) + LMAX(.5f, it->blur * s); cb[i] = cull_rect(x0 - pad, y0 - pad, x1 + pad, y1 + pad); break; }
-        case DO_TEXT:
-            if (it->w > 0 && it->h > 0 && it->ng) {   /* as text_outside: glyph ink stays within 2em of the box */
-                float em = 2 * (it->g[0].font ? it->g[0].font->size : 16) * s;
-                cb[i] = cull_rect(x0 - em, y0 - em, x1 + em, y1 + em);
-            }
+        case DO_TEXT: {
+            double ink[4];
+            if (paint_text_bounds(it, s, ink)) cb[i] = cull_rect(ink[0], ink[1], ink[2], ink[3]);
+            else cb[i] = (CullBox){0, 0, 0, 0, -1};
             break;
+        }
         case DO_PUSH_CLIP:
             cb[i] = cull_rect(x0, y0, x1, y1);
             if (nopen < MAXOPEN) { open[nopen] = i; open_layers[nopen] = layers; bad[nopen] = false; }
@@ -681,21 +721,25 @@ static LayerRect *layer_bounds(const DisplayList *dl, const CullBox *cb, float s
     for (int i = 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i];
         if (it->op == DO_PUSH_CLIP && cb && cb[i].skip >= 0 && cull_miss(cb, i, damage)) { i = cb[i].skip; continue; }
-        if (it->op <= DO_LINE && cull_miss(cb, i, damage)) continue;
+        if (it->op <= DO_TRANSFORM && cull_miss(cb, i, damage)) continue;
         if (it->op == DO_PUSH_LAYER) {
             if (!bounds) bounds = xmalloc(sizeof *bounds * (size_t)dl->items.n);
             if (depth < 16) { stack[depth] = i; bounds[i] = (LayerRect){0}; }
             depth++;
         } else if (it->op == DO_POP_LAYER) { if (depth) depth--; }
-        else if (depth && it->op == DO_TEXT) {
+        else if (depth && it->transform) {
+            double ink[4];
+            if (paint_item_bounds(it, scale, ink)) layer_include(bounds, stack, depth, damage,
+                ink[0] * scale - 1, ink[1] * scale - 1, ink[2] * scale + 1, ink[3] * scale + 1);
+        } else if (depth && it->op == DO_TEXT) {
             if (text_outside(it, scale, damage.x0, damage.y0, damage.x1, damage.y1)) continue;
             for (int j = 0; j < it->ng; j++) {
                 const DGlyph *dg = &it->g[j];
                 if (!dg->font) continue;
                 const Glyph *gl = font_glyph(dg->font, dg->gid, scale);
                 if (!gl || !gl->w || !gl->h) continue;
-                int x = (int)lroundf(dg->x * scale) + gl->left;
-                int y = (int)lroundf(dg->y * scale) - gl->top;
+                double x = round((double)dg->x * scale) + gl->left;
+                double y = round((double)dg->y * scale) - gl->top;
                 layer_include(bounds, stack, depth, damage, x, y, x + gl->w, y + gl->h);
             }
         } else if (depth && it->op <= DO_LINE) {
@@ -709,36 +753,41 @@ static LayerRect *layer_bounds(const DisplayList *dl, const CullBox *cb, float s
 
 unsigned long long g_raster_px, g_layer_px;
 unsigned g_raster_calls, g_layer_n;
-static void raster_band(Canvas *cv, const DisplayList *dl, const CullBox *cb, Color clearc, int rx0, int ry0, int rx1, int ry1, bool quiet) {
+static void raster_window(Canvas *cv, const DisplayList *dl, const CullBox *cb, Color clearc,
+                          int rx0, int ry0, int rx1, int ry1, bool quiet,
+                          double offset_x, double offset_y, uint32_t *private_layers, AffineScratch *scratch) {
     R r; memset(&r, 0, sizeof r); r.c = cv; r.s = cv->scale; r.px = cv->px; r.stride = cv->stride; r.height = cv->h; r.quiet = quiet;
+    r.offset_x = offset_x; r.offset_y = offset_y; r.private_layers = private_layers; r.scratch = scratch;
     uint32_t cl = premul(clearc, 1);
     /* An opaque canvas background covering the band stores every pixel anyway: no clear first. */
     const DItem *bg = dl->items.n ? &dl->items.v[0] : NULL;
-    bool covered = bg && bg->op == DO_RECT && COLOR_A(bg->color) == 255 && !bg->r[0] && !bg->r[1] && !bg->r[2] && !bg->r[3] &&
+    bool covered = !offset_x && !offset_y && bg && !bg->transform && bg->op == DO_RECT && COLOR_A(bg->color) == 255 && !bg->r[0] && !bg->r[1] && !bg->r[2] && !bg->r[3] &&
         bg->x * r.s <= rx0 && bg->y * r.s <= ry0 && (bg->x + bg->w) * r.s >= rx1 && (bg->y + bg->h) * r.s >= ry1;
     for (int y = ry0; !covered && y < ry1; y++) store_span(canvas_row(cv, y) + rx0, rx1 - rx0, cl);
     r.clips[0] = (Clip){ rx0, ry0, rx1, ry1, 0, 0, (float)cv->w, (float)cv->h, {0}, false }; r.nclip = 1;
     float s = r.s;
     LayerRect band = {rx0, ry0, rx1, ry1};
-    LayerRect *bounds = layer_bounds(dl, cb, s, band);
+    LayerRect *bounds = private_layers ? NULL : layer_bounds(dl, cb, s, band);
     for (int i = 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i];
         if (it->op == DO_PUSH_CLIP && cb && cb[i].skip >= 0 && cull_miss(cb, i, band)) { i = cb[i].skip; continue; }
-        if (it->op <= DO_LINE && cull_miss(cb, i, band)) continue;
+        if (it->op <= DO_TRANSFORM && cull_miss(cb, i, band)) continue;
+        if (it->transform) { affine_draw(&r, it); continue; }
         switch (it->op) {
-        case DO_RECT: case DO_LINE: { float rad[4]; for (int k = 0; k < 4; k++) rad[k] = it->r[k] * s; fill(&r, it->x * s, it->y * s, (it->x + it->w) * s, (it->y + it->h) * s, rad, it->color); break; }
+        case DO_RECT: case DO_LINE: { float rad[4]; for (int k = 0; k < 4; k++) rad[k] = it->r[k] * s; fill(&r, raster_x(&r, it->x), raster_y(&r, it->y), raster_x(&r, (double)it->x + it->w), raster_y(&r, (double)it->y + it->h), rad, it->color); break; }
         case DO_BORDER: border(&r, it); break;
         case DO_SHADOW: shadow(&r, it); break;
         case DO_GRADIENT: gradient(&r, it); break;
         case DO_TEXT: text(&r, it); break;
         case DO_IMAGE: image(&r, it); break;
+        case DO_TRANSFORM: affine_draw(&r, it); break;
         case DO_PUSH_CLIP: {
             if (r.nclip >= 64) break;
             const Clip *p = clip(&r); Clip c;
-            c.x0 = LMAX(p->x0, (int)floorf(it->x * s)); c.y0 = LMAX(p->y0, (int)floorf(it->y * s));
-            c.x1 = LMIN(p->x1, (int)ceilf((it->x + it->w) * s)); c.y1 = LMIN(p->y1, (int)ceilf((it->y + it->h) * s));
+            c.x0 = pixel_floor((double)it->x * s - offset_x, p->x0, p->x1); c.y0 = pixel_floor((double)it->y * s - offset_y, p->y0, p->y1);
+            c.x1 = pixel_ceil(((double)it->x + it->w) * s - offset_x, p->x0, p->x1); c.y1 = pixel_ceil(((double)it->y + it->h) * s - offset_y, p->y0, p->y1);
             if (c.x1 < c.x0) c.x1 = c.x0; if (c.y1 < c.y0) c.y1 = c.y0;
-            c.fx = it->x * s; c.fy = it->y * s; c.fw = it->w * s; c.fh = it->h * s;
+            c.fx = raster_x(&r, it->x); c.fy = raster_y(&r, it->y); c.fw = it->w * s; c.fh = it->h * s;
             c.round = false; for (int k = 0; k < 4; k++) { c.r[k] = it->r[k] * s; if (c.r[k] > 0) c.round = true; }
             if (!c.round && p->round) { c.round = true; c.fx = p->fx; c.fy = p->fy; c.fw = p->fw; c.fh = p->fh; memcpy(c.r, p->r, sizeof c.r); }
             r.clips[r.nclip++] = c; break;
@@ -748,9 +797,13 @@ static void raster_band(Canvas *cv, const DisplayList *dl, const CullBox *cb, Co
             if (r.nlayer >= 16) { r.nlayer++; break; }
             r.layers[r.nlayer] = (LayerSave){r.px, it->alpha, r.origin_x, r.origin_y, r.stride, r.height};
             r.nlayer++;
-            LayerRect b = bounds[i];
+            LayerRect b = private_layers ? (LayerRect){0, 0, cv->w, cv->h} : bounds[i];
             r.stride = b.x1 - b.x0; r.height = b.y1 - b.y0;
-            r.px = xcalloc((size_t)r.stride * (size_t)(b.y1 - b.y0), 4);
+            if (private_layers) {
+                size_t area = (size_t)cv->w * cv->h;
+                r.px = private_layers + (size_t)(r.nlayer - 1) * area;
+                memset(r.px, 0, area * sizeof *r.px);
+            } else r.px = xcalloc((size_t)r.stride * (size_t)(b.y1 - b.y0), 4);
             __atomic_fetch_add(&g_layer_n, 1, __ATOMIC_RELAXED); __atomic_fetch_add(&g_layer_px, (unsigned long long)LMAX(r.stride, 0) * (unsigned long long)LMAX(r.height, 0), __ATOMIC_RELAXED);
             r.origin_x = b.x0; r.origin_y = b.y0;
             break;
@@ -769,13 +822,31 @@ static void raster_band(Canvas *cv, const DisplayList *dl, const CullBox *cb, Co
                 if (k >= 256) { for (int x = 0; x < w; x++) if (sr[x]) over(&dr[x], sr[x]); }
                 else for (int x = 0; x < w; x++) if (sr[x]) over(&dr[x], scale_px(sr[x], k));
             }
-            free(src); r.px = saved.px; r.origin_x = saved.origin_x;
+            if (!private_layers) free(src); r.px = saved.px; r.origin_x = saved.origin_x;
             r.origin_y = saved.origin_y; r.stride = saved.stride; r.height = saved.height; break;
         }
         }
     }
-    while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { free(r.px); r.px = r.layers[r.nlayer].px; r.origin_y = r.layers[r.nlayer].origin_y; } }
+    while (r.nlayer > 0) { r.nlayer--; if (r.nlayer < 16) { if (!private_layers) free(r.px); r.px = r.layers[r.nlayer].px; r.origin_y = r.layers[r.nlayer].origin_y; } }
     free(bounds);
+}
+
+#include "affine-raster.h"
+
+static void raster_band(Canvas *cv, const DisplayList *dl, const CullBox *cb, Color clearc,
+                        int x0, int y0, int x1, int y1, bool quiet) {
+    AffineScratch scratch = {0, AFFINE_SCRATCH_LIMIT};
+    raster_window(cv, dl, cb, clearc, x0, y0, x1, y1, quiet, 0, 0, NULL, &scratch);
+}
+
+static void materialize_transform_images(const DTransform *group) {
+    if (!group) return;
+    for (int i = 0; i < group->count; i++) {
+        const DItem *it = &group->items[i]; Image *im = it->img;
+        if (it->transform) materialize_transform_images(it->transform);
+        else if (it->op == DO_IMAGE && im && !im->px && (im->yuv || im->gpu) && it->w > 0 && it->h > 0)
+            image_yuv_materialize(im);
+    }
 }
 
 /* Large rasters are cut into horizontal bands painted on all cores. Each band replays the whole
@@ -837,6 +908,7 @@ void raster_rect(Canvas *cv, const DisplayList *dl, Color clearc, int rx0, int r
     /* video frames convert to RGB once, before the bands read them; GPU frames are read back */
     for (int i = 0; i < dl->items.n; i++) {
         const DItem *it = &dl->items.v[i]; Image *im = it->img;
+        if (it->transform) { materialize_transform_images(it->transform); continue; }
         if (it->op != DO_IMAGE || !im || im->px || (!im->yuv && !im->gpu)) continue;
         if (!(it->tile.w > 0) && punch_image(cv, im)) continue;
         if (it->w > 0 && it->h > 0) image_yuv_materialize(im);

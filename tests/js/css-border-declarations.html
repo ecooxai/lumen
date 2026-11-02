@@ -1,0 +1,175 @@
+<!doctype html><meta charset="utf-8"><title>Physical border declarations, cascade and resets</title>
+<body><script>
+(() => {
+    const rows = [], observations = [], sides = ['top', 'right', 'bottom', 'left'];
+    const images = {'border-image-source':'none','border-image-slice':'100%','border-image-width':'1','border-image-outset':'0','border-image-repeat':'stretch'};
+    const border = (width, style, color) => Object.assign({}, ...sides.map(side => ({['border-'+side+'-width']:width,['border-'+side+'-style']:style,['border-'+side+'-color']:color})), images);
+    const group = (kind, values) => Object.fromEntries(sides.map((side, i) => ['border-'+side+'-'+kind, values[i]]));
+    function test(name, fn) { try { fn(); rows.push({name, pass:true}); } catch(error) { rows.push({name, pass:false, error:String(error)}); } }
+    function equal(actual, expected, message) { if (actual !== expected) throw new Error(message+': '+JSON.stringify(actual)+' != '+JSON.stringify(expected)); }
+    function declarations(style, expected) {
+        for (const [name,value] of Object.entries(expected)) equal(style.getPropertyValue(name), value, name);
+        equal(style.length, Object.keys(expected).length, 'only the affected longhands are enumerated');
+        const actual = Array.from({length:style.length}, (_,i)=>style.item(i)).sort().join(',');
+        equal(actual, Object.keys(expected).sort().join(','), 'enumeration contains no shorthand entry');
+    }
+    const valid = [
+        ['border','5px dotted blue',border('5px','dotted','blue')],
+        ['border-top','thin',{'border-top-width':'thin','border-top-style':'none','border-top-color':'currentcolor'}],
+        ['border-right','double',{'border-right-width':'medium','border-right-style':'double','border-right-color':'currentcolor'}],
+        ['border-bottom','green',{'border-bottom-width':'medium','border-bottom-style':'none','border-bottom-color':'green'}],
+        ['border-width','1px 2px 3px 4px',group('width',['1px','2px','3px','4px'])],
+        ['border-style','solid double groove ridge',group('style',['solid','double','groove','ridge'])],
+        ['border-color','red yellow green',group('color',['red','yellow','green','yellow'])],
+        ['border','1p\\78  so\\6c id r\\65 d',border('1px','solid','red')],
+        ['border','1px/**/solid/**/red',border('1px','solid','red')],
+        ['border-color','currentColor',group('color',['currentcolor','currentcolor','currentcolor','currentcolor'])]
+    ];
+    const invalid = [
+        ['border','auto'],['border','thin double green 1px'],['border','-2em'],
+        ['border','2px solid color-mix(42deg)'],['border','2px solid color-contrast(42deg)'],
+        ['border','inherit red'],['border-width','1px 2px 3px 4px 5px'],['border-width','10%'],
+        ['border-width','calc(1px + 0%)'],['border-width','calc(1px/**/+/**/2px)'],
+        ['border-style','solid unknown'],['border-color','red, blue'],['border','var()'],['border-left','1px solid red blue'],
+        ['border','1p\\78 so\\6c id r\\65 d']
+    ];
+    const element=document.createElement('div'); document.body.appendChild(element);
+    const sheet=document.createElement('style'); sheet.textContent='.border-declaration-rule {}'; document.head.appendChild(sheet);
+    for (const [kind,style] of [['inline',element.style],['rule',sheet.sheet.cssRules[0].style]]) {
+        for (const [property,value,expected] of valid) {
+            test(kind+' setProperty '+property+' '+value,()=>{style.cssText='';style.setProperty(property,value);declarations(style,expected);});
+            test(kind+' cssText '+property+' '+value,()=>{style.cssText=property+':'+value;declarations(style,expected);});
+        }
+        for (const [property,value] of invalid) test(kind+' invalid mutation '+property+' '+value,()=>{
+            style.cssText='border:5px solid blue !important;color:green'; const before=style.cssText;
+            style.setProperty(property,value);equal(style.cssText,before,'invalid value is atomic');
+            equal(style.getPropertyPriority('border-top-width'),'important','original priority retained');
+        });
+        test(kind+' mixed priorities prevent shorthand reconstruction',()=>{
+            style.cssText='border-top-width:9px !important;border-width:1px 2px 3px 4px';
+            equal(style.getPropertyValue('border-top-width'),'9px','important top survives lower declaration');
+            equal(style.getPropertyValue('border-right-width'),'2px','other side updates');
+            equal(style.getPropertyValue('border-width'),'','incompatible priorities');
+            equal(style.getPropertyPriority('border-width'),'','incompatible priority query');
+        });
+        test(kind+' setter replaces existing importance across all components',()=>{
+            style.cssText='border-width:9px !important';style.setProperty('border-width','1px 2px 3px 4px');
+            declarations(style,group('width',['1px','2px','3px','4px']));
+            for(const side of sides)equal(style.getPropertyPriority('border-'+side+'-width'),'','new normal priority');
+        });
+        test(kind+' invalid priority preserves complete shorthand',()=>{
+            style.cssText='border:5px solid blue !important';const before=style.cssText;
+            style.setProperty('border','2px dotted red','invalid');equal(style.cssText,before,'invalid priority is atomic');
+        });
+        test(kind+' removing width retains styles colors and image resets',()=>{
+            style.cssText='border:5px solid blue';equal(style.removeProperty('border-width'),'5px','removed value');
+            equal(style.length,13,'only four width longhands removed');equal(style.getPropertyValue('border'),'','incomplete border');
+            for(const side of sides){equal(style.getPropertyValue('border-'+side+'-width'),'','width removed');equal(style.getPropertyValue('border-'+side+'-style'),'solid','style survives');}
+            equal(style.getPropertyValue('border-image-source'),'none','reset longhand survives');
+        });
+        test(kind+' removing a side returns its canonical value',()=>{
+            style.cssText='border:5px solid blue';equal(style.removeProperty('border-left'),'5px solid blue','side shorthand return');
+            equal(style.length,14,'three side longhands removed');equal(style.getPropertyValue('border-left-color'),'','color removed');
+        });
+        test(kind+' removing border clears all reset-only subproperties',()=>{
+            style.cssText='border:5px solid blue;color:green';equal(style.removeProperty('border'),'5px solid blue','border shorthand return');
+            equal(style.length,1,'only unrelated declaration remains');equal(style.getPropertyValue('color'),'green','unrelated declaration survives');
+        });
+        for (const property of ['border-width','border-left','border']) test(kind+' independent removal state '+property,()=>{
+            style.cssText='border:5px solid blue'+(property==='border'?';color:green':'');
+            const before=style.getPropertyValue(property);
+            equal(before,property==='border-width'?'5px':'5px solid blue','pre-removal canonical getter');
+            const returned=style.removeProperty(property);
+            observations.push({name:kind+' '+property,before,returned,remaining:style.length,cssText:style.cssText});
+            const expected=property==='border'?{color:'green'}:border('5px','solid','blue');
+            if(property==='border-width')for(const side of sides)delete expected['border-'+side+'-width'];
+            if(property==='border-left')for(const part of ['width','style','color'])delete expected['border-left-'+part];
+            declarations(style,expected);
+        });
+        test(kind+' empty setter removes all covered longhands',()=>{
+            style.cssText='border:5px solid blue';style.setProperty('border-color','');
+            equal(style.length,13,'only four colors removed');for(const side of sides)equal(style.getPropertyValue('border-'+side+'-color'),'','color removed');
+        });
+        test(kind+' noninitial border image prevents border reconstruction',()=>{
+            style.cssText='border:5px solid blue;border-image-source:linear-gradient(red, blue)';
+            equal(style.getPropertyValue('border'),'','reset-only image source cannot be discarded');
+            equal(style.getPropertyValue('border-width'),'5px','independent width shorthand remains');
+        });
+        test(kind+' reset-only longhand retains shorthand importance in declaration text',()=>{
+            style.cssText='border:5px solid blue !important;border-image-source:linear-gradient(red,blue)';
+            equal(style.getPropertyValue('border-image-source'),'none','normal longhand cannot replace important reset');
+            equal(style.getPropertyPriority('border-image-source'),'important','reset priority retained');
+            equal(style.getPropertyValue('border'),'5px solid blue','complete important border still reconstructs');
+        });
+        test(kind+' CSS-wide border covers reset-only longhands',()=>{
+            style.cssText='';style.setProperty('border','initial','important');
+            declarations(style,Object.fromEntries(Object.keys(border('','','')).map(name=>[name,'initial'])));
+            equal(style.getPropertyValue('border'),'initial','whole CSS-wide shorthand');equal(style.getPropertyPriority('border'),'important','whole priority');
+        });
+        test(kind+' pending shorthand remains opaque',()=>{
+            style.cssText='';style.setProperty('border','var(--B)');
+            equal(style.getPropertyValue('border'),'var(--B)','pending token stream');equal(style.getPropertyValue('border-top-width'),'','pending width is not invented');
+        });
+    }
+    for(const [property,value,expected] of [
+        ['border','5px solid red',true],['border-width','thin 2px',true],['border-color','red rgb(0 0 255)',true],['border-style','dotted dashed',true],
+        ['border','1px red solid blue',false],['border-width','-2px',false],['border-style','solid unknown',false],['border','2px solid color-mix(42deg)',false]
+    ]) {
+        test('supports two arguments '+property+' '+value,()=>equal(CSS.supports(property,value),expected,'support query'));
+        test('supports one condition '+property+' '+value,()=>equal(CSS.supports('('+property+':'+value+')'),expected,'condition query'));
+    }
+    function physical(css,run){const el=document.createElement('div');el.style.cssText=css;document.body.appendChild(el);try{run(el);}finally{el.remove();}}
+    test('inline border resets real image and changes actual geometry',()=>physical('width:100px;height:20px;border-image-source:linear-gradient(red, blue)',el=>{
+        el.style.border='5px solid blue';equal(getComputedStyle(el).borderImageSource,'none','native image reset');
+        equal(el.getBoundingClientRect().width,110,'border box width');equal(el.getBoundingClientRect().height,30,'border box height');
+    }));
+    test('raw stylesheet uses the shared grammar and resets image',()=>{
+        const style=document.createElement('style'),el=document.createElement('div');el.id='border-native-sheet';
+        style.textContent='#border-native-sheet{width:100px;height:20px;border-image-source:linear-gradient(red,blue);border:5px solid blue;border:-2em}';
+        document.head.appendChild(style);document.body.appendChild(el);
+        try{equal(el.getBoundingClientRect().width,110,'invalid later native shorthand is ignored');equal(getComputedStyle(el).borderImageSource,'none','real stylesheet reset');style.sheet.cssRules[0].style.setProperty('border-width','3px');equal(el.getBoundingClientRect().width,106,'rule setter updates native geometry');}
+        finally{style.remove();el.remove();}
+    });
+    test('physical declaration after logical side wins across serialization',()=>physical('width:100px;height:20px;border:1px solid;border-left-width:7px;border-inline-start-width:9px;border-width:3px',el=>{
+        equal(el.getBoundingClientRect().width,106,'original cascade');el.style.color='green';equal(el.getBoundingClientRect().width,106,'serialized cascade');equal(getComputedStyle(el).borderLeftWidth,'3px','physical winner');
+    }));
+    test('later logical side wins across physical shorthand serialization',()=>physical('width:100px;height:20px;border:1px solid;border-left-width:7px;border-width:3px;border-inline-start-width:9px',el=>{
+        equal(el.getBoundingClientRect().width,112,'original logical winner');el.style.color='green';equal(el.getBoundingClientRect().width,112,'serialized logical winner');equal(getComputedStyle(el).borderLeftWidth,'9px','logical winner retained');
+    }));
+    for(const useRule of [false,true])for(const useGroup of [false,true])test((useRule?'rule':'inline')+' actual setter follows later logical mapping '+(useGroup?'group':'longhand'),()=>{
+        const el=document.createElement('div'),style=document.createElement('style');el.id='border-setter-order';
+        const initial='width:100px;height:20px;border:1px solid;border-left-width:7px;border-inline-start-width:9px';
+        if(useRule){style.textContent='#border-setter-order{'+initial+'}';document.head.appendChild(style);}else el.style.cssText=initial;
+        document.body.appendChild(el);
+        try{const declaration=useRule?style.sheet.cssRules[0].style:el.style;
+            equal(el.getBoundingClientRect().width,110,'later logical declaration before setter');
+            declaration.setProperty(useGroup?'border-width':'border-left-width','3px');
+            equal(getComputedStyle(el).borderLeftWidth,'3px','setter moves after different logical mapping');
+            equal(el.getBoundingClientRect().width,useGroup?106:104,'actual geometry after setter');
+        }finally{el.remove();style.remove();}
+    });
+    test('all barrier is not crossed by four-side recombination',()=>physical('border-top-width:1px;border-right-width:2px;all:initial;border-bottom-width:4px;border-left-width:5px;border-style:solid;width:100px;height:20px;display:block',el=>{
+        equal(el.getBoundingClientRect().width,108,'right initial plus explicit left');equal(el.getBoundingClientRect().height,27,'top initial plus explicit bottom');
+        el.style.color='green';equal(el.getBoundingClientRect().width,108,'width after serialization');equal(el.getBoundingClientRect().height,27,'height after serialization');
+    }));
+    test('pending substitution is validated after variable mutation',()=>physical('width:100px;height:20px;--B:5px solid blue;border:var(--B)',el=>{
+        equal(el.getBoundingClientRect().width,110,'valid substituted border');el.style.setProperty('--B','-2em');
+        equal(el.getBoundingClientRect().width,100,'invalid substitution takes initial border');equal(getComputedStyle(el).borderImageSource,'none','invalid substitution resets image');
+    }));
+    test('native CSS-wide border reset clears real image',()=>physical('width:100px;height:20px;border:5px solid red;border-image-source:linear-gradient(red,blue);border:unset',el=>{
+        equal(getComputedStyle(el).borderImageSource,'none','unset image reset');equal(el.getBoundingClientRect().width,100,'unset physical border');
+    }));
+    test('native supports stylesheet rejects malformed shorthand',()=>{
+        const style=document.createElement('style'),el=document.createElement('div');el.id='border-native-supports';
+        style.textContent='#border-native-supports{width:7px;height:1px}@supports (border:2px solid color-mix(42deg)){#border-native-supports{width:13px}}';
+        document.head.appendChild(style);document.body.appendChild(el);
+        try{equal(el.getBoundingClientRect().width,7,'invalid native @supports condition');}finally{style.remove();el.remove();}
+    });
+    element.remove();sheet.remove();
+    for(const observation of observations)console.log('BORDER_REMOVAL_OBSERVATION '+JSON.stringify(observation));
+    for(const row of rows)console.log('BORDER_DECLARATIONS_ROW '+JSON.stringify(row));
+    const passed=rows.filter(row=>row.pass).length,total=rows.length,status=total===126&&passed===total?'PASS':'FAIL';
+    console.log('RESULTS css-border-declarations:'+status+' '+JSON.stringify({passed,total}));
+    document.documentElement.setAttribute('data-css-border-declarations',status);
+})();
+</script>
