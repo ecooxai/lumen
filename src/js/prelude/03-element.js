@@ -1130,7 +1130,7 @@ function cssScalarSpecified(property, value) {
        particular, underflow must not manufacture a valid zero length, and
        number-valued border-image widths must not become px values. */
     if (!unit && property !== 'line-height') return value;
-    const canonical = specNormalize(property, value);
+    const canonical = specNormalize(property, scalar[1] + unit);
     if (canonical === value || !mathValid(property, value)) return value;
     if (N.cssSupports('(' + property + ':initial)') &&
         !N.cssSupports('(' + property + ':' + value + ')')) return value;
