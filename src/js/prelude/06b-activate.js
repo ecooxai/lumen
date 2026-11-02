@@ -244,6 +244,11 @@ class CSSRuleStyle extends CSSStyleDeclaration {
         v = v == null ? '' : String(v);
         if (v !== '' && !cssVarSyntax(v)) return;
         const m = this._m();
+        if (p === 'interpolate-size') {
+            const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
+            if (!cssInterpolateSizeSet(m, value, priority)) return;
+            this._w(m); return;
+        }
         if (p === 'overflow') {
             const value = v == null ? '' : String(v), priority = pri == null ? '' : String(pri);
             if (!cssOverflowSet(m, value, priority)) return;

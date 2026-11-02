@@ -691,17 +691,37 @@ FN(templateContent) {
     RET(jwrap(c, n->template_content));
 }
 FN(tplHost) { CTX; ARGN(n, 0); RET(n->type == NODE_FRAGMENT && !n->host && (n->flags & NF_INERT) != 0); }
+/* Synchronize the target document's animation layer at the same boundary as
+ * native style/layout reads. Cross-realm targets use their owning context;
+ * bootstrap and documents without a JS context retain ordinary host sync. */
+static bool flush_animations_for_read(JsCtx *owner, bool after_style) {
+    if (!owner || owner->dead || owner->ctx.IsEmpty() || owner->api.IsEmpty()) return false;
+    JS_ENTER(owner);
+    v8::Local<v8::Value> fn, result;
+    if (!owner->api.Get(iso)->Get(ctx, jstr(iso, "waSyncRead")).ToLocal(&fn) || !fn->IsFunction()) return false;
+    v8::Local<v8::Value> args[] = { v8::Boolean::New(iso, after_style) };
+    return jcall(owner, fn.As<v8::Function>(), v8::Undefined(iso), 1, args).ToLocal(&result) && result->BooleanValue(iso);
+}
+static void sync_style_for_read(JsCtx *owner, Document *doc, bool layout) {
+    if (!owner || !owner->host.sync) return;
+    (void)flush_animations_for_read(owner, false);
+    owner->host.sync(owner->host.ud, doc, layout);
+    /* Restyling can discover a CSS animation/transition. Its sampled layer
+       must reach real layout before the caller reads geometry or hit tests. */
+    if (flush_animations_for_read(owner, true)) owner->host.sync(owner->host.ud, doc, layout);
+}
+
 FN(skippedAncestor) {
     CTX; ARGN(n, 0);
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     RET(jsg_has_skipped_ancestor(n));
 }
 FN(rect) {
     CTX; ARGN(n, 0); float r[4];
     // An observer may belong to the parent realm while its target is in a frame.
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     if (!jsg_rect(n, r)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Array> o = v8::Array::New(iso, 4);
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
@@ -711,7 +731,7 @@ FN(rect) {
 FN(textRects) {
     CTX; ARGN(n, 0);
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     int s = (int)NUM(1), e = (int)NUM(2);
     float r[256 * 4];
     int k = n->type == NODE_TEXT ? jsg_text_rects(n, s, e, r, 256) : n->type == NODE_ELEMENT ? jsg_ctl_rects(n, s, e, r, 256) : 0;
@@ -722,7 +742,7 @@ FN(textRects) {
 FN(vrect) {
     CTX; ARGN(n, 0); float r[4];
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
     if (owner && owner->host.viewport) owner->host.viewport(owner->host.ud, &w, &h, &sx, &sy, &dpr);
     if (!jsg_vrect(n, r, sx, sy)) { RET(v8::Null(iso)); return; }
@@ -733,7 +753,7 @@ FN(vrect) {
 FN(vclip) {
     CTX; ARGN(n, 0); float r[4];
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     float w = 0, h = 0, sx = 0, sy = 0, dpr = 1;
     if (owner && owner->host.viewport) owner->host.viewport(owner->host.ud, &w, &h, &sx, &sy, &dpr);
     if (!jsg_vclip(n, a.Length() > 1 ? junwrap(a[1]) : nullptr, r, sx, sy)) { RET(v8::Null(iso)); return; }
@@ -746,7 +766,7 @@ FN(vclip) {
 FN(borders) {
     CTX; ARGN(n, 0); float r[4]; bool inl = false;
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, true);
+    sync_style_for_read(owner, n->doc, true);
     if (!jsg_borders(n, r, &inl)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Array> o = v8::Array::New(iso, 5);
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
@@ -756,20 +776,22 @@ FN(borders) {
 /* overflowSize(node) -> [w, h] padding box grown by overflowing descendants, or null (no box, inline) */
 FN(overflowSize) {
     CTX; ARGN(n, 0); float r[2];
-    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
+    sync_style_for_read(owner, n->doc, true);
     if (!jsg_overflow_size(n, r)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Value> v[2] = { v8::Number::New(iso, r[0]), v8::Number::New(iso, r[1]) };
     RET(v8::Array::New(iso, v, 2));
 }
 FN(scrollPos) {
     CTX; ARGN(n, 0); float r[4];
-    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
+    sync_style_for_read(owner, n->doc, true);
     if (!jsg_scroll(n, r)) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Array> o = v8::Array::New(iso, 4);
     for (int i = 0; i < 4; i++) (void)o->Set(ctx, i, v8::Number::New(iso, r[i]));
     RET(o);
 }
-FN(setScroll) { CTX; ARGN(n, 0); if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(jsg_set_scroll(n, (float)NUM(1), (float)NUM(2))); }
+FN(setScroll) { CTX; ARGN(n, 0); JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c; sync_style_for_read(owner, n->doc, true); RET(jsg_set_scroll(n, (float)NUM(1), (float)NUM(2))); }
 /* resolved values that read the box (used sizes, absolutized insets) need a current layout */
 static bool computed_needs_layout(const std::string &p) {
     static const char *const l[] = { "width", "height", "top", "right", "bottom", "left", "inset", "margin", "padding", "block-size", "inline-size", "grid-template", "transform-origin", "perspective-origin" };
@@ -782,7 +804,8 @@ FN(computed) {
        avoid a layout flush solely to obtain CSSOM's used grid track sizes. */
     int mode = a.Length() > 2 ? a[2]->Int32Value(ctx).FromMaybe(0) : 0;
     JsCtx *owner = n->doc != c->doc ? owner_ctx(n->doc) : c;
-    if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, mode != 3 && computed_needs_layout(p));
+    if (mode == 3) { if (owner && owner->host.sync) owner->host.sync(owner->host.ud, n->doc, false); }
+    else sync_style_for_read(owner, n->doc, computed_needs_layout(p));
     char *v = jsg_computed(n, p.c_str(), mode); RET(nstr(iso, v)); free(v);
 }
 FN(trTake) {
@@ -1401,13 +1424,14 @@ FN(viewport) {
 }
 FN(scrollTo) { CTX; if (c->host.scroll_to) c->host.scroll_to(c->host.ud, (float)NUM(0), (float)NUM(1)); }
 FN(hit) {
-    CTX; Node *n = c->host.hit ? c->host.hit(c->host.ud, (float)NUM(0), (float)NUM(1)) : nullptr;
+    CTX; sync_style_for_read(c, c->doc, true);
+    Node *n = c->host.hit ? c->host.hit(c->host.ud, (float)NUM(0), (float)NUM(1)) : nullptr;
     while (n && n->type != NODE_ELEMENT) n = n->parent;
     RET(jwrap(c, n));
 }
 FN(caret) {
     CTX; Node *n = nullptr; int off = 0;
-    if (c->host.sync) c->host.sync(c->host.ud, c->doc, true);
+    sync_style_for_read(c, c->doc, true);
     if (!c->host.caret || !c->host.caret(c->host.ud, (float)NUM(0), (float)NUM(1), &n, &off) || !n) { RET(v8::Null(iso)); return; }
     v8::Local<v8::Value> v[2] = { jwrap(c, n), v8::Integer::New(iso, off) };
     RET(v8::Array::New(iso, v, 2));
@@ -1670,7 +1694,7 @@ extern "C" {
 #include "../text/font.h"
 }
 /* fontsPending() -> @font-face fetches the laid-out text still waits for (layout first, so text asks for its faces) */
-FN(fontsPending) { CTX; if (c->host.sync) c->host.sync(c->host.ud, c->doc, true); RET(font_pending()); }
+FN(fontsPending) { CTX; sync_style_for_read(c, c->doc, true); RET(font_pending()); }
 template <class T> static T *c2d_arr(v8::Local<v8::Value> v, size_t *n) {
     const char *p; size_t b;
     if (!v->IsArrayBufferView() || !bytes_of(v, &p, &b)) { *n = 0; return nullptr; }

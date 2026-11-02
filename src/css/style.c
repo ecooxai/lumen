@@ -25,6 +25,7 @@ void css_set_anim_style(Node *n, const char *css) {
     if (n->doc) doc_mark_style_dirty(n->doc, n);
 }
 static const char *display_canon(const char *val);
+static const char *const display_keywords[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root", NULL };
 ComputedStyle *style_new_default(void) {
     ComputedStyle *s = xcalloc(1, sizeof *s); g_styles_live++;
     s->refs = 1; s->anim_iter = 1;
@@ -713,6 +714,8 @@ typedef struct VarResolver {
     ComputedStyle *style;
     const ComputedStyle *parent;
     const CustomProps *origin_base;
+    StyleEngine *engine; /* borrowed for this synchronous substitution */
+    Node *element;
     HMap entries;
     VEC(VarEntry *) stack;
 } VarResolver;
@@ -805,7 +808,7 @@ static const char *var_lookup(VarResolver *r, const char *name, unsigned depth) 
 /* Draft insertion after var_lookup(). The existing VarResolver owns all
  * custom-property resolution/cycle state; this code owns only parsed tokens.
  * It deliberately does not implement registered style values, ranges,
- * supports(), media(), or attr() substitution. */
+ * attr() substitution. Native media/supports query leaves are shared below. */
 typedef enum { IF_FALSE, IF_TRUE, IF_UNKNOWN, IF_INVALID } IfTruth;
 typedef struct { CTok token; int close; } IfToken;
 typedef VEC(IfToken) IfTokens;
@@ -885,7 +888,84 @@ static bool if_unregistered_equal(const char *left, const char *right) {
     if (!strcmp(right, " ")) right = "";
     return !strcmp(left, right);
 }
-static IfTruth if_boolean(VarResolver *, VarEntry *, const IfInput *, int, int, bool, unsigned);
+/* The outer if(), style(), supports(), and media() grammars share tokenized
+ * grouping. Leaf evaluation stays with the native selector/declaration/media
+ * implementations; a nested query's unknown result becomes false only at
+ * its function boundary (CSS Values 5 Appendix B). */
+typedef enum { IF_QUERY, IF_STYLE, IF_SUPPORTS, IF_MEDIA } IfQuery;
+
+static IfTruth if_supports_feature(VarResolver *r, const IfInput *in,
+                                   int begin, int end, bool *matched) {
+    *matched = false;
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return IF_INVALID;
+    const CTok *name = &in->tokens.v[begin].token;
+    if (name->type != CT_IDENT || !name->str) return IF_INVALID;
+    int colon = if_skip_ws(in, begin + 1, end);
+    if (colon == end || in->tokens.v[colon].token.type != CT_COLON) return IF_INVALID;
+    *matched = true;
+    for (int at = colon + 1; at < end; at = if_after_component(in, at)) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (token->type == CT_SEMI || (token->type == CT_DELIM && *token->start == '!')) return IF_FALSE;
+    }
+    bool custom = name->str[0] == '-' && name->str[1] == '-';
+    const char *property = custom ? atom(name->str) : atom_lower(name->str, strlen(name->str));
+    char *value = if_declaration_value(in, colon + 1, end);
+    Document *document = r->element ? r->element->doc : r->engine ? r->engine->doc : NULL;
+    bool supported = css_supports_declaration(property, value, document && document->quirks);
+    free(value); return supported ? IF_TRUE : IF_FALSE;
+}
+
+static IfTruth if_media_feature(VarResolver *r, const IfInput *in,
+                               int begin, int end, bool *matched) {
+    *matched = false;
+    begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
+    if (begin == end) return IF_INVALID;
+    bool feature = end == begin + 1 && in->tokens.v[begin].token.type == CT_IDENT;
+    for (int at = begin; at < end; at = if_after_component(in, at)) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (token->type == CT_COLON || (token->type == CT_DELIM && strchr("<>=", *token->start))) feature = true;
+        if (token->type == CT_LPAREN || token->type == CT_COMMA || token->type == CT_SEMI ||
+            if_keyword(in, at, "and") || if_keyword(in, at, "or") || if_keyword(in, at, "not")) return IF_INVALID;
+    }
+    if (!feature) return IF_INVALID;
+    *matched = true;
+    StyleEngine *engine = r->engine ? r->engine : r->element && r->element->doc ? r->element->doc->stylesheets : NULL;
+    if (!engine) return IF_UNKNOWN; /* no invented viewport for detached direct evaluation */
+    /* Native media features use normalized identifiers. Preserve numeric
+     * spelling and token boundaries, and never truncate a query to a prefix. */
+    SB text = {0}; bool valid = true;
+    for (int at = begin; at < end; at++) {
+        const CTok *token = &in->tokens.v[at].token;
+        if (at > begin) {
+            const CTok *previous = &in->tokens.v[at - 1].token;
+            if (previous->start + previous->len < token->start) sb_putc(&text, ' ');
+        }
+        if (token->type == CT_IDENT || token->type == CT_FUNC) {
+            for (const unsigned char *p = (const unsigned char *)token->str; p && *p; p++)
+                if (!(isalnum(*p) || *p == '-' || *p == '_')) valid = false;
+            if (!valid) break;
+            for (const char *p = token->str; *p; p++) sb_putc(&text, (char)lc(*p));
+            if (token->type == CT_FUNC) sb_putc(&text, '(');
+        } else if (token->type == CT_DIM) {
+            char *stop; strtod(token->start, &stop);
+            if (stop == token->start || (size_t)(stop - token->start) > token->len) { valid = false; break; }
+            for (const char *p = token->unit; *p; p++) if (!isalpha((unsigned char)*p)) valid = false;
+            if (!valid) break;
+            sb_put(&text, token->start, (size_t)(stop - token->start)); sb_puts(&text, token->unit);
+        } else if (token->type == CT_NUMBER || token->type == CT_PERCENT || token->type == CT_WS ||
+                   token->type == CT_COLON || token->type == CT_LPAREN || token->type == CT_RPAREN ||
+                   token->type == CT_COMMA || (token->type == CT_DELIM && strchr("<>=+-*/", *token->start))) {
+            sb_put(&text, token->start, token->len);
+        } else { valid = false; break; }
+    }
+    bool known = false;
+    bool matches = valid && css_media_feature_matches(text.s ? text.s : "", &engine->media, &known);
+    sb_free(&text);
+    return !known ? IF_UNKNOWN : matches ? IF_TRUE : IF_FALSE;
+}
+
+static IfTruth if_boolean(VarResolver *, VarEntry *, const IfInput *, int, int, IfQuery, unsigned);
 
 static IfTruth if_style_feature(VarResolver *r, VarEntry *owner, const IfInput *in,
                                int begin, int end, unsigned depth, bool *matched) {
@@ -929,7 +1009,7 @@ static IfTruth if_style_feature(VarResolver *r, VarEntry *owner, const IfInput *
     free(value); return equal ? IF_TRUE : IF_FALSE;
 }
 static IfTruth if_group(VarResolver *r, VarEntry *owner, const IfInput *in,
-                        int *position, int end, bool style, unsigned depth) {
+                        int *position, int end, IfQuery query, unsigned depth) {
     int at = if_skip_ws(in, *position, end);
     if (at == end || depth > VAR_RECURSION_LIMIT) return IF_INVALID;
     const IfToken *item = &in->tokens.v[at]; const CTok *token = &item->token;
@@ -937,33 +1017,47 @@ static IfTruth if_group(VarResolver *r, VarEntry *owner, const IfInput *in,
     int close = item->close;
     *position = LMIN(close + 1, end);
     if (token->type == CT_LPAREN) {
-        IfTruth result = if_boolean(r, owner, in, at + 1, close, style, depth + 1);
-        return result == IF_INVALID ? IF_UNKNOWN : result;
+        IfTruth result = if_boolean(r, owner, in, at + 1, close, query, depth + 1);
+        return result == IF_INVALID ? query == IF_SUPPORTS ? IF_FALSE : IF_UNKNOWN : result;
     }
     if (token->type == CT_FUNC) {
-        if (!style && token->str && str_ieq(token->str, "style")) {
-            IfTruth result = if_boolean(r, owner, in, at + 1, close, true, depth + 1);
-            /* style() is a nested boolean production, so its top-level
-             * unknown result becomes false before an outer not. */
-            return result == IF_TRUE ? IF_TRUE : IF_FALSE;
+        if (query == IF_QUERY && token->str) {
+            IfQuery nested = str_ieq(token->str, "style") ? IF_STYLE :
+                str_ieq(token->str, "supports") ? IF_SUPPORTS :
+                str_ieq(token->str, "media") ? IF_MEDIA : IF_QUERY;
+            if (nested != IF_QUERY) {
+                /* Height-only viewport changes use the existing per-style
+                 * dependency bit. Record false and unknown queries too. */
+                if (nested == IF_MEDIA) g_vh_used = true;
+                IfTruth result = if_boolean(r, owner, in, at + 1, close, nested, depth + 1);
+                return result == IF_TRUE ? IF_TRUE : IF_FALSE;
+            }
         }
-        return IF_UNKNOWN;
+        if (query == IF_SUPPORTS && token->str && str_ieq(token->str, "selector")) {
+            char *selector = if_declaration_value(in, at + 1, close);
+            bool supported = css_supports_selector(selector);
+            free(selector);
+            return supported ? IF_TRUE : IF_FALSE;
+        }
+        return query == IF_SUPPORTS ? IF_FALSE : IF_UNKNOWN;
     }
     return IF_INVALID;
 }
 static IfTruth if_boolean(VarResolver *r, VarEntry *owner, const IfInput *in,
-                          int begin, int end, bool style, unsigned depth) {
+                          int begin, int end, IfQuery query, unsigned depth) {
     if (depth > VAR_RECURSION_LIMIT) return IF_INVALID;
     begin = if_skip_ws(in, begin, end); end = if_trim_end(in, begin, end);
     if (begin == end) return IF_INVALID;
-    if (style) {
+    if (query != IF_QUERY) {
         bool matched;
-        IfTruth feature = if_style_feature(r, owner, in, begin, end, depth, &matched);
+        IfTruth feature = query == IF_STYLE ? if_style_feature(r, owner, in, begin, end, depth, &matched) :
+            query == IF_SUPPORTS ? if_supports_feature(r, in, begin, end, &matched) :
+            if_media_feature(r, in, begin, end, &matched);
         if (matched) return feature;
     }
     bool negate = if_keyword(in, begin, "not");
     int position = negate ? begin + 1 : begin;
-    IfTruth result = if_group(r, owner, in, &position, end, style, depth + 1);
+    IfTruth result = if_group(r, owner, in, &position, end, query, depth + 1);
     if (result == IF_INVALID) return result;
     position = if_skip_ws(in, position, end);
     if (negate) return position != end ? IF_INVALID : result == IF_UNKNOWN ? IF_UNKNOWN : result == IF_TRUE ? IF_FALSE : IF_TRUE;
@@ -974,7 +1068,7 @@ static IfTruth if_boolean(VarResolver *r, VarEntry *owner, const IfInput *in,
         operator_kind = kind; position++;
         /* Evaluate every operand in the selected condition. A discovered
          * cycle remains marked even if another boolean operand decides it. */
-        IfTruth right = if_group(r, owner, in, &position, end, style, depth + 1);
+        IfTruth right = if_group(r, owner, in, &position, end, query, depth + 1);
         if (right == IF_INVALID) return right;
         if (kind == 1) result = result == IF_FALSE || right == IF_FALSE ? IF_FALSE : result == IF_UNKNOWN || right == IF_UNKNOWN ? IF_UNKNOWN : IF_TRUE;
         else result = result == IF_TRUE || right == IF_TRUE ? IF_TRUE : result == IF_UNKNOWN || right == IF_UNKNOWN ? IF_UNKNOWN : IF_FALSE;
@@ -1070,7 +1164,7 @@ static IfTruth if_condition(VarResolver *r, VarEntry *owner, const IfInput *in,
     IfTruth truth = IF_INVALID;
     if (valid && begin != end) {
         bool otherwise = end == begin + 1 && if_keyword(&condition, begin, "else");
-        truth = otherwise ? IF_TRUE : if_boolean(r, owner, &condition, begin, end, false, depth + 1);
+        truth = otherwise ? IF_TRUE : if_boolean(r, owner, &condition, begin, end, IF_QUERY, depth + 1);
     }
     if_input_free(&condition); free(value); return truth;
 }
@@ -1164,13 +1258,16 @@ static char *var_substitute(VarResolver *r, VarEntry *owner, const char *source,
     if (invalid) { sb_free(&out.text); return NULL; }
     return sb_take(&out.text);
 }
-static char *subst_vars(const char *value, ComputedStyle *style, const ComputedStyle *parent, int depth) {
-    VarResolver r = { .style = style, .parent = parent };
+static char *subst_vars(const char *value, ComputedStyle *style, const ComputedStyle *parent,
+                        StyleEngine *engine, Node *element, int depth) {
+    VarResolver r = { .style = style, .parent = parent, .engine = engine, .element = element };
     return var_substitute(&r, NULL, value, (unsigned)depth);
 }
-static void custom_resolve_values(ComputedStyle *style, const ComputedStyle *parent, const CustomProps *origin_base) {
+static void custom_resolve_values(ComputedStyle *style, const ComputedStyle *parent,
+                                  const CustomProps *origin_base, StyleEngine *engine, Node *element) {
     if (!style->custom || (parent && style->custom == parent->custom)) return;
-    VarResolver r = { .style = style, .parent = parent, .origin_base = origin_base };
+    VarResolver r = { .style = style, .parent = parent, .origin_base = origin_base,
+                      .engine = engine, .element = element };
     VEC(VarEntry *) values = {0};
     hm_foreach(&style->custom->map, item) {
         const char *raw = item->val;
@@ -2026,7 +2123,10 @@ static bool transform_angle(ACtx *c, const char *text, float *out) {
         if (end == text || *end || zero != 0) return false;
         *out = 0;
     }
-    if (isnan(*out)) *out = 0;
+    /* Only completed angles reach this matrix boundary. Out-of-range angles
+       clamp to a supported full turn; nested IEEE math is left untouched.
+       Reduce finite turns before converting to radians to avoid overflow. */
+    *out = isfinite(*out) ? (float)fmod((double)*out, 360.0) : 0;
     return true;
 }
 static void parse_transform(ACtx *c, const char *v) {
@@ -2924,6 +3024,32 @@ bool css_box_shadow_valid(const char *property, const char *value) {
     free(parsed); return valid;
 }
 
+/* An inherited animation policy, kept in the existing generic computed store.
+ * This parser is shared by raw declarations, supports(), and direct application;
+ * pending substitution is checked again after the resolved tokens replace it. */
+static char *interpolate_size_parse(const char *value) {
+    if (!value || !css_var_syntax_valid(value)) return NULL;
+    if (min_size_deferred(value)) return xstrdup(value);
+    CLexer lexer; clex_init(&lexer, value, strlen(value));
+    CTok token;
+    do { token = clex_next(&lexer); if (token.type != CT_WS) break; free(token.str); } while (true);
+    const char *keyword = NULL;
+    if (token.type == CT_IDENT && token.str) {
+        static const char *const words[] = { "numeric-only", "allow-keywords",
+            "inherit", "initial", "unset", "revert", "revert-layer", NULL };
+        for (unsigned i = 0; words[i]; i++) if (str_ieq(token.str, words[i])) { keyword = words[i]; break; }
+    }
+    free(token.str);
+    do { token = clex_next(&lexer); if (token.type != CT_WS) break; free(token.str); } while (true);
+    bool end = token.type == CT_EOF; free(token.str);
+    return keyword && end ? xstrdup(keyword) : NULL;
+}
+bool css_interpolate_size_valid(const char *property, const char *value) {
+    if (!property || strcmp(property, "interpolate-size")) return true;
+    char *parsed = interpolate_size_parse(value); bool valid = parsed != NULL;
+    free(parsed); return valid;
+}
+
 /* Physical border shorthands share their concrete grammar with the declaration
  * engine and CSSOM. A pending substitution remains an opaque token stream. */
 static int border_decl_kind(const char *property) {
@@ -3570,6 +3696,7 @@ static char *grid_computed_tokens(const char *raw, float em, float rem, const Me
  * slots. Scope the projection to the same style so recursive substitution
  * retains normal all validation and nested other-style work is unaffected. */
 static _Thread_local const ComputedStyle *contain_intrinsic_projection_style;
+static _Thread_local const ComputedStyle *interpolate_size_projection_style;
 void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *prop, const char *value_in, StyleEngine *e, Node *el) {
     /* Invalid argument grammar is discarded before pending substitution can
        unset a normal property or replace a custom property's prior tokens. */
@@ -3586,7 +3713,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
             v = xstrdup(pv ? pv : "");
         } else if (str_ieq(k, "initial")) v = xstrdup("");
         else if (!*k) v = xstrdup(" ");   /* valid empty value, unlike "" */
-        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, par, 0);
+        else v = custom_defer ? xstrdup(value_in) : subst_vars(value_in, st, par, e, el, 0);
         free(kb);
         if (!v) v = xstrdup("");
         /* Re-declaring the value already in effect (Tailwind's universal --tw-* resets on every
@@ -3617,13 +3744,14 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     /* Authored parse errors are ignored before substitution can apply unset.
        Valid pending values are checked again after their tokens resolve. */
     if (!strcmp(prop, "transition-property") && !css_transition_property_valid(prop, value_in)) return;
+    if (!css_interpolate_size_valid(prop, value_in)) return;
     if (!css_box_shadow_valid(prop, value_in)) return;
     if (!css_border_valid(prop, value_in)) return;
     char *subst = NULL;
     const char *v = value_in;
     if (strstr(v, "cq")) st->inherited_dynamic = true;
     if (css_value_has_var(v) || css_value_has_if(v)) {
-        subst = subst_vars(v, st, par, 0);
+        subst = subst_vars(v, st, par, e, el, 0);
         if (subst && !css_math_spacing_valid(subst)) { free(subst); subst = NULL; }
         /* A failed substitution or property grammar takes unset; recognized
          * CSS-wide keywords keep their existing dedicated dispatch. */
@@ -3635,6 +3763,7 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
     }
     char *vbuf = min_size_property(prop) ? css_min_size_parse(v) :
         css_numeric_dimension_property(prop) ? css_numeric_dimension_parse(prop, v) :
+        !strcmp(prop, "interpolate-size") ? interpolate_size_parse(v) :
         !strcmp(prop, "transition-property") ? css_transition_property_parse(v) :
         !strcmp(prop, "box-shadow") ? css_box_shadow_parse(v) :
         border_decl_kind(prop) >= 0 ? css_border_parse(prop, v) : xstrdup(v);
@@ -3956,9 +4085,13 @@ void css_apply_decl(ComputedStyle *st, const ComputedStyle *par, const char *pro
         else if (!strcmp(P, "all")) {
             /* Preserve authored all ordering for these native families. The
                CSS-wide branch has already validated the reset keyword. */
-            css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
-            if (contain_intrinsic_projection_style != st)
-                css_apply_decl(st, par, "border", val, e, el);
+            if (interpolate_size_projection_style == st)
+                css_apply_decl(st, par, "interpolate-size", val, e, el);
+            else {
+                css_apply_decl(st, par, "contain-intrinsic-size", val, e, el);
+                if (contain_intrinsic_projection_style != st)
+                    css_apply_decl(st, par, "border", val, e, el);
+            }
         }
         else if (!inherit && !(unset && gp && gp->inherited) && gp && gp->native && gp->initial && *gp->initial) {
             /* other natively modelled properties: apply the textual initial value */
@@ -4070,13 +4203,12 @@ apply:
         break;
     case 'd':
         if (!strcmp(P, "display")) {
-            static const char *const ds[] = { "none", "inline", "block", "inline-block", "flex", "inline-flex", "grid", "inline-grid", "list-item", "table", "inline-table", "table-row", "table-cell", "table-row-group", "table-header-group", "table-footer-group", "table-column", "table-column-group", "table-caption", "contents", "flow-root", NULL };
-            k = kw(val, ds); const char *dt = NULL;
+            k = kw(val, display_keywords); const char *dt = NULL;
             st->display_text = NULL;
             if (k >= 0) st->display = (uint8_t)k;
             else if ((dt = display_canon(val))) {
                 st->display_text = dt;
-                k = kw(dt, ds);
+                k = kw(dt, display_keywords);
                 st->display = k >= 0 ? (uint8_t)k : strstr(dt, "list-item") ? D_LIST_ITEM : str_starts(dt, "block") || str_starts(dt, "run-in") ? D_BLOCK : D_INLINE;
                 if (k >= 0) st->display_text = NULL;
             }
@@ -6087,6 +6219,34 @@ static char *quirk_px(const char *v) {
     if (!b.s) sb_puts(&b, "");
     return b.s;
 }
+/* A supports() declaration asks the same native value grammars that consume
+ * these properties. The broader validator chain remains in parse.c. */
+bool css_supports_native_value(const char *property, const char *value, bool quirks) {
+    bool display = !strcmp(property, "display");
+    bool preferred = !strcmp(property, "width") || !strcmp(property, "height") ||
+        !strcmp(property, "inline-size") || !strcmp(property, "block-size");
+    if (!display && !preferred) return true;
+    if (!css_var_syntax_valid(value)) return false;
+    if (css_math_substitution_pending(value) || var_wide_keyword(value)) return true;
+    char *text = min_size_parser_text(value);
+    if (!text) return false;
+    char *trimmed = str_trim(text);
+    bool valid;
+    if (display) {
+        valid = kw(trimmed, display_keywords) >= 0 || display_canon(trimmed) != NULL ||
+            str_ieq(trimmed, "-webkit-box") || str_ieq(trimmed, "-webkit-flex") ||
+            str_ieq(trimmed, "-ms-flexbox") || str_ieq(trimmed, "-webkit-inline-box") ||
+            str_ieq(trimmed, "-webkit-inline-flex");
+    } else {
+        /* Only physical width/height have the unitless length quirk. Keep
+         * its existing token restriction; calc() numbers do not gain units. */
+        char *quirky = quirks && quirky_length_prop(property) && !strchr(value, '\\') ? quirk_px(trimmed) : NULL;
+        char *parsed = css_min_size_parse(quirky ? quirky : trimmed);
+        valid = parsed != NULL; free(parsed); free(quirky);
+    }
+    free(text); return valid;
+}
+
 /* author declarations: a unitless length is invalid outside quirks mode, and an escaped one always is */
 static bool unitless_invalid(const char *p, const char *v, Node *el) {
     if (!quirky_length_prop(p)) return false;
@@ -6139,7 +6299,7 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
     custom_defer = false;
     /* Resolve every winning local against one immutable map, then commit.
      * Inherited values are already computed; revert uses the earlier origin. */
-    custom_resolve_values(st, par, origin_base);
+    custom_resolve_values(st, par, origin_base, e, el);
     custom_origin_base = previous_origin;
     custom_unref(origin_base);
     /* CSS Logical Properties requires the element's computed writing mode
@@ -6147,12 +6307,14 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
     for (int i = 0; i < n; i++) if (flow_basis_prop(v[i].d->prop)) css_apply_decl(st, par, v[i].d->prop, v[i].d->value, e, el);
     apply_font_declarations(st, par, v, n, e, el, author);
     for (int i = 0; i < n; i++) { const char *p = v[i].d->prop; if (!strcmp(p, "color")) css_apply_decl(st, par, p, v[i].d->value, e, el); }
-    bool intrinsic_family = false;
+    bool intrinsic_family = false, interpolation_policy = false;
     for (int i = 0; i < n; i++) {
         const char *p = v[i].d->prop;
         if ((p[0] == '-' && p[1] == '-') || flow_basis_prop(p) || font_basis_prop(p) || !strcmp(p, "color")) continue;
+        if (!strcmp(p, "interpolate-size")) { interpolation_policy = true; continue; }
         if (contain_intrinsic_family(p)) {
             intrinsic_family = true;
+            if (!strcmp(p, "all")) interpolation_policy = true;
             if (strcmp(p, "all")) continue;
         }
         if (author && unitless_invalid(p, v[i].d->value, el)) continue;
@@ -6162,6 +6324,20 @@ static void apply_decl_ordered(ComputedStyle *st, const ComputedStyle *par, MDec
         css_apply_decl(st, par, p, v[i].d->value, e, el);
     }
     if (intrinsic_family) apply_contain_intrinsic_declarations(st, par, v, n, e, el);
+    /* Preserve source order and importance, including validated all resets.
+       The scoped all projection changes only this policy during the replay;
+       unrelated fields keep the results of the ordinary declaration pass. */
+    if (interpolation_policy) {
+        const ComputedStyle *previous_projection = interpolate_size_projection_style;
+        interpolate_size_projection_style = st;
+        for (int phase = 0; phase < 3; phase++) for (int i = 0; i < n; i++) {
+            const Decl *d = v[i].d;
+            if (strcmp(d->prop, "interpolate-size") && strcmp(d->prop, "all")) continue;
+            int priority = (v[i].key >> 62) == 3 ? 2 : !v[i].key && d->important ? 1 : 0;
+            if (priority == phase) css_apply_decl(st, par, d->prop, d->value, e, el);
+        }
+        interpolate_size_projection_style = previous_projection;
+    }
     bg_position_resolve_logical(st);
 }
 
@@ -6418,6 +6594,10 @@ static unsigned inherited_diff(const ComputedStyle *a, const ComputedStyle *b) {
         const GenProp *orientation = gen_prop("text-orientation");
         if (!str_same(gen_value(a, orientation), gen_value(b, orientation))) {
             g_inh_field = "text-orientation"; return INH_OTHER;
+        }
+        const GenProp *policy = gen_prop("interpolate-size");
+        if (!str_same(gen_value(a, policy), gen_value(b, policy))) {
+            g_inh_field = "interpolate-size"; return INH_OTHER;
         }
     }
 #undef INHERITED_EQ
@@ -7491,7 +7671,7 @@ char *css_get_animation_value(Node *el, const char *prop) {
 /* Properties whose computed value differs between o and s, for CSS transitions: the names in the
  * transition-property list, or for "all" every natively computed property plus the generic ones. */
 static void tr_scan_one(Node *n, const ComputedStyle *o, const ComputedStyle *s, const char *prop, void (*cb)(Node *, const char *, const char *, const char *)) {
-    if (!strncmp(prop, "transition", 10) || !strncmp(prop, "animation", 9)) return;
+    if (!strncmp(prop, "transition", 10) || !strncmp(prop, "animation", 9) || !strcmp(prop, "interpolate-size")) return;
     char *a = animation_value_of(n, o, prop), *b = animation_value_of(n, s, prop);
     if (strcmp(a, b)) cb(n, prop, a, b);
     free(a); free(b);

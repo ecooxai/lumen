@@ -253,7 +253,7 @@
 { "inset-inline-end", 0, 0, "auto" },
 { "inset-inline-start", 0, 0, "auto" },
 { "interactivity", 1, 0, "auto" },
-{ "interpolate-size", 0, 0, NULL },
+{ "interpolate-size", 1, 0, "numeric-only" },
 { "isolation", 0, 0, "auto" },
 { "justify-content", 0, 1, "normal" },
 { "justify-items", 0, 1, "legacy center" },

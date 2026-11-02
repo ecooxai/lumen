@@ -60,7 +60,7 @@ float fc_bottom(FloatCtx *fc) { return fc ? fc_clear(fc, CLEAR_BOTH) : -1e30f; }
 /* ---------------- translate ---------------- */
 static bool within(Box *x, Box *root) { for (; x; x = x->parent) if (x == root) return true; return false; }
 static bool abs_outside_translation(Box *box, Box *root) {
-    if (box->fixed && (!box->cb || !box->cb->parent)) return true;
+    if (box_fixed_to_viewport(box)) return true;
     return box->cb && !within(box->cb, root);
 }
 static void tr(Box *root, Box *b, float dx, float dy) {
@@ -1427,7 +1427,8 @@ static void hit_layers(Box *b, float x, float y, float ox, float oy, float vx, f
        Each layer is tested at most once, and a lower layer cannot replace a hit. */
     for (Box *c = b->last; c; c = c->prev) {
         bool outside = c->abs && b->scroller && !box_within(c->cb, b);
-        float cx = c->fixed ? vx : outside ? ox : cox, cy = c->fixed ? vy : outside ? oy : coy;
+        bool viewport_fixed = box_fixed_to_viewport(c);
+        float cx = viewport_fixed ? vx : outside ? ox : cox, cy = viewport_fixed ? vy : outside ? oy : coy;
         if (hit_layer(c) == 2) { hit_layers(c, x, y, cx, cy, vx, vy, sx, sy, best); continue; }
         int z = c->st->z_auto ? 0 : c->st->z_index;
         if ((z < 0) != best->negative || (best->box && z <= best->z)) continue;
@@ -1439,10 +1440,14 @@ static Box *hit(Box *b, float x, float y, float ox, float oy, float vx, float vy
     bool hidden = b->st && b->st->visibility != VIS_VISIBLE;   /* not a target itself, but visible descendants are */
     float sticky_x, sticky_y; box_sticky_offset(b, sx, sy, &sticky_x, &sticky_y);
     ox -= sticky_x; oy -= sticky_y;
-    if (b->st && b->st->has_transform) {   /* painted shifted by its translation (paint_stacking) */
-        float tx = b->st->transform[4] + b->st->translate_pending[0].pct * b->w / 100;
-        float ty = b->st->transform[5] + b->st->translate_pending[1].pct * b->h / 100;
-        ox -= tx; oy -= ty; vx -= tx; vy -= ty;
+    if (b->st && b->st->has_transform) {
+        Affine2D inverse;
+        if (!affine_inverse(box_transform_matrix(b), &inverse)) return NULL;
+        AffinePoint local = affine_point(inverse, (double)x + ox, (double)y + oy);
+        AffinePoint viewport = affine_point(inverse, (double)x + vx, (double)y + vy);
+        if (!isfinite(local.x) || !isfinite(local.y) || !isfinite(viewport.x) || !isfinite(viewport.y)) return NULL;
+        ox = affine_float(local.x - x); oy = affine_float(local.y - y);
+        vx = affine_float(viewport.x - x); vy = affine_float(viewport.y - y);
     }
     float lx = x + ox, ly = y + oy;
     bool inside = lx >= b->x && lx < b->x + b->w && ly >= b->y && ly < b->y + b->h;

@@ -99,9 +99,29 @@ function parseDecls(s, fontFace = false) {
         else if (c === ')') depth--;
     }
     finish(s.length);
-    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
+    for (const [rawName, rawValue] of parts) { const k = rawName.trim(); let v = rawValue.trim(); if (!k) continue; let imp = ''; if (/!important\s*$/i.test(v)) { v = v.replace(/\s*!important\s*$/i, ''); imp = 'important'; } const lk = k.startsWith('--') ? k : k.toLowerCase(); if (fontFace && lk === 'unicode-range') { const range = cssUnicodeRangeText(imp ? rawValue.replace(/[\t\n\f\r ]*!important[\t\n\f\r ]*$/i, '') : rawValue); if (range !== null) { m.delete(lk); m.set(lk, [range, imp]); } continue; } if (!cssVarSyntax(v)) continue; if (lk === 'interpolate-size') { cssInterpolateSizeSet(m, v, imp, true); continue; } if (cssBorderRelevant(lk)) { cssBorderSet(m, lk, v, imp, true); continue; } if (lk === 'box-shadow') { v = cssBoxShadowParse(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); m.set(lk, [v, imp]); continue; } if (!lk.startsWith('--') && CSS_MATH_VALUE.test(v)) { v = cssMathValueText(v); if (v === null || !mathValid(lk, v)) continue; v = specNormalize(lk, v); } if (/^(columns|column-width|column-count)$/.test(lk) && !N.cssSupports('(' + lk + ':' + v + ')')) continue; if (cssCisRelevant(lk)) { cssCisSet(m, lk, v, imp, true); continue; } if (cssGridRelevant(lk)) { cssGridSet(m, lk, v, imp, true); continue; } if (cssFlexRelevant(lk)) { cssFlexSet(m, lk, v, imp, true); continue; } if ((lk === 'font' || lk === 'font-family' || (v[0] === '-' && MATH_LEN_PROPS.test(lk)) || /^background-position(?:-[xy])?$/.test(lk)) && !mathValid(lk, v)) continue; if (CSS_MIN_SIZE.test(lk)) { v = cssMinSizeParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (lk === 'transition-property') { v = N.cssTransitionProperty(v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_NUMERIC_DIMENSION.test(lk)) { v = cssNumericDimensionParse(lk, v); if (v === null) continue; const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_POSITION.test(lk)) { v = specNormalize(lk, v); const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (CSS_BORDER_IMAGE.some(entry => entry[0] === lk)) { const old = m.get(lk); if (old && old[1] && !imp) continue; m.delete(lk); } if (!fontFace) v = cssScalarSpecified(lk, v); m.set(lk, [v, imp]); }
     return m;
 }
+/* The native enum parser owns acceptance; authored pending tokens remain opaque. */
+function cssInterpolateSizeParse(value) {
+    if (!N.cssSupports('(interpolate-size:' + value + ')')) return null;
+    const tokens = cssGridTokens(value);
+    if (!tokens || !tokens.length) return null;
+    if (tokens.some(token => token.includes('('))) return value.trim();
+    return tokens.length === 1 ? cssGridDecode(tokens[0]).toLowerCase() : null;
+}
+function cssInterpolateSizeSet(map, value, priority, cascade = false) {
+    const property = 'interpolate-size';
+    if (value === '') { map.delete(property); return true; }
+    if (priority && !/^important$/i.test(priority)) return false;
+    const parsed = cssInterpolateSizeParse(value);
+    if (parsed === null) return false;
+    const old = map.get(property);
+    if (cascade && old && old[1] && !priority) return true;
+    map.delete(property); map.set(property, [parsed, priority ? 'important' : '']);
+    return true;
+}
+
 /* Physical border declarations are stored as real longhands. The native
  * grammar validates the complete value before any declaration is changed. */
 const CSS_BORDER_SIDES = ['top', 'right', 'bottom', 'left'];
@@ -855,6 +875,7 @@ function fontFamilyPart(v) {   /* the family list of a font shorthand, or null w
 }
 function mathValid(p, v) {
     if (!cssVarSyntax(v)) return false;
+    if (p === 'interpolate-size') return cssInterpolateSizeParse(v) !== null;
     if (p === 'transition-property') return N.cssTransitionProperty(v) !== null;
     if (p === 'box-shadow') return N.cssBoxShadow(v) !== null;
     if (cssBorderRelevant(p)) return cssBorderParse(p, v) !== null;
@@ -1298,6 +1319,11 @@ class CSSStyleDeclaration {
         v = v == null ? '' : String(v);
         pri = pri == null ? '' : String(pri);
         if (v !== '' && ((pri && !/^important$/i.test(pri)) || !cssVarSyntax(v))) return;
+        if (p === 'interpolate-size') {
+            const m = new SMap(this._m());
+            if (!cssInterpolateSizeSet(m, v, pri)) return;
+            this._el.setAttribute('style', serDecls(m)); return;
+        }
         if (p === 'overflow') {
             const m = new SMap(this._m());
             if (!cssOverflowSet(m, v, pri)) return;
